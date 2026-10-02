@@ -8,7 +8,7 @@ package nl.mattix.andamp.state
  * because a row is labeled "Missing source" or "Signed out" accordingly.
  */
 enum class SourceStanding {
-    /** Nothing on this phone can play its rows: no app for it, or one too old to talk to. */
+    /** Nothing on this phone can play its rows: no app for it, or one built for another contract version. */
     ABSENT,
 
     /** Its app is here, and nobody has signed in to it. */
