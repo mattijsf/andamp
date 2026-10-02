@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 import nl.mattix.andamp.backend.pack.PackReach
 
 /**
- * A source's row in a line: which of its four states this phone is in.
+ * A source's row in a line: which of its states this phone is in.
  *
  * The account and the sign-in belong to the source, on the screen it draws in its own app; the
  * player opens that screen and does not draw it.
@@ -37,6 +37,10 @@ fun packSummary(
             "Installed, but too old for this version of Andamp"
         }
 
+        PackReach.Ahead -> {
+            "Installed, but made for a newer version of Andamp"
+        }
+
         is PackReach.SignedOut -> {
             "Not signed in"
         }
@@ -50,9 +54,34 @@ fun packSummary(
     }
 
 /**
+ * What [PackPage] says about a source built for another contract version, or null for a source
+ * that can be asked: which of the two apps is the older one, and so which to update.
+ */
+fun packNotice(
+    named: String,
+    reach: PackReach,
+): String? =
+    when (reach) {
+        PackReach.Outdated -> {
+            "$named is set up for an older Andamp and is not asked to play anything. " +
+                "A newer one puts its tracks back."
+        }
+
+        PackReach.Ahead -> {
+            "$named is set up for a newer Andamp and is not asked to play anything. " +
+                "Updating Andamp puts its tracks back."
+        }
+
+        else -> {
+            null
+        }
+    }
+
+/**
  * Preferences > Music sources > [named], when the source has no screen to open. It shows something
- * only for a source that is too old to be asked anything; a current source hands over its own
- * settings screen. The update button opens the same link the Music sources page ends with.
+ * only for a source built for another contract version; a current source hands over its own
+ * settings screen. A source that is too old gets an update button, which opens the same link the
+ * Music sources page ends with.
  */
 @Composable
 fun PackPage(
@@ -60,14 +89,14 @@ fun PackPage(
     reach: PackReach,
 ) {
     val links = LocalUriHandler.current
-    if (reach != PackReach.Outdated) return
+    val notice = packNotice(named, reach) ?: return
     Section(named)
     Text(
-        "$named is set up for an older Andamp and is not asked to play anything. " +
-            "A newer one puts its tracks back.",
+        notice,
         style = MaterialTheme.typography.bodyMedium,
         modifier = Modifier.testTag("prefs.pack.outdated"),
     )
+    if (reach != PackReach.Outdated) return
     Spacer(Modifier.height(12.dp))
     Button(
         onClick = { links.openUri(MORE_SOURCES_URL) },

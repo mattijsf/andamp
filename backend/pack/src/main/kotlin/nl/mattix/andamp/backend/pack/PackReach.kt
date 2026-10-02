@@ -9,8 +9,9 @@ import nl.mattix.andamp.core.packapi.PackDescriptor
  * How far the player can get with a pack right now.
  *
  * Each state has a different thing to offer on screen: a pack that is not installed wants an
- * install, one built against another contract wants an update, one nobody has signed into
- * wants its settings screen opened, and only the last can be played.
+ * install, one built against an older contract wants an update, one built against a newer
+ * contract wants the player updated, one nobody has signed into wants its settings screen
+ * opened, and only the last can be played.
  *
  * The value describes this moment only. A pack can be uninstalled while the player holds it,
  * so a verb can still fail under [Ready].
@@ -20,11 +21,18 @@ sealed interface PackReach {
     data object Absent : PackReach
 
     /**
-     * Something answers, but with a contract number this build does not implement. Nothing
+     * Something answers, but with a contract number lower than this build's. Nothing
      * further is asked of it. The pack stays bound, so that its process ending, which
      * installing a new one causes, is noticed.
      */
     data object Outdated : PackReach
+
+    /**
+     * Something answers, but with a contract number higher than this build's: the player is
+     * the older of the two. It is treated as [Outdated] is: asked nothing further, and kept
+     * bound.
+     */
+    data object Ahead : PackReach
 
     /**
      * The pack is there and understood, and nobody has signed into it. Its descriptor is

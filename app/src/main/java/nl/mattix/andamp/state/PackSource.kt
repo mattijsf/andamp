@@ -86,8 +86,8 @@ class PackSource(
     override fun home(context: Context): String? = descriptor?.home?.takeIf { it.isNotBlank() }
 
     /**
-     * A player for its rows, or null while the pack is not ready (missing, too old, or
-     * signed out); the playlist then skips its rows.
+     * A player for its rows, or null while the pack is not ready (missing, built for
+     * another contract version, or signed out); the playlist then skips its rows.
      *
      * The pack decodes and this player renders. The output is Media3's, the same chain a
      * local file goes through, so the equalizer, the balance, the effect rack and the
@@ -132,9 +132,10 @@ class PackSource(
      * The pack's own settings screen, resolved by intent action because the class is in
      * another APK; the player never loads the pack's code. Null when nothing answers, and
      * also for a pack built for another contract version: [Page] is drawn then, and says
-     * where a newer one is.
+     * which of the two apps to update.
      */
-    override fun settings(context: Context): Intent? = if (reach is PackReach.Outdated) null else client.settings()
+    override fun settings(context: Context): Intent? =
+        if (reach is PackReach.Outdated || reach is PackReach.Ahead) null else client.settings()
 
     /** What Preferences shows when the pack has no screen to open; see [PackPage]. */
     @Composable
@@ -147,7 +148,7 @@ class PackSource(
     }
 }
 
-/** A pack's reach as a standing. A pack too old to talk to counts as absent, since nothing of it can be used. */
+/** A pack's reach as a standing. A pack built for another contract version counts as absent, since nothing of it can be used. */
 private fun standingOf(reach: PackReach): SourceStanding =
     when (reach) {
         is PackReach.Ready -> SourceStanding.READY
