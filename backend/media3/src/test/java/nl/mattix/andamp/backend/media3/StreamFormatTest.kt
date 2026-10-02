@@ -66,6 +66,13 @@ class StreamFormatTest {
     }
 
     @Test
+    fun `an MPEG-2 mp3 average all but on 144 reads as 144`() {
+        val patched = StreamFormat.patch(track, 145_900, 22_050, StreamFormat.MPEG_AUDIO)
+
+        assertEquals(144, patched.bitrateKbps)
+    }
+
+    @Test
     fun `an mp3 average between rungs keeps its own figure`() {
         // a VBR encode: 52 is the file's average, and 48 is the nearest rung
         val patched = StreamFormat.patch(track, 51_965, 44_100, StreamFormat.MPEG_AUDIO)

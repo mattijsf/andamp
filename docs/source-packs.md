@@ -113,8 +113,9 @@ IPackListener (oneway)
 ### Versions
 
 Andamp calls `apiVersion()` first. If the number differs from its own `PACK_API`, it asks
-nothing else of the source. Preferences show it as too old for this version of Andamp,
-with a button that opens the page listing sources.
+nothing else of the source. For a lower number, Preferences show the source as too old for
+this version of Andamp, with a button that opens the page listing sources. For a higher
+number, they show it as made for a newer version of Andamp.
 
 Parcels are positional and carry no field names. Adding, removing or reordering a field in
 any parcel changes the bytes, so every such change needs a new `PACK_API`, and a source

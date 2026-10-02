@@ -28,7 +28,7 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
- * The four states of [PackReach] (absent, outdated, signed out and ready), and what the client
+ * The states of [PackReach] (absent, outdated, ahead, signed out and ready), and what the client
  * does when the pack's process ends, the pack is removed, or the pack throws.
  */
 @RunWith(RobolectricTestRunner::class)
@@ -146,11 +146,11 @@ class PackClientTest {
             assertNull(client.settings())
         }
 
-    /** A pack that answers with another contract number is not asked anything else. */
+    /** A pack that answers with a lower contract number is not asked anything else. */
     @Test
-    fun `a pack built against another contract is outdated and is asked nothing more`() =
+    fun `a pack built against an older contract is outdated and is asked nothing more`() =
         runTest {
-            val pack = FakePack(api = PackApi.PACK_API + 1)
+            val pack = FakePack(api = PackApi.PACK_API - 1)
             app.install(pack)
             val client = clientFor()
             advanceUntilIdle()
@@ -159,10 +159,23 @@ class PackClientTest {
             assertEquals("an outdated pack is asked nothing", emptyList<String>(), pack.heard)
         }
 
+    /** A pack that answers with a higher contract number is not asked anything else. */
+    @Test
+    fun `a pack built against a newer contract is ahead and is asked nothing more`() =
+        runTest {
+            val pack = FakePack(api = PackApi.PACK_API + 1)
+            app.install(pack)
+            val client = clientFor()
+            advanceUntilIdle()
+
+            assertEquals(PackReach.Ahead, client.reach.value)
+            assertEquals("a pack that is ahead is asked nothing", emptyList<String>(), pack.heard)
+        }
+
     @Test
     fun `an outdated pack is bound once`() =
         runTest {
-            val pack = FakePack(api = PackApi.PACK_API + 1)
+            val pack = FakePack(api = PackApi.PACK_API - 1)
             app.install(pack)
             val client = clientFor()
             advanceUntilIdle()

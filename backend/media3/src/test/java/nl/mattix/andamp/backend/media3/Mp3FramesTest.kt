@@ -30,7 +30,7 @@ class Mp3FramesTest {
 
         assertTrue("a VBR encode reads as variable", !frames.constant)
         // every rate it reports is a layer III bitrate
-        val rungs = setOf(8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320)
+        val rungs = setOf(8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 192, 224, 256, 320)
         (0 until frames.frameCount).forEach { at ->
             val kbps = frames.kbpsAt(at.toLong() * frames.frameDurationUs / 1000)
             assertTrue("frame $at reads a layer III bitrate: $kbps", kbps in rungs)
@@ -91,6 +91,44 @@ class Mp3FramesTest {
         assertTrue("more than ten frames are walked", frames.frameCount > 10)
     }
 
+    @Test
+    fun `a file without an ID3 tag is read from its first frame`() {
+        // one 128k frame, then 64k frames, with no tag in front
+        val bytes = frame(RUNG_128, BYTES_128) + frame(RUNG_64, BYTES_64) + frame(RUNG_64, BYTES_64)
+
+        val frames = requireNotNull(Mp3Frames.scan(bytes.inputStream()))
+
+        assertEquals(3, frames.frameCount)
+        assertEquals(128, frames.kbpsAt(0))
+        assertEquals(64, frames.kbpsAt(frames.frameDurationUs / 1000L + 1))
+    }
+
+    @Test
+    fun `a constant bitrate file without an ID3 tag is indexed from its first frames`() {
+        val tagged = javaClass.classLoader!!.getResourceAsStream("tone-cbr-192.mp3")!!.use { it.readBytes() }
+        val counted = Counting(tagged.copyOfRange(id3Bytes(tagged), tagged.size).inputStream())
+
+        val frames = counted.use { requireNotNull(Mp3Frames.scan(it)) }
+
+        assertTrue("a CBR file reads as constant", frames.constant)
+        assertEquals(192, frames.kbpsAt(0))
+        assertTrue("only the first frames are read: ${counted.read} bytes", counted.read < QUICK_READ_BYTES)
+    }
+
+    /** An MPEG-1 layer III frame at 44.1 kHz with silent content. */
+    private fun frame(
+        rung: Int,
+        bytes: Int,
+    ): ByteArray =
+        ByteArray(bytes).also {
+            it[0] = 0xFF.toByte()
+            it[1] = 0xFB.toByte()
+            it[2] = (rung shl 4).toByte()
+        }
+
+    /** The length of the ID3v2 tag at the front of [file]: ten header bytes and a syncsafe size. */
+    private fun id3Bytes(file: ByteArray): Int = 10 + (6..9).fold(0) { size, at -> size shl 7 or (file[at].toInt() and 0x7F) }
+
     /** Counts the bytes a scan reads from the stream. */
     private class Counting(
         private val inner: java.io.InputStream,
@@ -112,5 +150,11 @@ class Mp3FramesTest {
     private companion object {
         /** An upper bound for reading the tag frame and the first audio frame. */
         const val QUICK_READ_BYTES = 64 * 1024
+
+        /** Bitrate index and frame length of a 128k and a 64k frame at 44.1 kHz. */
+        const val RUNG_128 = 9
+        const val BYTES_128 = 417
+        const val RUNG_64 = 5
+        const val BYTES_64 = 208
     }
 }

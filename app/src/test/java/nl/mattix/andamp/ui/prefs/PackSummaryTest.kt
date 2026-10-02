@@ -45,6 +45,29 @@ class PackSummaryTest {
     }
 
     @Test
+    fun `a pack made for a newer player says so`() {
+        assertEquals(
+            "Installed, but made for a newer version of Andamp",
+            packSummary(PackReach.Ahead, signedIn = false),
+        )
+    }
+
+    @Test
+    fun `the page of a pack built for another contract names the app to update`() {
+        assertEquals(
+            "Moose Music is set up for an older Andamp and is not asked to play anything. " +
+                "A newer one puts its tracks back.",
+            packNotice("Moose Music", PackReach.Outdated),
+        )
+        assertEquals(
+            "Moose Music is set up for a newer Andamp and is not asked to play anything. " +
+                "Updating Andamp puts its tracks back.",
+            packNotice("Moose Music", PackReach.Ahead),
+        )
+        assertEquals(null, packNotice("Moose Music", PackReach.Absent))
+    }
+
+    @Test
     fun `a pack with no account says only that`() {
         assertEquals(
             "Not signed in",

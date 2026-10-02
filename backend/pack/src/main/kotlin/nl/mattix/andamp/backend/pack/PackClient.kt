@@ -390,13 +390,14 @@ class PackClient(
             binder.linkToDeath(notice, 0)
             gravestone = notice
             pack = greeted
-            if (greeted.apiVersion() == PackApi.PACK_API) {
+            val theirs = greeted.apiVersion()
+            if (theirs == PackApi.PACK_API) {
                 descriptor = greeted.describe()
                 listening.forEach { greeted.listen(it) }
                 greeted
             } else {
                 refused = true
-                _reach.value = PackReach.Outdated
+                _reach.value = if (theirs < PackApi.PACK_API) PackReach.Outdated else PackReach.Ahead
                 null
             }
         } catch (expected: RemoteException) {

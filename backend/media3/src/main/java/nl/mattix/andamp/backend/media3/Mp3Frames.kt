@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.backend.media3
 
+import java.io.BufferedInputStream
 import java.io.InputStream
 
 /**
@@ -70,7 +71,7 @@ internal class Mp3Frames(
          * rates gathered so far.
          */
         private class Walk(
-            private val stream: InputStream,
+            private val stream: BufferedInputStream,
         ) {
             var read = 0L
                 private set
@@ -171,15 +172,20 @@ internal class Mp3Frames(
             }
         }
 
-        /** ID3v2 sits in front of the audio; its size is seven bits per byte. */
-        private fun skipId3(stream: InputStream): Long {
+        /**
+         * ID3v2 sits in front of the audio; its size is seven bits per byte.
+         * Returns how many bytes were skipped: none for a file without a tag.
+         */
+        private fun skipId3(stream: BufferedInputStream): Long {
             val tag = ByteArray(ID3_HEADER)
-            if (!stream.readFully(tag)) return ID3_HEADER.toLong()
-            val isId3 = tag[0] == 'I'.code.toByte() && tag[1] == 'D'.code.toByte() && tag[2] == '3'.code.toByte()
+            stream.mark(ID3_HEADER)
+            val isId3 =
+                stream.readFully(tag) &&
+                    tag[0] == 'I'.code.toByte() && tag[1] == 'D'.code.toByte() && tag[2] == '3'.code.toByte()
             if (!isId3) {
-                // not a tag: these bytes stay consumed, and the walk resyncs
-                // to the next frame header from here
-                return pushBack(stream, tag)
+                // not a tag: the walk starts at the file's first byte
+                stream.reset()
+                return 0
             }
             val size =
                 (tag[6].toInt() and SYNCSAFE) shl 21 or
@@ -286,17 +292,6 @@ internal class Mp3Frames(
                     left -= n
                 }
             }
-        }
-
-        /** A stream with no ID3 tag: returns how many bytes were read looking for one. */
-        private fun pushBack(
-            stream: InputStream,
-            read: ByteArray,
-        ): Long {
-            // the stream cannot un-read them, so the walk starts here and
-            // resync finds the next frame header
-            if (stream.markSupported()) return read.size.toLong()
-            return read.size.toLong()
         }
 
         private val MPEG1_RATES = intArrayOf(0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 0)
