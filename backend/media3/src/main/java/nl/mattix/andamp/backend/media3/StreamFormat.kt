@@ -59,7 +59,7 @@ internal object StreamFormat {
 
     /** The layer III bitrates the readout snaps to, in kbit/s. */
     private val MP3_LADDER =
-        intArrayOf(8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320)
+        intArrayOf(8, 16, 24, 32, 40, 48, 56, 64, 80, 96, 112, 128, 144, 160, 192, 224, 256, 320)
 
     /**
      * How far from a rung, as a fraction of it, the reported average may sit
