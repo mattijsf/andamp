@@ -1,0 +1,93 @@
+# Overrides on top of detekt's defaults (buildUponDefaultConfig = true).
+# Formatting is ktlint/Spotless territory — detekt handles smells and complexity.
+# Thresholds below are tuned to this codebase's legitimate shape, not loosened
+# to hide problems; each carries its reason. No baseline file — the suite runs
+# clean, keep it that way.
+
+style:
+  UnusedImports:
+    # off by default, and ktlint's own rule for this lets them through here: a
+    # hundred and thirty of them had gathered in :app's ui package alone, with
+    # the gate green
+    active: true
+  MagicNumber:
+    # Sprite coordinates, frame counts and travel distances ARE the domain;
+    # naming every one would hurt auditability against webamp's skinSprites.ts.
+    active: false
+  MaxLineLength:
+    maxLineLength: 130 # matches .editorconfig/ktlint
+  ReturnCount:
+    max: 3
+    excludeGuardClauses: true
+  LoopWithTooManyJumpStatements:
+    # guard-style continue/break loops are idiomatic in the INI/zip parsers
+    # and the pointer-event pump
+    maxJumpCount: 3
+
+complexity:
+  LongMethod:
+    # window draw functions are linear sprite lists; splitting them would hide
+    # the draw order, which is load-bearing
+    threshold: 120
+  CyclomaticComplexMethod:
+    # per-sprite state selection (4-state buttons) branches a lot but stays flat
+    threshold: 20
+  LongParameterList:
+    # widget factories take flat geometry (id, x, y, w, h, thumb, travel) plus callbacks;
+    # the ViewModel's constructor is the app's one manual-DI seam, where every
+    # store a test may fake gets its slot. Raising this per store is a treadmill:
+    # at the next one the stores are worth grouping into a holder instead.
+    functionThreshold: 11
+    constructorThreshold: 12
+  TooManyFunctions:
+    # the playback transport API is inherently ~12 small verbs
+    # (play/pause/stop/next/previous/playAt/seek/volume/shuffle/repeat/queue/
+    # enqueue/release) plus a backend's private helpers on top of them
+    # the facade mirrors every verb with its capability guard, so it runs a
+    # couple past the backends
+    # the view model answers all of it plus the equalizer's and the playlist's
+    # own verbs, because a window's widgets ask one thing for what they do
+    # (WindowControls) rather than reaching into three ops objects
+    thresholdInInterfaces: 16
+    # 29 rather than 28 since AppViewModels: the view model outlives every
+    # activity, so flushing the debounced saves became a verb the host calls
+    # instead of something onCleared did on the way out
+    thresholdInClasses: 29
+    # 12 rather than 11 since SliderMath: it is one small conversion per control
+    # (a frame, a thumb offset, a detent) and the home screen widget added the
+    # one it shares with the player, so a press there means what a drag means
+    # here. Splitting a namespace of one-line mappings by theme would put a
+    # boundary where the art has none
+    thresholdInObjects: 12
+    # Naming an excludes list replaces the rule's own defaults rather than
+    # adding to it, so the test source sets have to be named here again. Written
+    # from the source set down - "**/src/test*/**" - rather than as detekt's own
+    # bare "**/test/**": the glob is matched against the whole path, so a
+    # checkout inside a directory called "test" would otherwise switch the rule
+    # off across the codebase. The one entry covers src/test and
+    # src/testFixtures alike. 1.23.8 also
+    # defaults to the Kotlin Multiplatform source sets (commonTest, jvmTest,
+    # iosTest and the rest), which this project has none of.
+    # ProjectMNative is projectM's C API transcribed one declaration per C
+    # function; there is no smaller unit to split it into, and splitting by
+    # theme would put the boundary somewhere the C header does not
+    # PackComponents.kt is the .avs body vocabulary (one factory per component)
+    # and AndAmpPack.kt is the shipped pack (one function per preset); like
+    # ProjectMNative there is no smaller unit to split either into
+    excludes:
+      ["**/src/test*/**", "**/src/androidTest/**", "**/ProjectMNative.kt",
+       "**/author/PackComponents.kt", "**/author/AndAmpPack.kt"]
+
+naming:
+  FunctionNaming:
+    ignoreAnnotated: ["Composable"]
+    # The contract suites live in src/testFixtures, which the rule's own default
+    # "**/test/**" does not match, so their backticked test names would be
+    # reported. "src/test*" covers src/test and src/testFixtures alike. Anchored at "src/" on purpose: the glob is
+    # matched against the whole path, so a bare "**/test*/**" would also match a
+    # directory above the checkout and switch the rule off everywhere. The same
+    # list as TooManyFunctions above, for the same reason.
+    excludes: ["**/src/test*/**", "**/src/androidTest/**"]
+  TopLevelPropertyNaming:
+    # webamp sprite names are transcribed 1:1 (MAIN_PREVIOUS_BUTTON, ...)
+    constantPattern: "[A-Z][A-Za-z0-9_]*"

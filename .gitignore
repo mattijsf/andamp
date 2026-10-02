@@ -1,0 +1,27 @@
+.gradle/
+.kotlin/
+build/
+local.properties
+.DS_Store
+.idea/
+*.iml
+captures/
+.externalNativeBuild/
+.cxx/
+
+# the upload key and its passwords
+keystore.properties
+*.jks
+*.keystore
+
+# python bytecode from tools/
+__pycache__/
+*.pyc
+
+# the virtualenv `./gradlew docsSite` renders the developer site with. Its
+# contents are pinned in tools/docs-requirements.txt, which is committed; the
+# installed tree is a build output like any other.
+tools/docs-venv/
+
+# Play's "what's new", written by tools/release.py at upload time.
+app/src/main/play/release-notes/

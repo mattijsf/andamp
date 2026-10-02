@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Translucent so the launcher (or whatever the app was opened over) shows
+         through the gutters around the skin windows: Winamp floating on a
+         desktop. The skin canvases themselves are fully opaque sprites.
+         API 28+ only; on O a translucent activity may not fix its orientation. -->
+    <style name="Theme.AndAmp" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+    </style>
+</resources>

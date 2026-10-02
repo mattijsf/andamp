@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- API 26/27 fallback: translucent + fixed screenOrientation throws
+         "Only fullscreen opaque activities can request orientation" on O,
+         so the desktop-float effect (values-v28) starts at 28. -->
+    <style name="Theme.AndAmp" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@android:color/black</item>
+    </style>
+
+    <!--
+      The widget's menu: an activity, because RemoteViews cannot show a menu, in
+      a translucent window so the home screen stays visible behind it.
+    -->
+    <style name="Theme.AndAmp.WidgetMenu" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
+        <item name="android:windowContentOverlay">@null</item>
+        <item name="android:windowAnimationStyle">@null</item>
+        <item name="android:backgroundDimEnabled">false</item>
+    </style>
+</resources>

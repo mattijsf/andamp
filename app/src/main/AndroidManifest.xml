@@ -1,0 +1,140 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      The device's audio library. MediaStore uris stay readable across restarts
+      on this one permission, where a document picker's grants are per item and
+      capped.
+    -->
+    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+    <!--
+      The floating player. Off by default, and unused until the listener grants
+      it on the system screen; see ui/overlay/PlayerOverlay.
+    -->
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+
+    <!--
+      Internet radio streams, the online skin museum and its thumbnails, plug-in
+      install links, and update checks for installed sources.
+    -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
+    <!--
+      How a separately installed source is found. Since Android 11 a package
+      sees only what it declares an interest in. QUERY_ALL_PACKAGES would show
+      every installed app, which is more than is needed, so the two actions a
+      source's pack exposes are named here: the service the player binds to and
+      the settings screen it opens. The actions name no particular source: a
+      pack for any source answers them.
+    -->
+    <queries>
+        <intent>
+            <action android:name="nl.mattix.andamp.source.BIND" />
+        </intent>
+        <intent>
+            <action android:name="nl.mattix.andamp.source.SETTINGS" />
+        </intent>
+    </queries>
+
+    <!--
+      usesCleartextTraffic: most legacy Shoutcast/Icecast stations still stream
+      over plain http, which the platform blocks by default since API 28.
+      Stations are user-entered urls, so it is allowed for every host.
+    -->
+    <application
+        android:name=".AndAmpApp"
+        android:label="@string/app_name"
+        android:icon="@mipmap/ic_launcher"
+        android:roundIcon="@mipmap/ic_launcher_round"
+        android:enableOnBackInvokedCallback="true"
+        android:theme="@style/Theme.AndAmp"
+        android:usesCleartextTraffic="true">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="orientation|screenSize|keyboardHidden">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+          A .lua plug-in opened or shared from another app. Android has no type
+          for .lua: MediaStore files one as application/octet-stream, and a file
+          manager passes that on, so the second filter matches that type (and
+          text/plain) only on a path ending in .lua. Apps that do name the type
+          use one of the first filter's. See PluginImportActivity for why this
+          is not MainActivity.
+        -->
+        <activity
+            android:name=".PluginImportActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter android:label="Add to Andamp">
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="text/x-lua" />
+                <data android:mimeType="application/x-lua" />
+                <data android:mimeType="text/x-lua-source" />
+            </intent-filter>
+            <intent-filter android:label="Add to Andamp">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:host="*" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="text/plain" />
+                <data android:pathPattern=".*\\.lua" />
+                <data android:pathPattern=".*\\..*\\.lua" />
+                <data android:pathPattern=".*\\..*\\..*\\.lua" />
+            </intent-filter>
+            <!--
+              The Install button on Andamp's site: a plain link to the .lua, which
+              Android gives to Andamp once the site's /.well-known/assetlinks.json
+              names this app. Only .lua files under the plug-ins path, so the page
+              listing them still opens in the browser. What arrives is offered,
+              not installed; see PluginLinks.
+            -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="mattix.nl" />
+                <data android:pathPattern="/andamp/extensions/plugins/.*\\.lua" />
+            </intent-filter>
+        </activity>
+
+        <receiver
+            android:name="nl.mattix.andamp.widget.MainWindowWidget"
+            android:label="@string/app_name"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_main_info" />
+        </receiver>
+        <activity
+            android:name=".widget.WidgetMenuActivity"
+            android:theme="@style/Theme.AndAmp.WidgetMenu"
+            android:taskAffinity=""
+            android:excludeFromRecents="true"
+            android:launchMode="singleTop"
+            android:exported="false" />
+    </application>
+
+</manifest>

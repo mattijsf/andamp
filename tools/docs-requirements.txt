@@ -1,0 +1,10 @@
+# The developer site, built by `./gradlew docsSite`.
+#
+# Pinned, so the site builds the same on every machine: Material's generated
+# HTML changes between minors.
+#
+# The venv these go into is tools/docs-venv/, which is gitignored:
+#   python3 -m venv tools/docs-venv
+#   tools/docs-venv/bin/pip install -r tools/docs-requirements.txt
+mkdocs==1.6.1
+mkdocs-material==9.7.7

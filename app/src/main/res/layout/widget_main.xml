@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  The player is one image, rendered off-screen by WidgetRender; centerInside so
+  a bitmap that fits is not scaled and one that does not is shrunk, not cropped.
+
+  RemoteViews cannot hit-test a bitmap, so the controls are transparent views
+  laid over the picture and moved into place at runtime (WidgetButtons,
+  WidgetSliders). Their ids have to exist at compile time, so they are listed
+  here. They are ImageViews with no image because RemoteViews does not inflate a
+  plain View. They sit after the image, so they are above it and take their own
+  taps.
+-->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <!--
+      The stage: the size of the drawn player, centered by the framework.
+      Everything the widget places sits inside it, so a patch's margins are the
+      art's own coordinates.
+
+      wrap_content: below API 31 a provider cannot size anything, so the picture
+      measures the stage. From API 31 WidgetSender also pins both in pixels.
+    -->
+    <FrameLayout
+        android:id="@+id/widget_stage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center">
+
+
+        <ImageView
+            android:id="@+id/widget_player"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:scaleType="centerInside"
+            android:contentDescription="Andamp player" />
+
+
+        <!--
+          The parts that change while the rest does not: the clock, the scrolling
+          title, the seek bar and the bitrate and sample-rate readout. Each is its
+          own picture laid over the place it belongs to, so a tick sends these and
+          not the whole window.
+        -->
+        <ImageView android:id="@+id/widget_layer_clock" android:layout_width="0dp" android:layout_height="0dp" android:scaleType="fitXY" android:contentDescription="Time" />
+        <ImageView android:id="@+id/widget_layer_marquee" android:layout_width="0dp" android:layout_height="0dp" android:scaleType="fitXY" android:contentDescription="Title" />
+        <ImageView android:id="@+id/widget_layer_posbar" android:layout_width="0dp" android:layout_height="0dp" android:scaleType="fitXY" android:contentDescription="Position" />
+        <ImageView android:id="@+id/widget_layer_readout" android:layout_width="0dp" android:layout_height="0dp" android:scaleType="fitXY" android:contentDescription="Bitrate" />
+
+        <!--
+          The visualizer. Eight pictures the launcher cycles by itself; a
+          ViewFlipper stops flipping when the home screen is not visible.
+        -->
+        <ViewFlipper
+            android:id="@+id/widget_vis"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:autoStart="true"
+            android:flipInterval="50"
+            android:visibility="gone">
+
+            <ImageView android:id="@+id/widget_vis_0" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:contentDescription="Visualizer" />
+            <ImageView android:id="@+id/widget_vis_1" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:contentDescription="Visualizer" />
+            <ImageView android:id="@+id/widget_vis_2" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:contentDescription="Visualizer" />
+            <ImageView android:id="@+id/widget_vis_3" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:contentDescription="Visualizer" />
+            <ImageView android:id="@+id/widget_vis_4" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:contentDescription="Visualizer" />
+            <ImageView android:id="@+id/widget_vis_5" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:contentDescription="Visualizer" />
+            <ImageView android:id="@+id/widget_vis_6" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:contentDescription="Visualizer" />
+            <ImageView android:id="@+id/widget_vis_7" android:layout_width="match_parent" android:layout_height="match_parent" android:scaleType="fitXY" android:contentDescription="Visualizer" />
+
+        </ViewFlipper>
+
+
+        <!--
+          The seek bar and the volume slider, as tap targets. RemoteViews has no
+          draggable control, so a row of targets covers each track. WidgetSliders
+          says where they go and what each one means.
+        -->
+        <ImageView android:id="@+id/widget_seek_0" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Seek" />
+        <ImageView android:id="@+id/widget_seek_1" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Seek" />
+        <ImageView android:id="@+id/widget_seek_2" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Seek" />
+        <ImageView android:id="@+id/widget_seek_3" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Seek" />
+        <ImageView android:id="@+id/widget_seek_4" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Seek" />
+        <ImageView android:id="@+id/widget_seek_5" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Seek" />
+        <ImageView android:id="@+id/widget_seek_6" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Seek" />
+        <ImageView android:id="@+id/widget_seek_7" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Seek" />
+        <ImageView android:id="@+id/widget_seek_8" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Seek" />
+        <ImageView android:id="@+id/widget_seek_9" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Seek" />
+        <ImageView android:id="@+id/widget_seek_10" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Seek" />
+        <ImageView android:id="@+id/widget_seek_11" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Seek" />
+
+        <ImageView android:id="@+id/widget_vol_0" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Volume" />
+        <ImageView android:id="@+id/widget_vol_1" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Volume" />
+        <ImageView android:id="@+id/widget_vol_2" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Volume" />
+        <ImageView android:id="@+id/widget_vol_3" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Volume" />
+        <ImageView android:id="@+id/widget_vol_4" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Volume" />
+        <ImageView android:id="@+id/widget_vol_5" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Volume" />
+        <ImageView android:id="@+id/widget_vol_6" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Volume" />
+        <ImageView android:id="@+id/widget_vol_7" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Volume" />
+        <ImageView android:id="@+id/widget_vol_8" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Volume" />
+        <ImageView android:id="@+id/widget_vol_9" android:layout_width="0dp" android:layout_height="0dp" android:contentDescription="Volume" />
+
+        <ImageView
+            android:id="@+id/widget_btn_0"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:contentDescription="Previous" />
+
+        <ImageView
+            android:id="@+id/widget_menu"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:contentDescription="Andamp menu" />
+
+        <ImageView
+            android:id="@+id/widget_logo"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:contentDescription="Open Andamp" />
+
+        <ImageView
+            android:id="@+id/widget_btn_1"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:contentDescription="Play" />
+
+        <ImageView
+            android:id="@+id/widget_btn_2"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:contentDescription="Pause" />
+
+        <ImageView
+            android:id="@+id/widget_btn_3"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:contentDescription="Stop" />
+
+        <ImageView
+            android:id="@+id/widget_btn_4"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:contentDescription="Next" />
+
+        <ImageView
+            android:id="@+id/widget_btn_5"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:contentDescription="Shuffle" />
+
+        <ImageView
+            android:id="@+id/widget_btn_6"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
+            android:contentDescription="Repeat" />
+
+
+    </FrameLayout>
+</FrameLayout>

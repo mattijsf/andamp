@@ -1,0 +1,90 @@
+# The "Extend Andamp" developer site: the two things somebody outside this
+# repository can write against - a music source, and a DSP plug-in.
+#
+# docs_dir is not docs/. docs/ also holds design notes, measurements and the
+# privacy policy, and the published pages are an allowlist so a new file under
+# docs/ is not published by accident. `./gradlew docsSite` fills the staging
+# directory from the list in the root build file, so running mkdocs by hand
+# against this file needs the Gradle task to have staged first.
+site_name: Extend Andamp
+site_description: Write a music source or a DSP plug-in for Andamp.
+docs_dir: build/docs-src
+
+# Plain files, openable from disk. `true` would write every page as
+# <name>/index.html and link to it as <name>/, which a web host resolves and a
+# browser opening the folder from file:// does not. `false` writes <name>.html
+# and links to it by that name, which resolves the same over file:// and over
+# HTTP, so the output directory can be served by a host or zipped and read
+# offline. The cost is .html in the address bar.
+use_directory_urls: false
+
+theme:
+  name: material
+  # Material fetches Roboto from fonts.googleapis.com unless this is off, and
+  # this output has to work without a network. With it off the theme falls back
+  # to the reader's own system stack.
+  font: false
+  features:
+    - navigation.top
+    - navigation.tracking
+    - toc.follow
+    - content.code.copy
+    - content.tabs.link
+    - search.highlight
+    - search.suggest
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: black
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+
+plugins:
+  - search
+
+markdown_extensions:
+  - toc:
+      permalink: true
+  - admonition
+  - attr_list
+  - def_list
+  - tables
+  - pymdownx.details
+  # No mermaid fence, on purpose. Material does not bundle mermaid - it
+  # fetches it from unpkg.com the first time a page has a diagram on it, which
+  # is the one way this output stops working offline. A diagram here is an SVG
+  # or a PNG committed beside the page.
+  - pymdownx.superfences
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+
+# The nav names the same four pages as the allowlist in the root build file.
+# A page that has not been written yet is absent from the built site - the
+# Gradle task prints which ones it skipped, and `not_found: ignore` here keeps
+# MkDocs from also warning about them. The API reference is a link, not a page,
+# because Dokka renders it: docsSite copies build/api-docs into api/ inside the
+# output, after MkDocs has cleaned it.
+validation:
+  nav:
+    not_found: ignore
+    omitted_files: ignore
+  links:
+    not_found: ignore
+
+nav:
+  - Extend Andamp: index.md
+  - Music sources: source-packs.md
+  - Writing a DSP plug-in: dsp-plugins-intro.md
+  - DSP plug-in reference: dsp-plugin-spec.md
+  - API reference: api/index.html

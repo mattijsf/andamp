@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      SystemNetworkWatch reads the network state and registers a callback for it.
+      Declared here so that every APK that uses the watcher gets it merged in;
+      without it the callback is refused and retries run on the clock alone
+    -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+</manifest>

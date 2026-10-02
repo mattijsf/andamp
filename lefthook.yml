@@ -1,0 +1,20 @@
+# Git hooks. One-time setup after clone: `lefthook install` (brew install lefthook)
+commit-msg:
+  commands:
+    type:
+      # feat:, change: and fix: reach the release notes, so a commit of one of
+      # those types has to change something that ships.
+      run: python3 tools/commit-type.py {1}
+pre-push:
+  commands:
+    verify:
+      # `gate` is defined in the root build.gradle.kts: formatting, detekt in
+      # every module, the JVM unit tests of every module that has tests - the
+      # shared contract suites among them - and the goldens. Assembling the
+      # app is not in it; that is the wider local gate in ENGINEERING.md.
+      run: ./gradlew gate
+    tools:
+      # unit tests of the release scripts - the version code, what fits in
+      # the store's notes, which commits reach the changelog - which Gradle
+      # does not run. Standard library only.
+      run: python3 -m unittest discover -s tools/tests -q

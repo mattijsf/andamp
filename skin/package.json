@@ -1,0 +1,11 @@
+{
+  "name": "andamp-skin",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Three Winamp 2.x skins (AndAmp Dark, Light and Spot), generated from source",
+  "scripts": {
+    "build": "python3 build.py verify",
+    "serve": "python3 -m http.server 8000"
+  },
+  "devDependencies": { "webamp": "^2.3.1" }
+}

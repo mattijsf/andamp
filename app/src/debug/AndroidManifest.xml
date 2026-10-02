@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!--
+      Debug builds only: ScreenshotWallpaper sets the device's wallpaper. Android
+      has no shell command that does, so this receiver sets it.
+    -->
+    <uses-permission android:name="android.permission.SET_WALLPAPER" />
+
+    <application>
+        <!--
+          Exported so `adb shell am broadcast` can reach it, and guarded by DUMP
+          so nothing else can: the shell holds that permission and an ordinary
+          app cannot.
+        -->
+        <receiver
+            android:name="nl.mattix.andamp.debug.ScreenshotWallpaper"
+            android:exported="true"
+            android:permission="android.permission.DUMP" />
+
+        <!--
+          A bare desktop to show behind the translucent player: the wallpaper,
+          Andamp's icon and a search bar. Guarded like the receiver: only the
+          shell starts it. A task of its own, because starting it in the app's
+          task would clear the player out of the way.
+        -->
+        <activity
+            android:name="nl.mattix.andamp.debug.ScreenshotDesktop"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:permission="android.permission.DUMP"
+            android:taskAffinity="nl.mattix.andamp.screenshotdesktop"
+            android:theme="@style/ScreenshotDesktop" />
+    </application>
+</manifest>

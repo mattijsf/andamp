@@ -1,0 +1,43 @@
+name: CI
+
+# Manual-only to keep Actions minutes near zero — the lefthook pre-push gate
+# runs the same checks locally on every push. Trigger occasionally via the
+# Actions tab ("Run workflow") or: gh workflow run ci.yml
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          # the native builds are compiled from source, and their CMakeLists
+          # stop with a message when the submodule is empty - so a bare
+          # checkout could never get as far as assembleDebug. Recursive
+          # because projectM vendors projectm-eval inside its own tree.
+          submodules: recursive
+
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1 # v4.4.4
+
+      # `gate` is the same task the pre-push hook runs: formatting, detekt in
+      # every module, the JVM unit tests of every module that has tests, and
+      # the goldens. Assembling the app is added because the toolchain here is
+      # a fresh one. Nothing here signs or uploads anything.
+      - name: The push gate, then build the app
+        run: ./gradlew gate assembleDebug
+
+      - name: Upload screenshot diffs on failure
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: roborazzi-diffs
+          path: |
+            app/build/outputs/roborazzi
+            app/src/test/snapshots/*_compare.png
+          if-no-files-found: ignore

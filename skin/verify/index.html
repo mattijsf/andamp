@@ -1,0 +1,64 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>andamp — Webamp harness</title>
+  <style>
+    html, body { margin: 0; height: 100%; background: #0b0a0e; }
+    #app { position: relative; height: 100%; }
+    #hud { position: fixed; right: 8px; bottom: 8px; z-index: 9999;
+           font: 11px ui-monospace, monospace; color: #8f8a99; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <div id="hud">loading…</div>
+  <script src="../node_modules/webamp/built/webamp.bundle.min.js"></script>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const skin = params.get("skin") || "AndAmp Dark";
+    const hud = document.getElementById("hud");
+    window.__errors = [];
+    window.addEventListener("error", (e) => window.__errors.push(String(e.message)));
+
+    fetch("./silence.txt").then(r => r.text()).then((silence) => {
+      // windowLayout positions are screen coordinates, and double size does
+      // not scale them -- a window at top:116 that renders 232px tall will
+      // overlap the one above it. So the stack is spaced by the rendered
+      // height. The playlist never doubles (canDouble is false for it).
+      const x2 = params.get("x2") === "1";
+      const step = x2 ? 232 : 116;
+      const webamp = new Webamp({
+        initialSkin: { url: `../dist/${encodeURIComponent(skin)}.wsz` },
+        availableSkins: [
+          { url: "../dist/AndAmp%20Dark.wsz", name: "AndAmp Dark" },
+          { url: "../dist/AndAmp%20Light.wsz", name: "AndAmp Light" },
+          { url: "../dist/AndAmp%20Spot.wsz", name: "AndAmp Spot" },
+        ],
+        initialTracks: [
+          { metaData: { artist: "andamp", title: "material 3 expressive" },
+            url: silence, duration: 225 },
+          { metaData: { artist: "android", title: "baseline purple" },
+            url: silence, duration: 187 },
+          { metaData: { artist: "andamp", title: "wavy media slider" },
+            url: silence, duration: 342 },
+          { metaData: { artist: "andamp", title: "geometric numerals" },
+            url: silence, duration: 96 },
+        ],
+        windowLayout: {
+          main:      { position: { top: 12, left: 12 } },
+          equalizer: { position: { top: 12 + step, left: 12 } },
+          playlist:  { position: { top: 12 + step * 2, left: 12 },
+                       size: { extraHeight: 4, extraWidth: 0 } },
+        },
+        enableDoubleSizeMode: x2,
+      });
+      window.__webamp = webamp;
+      webamp.renderInto(document.getElementById("app"))
+        .then(() => webamp.skinIsLoaded())
+        .then(() => { window.__ready = true; hud.textContent = skin; })
+        .catch((e) => { window.__errors.push(String(e)); hud.textContent = "FAILED: " + e; });
+    });
+  </script>
+</body>
+</html>

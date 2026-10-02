@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!--
+      setWakeMode, and AudioManners for a backend that renders its own audio:
+      the CPU may not sleep mid-track, and a stream needs the radio too
+    -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+    <!--
+      ACCESS_NETWORK_STATE, which StationRedial's network watch needs, comes
+      from :core:network's own manifest, beside the watcher itself
+    -->
+
+    <application>
+        <service
+            android:name="nl.mattix.andamp.backend.media3.PlaybackService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
+            <!--
+              Media buttons addressed to the package reach playback here. The
+              home screen widget sends these.
+            -->
+            <intent-filter>
+                <action android:name="android.intent.action.MEDIA_BUTTON" />
+            </intent-filter>
+        </service>
+    </application>
+
+</manifest>

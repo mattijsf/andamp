@@ -1,0 +1,29 @@
+# Versions, CHANGELOG.md and tags, from the conventional commits themselves.
+#
+# The rest of this repo's CI is manual-only to keep billed Actions minutes near
+# zero (see ci.yml). This one runs on every push to main because a
+# release-please run takes seconds and its release PR has to stay up to date
+# with main.
+#
+# It does not ship anything. Merging its PR bumps the version, writes the
+# changelog and tags. Uploading that tag to Play is tools/release.py, run by
+# hand, because the signing key lives in a keychain on one machine.
+name: release-please
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

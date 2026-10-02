@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  minHeight is one launcher row, which is the windowshade case.
+
+  minWidth is the player's own 275 virtual pixels, in dp: a host multiplies it
+  by the density, so 275dp still yields 275 real pixels on a density-1.0
+  screen. A narrower box there would crop the art, because the stage is pinned
+  in pixels.
+
+  updatePeriodMillis is half an hour, the system's minimum. The widget is kept
+  up to date by push; the period bounds how long a picture left behind by a
+  process that died can stay.
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="275dp"
+    android:minHeight="40dp"
+    android:targetCellWidth="4"
+    android:targetCellHeight="2"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen"
+    android:updatePeriodMillis="1800000"
+    android:previewImage="@drawable/widget_preview"
+    android:initialLayout="@layout/widget_main" />
