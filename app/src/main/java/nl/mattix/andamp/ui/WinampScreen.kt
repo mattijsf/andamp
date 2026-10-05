@@ -15,6 +15,7 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -301,8 +302,10 @@ fun PlayerSurface(
             ) {
                 val s = vm.state
                 LibraryAsks(vm, libraryAccess)
-                val scale = playerScale(constraints.maxWidth, constraints.maxHeight)
-                val virtualAvail = constraints.maxHeight / scale
+                val screenW = constraints.maxWidth
+                val screenH = constraints.maxHeight
+                val viewport = playerViewport(screenW, screenH, fillScreen = false)
+                val scale = viewport.scale
 
                 val quit = onExit
 
@@ -362,57 +365,16 @@ fun PlayerSurface(
                         }
                     }
                 val eqWidgets = remember(vm, s.eqShaded) { if (s.eqShaded) eqShadeWidgets(vm) else eqWindowWidgets(vm) }
-                // a shaded window is only as high as its title bar
-                val mainH = heightOf(MAIN_H, s.mainShaded)
-                val eqH = heightOf(EQ_H, s.eqShaded)
-                val milkdropH = milkdropHeight(frameFor(skin), milkdropContentH(s.milkdropSteps))
-                // the docked stack: the player, with the equalizer and the plug-in window
-                // under it. Only a window still attached counts toward its height, which
-                // the playlist sizes itself against.
-                val stackTop = grabbableTop(scale, LocalDensity.current)
-                val dockedH =
-                    dockedStackHeight(
-                        top = stackTop,
-                        anchor = mainH,
-                        under =
-                            listOf(
-                                stackMember(s, WindowStore.EQ, eqH, s.eqVisible),
-                                stackMember(s, WindowStore.MILKDROP, milkdropH, s.milkdropOn),
-                            ),
-                    )
-                val safeBottomPx =
-                    constraints.maxHeight -
-                        (surfaceScreen?.bottom ?: WindowInsets.safeDrawing.getBottom(LocalDensity.current))
-                val safeBottom = safeBottomPx / scale
-                s.screenW = constraints.maxWidth / scale
-                s.screenH = virtualAvail
+                // the skin is laid out on the viewport's surface, the size of which it sees
+                // as its constraints
+                PlayerViewportBox(viewport) {
+                    PlayerWindows(vm, skin, scale, onLongPress = openMenu, playlistActions, libraryAccess, mainWidgets, eqWidgets)
+                }
 
-                InPlayerVisualizerDriver(vm)
-                UiClocks(s)
-
-                FloatingWindows(
-                    vm,
-                    skin,
-                    scale,
-                    onLongPress = openMenu,
-                    playlistActions,
-                    libraryAccess,
-                    mainWidgets,
-                    eqWidgets,
-                    mainH,
-                    eqH,
-                    dockedH,
-                    virtualAvail,
-                    safeBottom,
-                )
-
-                // over every window: a lens clipped to its own window would be cut off by
-                // the window above it
-                LoupeLayer(s, scale)
-
-                // menus pop from their opening widget, like Winamp's context menus
+                // menus pop from their opening widget, like Winamp's context menus. They and
+                // the dialogs are at the screen's size, outside the surface the skin is on.
                 AmpModals(s, skin = skin, anchorBounds = { anchor ->
-                    menuAnchorBounds(anchor, scale, constraints.maxWidth, constraints.maxHeight, s.windowRects)
+                    menuAnchorBounds(anchor, scale, screenW, screenH, s.windowRects, viewport.shrink)
                 })
 
                 // the first-launch dialog, over the player
@@ -423,6 +385,74 @@ fun PlayerSurface(
             if (fullscreen) MilkdropSurface(vm, Modifier.fillMaxSize())
         }
     }
+}
+
+/**
+ * The windows on the surface they are laid out on, with what moves over them.
+ *
+ * The surface is this box, in its own pixels: [scale] of them to a virtual pixel.
+ */
+@Composable
+@Suppress("LongParameterList") // the player's parts, handed down from the surface that builds them
+private fun BoxWithConstraintsScope.PlayerWindows(
+    vm: WinampViewModel,
+    skin: Skin,
+    scale: Int,
+    onLongPress: () -> Unit,
+    playlistActions: PlaylistMenuActions,
+    libraryAccess: LibraryAccessHandle,
+    mainWidgets: List<Widget>,
+    eqWidgets: List<Widget>,
+) {
+    val s = vm.state
+    val virtualAvail = constraints.maxHeight / scale
+    // a shaded window is only as high as its title bar
+    val mainH = heightOf(MAIN_H, s.mainShaded)
+    val eqH = heightOf(EQ_H, s.eqShaded)
+    val milkdropH = milkdropHeight(frameFor(skin), milkdropContentH(s.milkdropSteps))
+    // the docked stack: the player, with the equalizer and the plug-in window
+    // under it. Only a window still attached counts toward its height, which
+    // the playlist sizes itself against.
+    val stackTop = grabbableTop(scale, LocalDensity.current)
+    val dockedH =
+        dockedStackHeight(
+            top = stackTop,
+            anchor = mainH,
+            under =
+                listOf(
+                    stackMember(s, WindowStore.EQ, eqH, s.eqVisible),
+                    stackMember(s, WindowStore.MILKDROP, milkdropH, s.milkdropOn),
+                ),
+        )
+    val safeBottomPx =
+        constraints.maxHeight -
+            (LocalSurfaceScreen.current?.bottom ?: WindowInsets.safeDrawing.getBottom(LocalDensity.current))
+    val safeBottom = safeBottomPx / scale
+    s.screenW = constraints.maxWidth / scale
+    s.screenH = virtualAvail
+
+    InPlayerVisualizerDriver(vm)
+    UiClocks(s)
+
+    FloatingWindows(
+        vm,
+        skin,
+        scale,
+        onLongPress,
+        playlistActions,
+        libraryAccess,
+        mainWidgets,
+        eqWidgets,
+        mainH,
+        eqH,
+        dockedH,
+        virtualAvail,
+        safeBottom,
+    )
+
+    // over every window: a lens clipped to its own window would be cut off by
+    // the window above it
+    LoupeLayer(s, scale)
 }
 
 /**

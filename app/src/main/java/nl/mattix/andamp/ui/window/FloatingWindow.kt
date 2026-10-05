@@ -3,9 +3,7 @@
 package nl.mattix.andamp.ui.window
 
 import android.os.SystemClock
-import androidx.compose.foundation.layout.mandatorySystemGestures
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
@@ -426,49 +424,6 @@ private const val SCREEN_AWAY = 10_000
 
 /** The side of the square in the bottom-right corner that the resize grip answers to. */
 internal const val RESIZE_GRIP = 20
-
-/**
- * What the surface being drawn knows about the screen around it, in device pixels, or null
- * to read the window's own insets.
- *
- * The activity reads its insets, because its window is the screen. The floating player's
- * insets describe its own window, which moves with the windows drawn inside it, so reading
- * them feeds back into the layout. The overlay measures the display from outside the
- * composition and provides the answer here.
- */
-data class SurfaceScreen(
-    /** The status bar's height: how far down this surface's content begins. */
-    val statusBar: Int,
-    /** How much of the notification shade's gesture strip lies inside the surface. */
-    val shadeStrip: Int,
-    /** What the bottom of the screen keeps for the system's own gestures. */
-    val bottom: Int,
-)
-
-val LocalSurfaceScreen = androidx.compose.runtime.compositionLocalOf<SurfaceScreen?> { null }
-
-/**
- * The first row a window's handle may occupy: below the strip the system keeps for the
- * notification shade, where a drag pulls the shade down.
- *
- * The screen is already padded by the status bar, so what is left of the strip is the
- * difference between the two, unless [LocalSurfaceScreen] says how much of the strip is
- * inside the surface.
- */
-@androidx.compose.runtime.Composable
-internal fun grabbableTop(
-    scale: Int,
-    density: androidx.compose.ui.unit.Density,
-): Int {
-    LocalSurfaceScreen.current?.let { return it.shadeStrip / scale }
-    val shade =
-        androidx.compose.foundation.layout.WindowInsets.Companion.mandatorySystemGestures
-            .getTop(density)
-    val status =
-        androidx.compose.foundation.layout.WindowInsets.Companion.statusBars
-            .getTop(density)
-    return ((shade - status).coerceAtLeast(0)) / scale
-}
 
 /**
  * The magnifier as one window offers it to the canvas: open it, move it, press what it is
