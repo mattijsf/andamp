@@ -374,5 +374,7 @@ private fun Player(
         // opened
         onFloatingChanged = { on -> if (!on) onOpenApp() },
         surfaceScreen = display,
+        // over other apps the windows float; Double Size shows once the app has the player again
+        fillsScreen = false,
     )
 }

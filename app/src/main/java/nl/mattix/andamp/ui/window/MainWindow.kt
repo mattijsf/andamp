@@ -63,8 +63,8 @@ fun mainWindowWidgets(
     onAlwaysOnTop: () -> Unit = {},
     /** The clutter bar's I: file info for what is playing. */
     onFileInfo: () -> Unit = {},
-    /** The clutter bar's D: Winamp's Double Size, or null on a surface that cannot offer it. */
-    onDoubleSize: (() -> Unit)? = null,
+    /** The clutter bar's D: Winamp's Double Size. */
+    onDoubleSize: () -> Unit = {},
     onOptions: () -> Unit,
 ): List<Widget> {
     val s = vm.state
@@ -93,15 +93,14 @@ fun mainWindowWidgets(
             Dest.CLUTTER_I.height,
             onTap = onFileInfo,
         ),
-        // Where Double Size is not offered the letter still takes its own presses, so they do
-        // not reach for the I or the V beside it; under another id, it does not light.
         button(
-            if (onDoubleSize != null) CLUTTER_D else "$CLUTTER_D.unavailable",
+            "main.clutter.d",
             Dest.CLUTTER_D.left,
             Dest.CLUTTER_D.top,
             Dest.CLUTTER_D.width,
             Dest.CLUTTER_D.height,
-        ) { onDoubleSize?.invoke() },
+            onTap = onDoubleSize,
+        ),
         button(
             "main.clutter.v",
             Dest.CLUTTER_V.left,
@@ -191,7 +190,7 @@ fun DrawScope.drawMainWindow(
     sprite(titlebar, SpriteMap.MAIN_TITLE_BAR_SELECTED, Dest.TITLE_BAR)
     sprite(titlebar, SpriteMap.MAIN_CLUTTER_BAR_BACKGROUND, Dest.CLUTTER_BAR)
     // the bar's art has the unlit letters, so only the lit ones are drawn over it
-    clutterLit(pressed, s.alwaysOnTop, s.stackLocked).forEach { (art, at) -> sprite(titlebar, art, at.left, at.top) }
+    clutterLit(pressed, s.alwaysOnTop, s.doubleSize).forEach { (art, at) -> sprite(titlebar, art, at.left, at.top) }
 
     // titlebar buttons: normal art is part of the titlebar strip; draw pressed art only
     when (pressed) {
@@ -463,14 +462,11 @@ private fun marqueeDrag(s: WinampState): Widget {
     )
 }
 
-/** The id of the clutter bar's D where Double Size is offered. */
-private const val CLUTTER_D = "main.clutter.d"
-
 /**
  * The lit clutter letters, and where each goes.
  *
  * A letter lights while it is held. The A stays lit while Always On Top is on, and the D
- * while the player fills the screen.
+ * while Double Size is.
  */
 private fun clutterLit(
     pressed: String?,
@@ -481,6 +477,6 @@ private fun clutterLit(
         (SpriteMap.MAIN_CLUTTER_BAR_BUTTON_O_SELECTED to Dest.CLUTTER_O).takeIf { pressed == "main.clutter.o" },
         (SpriteMap.MAIN_CLUTTER_BAR_BUTTON_A_SELECTED to Dest.CLUTTER_A).takeIf { pressed == "main.clutter.a" || alwaysOnTop },
         (SpriteMap.MAIN_CLUTTER_BAR_BUTTON_I_SELECTED to Dest.CLUTTER_I).takeIf { pressed == "main.clutter.i" },
-        (SpriteMap.MAIN_CLUTTER_BAR_BUTTON_D_SELECTED to Dest.CLUTTER_D).takeIf { pressed == CLUTTER_D || doubleSize },
+        (SpriteMap.MAIN_CLUTTER_BAR_BUTTON_D_SELECTED to Dest.CLUTTER_D).takeIf { pressed == "main.clutter.d" || doubleSize },
         (SpriteMap.MAIN_CLUTTER_BAR_BUTTON_V_SELECTED to Dest.CLUTTER_V).takeIf { pressed == "main.clutter.v" },
     )

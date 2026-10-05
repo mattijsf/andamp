@@ -13,7 +13,8 @@ import androidx.compose.runtime.setValue
  *
  * Off, the windows float at the largest whole scale that fits. On, they are held in one
  * stack as wide as the screen. The stack keeps a height of its own for the plug-in window,
- * so the size that window floats at is not changed by it.
+ * so the size that window floats at is not changed by it. The floating player always
+ * floats: there the setting can be switched, and it shows once the app has the player again.
  *
  * A fresh install starts with it on, and an install that was already in use keeps the player
  * as it was. Which of the two this is, is asked once, when nothing is stored yet, and the
@@ -21,10 +22,12 @@ import androidx.compose.runtime.setValue
  */
 class DoubleSizeStore(
     private val prefs: SharedPreferences,
+    /** Receives the setting when it is read and on every change; the clutter bar's D is lit from it. */
+    private val mirror: (Boolean) -> Unit = {},
     freshInstall: () -> Boolean,
 ) {
-    constructor(context: Context, freshInstall: () -> Boolean) :
-        this(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE), freshInstall)
+    constructor(context: Context, mirror: (Boolean) -> Unit = {}, freshInstall: () -> Boolean) :
+        this(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE), mirror, freshInstall)
 
     /** Snapshot state, so the player lays itself out again on a change. */
     private var current by mutableStateOf(
@@ -37,12 +40,17 @@ class DoubleSizeStore(
 
     private var steps by mutableStateOf(if (prefs.contains(VIS_STEPS)) prefs.getInt(VIS_STEPS, 0) else null)
 
+    init {
+        mirror(current)
+    }
+
     /** Whether the player fills the screen. */
     var on: Boolean
         get() = current
         set(value) {
             current = value
             prefs.edit().putBoolean(ON, value).apply()
+            mirror(value)
         }
 
     fun toggle() {

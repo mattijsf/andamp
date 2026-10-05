@@ -112,13 +112,12 @@ class MainWindowInteractionTest {
     }
 
     @Test
-    fun `where double size is not offered the D still takes its own presses and does not light`() {
+    fun `a press on any row of the D is the D's, not the I's above or the V's below`() {
         val widgets = mainWindowWidgets(vm) {}
 
-        // every row of the letter: none of them reaches for the I above or the V below
         val hit = (47..54).map { y -> hitTest(widgets, IntOffset(14, y))?.id }.distinct()
 
-        assertEquals(listOf("main.clutter.d.unavailable"), hit)
+        assertEquals(listOf("main.clutter.d"), hit)
     }
 
     @Test

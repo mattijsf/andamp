@@ -26,8 +26,8 @@ fun mainMenu(
     onMuseum: () -> Unit = {},
     /** Winamp's Ctrl+A, listed under Options as in Winamp. */
     onAlwaysOnTop: () -> Unit = {},
-    /** Winamp's Ctrl+D, listed under it; null where the player cannot fill the screen. */
-    onDoubleSize: (() -> Unit)? = null,
+    /** Winamp's Ctrl+D, listed under it. */
+    onDoubleSize: () -> Unit = {},
 ): AmpMenu {
     val skins = skinItems(vm, onPickSkin, onMuseum)
     val bookmarks = bookmarksMenu(vm)
@@ -191,8 +191,8 @@ fun optionsMenu(
     onMuseum: () -> Unit = {},
     /** Winamp's Ctrl+A; the same switch the clutter bar's A throws. */
     onAlwaysOnTop: () -> Unit = {},
-    /** Winamp's Ctrl+D; the same switch the clutter bar's D throws, or null where there is none. */
-    onDoubleSize: (() -> Unit)? = null,
+    /** Winamp's Ctrl+D; the same switch the clutter bar's D throws. */
+    onDoubleSize: () -> Unit = {},
 ): AmpMenu =
     AmpMenu(
         "Options",
@@ -246,7 +246,7 @@ private fun optionsItems(
     onPreferences: () -> Unit,
     skins: List<AmpMenuItem>,
     onAlwaysOnTop: () -> Unit,
-    onDoubleSize: (() -> Unit)?,
+    onDoubleSize: () -> Unit,
 ): List<AmpMenuItem> =
     listOf(
         AmpMenuItem.Action("Preferences...", onClick = onPreferences),
@@ -257,13 +257,7 @@ private fun optionsItems(
         AmpMenuItem.Divider,
         // Winamp's own group, minus EasyMove: every window here already moves with a finger
         AmpMenuItem.Action("Always On Top", checked = vm.state.alwaysOnTop, needsTheApp = true, onClick = onAlwaysOnTop),
-        // ticked while the player on this surface fills the screen, like the clutter bar's D
-        AmpMenuItem.Action(
-            "Double Size",
-            enabled = onDoubleSize != null,
-            checked = vm.state.stackLocked,
-            needsTheApp = true,
-        ) { onDoubleSize?.invoke() },
+        AmpMenuItem.Action("Double Size", checked = vm.state.doubleSize, needsTheApp = true, onClick = onDoubleSize),
         AmpMenuItem.Divider,
         AmpMenuItem.Action("Repeat", checked = vm.state.repeat) { vm.toggleRepeat() },
         AmpMenuItem.Action("Shuffle", checked = vm.state.shuffle) { vm.toggleShuffle() },

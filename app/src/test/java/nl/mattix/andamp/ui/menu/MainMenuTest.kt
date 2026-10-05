@@ -90,24 +90,19 @@ class MainMenuTest {
     }
 
     @Test
-    fun `double size calls its callback and is ticked while the player fills the screen`() {
+    fun `double size calls its callback and is ticked while it is on`() {
         val vm = testViewModel()
         var asked = 0
 
         fun entry() = actions(optionsMenu(vm, onDoubleSize = { asked++ }).items).first { it.label == "Double Size" }
 
-        assertEquals("unticked while the windows float", false, entry().checked)
-        vm.state.stackLocked = true
-        assertEquals("ticked while they are held in the stack", true, entry().checked)
+        vm.doubleSize.on = false
+        assertEquals(false, entry().checked)
+        vm.doubleSize.on = true
+        assertEquals("ticked from the setting, wherever the menu is opened", true, entry().checked)
+        assertEquals(true, entry().enabled)
         entry().onClick()
         assertEquals("the entry calls its callback once", 1, asked)
-    }
-
-    @Test
-    fun `double size is grayed on a surface that cannot offer it`() {
-        val entry = actions(optionsMenu(testViewModel()).items).first { it.label == "Double Size" }
-
-        assertEquals(false, entry.enabled)
     }
 
     /**

@@ -128,9 +128,9 @@ class WindowGoldenTest {
 
     @Test
     fun `main window with double size lit`() {
-        // the D stays lit for as long as the player fills the screen
+        // the D stays lit for as long as Double Size is on
         render(MAIN_W, MAIN_H) {
-            drawMainWindow(skin, playingState().apply { stackLocked = true })
+            drawMainWindow(skin, playingState().apply { doubleSize = true })
         }.captureRoboImage("$SNAPSHOT_DIR/main_window_double_size.png")
     }
 
@@ -142,7 +142,7 @@ class WindowGoldenTest {
                 skin,
                 playingState().apply {
                     alwaysOnTop = true
-                    stackLocked = true
+                    doubleSize = true
                     pressedWidget = "main.clutter.v"
                 },
             )

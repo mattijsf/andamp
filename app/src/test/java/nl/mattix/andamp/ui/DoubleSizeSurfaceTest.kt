@@ -64,7 +64,7 @@ class DoubleSizeSurfaceTest {
      * The clock is driven by hand: the player draws a visualizer, which is an animation
      * that never finishes, so waiting for the screen to go idle never returns.
      */
-    private fun show(offered: Boolean = true) {
+    private fun show(fillsScreen: Boolean = true) {
         compose.mainClock.autoAdvance = false
         compose.setContent {
             PlayerSurface(
@@ -78,7 +78,7 @@ class DoubleSizeSurfaceTest {
                 onExit = {},
                 onMinimize = {},
                 onOverlaySettings = {},
-                onDoubleSize = if (offered) ({ vm.doubleSize.toggle() }) else null,
+                fillsScreen = fillsScreen,
             )
         }
         settle()
@@ -125,6 +125,7 @@ class DoubleSizeSurfaceTest {
         settle()
 
         assertFalse(vm.doubleSize.on)
+        assertFalse("the D is no longer lit", vm.state.doubleSize)
         assertFalse(vm.state.stackLocked)
         // three screen pixels to a virtual one again, with room beside the player
         assertEquals(900 / 3, vm.state.screenW)
@@ -206,12 +207,31 @@ class DoubleSizeSurfaceTest {
     }
 
     @Test
-    fun `a surface that does not offer it keeps the windows floating, whatever the setting`() {
-        show(offered = false)
+    fun `a surface that cannot fill the screen keeps the windows floating, with the D lit from the setting`() {
+        show(fillsScreen = false)
 
         assertTrue("the setting is still on", vm.doubleSize.on)
+        assertTrue("and its D is lit", vm.state.doubleSize)
         assertFalse(vm.state.stackLocked)
         assertEquals(900 / 3, vm.state.screenW)
+    }
+
+    @Test
+    fun `the D there still switches the setting, for when the app has the player again`() {
+        show(fillsScreen = false)
+        // floating at three screen pixels to a virtual one
+        val main = rect(WindowStore.MAIN)!!
+
+        compose.onRoot().performTouchInput {
+            down(Offset((main.left + 14) * 3f + 1f, (main.top + 51) * 3f + 1f))
+            up()
+        }
+        settle()
+
+        assertFalse("the setting is switched off", vm.doubleSize.on)
+        assertFalse("and the D goes dark", vm.state.doubleSize)
+        assertFalse("the windows float as they did", vm.state.stackLocked)
+        assertEquals(main, rect(WindowStore.MAIN))
     }
 
     private companion object {

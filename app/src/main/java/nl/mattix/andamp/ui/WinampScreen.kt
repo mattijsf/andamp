@@ -258,7 +258,6 @@ fun WinampScreen(
                 onMinimize = { (context as? Activity)?.moveTaskToBack(true) },
                 onOverlaySettings = { context.startActivity(overlaySettingsIntent(context)) },
                 onFloatingChanged = onFloatingChanged,
-                onDoubleSize = { vm.doubleSize.toggle() },
             )
         }
     }
@@ -294,13 +293,16 @@ fun PlayerSurface(
      */
     surfaceScreen: SurfaceScreen? = null,
     /**
-     * Switches Winamp's Double Size, on a surface where the player can fill the screen. Null
-     * on one where it cannot: the windows float there whatever the setting says.
+     * Whether this surface can fill the screen with the player. The floating player cannot:
+     * its windows float whatever Double Size is set to, and the setting, which its D and its
+     * menu still switch, shows once the app has the player again.
      */
-    onDoubleSize: (() -> Unit)? = null,
+    fillsScreen: Boolean = true,
 ) {
     // filling the screen, the windows are one locked stack with black around it
-    val locked = onDoubleSize != null && vm.doubleSize.on
+    val locked = fillsScreen && vm.doubleSize.on
+    // the clutter bar's D and the Options menu share this switch
+    val doubleSize = { vm.doubleSize.toggle() }
     Box(Modifier.fillMaxSize().then(if (locked) Modifier.background(Color.Black) else Modifier)) {
         // the fullscreen visualizer is drawn over every window and outside the status-bar
         // inset the windows are held inside
@@ -346,11 +348,11 @@ fun PlayerSurface(
                             onPreferences = onPreferences,
                             onMuseum = onMuseum,
                             onAlwaysOnTop = alwaysOnTop,
-                            onDoubleSize = onDoubleSize,
+                            onDoubleSize = doubleSize,
                         )
                 }
                 val mainWidgets =
-                    remember(vm, s.mainShaded, onDoubleSize != null) {
+                    remember(vm, s.mainShaded) {
                         if (s.mainShaded) {
                             mainShadeWidgets(
                                 vm,
@@ -376,11 +378,11 @@ fun PlayerSurface(
                                         anchor,
                                         onPreferences,
                                         onAlwaysOnTop = alwaysOnTop,
-                                        onDoubleSize = onDoubleSize,
+                                        onDoubleSize = doubleSize,
                                     )
                                 },
                                 onAlwaysOnTop = alwaysOnTop,
-                                onDoubleSize = onDoubleSize,
+                                onDoubleSize = doubleSize,
                                 // the clutter bar's I: the item playing, or the last one that played
                                 onFileInfo = { vm.trackInfoOps.show(s.lastPlayed) },
                             ) {

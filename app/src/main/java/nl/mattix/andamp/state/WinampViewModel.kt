@@ -85,7 +85,7 @@ class WinampViewModel
         val welcome = WelcomeStore(app)
 
         /** Whether the player fills the screen; see [DoubleSizeStore]. */
-        val doubleSize = DoubleSizeStore(app) { app.neverUpdated() }
+        val doubleSize = DoubleSizeStore(app, mirror = { state.doubleSize = it }) { app.neverUpdated() }
         val eqOps = EqOps(state, facade, presetStore)
 
         /** Preferences > Effects. */

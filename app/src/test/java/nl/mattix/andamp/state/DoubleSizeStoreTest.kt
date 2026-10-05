@@ -92,6 +92,17 @@ class DoubleSizeStoreTest {
     }
 
     @Test
+    fun `whoever lights the D is told the setting at once and on every change`() {
+        val told = mutableListOf<Boolean>()
+        val store = DoubleSizeStore(prefs(), mirror = { told += it }) { true }
+
+        store.toggle()
+        store.on = true
+
+        assertEquals(listOf(true, false, true), told)
+    }
+
+    @Test
     fun `the plug-in window has no height of its own until its grip is dragged`() {
         assertNull(DoubleSizeStore(prefs()) { true }.visSteps)
     }

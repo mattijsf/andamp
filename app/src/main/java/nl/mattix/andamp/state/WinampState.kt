@@ -412,6 +412,9 @@ class WinampState {
     var screenW by mutableIntStateOf(0)
     var screenH by mutableIntStateOf(0)
 
+    /** Winamp's Double Size as it is set; see [DoubleSizeStore]. The clutter bar's D is lit from it. */
+    var doubleSize by mutableStateOf(false)
+
     /**
      * Whether the layout holds every window in one stack; published by the layout pass.
      * While it does, [windowRects] are the stack's and no window's own place changes.
