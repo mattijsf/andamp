@@ -6,6 +6,7 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
@@ -21,6 +22,7 @@ import nl.mattix.andamp.state.CurrentSkin
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.displayNameOf
 import nl.mattix.andamp.ui.Screen
+import nl.mattix.andamp.ui.StatusBarIcons
 import nl.mattix.andamp.ui.menu.AmpContextMenu
 import nl.mattix.andamp.ui.menu.AmpModals
 import nl.mattix.andamp.ui.menu.widgetMenu
@@ -44,6 +46,9 @@ class WidgetMenuActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // the window reaches under the system bars on every Android version, as it does from 15,
+        // so the home screen shows behind them too
+        enableEdgeToEdge()
         val skin = CurrentSkin.cached(this)
         // an activity result launcher has to be registered before the activity starts, so it is
         // made here and the menu is given a way to fire it
@@ -105,6 +110,8 @@ class WidgetMenuActivity : ComponentActivity() {
             // closes when nothing is showing: the menu, a modal it opened, or a picker in front
             val showing = picking || menu != null || player.state.showingAModal()
             LaunchedEffect(showing) { if (!showing) finish() }
+            // the status bar sits on the wallpaper here, as it does over a floating player
+            StatusBarIcons(onPlayer = true, playerFillsScreen = false, dark = false)
             // the menu is this window's own state and not WinampState.activeMenu, which every host
             // of AmpModals draws; the dialogs stay shared
             MaterialTheme(colorScheme = skin?.let { rememberSkinColorScheme(it) } ?: darkColorScheme()) {
