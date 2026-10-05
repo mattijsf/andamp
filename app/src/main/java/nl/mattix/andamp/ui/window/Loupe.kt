@@ -19,6 +19,10 @@ import nl.mattix.andamp.ui.widget.hitTest
  * Holding one opens a lens above the finger: that part of the window drawn again at [ZOOM]
  * with the same draw block, the control under the crosshair lit, and the finger moving the
  * crosshair geared down by [GEARING]. Release presses what the crosshair is on.
+ *
+ * A finger close to an edge of the screen cannot travel far toward it, so in that direction
+ * the crosshair is geared down less, by as much as it takes to bring the outermost control of
+ * the cluster under it within the room the finger has ([reach]).
  */
 class Loupe(
     /** The window it belongs to, so the layer can find where that window sits. */
@@ -32,17 +36,40 @@ class Loupe(
     val paint: DrawScope.() -> Unit,
     /** What can be pressed, read on each use: a window may rebuild its widgets. */
     val widgets: () -> List<Widget>,
-    start: Offset,
+    private val start: Offset,
+    /** How far the finger can travel from where it is before it meets an edge of the screen. */
+    reach: Reach = Reach.UNLIMITED,
 ) {
     /** Where the crosshair is, in window-local virtual pixels. */
     var focus by mutableStateOf(start)
         private set
 
-    /**
-     * Where the finger has asked it to be, unclamped, so that pushing past the edge and
-     * coming back lands where it started, and so [move] can measure how far past it is.
-     */
-    private var wanted = start
+    /** How far the finger has moved since the lens opened, in virtual pixels. */
+    private var travelled = Offset.Zero
+
+    private val left: Side
+    private val up: Side
+    private val right: Side
+    private val down: Side
+
+    init {
+        // the centers of the cluster's controls: what the crosshair has to be able to reach
+        val centers =
+            widgets()
+                .filter { !it.background && fiddly(it) && roam.contains(it.bounds.center) }
+                .map {
+                    Offset(
+                        it.bounds.center.x
+                            .toFloat(),
+                        it.bounds.center.y
+                            .toFloat(),
+                    )
+                }
+        left = Side.toward(centers.maxOfOrNull { start.x - it.x } ?: 0f, reach.left)
+        up = Side.toward(centers.maxOfOrNull { start.y - it.y } ?: 0f, reach.up)
+        right = Side.toward(centers.maxOfOrNull { it.x - start.x } ?: 0f, reach.right)
+        down = Side.toward(centers.maxOfOrNull { it.y - start.y } ?: 0f, reach.down)
+    }
 
     /** Once canceled, a release presses nothing. */
     private var cancelled = false
@@ -67,7 +94,15 @@ class Loupe(
         delta: Offset,
         state: WinampState,
     ) {
-        wanted = Offset(wanted.x + delta.x / GEARING, wanted.y + delta.y / GEARING)
+        travelled += delta
+        // Where the finger has asked the crosshair to be, unclamped. It is worked out from
+        // all the finger has moved, so pushing past the edge and coming back lands where it
+        // started, and how far past the cluster it is can be measured.
+        val wanted =
+            Offset(
+                start.x + if (travelled.x >= 0) right.crosshair(travelled.x) else -left.crosshair(-travelled.x),
+                start.y + if (travelled.y >= 0) down.crosshair(travelled.y) else -up.crosshair(-travelled.y),
+            )
         val held =
             Offset(
                 wanted.x.coerceIn(roam.left.toFloat(), (roam.right - 1).toFloat()),
@@ -99,6 +134,63 @@ class Loupe(
         hit ?: return
         hit.down(state, focus)
         hit.up(state, focus)
+    }
+
+    /**
+     * How far a finger can travel each way from where it is before it meets an edge of the
+     * screen, in virtual pixels.
+     */
+    data class Reach(
+        val left: Float,
+        val up: Float,
+        val right: Float,
+        val down: Float,
+    ) {
+        companion object {
+            /** A finger with all the room it could ask for. */
+            val UNLIMITED =
+                Reach(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
+
+            /** For a finger at [finger] on a screen of [screenW] by [screenH]. */
+            fun on(
+                finger: Offset,
+                screenW: Int,
+                screenH: Int,
+            ) = Reach(left = finger.x, up = finger.y, right = screenW - finger.x, down = screenH - finger.y)
+        }
+    }
+
+    /**
+     * One direction the crosshair can go: how far the outermost control is that way
+     * ([needed]), and the gearing that gets the crosshair there.
+     */
+    private class Side(
+        private val needed: Float,
+        private val gearing: Float,
+    ) {
+        /**
+         * How far the crosshair goes for a finger that went [finger] this way. Past the
+         * outermost control it is back to [GEARING], so the lens is no easier to push away.
+         */
+        fun crosshair(finger: Float): Float {
+            val within = needed * gearing
+            return if (finger <= within) finger / gearing else needed + (finger - within) / GEARING
+        }
+
+        companion object {
+            /**
+             * The side whose outermost control is [needed] away, for a finger that can travel
+             * [reach] that way. The finger is not expected in the last [EDGE_REACH] of it.
+             */
+            fun toward(
+                needed: Float,
+                reach: Float,
+            ): Side {
+                val room = reach - EDGE_REACH
+                val gearing = if (needed <= 0f) GEARING else (room / needed).coerceIn(MIN_GEARING, GEARING)
+                return Side(needed.coerceAtLeast(0f), gearing)
+            }
+        }
     }
 
     companion object {
@@ -182,6 +274,50 @@ class Loupe(
          * not have to travel far between neighboring controls.
          */
         const val GEARING = 1.5f
+
+        /**
+         * The least the finger's movement is divided by, toward an edge of the screen it has
+         * little room before. Below one the crosshair outruns the finger; much lower and it
+         * cannot be held on one control.
+         */
+        const val MIN_GEARING = 0.4f
+
+        /**
+         * How close to an edge of the screen a finger is expected to get, in virtual pixels:
+         * the middle of a fingertip stays about this far from the glass's edge.
+         */
+        const val EDGE_REACH = 10f
+
+        /**
+         * How far from a side of the screen a press is still aimed further out than it
+         * landed, in virtual pixels; see [aimedAcross].
+         */
+        const val EDGE_BAND = 30f
+
+        /**
+         * Where a press that landed at [x] on a screen [screenW] wide is aimed.
+         *
+         * The middle of a fingertip cannot get into the last [EDGE_REACH] before the glass
+         * ends, so a control there cannot be pressed where it is drawn. Within [EDGE_BAND]
+         * of a side, the stretch a finger can reach stands for all of it: a press as far
+         * out as a finger gets is aimed at the edge itself, and one at the band's inner end
+         * is aimed where it landed.
+         */
+        fun aimedAcross(
+            x: Float,
+            screenW: Int,
+        ): Float {
+            val fromRight = screenW - x
+            return when {
+                fromRight < EDGE_BAND && fromRight <= x -> screenW - stretched(fromRight)
+                x < EDGE_BAND -> stretched(x)
+                else -> x
+            }
+        }
+
+        /** A distance from the edge inside the band, with what a finger can reach spread over all of it. */
+        private fun stretched(fromEdge: Float) =
+            ((fromEdge - EDGE_REACH) * EDGE_BAND / (EDGE_BAND - EDGE_REACH)).coerceAtLeast(0f)
 
         /**
          * How long a hold takes to open the lens. A slow tap opens it too, which is

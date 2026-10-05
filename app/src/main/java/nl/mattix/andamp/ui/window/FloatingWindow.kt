@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.IntRect
 import nl.mattix.andamp.ui.widget.HIT_SLOP
 import nl.mattix.andamp.ui.widget.Widget
 import nl.mattix.andamp.ui.widget.distanceSquaredTo
+import nl.mattix.andamp.ui.widget.hitTest
 import kotlin.math.abs
 
 // What every floating window shares: it is dragged by a handle, it docks against its
@@ -441,12 +442,34 @@ internal const val RESIZE_GRIP = 20
  * The magnifier as one window offers it to the canvas: open it, move it, press what it is
  * on. [make] builds the [Loupe] from the window's own drawing and widgets, and the one open
  * lens is held in the state.
+ *
+ * [aim] says where a press that landed somewhere in the window is aimed, which near a side
+ * of the screen is further out than the finger got; see [Loupe.aimedAcross].
  */
 class LoupeGesture(
     private val state: nl.mattix.andamp.state.WinampState,
+    private val aim: (Offset) -> Offset = { it },
     private val make: (Offset, Widget) -> Loupe,
 ) {
-    /** [on] is the control the press landed on: the lens opens over that one. */
+    /**
+     * How far a press at [touched] is moved to where it was aimed, or nothing.
+     *
+     * Only a small control ([Loupe.fiddly]) takes a press that was aimed at it from beside
+     * it: a slider or a window's handle near the edge is pressed where the finger is.
+     */
+    fun shiftFor(
+        widgets: List<Widget>,
+        touched: Offset,
+    ): Offset {
+        val aimed = aim(touched)
+        val reached = hitTest(widgets, IntOffset(aimed.x.toInt(), aimed.y.toInt())) ?: return Offset.Zero
+        return if (!reached.background && Loupe.fiddly(reached)) aimed - touched else Offset.Zero
+    }
+
+    /**
+     * [at] is where the finger is, in the window's virtual pixels, and [on] the control the
+     * press landed on: the lens opens over that one.
+     */
     fun open(
         at: Offset,
         on: Widget,

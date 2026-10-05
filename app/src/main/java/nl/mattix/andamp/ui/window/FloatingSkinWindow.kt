@@ -284,12 +284,25 @@ private fun rememberLoupe(
     val drawNow by rememberUpdatedState(draw)
     val widgetsNow by rememberUpdatedState(widgets)
     return remember(id, state) {
-        LoupeGesture(state) { _, on ->
+        LoupeGesture(
+            state,
+            // a press near a side of the screen is aimed further out than the finger got
+            aim = { at ->
+                state.windowRects[id]?.let { window ->
+                    Offset(Loupe.aimedAcross(window.left + at.x, state.screenW) - window.left, at.y)
+                } ?: at
+            },
+        ) { finger, on ->
             Loupe(
                 window = id,
                 roam = Loupe.clusterAround(on, widgetsNow()),
                 paint = { drawNow() },
                 widgets = { widgetsNow() },
+                // the finger's room on the screen, which a window against its edge has little of
+                reach =
+                    state.windowRects[id]?.let { window ->
+                        Loupe.Reach.on(Offset(window.left + finger.x, window.top + finger.y), state.screenW, state.screenH)
+                    } ?: Loupe.Reach.UNLIMITED,
                 // starts on the center of the control that was pressed
                 start =
                     Offset(

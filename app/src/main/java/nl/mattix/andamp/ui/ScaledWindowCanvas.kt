@@ -202,7 +202,9 @@ private suspend fun AwaitPointerEventScope.oneGesture(
     onPress.value?.invoke()
     val current = widgets.value
     val s = scale.toFloat()
-    var pos = down.position / s
+    // the whole gesture is read as if the finger were where its press was aimed
+    val shift = loupe?.shiftFor(current, down.position / s) ?: Offset.Zero
+    var pos = down.position / s + shift
     val downPos = pos
     var target =
         hitTest(current, IntOffset(pos.x.toInt(), pos.y.toInt()))
@@ -211,7 +213,7 @@ private suspend fun AwaitPointerEventScope.oneGesture(
     target.down(state, pos)
     // a long press is touch's right click; it fires while the finger is still down and
     // swallows the tap on release. The lens opens after a shorter hold than the menu.
-    val lens = Magnifier(loupe, target)
+    val lens = Magnifier(loupe, target, downPos, shift)
     var deadline =
         when {
             lens.possible -> Loupe.HOLD_MS
@@ -230,7 +232,7 @@ private suspend fun AwaitPointerEventScope.oneGesture(
             continue
         }
         val change = event.changes.firstOrNull { it.id == down.id } ?: break
-        pos = change.position / s
+        pos = change.position / s + shift
         if (change.changedToUpIgnoreConsumed()) {
             change.consume()
             break
@@ -292,6 +294,10 @@ private fun travel(
 private class Magnifier(
     private val loupe: LoupeGesture?,
     private val target: Widget,
+    /** Where the finger came down, as the gesture reads it. */
+    downAt: Offset,
+    /** How far the gesture's positions are from the finger's own; see [LoupeGesture.shiftFor]. */
+    private val shift: Offset,
 ) {
     /** Whether a hold here magnifies. */
     val possible = loupe != null && !target.background && Loupe.fiddly(target)
@@ -300,12 +306,13 @@ private class Magnifier(
     var on = false
         private set
 
-    private var last = Offset.Zero
+    /** Where the finger was last seen, as the gesture reads it. */
+    private var last = downAt
     private var started = false
 
     fun open() {
-        // opens centered on the pressed control, which stays lit
-        loupe?.open(target.bounds.center.let { Offset(it.x.toFloat(), it.y.toFloat()) }, target)
+        // opens centered on the pressed control, which stays lit, and is told where the finger is
+        loupe?.open(last - shift, target)
         on = true
     }
 
