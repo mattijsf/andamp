@@ -50,7 +50,7 @@ class StackShadeMemoryTest {
 
     @Test
     fun `the next launch finds it collapsed in the stack and open while floating`() {
-        DoubleSizeStore(app) { true }.shaded = setOf(WindowStore.MAIN)
+        DoubleSizeStore(app).shaded = setOf(WindowStore.MAIN)
 
         val vm = testViewModel()
         settle()

@@ -4,7 +4,6 @@ package nl.mattix.andamp.state
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.backend.mock.MockBackend
 import nl.mattix.andamp.state.overlay.OverlayStore
 import nl.mattix.andamp.ui.window.testViewModel
 import org.junit.Assert.assertEquals
@@ -29,6 +28,15 @@ class OneModeAtATimeTest {
     private fun viewModel(mayFloat: Boolean = true): WinampViewModel {
         ShadowSettings.setCanDrawOverlays(mayFloat)
         return testViewModel().also { it.doubleSize.on = true }
+    }
+
+    @Test
+    fun `neither is on until the listener switches one on`() {
+        val vm = testViewModel()
+
+        assertFalse(vm.doubleSize.on)
+        assertFalse(vm.state.doubleSize)
+        assertFalse(vm.overlayOps.gate.wanted)
     }
 
     @Test
@@ -82,15 +90,9 @@ class OneModeAtATimeTest {
     @Test
     fun `an install that was left with both on starts floating, with double size off`() {
         OverlayStore(app).wanted = true
-        DoubleSizeStore(app) { true }.on = true
+        DoubleSizeStore(app).on = true
 
-        // built here and not by testViewModel(), which switches Double Size off itself
-        val vm =
-            WinampViewModel(
-                app,
-                createBackend = { scope -> MockBackend(FakeTracks.tracks, scope) },
-                presetStore = InMemoryEqPresetStore(),
-            )
+        val vm = testViewModel()
 
         assertTrue(vm.overlayOps.gate.wanted)
         assertFalse(vm.doubleSize.on)

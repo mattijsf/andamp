@@ -12,16 +12,9 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
-/**
- * Whether the player fills the screen, and who starts with it on.
- *
- * A fresh install does. An install that was already in use when this setting arrived has
- * nothing stored either, and keeps the player the size it was. A new install that Android
- * hands an older install's backup is still a new install.
- */
+/** Whether the player fills the screen, and what the stack it is then held in remembers. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class DoubleSizeStoreTest {
@@ -31,99 +24,53 @@ class DoubleSizeStoreTest {
         app.getSharedPreferences("doublesize-test-${System.nanoTime()}", Context.MODE_PRIVATE)
 
     @Test
-    fun `a fresh install starts with the player filling the screen`() {
-        assertTrue(DoubleSizeStore(prefs()) { true }.on)
-    }
-
-    @Test
-    fun `an install that was already in use keeps its floating player`() {
-        assertFalse(DoubleSizeStore(prefs()) { false }.on)
-    }
-
-    @Test
-    fun `which of the two it is, is asked once and remembered`() {
-        val prefs = prefs()
-        var asked = 0
-        DoubleSizeStore(prefs) {
-            asked++
-            true
-        }
-
-        // by the second launch the install is no longer fresh
-        val later =
-            DoubleSizeStore(prefs) {
-                asked++
-                false
-            }
-
-        assertTrue("the first answer stands", later.on)
-        assertEquals(1, asked)
+    fun `the player floats until the listener asks for double size`() {
+        assertFalse(DoubleSizeStore(prefs()).on)
     }
 
     @Test
     fun `what the listener switched it to is what comes back`() {
         val prefs = prefs()
-        DoubleSizeStore(prefs) { true }.toggle()
+        DoubleSizeStore(prefs).toggle()
+        assertTrue(DoubleSizeStore(prefs).on)
 
-        assertFalse(DoubleSizeStore(prefs) { true }.on)
-    }
-
-    private fun installedAt(
-        first: Long,
-        updated: Long,
-    ) {
-        val installed = shadowOf(app.packageManager).getInternalMutablePackageInfo(app.packageName)
-        installed.firstInstallTime = first
-        installed.lastUpdateTime = updated
-    }
-
-    @Test
-    fun `an app that was installed as this build has never been updated`() {
-        installedAt(first = 1_000, updated = 1_000)
-
-        assertTrue(app.neverUpdated())
-    }
-
-    @Test
-    fun `an app that was updated to this build was already in use`() {
-        installedAt(first = 1_000, updated = 9_000)
-
-        assertFalse(app.neverUpdated())
+        DoubleSizeStore(prefs).toggle()
+        assertFalse(DoubleSizeStore(prefs).on)
     }
 
     @Test
     fun `whoever lights the D is told the setting at once and on every change`() {
         val told = mutableListOf<Boolean>()
-        val store = DoubleSizeStore(prefs(), mirror = { told += it }) { true }
+        val store = DoubleSizeStore(prefs(), mirror = { told += it })
 
         store.toggle()
-        store.on = true
+        store.on = false
 
-        assertEquals(listOf(true, false, true), told)
+        assertEquals(listOf(false, true, false), told)
     }
 
     @Test
     fun `the windows collapsed in the stack come back, and none are to begin with`() {
         val prefs = prefs()
-        assertEquals(emptySet<String>(), DoubleSizeStore(prefs) { true }.shaded)
+        assertEquals(emptySet<String>(), DoubleSizeStore(prefs).shaded)
 
-        DoubleSizeStore(prefs) { true }.shaded = setOf("eq", "pl")
+        DoubleSizeStore(prefs).shaded = setOf("eq", "pl")
 
-        assertEquals(setOf("eq", "pl"), DoubleSizeStore(prefs) { true }.shaded)
+        assertEquals(setOf("eq", "pl"), DoubleSizeStore(prefs).shaded)
     }
 
     @Test
     fun `the plug-in window has no height of its own until its grip is dragged`() {
-        assertNull(DoubleSizeStore(prefs()) { true }.visSteps)
+        assertNull(DoubleSizeStore(prefs()).visSteps)
     }
 
     @Test
     fun `the plug-in window's height comes back, and can be given up again`() {
         val prefs = prefs()
-        DoubleSizeStore(prefs) { true }.visSteps = 21
-        assertEquals(21, DoubleSizeStore(prefs) { true }.visSteps)
+        DoubleSizeStore(prefs).visSteps = 21
+        assertEquals(21, DoubleSizeStore(prefs).visSteps)
 
-        DoubleSizeStore(prefs) { true }.visSteps = null
-        assertNull(DoubleSizeStore(prefs) { true }.visSteps)
+        DoubleSizeStore(prefs).visSteps = null
+        assertNull(DoubleSizeStore(prefs).visSteps)
     }
 }

@@ -33,18 +33,13 @@ const val GESTURE_BAR = 48
 /** Room for several 25px width steps: BIG_WINDOW only has one to give. */
 const val WIDE_WINDOW = "w1400dp-h1600dp-mdpi"
 
-/**
- * Interaction tests run on the mock backend: fast, deterministic, no ExoPlayer.
- *
- * Its windows float. A fresh install starts in Double Size, where the layout holds every
- * window in one stack; most of these tests compose one window on its own and drag it.
- */
+/** Interaction tests run on the mock backend: fast, deterministic, no ExoPlayer. */
 fun testViewModel(): WinampViewModel =
     WinampViewModel(
         ApplicationProvider.getApplicationContext<Application>(),
         createBackend = { scope -> MockBackend(FakeTracks.tracks, scope) },
         presetStore = InMemoryEqPresetStore(),
-    ).also { it.doubleSize.on = false }
+    )
 
 fun TouchInjectionScope.tapVirtual(
     x: Float,

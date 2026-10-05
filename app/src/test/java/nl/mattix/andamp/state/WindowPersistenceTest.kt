@@ -43,8 +43,7 @@ class WindowPersistenceTest {
             app,
             createBackend = { scope: CoroutineScope -> MockBackend(FakeTracks.tracks, scope) },
             presetStore = InMemoryEqPresetStore(),
-            // the floating layout is what is stored here; a fresh install starts in Double Size
-        ).also { it.doubleSize.on = false }
+        )
 
     @Test
     fun `a fresh player leaves every window where the layout puts it`() {

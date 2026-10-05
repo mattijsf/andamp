@@ -20,9 +20,7 @@ import androidx.compose.runtime.setValue
  * one of the two is on at a time. Whoever builds this store is told when it is switched on
  * ([onSwitchedOn]) and switches the other off.
  *
- * A fresh install starts with it on, and an install that was already in use keeps the player
- * as it was. Which of the two this is, is asked once, when nothing is stored yet, and the
- * answer is stored; see [neverUpdated].
+ * It is off until the listener switches it on.
  */
 class DoubleSizeStore(
     private val prefs: SharedPreferences,
@@ -30,23 +28,15 @@ class DoubleSizeStore(
     private val mirror: (Boolean) -> Unit = {},
     /** Called when the setting is switched on, and not when it is read as on. */
     private val onSwitchedOn: () -> Unit = {},
-    freshInstall: () -> Boolean,
 ) {
     constructor(
         context: Context,
         mirror: (Boolean) -> Unit = {},
         onSwitchedOn: () -> Unit = {},
-        freshInstall: () -> Boolean,
-    ) : this(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE), mirror, onSwitchedOn, freshInstall)
+    ) : this(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE), mirror, onSwitchedOn)
 
     /** Snapshot state, so the player lays itself out again on a change. */
-    private var current by mutableStateOf(
-        if (prefs.contains(ON)) {
-            prefs.getBoolean(ON, false)
-        } else {
-            freshInstall().also { prefs.edit().putBoolean(ON, it).apply() }
-        },
-    )
+    private var current by mutableStateOf(prefs.getBoolean(ON, false))
 
     private var steps by mutableStateOf(if (prefs.contains(VIS_STEPS)) prefs.getInt(VIS_STEPS, 0) else null)
 
@@ -95,17 +85,4 @@ class DoubleSizeStore(
         const val VIS_STEPS = "vis_steps"
         const val SHADED = "shaded"
     }
-}
-
-/**
- * Whether this install has never been updated: the app was put on the device as the build
- * that is running.
- *
- * The app's own files cannot answer this. Android restores a backup of them when the app is
- * installed again, so a new install can start with the window layout and the settings of an
- * older one.
- */
-fun Context.neverUpdated(): Boolean {
-    val installed = packageManager.getPackageInfo(packageName, 0)
-    return installed.firstInstallTime == installed.lastUpdateTime
 }

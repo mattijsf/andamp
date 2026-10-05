@@ -94,7 +94,7 @@ class WinampViewModel
                 app,
                 mirror = { state.doubleSize = it },
                 onSwitchedOn = { if (overlayOps.gate.wanted) overlayOps.want(false) },
-            ) { app.neverUpdated() }
+            )
         val eqOps = EqOps(state, facade, presetStore)
 
         /** Preferences > Effects. */
