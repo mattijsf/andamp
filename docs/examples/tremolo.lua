@@ -1,7 +1,8 @@
 -- Tremolo: an LFO on the volume.
 --
--- Two controls and one oscillator. It proves the parts a gain does not: a
--- stateful primitive, and a control that reaches it while it runs.
+-- The example that shows an oscillator. It sways the volume up and down, and
+-- its three controls change the speed, the depth and the stereo spread while
+-- the music plays.
 
 plugin {
   id      = "nl.mattix.andamp.example.tremolo",
@@ -30,10 +31,12 @@ function build(g, ctx)
   for ch = 0, ctx.channels - 1 do
     -- one oscillator per channel, the odd channels up to half a cycle behind:
     -- at Stereo 0 they move together, at 100 % one is loud while the other is
-    -- quiet. The phase is an edge, so the control moves them apart while it runs.
+    -- quiet. The phase is wired to the Stereo control rather than set once, so
+    -- moving the slider shifts them apart while the music plays.
+    -- g.lfo takes its options as one table, in braces.
     local sweep = g.lfo { rate = rate, shape = "sine", phase = g.mul(stereo, (ch % 2) * 0.5) }
-    -- a sine from -1..1, moved to 0..1, then scaled by depth around unity.
-    -- Primitives with options take one table, not positional arguments.
+    -- a sine from -1..1, moved to 0..1, then scaled by depth: at depth 0 the
+    -- volume stays put, at 1 it dips to silence.
     local half = g.mul(g.add(sweep, 1), 0.5)
     local amount = g.sub(1, g.mul(depth, g.sub(1, half)))
     out[ch] = g.mul(g.input(ch), amount)
