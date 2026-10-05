@@ -84,8 +84,17 @@ class WinampViewModel
         /** Whether the welcome screen has been shown; see [WelcomeStore]. */
         val welcome = WelcomeStore(app)
 
-        /** Whether the player fills the screen; see [DoubleSizeStore]. */
-        val doubleSize = DoubleSizeStore(app, mirror = { state.doubleSize = it }) { app.neverUpdated() }
+        /**
+         * Whether the player fills the screen; see [DoubleSizeStore]. Double Size and Always
+         * On Top are on one at a time: switching this on switches [overlayOps] off, and the
+         * other way round there.
+         */
+        val doubleSize: DoubleSizeStore =
+            DoubleSizeStore(
+                app,
+                mirror = { state.doubleSize = it },
+                onSwitchedOn = { if (overlayOps.gate.wanted) overlayOps.want(false) },
+            ) { app.neverUpdated() }
         val eqOps = EqOps(state, facade, presetStore)
 
         /** Preferences > Effects. */
@@ -105,11 +114,15 @@ class WinampViewModel
          * The floating player. The permission is read through [Settings.canDrawOverlays]
          * every time, because it can be withdrawn in system settings while Andamp runs.
          */
-        val overlayOps =
+        val overlayOps: OverlayOps =
             OverlayOps(
                 OverlayStore(app),
                 permitted = { Settings.canDrawOverlays(app) },
-                mirror = { state.alwaysOnTop = it },
+                // also when it is read as on at launch: an install that has both starts floating
+                mirror = { on ->
+                    state.alwaysOnTop = on
+                    if (on && doubleSize.on) doubleSize.on = false
+                },
             )
 
         /** The museum browser: its catalog, and what has been installed from it. */

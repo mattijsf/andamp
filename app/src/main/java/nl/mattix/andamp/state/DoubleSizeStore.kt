@@ -13,8 +13,11 @@ import androidx.compose.runtime.setValue
  *
  * Off, the windows float at the largest whole scale that fits. On, they are held in one
  * stack as wide as the screen. The stack keeps a height of its own for the plug-in window
- * and its own collapsed windows, so the floating layout is not changed by it. The floating player always
- * floats: there the setting can be switched, and it shows once the app has the player again.
+ * and its own collapsed windows, so the floating layout is not changed by it.
+ *
+ * It does not go together with Always On Top, where the player floats over other apps: only
+ * one of the two is on at a time. Whoever builds this store is told when it is switched on
+ * ([onSwitchedOn]) and switches the other off.
  *
  * A fresh install starts with it on, and an install that was already in use keeps the player
  * as it was. Which of the two this is, is asked once, when nothing is stored yet, and the
@@ -24,10 +27,16 @@ class DoubleSizeStore(
     private val prefs: SharedPreferences,
     /** Receives the setting when it is read and on every change; the clutter bar's D is lit from it. */
     private val mirror: (Boolean) -> Unit = {},
+    /** Called when the setting is switched on, and not when it is read as on. */
+    private val onSwitchedOn: () -> Unit = {},
     freshInstall: () -> Boolean,
 ) {
-    constructor(context: Context, mirror: (Boolean) -> Unit = {}, freshInstall: () -> Boolean) :
-        this(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE), mirror, freshInstall)
+    constructor(
+        context: Context,
+        mirror: (Boolean) -> Unit = {},
+        onSwitchedOn: () -> Unit = {},
+        freshInstall: () -> Boolean,
+    ) : this(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE), mirror, onSwitchedOn, freshInstall)
 
     /** Snapshot state, so the player lays itself out again on a change. */
     private var current by mutableStateOf(
@@ -51,6 +60,7 @@ class DoubleSizeStore(
             current = value
             prefs.edit().putBoolean(ON, value).apply()
             mirror(value)
+            if (value) onSwitchedOn()
         }
 
     fun toggle() {

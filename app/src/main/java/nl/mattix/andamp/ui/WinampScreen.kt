@@ -294,15 +294,20 @@ fun PlayerSurface(
     surfaceScreen: SurfaceScreen? = null,
     /**
      * Whether this surface can fill the screen with the player. The floating player cannot:
-     * its windows float whatever Double Size is set to, and the setting, which its D and its
-     * menu still switch, shows once the app has the player again.
+     * switching Double Size on there switches Always On Top off, and it is the app that
+     * fills the screen.
      */
     fillsScreen: Boolean = true,
 ) {
     // filling the screen, the windows are one locked stack with black around it
     val locked = fillsScreen && vm.doubleSize.on
-    // the clutter bar's D and the Options menu share this switch
-    val doubleSize = { vm.doubleSize.toggle() }
+    // The clutter bar's D and the Options menu share this switch. Switching Double Size on
+    // switches Always On Top off, and the surface is told as when its own A did that.
+    val doubleSize = {
+        val floating = vm.overlayOps.gate.wanted
+        vm.doubleSize.toggle()
+        if (floating && !vm.overlayOps.gate.wanted) onFloatingChanged(false)
+    }
     Box(Modifier.fillMaxSize().then(if (locked) Modifier.background(Color.Black) else Modifier)) {
         // the fullscreen visualizer is drawn over every window and outside the status-bar
         // inset the windows are held inside

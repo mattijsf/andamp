@@ -35,6 +35,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import org.robolectric.shadows.ShadowSettings
 
 /**
  * Winamp's Double Size on the app's own player: the windows fill the screen as one stack,
@@ -49,6 +50,9 @@ import org.robolectric.annotation.GraphicsMode
 class DoubleSizeSurfaceTest {
     @get:Rule
     val compose = createComposeRule()
+
+    /** What the surface was told about Always On Top being switched. */
+    private val handed = mutableListOf<Boolean>()
 
     private lateinit var skin: Skin
     private lateinit var vm: WinampViewModel
@@ -80,6 +84,7 @@ class DoubleSizeSurfaceTest {
                 onExit = {},
                 onMinimize = {},
                 onOverlaySettings = {},
+                onFloatingChanged = { handed += it },
                 fillsScreen = fillsScreen,
             )
         }
@@ -223,17 +228,19 @@ class DoubleSizeSurfaceTest {
     }
 
     @Test
-    fun `a surface that cannot fill the screen keeps the windows floating, with the D lit from the setting`() {
+    fun `a surface that cannot fill the screen never holds the windows in the stack`() {
         show(fillsScreen = false)
 
-        assertTrue("the setting is still on", vm.doubleSize.on)
-        assertTrue("and its D is lit", vm.state.doubleSize)
+        assertTrue("the setting is on", vm.doubleSize.on)
         assertFalse(vm.state.stackLocked)
         assertEquals(900 / 3, vm.state.screenW)
     }
 
     @Test
-    fun `the D there still switches the setting, for when the app has the player again`() {
+    fun `the D on the floating player ends always on top, and the surface is told so it opens the app`() {
+        ShadowSettings.setCanDrawOverlays(true)
+        vm.overlayOps.want(true)
+        assertFalse("floating, Double Size is off", vm.doubleSize.on)
         show(fillsScreen = false)
         // floating at three screen pixels to a virtual one
         val main = rect(WindowStore.MAIN)!!
@@ -244,10 +251,23 @@ class DoubleSizeSurfaceTest {
         }
         settle()
 
-        assertFalse("the setting is switched off", vm.doubleSize.on)
-        assertFalse("and the D goes dark", vm.state.doubleSize)
-        assertFalse("the windows float as they did", vm.state.stackLocked)
-        assertEquals(main, rect(WindowStore.MAIN))
+        assertTrue(vm.doubleSize.on)
+        assertFalse(vm.overlayOps.gate.wanted)
+        assertEquals("told once that floating was switched off", listOf(false), handed)
+        assertFalse("this surface itself goes on floating until it is taken down", vm.state.stackLocked)
+    }
+
+    @Test
+    fun `the D in the app, with nothing floating, tells nobody about always on top`() {
+        show()
+
+        compose.onRoot().performTouchInput {
+            down(filled(14, 51))
+            up()
+        }
+        settle()
+
+        assertEquals(emptyList<Boolean>(), handed)
     }
 
     private companion object {
