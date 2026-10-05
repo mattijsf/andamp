@@ -4,10 +4,12 @@ package nl.mattix.andamp.ui.overlay
 
 import android.content.Context
 import android.graphics.PixelFormat
+import android.os.Build
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.ComposeView
@@ -17,6 +19,7 @@ import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import nl.mattix.andamp.state.LibraryAccess
 import nl.mattix.andamp.state.WinampViewModel
+import nl.mattix.andamp.state.overlay.OverlaySupport
 import nl.mattix.andamp.ui.LibraryAccessHandle
 import nl.mattix.andamp.ui.PlayerSurface
 import nl.mattix.andamp.ui.Screen
@@ -39,6 +42,9 @@ import nl.mattix.andamp.ui.window.SurfaceScreen
  *
  * A file picker, Preferences and the museum need an activity, so those bring Andamp forward. What
  * the X does is the caller's `onClose`.
+ *
+ * Both windows are measured and placed with what Android has from version 11, so [show] does
+ * nothing on a phone older than that; see [OverlaySupport].
  */
 object PlayerOverlay {
     /** What [show]'s onOpenAppAt is handed when the player asks for the overlay permission. */
@@ -98,6 +104,7 @@ object PlayerOverlay {
         onMinimize: () -> Unit,
     ) {
         if (showing) return
+        if (!OverlaySupport.here) return
         val app = context.applicationContext
         val windows = app.getSystemService(WindowManager::class.java) ?: return
         // one measurement for both the window and the scale the player is drawn at
@@ -197,6 +204,7 @@ object PlayerOverlay {
     }
 
     /** Every flag both windows need: absolute placement, nothing fitted, nothing focused. */
+    @RequiresApi(Build.VERSION_CODES.R)
     private fun overlayLayout(extraFlags: Int): WindowManager.LayoutParams =
         WindowManager
             .LayoutParams(
@@ -218,9 +226,7 @@ object PlayerOverlay {
                 gravity = Gravity.TOP or Gravity.LEFT
                 layoutInDisplayCutoutMode =
                     WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-                if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.R) {
-                    fitInsetsTypes = 0
-                }
+                fitInsetsTypes = 0
             }
 
     /**
@@ -228,6 +234,7 @@ object PlayerOverlay {
      * window, and the touch window moves with the windows drawn in the picture, so insets read
      * there would feed back into its own position.
      */
+    @RequiresApi(Build.VERSION_CODES.R)
     private fun displayScreen(windows: WindowManager): SurfaceScreen {
         val insets = windows.currentWindowMetrics.windowInsets
         val bars =

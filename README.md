@@ -26,7 +26,7 @@ What works:
   Size (the D in the clutter bar) to fill the screen with the player instead.
 - DSP effects in Preferences, extendable with `.lua` plug-ins.
 - A visualizer window running AVS and Milkdrop presets.
-- A floating player that stays on top of other apps, and a home-screen widget.
+- A floating player that stays on top of other apps (Android 11+), and a home-screen widget.
 - A browser for the Winamp Skin Museum.
 - Jellyfin and Subsonic servers, through music sources that install as separate apps
   beside the player. See [docs/source-packs.md](docs/source-packs.md).

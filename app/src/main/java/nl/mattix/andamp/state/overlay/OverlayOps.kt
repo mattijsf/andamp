@@ -12,6 +12,9 @@ import nl.mattix.andamp.state.AmpPrompt
  * The settings screen, the lifecycle and the overlay's close button each write one flag.
  * The permission is read each time, because the listener can revoke it in system settings
  * while Andamp is running.
+ *
+ * Where the phone cannot show a floating player the preference reads as off and stays off,
+ * whatever is stored, and asking for it explains why.
  */
 class OverlayOps(
     private val store: OverlayStore,
@@ -21,9 +24,11 @@ class OverlayOps(
     private val mirror: (Boolean) -> Unit = {},
     /** Called when the preference is switched on, and not when it is read as on. */
     private val onSwitchedOn: () -> Unit = {},
+    /** Whether this phone can show a floating player at all; see [OverlaySupport]. */
+    val supported: Boolean = true,
 ) {
     var gate by mutableStateOf(
-        OverlayGate(wanted = store.wanted, permitted = permitted()),
+        OverlayGate(wanted = supported && store.wanted, permitted = permitted()),
     )
         private set
 
@@ -31,8 +36,12 @@ class OverlayOps(
         mirror(gate.wanted)
     }
 
-    /** Stores the preference. Without the permission the gate stays closed until it is granted. */
+    /**
+     * Stores the preference. Without the permission the gate stays closed until it is granted.
+     * Switching it on does nothing on a phone that cannot show a floating player.
+     */
     fun want(on: Boolean) {
+        if (on && !supported) return
         store.wanted = on
         gate = gate.copy(wanted = on, permitted = permitted())
         mirror(on)
@@ -42,13 +51,26 @@ class OverlayOps(
     /**
      * Sets Winamp's Always On Top to [on]; used by the Preferences switch and by [toggle].
      * Turning it on without the permission shows an [AmpPrompt] whose action is
-     * [openSettings], and leaves the preference unchanged.
+     * [openSettings], and leaves the preference unchanged. On a phone that cannot show a
+     * floating player, turning it on shows a notice that says so.
      */
     fun askFor(
         on: Boolean,
         prompt: (AmpPrompt?) -> Unit,
         openSettings: () -> Unit,
     ) {
+        if (on && !supported) {
+            prompt(
+                AmpPrompt(
+                    title = "Always on top",
+                    body = "Floating on top of other apps needs Android 11 or later.",
+                    confirmLabel = "OK",
+                    dismissLabel = null,
+                    onConfirm = {},
+                ),
+            )
+            return
+        }
         recheck()
         if (on && !gate.permitted) {
             prompt(
@@ -68,7 +90,8 @@ class OverlayOps(
     /**
      * Toggles Winamp's Always On Top, for the clutter bar's A and the main menu's entry:
      * asks for the permission if it is missing, changes the preference only if it is
-     * granted, and calls [onChanged] only if the preference changed.
+     * granted and the phone can show a floating player, and calls [onChanged] only if the
+     * preference changed.
      */
     fun toggle(
         prompt: (AmpPrompt?) -> Unit,

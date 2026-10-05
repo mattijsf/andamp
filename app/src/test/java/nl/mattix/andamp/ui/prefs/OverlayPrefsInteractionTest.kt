@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.assertTextContains
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -35,6 +36,7 @@ class OverlayPrefsInteractionTest {
         permitted: Boolean,
         on: Boolean = false,
         cap: Float? = null,
+        offered: Boolean = true,
     ) {
         wanted = on
         compose.setContent {
@@ -43,6 +45,7 @@ class OverlayPrefsInteractionTest {
             androidx.compose.foundation.layout.Column {
                 OverlayRow(
                     OverlayPrefs(
+                        offered = offered,
                         wanted = wanted,
                         permitted = permitted,
                         onWant = { wanted = it },
@@ -142,5 +145,14 @@ class OverlayPrefsInteractionTest {
 
         // the clutter bar's A, the permission prompt and this row share one name
         compose.onNodeWithText("Always on top").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a phone that cannot show a floating player has no row`() {
+        show(permitted = true, on = true, cap = 0.8f, offered = false)
+
+        compose.onAllNodesWithText("Always on top").assertCountEquals(0)
+        compose.onAllNodesWithTag("prefs.overlay.switch", useUnmergedTree = true).assertCountEquals(0)
+        compose.onAllNodesWithTag("prefs.overlay.capnote", useUnmergedTree = true).assertCountEquals(0)
     }
 }
