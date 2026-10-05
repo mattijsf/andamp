@@ -78,6 +78,7 @@ class WidgetMenuTest {
             "Visualization",
             "Skin Browser...",
             "Always On Top",
+            "Double Size",
         ).forEach { label ->
             assertNotNull("$label is on the menu", find(label))
             assertFalse("$label is grayed on the widget", enabledOf(label))

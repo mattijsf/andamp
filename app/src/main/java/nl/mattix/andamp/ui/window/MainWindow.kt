@@ -63,6 +63,8 @@ fun mainWindowWidgets(
     onAlwaysOnTop: () -> Unit = {},
     /** The clutter bar's I: file info for what is playing. */
     onFileInfo: () -> Unit = {},
+    /** The clutter bar's D: Winamp's Double Size, or null on a surface that cannot offer it. */
+    onDoubleSize: (() -> Unit)? = null,
     onOptions: () -> Unit,
 ): List<Widget> {
     val s = vm.state
@@ -70,8 +72,8 @@ fun mainWindowWidgets(
         // opens the main menu (Winamp's top-left system-menu icon)
         button("main.options", 6, 3, 9, 9, onTap = onOptions),
         // Winamp's clutter bar: O is the Options menu, A is Always On Top (the floating
-        // window), I is file info and V is the visualization menu. D, Double Size, has no
-        // widget: the scale comes from the screen.
+        // window), I is file info, D is Double Size (the player fills the screen) and V is
+        // the visualization menu.
         button("main.clutter.o", Dest.CLUTTER_O.left, Dest.CLUTTER_O.top, Dest.CLUTTER_O.width, Dest.CLUTTER_O.height) {
             s.activeMenu = optionsMenu(MenuAnchor(WindowStore.MAIN, Dest.CLUTTER_O.left, Dest.CLUTTER_O.top, 8, 8))
         },
@@ -91,6 +93,15 @@ fun mainWindowWidgets(
             Dest.CLUTTER_I.height,
             onTap = onFileInfo,
         ),
+        // Where Double Size is not offered the letter still takes its own presses, so they do
+        // not reach for the I or the V beside it; under another id, it does not light.
+        button(
+            if (onDoubleSize != null) CLUTTER_D else "$CLUTTER_D.unavailable",
+            Dest.CLUTTER_D.left,
+            Dest.CLUTTER_D.top,
+            Dest.CLUTTER_D.width,
+            Dest.CLUTTER_D.height,
+        ) { onDoubleSize?.invoke() },
         button(
             "main.clutter.v",
             Dest.CLUTTER_V.left,
@@ -179,8 +190,8 @@ fun DrawScope.drawMainWindow(
     val titlebar = skin[Sheet.TITLEBAR]
     sprite(titlebar, SpriteMap.MAIN_TITLE_BAR_SELECTED, Dest.TITLE_BAR)
     sprite(titlebar, SpriteMap.MAIN_CLUTTER_BAR_BACKGROUND, Dest.CLUTTER_BAR)
-    // the bar's art has the unlit letters, so only the lit one is drawn over it
-    clutterLit(pressed, s.alwaysOnTop)?.let { (art, at) -> sprite(titlebar, art, at.left, at.top) }
+    // the bar's art has the unlit letters, so only the lit ones are drawn over it
+    clutterLit(pressed, s.alwaysOnTop, s.stackLocked).forEach { (art, at) -> sprite(titlebar, art, at.left, at.top) }
 
     // titlebar buttons: normal art is part of the titlebar strip; draw pressed art only
     when (pressed) {
@@ -452,34 +463,24 @@ private fun marqueeDrag(s: WinampState): Widget {
     )
 }
 
+/** The id of the clutter bar's D where Double Size is offered. */
+private const val CLUTTER_D = "main.clutter.d"
+
 /**
- * The lit clutter letter, and where it goes.
+ * The lit clutter letters, and where each goes.
  *
- * A letter lights while it is held, and the A stays lit while Always On Top is on. Only one
- * letter is lit: a held O comes before the A, and the A before a held I or V.
+ * A letter lights while it is held. The A stays lit while Always On Top is on, and the D
+ * while the player fills the screen.
  */
 private fun clutterLit(
     pressed: String?,
     alwaysOnTop: Boolean,
-): Pair<nl.mattix.andamp.skin.Sprite, androidx.compose.ui.unit.IntRect>? =
-    when {
-        pressed == "main.clutter.o" -> {
-            SpriteMap.MAIN_CLUTTER_BAR_BUTTON_O_SELECTED to Dest.CLUTTER_O
-        }
-
-        pressed == "main.clutter.a" || alwaysOnTop -> {
-            SpriteMap.MAIN_CLUTTER_BAR_BUTTON_A_SELECTED to Dest.CLUTTER_A
-        }
-
-        pressed == "main.clutter.i" -> {
-            SpriteMap.MAIN_CLUTTER_BAR_BUTTON_I_SELECTED to Dest.CLUTTER_I
-        }
-
-        pressed == "main.clutter.v" -> {
-            SpriteMap.MAIN_CLUTTER_BAR_BUTTON_V_SELECTED to Dest.CLUTTER_V
-        }
-
-        else -> {
-            null
-        }
-    }
+    doubleSize: Boolean,
+): List<Pair<nl.mattix.andamp.skin.Sprite, androidx.compose.ui.unit.IntRect>> =
+    listOfNotNull(
+        (SpriteMap.MAIN_CLUTTER_BAR_BUTTON_O_SELECTED to Dest.CLUTTER_O).takeIf { pressed == "main.clutter.o" },
+        (SpriteMap.MAIN_CLUTTER_BAR_BUTTON_A_SELECTED to Dest.CLUTTER_A).takeIf { pressed == "main.clutter.a" || alwaysOnTop },
+        (SpriteMap.MAIN_CLUTTER_BAR_BUTTON_I_SELECTED to Dest.CLUTTER_I).takeIf { pressed == "main.clutter.i" },
+        (SpriteMap.MAIN_CLUTTER_BAR_BUTTON_D_SELECTED to Dest.CLUTTER_D).takeIf { pressed == CLUTTER_D || doubleSize },
+        (SpriteMap.MAIN_CLUTTER_BAR_BUTTON_V_SELECTED to Dest.CLUTTER_V).takeIf { pressed == "main.clutter.v" },
+    )

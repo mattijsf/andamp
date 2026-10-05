@@ -59,9 +59,12 @@ class WindowStore(
 ) {
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
+    /** Whether nothing has ever been written here: a fresh install. */
+    fun isFirstRun(): Boolean = !prefs.contains(SCHEMA)
+
     fun load(): WindowLayoutMemory {
         if (prefs.getInt(SCHEMA, 0) > SCHEMA_VERSION) return WindowLayoutMemory() // written by a newer build
-        val firstRun = !prefs.contains(SCHEMA)
+        val firstRun = isFirstRun()
         val placements =
             WINDOWS.associateWith { id ->
                 WindowPlacement(

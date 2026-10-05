@@ -26,10 +26,12 @@ fun mainMenu(
     onMuseum: () -> Unit = {},
     /** Winamp's Ctrl+A, listed under Options as in Winamp. */
     onAlwaysOnTop: () -> Unit = {},
+    /** Winamp's Ctrl+D, listed under it; null where the player cannot fill the screen. */
+    onDoubleSize: (() -> Unit)? = null,
 ): AmpMenu {
     val skins = skinItems(vm, onPickSkin, onMuseum)
     val bookmarks = bookmarksMenu(vm)
-    val options = optionsItems(vm, onPreferences, skins, onAlwaysOnTop)
+    val options = optionsItems(vm, onPreferences, skins, onAlwaysOnTop, onDoubleSize)
     val playback = playbackItems(vm)
     return AmpMenu(
         "Winamp",
@@ -189,10 +191,12 @@ fun optionsMenu(
     onMuseum: () -> Unit = {},
     /** Winamp's Ctrl+A; the same switch the clutter bar's A throws. */
     onAlwaysOnTop: () -> Unit = {},
+    /** Winamp's Ctrl+D; the same switch the clutter bar's D throws, or null where there is none. */
+    onDoubleSize: (() -> Unit)? = null,
 ): AmpMenu =
     AmpMenu(
         "Options",
-        optionsItems(vm, onPreferences, skinItems(vm, onPickSkin, onMuseum), onAlwaysOnTop),
+        optionsItems(vm, onPreferences, skinItems(vm, onPickSkin, onMuseum), onAlwaysOnTop, onDoubleSize),
         anchor,
     )
 
@@ -242,6 +246,7 @@ private fun optionsItems(
     onPreferences: () -> Unit,
     skins: List<AmpMenuItem>,
     onAlwaysOnTop: () -> Unit,
+    onDoubleSize: (() -> Unit)?,
 ): List<AmpMenuItem> =
     listOf(
         AmpMenuItem.Action("Preferences...", onClick = onPreferences),
@@ -250,9 +255,15 @@ private fun optionsItems(
         AmpMenuItem.Action("Time elapsed", checked = !vm.state.timeRemaining) { vm.state.timeRemaining = false },
         AmpMenuItem.Action("Time remaining", checked = vm.state.timeRemaining) { vm.state.timeRemaining = true },
         AmpMenuItem.Divider,
-        // Winamp's own group, minus Double Size and EasyMove: a phone has one
-        // size and every window here already moves with a finger
+        // Winamp's own group, minus EasyMove: every window here already moves with a finger
         AmpMenuItem.Action("Always On Top", checked = vm.state.alwaysOnTop, needsTheApp = true, onClick = onAlwaysOnTop),
+        // ticked while the player on this surface fills the screen, like the clutter bar's D
+        AmpMenuItem.Action(
+            "Double Size",
+            enabled = onDoubleSize != null,
+            checked = vm.state.stackLocked,
+            needsTheApp = true,
+        ) { onDoubleSize?.invoke() },
         AmpMenuItem.Divider,
         AmpMenuItem.Action("Repeat", checked = vm.state.repeat) { vm.toggleRepeat() },
         AmpMenuItem.Action("Shuffle", checked = vm.state.shuffle) { vm.toggleShuffle() },

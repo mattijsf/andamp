@@ -83,6 +83,12 @@ class WinampViewModel
 
         /** Whether the welcome screen has been shown; see [WelcomeStore]. */
         val welcome = WelcomeStore(app)
+
+        /**
+         * Whether the player fills the screen; see [DoubleSizeStore]. A fresh install has
+         * neither a window layout nor a welcome that was answered.
+         */
+        val doubleSize = DoubleSizeStore(app) { windowStore.isFirstRun() && !welcome.seen }
         val eqOps = EqOps(state, facade, presetStore)
 
         /** Preferences > Effects. */

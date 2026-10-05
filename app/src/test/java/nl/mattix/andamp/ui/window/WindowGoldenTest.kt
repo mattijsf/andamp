@@ -127,6 +127,29 @@ class WindowGoldenTest {
     }
 
     @Test
+    fun `main window with double size lit`() {
+        // the D stays lit for as long as the player fills the screen
+        render(MAIN_W, MAIN_H) {
+            drawMainWindow(skin, playingState().apply { stackLocked = true })
+        }.captureRoboImage("$SNAPSHOT_DIR/main_window_double_size.png")
+    }
+
+    @Test
+    fun `main window with a held letter beside the two that stay lit`() {
+        // each lit letter is drawn over the bar on its own, so they light together
+        render(MAIN_W, MAIN_H) {
+            drawMainWindow(
+                skin,
+                playingState().apply {
+                    alwaysOnTop = true
+                    stackLocked = true
+                    pressedWidget = "main.clutter.v"
+                },
+            )
+        }.captureRoboImage("$SNAPSHOT_DIR/main_window_clutter_lit_together.png")
+    }
+
+    @Test
     fun `main window shaded`() {
         render(MAIN_W, SHADE_H) { drawMainShade(skin, playingState()) }
             .captureRoboImage("$SNAPSHOT_DIR/main_window_shade.png")

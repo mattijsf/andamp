@@ -13,8 +13,8 @@ import nl.mattix.andamp.ui.Screen
  * The player's menu, as it reads from a home screen.
  *
  * [mainMenu] builds it. This adds the widget's own entries at the top and grays out every entry
- * marked `needsTheApp`: the windows to tick, Always On Top, the Skin Browser and the whole
- * Visualization branch. Everything else stays enabled: what acts on the player, the pickers and
+ * marked `needsTheApp`: the windows to tick, Always On Top, Double Size, the Skin Browser and
+ * the whole Visualization branch. Everything else stays enabled: what acts on the player, the pickers and
  * dialogs this host can show, and Preferences and the museum, which open the app at that screen.
  */
 fun widgetMenu(

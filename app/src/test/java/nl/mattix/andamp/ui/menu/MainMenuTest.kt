@@ -82,6 +82,34 @@ class MainMenuTest {
         assertEquals("the entry calls its callback once", 1, asked)
     }
 
+    @Test
+    fun `double size is listed right under always on top, as in Winamp`() {
+        val labels = actions(optionsMenu(testViewModel(), onDoubleSize = {}).items).map { it.label }
+
+        assertEquals(labels.indexOf("Always On Top") + 1, labels.indexOf("Double Size"))
+    }
+
+    @Test
+    fun `double size calls its callback and is ticked while the player fills the screen`() {
+        val vm = testViewModel()
+        var asked = 0
+
+        fun entry() = actions(optionsMenu(vm, onDoubleSize = { asked++ }).items).first { it.label == "Double Size" }
+
+        assertEquals("unticked while the windows float", false, entry().checked)
+        vm.state.stackLocked = true
+        assertEquals("ticked while they are held in the stack", true, entry().checked)
+        entry().onClick()
+        assertEquals("the entry calls its callback once", 1, asked)
+    }
+
+    @Test
+    fun `double size is grayed on a surface that cannot offer it`() {
+        val entry = actions(optionsMenu(testViewModel()).items).first { it.label == "Double Size" }
+
+        assertEquals(false, entry.enabled)
+    }
+
     /**
      * Winamp's View file info describes what has been heard this session, not
      * what is queued: disabled on a fresh launch, and still enabled after the
