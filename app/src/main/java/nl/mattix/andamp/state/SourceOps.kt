@@ -23,6 +23,8 @@ class SourceOps(
     private val library: LibraryOps,
     /** The sources beyond the phone, asked for each time; see [PackSources.found]. */
     private val extras: () -> List<ExtraSource> = { PackSources.found },
+    /** Asks the packs that have not answered yet to answer; see [PackSources.reachUnanswered]. */
+    private val reachUnanswered: () -> Unit = PackSources::reachUnanswered,
     /** Where each source's credential is read. */
     private val io: CoroutineContext = Dispatchers.IO,
     /** Drops a source's cached library; see [Libraries.forget]. */
@@ -214,9 +216,13 @@ class SourceOps(
      * holds, and a difference is applied as a sign-in or a sign-out; see
      * [reconcileWhileShown].
      *
+     * A pack that has not answered yet is not among the sources, so it is asked to answer
+     * first; it joins the list when it does, and the next call reads its account.
+     *
      * The credentials are read on [io]; the record is changed on the caller's context.
      */
     suspend fun reconcile(context: Context) {
+        reachUnanswered()
         val carried = extras()
         val recorded = sources.reach.signedIn
         // a source that throws or could not be reached is left as the record has it
