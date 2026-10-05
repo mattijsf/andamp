@@ -181,23 +181,41 @@ class WinampState {
             }
         }
 
+    /**
+     * Whether a window is collapsed in the layout on screen. The floating layout and the
+     * locked stack each keep their own answer ([stackShaded]), so collapsing a window in one
+     * leaves the other as it was.
+     */
     private fun shadedOf(id: String) =
         object : kotlin.properties.ReadWriteProperty<Any?, Boolean> {
             override fun getValue(
                 thisRef: Any?,
                 property: kotlin.reflect.KProperty<*>,
-            ) = placement(id).shaded ?: false
+            ) = if (stackLocked) id in stackShaded else placement(id).shaded ?: false
 
             override fun setValue(
                 thisRef: Any?,
                 property: kotlin.reflect.KProperty<*>,
                 value: Boolean,
             ) {
-                placement(id).shaded = value
+                if (stackLocked) {
+                    stackShaded = if (value) stackShaded + id else stackShaded - id
+                } else {
+                    placement(id).shaded = value
+                }
             }
         }
 
-    /** Window shade: the window collapsed to its title bar. Stored per window across restarts. */
+    /**
+     * The windows that are collapsed while the layout holds them in one stack, by their ids;
+     * see [stackLocked]. Stored across restarts, apart from the floating layout's own.
+     */
+    var stackShaded: Set<String> by mutableStateOf(emptySet())
+
+    /**
+     * Window shade: the window collapsed to its title bar, in the layout on screen. Stored
+     * per window and per layout across restarts.
+     */
     var mainShaded: Boolean by shadedOf(WindowStore.MAIN)
 
     var eqShaded: Boolean by shadedOf(WindowStore.EQ)
@@ -424,6 +442,12 @@ class WinampState {
     /** The floating stack, bottom to top; the last one is drawn on top. */
     var windowOrder by mutableStateOf(listOf("main", "eq", "milkdrop", "pl", "library", "skins"))
 
+    /** The same for the windows while the layout holds them in one stack: its own order, not stored. */
+    private var stackOrder by mutableStateOf(windowOrder)
+
+    /** The order of the layout on screen, bottom to top. */
+    val shownOrder: List<String> get() = if (stackLocked) stackOrder else windowOrder
+
     /** A window's current offset, computed from the rectangle it published. */
     fun offsetOfWindow(id: String): androidx.compose.ui.unit.IntOffset? {
         val rect = windowRects[id] ?: return null
@@ -456,8 +480,11 @@ class WinampState {
 
     /** Brings a window to the front; does nothing when it is already there. */
     fun raiseWindow(id: String) {
-        if (windowOrder.lastOrNull() == id || id !in windowOrder) return
-        windowOrder = windowOrder.filterNot { it == id } + id
+        val order = shownOrder
+        if (order.lastOrNull() == id || id !in order) return
+        val raised = order.filterNot { it == id } + id
+        // each layout has its own order, so a press in one does not restack the other
+        if (stackLocked) stackOrder = raised else windowOrder = raised
     }
 
     /** The selected track row at the library's leaf; -1 for none. */

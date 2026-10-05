@@ -12,8 +12,8 @@ import androidx.compose.runtime.setValue
  * Winamp's Double Size, the D in the clutter bar: whether the player fills the screen.
  *
  * Off, the windows float at the largest whole scale that fits. On, they are held in one
- * stack as wide as the screen. The stack keeps a height of its own for the plug-in window,
- * so the size that window floats at is not changed by it. The floating player always
+ * stack as wide as the screen. The stack keeps a height of its own for the plug-in window
+ * and its own collapsed windows, so the floating layout is not changed by it. The floating player always
  * floats: there the setting can be switched, and it shows once the app has the player again.
  *
  * A fresh install starts with it on, and an install that was already in use keeps the player
@@ -68,10 +68,21 @@ class DoubleSizeStore(
             prefs.edit().apply { if (value == null) remove(VIS_STEPS) else putInt(VIS_STEPS, value) }.apply()
         }
 
+    /**
+     * The windows collapsed to their title bars while the player fills the screen, by their
+     * ids. The stack has its own, so the floating layout's are not changed by it.
+     */
+    var shaded: Set<String>
+        get() = prefs.getStringSet(SHADED, emptySet()).orEmpty().toSet()
+        set(value) {
+            prefs.edit().putStringSet(SHADED, value).apply()
+        }
+
     private companion object {
         const val PREFS = "doublesize"
         const val ON = "on"
         const val VIS_STEPS = "vis_steps"
+        const val SHADED = "shaded"
     }
 }
 

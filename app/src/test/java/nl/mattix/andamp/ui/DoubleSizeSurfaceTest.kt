@@ -20,6 +20,8 @@ import nl.mattix.andamp.ui.window.MAIN_H
 import nl.mattix.andamp.ui.window.MAIN_W
 import nl.mattix.andamp.ui.window.PlaylistMenuActions
 import nl.mattix.andamp.ui.window.RESIZE_GRIP
+import nl.mattix.andamp.ui.window.SHADE_H
+import nl.mattix.andamp.ui.window.setShaded
 import nl.mattix.andamp.ui.window.testViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -94,14 +96,8 @@ class DoubleSizeSurfaceTest {
         y: Int,
     ) = Offset(x * FILLED_PIXEL + 1f, y * FILLED_PIXEL + 1f)
 
-    /** Every window's placement as the store would save it, without whether it is collapsed. */
-    private fun floatingLayout() =
-        WindowStore.WINDOWS.map {
-            vm.state
-                .placementOf(it)
-                ?.asMemory()
-                ?.copy(shaded = false)
-        }
+    /** The floating layout as the store would save it: every window's placement, and their order. */
+    private fun floatingLayout() = WindowStore.WINDOWS.map { vm.state.placementOf(it)?.asMemory() } to vm.state.windowOrder
 
     @Test
     fun `the player, the equalizer and the playlist fill the screen from top to bottom`() {
@@ -137,28 +133,48 @@ class DoubleSizeSurfaceTest {
         show()
         val before = floatingLayout()
 
-        // a drag on the player's title bar, a collapsed equalizer and an open library
+        // a drag on the player's title bar, a press that brings a window to the front, and
+        // a collapsed equalizer that is left collapsed
         compose.onRoot().performTouchInput { down(filled(100, 5)) }
         settle()
         compose.onRoot().performTouchInput { moveTo(filled(130, 60)) }
         settle()
         compose.onRoot().performTouchInput { up() }
-        vm.state.eqShaded = true
-        vm.state.libraryOpen = true
+        compose.onRoot().performTouchInput {
+            down(filled(100, MAIN_H + 60))
+            up()
+        }
+        vm.state.setShaded(WindowStore.EQ, true, EQ_H)
         settle()
-        vm.state.libraryOpen = false
-        vm.state.eqShaded = false
+        assertEquals("the stack has the equalizer collapsed", SHADE_H, rect(WindowStore.EQ)!!.height)
+
         vm.doubleSize.on = false
         settle()
 
         assertEquals(before, floatingLayout())
+        assertEquals("floating, the equalizer stands open", EQ_H, rect(WindowStore.EQ)!!.height)
+    }
+
+    @Test
+    fun `the stack finds its own collapsed windows when it comes back`() {
+        show()
+        vm.state.setShaded(WindowStore.EQ, true, EQ_H)
+        settle()
+
+        vm.doubleSize.on = false
+        settle()
+        vm.doubleSize.on = true
+        settle()
+
+        assertEquals(SHADE_H, rect(WindowStore.EQ)!!.height)
+        assertEquals(IntRect(0, MAIN_H + SHADE_H, MAIN_W, vm.state.safeBottom), rect(WindowStore.PLAYLIST))
     }
 
     @Test
     fun `a collapsed window gives its rows to the playlist`() {
         show()
 
-        vm.state.eqShaded = true
+        vm.state.setShaded(WindowStore.EQ, true, EQ_H)
         settle()
 
         val eq = rect(WindowStore.EQ)!!

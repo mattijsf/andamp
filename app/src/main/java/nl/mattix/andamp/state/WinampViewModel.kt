@@ -248,6 +248,11 @@ class WinampViewModel
             viewModelScope.launch {
                 snapshotFlow { tapAssistStore.enabled }.collect { state.tapAssist = it }
             }
+            // the locked stack's own collapsed windows: read here, and stored as they change
+            state.stackShaded = doubleSize.shaded
+            viewModelScope.launch {
+                snapshotFlow { state.stackShaded }.drop(1).collect { doubleSize.shaded = it }
+            }
             // restores what a previous session left: settings, queue, visuals, windows
             persistence.start()
             PlaybackRoot.follow(state)

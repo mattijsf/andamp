@@ -103,6 +103,16 @@ class DoubleSizeStoreTest {
     }
 
     @Test
+    fun `the windows collapsed in the stack come back, and none are to begin with`() {
+        val prefs = prefs()
+        assertEquals(emptySet<String>(), DoubleSizeStore(prefs) { true }.shaded)
+
+        DoubleSizeStore(prefs) { true }.shaded = setOf("eq", "pl")
+
+        assertEquals(setOf("eq", "pl"), DoubleSizeStore(prefs) { true }.shaded)
+    }
+
+    @Test
     fun `the plug-in window has no height of its own until its grip is dragged`() {
         assertNull(DoubleSizeStore(prefs()) { true }.visSteps)
     }

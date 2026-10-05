@@ -562,13 +562,14 @@ private fun FloatingWindows(
             .height
     // with the shade gesture switched off, every shaded window is opened; this also runs
     // at launch, for a window that was stored shaded
-    LaunchedEffect(s.shadeEnabled, plExpandedH) {
+    // and again when the layout changes: each layout has its own collapsed windows
+    LaunchedEffect(s.shadeEnabled, plExpandedH, held != null) {
         if (!s.shadeEnabled) s.unshadeEverything(plExpandedH)
     }
     // Composition order is fixed and stacking is a zIndex: a window raised by reordering
     // these children would be torn down and rebuilt mid-press, cancelling the gesture
     // that raised it.
-    WindowStacking.stack(WindowStore.WINDOWS, s.windowOrder).forEach { (id, z) ->
+    WindowStacking.stack(WindowStore.WINDOWS, s.shownOrder).forEach { (id, z) ->
         key(id) {
             when (id) {
                 WindowStore.MAIN -> {
