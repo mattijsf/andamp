@@ -57,6 +57,13 @@ object SpriteMap {
 
     fun digit(n: Int) = Sprite(n * 9, 0, 9, 13)
 
+    /**
+     * The empty cell after the ten digits, which both sheets have: NUMBERS.BMP is 99 wide and
+     * NUMS_EX.BMP 108. It is drawn over a slot that shows no digit, since a skin may paint
+     * digits of its own into the main window's plate.
+     */
+    val DIGIT_BLANK = Sprite(90, 0, 9, 13)
+
     // PLAYPAUS.BMP
     val MAIN_PLAYING_INDICATOR = Sprite(0, 0, 9, 9)
     val MAIN_PAUSED_INDICATOR = Sprite(9, 0, 9, 9)
