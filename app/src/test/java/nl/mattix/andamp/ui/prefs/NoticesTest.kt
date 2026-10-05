@@ -50,15 +50,32 @@ class NoticesTest {
 
     /** Aliases used by `implementation(...)` or `api(...)`, which is what ships. */
     private fun runtimeAliases(): List<String> =
-        repoRoot()
-            .walkTopDown()
-            .onEnter { it.name != "build" && it.name != ".git" && it.name != "third_party" }
-            .filter { it.name == "build.gradle.kts" }
+        moduleBuildFiles()
             .flatMap { it.readLines() }
             .mapNotNull { RUNTIME_DEPENDENCY.find(it.trim())?.groupValues?.get(2) }
             .map { it.removePrefix("libs.") }
             .distinct()
-            .toList()
+
+    /**
+     * The build file of every module `settings.gradle.kts` includes: the
+     * modules Gradle builds. A build file anywhere else under the root, such
+     * as in another checkout of this repo nested inside this one, belongs to
+     * another build and is not read.
+     */
+    private fun moduleBuildFiles(): List<File> {
+        val root = repoRoot()
+        return root
+            .resolve("settings.gradle.kts")
+            .readLines()
+            .filter { it.trim().startsWith("include(") }
+            .flatMap { line -> MODULE_PATH.findAll(line).map { it.groupValues[1] } }
+            .map { path ->
+                val buildFile = root.resolve(path.replace(':', '/')).resolve("build.gradle.kts")
+                // a module left out without a word would shrink the scan
+                check(buildFile.isFile) { "settings.gradle.kts includes :$path, which has no $buildFile" }
+                buildFile
+            }
+    }
 
     /** Catalog alias, in the dotted form Gradle's accessors use, to Maven group. */
     private fun versionCatalogue(): Map<String, String> =
@@ -82,6 +99,9 @@ class NoticesTest {
 
         /** This project's own group, which needs no notice. */
         const val OWN_GROUP = "nl.mattix.andamp"
+
+        /** A module path in an `include(...)` line, without its leading colon. */
+        val MODULE_PATH = Regex("""":([A-Za-z0-9:_-]+)"""")
 
         val RUNTIME_DEPENDENCY = Regex("""^(implementation|api)\((libs\.[A-Za-z0-9.]+)\)""")
         val CATALOGUE_ENTRY = Regex("""^([A-Za-z0-9-]+)\s*=\s*\{[^}]*group\s*=\s*"([^"]+)"""")
