@@ -412,6 +412,12 @@ class WinampState {
     var screenW by mutableIntStateOf(0)
     var screenH by mutableIntStateOf(0)
 
+    /**
+     * Whether the layout holds every window in one stack; published by the layout pass.
+     * While it does, [windowRects] are the stack's and no window's own place changes.
+     */
+    var stackLocked by mutableStateOf(false)
+
     /** The floating stack, bottom to top; the last one is drawn on top. */
     var windowOrder by mutableStateOf(listOf("main", "eq", "milkdrop", "pl", "library", "skins"))
 

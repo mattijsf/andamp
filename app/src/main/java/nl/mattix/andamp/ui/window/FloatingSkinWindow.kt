@@ -31,6 +31,9 @@ import nl.mattix.andamp.ui.widget.Widget
  *
  * With [dragsGroup], dragging it takes the windows docked to it along, as Winamp's player
  * does.
+ *
+ * With [pinnedAt] the layout holds the window: it is drawn there, a drag does not move it
+ * and [onMove] is never called, so the place it floats at is kept as it was.
  */
 @Composable
 @Suppress("LongParameterList") // a window: its identity, its size, its place, its contents
@@ -69,6 +72,8 @@ fun FloatingSkinWindow(
      * canvas applies it to both the art and the touches.
      */
     cut: SkinCut? = null,
+    /** Where the layout holds this window's top-left corner, in virtual pixels, or null while it floats. */
+    pinnedAt: IntOffset? = null,
     modifier: Modifier = Modifier,
     overlay: @Composable BoxScope.() -> Unit = {},
     draw: DrawScope.() -> Unit,
@@ -86,11 +91,12 @@ fun FloatingSkinWindow(
     val loupe = rememberLoupe(id, state, draw) { widgetsNow }
     val resizable = onResizeRaw != null
     val shadeable = onTitleDoubleTap != null
+    val pinned = pinnedAt != null
 
     fun place() = offsetNow ?: defaultNow
 
     val chrome =
-        remember(id, width, height, titleH, dragsGroup, resizable, shadeable, gripAt, onLongPress != null) {
+        remember(id, width, height, titleH, dragsGroup, resizable, shadeable, gripAt, onLongPress != null, pinned) {
             windowChromeWidget(
                 id = "$id.chrome",
                 bounds = IntRect(0, 0, width, height),
@@ -100,11 +106,14 @@ fun FloatingSkinWindow(
                 offsetNow = { place() },
                 heightNow = { height },
                 onMove = { place, _ ->
-                    onMoveNow(place)
-                    // measured from where the drag began, so the carried windows do not
-                    // drift from it event by event
-                    if (dragsGroup) {
-                        group.carry(state, id, IntOffset(place.x - drag.origin.x, place.y - drag.origin.y))
+                    // a pinned window takes the drag and stays where the layout holds it
+                    if (!pinned) {
+                        onMoveNow(place)
+                        // measured from where the drag began, so the carried windows do not
+                        // drift from it event by event
+                        if (dragsGroup) {
+                            group.carry(state, id, IntOffset(place.x - drag.origin.x, place.y - drag.origin.y))
+                        }
                     }
                 },
                 onResize = { grab -> onResizeNow?.invoke(grab) },
@@ -153,17 +162,19 @@ fun FloatingSkinWindow(
             // from there
             drag.syncToLayout()
         }
+        // a pinned window is where the layout says, with nothing to keep in reach
         val bounded =
-            WindowBounds.clamp(
-                place(),
-                width,
-                height,
-                screenW,
-                screenH,
-                titleH,
-                safeTop = safeTop,
-                safeBottom = safeBottom,
-            )
+            pinnedAt?.let { offsetOfTopLeft(it, width, height, screenW, screenH) }
+                ?: WindowBounds.clamp(
+                    place(),
+                    width,
+                    height,
+                    screenW,
+                    screenH,
+                    titleH,
+                    safeTop = safeTop,
+                    safeBottom = safeBottom,
+                )
         val rect = rectOf(bounded, width, height, screenW, screenH)
         SideEffect { state.windowRects[id] = rect }
         DisposableEffect(id) {

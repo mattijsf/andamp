@@ -72,6 +72,17 @@ class ShadeDockTest {
     }
 
     @Test
+    fun `in a locked stack the layout moves the windows, and the places they float at are kept`() {
+        val s = stack().apply { stackLocked = true }
+        val before = listOf(s.mainOffset, s.eqOffset, s.plOffset)
+
+        s.setShaded(WindowStore.MAIN, true, MAIN_H)
+
+        assertTrue("the player collapses", s.mainShaded)
+        assertEquals(before, listOf(s.mainOffset, s.eqOffset, s.plOffset))
+    }
+
+    @Test
     fun `expanding it puts them back`() {
         val s = stack()
         val eqBefore = s.eqOffset

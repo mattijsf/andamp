@@ -11,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
 import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.WinampState
@@ -25,6 +26,10 @@ import nl.mattix.andamp.ui.SkinCut
  * It starts under the stack, filling what is left of the height, and stays there until the
  * listener moves or resizes it: a null offset or a null segment count means "wherever the
  * layout puts it".
+ *
+ * With [pinned] the layout holds it in that rectangle, whatever its height: the last tile
+ * of the frame and the last row of the list are cut where the rectangle ends, and there is
+ * no grip.
  */
 @Composable
 @Suppress("LongParameterList") // a window: its player, its skin, its scale and its place
@@ -38,6 +43,8 @@ fun PlaylistFloatWindow(
     /** How tall it is while it has never been resized: the rest of the screen. */
     dockedSegments: Int,
     modifier: Modifier = Modifier,
+    /** The rectangle the layout holds it in, in virtual pixels, or null while it floats. */
+    pinned: IntRect? = null,
 ) {
     val s = vm.state
     val context = LocalContext.current
@@ -53,7 +60,9 @@ fun PlaylistFloatWindow(
         // the width is limited to the screen's
         val maxCols = ((screen.width - PL_W) / PlaylistLayout.WIDTH_STEP).coerceAtLeast(0)
         val cols = s.plCols.coerceIn(0, maxCols)
-        val layout = PlaylistLayout.ofSegments(segments, PlaylistLayout.widthOfCols(cols))
+        val layout =
+            pinned?.let { PlaylistLayout(it.height, it.width) }
+                ?: PlaylistLayout.ofSegments(segments, PlaylistLayout.widthOfCols(cols))
         val height = layout.height
 
         // Where the top edge is asking to be: under the stack while the window has never
@@ -100,11 +109,15 @@ fun PlaylistFloatWindow(
             onMove = { place -> s.plOffset = place },
             titleH = Dest.PL_TOP_H,
             widgets = widgets,
-            onResizeRaw = { grab ->
-                resizeTo(s, grab, cols, maxCols, segments, maxSegments, screen.width, screen.height)
-            },
+            onResizeRaw =
+                if (pinned != null) {
+                    null
+                } else {
+                    { grab -> resizeTo(s, grab, cols, maxCols, segments, maxSegments, screen.width, screen.height) }
+                },
             onTitleDoubleTap = { s.setShaded(WindowStore.PLAYLIST, true, height) },
             cut = SkinCut(skin),
+            pinnedAt = pinned?.topLeft,
             modifier = Modifier.matchParentSize(),
         ) {
             drawPlaylistWindow(skin, s, layout, text, scale)

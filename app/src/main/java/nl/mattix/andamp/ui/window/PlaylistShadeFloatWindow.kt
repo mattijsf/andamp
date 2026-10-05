@@ -29,10 +29,12 @@ fun PlaylistShadeFloatWindow(
     expandedH: Int,
     defaultOffset: IntOffset,
     modifier: Modifier = Modifier,
+    /** Where the layout holds it, at its narrowest and with no grip, or null while it floats. */
+    pinnedAt: IntOffset? = null,
 ) {
     val s = vm.state
     val maxCols = ((s.screenW - PL_W) / PlaylistLayout.WIDTH_STEP).coerceAtLeast(0)
-    val cols = s.plCols.coerceIn(0, maxCols)
+    val cols = if (pinnedAt != null) 0 else s.plCols.coerceIn(0, maxCols)
     val width = PL_W + cols * PlaylistLayout.WIDTH_STEP
     FloatingSkinWindow(
         id = WindowStore.PLAYLIST,
@@ -44,28 +46,30 @@ fun PlaylistShadeFloatWindow(
         defaultOffset = defaultOffset,
         onMove = { s.plOffset = it },
         cut = SkinCut(skin),
-        onResizeRaw = { grab ->
-            val resized =
-                WindowSizing.resize(
-                    grab,
-                    screenW = s.screenW,
-                    screenH = s.screenH,
-                    // shaded, the height is fixed
-                    heightAxis = SizeAxis(furniture = SHADE_H, step = 1, min = 0, max = 0, current = 0),
-                    heightOf = { SHADE_H },
-                    widthAxis =
-                        SizeAxis(
-                            furniture = PL_W,
-                            step = PlaylistLayout.WIDTH_STEP,
-                            min = 0,
-                            max = maxCols,
-                            current = cols,
-                        ),
-                    widthOf = { steps -> PL_W + steps * PlaylistLayout.WIDTH_STEP },
-                )
-            s.plCols = resized.cols
-            s.plOffset = resized.offset
-        },
+        pinnedAt = pinnedAt,
+        onResizeRaw =
+            { grab: WindowGrab ->
+                val resized =
+                    WindowSizing.resize(
+                        grab,
+                        screenW = s.screenW,
+                        screenH = s.screenH,
+                        // shaded, the height is fixed
+                        heightAxis = SizeAxis(furniture = SHADE_H, step = 1, min = 0, max = 0, current = 0),
+                        heightOf = { SHADE_H },
+                        widthAxis =
+                            SizeAxis(
+                                furniture = PL_W,
+                                step = PlaylistLayout.WIDTH_STEP,
+                                min = 0,
+                                max = maxCols,
+                                current = cols,
+                            ),
+                        widthOf = { steps -> PL_W + steps * PlaylistLayout.WIDTH_STEP },
+                    )
+                s.plCols = resized.cols
+                s.plOffset = resized.offset
+            }.takeIf { pinnedAt == null },
         gripAt = playlistShadeGrip(width),
         titleH = SHADE_H,
         widgets = remember(vm, expandedH, width) { playlistShadeWidgets(vm, expandedH, width) },

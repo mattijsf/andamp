@@ -91,6 +91,18 @@ internal fun devicePlacementOf(
     return IntOffset(topLeft.x * scale, topLeft.y * scale)
 }
 
+/**
+ * The center-relative offset that puts a window's top-left corner at [topLeft]: what
+ * [topLeftOf] is undone by.
+ */
+internal fun offsetOfTopLeft(
+    topLeft: IntOffset,
+    width: Int,
+    height: Int,
+    screenW: Int,
+    screenH: Int,
+): IntOffset = IntOffset(topLeft.x - (screenW - width) / 2, topLeft.y - (screenH - height) / 2)
+
 internal fun rectOf(
     offset: IntOffset,
     width: Int,

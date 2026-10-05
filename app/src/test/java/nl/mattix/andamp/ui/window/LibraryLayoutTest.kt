@@ -50,6 +50,26 @@ class LibraryLayoutTest {
     }
 
     @Test
+    fun `a window held at a height between two rows is exactly that tall, the rest left under the last row`() {
+        val whole = LibraryLayout(12).height(frame)
+
+        val held = LibraryLayout.filling(whole + 7, LibraryLayout.WIDTH, frame)
+
+        assertEquals(12, held.visibleRows)
+        assertEquals(7, held.slack)
+        assertEquals(whole + 7, held.height(frame))
+        assertEquals("the bar is under the slack", LibraryLayout(12).barTop + 7, held.barTop)
+    }
+
+    @Test
+    fun `a window held at a whole number of rows has no slack`() {
+        val held = LibraryLayout.filling(LibraryLayout(12).height(frame), LibraryLayout.WIDTH, frame)
+
+        assertEquals(12, held.visibleRows)
+        assertEquals(0, held.slack)
+    }
+
+    @Test
     fun `the bar sits directly under the rows and their rule`() {
         val layout = LibraryLayout(10)
         assertEquals(LibraryLayout.ROWS_TOP + 10 * LibraryLayout.ROW_H, layout.rowsBottom)

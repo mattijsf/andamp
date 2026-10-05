@@ -228,6 +228,14 @@ class WindowGoldenTest {
     }
 
     @Test
+    fun `playlist window held at a height between two segments`() {
+        // the frame's ninth tile and the list's last row are cut where the window ends
+        val layout = PlaylistLayout(20 + 8 * 29 + 11 + 38)
+        render(PL_W, layout.height) { drawPlaylistWindow(skin, playingState(), layout, measurer()) }
+            .captureRoboImage("$SNAPSHOT_DIR/playlist_window_exact_height.png")
+    }
+
+    @Test
     fun `playlist window with the remove menu expanded`() {
         val layout = PlaylistLayout(116)
         val state = stoppedState().apply { openMenu = "pl.menu.rem" }
@@ -263,6 +271,21 @@ class WindowGoldenTest {
         render(width, height) {
             drawSkinList(rasterizer, entries, scroll = 0, currentId = "aaaa", style = skin.pledit, scale = 1, frame = frame)
         }.captureRoboImage("$SNAPSHOT_DIR/skin_manager_rows.png")
+
+        // held at a height between two rows: the list's background runs on under the last one
+        val held = SkinManagerLayout(slack = 5)
+        render(width, held.listHeight()) {
+            drawSkinList(
+                rasterizer,
+                entries,
+                scroll = 0,
+                currentId = "aaaa",
+                style = skin.pledit,
+                scale = 1,
+                frame = frame,
+                layout = held,
+            )
+        }.captureRoboImage("$SNAPSHOT_DIR/skin_manager_slack.png")
     }
 
     // --- the media library: deterministic fixtures over a hand-rolled shelf ---
@@ -348,9 +371,10 @@ class WindowGoldenTest {
         ops: nl.mattix.andamp.state.LibraryOps,
         state: WinampState,
         cols: Int = 0,
+        slack: Int = 0,
     ) {
         val frame = GenFrame
-        val layout = LibraryLayout(8, LibraryLayout.widthOfCols(cols))
+        val layout = LibraryLayout(8, LibraryLayout.widthOfCols(cols), slack)
         render(layout.listWidth(frame), layout.contentH) {
             drawLibraryContent(libraryRasterizer(), ops, state, skin, 1, frame, layout)
         }.captureRoboImage("$SNAPSHOT_DIR/$name.png")
@@ -360,6 +384,13 @@ class WindowGoldenTest {
     fun `library artists with header and status bar`() {
         val (ops, state) = libraryFixture()
         renderLibrary("library_artists", ops, state)
+    }
+
+    @Test
+    fun `a library held at a height between two rows keeps its bar at the bottom`() {
+        // the rows' area and the scrollbar's rail are seven pixels taller than the rows
+        val (ops, state) = libraryFixture()
+        renderLibrary("library_slack", ops, state, slack = 7)
     }
 
     @Test
