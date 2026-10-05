@@ -390,7 +390,7 @@ private fun PluginEntry.credit(): String =
     ).joinToString(", ").ifBlank { "no version declared" }
 
 /** The site's page of effect plug-ins, each with an Install link that opens Andamp. */
-internal const val MORE_EFFECTS_URL = "https://mattix.nl/andamp/extensions/plugins"
+internal const val MORE_EFFECTS_URL = "https://andamp.nl/extensions/plugins"
 
 /**
  * A link to more effects, shown on the rack and on the list of added plug-ins. What is offered is

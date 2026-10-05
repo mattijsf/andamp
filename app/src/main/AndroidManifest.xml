@@ -105,8 +105,17 @@
               Android gives to Andamp once the site's /.well-known/assetlinks.json
               names this app. Only .lua files under the plug-ins path, so the page
               listing them still opens in the browser. What arrives is offered,
-              not installed; see PluginLinks.
+              not installed; see PluginLinks. One filter per host, because the
+              hosts and paths of one filter combine and each host has its own path.
             -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" />
+                <data android:host="andamp.nl" />
+                <data android:pathPattern="/extensions/plugins/.*\\.lua" />
+            </intent-filter>
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />

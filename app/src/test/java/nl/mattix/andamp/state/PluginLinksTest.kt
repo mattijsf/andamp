@@ -13,6 +13,11 @@ import org.junit.Test
 class PluginLinksTest {
     @Test
     fun `a lua file in the site's plug-in folder is a plug-in link`() {
+        assertTrue(PluginLinks.accepts("https://andamp.nl/extensions/plugins/warmth.lua"))
+    }
+
+    @Test
+    fun `so is the same file in mattix_nl's plug-in folder`() {
         assertTrue(PluginLinks.accepts("https://mattix.nl/andamp/extensions/plugins/warmth.lua"))
     }
 
@@ -29,6 +34,17 @@ class PluginLinksTest {
             "https://user@mattix.nl/andamp/extensions/plugins/warmth.lua",
             "https://mattix.nl:8443/andamp/extensions/plugins/warmth.lua",
             "https://mattix.nl/andamp/extensions/plugins/../../elsewhere/x.lua",
+            "http://andamp.nl/extensions/plugins/warmth.lua",
+            "https://andamp.nl/extensions/plugins/",
+            "https://andamp.nl/extensions/warmth.lua",
+            // each host has its own folder, and not the other's
+            "https://andamp.nl/andamp/extensions/plugins/warmth.lua",
+            "https://mattix.nl/extensions/plugins/warmth.lua",
+            "https://www.andamp.nl/extensions/plugins/warmth.lua",
+            "https://andamp.nl.evil.example/extensions/plugins/warmth.lua",
+            "https://user@andamp.nl/extensions/plugins/warmth.lua",
+            "https://andamp.nl:8443/extensions/plugins/warmth.lua",
+            "https://andamp.nl/extensions/plugins/../../elsewhere/x.lua",
             "not a url at all",
         ).forEach { assertFalse(it, PluginLinks.accepts(it)) }
     }
