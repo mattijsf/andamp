@@ -64,7 +64,7 @@ implementation("nl.mattix.andamp:source-common:0.1.0")  // the source side that 
 | `nl.mattix.andamp:source-api` | the source contract: one AIDL interface, one callback interface, the parcelable types that cross (`core/packapi` in [the Andamp repository](https://github.com/mattijsf/andamp)) |
 | `nl.mattix.andamp:source-common` | the source side of the wire that is not about any one source: the audio pipe, the state relay, paged answers, and HTTP stream playback (`pack/common`) |
 | `backend/pack` | the player's end of that wire |
-| [andamp-source-subsonic](https://github.com/mattijsf/andamp-source-subsonic), [andamp-source-jellyfin](https://github.com/mattijsf/andamp-source-jellyfin) | complete sources for a server on the network, over its own HTTP API, each with its own settings screen |
+| [andamp-source-subsonic](https://github.com/mattijsf/andamp-source-subsonic), [andamp-source-jellyfin](https://github.com/mattijsf/andamp-source-jellyfin), [andamp-source-plex](https://github.com/mattijsf/andamp-source-plex) | complete sources for a server on the network, over its own HTTP API, each with its own settings screen |
 | [andamp-source-template](https://github.com/mattijsf/andamp-source-template) | the smallest source that builds |
 | `core/plugin` | the plug-in loader, the sandbox and the UI binding |
 | `core/dsp` | the graph compiler and the primitives a plug-in may use |

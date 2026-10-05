@@ -9,6 +9,7 @@ import android.view.Gravity
 import android.view.MotionEvent
 import android.view.View
 import android.view.WindowManager
+import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.ComposeView
@@ -18,6 +19,7 @@ import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import nl.mattix.andamp.state.LibraryAccess
 import nl.mattix.andamp.state.WinampViewModel
+import nl.mattix.andamp.state.overlay.OverlaySupport
 import nl.mattix.andamp.ui.LibraryAccessHandle
 import nl.mattix.andamp.ui.PlayerSurface
 import nl.mattix.andamp.ui.Screen
@@ -40,6 +42,9 @@ import nl.mattix.andamp.ui.window.SurfaceScreen
  *
  * A file picker, Preferences and the museum need an activity, so those bring Andamp forward. What
  * the X does is the caller's `onClose`.
+ *
+ * Both windows are measured and placed with what Android has from version 11, so [show] does
+ * nothing on a phone older than that; see [OverlaySupport].
  */
 object PlayerOverlay {
     /** What [show]'s onOpenAppAt is handed when the player asks for the overlay permission. */
@@ -99,6 +104,7 @@ object PlayerOverlay {
         onMinimize: () -> Unit,
     ) {
         if (showing) return
+        if (!OverlaySupport.here) return
         val app = context.applicationContext
         val windows = app.getSystemService(WindowManager::class.java) ?: return
         // one measurement for both the window and the scale the player is drawn at
@@ -198,6 +204,7 @@ object PlayerOverlay {
     }
 
     /** Every flag both windows need: absolute placement, nothing fitted, nothing focused. */
+    @RequiresApi(Build.VERSION_CODES.R)
     private fun overlayLayout(extraFlags: Int): WindowManager.LayoutParams =
         WindowManager
             .LayoutParams(
@@ -217,16 +224,11 @@ object PlayerOverlay {
                 PixelFormat.TRANSLUCENT,
             ).apply {
                 gravity = Gravity.TOP or Gravity.LEFT
-                // A cutout on any edge from Android 11. Android 9 and 10 offer the short edges
-                // only, and before 9 a window has no cutout mode.
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                    layoutInDisplayCutoutMode =
-                        WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
-                    fitInsetsTypes = 0
-                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                    layoutInDisplayCutoutMode =
-                        WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_SHORT_EDGES
-                }
+                // a cutout on any edge of the screen: the window reaches around it, and
+                // nothing is fitted
+                layoutInDisplayCutoutMode =
+                    WindowManager.LayoutParams.LAYOUT_IN_DISPLAY_CUTOUT_MODE_ALWAYS
+                fitInsetsTypes = 0
             }
 
     /**
@@ -234,6 +236,7 @@ object PlayerOverlay {
      * window, and the touch window moves with the windows drawn in the picture, so insets read
      * there would feed back into its own position.
      */
+    @RequiresApi(Build.VERSION_CODES.R)
     private fun displayScreen(windows: WindowManager): SurfaceScreen {
         val insets = windows.currentWindowMetrics.windowInsets
         val bars =

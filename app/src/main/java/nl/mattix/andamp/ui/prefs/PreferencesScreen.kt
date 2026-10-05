@@ -119,6 +119,7 @@ fun PreferencesScreen(
                 peaks = { vm.audioTap?.peaks ?: nl.mattix.andamp.core.playback.PeakReading.NONE },
                 overlay =
                     OverlayPrefs(
+                        offered = vm.overlayOps.supported,
                         wanted = vm.overlayOps.gate.wanted,
                         permitted = vm.overlayOps.gate.permitted,
                         onWant = { on ->

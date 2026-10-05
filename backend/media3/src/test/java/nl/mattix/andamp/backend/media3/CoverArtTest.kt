@@ -19,8 +19,9 @@ import java.util.concurrent.TimeUnit
 /**
  * Where the notification's cover is looked for.
  *
- * The routing is what is tested: which addresses are opened as files and
- * which are fetched. A station's address is never opened for a cover.
+ * The routing is tested: which addresses are opened as files and which are
+ * fetched. A station's address is never opened for a cover. So is the size a
+ * cover is decoded at.
  */
 @RunWith(RobolectricTestRunner::class)
 class CoverArtTest {
@@ -69,6 +70,24 @@ class CoverArtTest {
         val song = Uri.parse("content://media/audio/9")
         loader.loadBitmap(song).get(WAIT, TimeUnit.SECONDS)
         assertEquals(listOf(song), fetching.asked)
+    }
+
+    @Test
+    fun `a cover that already fits is decoded as it is`() {
+        assertEquals(1, coverSampleSize(600, 600, 1024))
+        assertEquals(1, coverSampleSize(1024, 768, 1024))
+    }
+
+    @Test
+    fun `a large cover is halved until its longer side fits`() {
+        assertEquals(2, coverSampleSize(1025, 1025, 1024))
+        assertEquals(4, coverSampleSize(3000, 3000, 1024))
+        assertEquals(4, coverSampleSize(500, 4096, 1024))
+    }
+
+    @Test
+    fun `a picture whose size could not be read is not sampled`() {
+        assertEquals(1, coverSampleSize(-1, -1, 1024))
     }
 
     /** Stands in for Media3's loader and records what it was asked for. */

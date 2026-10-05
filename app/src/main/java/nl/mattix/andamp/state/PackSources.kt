@@ -19,6 +19,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.launch
 import nl.mattix.andamp.backend.pack.PackClient
 import nl.mattix.andamp.backend.pack.PackFinder
+import nl.mattix.andamp.backend.pack.PackReach
 
 /**
  * Which sources this phone has.
@@ -97,6 +98,24 @@ object PackSources {
         // this may run outside a composition (a binder callback, the widget's process), where
         // nothing applies snapshot writes, so observers are notified here
         Snapshot.sendApplyNotifications()
+    }
+
+    /**
+     * Looks again, and asks every installed pack that has never said what it is to say it
+     * now. A pack's first binding can fail: one installed while the player sat in the
+     * background, with its process being replaced as the player bound it, answers nothing,
+     * and until it answers it is not listed. [SourceOps.reconcile] calls this when the app
+     * comes forward, so such a pack is listed without a reinstall.
+     *
+     * A pack that answered with another contract number has no card either, and is not
+     * asked again: it stays bound, and a newer install of it is noticed through that.
+     */
+    @Synchronized
+    fun reachUnanswered() {
+        look()
+        clients.values
+            .filter { it.card() == null && it.reach.value != PackReach.Outdated && it.reach.value != PackReach.Ahead }
+            .forEach { client -> scope.launch { client.account() } }
     }
 
     /**

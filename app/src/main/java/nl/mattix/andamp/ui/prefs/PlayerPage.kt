@@ -29,5 +29,7 @@ internal fun PrefsSections.playerSummary(): String {
             "Tap assist".takeIf { tapAssist.enabled },
             "Wallpaper colors".takeIf { palette.offered && palette.enabled },
         )
-    return on.joinToString(" · ").ifEmpty { "Always on top, windows, touch and colors" }
+    return on.joinToString(" · ").ifEmpty {
+        if (overlay.offered) "Always on top, windows, touch and colors" else "Windows, touch and colors"
+    }
 }
