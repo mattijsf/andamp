@@ -47,8 +47,16 @@ class LoupeTest {
         reach = reach,
     )
 
+    /** A fingertip that stays ten pixels from the glass's edge and is aimed within thirty of it. */
+    private val edge = Loupe.Edge(reach = 10f, band = 30f)
+
     /** The room of a finger at [x] in the title bar of a window as wide as the screen. */
-    private fun fingerAt(x: Float) = Loupe.Reach.on(Offset(x, 7f), screenW = 275, screenH = 116)
+    private fun fingerAt(x: Float) = Loupe.Reach.on(Offset(x, 7f), screenW = 275, screenH = 116, edge)
+
+    private fun aimed(
+        x: Float,
+        screenW: Int = 275,
+    ) = Loupe.aimedAcross(x, screenW, edge)
 
     /** The centers of the two buttons: shade at 254 and close at 264, each 9 wide. */
     private val onShade = Offset(258f, 7f)
@@ -58,7 +66,7 @@ class LoupeTest {
     fun `a finger with room to spare moves the crosshair as it always does`() {
         val state = WinampState()
         // in the middle of a wide screen
-        val loupe = loupe(onShade, Loupe.Reach.on(Offset(600f, 300f), screenW = 1200, screenH = 800))
+        val loupe = loupe(onShade, Loupe.Reach.on(Offset(600f, 300f), screenW = 1200, screenH = 800, edge))
 
         loupe.move(Offset(9f, 0f), state)
 
@@ -139,39 +147,53 @@ class LoupeTest {
 
     @Test
     fun `a press as far out as a finger gets is aimed at the edge of the screen`() {
-        assertEquals(275f, Loupe.aimedAcross(275f - Loupe.EDGE_REACH, 275), 0.01f)
-        assertEquals(0f, Loupe.aimedAcross(Loupe.EDGE_REACH, 275), 0.01f)
+        assertEquals(275f, aimed(265f), 0.01f)
+        assertEquals(0f, aimed(10f), 0.01f)
         // and one that got closer than expected is not aimed past it
-        assertEquals(275f, Loupe.aimedAcross(272f, 275), 0.01f)
+        assertEquals(275f, aimed(272f), 0.01f)
     }
 
     @Test
     fun `a press where the edge's pull ends is aimed where it landed`() {
-        assertEquals(275f - Loupe.EDGE_BAND, Loupe.aimedAcross(275f - Loupe.EDGE_BAND, 275), 0.01f)
-        assertEquals(Loupe.EDGE_BAND, Loupe.aimedAcross(Loupe.EDGE_BAND, 275), 0.01f)
-        assertEquals(137f, Loupe.aimedAcross(137f, 275), 0.01f)
+        assertEquals(245f, aimed(245f), 0.01f)
+        assertEquals(30f, aimed(30f), 0.01f)
+        assertEquals(137f, aimed(137f), 0.01f)
     }
 
     @Test
     fun `between the two, a press is aimed further out the nearer the edge it is`() {
         // 15 from the right edge, where the shade button is drawn: aimed at close, 7.5 from it
-        assertEquals(267.5f, Loupe.aimedAcross(260f, 275), 0.01f)
+        assertEquals(267.5f, aimed(260f), 0.01f)
         // 22 from it, still on the shade button's side of minimize: aimed at shade, 18 from it
-        assertEquals(257f, Loupe.aimedAcross(253f, 275), 0.01f)
+        assertEquals(257f, aimed(253f), 0.01f)
         // and the same from the left
-        assertEquals(7.5f, Loupe.aimedAcross(15f, 275), 0.01f)
+        assertEquals(7.5f, aimed(15f), 0.01f)
     }
 
     @Test
     fun `a window in from the side of a wide screen is pressed where the finger is`() {
-        assertEquals(700f, Loupe.aimedAcross(700f, 1200), 0.01f)
+        assertEquals(700f, aimed(700f, screenW = 1200), 0.01f)
+    }
+
+    @Test
+    fun `a fingertip is the same size however large the virtual pixels are drawn`() {
+        // a phone, where a dp spans about two thirds of a virtual pixel, and a tablet held
+        // upright, where it spans a quarter of one
+        val phone = Loupe.Edge.of(virtualPerDp = 0.64f)
+        val tablet = Loupe.Edge.of(virtualPerDp = 0.26f)
+
+        assertEquals(10.24f, phone.reach, 0.01f)
+        assertEquals(30.72f, phone.band, 0.01f)
+        // on the tablet the shade button's own pixels, 15 from the edge, are out of the band
+        assertEquals(260f, Loupe.aimedAcross(260f, 275, tablet), 0.01f)
+        assertEquals(267.9f, Loupe.aimedAcross(260f, 275, phone), 0.1f)
     }
 
     @Test
     fun `a row of buttons under the top of the screen is not hurried up or down`() {
         val state = WinampState()
         // seven pixels under the top edge, and every button on the same row
-        val loupe = loupe(onShade, Loupe.Reach.on(Offset(150f, 7f), screenW = 275, screenH = 600))
+        val loupe = loupe(onShade, Loupe.Reach.on(Offset(150f, 7f), screenW = 275, screenH = 600, edge))
 
         loupe.move(Offset(0f, -3f), state)
 

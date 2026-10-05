@@ -21,8 +21,6 @@ object LockedStack {
     /** What is on screen, and the screen it is on, in virtual pixels. */
     data class Ask(
         val screenW: Int,
-        /** The first row a window may take. */
-        val top: Int,
         /** The row the system's own strip at the bottom begins on. */
         val safeBottom: Int,
         /** The player's height, collapsed or not. */
@@ -48,7 +46,8 @@ object LockedStack {
     fun layout(ask: Ask): Places {
         val left = (ask.screenW - MAIN_W) / 2
         val rects = LinkedHashMap<String, IntRect>()
-        var row = ask.top
+        // nothing in the stack is dragged, so it starts on the surface's first row
+        var row = 0
 
         fun take(
             id: String,

@@ -58,7 +58,7 @@ Skins. Modern `.wal` skins are not supported.
 
 Everything draws in a 275 pixel wide virtual space, like real Winamp, scaled by a whole
 number. With Double Size on, the finished picture is then drawn a little smaller, so it is
-exactly as wide as the screen. Sprite coordinates come from [webamp](https://github.com/captbaritone/webamp)'s
+exactly as large as the screen takes: as wide as a phone's. Sprite coordinates come from [webamp](https://github.com/captbaritone/webamp)'s
 `skinSprites.ts`.
 
 ```

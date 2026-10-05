@@ -3,7 +3,6 @@
 package nl.mattix.andamp.ui.window
 
 import android.os.SystemClock
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
@@ -35,8 +34,8 @@ data class WindowScreen(
  * The screen this window sits on, measured from the container it was given and published to
  * [state].
  *
- * The container must be the whole of the app's window: what the system bars take is
- * expressed as [WindowScreen.safeBottom], not by handing this a smaller box.
+ * The container must be the whole surface the windows are laid out on: what the system
+ * bars take is expressed as [WindowScreen.safeBottom], not by handing this a smaller box.
  */
 @androidx.compose.runtime.Composable
 internal fun androidx.compose.foundation.layout.BoxWithConstraintsScope.windowScreen(
@@ -44,11 +43,7 @@ internal fun androidx.compose.foundation.layout.BoxWithConstraintsScope.windowSc
     state: nl.mattix.andamp.state.WinampState,
 ): WindowScreen {
     val density = androidx.compose.ui.platform.LocalDensity.current
-    val told = LocalSurfaceScreen.current
-    val bottomInset =
-        told?.bottom
-            ?: androidx.compose.foundation.layout.WindowInsets.Companion.safeDrawing
-                .getBottom(density)
+    val bottomInset = surfaceBottomInset(density)
     val screen =
         WindowScreen(
             width = constraints.maxWidth / scale,
@@ -455,7 +450,8 @@ class LoupeGesture(
      * How far a press at [touched] is moved to where it was aimed, or nothing.
      *
      * Only a small control ([Loupe.fiddly]) takes a press that was aimed at it from beside
-     * it: a slider or a window's handle near the edge is pressed where the finger is.
+     * it: a slider or a window's handle near the edge is pressed where the finger is. The
+     * aim is a fingertip's, so only a finger's press is asked about here.
      */
     fun shiftFor(
         widgets: List<Widget>,

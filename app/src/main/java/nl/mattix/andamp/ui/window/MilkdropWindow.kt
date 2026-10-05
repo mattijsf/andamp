@@ -178,6 +178,8 @@ fun MilkdropWindow(
         titleH = frame.titleH,
         cut = SkinCut(skin),
         pinnedAt = pinned?.rect?.topLeft,
+        // its grip still changes its height in the stack
+        pinnedGrip = true,
         widgets = widgets,
         modifier = modifier,
         overlay = {

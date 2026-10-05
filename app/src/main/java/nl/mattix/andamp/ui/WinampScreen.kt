@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
@@ -102,6 +101,7 @@ import nl.mattix.andamp.ui.window.mainWindowWidgets
 import nl.mattix.andamp.ui.window.milkdropContentH
 import nl.mattix.andamp.ui.window.milkdropHeight
 import nl.mattix.andamp.ui.window.offsetInState
+import nl.mattix.andamp.ui.window.surfaceBottomInset
 import nl.mattix.andamp.ui.window.unshadeEverything
 
 // 60fps target; the loop self-corrects for scheduling drift
@@ -203,12 +203,13 @@ fun WinampScreen(
             .value
             ?.destination
             ?.route
-    // the status bar's icons, dark or light for what is under the bar: the
-    // wallpaper on the player, the screen's own background everywhere else
+    // the status bar's icons, dark or light for what is under the bar: the wallpaper
+    // behind a floating player, black behind one that fills the screen, and the screen's
+    // own background everywhere else
     val modern = skin?.let { rememberSkinColorScheme(it) } ?: darkColorScheme()
     StatusBarIcons(
         onPlayer = here == null || here == Screen.PLAYER,
-        playerFillsScreen = vm.doubleSize.on,
+        playerFillsScreen = vm.state.doubleSize,
         dark = modern.background.luminance() > LIGHT_BACKGROUND,
     )
     LaunchedEffect(here, vm.overlayOps.gate.wanted, vm.overlayOps.gate.permitted) {
@@ -292,15 +293,9 @@ fun PlayerSurface(
      * insets; see [LocalSurfaceScreen].
      */
     surfaceScreen: SurfaceScreen? = null,
-    /**
-     * Whether this surface can fill the screen with the player. The floating player cannot:
-     * switching Double Size on there switches Always On Top off, and it is the app that
-     * fills the screen.
-     */
-    fillsScreen: Boolean = true,
 ) {
     // filling the screen, the windows are one locked stack with black around it
-    val locked = fillsScreen && vm.doubleSize.on
+    val locked = vm.state.doubleSize
     // The clutter bar's D and the Options menu share this switch. Switching Double Size on
     // switches Always On Top off, and the surface is told as when its own A did that.
     val doubleSize = {
@@ -403,7 +398,6 @@ fun PlayerSurface(
                         vm,
                         skin,
                         scale,
-                        locked,
                         onLongPress = openMenu,
                         playlistActions,
                         libraryAccess,
@@ -439,8 +433,6 @@ private fun BoxWithConstraintsScope.PlayerWindows(
     vm: WinampViewModel,
     skin: Skin,
     scale: Int,
-    /** Whether the windows are held in one stack; see [LockedStack]. */
-    locked: Boolean,
     onLongPress: () -> Unit,
     playlistActions: PlaylistMenuActions,
     libraryAccess: LibraryAccessHandle,
@@ -467,20 +459,15 @@ private fun BoxWithConstraintsScope.PlayerWindows(
                     stackMember(s, WindowStore.MILKDROP, milkdropH, s.milkdropOn),
                 ),
         )
-    val safeBottomPx =
-        constraints.maxHeight -
-            (LocalSurfaceScreen.current?.bottom ?: WindowInsets.safeDrawing.getBottom(LocalDensity.current))
-    val safeBottom = safeBottomPx / scale
+    val safeBottom = (constraints.maxHeight - surfaceBottomInset(LocalDensity.current)) / scale
     s.screenW = constraints.maxWidth / scale
     s.screenH = virtualAvail
-    s.stackLocked = locked
+    // Double Size holds the windows in one stack; see [LockedStack]
     val held =
-        if (locked) {
+        if (s.doubleSize) {
             LockedStack.layout(
                 LockedStack.Ask(
                     screenW = s.screenW,
-                    // nothing in the stack is dragged, so it starts at the very top
-                    top = 0,
                     safeBottom = safeBottom,
                     mainH = mainH,
                     eqH = eqH.takeIf { s.eqVisible },
@@ -556,8 +543,6 @@ private fun FloatingWindows(
 ) {
     val s = vm.state
 
-    fun shown(id: String) = held == null || id in held.rects
-
     // the stack starts below the strip the system keeps for the notification shade
     val top = grabbableTop(scale, LocalDensity.current)
     // what a collapsed playlist expands back to
@@ -576,6 +561,9 @@ private fun FloatingWindows(
     // that raised it.
     WindowStacking.stack(WindowStore.WINDOWS, s.shownOrder).forEach { (id, z) ->
         key(id) {
+            // the rectangle the stack holds this window in; a window it has none for is not shown
+            val pin = held?.rects?.get(id)
+            val shown = held == null || pin != null
             when (id) {
                 WindowStore.MAIN -> {
                     MainFloatWindow(
@@ -587,12 +575,12 @@ private fun FloatingWindows(
                         defaultOffset = dockedOffset(top, mainH, screenH),
                         modifier = Modifier.fillMaxSize().zIndex(z),
                         onLongPress = onLongPress,
-                        pinnedAt = held?.rects?.get(id)?.topLeft,
+                        pinnedAt = pin?.topLeft,
                     )
                 }
 
                 WindowStore.EQ -> {
-                    if (s.eqVisible && shown(id)) {
+                    if (s.eqVisible && shown) {
                         EqFloatWindow(
                             vm,
                             skin,
@@ -602,13 +590,13 @@ private fun FloatingWindows(
                             defaultOffset = dockedOffset(top + mainH, eqH, screenH),
                             modifier = Modifier.fillMaxSize().zIndex(z),
                             onLongPress = onLongPress,
-                            pinnedAt = held?.rects?.get(id)?.topLeft,
+                            pinnedAt = pin?.topLeft,
                         )
                     }
                 }
 
                 WindowStore.MILKDROP -> {
-                    if (s.milkdropOn && !s.milkdropFullscreen && shown(id)) {
+                    if (s.milkdropOn && !s.milkdropFullscreen && shown) {
                         MilkdropWindow(
                             vm,
                             skin,
@@ -629,15 +617,17 @@ private fun FloatingWindows(
                             modifier = Modifier.fillMaxSize().zIndex(z),
                             // the stack keeps the height its grip asks for
                             pinned =
-                                held?.rects?.get(id)?.let { rect ->
-                                    PinnedVisual(rect, held.visMaxSteps) { vm.doubleSize.visSteps = it }
+                                if (held != null && pin != null) {
+                                    PinnedVisual(pin, held.visMaxSteps) { vm.doubleSize.visSteps = it }
+                                } else {
+                                    null
                                 },
                         )
                     }
                 }
 
                 WindowStore.PLAYLIST -> {
-                    val open = s.plVisible && shown(id)
+                    val open = s.plVisible && shown
                     if (open && s.plShaded) {
                         PlaylistShadeFloatWindow(
                             vm,
@@ -646,7 +636,7 @@ private fun FloatingWindows(
                             expandedH = plExpandedH,
                             defaultOffset = dockedOffset(top + dockedH, SHADE_H, screenH),
                             modifier = Modifier.fillMaxSize().zIndex(z),
-                            pinnedAt = held?.rects?.get(id)?.topLeft,
+                            pinnedAt = pin?.topLeft,
                         )
                     } else if (open) {
                         PlaylistFloatWindow(
@@ -658,20 +648,20 @@ private fun FloatingWindows(
                             dockedTop = top + dockedH,
                             dockedSegments = PlaylistLayout.segmentsThatFit(safeBottom - top - dockedH),
                             modifier = Modifier.fillMaxSize().zIndex(z),
-                            pinned = held?.rects?.get(id),
+                            pinned = pin,
                         )
                     }
                 }
 
                 WindowStore.LIBRARY -> {
                     if (s.libraryOpen) {
-                        LibraryWindow(vm, skin, scale, libraryAccess, Modifier.fillMaxSize().zIndex(z), held?.rects?.get(id))
+                        LibraryWindow(vm, skin, scale, libraryAccess, Modifier.fillMaxSize().zIndex(z), pin)
                     }
                 }
 
                 WindowStore.SKINS -> {
                     if (s.skinManagerOpen) {
-                        SkinManagerWindow(vm, skin, scale, Modifier.fillMaxSize().zIndex(z), held?.rects?.get(id))
+                        SkinManagerWindow(vm, skin, scale, Modifier.fillMaxSize().zIndex(z), pin)
                     }
                 }
             }

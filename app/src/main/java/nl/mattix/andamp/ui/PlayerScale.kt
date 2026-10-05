@@ -13,8 +13,9 @@ import kotlin.math.roundToInt
  *
  * As many as the width allows, but no more than lets a stack of [SMALLEST_STACK_H] fit the
  * height, so the player, the equalizer and a short playlist fit a wide screen such as a
- * tablet in landscape. Whole numbers only: the skin is pixel art, and a fractional scale
- * smears it.
+ * tablet in landscape. Whole numbers only: the skin is pixel art, and drawn at a fractional
+ * scale its pixels come out in two widths. A player that fills the screen is laid out at a
+ * whole scale too, and shrunk as one picture; see [playerViewport].
  */
 fun playerScale(
     widthPx: Int,
@@ -50,7 +51,8 @@ data class PlayerViewport(
  * The surface for a screen of [widthPx] by [heightPx].
  *
  * Filling the screen, the player is as wide as the screen, or as wide as lets a stack of
- * [SMALLEST_STACK_H] fit the height. Otherwise it is drawn at [playerScale].
+ * [SMALLEST_STACK_H] fit the height, which leaves room at its sides. Otherwise it is drawn
+ * at [playerScale].
  */
 fun playerViewport(
     widthPx: Int,

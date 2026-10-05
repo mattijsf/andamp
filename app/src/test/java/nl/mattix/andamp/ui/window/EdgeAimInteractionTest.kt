@@ -3,8 +3,11 @@
 package nl.mattix.andamp.ui.window
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.click
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
+import androidx.compose.ui.test.performMouseInput
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.IntRect
 import nl.mattix.andamp.state.WinampState
@@ -54,7 +57,7 @@ class EdgeAimInteractionTest {
         val loupe =
             LoupeGesture(
                 state,
-                aim = { at -> Offset(Loupe.aimedAcross(at.x, 275), at.y) },
+                aim = { at -> Offset(Loupe.aimedAcross(at.x, 275, Loupe.Edge(reach = 10f, band = 30f)), at.y) },
             ) { finger, on ->
                 fingerAt = finger
                 Loupe(
@@ -131,6 +134,18 @@ class EdgeAimInteractionTest {
         tap(262f, 50f)
 
         assertEquals(262f, widePressedAt!!.x, 1f)
+    }
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun `a mouse presses what it points at`() {
+        show()
+
+        compose.onRoot().performMouseInput { click(Offset(260f, 7f)) }
+        compose.waitForIdle()
+
+        assertEquals(1, shaded)
+        assertEquals(0, closed)
     }
 
     @Test

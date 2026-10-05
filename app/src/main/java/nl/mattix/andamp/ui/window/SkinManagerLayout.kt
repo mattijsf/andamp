@@ -41,14 +41,14 @@ class SkinManagerLayout(
             frame: WindowFrame,
         ): Int = ((availVirtual - furnitureH(frame)) / ROW_H).coerceAtLeast(MIN_ROWS)
 
-        /** The layout of a window exactly [height] tall and [width] wide: the rows that fit, and the rest as slack. */
+        /** The layout of a window exactly [height] tall and [width] wide; see [WindowSizing.rowsAndSlack]. */
         fun filling(
             height: Int,
             width: Int,
             frame: WindowFrame,
         ): SkinManagerLayout {
-            val rows = rowsThatFit(height, frame)
-            return SkinManagerLayout(rows, width, slack = (height - furnitureH(frame) - rows * ROW_H).coerceAtLeast(0))
+            val (rows, slack) = WindowSizing.rowsAndSlack(height, furnitureH(frame), ROW_H, MIN_ROWS)
+            return SkinManagerLayout(rows, width, slack)
         }
 
         /** The height that is not rows: the frame's chrome and the top pad. */

@@ -32,7 +32,7 @@ class StackShadeMemoryTest {
     fun `a window collapsed in the locked stack is stored with Double Size`() {
         val vm = testViewModel()
         settle()
-        vm.state.stackLocked = true
+        vm.doubleSize.on = true
 
         vm.state.setShaded(WindowStore.EQ, true, EQ_H)
         settle()
@@ -56,8 +56,9 @@ class StackShadeMemoryTest {
         settle()
 
         assertEquals(setOf(WindowStore.MAIN), vm.state.stackShaded)
+        vm.doubleSize.on = false
         assertEquals("floating, the player stands open", false, vm.state.mainShaded)
-        vm.state.stackLocked = true
+        vm.doubleSize.on = true
         assertTrue(vm.state.mainShaded)
     }
 }

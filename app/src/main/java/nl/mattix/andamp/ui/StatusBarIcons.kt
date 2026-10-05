@@ -51,21 +51,26 @@ fun StatusBarIcons(
  * While [active], shows the navigation bar's buttons light and without the scrim the system
  * draws behind them for contrast: what is under the bar is black. The bar is given back as it
  * was found.
+ *
+ * From Android 10, where that scrim can be switched off. Before it the bar has a color of
+ * its own, and is left as it is.
  */
 @Composable
 private fun NavigationBarOverBlack(active: Boolean) {
     val view = LocalView.current
     DisposableEffect(view, active) {
         val window = (view.context as? Activity)?.window
-        if (!active || window == null) return@DisposableEffect onDispose {}
+        if (!active || window == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            return@DisposableEffect onDispose {}
+        }
         val bars = WindowInsetsControllerCompat(window, view)
         val darkButtons = bars.isAppearanceLightNavigationBars
+        val scrim = window.isNavigationBarContrastEnforced
         bars.isAppearanceLightNavigationBars = false
-        val scrim = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q && window.isNavigationBarContrastEnforced
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) window.isNavigationBarContrastEnforced = false
+        window.isNavigationBarContrastEnforced = false
         onDispose {
             bars.isAppearanceLightNavigationBars = darkButtons
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) window.isNavigationBarContrastEnforced = scrim
+            window.isNavigationBarContrastEnforced = scrim
         }
     }
 }

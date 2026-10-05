@@ -75,7 +75,7 @@ fun WinampState.setShaded(
     if (was == shaded) return
     val oldH = heightOf(expandedH, was)
     val newH = heightOf(expandedH, shaded)
-    if (!stackLocked) {
+    if (!doubleSize) {
         val offset = offsetInState(id)
         if (offset != null && screenH > 0) {
             placeWindow(id, WindowSizing.anchorTop(offset, oldH = oldH, newH = newH, screenH = screenH))

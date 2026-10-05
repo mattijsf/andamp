@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.Density
 import nl.mattix.andamp.ui.window.LocalSurfaceScreen
 import nl.mattix.andamp.ui.window.SurfaceScreen
 import nl.mattix.andamp.ui.window.shadeStripBelowStatusBar
@@ -26,7 +27,8 @@ import nl.mattix.andamp.ui.window.shadeStripBelowStatusBar
  * [content] is measured on [viewport]'s surface and sees that surface's size as its
  * constraints. A surface larger than the screen is drawn through one layer that shrinks it
  * to fit, and touches are mapped back through that layer. What [content] is told about the
- * screen through [LocalSurfaceScreen] is in the surface's pixels too.
+ * screen through [LocalSurfaceScreen], and how many pixels make a dp through [LocalDensity],
+ * are the surface's too.
  *
  * Only the skin belongs in here. A menu or a dialog opens in a window of its own, at the
  * screen's size, so it is composed outside and placed by [PlayerViewport.shrink].
@@ -37,9 +39,13 @@ internal fun PlayerViewportBox(
     modifier: Modifier = Modifier,
     content: @Composable BoxWithConstraintsScope.() -> Unit,
 ) {
-    val screen = surfaceScreenOn(viewport, LocalSurfaceScreen.current)
-    BoxWithConstraints(modifier.fillMaxSize().shrunkToFit(viewport)) {
-        CompositionLocalProvider(LocalSurfaceScreen provides screen) { content() }
+    // one call for both, so switching between them keeps what the windows remember
+    val shrunk = viewport.shrink != 1f
+    val screen = if (shrunk) windowScreenOn(viewport) else LocalSurfaceScreen.current
+    // a dp spans more of a larger surface's pixels than of the screen's
+    val density = LocalDensity.current.let { if (shrunk) Density(it.density / viewport.shrink, it.fontScale) else it }
+    BoxWithConstraints(modifier.fillMaxSize().then(if (shrunk) Modifier.shrunkToFit(viewport) else Modifier)) {
+        CompositionLocalProvider(LocalSurfaceScreen provides screen, LocalDensity provides density) { content() }
     }
 }
 
@@ -49,9 +55,8 @@ internal fun PlayerViewportBox(
  * The layer is rendered off screen at the surface's size first, so the shrinking samples
  * the finished picture rather than each sprite.
  */
-private fun Modifier.shrunkToFit(viewport: PlayerViewport): Modifier {
-    if (viewport.shrink == 1f) return this
-    return layout { measurable, constraints ->
+private fun Modifier.shrunkToFit(viewport: PlayerViewport): Modifier =
+    layout { measurable, constraints ->
         val surface =
             measurable.measure(
                 Constraints.fixed(viewport.inner(constraints.maxWidth), viewport.inner(constraints.maxHeight)),
@@ -65,31 +70,17 @@ private fun Modifier.shrunkToFit(viewport: PlayerViewport): Modifier {
             }
         }
     }
-}
 
 /**
- * What the windows on [viewport]'s surface are told about the screen.
- *
- * A surface the size of the screen passes [told] on, null included: its windows read the
- * same insets this would. A larger one needs every inset in its own pixels, so the window's
- * insets are read here when nothing was told.
+ * What the windows on a shrunk [viewport]'s surface are told about the screen: the window's
+ * insets, in the surface's pixels.
  */
 @Composable
-private fun surfaceScreenOn(
-    viewport: PlayerViewport,
-    told: SurfaceScreen?,
-): SurfaceScreen? {
-    if (viewport.shrink == 1f) return told
+private fun windowScreenOn(viewport: PlayerViewport): SurfaceScreen {
     val density = LocalDensity.current
-    val screen =
-        told ?: SurfaceScreen(
-            statusBar = WindowInsets.statusBars.getTop(density),
-            shadeStrip = shadeStripBelowStatusBar(density),
-            bottom = WindowInsets.safeDrawing.getBottom(density),
-        )
     return SurfaceScreen(
-        statusBar = viewport.inner(screen.statusBar),
-        shadeStrip = viewport.inner(screen.shadeStrip),
-        bottom = viewport.inner(screen.bottom),
+        statusBar = viewport.inner(WindowInsets.statusBars.getTop(density)),
+        shadeStrip = viewport.inner(shadeStripBelowStatusBar(density)),
+        bottom = viewport.inner(WindowInsets.safeDrawing.getBottom(density)),
     )
 }

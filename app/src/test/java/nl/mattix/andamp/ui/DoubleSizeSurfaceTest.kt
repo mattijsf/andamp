@@ -60,8 +60,8 @@ class DoubleSizeSurfaceTest {
     @Before
     fun setUp() {
         skin = SkinLoader.loadBase(ApplicationProvider.getApplicationContext<Application>())
-        // a fresh install: Double Size starts on
         vm = testViewModel()
+        vm.doubleSize.on = true
         // its welcome is answered, so the player is the only window on screen
         vm.welcome.seen = true
     }
@@ -70,7 +70,7 @@ class DoubleSizeSurfaceTest {
      * The clock is driven by hand: the player draws a visualizer, which is an animation
      * that never finishes, so waiting for the screen to go idle never returns.
      */
-    private fun show(fillsScreen: Boolean = true) {
+    private fun show() {
         compose.mainClock.autoAdvance = false
         compose.setContent {
             PlayerSurface(
@@ -85,7 +85,6 @@ class DoubleSizeSurfaceTest {
                 onMinimize = {},
                 onOverlaySettings = {},
                 onFloatingChanged = { handed += it },
-                fillsScreen = fillsScreen,
             )
         }
         settle()
@@ -108,7 +107,7 @@ class DoubleSizeSurfaceTest {
     fun `the player, the equalizer and the playlist fill the screen from top to bottom`() {
         show()
 
-        assertTrue(vm.state.stackLocked)
+        assertTrue(vm.state.doubleSize)
         assertEquals("the screen is one player wide", MAIN_W, vm.state.screenW)
         assertEquals(IntRect(0, 0, MAIN_W, MAIN_H), rect(WindowStore.MAIN))
         assertEquals(IntRect(0, MAIN_H, MAIN_W, MAIN_H + EQ_H), rect(WindowStore.EQ))
@@ -126,8 +125,7 @@ class DoubleSizeSurfaceTest {
         settle()
 
         assertFalse(vm.doubleSize.on)
-        assertFalse("the D is no longer lit", vm.state.doubleSize)
-        assertFalse(vm.state.stackLocked)
+        assertFalse("the D is no longer lit, and the stack is let go", vm.state.doubleSize)
         // three screen pixels to a virtual one again, with room beside the player
         assertEquals(900 / 3, vm.state.screenW)
         assertEquals((900 / 3 - MAIN_W) / 2, rect(WindowStore.MAIN)!!.left)
@@ -228,20 +226,11 @@ class DoubleSizeSurfaceTest {
     }
 
     @Test
-    fun `a surface that cannot fill the screen never holds the windows in the stack`() {
-        show(fillsScreen = false)
-
-        assertTrue("the setting is on", vm.doubleSize.on)
-        assertFalse(vm.state.stackLocked)
-        assertEquals(900 / 3, vm.state.screenW)
-    }
-
-    @Test
-    fun `the D on the floating player ends always on top, and the surface is told so it opens the app`() {
+    fun `the D on a floating player ends always on top, and the surface is told so it opens the app`() {
         ShadowSettings.setCanDrawOverlays(true)
         vm.overlayOps.want(true)
         assertFalse("floating, Double Size is off", vm.doubleSize.on)
-        show(fillsScreen = false)
+        show()
         // floating at three screen pixels to a virtual one
         val main = rect(WindowStore.MAIN)!!
 
@@ -254,7 +243,6 @@ class DoubleSizeSurfaceTest {
         assertTrue(vm.doubleSize.on)
         assertFalse(vm.overlayOps.gate.wanted)
         assertEquals("told once that floating was switched off", listOf(false), handed)
-        assertFalse("this surface itself goes on floating until it is taken down", vm.state.stackLocked)
     }
 
     @Test

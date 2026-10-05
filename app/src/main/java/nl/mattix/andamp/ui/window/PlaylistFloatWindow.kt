@@ -28,8 +28,7 @@ import nl.mattix.andamp.ui.SkinCut
  * layout puts it".
  *
  * With [pinned] the layout holds it in that rectangle, whatever its height: the last tile
- * of the frame and the last row of the list are cut where the rectangle ends, and there is
- * no grip.
+ * of the frame and the last row of the list are cut where the rectangle ends.
  */
 @Composable
 @Suppress("LongParameterList") // a window: its player, its skin, its scale and its place
@@ -109,12 +108,9 @@ fun PlaylistFloatWindow(
             onMove = { place -> s.plOffset = place },
             titleH = Dest.PL_TOP_H,
             widgets = widgets,
-            onResizeRaw =
-                if (pinned != null) {
-                    null
-                } else {
-                    { grab -> resizeTo(s, grab, cols, maxCols, segments, maxSegments, screen.width, screen.height) }
-                },
+            onResizeRaw = { grab ->
+                resizeTo(s, grab, cols, maxCols, segments, maxSegments, screen.width, screen.height)
+            },
             onTitleDoubleTap = { s.setShaded(WindowStore.PLAYLIST, true, height) },
             cut = SkinCut(skin),
             pinnedAt = pinned?.topLeft,

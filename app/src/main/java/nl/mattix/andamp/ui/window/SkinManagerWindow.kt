@@ -38,7 +38,7 @@ fun SkinManagerWindow(
     skin: Skin,
     scale: Int,
     modifier: Modifier = Modifier,
-    /** The rectangle the layout holds it in, with no grip, or null while it floats. */
+    /** The rectangle the layout holds it in, or null while it floats. */
     pinned: IntRect? = null,
 ) {
     val s = vm.state
@@ -81,36 +81,35 @@ fun SkinManagerWindow(
                     onClose = { s.skinManagerOpen = false },
                     id = WindowStore.SKINS,
                     pinnedAt = pinned?.topLeft,
-                    onResizeRaw =
-                        { grab: WindowGrab ->
-                            val resized =
-                                WindowSizing.resize(
-                                    grab,
-                                    screenW = screen.width,
-                                    screenH = screen.height,
-                                    heightAxis =
-                                        SizeAxis(
-                                            furniture = SkinManagerLayout.furnitureH(frame),
-                                            step = SkinManagerLayout.ROW_H,
-                                            min = SkinManagerLayout.MIN_ROWS,
-                                            max = fits,
-                                            current = layout.visibleRows,
-                                        ),
-                                    heightOf = { rows -> SkinManagerLayout(rows).height(frame) },
-                                    widthAxis =
-                                        SizeAxis(
-                                            furniture = SkinManagerLayout.WIDTH,
-                                            step = SkinManagerLayout.WIDTH_STEP,
-                                            min = 0,
-                                            max = maxCols,
-                                            current = cols,
-                                        ),
-                                    widthOf = SkinManagerLayout::widthOfCols,
-                                )
-                            s.skinCols = resized.cols
-                            s.skinRows = resized.steps
-                            s.skinManagerOffset = resized.offset
-                        }.takeIf { pinned == null },
+                    onResizeRaw = { grab ->
+                        val resized =
+                            WindowSizing.resize(
+                                grab,
+                                screenW = screen.width,
+                                screenH = screen.height,
+                                heightAxis =
+                                    SizeAxis(
+                                        furniture = SkinManagerLayout.furnitureH(frame),
+                                        step = SkinManagerLayout.ROW_H,
+                                        min = SkinManagerLayout.MIN_ROWS,
+                                        max = fits,
+                                        current = layout.visibleRows,
+                                    ),
+                                heightOf = { rows -> SkinManagerLayout(rows).height(frame) },
+                                widthAxis =
+                                    SizeAxis(
+                                        furniture = SkinManagerLayout.WIDTH,
+                                        step = SkinManagerLayout.WIDTH_STEP,
+                                        min = 0,
+                                        max = maxCols,
+                                        current = cols,
+                                    ),
+                                widthOf = SkinManagerLayout::widthOfCols,
+                            )
+                        s.skinCols = resized.cols
+                        s.skinRows = resized.steps
+                        s.skinManagerOffset = resized.offset
+                    },
                 ),
             widgets = widgets,
             modifier = Modifier.matchParentSize(),

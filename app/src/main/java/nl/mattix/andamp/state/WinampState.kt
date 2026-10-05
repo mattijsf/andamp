@@ -191,14 +191,14 @@ class WinampState {
             override fun getValue(
                 thisRef: Any?,
                 property: kotlin.reflect.KProperty<*>,
-            ) = if (stackLocked) id in stackShaded else placement(id).shaded ?: false
+            ) = if (doubleSize) id in stackShaded else placement(id).shaded ?: false
 
             override fun setValue(
                 thisRef: Any?,
                 property: kotlin.reflect.KProperty<*>,
                 value: Boolean,
             ) {
-                if (stackLocked) {
+                if (doubleSize) {
                     stackShaded = if (value) stackShaded + id else stackShaded - id
                 } else {
                     placement(id).shaded = value
@@ -208,7 +208,7 @@ class WinampState {
 
     /**
      * The windows that are collapsed while the layout holds them in one stack, by their ids;
-     * see [stackLocked]. Stored across restarts, apart from the floating layout's own.
+     * see [doubleSize]. Stored across restarts, apart from the floating layout's own.
      */
     var stackShaded: Set<String> by mutableStateOf(emptySet())
 
@@ -430,14 +430,12 @@ class WinampState {
     var screenW by mutableIntStateOf(0)
     var screenH by mutableIntStateOf(0)
 
-    /** Winamp's Double Size as it is set; see [DoubleSizeStore]. The clutter bar's D is lit from it. */
-    var doubleSize by mutableStateOf(false)
-
     /**
-     * Whether the layout holds every window in one stack; published by the layout pass.
-     * While it does, [windowRects] are the stack's and no window's own place changes.
+     * Winamp's Double Size as it is set; see [DoubleSizeStore]. While it is on, the layout
+     * holds every window in one stack: [windowRects] are the stack's and no window's own
+     * place changes. The clutter bar's D is lit from it.
      */
-    var stackLocked by mutableStateOf(false)
+    var doubleSize by mutableStateOf(false)
 
     /** The floating stack, bottom to top; the last one is drawn on top. */
     var windowOrder by mutableStateOf(listOf("main", "eq", "milkdrop", "pl", "library", "skins"))
@@ -446,7 +444,7 @@ class WinampState {
     private var stackOrder by mutableStateOf(windowOrder)
 
     /** The order of the layout on screen, bottom to top. */
-    val shownOrder: List<String> get() = if (stackLocked) stackOrder else windowOrder
+    val shownOrder: List<String> get() = if (doubleSize) stackOrder else windowOrder
 
     /** A window's current offset, computed from the rectangle it published. */
     fun offsetOfWindow(id: String): androidx.compose.ui.unit.IntOffset? {
@@ -467,7 +465,8 @@ class WinampState {
 
     /**
      * Opens or closes a window. An opening window is raised to the front, so it is not
-     * hidden behind another. Closing leaves the stack order alone.
+     * hidden behind another, in the floating layout and in the locked stack alike: it is
+     * open in both. Closing leaves the order alone.
      */
     fun setWindowOpen(
         id: String,
@@ -475,17 +474,22 @@ class WinampState {
         setOpen: (Boolean) -> Unit,
     ) {
         setOpen(open)
-        if (open) raiseWindow(id)
+        if (!open) return
+        windowOrder = windowOrder.withInFront(id)
+        stackOrder = stackOrder.withInFront(id)
     }
 
-    /** Brings a window to the front; does nothing when it is already there. */
+    /**
+     * Brings a window to the front of the layout on screen. Each layout has its own order,
+     * so a press in one does not restack the other.
+     */
     fun raiseWindow(id: String) {
-        val order = shownOrder
-        if (order.lastOrNull() == id || id !in order) return
-        val raised = order.filterNot { it == id } + id
-        // each layout has its own order, so a press in one does not restack the other
-        if (stackLocked) stackOrder = raised else windowOrder = raised
+        if (doubleSize) stackOrder = stackOrder.withInFront(id) else windowOrder = windowOrder.withInFront(id)
     }
+
+    /** This order with [id] last, which is in front; the same list when it is there already or not in it. */
+    private fun List<String>.withInFront(id: String): List<String> =
+        if (lastOrNull() == id || id !in this) this else filterNot { it == id } + id
 
     /** The selected track row at the library's leaf; -1 for none. */
     var librarySelected by mutableIntStateOf(-1)

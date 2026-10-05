@@ -53,7 +53,7 @@ fun LibraryWindow(
     scale: Int,
     access: LibraryAccessHandle,
     modifier: Modifier = Modifier,
-    /** The rectangle the layout holds it in, with no grip, or null while it floats. */
+    /** The rectangle the layout holds it in, or null while it floats. */
     pinned: IntRect? = null,
 ) {
     val s = vm.state
@@ -100,37 +100,36 @@ fun LibraryWindow(
                     onClose = { s.libraryOpen = false },
                     id = WindowStore.LIBRARY,
                     pinnedAt = pinned?.topLeft,
-                    onResizeRaw =
-                        { grab: WindowGrab ->
-                            val resized =
-                                WindowSizing.resize(
-                                    grab,
-                                    screenW = screen.width,
-                                    screenH = screen.height,
-                                    heightAxis =
-                                        SizeAxis(
-                                            furniture = frame.chromeH + LibraryLayout.FURNITURE_H,
-                                            step = LibraryLayout.ROW_H,
-                                            min = LibraryLayout.MIN_ROWS,
-                                            max = fits,
-                                            current = rows,
-                                        ),
-                                    heightOf = { asked -> LibraryLayout(asked, layout.width).height(frame) },
-                                    widthAxis =
-                                        SizeAxis(
-                                            furniture = LibraryLayout.WIDTH,
-                                            step = LibraryLayout.WIDTH_STEP,
-                                            min = 0,
-                                            max = maxCols,
-                                            current = cols,
-                                        ),
-                                    widthOf = LibraryLayout::widthOfCols,
-                                )
-                            s.libraryCols = resized.cols
-                            s.libraryOffset = resized.offset
-                            // null once it fills the height, so it goes back to the default
-                            s.libraryRows = WindowSizing.rememberedSize(resized.steps, fits)
-                        }.takeIf { pinned == null },
+                    onResizeRaw = { grab ->
+                        val resized =
+                            WindowSizing.resize(
+                                grab,
+                                screenW = screen.width,
+                                screenH = screen.height,
+                                heightAxis =
+                                    SizeAxis(
+                                        furniture = frame.chromeH + LibraryLayout.FURNITURE_H,
+                                        step = LibraryLayout.ROW_H,
+                                        min = LibraryLayout.MIN_ROWS,
+                                        max = fits,
+                                        current = rows,
+                                    ),
+                                heightOf = { asked -> LibraryLayout(asked, layout.width).height(frame) },
+                                widthAxis =
+                                    SizeAxis(
+                                        furniture = LibraryLayout.WIDTH,
+                                        step = LibraryLayout.WIDTH_STEP,
+                                        min = 0,
+                                        max = maxCols,
+                                        current = cols,
+                                    ),
+                                widthOf = LibraryLayout::widthOfCols,
+                            )
+                        s.libraryCols = resized.cols
+                        s.libraryOffset = resized.offset
+                        // null once it fills the height, so it goes back to the default
+                        s.libraryRows = WindowSizing.rememberedSize(resized.steps, fits)
+                    },
                 ),
             widgets = widgets,
             // the window centers and clamps in the whole container
@@ -705,14 +704,14 @@ class LibraryLayout(
             frame: WindowFrame,
         ): Int = ((availVirtual - frame.chromeH - FURNITURE_H) / ROW_H).coerceAtLeast(MIN_ROWS)
 
-        /** The layout of a window exactly [height] tall and [width] wide: the rows that fit, and the rest as slack. */
+        /** The layout of a window exactly [height] tall and [width] wide; see [WindowSizing.rowsAndSlack]. */
         fun filling(
             height: Int,
             width: Int,
             frame: WindowFrame,
         ): LibraryLayout {
-            val rows = rowsThatFit(height, frame)
-            return LibraryLayout(rows, width, slack = (height - frame.chromeH - FURNITURE_H - rows * ROW_H).coerceAtLeast(0))
+            val (rows, slack) = WindowSizing.rowsAndSlack(height, frame.chromeH + FURNITURE_H, ROW_H, MIN_ROWS)
+            return LibraryLayout(rows, width, slack)
         }
 
         /** webamp's WINDOW_RESIZE_SEGMENT_WIDTH. */

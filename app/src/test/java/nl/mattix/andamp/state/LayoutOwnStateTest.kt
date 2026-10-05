@@ -21,12 +21,12 @@ class LayoutOwnStateTest {
     @Test
     fun `a window collapsed in the locked stack still stands open in the floating layout`() {
         val s = state()
-        s.stackLocked = true
+        s.doubleSize = true
 
         s.setShaded(WindowStore.EQ, true, EQ_H)
         assertTrue(s.eqShaded)
 
-        s.stackLocked = false
+        s.doubleSize = false
         assertFalse("the floating equalizer was not touched", s.eqShaded)
         assertEquals(false, s.placementOf(WindowStore.EQ)?.asMemory()?.shaded ?: false)
     }
@@ -36,7 +36,7 @@ class LayoutOwnStateTest {
         val s = state()
 
         s.setShaded(WindowStore.MAIN, true, MAIN_H)
-        s.stackLocked = true
+        s.doubleSize = true
 
         assertFalse(s.mainShaded)
         assertEquals(emptySet<String>(), s.stackShaded)
@@ -46,20 +46,20 @@ class LayoutOwnStateTest {
     fun `each layout finds its own collapsed windows again`() {
         val s = state()
         s.setShaded(WindowStore.MAIN, true, MAIN_H)
-        s.stackLocked = true
+        s.doubleSize = true
         s.setShaded(WindowStore.EQ, true, EQ_H)
 
         assertEquals("the stack: only the equalizer", listOf(false, true), listOf(s.mainShaded, s.eqShaded))
-        s.stackLocked = false
+        s.doubleSize = false
         assertEquals("floating: only the player", listOf(true, false), listOf(s.mainShaded, s.eqShaded))
-        s.stackLocked = true
+        s.doubleSize = true
         assertEquals(setOf(WindowStore.EQ), s.stackShaded)
     }
 
     @Test
     fun `expanding a window in the locked stack takes it out of the stack's own set`() {
         val s = state()
-        s.stackLocked = true
+        s.doubleSize = true
         s.setShaded(WindowStore.PLAYLIST, true, 290)
 
         s.setShaded(WindowStore.PLAYLIST, false, 290)
@@ -71,27 +71,39 @@ class LayoutOwnStateTest {
     fun `a window brought to the front in the locked stack keeps its place in the floating layout`() {
         val s = state()
         val floating = s.windowOrder
-        s.stackLocked = true
+        s.doubleSize = true
 
         s.raiseWindow(WindowStore.MAIN)
 
         assertEquals("the stack has the player in front", WindowStore.MAIN, s.shownOrder.last())
         assertEquals("the floating order is as it was", floating, s.windowOrder)
-        s.stackLocked = false
+        s.doubleSize = false
         assertEquals(floating, s.shownOrder)
+    }
+
+    @Test
+    fun `a window that is opened is in front in both layouts, since it is open in both`() {
+        val s = state()
+        s.doubleSize = true
+
+        s.setWindowOpen(WindowStore.EQ, true) { s.eqVisible = it }
+
+        assertEquals(WindowStore.EQ, s.shownOrder.last())
+        s.doubleSize = false
+        assertEquals("and in front of the floating windows too", WindowStore.EQ, s.shownOrder.last())
     }
 
     @Test
     fun `a window brought to the front while floating keeps its place in the locked stack`() {
         val s = state()
-        s.stackLocked = true
+        s.doubleSize = true
         val stacked = s.shownOrder
-        s.stackLocked = false
+        s.doubleSize = false
 
         s.raiseWindow(WindowStore.EQ)
 
         assertEquals(WindowStore.EQ, s.windowOrder.last())
-        s.stackLocked = true
+        s.doubleSize = true
         assertEquals(stacked, s.shownOrder)
     }
 }

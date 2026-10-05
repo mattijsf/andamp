@@ -19,6 +19,8 @@ class OverlayOps(
     private val permitted: () -> Boolean,
     /** Receives the preference on every change; the clutter bar's A is lit from it. */
     private val mirror: (Boolean) -> Unit = {},
+    /** Called when the preference is switched on, and not when it is read as on. */
+    private val onSwitchedOn: () -> Unit = {},
 ) {
     var gate by mutableStateOf(
         OverlayGate(wanted = store.wanted, permitted = permitted()),
@@ -34,6 +36,7 @@ class OverlayOps(
         store.wanted = on
         gate = gate.copy(wanted = on, permitted = permitted())
         mirror(on)
+        if (on) onSwitchedOn()
     }
 
     /**

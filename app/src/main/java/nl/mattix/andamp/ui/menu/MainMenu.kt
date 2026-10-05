@@ -26,7 +26,7 @@ fun mainMenu(
     onMuseum: () -> Unit = {},
     /** Winamp's Ctrl+A, listed under Options as in Winamp. */
     onAlwaysOnTop: () -> Unit = {},
-    /** Winamp's Ctrl+D, listed under it. */
+    /** Winamp's Ctrl+D, Double Size, listed under Options after Always On Top. */
     onDoubleSize: () -> Unit = {},
 ): AmpMenu {
     val skins = skinItems(vm, onPickSkin, onMuseum)

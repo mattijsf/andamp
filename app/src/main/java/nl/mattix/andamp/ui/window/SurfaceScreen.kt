@@ -4,6 +4,7 @@ package nl.mattix.andamp.ui.window
 
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.mandatorySystemGestures
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.compositionLocalOf
@@ -45,6 +46,14 @@ internal fun grabbableTop(
     LocalSurfaceScreen.current?.let { return it.shadeStrip / scale }
     return shadeStripBelowStatusBar(density) / scale
 }
+
+/**
+ * What the bottom of the surface keeps for the system's own gestures and the keyboard, in the
+ * surface's pixels: what [LocalSurfaceScreen] says, or the window's own inset.
+ */
+@Composable
+internal fun surfaceBottomInset(density: Density): Int =
+    LocalSurfaceScreen.current?.bottom ?: WindowInsets.safeDrawing.getBottom(density)
 
 /** How much of the notification shade's gesture strip the window's insets leave below the status bar. */
 @Composable

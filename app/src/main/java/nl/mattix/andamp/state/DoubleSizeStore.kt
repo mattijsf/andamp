@@ -12,7 +12,8 @@ import androidx.compose.runtime.setValue
  * Winamp's Double Size, the D in the clutter bar: whether the player fills the screen.
  *
  * Off, the windows float at the largest whole scale that fits. On, they are held in one
- * stack as wide as the screen. The stack keeps a height of its own for the plug-in window
+ * stack as large as the screen takes: as wide as it, or in its middle where the height
+ * decides. The stack keeps a height of its own for the plug-in window
  * and its own collapsed windows, so the floating layout is not changed by it.
  *
  * It does not go together with Always On Top, where the player floats over other apps: only

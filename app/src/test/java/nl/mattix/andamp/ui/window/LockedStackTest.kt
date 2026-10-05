@@ -13,12 +13,11 @@ import org.junit.Test
 /**
  * The column the windows are held in while the player fills the screen.
  *
- * The screen here is a phone's: exactly as wide as the player, 600 rows tall, with the top
- * four rows and everything from row 588 down kept by the system.
+ * The screen here is a phone's: exactly as wide as the player, 600 rows tall, with
+ * everything from row 584 down kept by the system.
  */
 class LockedStackTest {
-    private val top = 4
-    private val safeBottom = 588
+    private val safeBottom = 584
     private val chromeH = 34
 
     private fun ask(
@@ -30,7 +29,7 @@ class LockedStackTest {
         playlist: Playlist = Playlist.OPEN,
         covers: List<String> = emptyList(),
         safeBottom: Int = this.safeBottom,
-    ) = LockedStack.Ask(screenW, top, safeBottom, mainH, eqH, visChromeH, visSteps, playlist, covers)
+    ) = LockedStack.Ask(screenW, safeBottom, mainH, eqH, visChromeH, visSteps, playlist, covers)
 
     private fun rects(ask: LockedStack.Ask) = LockedStack.layout(ask).rects
 
@@ -43,9 +42,9 @@ class LockedStackTest {
     fun `the player, the equalizer and the playlist are one column from the top to the safe bottom`() {
         val rects = rects(ask())
 
-        assertEquals(column(4, 120), rects[WindowStore.MAIN])
-        assertEquals(column(120, 236), rects[WindowStore.EQ])
-        assertEquals(column(236, safeBottom), rects[WindowStore.PLAYLIST])
+        assertEquals(column(0, 116), rects[WindowStore.MAIN])
+        assertEquals(column(116, 232), rects[WindowStore.EQ])
+        assertEquals(column(232, safeBottom), rects[WindowStore.PLAYLIST])
     }
 
     @Test
@@ -64,21 +63,21 @@ class LockedStackTest {
         val rects = rects(ask(eqH = null))
 
         assertNull(rects[WindowStore.EQ])
-        assertEquals(column(120, safeBottom), rects[WindowStore.PLAYLIST])
+        assertEquals(column(116, safeBottom), rects[WindowStore.PLAYLIST])
     }
 
     @Test
     fun `a collapsed window moves everything under it up`() {
         val rects = rects(ask(mainH = SHADE_H, eqH = SHADE_H))
 
-        assertEquals(column(4, 18), rects[WindowStore.MAIN])
-        assertEquals(column(18, 32), rects[WindowStore.EQ])
-        assertEquals(column(32, safeBottom), rects[WindowStore.PLAYLIST])
+        assertEquals(column(0, 14), rects[WindowStore.MAIN])
+        assertEquals(column(14, 28), rects[WindowStore.EQ])
+        assertEquals(column(28, safeBottom), rects[WindowStore.PLAYLIST])
     }
 
     @Test
     fun `a collapsed playlist is its bar under the stack, and a closed one is not there`() {
-        assertEquals(column(236, 236 + SHADE_H), rects(ask(playlist = Playlist.SHADED))[WindowStore.PLAYLIST])
+        assertEquals(column(232, 232 + SHADE_H), rects(ask(playlist = Playlist.SHADED))[WindowStore.PLAYLIST])
         assertNull(rects(ask(playlist = Playlist.CLOSED))[WindowStore.PLAYLIST])
     }
 
@@ -86,7 +85,7 @@ class LockedStackTest {
     fun `the plug-in window sits between the equalizer and the playlist at its default height`() {
         val rects = rects(ask(visChromeH = chromeH))
 
-        val visual = column(236, 236 + chromeH + MILKDROP_CONTENT_H)
+        val visual = column(232, 232 + chromeH + MILKDROP_CONTENT_H)
         assertEquals(visual, rects[WindowStore.MILKDROP])
         assertEquals(column(visual.bottom, safeBottom), rects[WindowStore.PLAYLIST])
     }
@@ -102,7 +101,7 @@ class LockedStackTest {
     fun `the plug-in window never takes the playlist's last two segments`() {
         val places = LockedStack.layout(ask(visChromeH = chromeH, visSteps = 500))
 
-        // 588 - 236 rows are left; the frame and a 116-row playlist leave 202 for the visual
+        // 584 - 232 rows are left; the frame and a 116-row playlist leave 202 for the visual
         assertEquals(202 / MILKDROP_STEP, places.visMaxSteps)
         assertEquals(chromeH + places.visMaxSteps * MILKDROP_STEP, places.rects.getValue(WindowStore.MILKDROP).height)
         val playlist = places.rects.getValue(WindowStore.PLAYLIST)
@@ -116,8 +115,8 @@ class LockedStackTest {
         val shaded = LockedStack.layout(ask(visChromeH = chromeH, playlist = Playlist.SHADED)).visMaxSteps
         val closed = LockedStack.layout(ask(visChromeH = chromeH, playlist = Playlist.CLOSED)).visMaxSteps
 
-        assertEquals((588 - 236 - chromeH - SHADE_H) / MILKDROP_STEP, shaded)
-        assertEquals((588 - 236 - chromeH) / MILKDROP_STEP, closed)
+        assertEquals((584 - 232 - chromeH - SHADE_H) / MILKDROP_STEP, shaded)
+        assertEquals((584 - 232 - chromeH) / MILKDROP_STEP, closed)
         assertEquals(true, open < shaded && shaded < closed)
     }
 
@@ -134,14 +133,14 @@ class LockedStackTest {
         val rects = rects(ask(visChromeH = chromeH, covers = listOf(WindowStore.LIBRARY)))
 
         assertEquals(setOf(WindowStore.MAIN, WindowStore.LIBRARY), rects.keys)
-        assertEquals(column(120, safeBottom), rects[WindowStore.LIBRARY])
+        assertEquals(column(116, safeBottom), rects[WindowStore.LIBRARY])
     }
 
     @Test
     fun `the library and the skin browser cover the same rows`() {
         val rects = rects(ask(mainH = SHADE_H, covers = listOf(WindowStore.LIBRARY, WindowStore.SKINS)))
 
-        assertEquals(column(18, safeBottom), rects[WindowStore.LIBRARY])
+        assertEquals(column(14, safeBottom), rects[WindowStore.LIBRARY])
         assertEquals(rects[WindowStore.LIBRARY], rects[WindowStore.SKINS])
     }
 
@@ -149,7 +148,7 @@ class LockedStackTest {
     fun `on a screen wider than the player the column is in the middle`() {
         val rects = rects(ask(screenW = 601))
 
-        assertEquals(IntRect(163, 4, 163 + MAIN_W, 120), rects[WindowStore.MAIN])
+        assertEquals(IntRect(163, 0, 163 + MAIN_W, 116), rects[WindowStore.MAIN])
         assertEquals(163, rects.getValue(WindowStore.PLAYLIST).left)
     }
 }

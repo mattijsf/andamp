@@ -92,6 +92,21 @@ object WindowSizing {
     ): Int = ((availableH - chromeH) / stepPx).coerceAtLeast(min)
 
     /**
+     * A list window held at exactly [height]: the whole rows that fit beside its
+     * [furniture], never fewer than [minRows], and what is left over, which stays empty
+     * under the last row.
+     */
+    fun rowsAndSlack(
+        height: Int,
+        furniture: Int,
+        rowH: Int,
+        minRows: Int,
+    ): Pair<Int, Int> {
+        val rows = ((height - furniture) / rowH).coerceAtLeast(minRows)
+        return rows to (height - furniture - rows * rowH).coerceAtLeast(0)
+    }
+
+    /**
      * The size to remember: null once a window is as big as fits, which restores the
      * fill-the-screen default, so the window is not pinned to a height that only matches the
      * current screen.

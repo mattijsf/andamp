@@ -118,11 +118,8 @@ class WinampViewModel
             OverlayOps(
                 OverlayStore(app),
                 permitted = { Settings.canDrawOverlays(app) },
-                // also when it is read as on at launch: an install that has both starts floating
-                mirror = { on ->
-                    state.alwaysOnTop = on
-                    if (on && doubleSize.on) doubleSize.on = false
-                },
+                mirror = { state.alwaysOnTop = it },
+                onSwitchedOn = { doubleSize.on = false },
             )
 
         /** The museum browser: its catalog, and what has been installed from it. */
@@ -137,6 +134,8 @@ class WinampViewModel
                 )
 
         init {
+            // an install that was left with both starts floating, with Double Size off
+            if (overlayOps.gate.wanted && doubleSize.on) doubleSize.on = false
             // a skin removed in the Skin Manager also loses its museum record, and a source
             // that asked for it goes back to Default
             skinOps.onRemoved = { id ->

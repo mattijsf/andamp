@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.input.pointer.AwaitPointerEventScope
+import androidx.compose.ui.input.pointer.PointerType
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
@@ -203,7 +204,9 @@ private suspend fun AwaitPointerEventScope.oneGesture(
     val current = widgets.value
     val s = scale.toFloat()
     // the whole gesture is read as if the finger were where its press was aimed
-    val shift = loupe?.shiftFor(current, down.position / s) ?: Offset.Zero
+    // a mouse or a stylus points where it presses; only a finger is aimed
+    val aimed = loupe?.takeIf { down.type == PointerType.Touch }
+    val shift = aimed?.shiftFor(current, down.position / s) ?: Offset.Zero
     var pos = down.position / s + shift
     val downPos = pos
     var target =

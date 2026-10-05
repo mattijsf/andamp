@@ -4,6 +4,7 @@ package nl.mattix.andamp.state
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
+import nl.mattix.andamp.backend.mock.MockBackend
 import nl.mattix.andamp.state.overlay.OverlayStore
 import nl.mattix.andamp.ui.window.testViewModel
 import org.junit.Assert.assertEquals
@@ -24,10 +25,10 @@ import org.robolectric.shadows.ShadowSettings
 class OneModeAtATimeTest {
     private val app = ApplicationProvider.getApplicationContext<Application>()
 
-    /** A view model that may draw over other apps, with Double Size on as on a fresh install. */
-    private fun viewModel(): WinampViewModel {
-        ShadowSettings.setCanDrawOverlays(true)
-        return testViewModel().also { assertTrue(it.doubleSize.on) }
+    /** A view model with Double Size on, that may draw over other apps or may not. */
+    private fun viewModel(mayFloat: Boolean = true): WinampViewModel {
+        ShadowSettings.setCanDrawOverlays(mayFloat)
+        return testViewModel().also { it.doubleSize.on = true }
     }
 
     @Test
@@ -68,8 +69,7 @@ class OneModeAtATimeTest {
 
     @Test
     fun `always on top that is refused for want of the permission leaves double size on`() {
-        ShadowSettings.setCanDrawOverlays(false)
-        val vm = testViewModel()
+        val vm = viewModel(mayFloat = false)
         var asked = 0
 
         vm.overlayOps.askFor(true, prompt = { asked++ }, openSettings = {})
@@ -84,7 +84,13 @@ class OneModeAtATimeTest {
         OverlayStore(app).wanted = true
         DoubleSizeStore(app) { true }.on = true
 
-        val vm = testViewModel()
+        // built here and not by testViewModel(), which switches Double Size off itself
+        val vm =
+            WinampViewModel(
+                app,
+                createBackend = { scope -> MockBackend(FakeTracks.tracks, scope) },
+                presetStore = InMemoryEqPresetStore(),
+            )
 
         assertTrue(vm.overlayOps.gate.wanted)
         assertFalse(vm.doubleSize.on)

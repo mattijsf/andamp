@@ -20,7 +20,7 @@ import nl.mattix.andamp.ui.widget.hitTest
  * with the same draw block, the control under the crosshair lit, and the finger moving the
  * crosshair geared down by [GEARING]. Release presses what the crosshair is on.
  *
- * A finger close to an edge of the screen cannot travel far toward it, so in that direction
+ * A finger close to a side of the screen cannot travel far toward it, so in that direction
  * the crosshair is geared down less, by as much as it takes to bring the outermost control of
  * the cluster under it within the room the finger has ([reach]).
  */
@@ -37,7 +37,7 @@ class Loupe(
     /** What can be pressed, read on each use: a window may rebuild its widgets. */
     val widgets: () -> List<Widget>,
     private val start: Offset,
-    /** How far the finger can travel from where it is before it meets an edge of the screen. */
+    /** How far the finger can travel each way from where it is. */
     reach: Reach = Reach.UNLIMITED,
 ) {
     /** Where the crosshair is, in window-local virtual pixels. */
@@ -137,8 +137,27 @@ class Loupe(
     }
 
     /**
-     * How far a finger can travel each way from where it is before it meets an edge of the
-     * screen, in virtual pixels.
+     * How a fingertip meets a side of the screen, in virtual pixels. The sizes are a
+     * finger's, so how many virtual pixels they are depends on how large those are drawn.
+     */
+    data class Edge(
+        /** How close to where the glass ends the middle of a fingertip gets. */
+        val reach: Float,
+        /** How far from a side a press is still aimed further out than it landed; see [aimedAcross]. */
+        val band: Float,
+    ) {
+        companion object {
+            private const val REACH_DP = 16f
+            private const val BAND_DP = 48f
+
+            /** For a surface on which a dp spans [virtualPerDp] virtual pixels. */
+            fun of(virtualPerDp: Float) = Edge(REACH_DP * virtualPerDp, BAND_DP * virtualPerDp)
+        }
+    }
+
+    /**
+     * How far a finger can travel each way from where it is and still be where a fingertip
+     * gets, in virtual pixels.
      */
     data class Reach(
         val left: Float,
@@ -151,12 +170,18 @@ class Loupe(
             val UNLIMITED =
                 Reach(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY)
 
-            /** For a finger at [finger] on a screen of [screenW] by [screenH]. */
+            /** For a finger at [finger] on a screen of [screenW] by [screenH], whose sides it meets as [edge] says. */
             fun on(
                 finger: Offset,
                 screenW: Int,
                 screenH: Int,
-            ) = Reach(left = finger.x, up = finger.y, right = screenW - finger.x, down = screenH - finger.y)
+                edge: Edge,
+            ) = Reach(
+                left = finger.x - edge.reach,
+                up = finger.y - edge.reach,
+                right = screenW - finger.x - edge.reach,
+                down = screenH - finger.y - edge.reach,
+            )
         }
     }
 
@@ -178,15 +203,11 @@ class Loupe(
         }
 
         companion object {
-            /**
-             * The side whose outermost control is [needed] away, for a finger that can travel
-             * [reach] that way. The finger is not expected in the last [EDGE_REACH] of it.
-             */
+            /** The side whose outermost control is [needed] away, for a finger that can travel [room] that way. */
             fun toward(
                 needed: Float,
-                reach: Float,
+                room: Float,
             ): Side {
-                val room = reach - EDGE_REACH
                 val gearing = if (needed <= 0f) GEARING else (room / needed).coerceIn(MIN_GEARING, GEARING)
                 return Side(needed.coerceAtLeast(0f), gearing)
             }
@@ -283,22 +304,10 @@ class Loupe(
         const val MIN_GEARING = 0.4f
 
         /**
-         * How close to an edge of the screen a finger is expected to get, in virtual pixels:
-         * the middle of a fingertip stays about this far from the glass's edge.
-         */
-        const val EDGE_REACH = 10f
-
-        /**
-         * How far from a side of the screen a press is still aimed further out than it
-         * landed, in virtual pixels; see [aimedAcross].
-         */
-        const val EDGE_BAND = 30f
-
-        /**
          * Where a press that landed at [x] on a screen [screenW] wide is aimed.
          *
-         * The middle of a fingertip cannot get into the last [EDGE_REACH] before the glass
-         * ends, so a control there cannot be pressed where it is drawn. Within [EDGE_BAND]
+         * The middle of a fingertip cannot get into the last [Edge.reach] before the glass
+         * ends, so a control there cannot be pressed where it is drawn. Within [Edge.band]
          * of a side, the stretch a finger can reach stands for all of it: a press as far
          * out as a finger gets is aimed at the edge itself, and one at the band's inner end
          * is aimed where it landed.
@@ -306,18 +315,19 @@ class Loupe(
         fun aimedAcross(
             x: Float,
             screenW: Int,
+            edge: Edge,
         ): Float {
             val fromRight = screenW - x
             return when {
-                fromRight < EDGE_BAND && fromRight <= x -> screenW - stretched(fromRight)
-                x < EDGE_BAND -> stretched(x)
+                edge.band <= edge.reach -> x
+                fromRight < edge.band && fromRight <= x -> screenW - edge.stretched(fromRight)
+                x < edge.band -> edge.stretched(x)
                 else -> x
             }
         }
 
-        /** A distance from the edge inside the band, with what a finger can reach spread over all of it. */
-        private fun stretched(fromEdge: Float) =
-            ((fromEdge - EDGE_REACH) * EDGE_BAND / (EDGE_BAND - EDGE_REACH)).coerceAtLeast(0f)
+        /** A distance from the side inside the band, with what a finger can reach spread over all of it. */
+        private fun Edge.stretched(fromSide: Float) = ((fromSide - reach) * band / (band - reach)).coerceAtLeast(0f)
 
         /**
          * How long a hold takes to open the lens. A slow tap opens it too, which is

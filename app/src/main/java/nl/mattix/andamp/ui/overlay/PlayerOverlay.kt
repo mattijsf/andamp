@@ -138,7 +138,9 @@ object PlayerOverlay {
                         setModal(windows, modal)
                         resize(windows, here)
                     }
-                    Player(vm, skin, display, onOpenApp, onOpenAppAt, onClose, onMinimize)
+                    // not once it is switched off: the app is the surface that lays the player
+                    // out from then on, and Double Size switched on from here fills that one
+                    if (stillWanted) Player(vm, skin, display, onOpenApp, onOpenAppAt, onClose, onMinimize)
                 }
             }
 
@@ -374,8 +376,5 @@ private fun Player(
         // opened
         onFloatingChanged = { on -> if (!on) onOpenApp() },
         surfaceScreen = display,
-        // over other apps the windows float: Double Size switched on here ends the floating
-        // player, and the app that opens fills the screen
-        fillsScreen = false,
     )
 }
