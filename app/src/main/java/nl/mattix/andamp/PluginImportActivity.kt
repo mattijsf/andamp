@@ -46,7 +46,7 @@ class PluginImportActivity : Activity() {
             if (PluginLinks.accepts(link)) {
                 player.pluginOps.offerFrom(link)
             } else {
-                player.pluginOps.unreadable("that link is not a plug-in on ${PluginLinks.HOST}")
+                player.pluginOps.unreadable("that link is not a plug-in on ${PluginLinks.SITE}")
             }
         } else {
             val stream = file?.let { runCatching { contentResolver.openInputStream(it) }.getOrNull() }

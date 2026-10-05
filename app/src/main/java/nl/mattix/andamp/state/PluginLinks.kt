@@ -11,7 +11,8 @@ import java.net.URL
  *
  * The link is an App Link, verified against the site's `/.well-known/assetlinks.json`, so
  * Android hands it to Andamp; where Andamp is not installed, the same link downloads the
- * file. Only https links under [PATH] on [HOST] are taken. The manifest filter says so and
+ * file. Only https links into the plug-in folder of one of the [FOLDERS] are taken: the
+ * site, and mattix.nl, which serves the same files. The manifest filters say so and
  * [accepts] checks again, because the receiving activity also receives files from anywhere.
  *
  * Following a link installs nothing. The fetched file is shown to the listener first
@@ -19,18 +20,25 @@ import java.net.URL
  * access to Android.
  */
 object PluginLinks {
-    const val HOST = "mattix.nl"
-    const val PATH = "/andamp/extensions/plugins/"
+    /** The site, as it is named to the listener. */
+    const val SITE = "andamp.nl"
+
+    /** The plug-in folder of each host a link is taken from. */
+    private val FOLDERS =
+        mapOf(
+            SITE to "/extensions/plugins/",
+            "mattix.nl" to "/andamp/extensions/plugins/",
+        )
 
     /** Whether [url] is a plug-in link on the site. */
     fun accepts(url: String): Boolean {
         val uri = runCatching { URI(url) }.getOrNull() ?: return false
+        val folder = FOLDERS[uri.host] ?: return false
         val path = uri.path.orEmpty()
         return uri.scheme == "https" &&
-            uri.host == HOST &&
             uri.port == -1 &&
             uri.userInfo == null &&
-            path.startsWith(PATH) &&
+            path.startsWith(folder) &&
             path.endsWith(".lua") &&
             !path.contains("/../")
     }
@@ -42,7 +50,7 @@ object PluginLinks {
      * by [PluginOps.MAX_SOURCE_BYTES].
      */
     fun download(url: String): String {
-        require(accepts(url)) { "that is not a plug-in link on $HOST" }
+        require(accepts(url)) { "that is not a plug-in link on $SITE" }
         val connection = URL(url).openConnection() as HttpURLConnection
         return try {
             connection.instanceFollowRedirects = false

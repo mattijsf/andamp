@@ -301,7 +301,7 @@ that guards something asks the listener once for each calling package.
 its player, its library, its Preferences row and its page. `PackSource` is the only
 implementation and answers from a `PackClient` and a `PackDescriptor`. Preferences lists
 This Phone first, then each source that was found, then a "More sources" link to
-`mattix.nl/andamp/extensions/source`. An account, and what it takes to get one, is the
+`andamp.nl/extensions/source`. An account, and what it takes to get one, is the
 source's business and lives behind its own settings screen.
 
 **Settings and updates.** A source's settings are an activity in its own APK that answers
