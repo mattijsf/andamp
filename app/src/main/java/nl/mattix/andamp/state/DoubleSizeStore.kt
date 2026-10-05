@@ -17,7 +17,7 @@ import androidx.compose.runtime.setValue
  *
  * A fresh install starts with it on, and an install that was already in use keeps the player
  * as it was. Which of the two this is, is asked once, when nothing is stored yet, and the
- * answer is stored.
+ * answer is stored; see [neverUpdated].
  */
 class DoubleSizeStore(
     private val prefs: SharedPreferences,
@@ -65,4 +65,17 @@ class DoubleSizeStore(
         const val ON = "on"
         const val VIS_STEPS = "vis_steps"
     }
+}
+
+/**
+ * Whether this install has never been updated: the app was put on the device as the build
+ * that is running.
+ *
+ * The app's own files cannot answer this. Android restores a backup of them when the app is
+ * installed again, so a new install can start with the window layout and the settings of an
+ * older one.
+ */
+fun Context.neverUpdated(): Boolean {
+    val installed = packageManager.getPackageInfo(packageName, 0)
+    return installed.firstInstallTime == installed.lastUpdateTime
 }

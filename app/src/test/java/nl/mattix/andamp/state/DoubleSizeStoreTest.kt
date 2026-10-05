@@ -12,13 +12,15 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /**
  * Whether the player fills the screen, and who starts with it on.
  *
  * A fresh install does. An install that was already in use when this setting arrived has
- * nothing stored either, and keeps the player the size it was.
+ * nothing stored either, and keeps the player the size it was. A new install that Android
+ * hands an older install's backup is still a new install.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -64,6 +66,29 @@ class DoubleSizeStoreTest {
         DoubleSizeStore(prefs) { true }.toggle()
 
         assertFalse(DoubleSizeStore(prefs) { true }.on)
+    }
+
+    private fun installedAt(
+        first: Long,
+        updated: Long,
+    ) {
+        val installed = shadowOf(app.packageManager).getInternalMutablePackageInfo(app.packageName)
+        installed.firstInstallTime = first
+        installed.lastUpdateTime = updated
+    }
+
+    @Test
+    fun `an app that was installed as this build has never been updated`() {
+        installedAt(first = 1_000, updated = 1_000)
+
+        assertTrue(app.neverUpdated())
+    }
+
+    @Test
+    fun `an app that was updated to this build was already in use`() {
+        installedAt(first = 1_000, updated = 9_000)
+
+        assertFalse(app.neverUpdated())
     }
 
     @Test
