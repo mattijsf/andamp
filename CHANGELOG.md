@@ -4,6 +4,13 @@ What changed for somebody who uses Andamp, newest first. It is written from the 
 messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `docs:` and
 `chore:` commits do not appear here.
 
+## [0.9.0](https://github.com/mattijsf/andamp/compare/v0.8.0...v0.9.0) (2026-10-06)
+
+
+### New
+
+* the D in the clutter bar fills the screen with the player (Double Size) ([#8](https://github.com/mattijsf/andamp/issues/8)) ([3bf3619](https://github.com/mattijsf/andamp/commit/3bf3619c1a24e413563b54c694e9a183c2201002))
+
 ## [0.8.0](https://github.com/mattijsf/andamp/compare/v0.7.2...v0.8.0) (2026-10-05)
 
 
