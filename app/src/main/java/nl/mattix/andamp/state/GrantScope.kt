@@ -19,4 +19,15 @@ object GrantScope {
         grant: String,
         used: Set<String>,
     ): Boolean = used.any { it == grant || it.startsWith("$grant/") }
+
+    /**
+     * How many grants are held before any is given up, on Android version [sdk]. The
+     * platform keeps 512 for an app from Android 11 and 128 before it. Three quarters of
+     * that leaves room to pick more files before the platform starts dropping the oldest.
+     */
+    fun room(sdk: Int): Int = (if (sdk >= ANDROID_11) CAP_FROM_ANDROID_11 else CAP_BEFORE) * 3 / 4
+
+    private const val ANDROID_11 = 30
+    private const val CAP_FROM_ANDROID_11 = 512
+    private const val CAP_BEFORE = 128
 }

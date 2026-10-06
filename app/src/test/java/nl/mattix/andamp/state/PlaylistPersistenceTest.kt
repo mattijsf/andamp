@@ -43,7 +43,9 @@ class PlaylistPersistenceTest {
     @Before
     fun setUp() {
         File(app.filesDir, "winamp.m3u").delete()
-        store = PlaylistStore(app)
+        // no room: a grant nothing names is released at the next save, so the tests
+        // about which grants are kept do not have to hold hundreds first
+        store = PlaylistStore(app, room = 0)
     }
 
     private fun vm(): WinampViewModel =
@@ -294,6 +296,88 @@ class PlaylistPersistenceTest {
         assertTrue(
             "an unused folder grant is released",
             app.contentResolver.persistedUriPermissions.none { it.uri == folder },
+        )
+    }
+
+    /**
+     * A saved list names its tracks by the same uris the queue does. A folder those tracks
+     * lie under has to stay readable after the queue has moved on to something else, or the
+     * list cannot play until the folder is added again.
+     */
+    @Test
+    fun `a folder a saved list plays from keeps its access after the queue moves on`() {
+        val folder = Uri.parse("content://com.android.externalstorage.documents/tree/primary%3AMusic%2FRoad")
+        val unused = Uri.parse("content://com.android.externalstorage.documents/tree/primary%3AMusic%2FUnused")
+        store.rememberTree(folder)
+        store.rememberTree(unused)
+        val lists = File(app.filesDir, "playlists").also { it.deleteRecursively() }
+        lists.mkdirs()
+        PlaylistLibrary(lists).save(
+            "Road trip",
+            listOf(Track("one", "", "one.mp3", 1000, uri = "$folder/document/primary%3AMusic%2FRoad%2Fone.mp3")),
+        )
+        val vm = vm()
+        await { vm.state.playlist.isNotEmpty() }
+
+        vm.playlistOps.removeAll()
+
+        // the prune has run once the folder nothing names is gone
+        await { app.contentResolver.persistedUriPermissions.none { it.uri == unused } }
+        assertTrue(
+            "the saved list's folder is still readable",
+            app.contentResolver.persistedUriPermissions.any { it.uri == folder },
+        )
+    }
+
+    @Test
+    fun `while there is room no access is given up at all`() {
+        val roomy = PlaylistStore(app, room = 3)
+        val folders = (1..3).map { Uri.parse("content://com.android.externalstorage.documents/tree/primary%3AMusic%2F$it") }
+        folders.forEach(roomy::rememberTree)
+
+        roomy.retainOnly(emptySet())
+
+        assertEquals(
+            folders.toSet(),
+            app.contentResolver.persistedUriPermissions
+                .map { it.uri }
+                .toSet(),
+        )
+    }
+
+    @Test
+    fun `past the room what nothing names is given up and the rest is kept`() {
+        val roomy = PlaylistStore(app, room = 3)
+        val folders = (1..4).map { Uri.parse("content://com.android.externalstorage.documents/tree/primary%3AMusic%2F$it") }
+        folders.forEach(roomy::rememberTree)
+
+        roomy.retainOnly(setOf("${folders[0]}/document/primary%3AMusic%2F1%2Fone.mp3"))
+
+        assertEquals(
+            setOf(folders[0]),
+            app.contentResolver.persistedUriPermissions
+                .map { it.uri }
+                .toSet(),
+        )
+    }
+
+    @Test
+    fun `a bookmarked file keeps its access after it leaves the queue`() {
+        val picked = Uri.parse("content://com.android.providers.media.documents/document/audio%3A77")
+        val unused = Uri.parse("content://com.android.providers.media.documents/document/audio%3A78")
+        store.remember(picked)
+        store.remember(unused)
+        val bookmarks = File(app.filesDir, "bookmarks.m3u").also { it.delete() }
+        BookmarkStore(bookmarks).add(Track("b", "", "Kept", 1000, uri = picked.toString()))
+        val vm = vm()
+        await { vm.state.playlist.isNotEmpty() }
+
+        vm.playlistOps.removeAll()
+
+        await { app.contentResolver.persistedUriPermissions.none { it.uri == unused } }
+        assertTrue(
+            "the bookmark's file is still readable",
+            app.contentResolver.persistedUriPermissions.any { it.uri == picked },
         )
     }
 

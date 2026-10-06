@@ -80,6 +80,22 @@ class PlaylistLibraryTest {
     }
 
     @Test
+    fun `the shelf says every uri its lists name`() {
+        val shelf = PlaylistLibrary(temp.newFolder())
+        shelf.save("Road trip", tracks("One", "Two"))
+        shelf.save("Gym", tracks("One", "Two", "Three"))
+
+        assertEquals(setOf("content://0", "content://1", "content://2"), shelf.uris())
+    }
+
+    @Test
+    fun `a shelf that was never written to names nothing`() {
+        val shelf = PlaylistLibrary(File(temp.root, "not-made-yet"))
+
+        assertEquals(emptySet<String>(), shelf.uris())
+    }
+
+    @Test
     fun `loading a name that was never saved is null`() {
         assertNull(PlaylistLibrary(temp.newFolder()).load("nothing"))
     }

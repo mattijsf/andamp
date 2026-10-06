@@ -209,6 +209,42 @@ class PersistenceOpsTest {
         assertEquals(before, store.load())
     }
 
+    /**
+     * What the saved lists and the bookmarks name is read from files. When that read fails,
+     * nothing is known about what they need, and releasing on that would take away access
+     * that only the listener can give back.
+     */
+    @Test
+    fun `no access is given up while what is saved cannot be read`() {
+        // no room, so a release would happen if the read had answered
+        val store = PlaylistStore(app, room = 0)
+        val folder = android.net.Uri.parse("content://com.android.externalstorage.documents/tree/primary%3AMusic%2FKept")
+        store.rememberTree(folder)
+        val backend = MockBackend(FakeTracks.tracks, scope)
+        val ops =
+            PersistenceOps(
+                WinampState(),
+                PlayerFacade(backend),
+                scope,
+                store,
+                TransportStore(app),
+                WindowStore(app),
+                VisualsStore(app),
+                io = Dispatchers.Unconfined,
+                namedElsewhere = { null },
+            )
+        ops.start()
+
+        backend.setQueue(emptyList(), 0)
+        ops.flush()
+
+        assertEquals("the edit itself is stored", emptyList<Track>(), store.load()?.tracks)
+        assertTrue(
+            "the folder nothing in the queue names is still readable",
+            app.contentResolver.persistedUriPermissions.any { it.uri == folder },
+        )
+    }
+
     /** A backend that cannot edit its queue, as a remote source's cannot. */
     private class FakeRemoteBackend : PlaybackBackend {
         private val _state = MutableStateFlow(BackendState(queue = emptyList()))

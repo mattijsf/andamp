@@ -21,6 +21,12 @@ class BookmarkStore(
      */
     fun list(): List<Track> = read().orEmpty()
 
+    /**
+     * The uris the bookmarks name, so the access they need is kept; null when the file is
+     * there and could not be read.
+     */
+    fun uris(): Set<String>? = read()?.mapNotNullTo(mutableSetOf()) { it.uri }
+
     /** What is stored, or null when the file is there and could not be read; see [readOrNull]. */
     private fun read(): List<Track>? =
         file

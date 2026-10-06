@@ -36,6 +36,12 @@ class PersistenceOps(
     private val visualsStore: VisualsStore,
     /** Where the writes happen. */
     private val io: kotlin.coroutines.CoroutineContext = Dispatchers.IO,
+    /**
+     * The uris named outside the queue, by the saved lists and the bookmarks. Their tracks
+     * need their access as much as the queue's rows do. Null when that could not be read,
+     * and no access is given up then. Called where the writes happen.
+     */
+    private val namedElsewhere: () -> Set<String>? = { emptySet() },
 ) {
     /**
      * Whether the queue on screen is the one to store.
@@ -111,7 +117,10 @@ class PersistenceOps(
     private fun storePlaylist(snapshot: PlaylistCodec.Saved) {
         if (!ownsQueue) return
         playlistStore.save(snapshot.tracks, snapshot.currentIndex)
-        playlistStore.retainOnly(snapshot.tracks.mapNotNull { it.uri }.toSet())
+        // access is given up only for what neither the queue nor anything saved names
+        namedElsewhere()?.let { elsewhere ->
+            playlistStore.retainOnly(snapshot.tracks.mapNotNullTo(elsewhere.toMutableSet()) { it.uri })
+        }
         savedSnapshot = snapshot
     }
 

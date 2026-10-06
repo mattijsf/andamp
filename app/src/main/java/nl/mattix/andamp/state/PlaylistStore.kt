@@ -27,6 +27,8 @@ class PlaylistStore(
     private val pages: (Context) -> Map<String, String> = { where ->
         PackSources.found.mapNotNull { source -> source.home(where)?.let { source.source.id to it } }.toMap()
     },
+    /** How many persisted grants are held before [retainOnly] releases any; see [GrantScope.room]. */
+    private val room: Int = GrantScope.room(android.os.Build.VERSION.SDK_INT),
 ) {
     private val app = context.applicationContext
     private val resolver = context.contentResolver
@@ -103,12 +105,20 @@ class PlaylistStore(
             ?.takeIf { it.tracks.isNotEmpty() }
 
     /**
-     * Releases the persisted grants that [uris] do not need. The platform caps how many
-     * grants an app may hold, and past the cap the oldest are lost.
+     * Releases the persisted grants that [uris] do not need, once more than [room] are held.
+     * The platform caps how many grants an app may hold, and past the cap it drops the
+     * oldest, needed or not. Below [room] nothing is released, so a folder stays readable
+     * whatever names its tracks.
+     *
+     * [uris] has to be everything that still names a document: the queue, and the saved
+     * lists and bookmarks too, since a grant that is released does not come back until the
+     * listener picks the file or the folder again.
      */
     fun retainOnly(uris: Set<String>) {
+        val held = resolver.persistedUriPermissions
+        if (held.size <= room) return
         // a folder's grant covers the tracks underneath it; see GrantScope
-        resolver.persistedUriPermissions
+        held
             .filterNot { GrantScope.isNeeded(it.uri.toString(), uris) }
             .forEach { held ->
                 runCatching { resolver.releasePersistableUriPermission(held.uri, Intent.FLAG_GRANT_READ_URI_PERMISSION) }

@@ -233,7 +233,20 @@ class WinampViewModel
 
         /** What this session leaves for the next one: settings, queue, visuals, windows. */
         val persistence =
-            PersistenceOps(state, facade, viewModelScope, playlistStore, transportStore, windowStore, visualsStore)
+            PersistenceOps(
+                state,
+                facade,
+                viewModelScope,
+                playlistStore,
+                transportStore,
+                windowStore,
+                visualsStore,
+                namedElsewhere = {
+                    val lists = playlistLibrary.uris()
+                    val bookmarks = bookmarkStore.uris()
+                    if (lists == null || bookmarks == null) null else lists + bookmarks
+                },
+            )
 
         /** Winamp's Alt+3. Not a constructor parameter: tests exercise [TrackInfoOps] directly. */
         val trackInfoOps = TrackInfoOps(state, FileInfoSource(app, liveSampleRateKhz = state::liveSampleRateKhz), viewModelScope)

@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.state
 
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -21,6 +22,14 @@ class GrantScopeTest {
     fun `a folder grant is kept while any of its tracks are queued`() {
         // the queue names the folder's tracks, never the folder
         assertTrue(GrantScope.isNeeded(folder, setOf(trackInFolder)))
+    }
+
+    @Test
+    fun `three quarters of what the platform holds are kept before any is given up`() {
+        assertEquals(96, GrantScope.room(sdk = 26))
+        assertEquals(96, GrantScope.room(sdk = 29))
+        assertEquals(384, GrantScope.room(sdk = 30))
+        assertEquals(384, GrantScope.room(sdk = 36))
     }
 
     @Test

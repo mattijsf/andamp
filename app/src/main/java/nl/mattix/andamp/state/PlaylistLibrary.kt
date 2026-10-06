@@ -43,6 +43,25 @@ class PlaylistLibrary(
             .getOrNull()
             ?.takeIf { it.isNotEmpty() }
 
+    /**
+     * Every uri the saved lists name, so the access those tracks need is not given up while
+     * a list still plays them. Null when the folder or a list in it could not be read: what
+     * is named is then unknown, which is not the same as nothing being named.
+     */
+    fun uris(): Set<String>? {
+        val files =
+            dir.listFiles { f: File -> f.isFile && f.extension == EXTENSION }
+                ?: return if (dir.exists()) null else emptySet()
+        val named = mutableSetOf<String>()
+        for (file in files) {
+            val tracks =
+                file.readOrNull()?.let { text -> runCatching { PlaylistCodec.decode(text).tracks }.getOrNull() }
+                    ?: return null
+            tracks.mapNotNullTo(named) { it.uri }
+        }
+        return named
+    }
+
     /** Deletes [name]; false when it was not there or could not be deleted. */
     fun delete(name: String): Boolean = runCatching { fileFor(name).delete() }.getOrDefault(false)
 
