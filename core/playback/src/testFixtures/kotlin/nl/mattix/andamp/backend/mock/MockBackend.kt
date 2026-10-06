@@ -63,7 +63,7 @@ class MockBackend(
 
     override fun stop() = apply(TransportRules::stop)
 
-    override fun next() = apply(TransportRules::next)
+    override fun next() = apply { TransportRules.next(it, random::nextInt) }
 
     override fun previous() = apply(TransportRules::previous)
 

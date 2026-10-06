@@ -40,7 +40,8 @@ import nl.mattix.andamp.core.playback.withStationsAtRest
  * Audio playback through Media3/ExoPlayer, with Winamp's transport semantics:
  * play while playing restarts the track, pause toggles, next and previous wrap
  * around the queue, the end of the queue without repeat stops, and shuffle
- * uses the player's shuffle order.
+ * uses the player's shuffle order, for a track that ends and for next and
+ * previous alike.
  *
  * Callers see [BackendState] and [Track], not Media3 types. Transport intent
  * is tracked here and not derived from `isPlaying`, so buffering still reads
@@ -564,9 +565,35 @@ class Media3Backend(
         (player as? ExoPlayer)?.pauseAtEndOfMediaItems = on
     }
 
-    override fun next() = step(_state.value.currentIndex + 1)
+    override fun next() = step(neighbour(forward = true))
 
-    override fun previous() = step(_state.value.currentIndex - 1)
+    override fun previous() = step(neighbour(forward = false))
+
+    /**
+     * The row a skip lands on: the one below or above, and under shuffle the one the
+     * player's shuffle order has next or had before.
+     *
+     * That order is the one playback moves through by itself, so Next plays what would
+     * have come next and Previous goes back the way it came. Past either end of it a skip
+     * wraps to the other end, as it wraps around the queue without shuffle.
+     */
+    private fun neighbour(forward: Boolean): Int {
+        val at = _state.value.currentIndex
+        val timeline = player.currentTimeline
+        if (!player.shuffleModeEnabled || timeline.isEmpty) return if (forward) at + 1 else at - 1
+        // asked without the repeat mode, which would answer with this same row for repeat-one
+        val to =
+            if (forward) {
+                timeline.getNextWindowIndex(at, Player.REPEAT_MODE_OFF, true)
+            } else {
+                timeline.getPreviousWindowIndex(at, Player.REPEAT_MODE_OFF, true)
+            }
+        return when {
+            to != C.INDEX_UNSET -> to
+            forward -> timeline.getFirstWindowIndex(true)
+            else -> timeline.getLastWindowIndex(true)
+        }
+    }
 
     /**
      * What the skip buttons do depends on the transport.

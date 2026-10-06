@@ -45,8 +45,23 @@ object TransportRules {
     /** Stop returns to the head of the track, and lets a station go. */
     fun stop(state: BackendState): BackendState = state.copy(transport = Transport.Stopped, positionMs = 0).withStationsAtRest()
 
-    /** Next wraps to the head; an empty queue has no next. */
-    fun next(state: BackendState): BackendState = jumpTo(state, (state.currentIndex + 1) % state.queue.size.coerceAtLeast(1))
+    /**
+     * Next wraps to the head; an empty queue has no next.
+     *
+     * Under shuffle it is one of the other rows, so that the button does what shuffle says
+     * and not what the list says. [pickShuffled] is handed how many other rows there are and
+     * answers with one of them, counted from the row below, so the randomness belongs to the
+     * backend. A backend that keeps an order of its own for shuffle follows that instead.
+     */
+    fun next(
+        state: BackendState,
+        pickShuffled: (Int) -> Int = { 0 },
+    ): BackendState {
+        val size = state.queue.size
+        val others = size - 1
+        val step = if (state.shuffle && others > 1) pickShuffled(others).coerceIn(0, others - 1) else 0
+        return jumpTo(state, (state.currentIndex + 1 + step) % size.coerceAtLeast(1))
+    }
 
     /** Previous wraps to the tail. */
     fun previous(state: BackendState): BackendState =
@@ -133,7 +148,7 @@ object TransportRules {
      * they carry on playing. In every case a station left behind goes back to its own name
      * ([withStationsAtRest]).
      */
-    private fun jumpTo(
+    fun jumpTo(
         state: BackendState,
         index: Int,
     ): BackendState {

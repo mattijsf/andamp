@@ -119,6 +119,13 @@ class MixedQueueBackend(
 
     private var queue: List<Track> = tracks
     private var shuffle = false
+
+    /**
+     * The rows played under shuffle while the order is decided here, by id, oldest first and
+     * the one playing last. Previous goes back along it, the way the music came. It holds
+     * [TRAIL] rows at most and is dropped when shuffle is turned off.
+     */
+    private val trail = ArrayDeque<String>()
     private var repeat = false
     private var stopAfterCurrent = false
 
@@ -328,9 +335,27 @@ class MixedQueueBackend(
         publish()
     }
 
-    override fun next() = step(TransportRules.next(global()), forward = true) { it.next() }
+    override fun next() = step(TransportRules.next(global(), random::nextInt), forward = true) { it.next() }
 
-    override fun previous() = step(TransportRules.previous(global()), forward = false) { it.previous() }
+    override fun previous() {
+        // a player holding the whole queue goes back through its own shuffle
+        val back = if (shuffle && run?.whole != true) heardBefore() else null
+        val target = if (back != null) TransportRules.jumpTo(global(), back) else TransportRules.previous(global())
+        step(target, forward = false) { it.previous() }
+    }
+
+    /**
+     * The row heard before this one under shuffle, with the trail cut back to it; null when
+     * the trail holds no earlier row that is still in the queue.
+     */
+    private fun heardBefore(): Int? {
+        while (trail.size > 1) {
+            trail.removeLast()
+            val at = queue.indexOfFirst { it.id == trail.last() }
+            if (at >= 0) return at
+        }
+        return null
+    }
 
     override fun playAt(index: Int) {
         if (queue.isEmpty()) return
@@ -359,6 +384,7 @@ class MixedQueueBackend(
 
     override fun setShuffle(enabled: Boolean) {
         shuffle = enabled
+        if (!enabled) trail.clear()
         if (run != null) reshape(cursor) else publish()
     }
 
@@ -541,10 +567,19 @@ class MixedQueueBackend(
             meanToPlay()
             lastHeard = -1
             r.player.playAt(at - r.start)
+            // going back does not add to the way back
+            if (shuffle && forward) remember(at)
             publish()
             return true
         }
         return false
+    }
+
+    private fun remember(at: Int) {
+        val id = queue[at].id
+        if (trail.lastOrNull() == id) return
+        trail.addLast(id)
+        if (trail.size > TRAIL) trail.removeFirst()
     }
 
     /**
@@ -855,5 +890,8 @@ class MixedQueueBackend(
     private companion object {
         /** How long before a run's end the next player is opened, in milliseconds. */
         const val LEAD_MS = 15_000L
+
+        /** How many rows back Previous can go under shuffle. */
+        const val TRAIL = 256
     }
 }

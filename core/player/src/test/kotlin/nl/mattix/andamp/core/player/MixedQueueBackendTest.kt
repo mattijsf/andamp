@@ -496,6 +496,51 @@ class MixedQueueBackendTest {
             )
         }
 
+    /**
+     * Under shuffle a mixed queue is ordered here, one row at a time. Next goes to one of
+     * the other rows, and Previous goes back through the rows that were played, in the
+     * order they were played.
+     */
+    @Test
+    fun `under shuffle next goes on to other rows and previous goes back the way it came`() =
+        runTest {
+            val rig = rig("a1", "b1", "a2", "b2", "a3", "b3", "a4", "b4")
+            rig.backend.setShuffle(true)
+            rig.backend.playAt(0)
+            val heard = mutableListOf(rig.backend.state.value.currentIndex)
+
+            repeat(4) {
+                rig.backend.next()
+                runCurrent()
+                assertTrue("next moves to another row", rig.backend.state.value.currentIndex != heard.last())
+                heard += rig.backend.state.value.currentIndex
+            }
+            assertTrue("next under shuffle is not just the row below each time", heard != listOf(0, 1, 2, 3, 4))
+
+            val back = mutableListOf<Int>()
+            repeat(4) {
+                rig.backend.previous()
+                runCurrent()
+                back += rig.backend.state.value.currentIndex
+            }
+
+            assertEquals(heard.dropLast(1).reversed(), back)
+            assertEquals(Transport.Playing, rig.backend.state.value.transport)
+        }
+
+    @Test
+    fun `previous with nothing behind it under shuffle is the row above`() =
+        runTest {
+            val rig = rig("a1", "b1", "a2", "b2")
+            rig.backend.setShuffle(true)
+            rig.backend.playAt(2)
+
+            rig.backend.previous()
+            runCurrent()
+
+            assertEquals(1, rig.backend.state.value.currentIndex)
+        }
+
     @Test
     fun `under shuffle the one row that can play is found`() =
         runTest {

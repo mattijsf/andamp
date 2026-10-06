@@ -6,6 +6,7 @@ import nl.mattix.andamp.core.model.BackendState
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.model.Transport
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** The rules on their own, without a backend. */
@@ -72,6 +73,34 @@ class TransportRulesTest {
         val empty = BackendState()
 
         assertEquals(empty, TransportRules.playAt(empty, 0))
+    }
+
+    @Test
+    fun `next under shuffle is one of the other rows, whichever is picked`() {
+        val state = BackendState(queue = rows, currentIndex = 1, transport = Transport.Playing, shuffle = true)
+        val others = rows.size - 1
+
+        val landed = (0 until others).map { pick -> TransportRules.next(state, pickShuffled = { pick }).currentIndex }
+
+        assertEquals("every other row can be reached", (rows.indices - 1).toSet(), landed.toSet())
+        assertEquals(Transport.Playing, TransportRules.next(state, pickShuffled = { 0 }).transport)
+    }
+
+    @Test
+    fun `next under shuffle never stays on the row it is on`() {
+        val state = BackendState(queue = rows, currentIndex = 0, transport = Transport.Playing, shuffle = true)
+
+        // a picker that answers out of range is held to the rows there are
+        listOf(-5, 0, 99).forEach { pick ->
+            assertTrue(TransportRules.next(state, pickShuffled = { pick }).currentIndex != 0)
+        }
+    }
+
+    @Test
+    fun `next without shuffle is the row below and asks for no pick`() {
+        val state = BackendState(queue = rows, currentIndex = 0, transport = Transport.Playing)
+
+        assertEquals(1, TransportRules.next(state, pickShuffled = { error("not asked without shuffle") }).currentIndex)
     }
 
     @Test

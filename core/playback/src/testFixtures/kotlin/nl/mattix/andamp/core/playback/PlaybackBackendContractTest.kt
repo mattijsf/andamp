@@ -255,6 +255,24 @@ abstract class PlaybackBackendContractTest {
         }
 
     @Test
+    fun `next under shuffle moves to another row and keeps playing`() =
+        runTest {
+            val backend = createBackend(tracks(20, 20, 20, 20))
+            backend.setShuffle(true)
+            backend.play()
+            runCurrent()
+            val from = backend.state.value.currentIndex
+
+            backend.next()
+            runCurrent()
+
+            val s = backend.state.value
+            assertTrue(s.currentIndex in s.queue.indices)
+            assertTrue("next does not stay on the row it was on", s.currentIndex != from)
+            assertEquals(Transport.Playing, s.transport)
+        }
+
+    @Test
     fun `setQueue keeps playback running when the current track survives the edit`() =
         runTest {
             val backend = createBackend(tracks(10, 20, 30))

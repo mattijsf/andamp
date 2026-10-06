@@ -469,6 +469,92 @@ class Media3BackendTest {
         assertEquals(0f, b.state.value.volumeFraction)
     }
 
+    /**
+     * Eight rows under shuffle, in an order the test sets: 0, 5, 2, 7, 1, 6, 3, 4. Playback
+     * moves through the rows in that order by itself, and the skip buttons have to as well:
+     * a Next that goes to the row below is a shuffle that only works while nobody touches it.
+     */
+    private fun shuffled(): Media3Backend {
+        val b = backend(10, 10, 10, 10, 10, 10, 10, 10)
+        b.setShuffle(true)
+        player!!.setShuffleOrder(
+            androidx.media3.exoplayer.source.ShuffleOrder
+                .DefaultShuffleOrder(intArrayOf(0, 5, 2, 7, 1, 6, 3, 4), 0L),
+        )
+        idle()
+        return b
+    }
+
+    @Test
+    fun `next under shuffle goes to the row the shuffle has next`() {
+        val b = shuffled()
+        b.play()
+        idle()
+
+        b.next()
+        idle()
+        assertEquals(5, b.state.value.currentIndex)
+
+        b.next()
+        idle()
+        assertEquals(2, b.state.value.currentIndex)
+        assertEquals(Transport.Playing, b.state.value.transport)
+    }
+
+    @Test
+    fun `previous under shuffle goes back the way it came`() {
+        val b = shuffled()
+        b.play()
+        idle()
+        b.next()
+        b.next()
+        idle()
+
+        b.previous()
+        idle()
+        assertEquals(5, b.state.value.currentIndex)
+
+        b.previous()
+        idle()
+        assertEquals(0, b.state.value.currentIndex)
+    }
+
+    @Test
+    fun `next past the last row of the shuffle starts the shuffle again, as next wraps without it`() {
+        val b = shuffled()
+        b.playAt(4)
+        idle()
+
+        b.next()
+        idle()
+
+        assertEquals(0, b.state.value.currentIndex)
+        assertEquals(Transport.Playing, b.state.value.transport)
+    }
+
+    @Test
+    fun `previous before the first row of the shuffle goes to its last`() {
+        val b = shuffled()
+        b.play()
+        idle()
+
+        b.previous()
+        idle()
+
+        assertEquals(4, b.state.value.currentIndex)
+    }
+
+    @Test
+    fun `a skip while stopped moves the cursor along the shuffle and plays nothing`() {
+        val b = shuffled()
+
+        b.next()
+        idle()
+
+        assertEquals(5, b.state.value.currentIndex)
+        assertEquals(Transport.Stopped, b.state.value.transport)
+    }
+
     @Test
     fun `shuffle and repeat map onto the player modes`() {
         val b = backend(10, 20)
