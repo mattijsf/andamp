@@ -105,7 +105,9 @@ fun AboutBody(onClose: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(16.dp))
-            Stamp("mattix.nl", "https://mattix.nl")
+            Stamp("andamp.nl", "https://andamp.nl", "about.site")
+            Spacer(Modifier.height(SHADOW + 8.dp))
+            Stamp("mattix.nl", "https://mattix.nl", "about.maker")
             Spacer(Modifier.height(4.dp))
             TextButton(onClick = onClose, modifier = Modifier.testTag("about.close")) { Text("Close") }
         }
@@ -117,6 +119,7 @@ fun AboutBody(onClose: () -> Unit) {
 private fun Stamp(
     label: String,
     url: String,
+    tag: String,
 ) {
     val context = LocalContext.current
     Box {
@@ -136,7 +139,7 @@ private fun Stamp(
                     runCatching { context.startActivity(view) }.recoverCatching { error ->
                         if (error !is ActivityNotFoundException) throw error
                     }
-                }.testTag("about.link")
+                }.testTag(tag)
                 .padding(horizontal = 18.dp, vertical = 10.dp),
         ) {
             Text(
