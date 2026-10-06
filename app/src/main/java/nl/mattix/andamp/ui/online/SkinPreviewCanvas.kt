@@ -127,5 +127,15 @@ internal fun SkinPreviewCanvas(
  */
 internal fun wholePlayerWidth(availablePx: Int): Int = (availablePx / MAIN_W).coerceAtLeast(1) * MAIN_W
 
+/**
+ * [wholePlayerWidth] for a skin shown at its screenshot's shape with only [roomPx] to stand in:
+ * the widest whole multiple that fits [availablePx] across and is no taller than the room. A
+ * screen that is wider than it is tall would otherwise get a skin taller than itself.
+ */
+internal fun wholePlayerWidth(
+    availablePx: Int,
+    roomPx: Int,
+): Int = minOf(wholePlayerWidth(availablePx), wholePlayerWidth((roomPx * SHOT_RATIO).toInt()))
+
 /** The playlist's height in the museum's screenshots: three windows, 116 each. */
 internal const val PLAYLIST_H = 116

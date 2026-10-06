@@ -12,6 +12,7 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.onRoot
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -157,6 +158,77 @@ class SkinPreviewTest {
         compose.onNodeWithTag("online.live").assertIsDisplayed()
         // it replaced the picture in place: the frame it lives in is still there
         compose.onNodeWithTag("online.enlarged").assertIsDisplayed()
+    }
+
+    /** The viewer on its own, with a skin that is not installed. */
+    private fun showViewer() {
+        compose.setContent {
+            MaterialTheme(colorScheme = darkColorScheme()) {
+                SkinViewer(
+                    pull = rememberBackPull {},
+                    settled = true,
+                    skin = museumSkin,
+                    live = null,
+                    installed = false,
+                    busy = false,
+                    onInstall = {},
+                    onUninstall = {},
+                    onClose = {},
+                )
+            }
+        }
+    }
+
+    /** Whether the node tagged [tag] lies wholly on the screen. */
+    private fun onScreen(tag: String): Boolean {
+        val screen = compose.onRoot().fetchSemanticsNode().boundsInRoot
+        val it = compose.onNodeWithTag(tag).fetchSemanticsNode().boundsInRoot
+        return it.top >= screen.top && it.bottom <= screen.bottom && it.left >= screen.left && it.right <= screen.right
+    }
+
+    /**
+     * The skin is as large as whole pixels allow, and a screen that is wider than it is tall
+     * allows a skin taller than the screen. The skin gives way: its name and the button that
+     * installs it are what the page is for.
+     */
+    @Test
+    @Config(sdk = [35], qualifiers = "w1280dp-h800dp-xhdpi")
+    fun `on a tablet held sideways the skin, its name and the install button are all on screen`() {
+        showViewer()
+
+        assertTrue("the skin is on the screen", onScreen("online.enlarged"))
+        assertTrue("the install button is on the screen", onScreen("online.install.abc"))
+        compose.onNodeWithTag("online.install.abc").assertIsDisplayed()
+    }
+
+    @Test
+    @Config(sdk = [35], qualifiers = "w800dp-h1280dp-xhdpi")
+    fun `on a tablet held upright the skin, its name and the install button are all on screen`() {
+        showViewer()
+
+        assertTrue("the skin is on the screen", onScreen("online.enlarged"))
+        assertTrue("the install button is on the screen", onScreen("online.install.abc"))
+    }
+
+    @Test
+    @Config(sdk = [35], qualifiers = "w891dp-h411dp-xxhdpi")
+    fun `on a phone held sideways the install button is on screen too`() {
+        showViewer()
+
+        assertTrue("the skin is on the screen", onScreen("online.enlarged"))
+        assertTrue("the install button is on the screen", onScreen("online.install.abc"))
+    }
+
+    /** A phone held upright has room for the widest skin its width allows, and keeps it. */
+    @Test
+    @Config(sdk = [35], qualifiers = "w411dp-h891dp-xxhdpi")
+    fun `on a phone held upright the skin is still as wide as whole pixels allow`() {
+        showViewer()
+
+        val skin = compose.onNodeWithTag("online.enlarged").fetchSemanticsNode().boundsInRoot
+        val screen = compose.onRoot().fetchSemanticsNode().boundsInRoot
+        assertEquals(wholePlayerWidth(screen.width.toInt()), skin.width.toInt())
+        assertTrue(onScreen("online.install.abc"))
     }
 
     @Test

@@ -65,6 +65,10 @@ import nl.mattix.andamp.ui.BackPull
 /**
  * One skin, large: its name, whether it is installed, and the button that changes that. The
  * screenshot is 275x348 and is shown whole, not cropped to fill the screen.
+ *
+ * The skin is as large as the screen allows after its name and the buttons have had their room
+ * ([BESIDE]). On a phone held upright that is as wide as the screen; on a tablet, or on a phone held
+ * sideways, the height is what limits it.
  */
 @Composable
 @Suppress("LongParameterList") // one skin, and everything that can be done with it
@@ -88,11 +92,13 @@ internal fun SkinViewer(
     // note
     val leaving = Modifier.graphicsLayer { alpha = 1f - pull.progress }
     run {
-        Box(
+        BoxWithConstraints(
             Modifier
                 .fillMaxSize()
                 .testTag("$TAG.viewer"),
         ) {
+            // what the skin may stand in: the page's height without what is shown beside it
+            val room = constraints.maxHeight - with(LocalDensity.current) { BESIDE.dp.roundToPx() }
             // the wash takes the tap that closes, on its own node: a clickable around everything
             // would merge the semantics of what is inside it
             Box(
@@ -130,6 +136,7 @@ internal fun SkinViewer(
                     SkinStage(
                         skin,
                         live,
+                        room,
                         flying = !settled,
                         carried = pull.progress > 0f,
                         modifier = Modifier.flyingHome(pull),
@@ -232,13 +239,15 @@ private fun Readme(text: String) {
 private fun SkinStage(
     skin: OnlineSkin,
     live: Skin?,
+    /** How tall the skin may be, in pixels; see [wholePlayerWidth]. */
+    room: Int,
     flying: Boolean,
     /** Whether a back gesture is moving the skin; the shared element is then switched off. */
     carried: Boolean,
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(modifier.fillMaxWidth()) {
-        val across = with(LocalDensity.current) { wholePlayerWidth(constraints.maxWidth).toDp() }
+        val across = with(LocalDensity.current) { wholePlayerWidth(constraints.maxWidth, room).toDp() }
         Box(
             Modifier
                 .width(across)
@@ -285,6 +294,13 @@ private fun SkinStage(
 private const val SCRIM_ALPHA = 0.62f
 private const val FADE_MS = 400
 private const val FADED = 0.6f
+
+/**
+ * The height kept free of the skin, in dp: its name, its number and the row of buttons under it,
+ * the gaps between them, and some air above and below so the skin does not touch the screen's edges
+ * or the button that closes the page.
+ */
+private const val BESIDE = 208
 
 /** The weights of the space above and below the skin. */
 private const val ABOVE = 1f
