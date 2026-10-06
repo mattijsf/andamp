@@ -130,11 +130,15 @@ class SourceOpsTest {
             sources,
             library,
             extras = { listOf(extra) },
+            reachUnanswered = { reached++ },
             io = Dispatchers.Unconfined,
             forgetLibrary = { forgotLibraries += it },
             forgetPlayer = { forgotPlayers += it },
         )
     }
+
+    /** How often the packs that have not answered were asked to; see [SourceOps.reconcile]. */
+    private var reached = 0
 
     @Test
     fun `a source nobody is signed in to sends the pick to its page in Preferences`() {
@@ -273,6 +277,18 @@ class SourceOpsTest {
 
             assertNull("the source counts as signed in", sources.reach.absence(example))
             assertEquals("the source's library is read again", listOf(example), forgotLibraries)
+        }
+
+    /** A pack whose first binding failed is not among the sources until it answers, so each look asks it again. */
+    @Test
+    fun `each look asks the packs that have not answered yet`() =
+        runTest {
+            val ops = ops(signedIn = false)
+
+            ops.reconcile(app)
+            ops.reconcile(app)
+
+            assertEquals(2, reached)
         }
 
     @Test
