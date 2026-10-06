@@ -8,11 +8,14 @@ import android.content.Intent
 import android.content.IntentFilter
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.test.TestCoroutineScheduler
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import nl.mattix.andamp.backend.pack.PackCard
 import nl.mattix.andamp.backend.pack.PackClient
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.packapi.PackApi
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -39,6 +42,17 @@ import org.robolectric.annotation.Config
 class PackSourceTest {
     private val app = ApplicationProvider.getApplicationContext<Application>()
 
+    /**
+     * The clock the client waits on. The client binds as soon as it is built, and a bind
+     * that nothing answers is given up on ten seconds later.
+     */
+    private val clock = TestCoroutineScheduler()
+
+    /** Where the client runs: on the test's thread, and waiting on [clock]. */
+    private val own = UnconfinedTestDispatcher(clock)
+
+    private val scope = CoroutineScope(own)
+
     private lateinit var subject: PackSource
 
     @Before
@@ -56,12 +70,15 @@ class PackSourceTest {
         subject =
             PackSource(
                 PACK,
-                PackClient(app, fromPackage = PACK, scope = CoroutineScope(Dispatchers.Unconfined)),
+                PackClient(app, fromPackage = PACK, scope = scope, io = own),
                 // the scheme and label stored from the last time the pack was
                 // reached, which a launch uses before anything is bound
                 PackCard(scheme = "moose", label = "Moose Music"),
             )
     }
+
+    @After
+    fun stopWaitingForThePack() = scope.cancel()
 
     /**
      * A row's source is read from the scheme of its uri. The pack source's id
@@ -106,11 +123,30 @@ class PackSourceTest {
         assertNull("the source reports no update address", subject.updates)
         assertFalse("the source offers no skin choice", subject.skinnable)
         assertNull(subject.browse(app))
-        assertNull(subject.backend(app, CoroutineScope(Dispatchers.Unconfined)))
+        assertNull(subject.backend(app, scope))
+    }
+
+    /**
+     * The client gives a bind ten seconds to answer and then lets go of it. Here that wait
+     * is on [clock]. On a real clock it would end after this test's application is gone,
+     * and the unbind would throw on a thread no test owns.
+     */
+    @Test
+    fun `the wait for an unanswered bind ends on the test's own clock`() {
+        val bindings = shadowOf(app)
+        val letGoBefore = bindings.unboundServiceConnections.size
+
+        clock.advanceTimeBy(PAST_THE_WAIT_MS)
+
+        assertEquals("nothing is let go of while the wait runs", 0, letGoBefore)
+        assertEquals("the binding is let go of when the wait ends", 1, bindings.unboundServiceConnections.size)
     }
 
     private companion object {
         /** An example package name for the pack. */
         const val PACK = "com.example.moose"
+
+        /** Longer than the ten seconds the client gives a bind to answer. */
+        const val PAST_THE_WAIT_MS = 11_000L
     }
 }
