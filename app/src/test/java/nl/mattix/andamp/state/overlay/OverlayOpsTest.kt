@@ -194,4 +194,65 @@ class OverlayOpsTest {
         assertFalse("the preference stays off", ops.gate.wanted)
         assertEquals("the player is not handed over", null, handed)
     }
+
+    /** A phone whose Android cannot show a floating player, with the permission granted. */
+    private fun opsOnAnOlderPhone(
+        mirror: (Boolean) -> Unit = {},
+        onSwitchedOn: () -> Unit = {},
+    ) = OverlayOps(OverlayStore(app), permitted = { true }, mirror, onSwitchedOn, supported = false)
+
+    @Test
+    fun `a phone that cannot float the player never shows it, whatever was stored`() {
+        OverlayStore(app).wanted = true
+        var lit: Boolean? = null
+
+        val ops = opsOnAnOlderPhone(mirror = { lit = it })
+        ops.leftApp()
+
+        assertFalse(ops.gate.wanted)
+        assertFalse(ops.gate.showing)
+        assertEquals("the A stays dark", false, lit)
+    }
+
+    @Test
+    fun `switching it on does nothing on a phone that cannot float the player`() {
+        var switchedOn = 0
+        val ops = opsOnAnOlderPhone(onSwitchedOn = { switchedOn++ })
+
+        ops.want(true)
+        ops.leftApp()
+
+        assertFalse(ops.gate.showing)
+        assertFalse("nothing is stored", OverlayStore(app).wanted)
+        assertEquals("nothing else is switched off for it", 0, switchedOn)
+    }
+
+    @Test
+    fun `asking for it on a phone that cannot float the player says why and opens no settings`() {
+        val ops = opsOnAnOlderPhone()
+        var asked: AmpPrompt? = null
+        var settingsOpened = 0
+
+        ops.askFor(on = true, prompt = { asked = it }, openSettings = { settingsOpened++ })
+
+        assertFalse(ops.gate.wanted)
+        assertEquals("Always on top", asked?.title)
+        assertTrue("the notice names the Android it needs", asked?.body.orEmpty().contains("Android 11"))
+        assertNull("a notice has only its OK", asked?.dismissLabel)
+        asked?.onConfirm?.invoke()
+        assertEquals(0, settingsOpened)
+    }
+
+    @Test
+    fun `the A on a phone that cannot float the player says why and hands nothing over`() {
+        val ops = opsOnAnOlderPhone()
+        var asked: AmpPrompt? = null
+        var handed: Boolean? = null
+
+        ops.toggle(prompt = { asked = it }, openSettings = {}, onChanged = { handed = it })
+
+        assertTrue("the notice is shown", asked != null)
+        assertFalse(ops.gate.wanted)
+        assertNull("the player is not handed over", handed)
+    }
 }

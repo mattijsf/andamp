@@ -29,6 +29,7 @@ import nl.mattix.andamp.core.player.PlayerFacade
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.overlay.OverlayOps
 import nl.mattix.andamp.state.overlay.OverlayStore
+import nl.mattix.andamp.state.overlay.OverlaySupport
 import nl.mattix.andamp.ui.menu.promptFor
 import kotlin.math.roundToInt
 
@@ -113,6 +114,7 @@ class WinampViewModel
         /**
          * The floating player. The permission is read through [Settings.canDrawOverlays]
          * every time, because it can be withdrawn in system settings while Andamp runs.
+         * Android 11 is the first that can show it; see [OverlaySupport].
          */
         val overlayOps: OverlayOps =
             OverlayOps(
@@ -120,6 +122,7 @@ class WinampViewModel
                 permitted = { Settings.canDrawOverlays(app) },
                 mirror = { state.alwaysOnTop = it },
                 onSwitchedOn = { doubleSize.on = false },
+                supported = OverlaySupport.here,
             )
 
         /** The museum browser: its catalog, and what has been installed from it. */

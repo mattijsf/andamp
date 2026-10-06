@@ -21,8 +21,11 @@ import androidx.core.net.toUri
 
 /**
  * The floating player's settings, handed to the page as data so the page does not see a ViewModel.
+ * The row is shown only where the phone can show a floating player, which is Android 11 and later.
  */
 data class OverlayPrefs(
+    /** Whether the phone can show a floating player; the row hides without it. */
+    val offered: Boolean = false,
     val wanted: Boolean = false,
     val permitted: Boolean = false,
     val onWant: (Boolean) -> Unit = {},
@@ -38,6 +41,7 @@ data class OverlayPrefs(
 
 @Composable
 fun OverlayRow(prefs: OverlayPrefs) {
+    if (!prefs.offered) return
     Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
         Column(Modifier.weight(1f).padding(end = 16.dp)) {
             // Winamp's name for it, also used by the clutter bar's A and the permission prompt
