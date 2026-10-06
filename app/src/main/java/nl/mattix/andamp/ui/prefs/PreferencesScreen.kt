@@ -194,6 +194,15 @@ fun PreferencesScreen(
                             WidgetSettings.update(context, chosen)
                         },
                     ),
+                support =
+                    SupportPrefs(
+                        shelf = vm.tipJar.shelf,
+                        note = vm.tipJar.note,
+                        given = vm.tipJar.given,
+                        onShown = vm.tipJar::open,
+                        // the store's purchase screen opens over an activity
+                        onGive = { tip -> (context as? Activity)?.let { vm.tipJar.give(it, tip) } },
+                    ),
             ),
     )
 }
@@ -238,6 +247,7 @@ data class PrefsSections(
     val volume: VolumePrefs = VolumePrefs(),
     val widget: WidgetPrefs = WidgetPrefs(),
     val sources: SourcesPrefs = SourcesPrefs(),
+    val support: SupportPrefs = SupportPrefs(),
     /** What the output stage is doing to peaks, for the limiter's card; asked while the rack is on screen. */
     val peaks: () -> nl.mattix.andamp.core.playback.PeakReading = { nl.mattix.andamp.core.playback.PeakReading.NONE },
 )
@@ -264,6 +274,7 @@ private enum class PrefsPage(
     VISUALIZER("Visualizer", "visualizer"),
     PLAYER("Player", "player"),
     WIDGET("Home screen widget", WIDGET_PAGE),
+    SUPPORT("Support Andamp", SUPPORT_PAGE),
     ABOUT("About Andamp", "about"),
     LICENCES("Open-source licenses", "licences"),
     ;
@@ -392,6 +403,7 @@ fun PreferencesPage(
                         page(PrefsPage.VISUALIZER.route) { VisualizerSettings(sections.visualizer) }
                         page(PrefsPage.PLAYER.route) { PlayerPage(sections) }
                         page(PrefsPage.WIDGET.route) { WidgetRows(sections.widget) }
+                        page(PrefsPage.SUPPORT.route) { SupportPage(sections.support) }
                         page(PrefsPage.ABOUT.route) { AboutPage(pages::navigate) }
                         page(PrefsPage.LICENCES.route) { LicencesPage() }
                     }
@@ -494,6 +506,11 @@ private fun Root(
     )
 
     Divided()
+    PageRow(
+        page = PrefsPage.SUPPORT,
+        summary = sections.support.summary(),
+        onOpen = { onOpen(it.route) },
+    )
     PageRow(
         page = PrefsPage.ABOUT,
         summary = "Version ${BuildConfig.VERSION_NAME} · open-source licenses",

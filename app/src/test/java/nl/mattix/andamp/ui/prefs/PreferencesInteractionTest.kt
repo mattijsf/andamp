@@ -266,6 +266,16 @@ class PreferencesInteractionTest {
     }
 
     @Test
+    fun `the list opens the support page`() {
+        show(EffectBackend(scope))
+
+        tag("prefs.open.support").performScrollTo().performClick()
+
+        // no store in a test, so the page says there are no tips to give
+        tag("prefs.support.closed").assertIsDisplayed()
+    }
+
+    @Test
     fun `the licenses page names every project that ships`() {
         show(EffectBackend(scope))
 

@@ -104,6 +104,16 @@ object Notices {
                 groups = listOf("org.luaj"),
             ),
             Notice(
+                name = "Google Play Billing Library",
+                licence = "Android SDK License",
+                what = "Takes the tips on the Support Andamp page, through Google Play.",
+                url = "https://developer.android.com/google/play/billing",
+                groups = listOf("com.android.billingclient"),
+                obligation =
+                    "This library is not open source. Andamp's license carries an additional permission " +
+                        "to combine Andamp with it and to distribute the result.",
+            ),
+            Notice(
                 name = "AndroidX and Jetpack Compose",
                 licence = "Apache-2.0",
                 what = "The UI toolkit, navigation, lifecycle, and Media3 for local playback.",

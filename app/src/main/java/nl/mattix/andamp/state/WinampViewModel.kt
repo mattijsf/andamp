@@ -225,6 +225,9 @@ class WinampViewModel
         /** Preferences > Music sources > This Phone: how much music, and a scan; see [PhoneLibrary]. */
         val phoneLibrary = PhoneLibrary(app, viewModelScope)
 
+        /** Preferences > Support Andamp: tips, bought through the store; see [TipJar]. */
+        val tipJar = TipJar(PlayTill(app), TipLedger(app), viewModelScope)
+
         // the home screen widget's mirror of the player is started by PlaybackRoot, since
         // the player outlives every window
 

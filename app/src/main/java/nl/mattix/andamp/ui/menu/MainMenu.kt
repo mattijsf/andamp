@@ -9,6 +9,7 @@ import nl.mattix.andamp.state.MusicSource
 import nl.mattix.andamp.state.SkinEntry
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
+import nl.mattix.andamp.ui.prefs.SUPPORT_PAGE
 
 /**
  * The titlebar options-button menu, the touch stand-in for Winamp's main menu (the top-left icon):
@@ -86,6 +87,13 @@ fun mainMenu(
             // so the whole branch is marked as needing the app
             AmpMenuItem.Submenu("Visualization", visualizationMenu(vm).items, needsTheApp = true),
             AmpMenuItem.Submenu("Skins", skins),
+            AmpMenuItem.Divider,
+            // Preferences, opened on the page with the tips; every host of the menu can open
+            // Preferences
+            AmpMenuItem.Action("Support Andamp...") {
+                vm.state.arrivalPage = SUPPORT_PAGE
+                onPreferences()
+            },
             AmpMenuItem.Divider,
             AmpMenuItem.Action("Exit", onClick = onExit),
         ),
