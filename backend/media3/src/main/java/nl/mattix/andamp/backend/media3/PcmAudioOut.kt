@@ -11,6 +11,8 @@ import nl.mattix.andamp.core.model.EqSettings
 import nl.mattix.andamp.core.model.RackSettings
 import nl.mattix.andamp.core.playback.AudioOut
 import nl.mattix.andamp.core.playback.PcmProvider
+import java.util.concurrent.Semaphore
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
@@ -71,6 +73,12 @@ class PcmAudioOut(
     /** Set when the chain must drop its tails before it next runs; see [PcmChain.flush]. */
     private val flushChain = AtomicBoolean(false)
 
+    /**
+     * Ends the render thread's wait on a device that takes no more; see [deliver].
+     * Released by what can change that: a resume, a discard and a stop.
+     */
+    private val wake = Semaphore(0)
+
     /** What the device has been handed and has not played yet. Guarded by [lock]. */
     private val meter = TrackAheadMeter(PcmProvider.SAMPLE_RATE_HZ)
 
@@ -123,12 +131,13 @@ class PcmAudioOut(
                 it.release()
             }
             chain.holdAhead()
+            wake.release()
             manners?.done()
         }
     }
 
-    // pauses the device, not the loop: the loop blocks in write() while the
-    // track is paused, as it does when the buffer is full
+    // pauses the device, not the loop: the loop waits in deliver() while the
+    // track is paused and full
     override fun pause() {
         synchronized(lock) {
             held = true
@@ -144,6 +153,7 @@ class PcmAudioOut(
             val device = track ?: return
             runCatching { device.play() }
             runCatching { reportAhead(device) }
+            wake.release()
             manners?.sounding()
         }
     }
@@ -165,6 +175,7 @@ class PcmAudioOut(
         flushChain.set(true)
         synchronized(lock) {
             discards.incrementAndGet()
+            wake.release()
             val device = track ?: return
             runCatching {
                 device.pause()
@@ -283,9 +294,11 @@ class PcmAudioOut(
      * Writes [size] bytes of the chain's output to the device.
      *
      * A write that returns short was woken by a pause or a flush, and the rest
-     * is written again; during a pause this is where the loop waits. It stops
-     * early when the device has gone, or when a discard came after the bytes
-     * were produced.
+     * is written again. A paused device takes what still fits and after that
+     * nothing, and does not block, so after a write that took nothing the
+     * loop waits for [wake] before it tries again; this is where it waits
+     * during a pause. It stops early when the device has gone, or when a
+     * discard came after the bytes were produced.
      *
      * The bytes are counted as handed to the device before the first write,
      * because the tap already holds them, and the distance is reported after
@@ -307,8 +320,11 @@ class PcmAudioOut(
             val wrote = device.write(chain.output, from, size - from, AudioTrack.WRITE_BLOCKING)
             if (wrote < 0) return
             from += wrote
-            // a write that took nothing changed nothing
-            if (wrote > 0) {
+            if (wrote == 0) {
+                wake.tryAcquire(FULL_WAIT_MS, TimeUnit.MILLISECONDS)
+                // one wake-up answers every release made before it
+                wake.drainPermits()
+            } else {
                 synchronized(lock) {
                     // a paused device stands still, and the tap was told so
                     if (track === device && discards.get() == mark && !held) reportAhead(device)
@@ -359,5 +375,11 @@ class PcmAudioOut(
         /** About 93 ms at 44.1 kHz stereo. */
         const val READ_BYTES = 16_384
         const val BUFFERS = 4
+
+        /**
+         * The longest wait before writing again to a device that took nothing,
+         * for when nothing announces that it takes more.
+         */
+        const val FULL_WAIT_MS = 100L
     }
 }

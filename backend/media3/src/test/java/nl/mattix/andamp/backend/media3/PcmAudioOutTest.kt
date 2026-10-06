@@ -33,6 +33,7 @@ import org.robolectric.shadows.ShadowPowerManager
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * A backend's own samples on their way out: the render loop, the device, and
@@ -91,12 +92,20 @@ class PcmAudioOutTest {
             return AudioTrack.SUCCESS
         }
 
+        /** Set for a device that is paused with its buffer full: a write returns at once, with nothing taken. */
+        @Volatile var full = false
+        val refused = AtomicInteger()
+
         override fun write(
             audioData: ByteArray,
             offsetInBytes: Int,
             sizeInBytes: Int,
             writeMode: Int,
         ): Int {
+            if (full) {
+                refused.incrementAndGet()
+                return 0
+            }
             written += audioData.copyOfRange(offsetInBytes, offsetInBytes + sizeInBytes)
             return sizeInBytes
         }
@@ -474,7 +483,37 @@ class PcmAudioOutTest {
         assertEquals("a tenth of a second on, a tenth of a second is heard", resumed - 4_410, later)
     }
 
+    /**
+     * A paused device with a full buffer does not block a write; it returns
+     * with nothing taken. The loop must not ask again without a wait, or it
+     * keeps a processor busy for as long as the pause lasts.
+     */
+    @Test
+    fun `a paused device that takes no more is asked again now and then, not all the time`() {
+        val out = outOver(context = null)
+        val feed = Feed()
+        out.start(feed)
+        val device = built.single()
+        out.pause()
+        device.full = true
+        val packet = tone()
+
+        feed.waiting += packet
+        Thread.sleep(PAUSE_MS)
+        val asked = device.refused.get()
+        device.full = false
+        out.resume()
+        val landed = device.nextWrite()
+        out.stop()
+
+        assertTrue("it went on asking during the pause", asked > 0)
+        assertTrue("it asked $asked times in $PAUSE_MS ms", asked <= PAUSE_MS / 2)
+        assertArrayEquals("what waited through the pause is played after it", packet, landed)
+    }
+
     private companion object {
+        const val PAUSE_MS = 300L
+
         /** The size the render loop reads at a time, so one packet is one read and one write. */
         const val PACKET_BYTES = 16_384
         const val PACKET_FRAMES = PACKET_BYTES / PcmProvider.BYTES_PER_FRAME
