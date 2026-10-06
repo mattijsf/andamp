@@ -47,6 +47,9 @@ class LoupeInteractionTest {
 
     private var played = 0
 
+    /** Where the window was told the finger is when the lens opened. */
+    private var openedAt: Offset? = null
+
     private val widgets =
         listOf(
             Widget(
@@ -65,7 +68,8 @@ class LoupeInteractionTest {
 
     private fun show() {
         val loupe =
-            LoupeGesture(state) { _, on ->
+            LoupeGesture(state) { finger, on ->
+                openedAt = finger
                 Loupe(
                     window = "main",
                     roam = Loupe.clusterAround(on, widgets),
@@ -99,6 +103,19 @@ class LoupeInteractionTest {
 
         assertNotNull("holding the button opens the magnifier", state.loupe)
         assertEquals("the hold opens no menu", 0, menus)
+    }
+
+    @Test
+    fun `the window is told where the finger is, which is not where the button is`() {
+        show()
+        compose.mainClock.autoAdvance = false
+
+        compose.onRoot().performTouchInput { down(at(261f, 9f)) }
+        compose.mainClock.advanceTimeBy(600)
+
+        // how much room the finger has on the screen is measured from here
+        assertEquals(261f, openedAt!!.x, 1f)
+        assertEquals(9f, openedAt!!.y, 1f)
     }
 
     @Test

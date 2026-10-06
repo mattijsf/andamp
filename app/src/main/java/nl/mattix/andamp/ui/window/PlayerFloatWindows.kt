@@ -37,6 +37,8 @@ fun MainFloatWindow(
     modifier: Modifier = Modifier,
     /** Winamp's right click on the window: the main menu, from a long press. */
     onLongPress: (() -> Unit)? = null,
+    /** Where the layout holds it, or null while it floats; see [FloatingSkinWindow]. */
+    pinnedAt: IntOffset? = null,
 ) {
     val s: WinampState = vm.state
     FloatingSkinWindow(
@@ -55,6 +57,7 @@ fun MainFloatWindow(
         onTitleDoubleTap = { s.setShaded(WindowStore.MAIN, !s.mainShaded, MAIN_H) },
         onLongPress = onLongPress,
         cut = SkinCut(skin, if (s.mainShaded) RegionTxt.Window.MAIN_SHADE else RegionTxt.Window.MAIN),
+        pinnedAt = pinnedAt,
         modifier = modifier,
         overlay = {
             // the visualizer animates on its own canvas, so a frame repaints only that
@@ -84,6 +87,8 @@ fun EqFloatWindow(
     modifier: Modifier = Modifier,
     /** Winamp's right click on the window: the main menu, from a long press. */
     onLongPress: (() -> Unit)? = null,
+    /** Where the layout holds it, or null while it floats; see [FloatingSkinWindow]. */
+    pinnedAt: IntOffset? = null,
 ) {
     val s: WinampState = vm.state
     FloatingSkinWindow(
@@ -100,6 +105,7 @@ fun EqFloatWindow(
         onTitleDoubleTap = { s.setShaded(WindowStore.EQ, !s.eqShaded, EQ_H) },
         onLongPress = onLongPress,
         cut = SkinCut(skin, if (s.eqShaded) RegionTxt.Window.EQ_SHADE else RegionTxt.Window.EQ),
+        pinnedAt = pinnedAt,
         modifier = modifier,
     ) { if (s.eqShaded) drawEqShade(skin, s) else drawEqWindow(skin, s) }
 }

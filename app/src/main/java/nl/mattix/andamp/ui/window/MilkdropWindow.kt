@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.viewinterop.AndroidView
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.PresetImport
@@ -55,7 +56,7 @@ const val MILKDROP_STEP = 8
 /** The smallest height of the visual, in steps. */
 const val MILKDROP_MIN_STEPS = 5
 
-private const val MILKDROP_DEFAULT_STEPS = MILKDROP_CONTENT_H / MILKDROP_STEP
+internal const val MILKDROP_DEFAULT_STEPS = MILKDROP_CONTENT_H / MILKDROP_STEP
 
 /** The visual's height for a remembered [steps], or the default while it is null. */
 fun milkdropContentH(steps: Int?) = (steps ?: MILKDROP_DEFAULT_STEPS) * MILKDROP_STEP
@@ -104,6 +105,9 @@ fun milkdropWidgets(
  *
  * A tap moves to the next preset, a double tap toggles fullscreen and a long press opens the
  * plug-in's menu; see [MilkdropSurface].
+ *
+ * With [pinned] the layout holds it: the grip changes only its height, and the height it
+ * floats at is kept as it was.
  */
 @Composable
 fun MilkdropWindow(
@@ -113,16 +117,17 @@ fun MilkdropWindow(
     /** Where it sits until the listener drags it. */
     defaultOffset: IntOffset,
     modifier: Modifier = Modifier,
+    pinned: PinnedVisual? = null,
 ) {
     val s = vm.state
     val density = LocalDensity.current
     val frame = frameFor(skin)
-    val contentH = milkdropContentH(s.milkdropSteps)
+    val contentH = pinned?.let { it.rect.height - frame.chromeH } ?: milkdropContentH(s.milkdropSteps)
     val height = milkdropHeight(frame, contentH)
     // the width is limited to the screen's
     val maxCols = ((s.screenW - MILKDROP_W) / MILKDROP_WIDTH_STEP).coerceAtLeast(0)
     val cols = s.milkdropCols.coerceIn(0, maxCols)
-    val width = milkdropWidth(cols)
+    val width = pinned?.rect?.width ?: milkdropWidth(cols)
     val widgets = remember(vm, frame, width) { milkdropWidgets(vm, frame, width) }
     FloatingSkinWindow(
         id = "milkdrop",
@@ -134,6 +139,10 @@ fun MilkdropWindow(
         defaultOffset = defaultOffset,
         onMove = { s.milkdropOffset = it },
         onResizeRaw = { grab ->
+            if (pinned != null) {
+                pinned.ask(grab, frame.chromeH)
+                return@FloatingSkinWindow
+            }
             // the height is capped at what fits between this window's top edge and the
             // safe bottom
             val topAtGrab = (s.screenH - grab.atHeight) / 2 + grab.atOffset.y
@@ -168,6 +177,9 @@ fun MilkdropWindow(
         },
         titleH = frame.titleH,
         cut = SkinCut(skin),
+        pinnedAt = pinned?.rect?.topLeft,
+        // its grip still changes its height in the stack
+        pinnedGrip = true,
         widgets = widgets,
         modifier = modifier,
         overlay = {
@@ -186,6 +198,31 @@ fun MilkdropWindow(
             draw(skin, width, height, milkdropTitle(s, vm.presetOps.importing), s.pressedWidget == "milkdrop.close")
         }
     }
+}
+
+/**
+ * The plug-in window while the layout holds it: the rectangle it is drawn in, how many steps
+ * tall the grip may make its visual, and who is told the height the grip asks for.
+ */
+class PinnedVisual(
+    val rect: IntRect,
+    val maxSteps: Int,
+    val onSteps: (Int) -> Unit,
+) {
+    /** Passes on the height a grip drag asks for, in steps, for a frame [chromeH] tall around the visual. */
+    fun ask(
+        grab: WindowGrab,
+        chromeH: Int,
+    ) = onSteps(
+        WindowSizing.stepsForHeight(
+            rawHeight = grab.rawHeight,
+            furnitureH = chromeH,
+            stepPx = MILKDROP_STEP,
+            min = MILKDROP_MIN_STEPS,
+            max = maxSteps,
+            current = (rect.height - chromeH) / MILKDROP_STEP,
+        ),
+    )
 }
 
 /**

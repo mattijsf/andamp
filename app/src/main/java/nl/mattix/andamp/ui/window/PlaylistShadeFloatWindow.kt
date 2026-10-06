@@ -29,10 +29,12 @@ fun PlaylistShadeFloatWindow(
     expandedH: Int,
     defaultOffset: IntOffset,
     modifier: Modifier = Modifier,
+    /** Where the layout holds it, at its narrowest, or null while it floats. */
+    pinnedAt: IntOffset? = null,
 ) {
     val s = vm.state
     val maxCols = ((s.screenW - PL_W) / PlaylistLayout.WIDTH_STEP).coerceAtLeast(0)
-    val cols = s.plCols.coerceIn(0, maxCols)
+    val cols = if (pinnedAt != null) 0 else s.plCols.coerceIn(0, maxCols)
     val width = PL_W + cols * PlaylistLayout.WIDTH_STEP
     FloatingSkinWindow(
         id = WindowStore.PLAYLIST,
@@ -44,6 +46,7 @@ fun PlaylistShadeFloatWindow(
         defaultOffset = defaultOffset,
         onMove = { s.plOffset = it },
         cut = SkinCut(skin),
+        pinnedAt = pinnedAt,
         onResizeRaw = { grab ->
             val resized =
                 WindowSizing.resize(

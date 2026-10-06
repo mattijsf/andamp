@@ -83,6 +83,18 @@ class WinampViewModel
 
         /** Whether the welcome screen has been shown; see [WelcomeStore]. */
         val welcome = WelcomeStore(app)
+
+        /**
+         * Whether the player fills the screen; see [DoubleSizeStore]. Double Size and Always
+         * On Top are on one at a time: switching this on switches [overlayOps] off, and the
+         * other way round there.
+         */
+        val doubleSize: DoubleSizeStore =
+            DoubleSizeStore(
+                app,
+                mirror = { state.doubleSize = it },
+                onSwitchedOn = { if (overlayOps.gate.wanted) overlayOps.want(false) },
+            )
         val eqOps = EqOps(state, facade, presetStore)
 
         /** Preferences > Effects. */
@@ -102,11 +114,12 @@ class WinampViewModel
          * The floating player. The permission is read through [Settings.canDrawOverlays]
          * every time, because it can be withdrawn in system settings while Andamp runs.
          */
-        val overlayOps =
+        val overlayOps: OverlayOps =
             OverlayOps(
                 OverlayStore(app),
                 permitted = { Settings.canDrawOverlays(app) },
                 mirror = { state.alwaysOnTop = it },
+                onSwitchedOn = { doubleSize.on = false },
             )
 
         /** The museum browser: its catalog, and what has been installed from it. */
@@ -121,6 +134,8 @@ class WinampViewModel
                 )
 
         init {
+            // an install that was left with both starts floating, with Double Size off
+            if (overlayOps.gate.wanted && doubleSize.on) doubleSize.on = false
             // a skin removed in the Skin Manager also loses its museum record, and a source
             // that asked for it goes back to Default
             skinOps.onRemoved = { id ->
@@ -244,6 +259,11 @@ class WinampViewModel
             }
             viewModelScope.launch {
                 snapshotFlow { tapAssistStore.enabled }.collect { state.tapAssist = it }
+            }
+            // the locked stack's own collapsed windows: read here, and stored as they change
+            state.stackShaded = doubleSize.shaded
+            viewModelScope.launch {
+                snapshotFlow { state.stackShaded }.drop(1).collect { doubleSize.shaded = it }
             }
             // restores what a previous session left: settings, queue, visuals, windows
             persistence.start()

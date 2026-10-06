@@ -6,9 +6,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.IntOffset
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.ui.ScaledWindowCanvas
+import nl.mattix.andamp.ui.widget.hitTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Before
@@ -33,6 +35,7 @@ class MainWindowInteractionTest {
     private var exits = 0
     private var minimizes = 0
     private var alwaysOnTop = 0
+    private var doubleSizes = 0
     private var optionsMenus = 0
 
     @Before
@@ -44,6 +47,7 @@ class MainWindowInteractionTest {
                 onExit = { exits++ },
                 onMinimize = { minimizes++ },
                 onAlwaysOnTop = { alwaysOnTop++ },
+                onDoubleSize = { doubleSizes++ },
                 optionsMenu = { anchor ->
                     optionsMenus++
                     nl.mattix.andamp.state
@@ -87,6 +91,33 @@ class MainWindowInteractionTest {
 
         compose.onRoot().performTouchInput { up() }
         assertEquals(null, vm.state.pressedWidget)
+    }
+
+    @Test
+    fun `the clutter bar's D asks for double size`() {
+        // the fourth letter: rows 47 to 54 of the window
+        compose.onRoot().performTouchInput { tapVirtual(14f, 51f) }
+
+        assertEquals(1, doubleSizes)
+        assertEquals("the D opens no menu", null, vm.state.activeMenu)
+    }
+
+    @Test
+    fun `a held D is the pressed widget, so it lights`() {
+        compose.onRoot().performTouchInput { down(Offset(14f * SCALE, 51f * SCALE)) }
+
+        assertEquals("main.clutter.d", vm.state.pressedWidget)
+
+        compose.onRoot().performTouchInput { up() }
+    }
+
+    @Test
+    fun `a press on any row of the D is the D's, not the I's above or the V's below`() {
+        val widgets = mainWindowWidgets(vm) {}
+
+        val hit = (47..54).map { y -> hitTest(widgets, IntOffset(14, y))?.id }.distinct()
+
+        assertEquals(listOf("main.clutter.d"), hit)
     }
 
     @Test

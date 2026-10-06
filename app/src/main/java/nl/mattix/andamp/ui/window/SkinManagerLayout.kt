@@ -10,6 +10,11 @@ class SkinManagerLayout(
     val visibleRows: Int = DEFAULT_ROWS,
     /** The window's width: [WIDTH] plus [WIDTH_STEP] a step. */
     val width: Int = WIDTH,
+    /**
+     * What the list is taller than its rows: a window held at a height that is not a whole
+     * number of rows leaves this much empty under the last one.
+     */
+    val slack: Int = 0,
 ) {
     fun listWidth(frame: WindowFrame) = width - frame.chromeW
 
@@ -17,7 +22,7 @@ class SkinManagerLayout(
      * The height of the list area: every visible row plus the top pad the rows are drawn
      * with.
      */
-    fun listHeight() = ListText.TOP_PAD.toInt() + visibleRows * ROW_H
+    fun listHeight() = ListText.TOP_PAD.toInt() + visibleRows * ROW_H + slack
 
     /** The window's height in [frame]: the list plus the frame's chrome. */
     fun height(frame: WindowFrame) = frame.chromeH + listHeight()
@@ -35,6 +40,16 @@ class SkinManagerLayout(
             availVirtual: Int,
             frame: WindowFrame,
         ): Int = ((availVirtual - furnitureH(frame)) / ROW_H).coerceAtLeast(MIN_ROWS)
+
+        /** The layout of a window exactly [height] tall and [width] wide; see [WindowSizing.rowsAndSlack]. */
+        fun filling(
+            height: Int,
+            width: Int,
+            frame: WindowFrame,
+        ): SkinManagerLayout {
+            val (rows, slack) = WindowSizing.rowsAndSlack(height, furnitureH(frame), ROW_H, MIN_ROWS)
+            return SkinManagerLayout(rows, width, slack)
+        }
 
         /** The height that is not rows: the frame's chrome and the top pad. */
         fun furnitureH(frame: WindowFrame) = frame.chromeH + ListText.TOP_PAD.toInt()

@@ -61,7 +61,8 @@ internal fun shadeTime(s: WinampState): String {
  *
  * A window's place is a center-relative offset, so a window that has been moved is
  * re-anchored for its new height, and the windows docked under it follow. A window that has
- * never been moved is placed by its row.
+ * never been moved is placed by its row. In a locked stack the layout places every window,
+ * and the places they float at are left as they are.
  */
 fun WinampState.setShaded(
     id: String,
@@ -74,11 +75,13 @@ fun WinampState.setShaded(
     if (was == shaded) return
     val oldH = heightOf(expandedH, was)
     val newH = heightOf(expandedH, shaded)
-    val offset = offsetInState(id)
-    if (offset != null && screenH > 0) {
-        placeWindow(id, WindowSizing.anchorTop(offset, oldH = oldH, newH = newH, screenH = screenH))
+    if (!doubleSize) {
+        val offset = offsetInState(id)
+        if (offset != null && screenH > 0) {
+            placeWindow(id, WindowSizing.anchorTop(offset, oldH = oldH, newH = newH, screenH = screenH))
+        }
+        carryDockedBelow(id, newH - oldH)
     }
-    carryDockedBelow(id, newH - oldH)
     when (id) {
         WindowStore.MAIN -> mainShaded = shaded
         WindowStore.EQ -> eqShaded = shaded

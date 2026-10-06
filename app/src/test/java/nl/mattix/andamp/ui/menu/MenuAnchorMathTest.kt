@@ -56,6 +56,20 @@ class MenuAnchorMathTest {
         assertEquals(400 * scale, rect.top)
     }
 
+    @Test
+    fun `on a surface drawn smaller than it is laid out, an anchor lands where the widget is drawn`() {
+        // a 1080 px screen filled by a player laid out at 4: 1100 px drawn as 1080
+        val shrink = 1080f / 1100f
+        val filled = mapOf(WindowStore.EQ to IntRect(0, 116, 275, 232))
+
+        val rect = menuAnchorBounds(MenuAnchor(WindowStore.EQ, 217, 18, 44, 12), 4, width, height, filled, shrink)
+
+        assertEquals(852, rect.left) // 217 * 4 * shrink = 852.2
+        assertEquals(526, rect.top) // 134 * 4 * shrink = 526.3
+        assertEquals(173, rect.width) // 44 * 4 * shrink = 172.8
+        assertEquals(47, rect.height) // 12 * 4 * shrink = 47.1
+    }
+
     /** A window still laying out has no rectangle to anchor to. */
     @Test
     fun `an anchor on a window that has not laid out lands mid-screen`() {

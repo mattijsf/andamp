@@ -19,4 +19,6 @@ data class GenWindowSpec(
      * to the window's own step. A window without one has no grip and cannot be resized.
      */
     val onResizeRaw: ((WindowGrab) -> Unit)? = null,
+    /** Where the layout holds the window, or null while it floats; see [FloatingSkinWindow]. */
+    val pinnedAt: IntOffset? = null,
 )

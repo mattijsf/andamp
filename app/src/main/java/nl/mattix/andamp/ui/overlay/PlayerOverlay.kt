@@ -138,7 +138,9 @@ object PlayerOverlay {
                         setModal(windows, modal)
                         resize(windows, here)
                     }
-                    Player(vm, skin, display, onOpenApp, onOpenAppAt, onClose, onMinimize)
+                    // not once it is switched off: the app is the surface that lays the player
+                    // out from then on, and Double Size switched on from here fills that one
+                    if (stillWanted) Player(vm, skin, display, onOpenApp, onOpenAppAt, onClose, onMinimize)
                 }
             }
 

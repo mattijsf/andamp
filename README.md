@@ -22,7 +22,8 @@ What works:
 - The whole interface: transport, seekbar, volume and balance, the marquee, a working 10-band
   equalizer with the factory presets, playlist editing, shade mode, and the built-in
   spectrum analyzer and oscilloscope.
-- A translucent window (Android 9+), so the windows float over your wallpaper.
+- A translucent window (Android 9+), so the windows float over your wallpaper, or Double
+  Size (the D in the clutter bar) to fill the screen with the player instead.
 - DSP effects in Preferences, extendable with `.lua` plug-ins.
 - A visualizer window running AVS and Milkdrop presets.
 - A floating player that stays on top of other apps, and a home-screen widget.
@@ -55,8 +56,9 @@ Skins. Modern `.wal` skins are not supported.
 
 ## Project layout
 
-Everything draws in a 275 pixel wide virtual space, like real Winamp, scaled to the screen
-by a whole number. Sprite coordinates come from [webamp](https://github.com/captbaritone/webamp)'s
+Everything draws in a 275 pixel wide virtual space, like real Winamp, scaled by a whole
+number. With Double Size on, the finished picture is then drawn a little smaller, so it is
+exactly as large as the screen takes: as wide as a phone's. Sprite coordinates come from [webamp](https://github.com/captbaritone/webamp)'s
 `skinSprites.ts`.
 
 ```

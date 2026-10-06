@@ -380,8 +380,14 @@ Rules:
    can be compared one to one. For new coordinates: fetch, transcribe, and check on a
    device against https://webamp.org with the same skin.
 2. **Everything draws in virtual pixels, 275 wide.** Each window has one uniform
-   `withTransform { scale(S, S) }` with integer `S = floor(screenWidthPx / 275)`. All
-   coordinates are integers in virtual space. Never scale a sprite on its own.
+   `withTransform { scale(S, S) }` with a whole `S`, the largest that fits the screen
+   (`playerScale`). All coordinates are integers in virtual space. Never scale a sprite on
+   its own.
+   With Double Size on, the player is as large as the screen takes, which is rarely a
+   whole number of times its own size. `playerViewport` then picks the next whole `S` up,
+   the windows are laid out on a surface larger than the screen, and `PlayerViewportBox`
+   draws that surface smaller through one layer. Drawing and layout code still see a whole
+   `S`; only the layer knows the fraction.
    The home-screen widget is the one exception, and only when the listener picks
    Preferences > Home screen widget > Size > Fill. The scale is still uniform, and
    `WidgetLayout.px`/`span` is the single rounding that drawing and placing both use.
@@ -523,8 +529,10 @@ After a UI change: `./gradlew installDebug`, launch, take a screenshot with
 `adb exec-out screencap -p > shot.png`, and look at the changed region pixel by pixel. If
 coordinates changed, compare with webamp.org using the same skin. `adb shell input
 tap/swipe` works for interactions; content is centered, and a virtual coordinate `v` is at
-`origin + v*S` on the device. After a change to the skin engine, also test a skin other
-than the base one.
+`origin + v*S` on the device. With Double Size on, on a phone, the stack starts at the
+screen's left edge under the status bar, and `v` is at `v * screenWidthPx / 275`. Where the
+height decides the size, as on a tablet on its side, the stack is in the middle. After a
+change to the skin engine, also test a skin other than the base one.
 
 ## Code style
 

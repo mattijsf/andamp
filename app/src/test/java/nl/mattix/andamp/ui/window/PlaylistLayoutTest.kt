@@ -19,6 +19,17 @@ class PlaylistLayoutTest {
     }
 
     @Test
+    fun `a window held at a height between two segments shows the rows that fit it`() {
+        // 11 rows more than eight segments: the frame's ninth tile is cut short
+        val layout = PlaylistLayout(20 + 8 * 29 + 11 + 38)
+
+        assertEquals(301, layout.height)
+        assertEquals(8 * 29 + 11, layout.middleH)
+        assertEquals((8 * 29 + 11 - 6) / 13, layout.visibleRows)
+        assertEquals(layout.middleH - 18, layout.scrollTrackH)
+    }
+
+    @Test
     fun `tiny available space still yields the two-segment minimum`() {
         assertEquals(116, PlaylistLayout.forAvailableHeight(0).height)
         assertEquals(116, PlaylistLayout.forAvailableHeight(-100).height)

@@ -25,24 +25,68 @@ import androidx.core.view.WindowInsetsControllerCompat
 /**
  * Draws the status bar's icons dark over something light, and light over something dark.
  *
- * The bar is transparent. Over the player it sits on the wallpaper, so the answer is read
- * from the wallpaper and read again when the wallpaper changes. Over any other screen it sits
- * on that screen's own background, and [dark] is the answer.
+ * The bar is transparent. Over the floating player it sits on the wallpaper, so the answer
+ * is read from the wallpaper and read again when the wallpaper changes. A player that fills
+ * the screen ([playerFillsScreen]) puts black under it, and under the navigation bar too.
+ * Over any other screen it sits on that screen's own background, and [dark] is the answer.
  */
 @Composable
 fun StatusBarIcons(
     onPlayer: Boolean,
+    playerFillsScreen: Boolean,
     dark: Boolean,
 ) {
     val view = LocalView.current
     if (view.isInEditMode) return
     val lightWallpaper = rememberWallpaperIsLight()
-    val wanted = if (onPlayer) lightWallpaper else dark
+    val wanted = statusBarIconsDark(onPlayer, playerFillsScreen, lightWallpaper, lightScreen = dark)
     SideEffect {
         val window = (view.context as? Activity)?.window ?: return@SideEffect
         WindowInsetsControllerCompat(window, view).isAppearanceLightStatusBars = wanted
     }
+    NavigationBarOverBlack(onPlayer && playerFillsScreen)
 }
+
+/**
+ * While [active], shows the navigation bar's buttons light and without the scrim the system
+ * draws behind them for contrast: what is under the bar is black. The bar is given back as it
+ * was found.
+ *
+ * From Android 10, where that scrim can be switched off. Before it the bar has a color of
+ * its own, and is left as it is.
+ */
+@Composable
+private fun NavigationBarOverBlack(active: Boolean) {
+    val view = LocalView.current
+    DisposableEffect(view, active) {
+        val window = (view.context as? Activity)?.window
+        if (!active || window == null || Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            return@DisposableEffect onDispose {}
+        }
+        val bars = WindowInsetsControllerCompat(window, view)
+        val darkButtons = bars.isAppearanceLightNavigationBars
+        val scrim = window.isNavigationBarContrastEnforced
+        bars.isAppearanceLightNavigationBars = false
+        window.isNavigationBarContrastEnforced = false
+        onDispose {
+            bars.isAppearanceLightNavigationBars = darkButtons
+            window.isNavigationBarContrastEnforced = scrim
+        }
+    }
+}
+
+/** Whether the status bar's icons are dark, for what is under the bar. */
+internal fun statusBarIconsDark(
+    onPlayer: Boolean,
+    playerFillsScreen: Boolean,
+    lightWallpaper: Boolean,
+    lightScreen: Boolean,
+): Boolean =
+    when {
+        !onPlayer -> lightScreen
+        playerFillsScreen -> false
+        else -> lightWallpaper
+    }
 
 /** Whether the home screen's wallpaper wants dark text over it, kept up to date. */
 @Composable

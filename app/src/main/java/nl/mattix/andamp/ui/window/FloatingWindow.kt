@@ -3,15 +3,13 @@
 package nl.mattix.andamp.ui.window
 
 import android.os.SystemClock
-import androidx.compose.foundation.layout.mandatorySystemGestures
-import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import nl.mattix.andamp.ui.widget.HIT_SLOP
 import nl.mattix.andamp.ui.widget.Widget
 import nl.mattix.andamp.ui.widget.distanceSquaredTo
+import nl.mattix.andamp.ui.widget.hitTest
 import kotlin.math.abs
 
 // What every floating window shares: it is dragged by a handle, it docks against its
@@ -36,8 +34,8 @@ data class WindowScreen(
  * The screen this window sits on, measured from the container it was given and published to
  * [state].
  *
- * The container must be the whole of the app's window: what the system bars take is
- * expressed as [WindowScreen.safeBottom], not by handing this a smaller box.
+ * The container must be the whole surface the windows are laid out on: what the system
+ * bars take is expressed as [WindowScreen.safeBottom], not by handing this a smaller box.
  */
 @androidx.compose.runtime.Composable
 internal fun androidx.compose.foundation.layout.BoxWithConstraintsScope.windowScreen(
@@ -45,11 +43,7 @@ internal fun androidx.compose.foundation.layout.BoxWithConstraintsScope.windowSc
     state: nl.mattix.andamp.state.WinampState,
 ): WindowScreen {
     val density = androidx.compose.ui.platform.LocalDensity.current
-    val told = LocalSurfaceScreen.current
-    val bottomInset =
-        told?.bottom
-            ?: androidx.compose.foundation.layout.WindowInsets.Companion.safeDrawing
-                .getBottom(density)
+    val bottomInset = surfaceBottomInset(density)
     val screen =
         WindowScreen(
             width = constraints.maxWidth / scale,
@@ -92,6 +86,18 @@ internal fun devicePlacementOf(
     val topLeft = topLeftOf(offset, width, height, screenW, screenH)
     return IntOffset(topLeft.x * scale, topLeft.y * scale)
 }
+
+/**
+ * The center-relative offset that puts a window's top-left corner at [topLeft]: what
+ * [topLeftOf] is undone by.
+ */
+internal fun offsetOfTopLeft(
+    topLeft: IntOffset,
+    width: Int,
+    height: Int,
+    screenW: Int,
+    screenH: Int,
+): IntOffset = IntOffset(topLeft.x - (screenW - width) / 2, topLeft.y - (screenH - height) / 2)
 
 internal fun rectOf(
     offset: IntOffset,
@@ -428,58 +434,38 @@ private const val SCREEN_AWAY = 10_000
 internal const val RESIZE_GRIP = 20
 
 /**
- * What the surface being drawn knows about the screen around it, in device pixels, or null
- * to read the window's own insets.
- *
- * The activity reads its insets, because its window is the screen. The floating player's
- * insets describe its own window, which moves with the windows drawn inside it, so reading
- * them feeds back into the layout. The overlay measures the display from outside the
- * composition and provides the answer here.
- */
-data class SurfaceScreen(
-    /** The status bar's height: how far down this surface's content begins. */
-    val statusBar: Int,
-    /** How much of the notification shade's gesture strip lies inside the surface. */
-    val shadeStrip: Int,
-    /** What the bottom of the screen keeps for the system's own gestures. */
-    val bottom: Int,
-)
-
-val LocalSurfaceScreen = androidx.compose.runtime.compositionLocalOf<SurfaceScreen?> { null }
-
-/**
- * The first row a window's handle may occupy: below the strip the system keeps for the
- * notification shade, where a drag pulls the shade down.
- *
- * The screen is already padded by the status bar, so what is left of the strip is the
- * difference between the two, unless [LocalSurfaceScreen] says how much of the strip is
- * inside the surface.
- */
-@androidx.compose.runtime.Composable
-internal fun grabbableTop(
-    scale: Int,
-    density: androidx.compose.ui.unit.Density,
-): Int {
-    LocalSurfaceScreen.current?.let { return it.shadeStrip / scale }
-    val shade =
-        androidx.compose.foundation.layout.WindowInsets.Companion.mandatorySystemGestures
-            .getTop(density)
-    val status =
-        androidx.compose.foundation.layout.WindowInsets.Companion.statusBars
-            .getTop(density)
-    return ((shade - status).coerceAtLeast(0)) / scale
-}
-
-/**
  * The magnifier as one window offers it to the canvas: open it, move it, press what it is
  * on. [make] builds the [Loupe] from the window's own drawing and widgets, and the one open
  * lens is held in the state.
+ *
+ * [aim] says where a press that landed somewhere in the window is aimed, which near a side
+ * of the screen is further out than the finger got; see [Loupe.aimedAcross].
  */
 class LoupeGesture(
     private val state: nl.mattix.andamp.state.WinampState,
+    private val aim: (Offset) -> Offset = { it },
     private val make: (Offset, Widget) -> Loupe,
 ) {
-    /** [on] is the control the press landed on: the lens opens over that one. */
+    /**
+     * How far a press at [touched] is moved to where it was aimed, or nothing.
+     *
+     * Only a small control ([Loupe.fiddly]) takes a press that was aimed at it from beside
+     * it: a slider or a window's handle near the edge is pressed where the finger is. The
+     * aim is a fingertip's, so only a finger's press is asked about here.
+     */
+    fun shiftFor(
+        widgets: List<Widget>,
+        touched: Offset,
+    ): Offset {
+        val aimed = aim(touched)
+        val reached = hitTest(widgets, IntOffset(aimed.x.toInt(), aimed.y.toInt())) ?: return Offset.Zero
+        return if (!reached.background && Loupe.fiddly(reached)) aimed - touched else Offset.Zero
+    }
+
+    /**
+     * [at] is where the finger is, in the window's virtual pixels, and [on] the control the
+     * press landed on: the lens opens over that one.
+     */
     fun open(
         at: Offset,
         on: Widget,
