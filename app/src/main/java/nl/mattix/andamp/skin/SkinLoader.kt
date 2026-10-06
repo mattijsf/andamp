@@ -16,9 +16,18 @@ import java.util.zip.ZipInputStream
  * lookup rules: case-insensitive base names, any directory prefix, last
  * matching zip entry wins, every member optional with per-sheet fallback
  * to the bundled base skin.
+ *
+ * A sheet of more than [MAX_SHEET_PIXELS] pixels is not decoded and counts as
+ * corrupt, so one archive cannot ask for more memory than the phone has.
  */
 object SkinLoader {
     private const val TAG = "SkinLoader"
+
+    /**
+     * The most pixels one sheet may hold: twelve times the largest sheet of the format, the
+     * equalizer's 275 by 315. A decoded pixel takes four bytes, so a sheet takes 4 MB at most.
+     */
+    internal const val MAX_SHEET_PIXELS = 1024 * 1024
 
     /** Loads the bundled base skin. */
     fun loadBase(context: Context): Skin = loadBundled(context, BundledSkins.BASE)
@@ -109,8 +118,18 @@ object SkinLoader {
                 BitmapFactory.Options().apply {
                     inScaled = false
                     inPreferredConfig = Bitmap.Config.ARGB_8888
+                    // the first pass reads the sheet's size and decodes no pixels
+                    inJustDecodeBounds = true
                 }
-            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)?.asImageBitmap()
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
+            // refused and not sampled down: sprites are cut from a sheet at fixed coordinates
+            if (opts.outWidth.toLong() * opts.outHeight > MAX_SHEET_PIXELS) {
+                Log.w(TAG, "Sheet of ${opts.outWidth} by ${opts.outHeight} pixels is too large")
+                null
+            } else {
+                opts.inJustDecodeBounds = false
+                BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)?.asImageBitmap()
+            }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to decode sheet", e)
             null

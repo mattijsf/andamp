@@ -35,12 +35,16 @@ import java.util.concurrent.Executors
  * Any other address, and a local one with no picture in either place, goes to
  * Media3's loader.
  *
+ * A cover is decoded no larger than [MAX_SIDE] on its longer side, wherever it
+ * comes from. A picture in a file's tags or behind an address can be thousands
+ * of pixels wide, and a decoded pixel takes four bytes.
+ *
  * The work runs on one thread of its own, because reading tags opens and
  * parses the file.
  */
 internal class CoverBitmapLoader(
     context: Context,
-    private val elsewhere: BitmapLoader = DataSourceBitmapLoader(context.applicationContext),
+    private val elsewhere: BitmapLoader = DataSourceBitmapLoader(context.applicationContext, MAX_SIDE),
 ) : BitmapLoader {
     private val app = context.applicationContext
     private val work: ExecutorService = Executors.newSingleThreadExecutor { job -> Thread(job, "andamp-cover") }
@@ -68,13 +72,23 @@ internal class CoverBitmapLoader(
         val tags = MediaMetadataRetriever()
         return try {
             tags.setDataSource(app, uri)
-            tags.embeddedPicture?.let { BitmapFactory.decodeByteArray(it, 0, it.size) }
+            tags.embeddedPicture?.let(::decodeBounded)
         } catch (_: RuntimeException) {
             // not audio, not openable, or gone: all mean no picture here
             null
         } finally {
             runCatching { tags.release() }
         }
+    }
+
+    /** Decodes an encoded [picture], sampled down until its longer side fits in [MAX_SIDE]. */
+    private fun decodeBounded(picture: ByteArray): Bitmap? {
+        // the first pass reads the picture's size and decodes no pixels
+        val options = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+        BitmapFactory.decodeByteArray(picture, 0, picture.size, options)
+        options.inSampleSize = coverSampleSize(options.outWidth, options.outHeight, MAX_SIDE)
+        options.inJustDecodeBounds = false
+        return BitmapFactory.decodeByteArray(picture, 0, picture.size, options)
     }
 
     /**
@@ -98,7 +112,27 @@ internal class CoverBitmapLoader(
     private companion object {
         /** The side of the thumbnail asked for, in pixels. */
         const val SIDE = 512
+
+        /** The longer side of a decoded cover, at most, in pixels. */
+        const val MAX_SIDE = 1024
     }
+}
+
+/**
+ * What a picture of [width] by [height] pixels is divided by so that its
+ * longer side fits in [max] pixels. A power of two, because the decoder rounds
+ * any other number down to one.
+ */
+internal fun coverSampleSize(
+    width: Int,
+    height: Int,
+    max: Int,
+): Int {
+    val longer = maxOf(width, height)
+    var sample = 1
+    // rounded up, as the decoder rounds a side that does not divide evenly
+    while ((longer + sample - 1) / sample > max) sample *= 2
+    return sample
 }
 
 /** A `content://` or `file://` address. */
