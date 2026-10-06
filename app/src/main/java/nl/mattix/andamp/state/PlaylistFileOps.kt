@@ -36,6 +36,8 @@ class PlaylistFileOps(
     private val io: kotlin.coroutines.CoroutineContext = Dispatchers.IO,
     /** Told the name of a saved list once it is deleted, so the library window can drop its row. */
     private val onListDeleted: (String) -> Unit = {},
+    /** Told the rows of a saved list once they are read; see [FolderAccessOps.listRead]. */
+    private val onListRead: suspend (List<Track>) -> Unit = {},
 ) {
     /** True when the device's audio library may be read; drives the permission prompt. */
     fun canReadLibrary() = library.hasPermission()
@@ -257,7 +259,10 @@ class PlaylistFileOps(
                     val name = keys.firstOrNull() ?: return@PresetPicker
                     scope.launch {
                         val tracks = withContext(io) { listsLibrary.load(name) }
-                        if (!tracks.isNullOrEmpty()) facade.setQueue(tracks)
+                        if (!tracks.isNullOrEmpty()) {
+                            facade.setQueue(tracks)
+                            onListRead(tracks)
+                        }
                     }
                 }
         }

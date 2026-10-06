@@ -112,6 +112,23 @@ class FakeMediaStore : ContentProvider() {
         db.execSQL("UPDATE albums SET numsongs = numsongs - 1 WHERE _id = ?", arrayOf<Any>(oldId))
     }
 
+    /** One audio file the library lists at [path], under [id]. */
+    fun file(
+        id: Long,
+        path: String,
+    ) {
+        db.insert(
+            "media",
+            null,
+            ContentValues().apply {
+                put("_id", id)
+                put("title", path.substringAfterLast('/'))
+                put("duration", TRACK_MS)
+                put("_data", path)
+            },
+        )
+    }
+
     /** Strips a track's number, the way an untagged file arrives. */
     fun unnumber(track: String) {
         db.execSQL("UPDATE media SET track = NULL WHERE title = ?", arrayOf<Any>(track))

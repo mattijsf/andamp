@@ -57,12 +57,20 @@ internal class CoverBitmapLoader(
 
     override fun loadBitmap(uri: Uri): ListenableFuture<Bitmap> {
         if (!onThisPhone(uri)) return elsewhere.loadBitmap(uri)
+        // The uri the file can be read under now, worked out on the worker and used by all
+        // three places a cover is looked for; see Media3PlaybackHost.readableUri.
+        val readable =
+            java.util.concurrent.atomic
+                .AtomicReference(uri)
         // a local address with no cover is not reported as a failure: the
         // fetching loader gets it next, and its answer is the caller's
         return Futures.catchingAsync(
-            onWorker { inTags(uri) ?: fromLibrary(uri) ?: error("no cover in $uri") },
+            onWorker {
+                val at = Media3PlaybackHost.readableUri(uri).also(readable::set)
+                inTags(at) ?: fromLibrary(at) ?: error("no cover in $uri")
+            },
             Throwable::class.java,
-            AsyncFunction { elsewhere.loadBitmap(uri) },
+            AsyncFunction { elsewhere.loadBitmap(readable.get()) },
             MoreExecutors.directExecutor(),
         )
     }

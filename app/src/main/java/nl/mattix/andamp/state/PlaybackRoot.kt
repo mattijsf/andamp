@@ -48,6 +48,10 @@ object PlaybackRoot {
         val restored = PlaylistStore(app).initial(DefaultTracks.tracks)
         // the notification uses the app's own icon; set here because the drawable is the app's
         Media3PlaybackHost.notificationIcon = nl.mattix.andamp.R.drawable.ic_launcher_monochrome
+        // what the player opens a row's file under is worked out here, where grants and the
+        // library are known; see ReadableUri
+        val readable = ReadableUri(app)
+        Media3PlaybackHost.readableUri = { uri -> android.net.Uri.parse(readable.of(uri.toString())) }
         val player = mixed(app, restored)
         // the host owns the media session, and with it the notification, the lock screen,
         // the headset button and the foreground service. It is given the composite, so the

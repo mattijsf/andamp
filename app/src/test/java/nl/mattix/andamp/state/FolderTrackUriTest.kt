@@ -16,7 +16,8 @@ import org.robolectric.annotation.Config
  * A track added from a picked folder keeps the folder's own uri.
  *
  * The grant is on the tree, and [GrantScope] keeps a tree grant only while a queued uri
- * lies under it. A library uri in the queue would let the prune release the folder.
+ * lies under it. A library uri in the queue would let the prune release the folder, and
+ * it would not say where the file is.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -47,8 +48,23 @@ class FolderTrackUriTest {
         assertEquals(document, track.uri)
     }
 
+    /**
+     * A file picked from the phone's storage is named by where it is, which still means
+     * the same file on another phone. The library's uri for it is a number in this
+     * phone's library.
+     */
     @Test
-    fun `a picked file takes the library's uri`() {
+    fun `a file picked from storage keeps its own uri although the library knows the file`() {
+        val files = MediaFiles(app, KnowsEverything(app))
+        val picked = "content://com.android.externalstorage.documents/document/primary%3ADownload%2Fsong.mp3"
+
+        val track = files.readAdded(Uri.parse(picked))
+
+        assertEquals(picked, track.uri)
+    }
+
+    @Test
+    fun `a picked file whose uri does not say where it is takes the library's uri`() {
         val files = MediaFiles(app, KnowsEverything(app))
 
         val track = files.readAdded(Uri.parse("content://com.android.providers.downloads.documents/document/msf%3A23"))

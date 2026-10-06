@@ -46,6 +46,18 @@ object Media3PlaybackHost {
     @androidx.annotation.DrawableRes
     var notificationIcon: Int = 0
 
+    /**
+     * Which uri a local file is opened under right now, given the uri its row carries. Set
+     * by the app, which knows what it may read: a row keeps the address it was added under,
+     * and the same file can be reachable another way when that address no longer opens.
+     *
+     * Everything in this module that opens a row's file asks here at the moment it opens
+     * it: playback, the kbps readout and the cover. The answer is used for that one read
+     * and is not kept, so the row itself never changes. Called off the main thread.
+     */
+    @Volatile
+    var readableUri: (android.net.Uri) -> android.net.Uri = { it }
+
     fun backend(
         context: Context,
         initialTracks: List<Track>,

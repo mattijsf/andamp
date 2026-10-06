@@ -528,6 +528,9 @@ class WinampState {
     /** A request for music access, waiting for the screen to ask; see [LibraryPrompt]. */
     var libraryAsk by mutableStateOf<LibraryAsk?>(null)
 
+    /** A folder to pick again, waiting for the screen to open the picker; see [FolderAccessOps]. */
+    var folderAsk by mutableStateOf<FolderAsk?>(null)
+
     /**
      * Winamp's Always On Top, as the clutter bar draws it: its A is lit while the floating
      * window is switched on. Mirrored here because draw code reads this state only.

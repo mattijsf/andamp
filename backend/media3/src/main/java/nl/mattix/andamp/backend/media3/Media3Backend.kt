@@ -1074,7 +1074,7 @@ private class TrackBytes(
             if (uri.startsWith(ASSET_SCHEME)) {
                 context.assets.open(uri.removePrefix(ASSET_SCHEME))
             } else {
-                context.contentResolver.openInputStream(android.net.Uri.parse(uri))
+                context.contentResolver.openInputStream(Media3PlaybackHost.readableUri(android.net.Uri.parse(uri)))
             }
         }.getOrNull()
 
@@ -1094,17 +1094,33 @@ private class TrackBytes(
 private fun streamingSources(context: Context) =
     androidx.media3.exoplayer.source
         .DefaultMediaSourceFactory(
-            androidx.media3.datasource
-                .DefaultDataSource
-                .Factory(
-                    context,
-                    androidx.media3.datasource
-                        .DefaultHttpDataSource
-                        .Factory()
-                        .setAllowCrossProtocolRedirects(true)
-                        .setDefaultRequestProperties(mapOf("Icy-MetaData" to "1")),
-                ),
+            readableSources(
+                androidx.media3.datasource
+                    .DefaultDataSource
+                    .Factory(
+                        context,
+                        androidx.media3.datasource
+                            .DefaultHttpDataSource
+                            .Factory()
+                            .setAllowCrossProtocolRedirects(true)
+                            .setDefaultRequestProperties(mapOf("Icy-MetaData" to "1")),
+                    ),
+            ),
         )
+
+/**
+ * [upstream], with each local file opened under the uri [readable] gives for it; see
+ * [Media3PlaybackHost.readableUri]. The uri is worked out when the file is opened, on the
+ * loading thread, and the media item keeps the row's own uri. A station's address is passed
+ * through unasked.
+ */
+internal fun readableSources(
+    upstream: androidx.media3.datasource.DataSource.Factory,
+    readable: (android.net.Uri) -> android.net.Uri = { Media3PlaybackHost.readableUri(it) },
+): androidx.media3.datasource.DataSource.Factory =
+    androidx.media3.datasource.ResolvingDataSource.Factory(upstream) { spec ->
+        if (spec.uri.scheme == android.content.ContentResolver.SCHEME_CONTENT) spec.withUri(readable(spec.uri)) else spec
+    }
 
 /**
  * The length a queue entry should carry, or null to leave it alone.

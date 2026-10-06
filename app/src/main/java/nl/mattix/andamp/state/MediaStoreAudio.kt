@@ -7,6 +7,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Environment
 import android.provider.MediaStore
 import android.util.Log
 import androidx.core.content.ContextCompat
@@ -69,6 +70,35 @@ open class MediaStoreAudio(
             .buildUpon()
             .appendPath(match.id.toString())
             .build()
+    }
+
+    /**
+     * The library entry for the very file the storage document [documentUri] stands for,
+     * found by its path ([DocumentFilePath]). No grant on the document is needed, so this
+     * finds a file whose folder can no longer be read, and it cannot pick another file of
+     * the same name. Null for a document of another provider and for a file the library
+     * does not list.
+     */
+    open fun findAt(documentUri: String): Uri? {
+        if (!hasPermission()) return null
+        val path = DocumentFilePath.of(documentUri, Environment.getExternalStorageDirectory().path) ?: return null
+        return runCatching {
+            resolver
+                .query(
+                    MediaStore.Audio.Media.EXTERNAL_CONTENT_URI,
+                    arrayOf(MediaStore.Audio.Media._ID),
+                    "${MediaStore.Audio.Media.DATA} = ?",
+                    arrayOf(path),
+                    null,
+                )?.use { cursor -> if (cursor.moveToFirst()) cursor.getLong(0) else null }
+        }.onFailure { Log.i(TAG, "Library lookup for $path failed", it) }
+            .getOrNull()
+            ?.let { id ->
+                MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+                    .buildUpon()
+                    .appendPath(id.toString())
+                    .build()
+            }
     }
 
     /** What the library knows about [uri]: artist, title and duration. */

@@ -28,6 +28,8 @@ class FileInfoSource(
      * null; see [WinampState.liveSampleRateKhz].
      */
     private val liveSampleRateKhz: (Track) -> Int? = { null },
+    /** The uri to open a row's file under right now; see [ReadableUri]. */
+    private val readable: (String) -> String = { it },
 ) : TrackInfoSource {
     override suspend fun describe(track: Track): TrackInfo? {
         // a stream has no file to open, and a row with no uri has nothing at all
@@ -44,7 +46,7 @@ class FileInfoSource(
         val retriever = open()
         val tags: Map<Int, String> =
             try {
-                retriever.setDataSource(app, uri)
+                retriever.setDataSource(app, Uri.parse(readable(uri.toString())))
                 KEYS.mapNotNull { key -> retriever.extractMetadata(key)?.let { key to it } }.toMap()
             } catch (e: Exception) {
                 Log.w(TAG, "Could not read $uri", e)

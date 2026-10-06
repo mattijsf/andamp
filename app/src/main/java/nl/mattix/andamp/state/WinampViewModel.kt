@@ -69,7 +69,8 @@ class WinampViewModel
         /** Not a constructor parameter: tests reach it through the prefs the app writes. */
         private val visualsStore = VisualsStore(app)
         private val library = MediaStoreAudio(app)
-        private val mediaFiles = MediaFiles(app, library)
+        private val readable = ReadableUri(app, library)
+        private val mediaFiles = MediaFiles(app, library, readable::of)
         val playlistOps = PlaylistOps(state, facade)
         val volumeModes = VolumeModeStore(app)
 
@@ -153,8 +154,15 @@ class WinampViewModel
                 bookmarkStore,
                 state,
                 viewModelScope,
-                queue = { tracks, from -> facade.setQueue(tracks, from) },
-                append = { facade.enqueue(it) },
+                // a bookmark is read from disk like a saved list; see FolderAccessOps.listRead
+                queue = { tracks, from ->
+                    facade.setQueue(tracks, from)
+                    viewModelScope.launch { folderAccess.listRead(tracks) }
+                },
+                append = { tracks ->
+                    facade.enqueue(tracks)
+                    viewModelScope.launch { folderAccess.listRead(tracks) }
+                },
             )
 
         /** Preferences > Plug-ins: installing and removing .lua files. */
@@ -174,6 +182,16 @@ class WinampViewModel
                 onReach = { state.reach = it },
             )
 
+        /** The way back to a folder that can no longer be read; see [FolderAccessOps]. */
+        val folderAccess =
+            FolderAccessOps(
+                state,
+                facade,
+                viewModelScope,
+                playlistStore,
+                readable,
+            )
+
         /** The media library window: artists, albums, lists and radio. */
         val libraryOps =
             LibraryOps(
@@ -184,6 +202,7 @@ class WinampViewModel
                 playlistLibrary,
                 stationStore,
                 nameOf = { librarySources.showing.label },
+                onListRead = folderAccess::listRead,
             )
 
         /** Picking a library, and what a sign-in or a sign-out changes; see [SourceOps]. */
@@ -249,7 +268,12 @@ class WinampViewModel
             )
 
         /** Winamp's Alt+3. Not a constructor parameter: tests exercise [TrackInfoOps] directly. */
-        val trackInfoOps = TrackInfoOps(state, FileInfoSource(app, liveSampleRateKhz = state::liveSampleRateKhz), viewModelScope)
+        val trackInfoOps =
+            TrackInfoOps(
+                state,
+                FileInfoSource(app, liveSampleRateKhz = state::liveSampleRateKhz, readable = readable::of),
+                viewModelScope,
+            )
 
         /** LIST > SAVE/LOAD LIST, which need a document picker and the file system. */
         val playlistFiles =
@@ -263,6 +287,7 @@ class WinampViewModel
                 mediaFiles,
                 playlistLibrary,
                 onListDeleted = libraryOps::savedListDeleted,
+                onListRead = folderAccess::listRead,
             )
 
         /** The skin every canvas draws with; null until the bundled one decodes. */
@@ -380,8 +405,11 @@ class WinampViewModel
         val canAttenuate get() = facade.capabilities.canAttenuate
 
         override fun play() {
+            val row = state.playlist.getOrNull(state.currentIndex)
+            // from a stop the press is for this row; a paused or playing one is open already
+            if (state.transport == Transport.Stopped && row != null && folderAccess.pressed(row)) return
             facade.play()
-            libraryPrompt.of(state.playlist.getOrNull(state.currentIndex))?.let { state.libraryAsk = it }
+            libraryPrompt.of(row)?.let { state.libraryAsk = it }
         }
 
         override fun pause() = facade.pause()
@@ -394,6 +422,8 @@ class WinampViewModel
 
         override fun playTrack(index: Int) {
             val row = state.playlist.getOrNull(index) ?: return
+            // a row whose folder can no longer be read is taken care of there
+            if (folderAccess.pressed(row)) return
             // the press goes through: the player skips a row nothing can open and plays
             // the next one it can. The prompt says why this row cannot play
             facade.playAt(index)

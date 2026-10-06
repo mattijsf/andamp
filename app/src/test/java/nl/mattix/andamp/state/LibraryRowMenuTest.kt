@@ -270,6 +270,43 @@ class LibraryRowMenuTest {
         assertTrue(ops.rows.isEmpty())
     }
 
+    /**
+     * A saved list is read from disk, and what it names may have stopped opening since it
+     * was saved. Its rows are reported when they are read, from the list's row and from
+     * inside the list alike, so that a folder they need can be asked for. The rows
+     * themselves are played as they were saved.
+     */
+    @Test
+    fun `a saved list's rows are reported when read and played as saved`() {
+        val facade = PlayerFacade(MockBackend(emptyList(), scope))
+        val shelf = lists()
+        shelf.save("Road trip", listOf(Shelf.track("r1", "One"), Shelf.track("r2", "Two")))
+        val read = mutableListOf<List<String>>()
+        val ops =
+            LibraryOps(
+                { Shelf() },
+                facade,
+                WinampState(),
+                scope,
+                shelf,
+                stations(),
+                onListRead = { rows -> read += rows.map { it.id } },
+            )
+        ops.open()
+        ops.switchCategory(LibraryOps.Category.LISTS)
+
+        ops.playRow(0)
+        assertEquals(listOf(listOf("r1", "r2")), read)
+        assertEquals(
+            listOf("content://r1", "content://r2"),
+            facade.state.value.queue
+                .map { it.uri },
+        )
+
+        ops.tapRow(0) // into Road trip
+        assertEquals("opening the list reads it again", 2, read.size)
+    }
+
     @Test
     fun `deleting a list leaves the queue it filled alone`() {
         val saved = savedLists()

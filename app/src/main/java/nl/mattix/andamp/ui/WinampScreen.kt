@@ -320,6 +320,7 @@ fun PlayerSurface(
             ) {
                 val s = vm.state
                 LibraryAsks(vm, libraryAccess)
+                FolderAsks(vm)
                 val screenW = constraints.maxWidth
                 val screenH = constraints.maxHeight
                 val viewport = playerViewport(screenW, screenH, fillScreen = locked)

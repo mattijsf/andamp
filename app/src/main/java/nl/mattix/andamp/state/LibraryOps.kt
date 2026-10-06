@@ -56,6 +56,11 @@ class LibraryOps(
      * listener picked. Blank gives "the library".
      */
     private val nameOf: () -> String = { "" },
+    /**
+     * Told the rows of a saved list once they are read, before they are shown or played;
+     * see [FolderAccessOps.listRead].
+     */
+    private val onListRead: suspend (List<Track>) -> Unit = {},
 ) {
     /**
      * The library as it is now; see [sourceOf]. It is read once per page and handed to
@@ -692,14 +697,14 @@ class LibraryOps(
             status = count(saved.size, "LIST"),
             rows = saved.map { Row(it.name, detail = "${it.trackCount} TRK") },
             open = saved.map { entry -> { drill(entry.name) { listTracksPage(entry.name) } } },
-            tracksOf = saved.map { entry -> { lists.load(entry.name).orEmpty() } },
+            tracksOf = saved.map { entry -> { lists.load(entry.name).orEmpty().also { onListRead(it) } } },
             saved = saved.map { it.name },
             empty = "NO SAVED LISTS · LIST > SAVE KEEPS ONE",
         )
     }
 
-    private fun listTracksPage(name: String): Page {
-        val tracks = lists.load(name).orEmpty()
+    private suspend fun listTracksPage(name: String): Page {
+        val tracks = lists.load(name).orEmpty().also { onListRead(it) }
         return trackListPage(name, tracks, empty = "NO TRACKS", savedName = name)
     }
 

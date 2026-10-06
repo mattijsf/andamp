@@ -13,14 +13,21 @@ import nl.mattix.andamp.core.model.Track
 class MediaFiles(
     private val app: Application,
     private val library: MediaStoreAudio = MediaStoreAudio(app),
+    /** The uri to open a row's file under right now; see [ReadableUri]. */
+    private val readable: (String) -> String = { it },
 ) {
     /**
-     * A picked document as a playlist entry. Where the device's audio library knows the
-     * file, the entry gets the library's uri, because the document's own uri works only
-     * while its grant does; otherwise it keeps the picked uri.
+     * A picked document as a playlist entry.
+     *
+     * A file from the phone's storage or from a card keeps the picked uri, which says where
+     * the file is and so names it on any phone; [ReadableUri] finds another way to it when
+     * the grant is gone. A document of another provider says nothing of the kind, and its
+     * uri works only while its grant does, so where the device's audio library knows the
+     * file, that entry gets the library's uri.
      */
     fun readAdded(uri: Uri): Track {
         val tags = readMetadata(uri)
+        if (DocumentFilePath.covers(uri.toString())) return tags
         val libraryUri = library.libraryUriFor(uri, app.displayNameOf(uri), tags.durationMs)
         return if (libraryUri != null) tags.copy(uri = libraryUri.toString()) else tags
     }
@@ -28,8 +35,7 @@ class MediaFiles(
     /**
      * A track from a folder the listener picked, kept under the folder's own uri. The app
      * holds a persisted grant on the tree, and a document uri built under it lasts as long.
-     * A library uri here would hide from [GrantScope] that the folder's grant is in use,
-     * and it would be released.
+     * The uri also says where the file is, which a library uri does not; see [readAdded].
      */
     fun readInTree(uri: Uri): Track = readMetadata(uri)
 
@@ -39,7 +45,7 @@ class MediaFiles(
         val fallbackTitle = app.displayNameOf(uri) ?: "Unknown"
         val retriever = MediaMetadataRetriever()
         return try {
-            retriever.setDataSource(app, uri)
+            retriever.setDataSource(app, Uri.parse(readable(uri.toString())))
             Track(
                 id = "picked-${System.nanoTime()}",
                 artist = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ARTIST).orEmpty(),
@@ -84,7 +90,7 @@ class MediaFiles(
 
                 uri.startsWith("content://") || uri.startsWith("file://") -> {
                     app.contentResolver
-                        .openAssetFileDescriptor(Uri.parse(uri), "r")
+                        .openAssetFileDescriptor(Uri.parse(readable(uri)), "r")
                         ?.use { true } ?: false
                 }
 

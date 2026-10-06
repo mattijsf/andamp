@@ -8,9 +8,12 @@ import nl.mattix.andamp.core.model.Track
 /**
  * Re-finds playlist entries whose uri has stopped opening.
  *
- * A document uri stops working when its grant is released. The file is usually still on the
+ * A document uri stops working when its grant is gone. The file is usually still on the
  * phone, so the library is asked for it by name: the same recording under a
  * `content://media/...` uri. The lookup rules are in [MediaStoreMatch].
+ *
+ * This is for a row whose uri does not say where its file is. One from the phone's storage
+ * or from a card does, and is read through [ReadableUri] without its row being changed.
  */
 object PlaylistHealer {
     /** What a row needs before it can be re-found: a name to search for. */

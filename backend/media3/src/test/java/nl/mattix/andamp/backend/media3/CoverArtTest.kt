@@ -63,6 +63,31 @@ class CoverArtTest {
         assertEquals(listOf(cover), fetching.asked)
     }
 
+    /**
+     * A row can name a file through an address that no longer opens while the file is still
+     * reachable another way. The cover is looked for under the address that opens now, in
+     * the file's tags and by the loader the file is handed on to alike.
+     */
+    @Test
+    fun `a cover is looked for under the address the file can be read under now`() {
+        val fetching = Recording()
+        val loader = CoverBitmapLoader(app, fetching)
+        val row =
+            Uri.parse(
+                "content://com.android.externalstorage.documents/tree/primary%3AMusic/document/primary%3AMusic%2Fone.mp3",
+            )
+        val readable = Uri.parse("content://media/external/audio/media/8")
+        val before = Media3PlaybackHost.readableUri
+        Media3PlaybackHost.readableUri = { if (it == row) readable else it }
+        try {
+            loader.loadBitmap(row).get(WAIT, TimeUnit.SECONDS)
+        } finally {
+            Media3PlaybackHost.readableUri = before
+        }
+
+        assertEquals(listOf(readable), fetching.asked)
+    }
+
     @Test
     fun `a file holding no picture is handed on rather than failed`() {
         val fetching = Recording()
