@@ -36,6 +36,15 @@ interface AudioTap {
     /** Convenience: the newest available window. */
     fun readLatest(out: FloatArray): Boolean = readAt(writtenSamples, out)
 
+    /**
+     * How many samples [writtenSamples] is ahead of what is heard at this moment: what the
+     * player has buffered plus the device's output delay. A reader that trails the write
+     * head by this much shows a beat when it sounds. It shrinks as the buffered audio plays
+     * and grows with each burst written. 0 when the backend cannot tell, and a reader then
+     * assumes a delay of its own.
+     */
+    val aheadSamples: Long get() = 0L
+
     /** What the output stage last did to the peaks; see [PeakReading]. */
     val peaks: PeakReading get() = PeakReading.NONE
 }
@@ -62,9 +71,19 @@ data class PeakReading(
 /**
  * Single-writer ring buffer implementation. The writer is the audio thread; readers are
  * render loops. There are no locks, so a reader can see a torn window.
+ *
+ * It holds several seconds, more than a player buffers ahead, so the window a reader wants
+ * [aheadSamples] behind the write head is still in it.
+ *
+ * The audio thread says now and then which sample is being heard ([reportAhead]). Between
+ * two reports that place moves on with the clock, so [aheadSamples] is right at any moment
+ * and not only when a report arrives, which matters because a player writes in bursts of
+ * a few hundred milliseconds.
  */
 class PcmRingBuffer(
-    capacity: Int = 65536,
+    capacity: Int = 262_144,
+    /** The clock the heard place moves on with between reports; tests pass their own. */
+    private val nanoTime: () -> Long = System::nanoTime,
 ) : AudioTap {
     private val buffer = FloatArray(capacity)
 
@@ -75,7 +94,50 @@ class PcmRingBuffer(
     @Volatile override var peaks: PeakReading = PeakReading.NONE
         private set
 
+    /** The sample that was being heard at [heardAtNanos]. */
+    @Volatile private var heardSample = 0L
+
+    /** When [heardSample] was heard; [HELD] while the place stands still, [NEVER] before any report. */
+    @Volatile private var heardAtNanos = NEVER
+
+    /** The distance at the last report or hold, which is the answer while the place stands still. */
+    @Volatile private var heldAhead = 0L
+
+    override val aheadSamples: Long
+        get() {
+            val at = heardAtNanos
+            if (at == NEVER) return 0L
+            if (at == HELD) return heldAhead
+            val sinceMicros = (nanoTime() - at) / NANOS_PER_MICRO
+            // reports come several times a second while audio plays; without one the place
+            // is not known to be moving
+            if (sinceMicros > STALE_MICROS) return heldAhead
+            val heardNow = heardSample + sinceMicros * rate / MICROS_PER_SECOND
+            return (written - heardNow).coerceAtLeast(0L)
+        }
+
     override val sampleRateHz: Int get() = rate
+
+    /**
+     * Called from the audio thread while audio plays, with how far the write head is ahead
+     * of the ear right now; see [AudioTap.aheadSamples].
+     */
+    fun reportAhead(samples: Long) {
+        val ahead = samples.coerceAtLeast(0L)
+        heldAhead = ahead
+        heardSample = written - ahead
+        heardAtNanos = nanoTime()
+    }
+
+    /**
+     * Called from the audio thread when the sound stops moving, at a pause or a seek: the
+     * distance stays what it is now until the next [reportAhead].
+     */
+    fun holdAhead() {
+        if (heardAtNanos == NEVER) return
+        heldAhead = aheadSamples
+        heardAtNanos = HELD
+    }
 
     /**
      * Called from the audio thread once per buffer with what the output stage did; see
@@ -122,5 +184,13 @@ class PcmRingBuffer(
             if (pos == buffer.size) pos = 0
         }
         return true
+    }
+
+    private companion object {
+        const val NEVER = Long.MIN_VALUE
+        const val HELD = Long.MIN_VALUE + 1
+        const val NANOS_PER_MICRO = 1_000L
+        const val MICROS_PER_SECOND = 1_000_000L
+        const val STALE_MICROS = 2_000_000L
     }
 }

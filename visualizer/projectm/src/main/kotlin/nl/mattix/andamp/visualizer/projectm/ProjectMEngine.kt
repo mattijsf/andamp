@@ -17,7 +17,7 @@ class ProjectMEngine {
     /** Whether [create] succeeded and [destroy] has not run. */
     val isAlive: Boolean get() = handle != 0L
 
-    /** Most samples one [addPcmFloat] can carry; anything beyond is dropped by projectM. */
+    /** The samples projectM draws as a waveform in one frame, which is what its API reports as the most it stores. */
     val maxSamples: Int get() = ProjectMNative.nativeMaxSamples()
 
     /**
@@ -169,12 +169,23 @@ class ProjectMEngine {
         ProjectM.ensureLoaded()
     }
 
-    private companion object {
+    companion object {
+        /**
+         * The samples projectM's analysis looks at each frame: its whole input buffer
+         * (`AudioBufferSamples` in Audio/AudioConstants.hpp), which is more than the
+         * waveform's [maxSamples]. It keeps the newest this many of whatever it is given.
+         *
+         * A frame that hands over this many replaces the buffer with one piece of audio.
+         * Fewer leaves the oldest samples of the frame before in it, and the jump where
+         * the two pieces meet reads as treble that is not in the music.
+         */
+        const val ANALYSIS_SAMPLES = 576
+
         // projectm_channels in types.h
-        const val MONO = 1
-        const val STEREO = 2
+        private const val MONO = 1
+        private const val STEREO = 2
 
         /** How many presets the playlist may skip past before giving up on a switch. */
-        const val PRESET_RETRIES = 5
+        private const val PRESET_RETRIES = 5
     }
 }

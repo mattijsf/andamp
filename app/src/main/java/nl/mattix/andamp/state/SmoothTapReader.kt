@@ -10,8 +10,13 @@ import kotlin.math.abs
  *
  * The tap's write head advances in decode-time bursts (players buffer hundreds of ms
  * ahead), so reading the latest samples would freeze between bursts. This clock advances
- * at the sample rate every frame and locks onto the write head minus a buffering margin,
- * giving a continuously sliding window; it snaps on seeks and at the start.
+ * at the sample rate every frame and locks onto the write head minus what the player has
+ * buffered, giving a continuously sliding window over the audio that is being heard; it
+ * snaps on seeks and at the start.
+ *
+ * How far behind the write head that is comes from the tap ([AudioTap.aheadSamples]), which
+ * differs by phone and by output: a wired speaker and a Bluetooth one are not the same
+ * distance behind. A tap that cannot tell gets [TRAIL_S].
  *
  * One instance per visualizer, each with its own read position.
  */
@@ -36,7 +41,8 @@ class SmoothTapReader(
             lastWritten = written
             stalledMs = 0
         }
-        val target = written - (rate * TRAIL_S).toLong()
+        val ahead = tap.aheadSamples
+        val target = written - if (ahead > 0) ahead else (rate * TRAIL_S).toLong()
         if (readPos < 0 || abs(target - readPos) > rate) {
             readPos = target // start or seek: snap
         } else {
@@ -60,8 +66,8 @@ class SmoothTapReader(
     }
 
     private companion object {
-        // trails the decode head by roughly the audio sink's buffering, so the window read
-        // is close to what is audible
+        // for a tap that does not say how far ahead it runs: roughly a small audio sink's
+        // buffering
         const val TRAIL_S = 0.25f
         const val DRIFT_CORRECTION = 0.05f
 

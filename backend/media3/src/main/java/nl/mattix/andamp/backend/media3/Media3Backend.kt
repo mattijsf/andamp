@@ -1052,12 +1052,15 @@ class Media3Backend(
                     enableFloatOutput: Boolean,
                     enableAudioTrackPlaybackParams: Boolean,
                 ): AudioSink =
-                    DefaultAudioSink
-                        .Builder(context)
-                        .setEnableFloatOutput(enableFloatOutput)
-                        .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
-                        .setAudioProcessors(audioChain(eq, balance, dsp, ring).toTypedArray())
-                        .build()
+                    AheadReportingAudioSink(
+                        DefaultAudioSink
+                            .Builder(context)
+                            .setEnableFloatOutput(enableFloatOutput)
+                            .setEnableAudioTrackPlaybackParams(enableAudioTrackPlaybackParams)
+                            .setAudioProcessors(audioChain(eq, balance, dsp, ring).toTypedArray())
+                            .build(),
+                        ring,
+                    )
             }
     }
 }

@@ -238,6 +238,7 @@ class MixedQueueBackend(
                 override val sampleRateHz get() = tap?.sampleRateHz ?: 0
                 override val writtenSamples get() = tap?.writtenSamples ?: 0L
                 override val peaks get() = tap?.peaks ?: PeakReading.NONE
+                override val aheadSamples get() = tap?.aheadSamples ?: 0L
 
                 override fun readAt(
                     endSample: Long,

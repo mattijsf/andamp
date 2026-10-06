@@ -39,8 +39,8 @@ class TapPcmSourceTest {
     }
 
     @Test
-    fun `the window never exceeds what projectM accepts`() {
-        assertEquals(512, samplesPerFrame(44_100, 60, 512))
+    fun `the window never exceeds what the engine looks at`() {
+        assertEquals(576, samplesPerFrame(44_100, 60, 576))
     }
 
     /**

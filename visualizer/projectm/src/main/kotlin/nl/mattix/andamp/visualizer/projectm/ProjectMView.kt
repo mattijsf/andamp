@@ -23,8 +23,8 @@ class ProjectMView(
 ) : VisualizerView<ProjectMEngine>(context) {
     /**
      * Builds the audio source from the frame rate and from how much PCM
-     * projectM accepts at once. Both are known only after the engine exists,
-     * and the source sizes its buffer from them.
+     * projectM looks at in one frame. The rate is known only after the engine
+     * exists, and the source sizes its buffer from both.
      */
     @Volatile
     var pcmSourceFactory: ((fps: Int, maxSamples: Int) -> PcmSource)? = null
@@ -69,7 +69,7 @@ class ProjectMView(
             var appliedSize = Size(width, height)
             val fps = targetFps()
             engine.create(width, height, MESH_W, MESH_H, fps)
-            val maxSamples = engine.maxSamples
+            val maxSamples = ProjectMEngine.ANALYSIS_SAMPLES
             val pcm = pcmSourceFactory?.invoke(fps, maxSamples)
             val pacer = FramePacer(fps)
             val presetLoader =
