@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -53,6 +54,7 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
@@ -66,9 +68,13 @@ import nl.mattix.andamp.ui.BackPull
  * One skin, large: its name, whether it is installed, and the button that changes that. The
  * screenshot is 275x348 and is shown whole, not cropped to fill the screen.
  *
- * The skin is as large as the screen allows after its name and the buttons have had their room
- * ([BESIDE]). On a phone held upright that is as wide as the screen; on a tablet, or on a phone held
- * sideways, the height is what limits it.
+ * A screen that is taller than it is wide has the skin on top and the rest under it ([Upright]). A
+ * screen that is wider than it is tall has them side by side ([Sideways]), because a skin's picture
+ * is taller than it is wide: beside the rest it can use the screen's whole height, under a column
+ * of text it would have to shrink to leave the text its room.
+ *
+ * Either way the skin is as large as whole pixels allow in the room it is given; see
+ * [wholePlayerWidth].
  */
 @Composable
 @Suppress("LongParameterList") // one skin, and everything that can be done with it
@@ -85,20 +91,20 @@ internal fun SkinViewer(
     onUninstall: () -> Unit,
     onClose: () -> Unit,
 ) {
-    val context = LocalContext.current
     // not a dialog: a dialog is its own window, and a shared element cannot cross windows
 
     // everything but the skin fades with the back gesture: the wash, the name, the buttons and the
     // note
     val leaving = Modifier.graphicsLayer { alpha = 1f - pull.progress }
     run {
-        BoxWithConstraints(
+        Box(
             Modifier
                 .fillMaxSize()
                 .testTag("$TAG.viewer"),
         ) {
-            // what the skin may stand in: the page's height without what is shown beside it
-            val room = constraints.maxHeight - with(LocalDensity.current) { BESIDE.dp.roundToPx() }
+            // read from the window and not measured here: measuring the page before composing it
+            // would put the skin's flight from its tile inside a second pass
+            val wide = LocalWindowInfo.current.containerSize.let { it.width > it.height }
             // the wash takes the tap that closes, on its own node: a clickable around everything
             // would merge the semantics of what is inside it
             Box(
@@ -123,80 +129,156 @@ internal fun SkinViewer(
             ) {
                 Icon(Icons.Filled.Close, contentDescription = "Back to the grid", tint = Color.White)
             }
-            // the skin's place is set by the space above it, and the note gets what is left
-            // underneath, so a note arriving does not move the skin
-            Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
-                Spacer(Modifier.weight(ABOVE))
-                Column(
-                    // no padding around the skin itself: it arrives from a list where it filled the
-                    // width
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(GAP.dp),
-                ) {
-                    SkinStage(
-                        skin,
-                        live,
-                        room,
-                        flying = !settled,
-                        carried = pull.progress > 0f,
-                        modifier = Modifier.flyingHome(pull),
-                    )
-                    Text(
-                        skin.filename.asSkinName(),
-                        modifier = Modifier.padding(horizontal = GAP.dp).then(leaving),
-                        style = MaterialTheme.typography.titleMedium,
-                        color = Color.White,
-                        textAlign = TextAlign.Center,
-                    )
-                    Text(
-                        skin.md5,
-                        modifier = leaving,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = Color.White.copy(alpha = FADED),
-                    )
-                    Row(
-                        leaving,
-                        horizontalArrangement = Arrangement.spacedBy(GAP.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        if (installed) {
-                            FilledTonalButton(
-                                onClick = onUninstall,
-                                colors =
-                                    ButtonDefaults.filledTonalButtonColors(
-                                        containerColor = MaterialTheme.colorScheme.errorContainer,
-                                        contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                                    ),
-                                modifier = Modifier.testTag("$TAG.uninstall.${skin.md5}"),
-                            ) { Text("Uninstall") }
-                        } else {
-                            Button(
-                                onClick = onInstall,
-                                enabled = !busy,
-                                modifier = Modifier.testTag("$TAG.install.${skin.md5}"),
-                            ) { Text(if (busy) "Installing\u2026" else "Install") }
-                        }
-                        skin.museumUrl?.let { url ->
-                            TextButton(
-                                onClick = {
-                                    // the museum's page has what this screen does not: who made the
-                                    // skin and when
-                                    runCatching {
-                                        context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
-                                    }.onFailure { if (it !is ActivityNotFoundException) throw it }
-                                },
-                                modifier = Modifier.testTag("$TAG.museum"),
-                            ) { Text("In the museum") }
-                        }
-                    }
-                }
-                // the note gets the remaining space and scrolls inside it
-                Box(
-                    Modifier.weight(BELOW).padding(top = GAP.dp).then(leaving),
-                    contentAlignment = Alignment.TopCenter,
-                ) {
-                    live?.readme?.let { Readme(it) }
-                }
+            val stage: @Composable () -> Unit = {
+                SkinStage(
+                    skin,
+                    live,
+                    // beside the skin a sideways page keeps nothing free: the half it stands in is
+                    // already the room it has
+                    kept = if (wide) 0 else BESIDE,
+                    flying = !settled,
+                    carried = pull.progress > 0f,
+                    modifier = Modifier.flyingHome(pull),
+                )
+            }
+            val facts: @Composable (Alignment.Horizontal) -> Unit = { side ->
+                SkinFacts(skin, installed, busy, side, leaving, onInstall, onUninstall)
+            }
+            val note: @Composable () -> Unit = { live?.readme?.let { Readme(it) } }
+            if (wide) Sideways(stage, facts, note, leaving) else Upright(stage, facts, note, leaving)
+        }
+    }
+}
+
+/**
+ * The page on a screen taller than it is wide: the skin, and under it its name, the buttons and the
+ * note.
+ */
+@Composable
+private fun Upright(
+    stage: @Composable () -> Unit,
+    facts: @Composable (Alignment.Horizontal) -> Unit,
+    note: @Composable () -> Unit,
+    leaving: Modifier,
+) {
+    // the skin's place is set by the space above it, and the note gets what is left underneath, so
+    // a note arriving does not move the skin
+    Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
+        Spacer(Modifier.weight(ABOVE))
+        Column(
+            // no padding around the skin itself: it arrives from a list where it filled the width
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(GAP.dp),
+        ) {
+            stage()
+            facts(Alignment.CenterHorizontally)
+        }
+        // the note gets the remaining space and scrolls inside it
+        Box(
+            Modifier.weight(BELOW).padding(top = GAP.dp).then(leaving),
+            contentAlignment = Alignment.TopCenter,
+        ) { note() }
+    }
+}
+
+/**
+ * The page on a screen wider than it is tall: the skin in the left half, as tall as the screen
+ * lets it be, and its name, the buttons and the note in the right half, read from the left.
+ */
+@Composable
+private fun Sideways(
+    stage: @Composable () -> Unit,
+    facts: @Composable (Alignment.Horizontal) -> Unit,
+    note: @Composable () -> Unit,
+    leaving: Modifier,
+) {
+    Row(Modifier.fillMaxSize()) {
+        // under the button that closes the page, which sits in this half's corner
+        Box(
+            Modifier.weight(1f).fillMaxHeight().padding(top = CLOSE_BAND.dp, bottom = GAP.dp),
+            contentAlignment = Alignment.Center,
+        ) { stage() }
+        // the name's place is set by the space above it and the note gets what is left
+        // underneath, as on an upright screen, so a note arriving moves nothing
+        Column(Modifier.weight(1f).fillMaxHeight().padding(horizontal = GAP.dp)) {
+            Spacer(Modifier.weight(ABOVE))
+            facts(Alignment.Start)
+            Box(
+                Modifier.weight(BELOW).padding(vertical = GAP.dp).then(leaving),
+                contentAlignment = Alignment.TopStart,
+            ) { note() }
+        }
+    }
+}
+
+/**
+ * What is said about the skin, and done with it: its name, its number, and the buttons that install
+ * it, uninstall it and open its page in the museum. Lined up on [side].
+ */
+@Composable
+@Suppress("LongParameterList") // one skin, and everything that can be done with it
+private fun SkinFacts(
+    skin: OnlineSkin,
+    installed: Boolean,
+    busy: Boolean,
+    side: Alignment.Horizontal,
+    /** Fades these with the back gesture; see [SkinViewer]. */
+    leaving: Modifier,
+    onInstall: () -> Unit,
+    onUninstall: () -> Unit,
+) {
+    val context = LocalContext.current
+    Column(
+        Modifier.padding(horizontal = GAP.dp),
+        horizontalAlignment = side,
+        verticalArrangement = Arrangement.spacedBy(GAP.dp),
+    ) {
+        Text(
+            skin.filename.asSkinName(),
+            modifier = leaving,
+            style = MaterialTheme.typography.titleMedium,
+            color = Color.White,
+            textAlign = if (side == Alignment.Start) TextAlign.Start else TextAlign.Center,
+        )
+        Text(
+            skin.md5,
+            modifier = leaving,
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.White.copy(alpha = FADED),
+        )
+        Row(
+            leaving,
+            horizontalArrangement = Arrangement.spacedBy(GAP.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            if (installed) {
+                FilledTonalButton(
+                    onClick = onUninstall,
+                    colors =
+                        ButtonDefaults.filledTonalButtonColors(
+                            containerColor = MaterialTheme.colorScheme.errorContainer,
+                            contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                        ),
+                    modifier = Modifier.testTag("$TAG.uninstall.${skin.md5}"),
+                ) { Text("Uninstall") }
+            } else {
+                Button(
+                    onClick = onInstall,
+                    enabled = !busy,
+                    modifier = Modifier.testTag("$TAG.install.${skin.md5}"),
+                ) { Text(if (busy) "Installing\u2026" else "Install") }
+            }
+            skin.museumUrl?.let { url ->
+                TextButton(
+                    onClick = {
+                        // the museum's page has what this screen does not: who made the skin and
+                        // when
+                        runCatching {
+                            context.startActivity(Intent(Intent.ACTION_VIEW, url.toUri()))
+                        }.onFailure { if (it !is ActivityNotFoundException) throw it }
+                    },
+                    modifier = Modifier.testTag("$TAG.museum"),
+                ) { Text("In the museum") }
             }
         }
     }
@@ -239,15 +321,20 @@ private fun Readme(text: String) {
 private fun SkinStage(
     skin: OnlineSkin,
     live: Skin?,
-    /** How tall the skin may be, in pixels; see [wholePlayerWidth]. */
-    room: Int,
+    /** The height to keep free of the skin, in dp, out of what this is given; see [wholePlayerWidth]. */
+    kept: Int,
     flying: Boolean,
     /** Whether a back gesture is moving the skin; the shared element is then switched off. */
     carried: Boolean,
     modifier: Modifier = Modifier,
 ) {
     BoxWithConstraints(modifier.fillMaxWidth()) {
-        val across = with(LocalDensity.current) { wholePlayerWidth(constraints.maxWidth, room).toDp() }
+        val across =
+            with(LocalDensity.current) {
+                // a page that scrolls has no height to go by, and then the width decides alone
+                val room = if (constraints.hasBoundedHeight) constraints.maxHeight - kept.dp.roundToPx() else Int.MAX_VALUE
+                wholePlayerWidth(constraints.maxWidth, room).toDp()
+            }
         Box(
             Modifier
                 .width(across)
@@ -296,11 +383,14 @@ private const val FADE_MS = 400
 private const val FADED = 0.6f
 
 /**
- * The height kept free of the skin, in dp: its name, its number and the row of buttons under it,
- * the gaps between them, and some air above and below so the skin does not touch the screen's edges
- * or the button that closes the page.
+ * The height kept free of the skin on an upright screen, in dp: its name, its number and the row of
+ * buttons under it, the gaps between them, and some air above and below so the skin does not touch
+ * the screen's edges or the button that closes the page.
  */
 private const val BESIDE = 208
+
+/** The height of the band the closing button sits in, in dp: the button and the gap on each side of it. */
+private const val CLOSE_BAND = 48 + 2 * GAP
 
 /** The weights of the space above and below the skin. */
 private const val ABOVE = 1f

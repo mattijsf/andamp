@@ -135,7 +135,14 @@ internal fun wholePlayerWidth(availablePx: Int): Int = (availablePx / MAIN_W).co
 internal fun wholePlayerWidth(
     availablePx: Int,
     roomPx: Int,
-): Int = minOf(wholePlayerWidth(availablePx), wholePlayerWidth((roomPx * SHOT_RATIO).toInt()))
+): Int {
+    // the room as a width: how wide a skin is that is exactly that tall
+    val asWide = (roomPx.toLong() * MAIN_W / SHOT_H).coerceIn(0L, Int.MAX_VALUE.toLong()).toInt()
+    return minOf(wholePlayerWidth(availablePx), wholePlayerWidth(asWide))
+}
+
+/** A screenshot's height: the three windows, 116 each, one under the other. */
+private const val SHOT_H = 348
 
 /** The playlist's height in the museum's screenshots: three windows, 116 each. */
 internal const val PLAYLIST_H = 116
