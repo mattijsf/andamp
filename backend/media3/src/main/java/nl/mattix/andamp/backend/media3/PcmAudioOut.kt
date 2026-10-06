@@ -4,6 +4,7 @@ package nl.mattix.andamp.backend.media3
 
 import android.content.Context
 import android.media.AudioFormat
+import android.media.AudioTimestamp
 import android.media.AudioTrack
 import android.util.Log
 import nl.mattix.andamp.core.model.EqSettings
@@ -22,6 +23,9 @@ import java.util.concurrent.atomic.AtomicInteger
  * The write blocks, so the `AudioTrack` paces the loop by the audio, and that
  * back-pressure reaches the provider of the samples.
  *
+ * After each write it tells the chain's tap how far the samples it has made are
+ * ahead of the ear ([TrackAheadMeter]), so the visualizers draw what is heard.
+ *
  * Given a [context], it also holds the audio focus, watches the headphones
  * and stays awake while it sounds (see [AudioManners]), and reports through
  * [setInterruptions] when to pause. Without one, as in a JVM test, it does
@@ -36,7 +40,11 @@ class PcmAudioOut(
 ) : AudioOut {
     override val tap get() = if (started) chain.tap else null
 
-    /** Guards starting and stopping, which the render thread takes part in; see [pump]. */
+    /**
+     * Guards starting and stopping, which the render thread takes part in; see [pump].
+     * Also guards [meter], and with it every flush of the device, so the frames counted
+     * and the device's playback head are of the same run of audio.
+     */
     private val lock = Any()
 
     @Volatile private var started = false
@@ -63,6 +71,12 @@ class PcmAudioOut(
     /** Set when the chain must drop its tails before it next runs; see [PcmChain.flush]. */
     private val flushChain = AtomicBoolean(false)
 
+    /** What the device has been handed and has not played yet. Guarded by [lock]. */
+    private val meter = TrackAheadMeter(PcmProvider.SAMPLE_RATE_HZ)
+
+    /** Where [reportAhead] reads the device's timestamp into. Guarded by [lock]. */
+    private val stamp = AudioTimestamp()
+
     private val manners = context?.let { AudioManners(it, ::applyGain) }
 
     /** Opens a device: the platform's, unless a test replaces it. */
@@ -84,6 +98,7 @@ class PcmAudioOut(
             held = false
             this.provider = provider
             track = device
+            meter.emptied()
             started = true
             // a new run starts without the last one's tail
             flushChain.set(true)
@@ -107,6 +122,7 @@ class PcmAudioOut(
                 runCatching { it.stop() }
                 it.release()
             }
+            chain.holdAhead()
             manners?.done()
         }
     }
@@ -117,6 +133,7 @@ class PcmAudioOut(
         synchronized(lock) {
             held = true
             track?.let { runCatching { it.pause() } }
+            chain.holdAhead()
             manners?.silent()
         }
     }
@@ -126,6 +143,7 @@ class PcmAudioOut(
             held = false
             val device = track ?: return
             runCatching { device.play() }
+            runCatching { reportAhead(device) }
             manners?.sounding()
         }
     }
@@ -138,16 +156,23 @@ class PcmAudioOut(
      * paused for the flush and played again unless it is held. The chain
      * belongs to the render thread, which flushes it before it next runs and
      * drops whatever output it was writing when this was called.
+     *
+     * The flush also sets the device's playback head back to 0, so the count
+     * of what it holds starts over with it.
      */
     override fun discard() {
         provider?.discard()
         flushChain.set(true)
-        discards.incrementAndGet()
-        val device = track ?: return
-        runCatching {
-            device.pause()
-            device.flush()
-            if (!held) device.play()
+        synchronized(lock) {
+            discards.incrementAndGet()
+            val device = track ?: return
+            runCatching {
+                device.pause()
+                device.flush()
+                meter.emptied()
+                chain.holdAhead()
+                if (!held) device.play()
+            }
         }
     }
 
@@ -261,18 +286,46 @@ class PcmAudioOut(
      * is written again; during a pause this is where the loop waits. It stops
      * early when the device has gone, or when a discard came after the bytes
      * were produced.
+     *
+     * The bytes are counted as handed to the device before the first write,
+     * because the tap already holds them, and the distance is reported after
+     * each write.
      */
     private fun deliver(
         size: Int,
         mark: Int,
     ) {
+        val device =
+            synchronized(lock) {
+                if (discards.get() != mark) return
+                val device = track ?: return
+                meter.handed(size / PcmProvider.BYTES_PER_FRAME)
+                device
+            }
         var from = 0
-        while (from < size && discards.get() == mark) {
-            val device = track ?: return
+        while (from < size && discards.get() == mark && track === device) {
             val wrote = device.write(chain.output, from, size - from, AudioTrack.WRITE_BLOCKING)
             if (wrote < 0) return
             from += wrote
+            // a write that took nothing changed nothing
+            if (wrote > 0) {
+                synchronized(lock) {
+                    // a paused device stands still, and the tap was told so
+                    if (track === device && discards.get() == mark && !held) reportAhead(device)
+                }
+            }
         }
+    }
+
+    /**
+     * Tells the tap how far the chain's output is ahead of the ear: what
+     * [device] holds, and what the output behind it holds when the device's
+     * timestamp tells. Called under [lock].
+     */
+    private fun reportAhead(device: AudioTrack) {
+        val head = device.playbackHeadPosition
+        if (device.getTimestamp(stamp)) meter.presented(head, stamp.framePosition, System.nanoTime() - stamp.nanoTime)
+        chain.reportAhead(meter.ahead(head))
     }
 
     private fun openTrack(): AudioTrack {

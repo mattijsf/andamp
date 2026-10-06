@@ -24,7 +24,8 @@ import java.nio.ByteOrder
  * ExoPlayer supplies the bytes for a file; a [PcmProvider] supplies them here.
  *
  * Not safe to share between threads: [process] and [flush] belong to the one
- * thread that renders, and only the settings may arrive from any thread.
+ * thread that renders. The settings may arrive from any thread, and so may
+ * [reportAhead] and [holdAhead], one at a time.
  *
  * Media3 types stay inside this module. A [PcmProvider] goes in and an
  * [AudioTap] comes out.
@@ -77,6 +78,15 @@ class PcmChain(
 
     /** The plug-ins a listener installed; see [DspAudioProcessor.setPlugins]. */
     fun setPlugins(sources: List<String>) = dsp.setPlugins(sources)
+
+    /**
+     * Tells the tap that the last sample [process] made is [samples] ahead of
+     * the one being heard; see [PcmRingBuffer.reportAhead].
+     */
+    fun reportAhead(samples: Long) = ring.reportAhead(samples)
+
+    /** Tells the tap the sound has stopped moving; see [PcmRingBuffer.holdAhead]. */
+    fun holdAhead() = ring.holdAhead()
 
     /**
      * Runs [bytes] of [buffer] through the chain, and returns how many bytes

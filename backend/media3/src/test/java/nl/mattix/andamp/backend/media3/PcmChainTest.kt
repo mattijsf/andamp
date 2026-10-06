@@ -72,6 +72,17 @@ class PcmChainTest {
 
     /** Checks that the curve reaches the chain; the equalizer's own tests cover what it does. */
     @Test
+    fun `the tap is told how far its samples are ahead of the ear`() {
+        val chain = PcmChain()
+        chain.through(tone(4_096))
+
+        chain.reportAhead(3_000)
+        chain.holdAhead()
+
+        assertEquals(3_000L, chain.tap.aheadSamples)
+    }
+
+    @Test
     fun `a curve the listener set changes what comes out`() {
         val input = tone(1_024)
         val flat = PcmChain().through(input)

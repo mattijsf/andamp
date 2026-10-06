@@ -7,6 +7,7 @@ import android.content.Intent
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioManager
+import android.media.AudioTimestamp
 import android.media.AudioTrack
 import android.net.wifi.WifiManager
 import android.os.Looper
@@ -16,6 +17,7 @@ import nl.mattix.andamp.core.model.RackSettings
 import nl.mattix.andamp.core.model.RackSlot
 import nl.mattix.andamp.core.playback.AudioOut
 import nl.mattix.andamp.core.playback.PcmProvider
+import nl.mattix.andamp.core.playback.PcmRingBuffer
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -37,7 +39,8 @@ import java.util.concurrent.TimeUnit
  * the audio focus, headphones and wake locks while it sounds.
  *
  * The device is an `AudioTrack` subclass that records the level it was set to
- * and the bytes written to it.
+ * and the bytes written to it, and answers the playback head and the timestamp
+ * a case gives it.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -63,6 +66,25 @@ class PcmAudioOutTest {
         @Volatile var gain = Float.NaN
         val written = LinkedBlockingQueue<ByteArray>()
         val released = CountDownLatch(1)
+
+        /** The frames it says it has played; a flush sets it back to 0, as a device's does. */
+        @Volatile var head = 0
+
+        /** The frame its timestamp says is at the speaker now, or -1 for a device that gives no timestamp. */
+        @Volatile var atSpeaker = -1L
+
+        override fun getPlaybackHeadPosition(): Int = head
+
+        override fun getTimestamp(timestamp: AudioTimestamp): Boolean {
+            if (atSpeaker < 0) return false
+            timestamp.framePosition = atSpeaker
+            timestamp.nanoTime = System.nanoTime()
+            return true
+        }
+
+        override fun flush() {
+            head = 0
+        }
 
         override fun setVolume(gain: Float): Int {
             this.gain = gain
@@ -98,11 +120,40 @@ class PcmAudioOutTest {
         }
     }
 
+    /** The clock the tap moves the heard place on with; it stands still unless a case moves it. */
+    @Volatile private var nowNanos = 0L
+
     private fun outOver(context: Context? = app) =
-        PcmAudioOut(context).apply {
+        PcmAudioOut(context, PcmChain(ring = PcmRingBuffer(nanoTime = { nowNanos }))).apply {
             openDevice = { Device().also { built += it } }
             setInterruptions { heard += it }
         }
+
+    /** Hands over [packets] packets of [PACKET_FRAMES] frames each, and waits for the device to have them. */
+    private fun Feed.play(
+        device: Device,
+        packets: Int,
+    ) = repeat(packets) {
+        waiting += tone()
+        device.nextWrite()
+    }
+
+    /**
+     * The distance the tap reports, once it is [expected] give or take [slack]. The render
+     * thread reports after a write has landed, so the answer can be a moment behind the write.
+     */
+    private fun PcmAudioOut.aheadSettlesAt(
+        expected: Long,
+        slack: Long = 0,
+    ): Long {
+        val deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(5)
+        while (System.nanoTime() < deadline) {
+            val ahead = checkNotNull(tap).aheadSamples
+            if (ahead in expected - slack..expected + slack) return ahead
+            Thread.sleep(2)
+        }
+        return checkNotNull(tap).aheadSamples
+    }
 
     /** A sawtooth on both channels, [frames] long; a packet is never more than the loop reads at once. */
     private fun tone(frames: Int = PACKET_BYTES / PcmProvider.BYTES_PER_FRAME) =
@@ -347,9 +398,88 @@ class PcmAudioOutTest {
         assertTrue("no tail of the old audio comes through the discard", after.all { it == 0.toByte() })
     }
 
+    @Test
+    fun `the tap is told how far the device is behind what it was handed`() {
+        val out = outOver(context = null)
+        val feed = Feed()
+        out.start(feed)
+        val device = built.single()
+        device.head = 2_000
+
+        feed.play(device, packets = 3)
+        val ahead = out.aheadSettlesAt(3L * PACKET_FRAMES - 2_000)
+        out.stop()
+
+        assertEquals(3L * PACKET_FRAMES - 2_000, ahead)
+    }
+
+    @Test
+    fun `a device that says what is at the speaker is measured to there`() {
+        val out = outOver(context = null)
+        val feed = Feed()
+        out.start(feed)
+        val device = built.single()
+        device.head = 3_000
+        device.atSpeaker = 1_000
+
+        feed.play(device, packets = 2)
+        // the timestamp is a few microseconds old when it is read, which is a frame at most
+        val ahead = out.aheadSettlesAt(2L * PACKET_FRAMES - 1_000, slack = FRAMES_OF_SLACK)
+        out.stop()
+
+        assertEquals((2L * PACKET_FRAMES - 1_000).toDouble(), ahead.toDouble(), FRAMES_OF_SLACK.toDouble())
+    }
+
+    /** A flush sets the device's playback head back to 0, and what was handed over before it is gone. */
+    @Test
+    fun `a discard starts the distance over`() {
+        val out = outOver(context = null)
+        val feed = Feed()
+        out.start(feed)
+        val device = built.single()
+        feed.play(device, packets = 3)
+        device.head = 5_000
+        out.aheadSettlesAt(3L * PACKET_FRAMES)
+
+        out.discard()
+        feed.play(device, packets = 1)
+        val ahead = out.aheadSettlesAt(PACKET_FRAMES.toLong())
+        out.stop()
+
+        assertEquals(PACKET_FRAMES.toLong(), ahead)
+    }
+
+    @Test
+    fun `the distance stands still through a pause, and moves again after it`() {
+        val out = outOver(context = null)
+        val feed = Feed()
+        out.start(feed)
+        val device = built.single()
+        feed.play(device, packets = 2)
+        val playing = out.aheadSettlesAt(2L * PACKET_FRAMES)
+
+        out.pause()
+        // two packets, so the render thread is done with the first when the second has landed
+        feed.play(device, packets = 2)
+        nowNanos += TENTH_OF_A_SECOND_NANOS
+        val paused = checkNotNull(out.tap).aheadSamples
+        out.resume()
+        val resumed = out.aheadSettlesAt(4L * PACKET_FRAMES)
+        nowNanos += TENTH_OF_A_SECOND_NANOS
+        val later = checkNotNull(out.tap).aheadSamples
+        out.stop()
+
+        assertEquals("a paused device is not moving toward what the tap holds", playing, paused)
+        assertEquals("the packets handed over during the pause count once it plays", 4L * PACKET_FRAMES, resumed)
+        assertEquals("a tenth of a second on, a tenth of a second is heard", resumed - 4_410, later)
+    }
+
     private companion object {
         /** The size the render loop reads at a time, so one packet is one read and one write. */
         const val PACKET_BYTES = 16_384
+        const val PACKET_FRAMES = PACKET_BYTES / PcmProvider.BYTES_PER_FRAME
+        const val FRAMES_OF_SLACK = 50L
+        const val TENTH_OF_A_SECOND_NANOS = 100_000_000L
 
         val REVERB_ON =
             RackSettings(listOf(RackSlot(BuiltInEffects.REVERB, enabled = true, params = BuiltInEffects.reverb.defaults)))
