@@ -268,11 +268,12 @@ installed.
 
 ## Sources to read
 
-Two complete sources, each in its own repository. Both connect to a server on the
+Three complete sources, each in its own repository. All connect to a server on the
 listener's network and stream its files over HTTP.
 
 - [andamp-source-subsonic](https://github.com/mattijsf/andamp-source-subsonic)
 - [andamp-source-jellyfin](https://github.com/mattijsf/andamp-source-jellyfin)
+- [andamp-source-plex](https://github.com/mattijsf/andamp-source-plex)
 
 Read their `PackService`, which extends `PackServiceBase`, for the service side, and
 `:backend:pack` in this repository for the player's side.
@@ -288,8 +289,8 @@ Set `seekable` correctly:
 - A stream the server transcodes while sending is a 200 response without ranges, and
   `MediaExtractor` cannot seek in it. Set `seekable = false`, and put the position
   `locate` is given into the request as the server's own offset (`timeOffset` for
-  Subsonic, `StartTimeTicks` for Jellyfin). A seek then opens the row again at the new
-  position.
+  Subsonic, `StartTimeTicks` for Jellyfin, `offset` for Plex). A seek then opens the row
+  again at the new position.
 
 A transcode marked `seekable = true` keeps playing from where it was while the seek bar
 shows the new position.
