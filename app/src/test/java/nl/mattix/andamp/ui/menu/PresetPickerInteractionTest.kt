@@ -115,6 +115,39 @@ class PresetPickerInteractionTest {
     }
 
     @Test
+    fun `the extra button takes the picked row and leaves the dialog open`() {
+        var extraPicked: List<String>? = null
+        val picker =
+            PresetPicker(
+                title = "Open playlist",
+                entries = (1..3).map { PresetEntry("k$it", "List $it") },
+                confirmLabel = "Open",
+                extra = PresetPicker.Extra("Delete", destructive = true) { extraPicked = it },
+            ) { confirmed = it }
+        compose.setContent {
+            MaterialTheme(colorScheme = darkColorScheme()) {
+                PresetPickerSheet(picker) { dismissed = true }
+            }
+        }
+        compose.waitForIdle()
+        compose.onNodeWithTag("$PRESET_PICKER_TAG.extra").assertIsNotEnabled()
+
+        compose.onNodeWithTag("$PRESET_PICKER_TAG.row.k2").performClick()
+        compose.onNodeWithTag("$PRESET_PICKER_TAG.extra").performClick()
+
+        assertEquals(listOf("k2"), extraPicked)
+        assertEquals(null, confirmed)
+        assertEquals(false, dismissed)
+    }
+
+    @Test
+    fun `a picker without an extra has only its two buttons`() {
+        show(entries = 3)
+
+        compose.onNodeWithTag("$PRESET_PICKER_TAG.extra").assertDoesNotExist()
+    }
+
+    @Test
     fun `cancel leaves everything alone`() {
         show(entries = 3)
 

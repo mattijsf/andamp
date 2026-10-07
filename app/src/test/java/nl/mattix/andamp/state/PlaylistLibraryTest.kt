@@ -4,6 +4,7 @@ package nl.mattix.andamp.state
 
 import nl.mattix.andamp.core.model.Track
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -59,6 +60,23 @@ class PlaylistLibraryTest {
 
         assertTrue(dir.listFiles().orEmpty().all { it.parentFile == dir })
         assertEquals(1, shelf.list().size)
+    }
+
+    @Test
+    fun `a deleted list is gone and the others stay`() {
+        val shelf = PlaylistLibrary(temp.newFolder())
+        shelf.save("Keep", tracks("One"))
+        shelf.save("Drop", tracks("Two"))
+
+        assertTrue(shelf.delete("Drop"))
+
+        assertEquals(listOf("Keep"), shelf.list().map { it.name })
+        assertNull(shelf.load("Drop"))
+    }
+
+    @Test
+    fun `deleting a name that was never saved says so`() {
+        assertFalse(PlaylistLibrary(temp.newFolder()).delete("nothing"))
     }
 
     @Test

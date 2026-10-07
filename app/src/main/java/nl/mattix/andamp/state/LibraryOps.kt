@@ -98,6 +98,14 @@ class LibraryOps(
          * Empty where the leaf's own [tracks] answer it.
          */
         val tracksOf: List<suspend () -> List<Track>> = emptyList(),
+        /**
+         * The saved list each row stands for, indexed like [rows], on the page of the
+         * lists this app keeps as files; empty on every other page. Only these rows can
+         * be deleted.
+         */
+        val saved: List<String> = emptyList(),
+        /** The saved list whose tracks this page shows; null on every other page. */
+        val savedName: String? = null,
         /** The playable tracks, when this page is a leaf. */
         val tracks: List<Track>? = null,
         /** The text an empty page shows. */
@@ -431,6 +439,63 @@ class LibraryOps(
             showFlash("+${chosen.size} NEXT")
         }
 
+    // --- deleting a saved list ---
+
+    /** Whether the row is one of the app's saved lists, the only rows that can be deleted. */
+    fun canDeleteRow(index: Int): Boolean = index in page.saved.indices
+
+    /** Whether the page shows the tracks of a saved list, which the bar's DEL LIST deletes. */
+    val canDeletePage: Boolean get() = page.savedName != null
+
+    /** The row menu's Delete list, on the page of saved lists. */
+    fun promptDeleteRow(index: Int) {
+        page.saved.getOrNull(index)?.let(::promptDelete)
+    }
+
+    /**
+     * The bar's DEL LIST, inside a saved list: deletes the list and goes back up to the
+     * others. It acts on the whole list whatever row is selected, unlike PLAY and ADD beside
+     * it, which is why it says LIST.
+     */
+    fun promptDeletePage() {
+        page.savedName?.let(::promptDelete)
+    }
+
+    private fun promptDelete(name: String) {
+        state.prompt =
+            deleteListPrompt(name, onDone = { state.prompt = null }) {
+                scope.launch { if (lists.delete(name)) savedListDeleted(name) else showFlash("CAN'T DELETE") }
+            }
+    }
+
+    /**
+     * The saved list [name] is gone, deleted here or from LIST > LOAD LIST. The page of
+     * saved lists is read again wherever it is: on screen, or under an opened list, where
+     * going up returns to. Its scroll is kept, so the next list to delete is still under
+     * the finger. The deleted list's own page closes.
+     */
+    fun savedListDeleted(name: String) {
+        if (loading) return
+        for (at in crumbs.indices) {
+            val crumb = crumbs[at]
+            if (crumb.page.saved.isEmpty()) continue
+            val next = savedListsPage()
+            crumbs[at] = Crumb(next, scrollWithin(next, crumb.scroll), crumb.selection, crumb.query, crumb.finding)
+        }
+        if (page.saved.isNotEmpty()) {
+            val next = savedListsPage()
+            abandonLoad()
+            commit(next, scroll = scrollWithin(next, state.libraryScroll))
+        }
+        if (page.savedName == name) up()
+    }
+
+    /** [scroll], or the last row of [next] when the page has become shorter than that. */
+    private fun scrollWithin(
+        next: Page,
+        scroll: Int,
+    ) = scroll.coerceIn(0, (next.rows.size - 1).coerceAtLeast(0))
+
     private fun onRow(
         index: Int,
         act: (List<Track>) -> Unit,
@@ -627,13 +692,15 @@ class LibraryOps(
             status = count(saved.size, "LIST"),
             rows = saved.map { Row(it.name, detail = "${it.trackCount} TRK") },
             open = saved.map { entry -> { drill(entry.name) { listTracksPage(entry.name) } } },
+            tracksOf = saved.map { entry -> { lists.load(entry.name).orEmpty() } },
+            saved = saved.map { it.name },
             empty = "NO SAVED LISTS · LIST > SAVE KEEPS ONE",
         )
     }
 
     private fun listTracksPage(name: String): Page {
         val tracks = lists.load(name).orEmpty()
-        return trackListPage(name, tracks, empty = "NO TRACKS")
+        return trackListPage(name, tracks, empty = "NO TRACKS", savedName = name)
     }
 
     private fun radioRootPage(): Page {
@@ -698,6 +765,7 @@ class LibraryOps(
         header: String,
         tracks: List<Track>,
         empty: String,
+        savedName: String? = null,
     ): Page {
         val time = if (tracks.isEmpty()) "" else " · ${clock(tracks.sumOf { it.durationSec })}"
         return Page(
@@ -706,6 +774,7 @@ class LibraryOps(
             rows = tracks.mapIndexed { at, track -> Row("${at + 1}. ${track.title}", detail = clock(track.durationSec)) },
             tracks = tracks,
             empty = empty,
+            savedName = savedName,
         )
     }
 

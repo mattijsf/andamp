@@ -43,6 +43,9 @@ class PlaylistLibrary(
             .getOrNull()
             ?.takeIf { it.isNotEmpty() }
 
+    /** Deletes [name]; false when it was not there or could not be deleted. */
+    fun delete(name: String): Boolean = runCatching { fileFor(name).delete() }.getOrDefault(false)
+
     /** A list's name as a file name: path characters become spaces. */
     private fun fileFor(name: String): File {
         val safe =

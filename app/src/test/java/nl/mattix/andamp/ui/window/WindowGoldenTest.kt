@@ -482,6 +482,27 @@ class WindowGoldenTest {
     }
 
     @Test
+    fun `library saved list with the delete cell`() {
+        val (ops, state) =
+            libraryFixture { lists, _ ->
+                lists.save(
+                    "Road trip",
+                    listOf(
+                        nl.mattix.andamp.core.model
+                            .Track("r1", "Autechre", "Foil", 366_000, uri = "content://1"),
+                        nl.mattix.andamp.core.model
+                            .Track("r2", "Autechre", "Montreal", 456_000, uri = "content://2"),
+                    ),
+                )
+            }
+        ops.switchCategory(
+            nl.mattix.andamp.state.LibraryOps.Category.LISTS,
+        )
+        ops.tapRow(0)
+        renderLibrary("library_list_saved", ops, state)
+    }
+
+    @Test
     fun `playlist-art window frame`() {
         // what a skin without GEN.BMP wears: playlist chrome, plain bottom
         // filler (no baked ADD/SUB/SEL buttons), title in the skin's own font

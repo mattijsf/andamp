@@ -34,6 +34,8 @@ class PlaylistFileOps(
     private val queue: PlaylistOps = PlaylistOps(state, facade),
     /** Where the file and library work happens. */
     private val io: kotlin.coroutines.CoroutineContext = Dispatchers.IO,
+    /** Told the name of a saved list once it is deleted, so the library window can drop its row. */
+    private val onListDeleted: (String) -> Unit = {},
 ) {
     /** True when the device's audio library may be read; drives the permission prompt. */
     fun canReadLibrary() = library.hasPermission()
@@ -234,7 +236,10 @@ class PlaylistFileOps(
         }
     }
 
-    /** Shows the lists saved in the app's library, to open one. The picker opens once they are read. */
+    /**
+     * Shows the lists saved in the app's library, to open one or to delete one. The picker
+     * opens once they are read.
+     */
     fun loadFromLibrary() {
         scope.launch {
             val saved = withContext(io) { listsLibrary.list() }
@@ -244,6 +249,10 @@ class PlaylistFileOps(
                     entries = saved.map { PresetEntry(it.name, it.name, "${it.trackCount} TRK") },
                     confirmLabel = "Open",
                     emptyMessage = "No lists saved here yet",
+                    extra =
+                        PresetPicker.Extra("Delete", destructive = true) { keys ->
+                            keys.firstOrNull()?.let(::promptDelete)
+                        },
                 ) { keys ->
                     val name = keys.firstOrNull() ?: return@PresetPicker
                     scope.launch {
@@ -252,6 +261,17 @@ class PlaylistFileOps(
                     }
                 }
         }
+    }
+
+    /** Asks over the picker, which stays open and lists what is left once the list is gone. */
+    private fun promptDelete(name: String) {
+        state.prompt =
+            deleteListPrompt(name, onDone = { state.prompt = null }) {
+                scope.launch {
+                    if (withContext(io) { listsLibrary.delete(name) }) onListDeleted(name)
+                    if (state.presetPicker != null) loadFromLibrary()
+                }
+            }
     }
 
     /**
