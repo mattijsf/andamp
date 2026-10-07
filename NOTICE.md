@@ -9,18 +9,20 @@ check them again before you redistribute.
 ## Andamp itself: GPL-3.0-or-later
 
 Andamp's own code is under the GNU GPL, version 3 or later (see `LICENSE` and the license
-section of the README). There is one additional permission under section 7: effect
+section of the README). There are two additional permissions under section 7. Effect
 plug-ins, visualizer presets and skins may use any license, because they reach the app
-only through its documented formats.
+only through its documented formats. And Andamp may be combined and distributed with the
+Google Play Billing Library, which is not free software (see its section below).
 
 The source SDK is Apache-2.0 (`LICENSE-APACHE-2.0`). It consists of `core/model`,
 `core/playback`, `core/network`, `core/packapi` and `pack/common`, the modules a music
 source compiles against. A source is its author's own app and may carry any license. The
 player uses these modules like any other Apache-2.0 library.
 
-Everything below keeps its own terms. None of them conflicts with the GPL: Apache-2.0 and
-LGPL-2.1 code can be combined with GPLv3 code, and BSD, MIT and OFL only ask for
-attribution. One thing to watch: GPLv2-only code cannot be combined with the Apache-2.0
+Everything below keeps its own terms. With one exception, none of them conflicts with the
+GPL: Apache-2.0 and LGPL-2.1 code can be combined with GPLv3 code, and BSD, MIT and OFL
+only ask for attribution. The exception is the Google Play Billing Library, which is why
+it has an additional permission of its own. One thing to watch: GPLv2-only code cannot be combined with the Apache-2.0
 libraries this app links.
 
 ## projectM: LGPL-2.1
@@ -107,6 +109,25 @@ Bundled as `app/src/main/assets/fonts/LiberationSans-Regular.ttf`. It is
 metric-compatible with the Arial that `PLEDIT.TXT` names and renders the playlist text.
 The license text is in `docs/LiberationSans-LICENSE.txt`, and the build copies it into the
 APK as the asset `licenses/LiberationSans-OFL-1.1.txt`.
+
+## Google Play Billing Library: Android SDK License
+
+<https://developer.android.com/google/play/billing>
+
+The tip jar on Preferences > Support Andamp buys its tips through Google Play, and Google
+Play accepts purchases only through this library. It comes from Google's Maven repository
+as `com.android.billingclient:billing-ktx`, brings the Google Play services libraries it
+depends on, and ships inside the APK. Only `PlayTill.kt` in `:app` uses it.
+
+It is under the Android Software Development Kit License
+(<https://developer.android.com/studio/terms>), which is not an open-source license and
+cannot be combined with GPL code on the GPL's own terms. So Andamp's license carries an
+additional permission under section 7 of the GPL, worded in the license section of the
+README: Andamp may be combined with this library and distributed that way, and the GPL
+keeps applying to all of Andamp's own code.
+
+A build without the tip jar has no need of the permission: remove the dependency and
+`PlayTill.kt`, and give `TipJar` a `Till` that never connects.
 
 ## Libraries the app links against
 

@@ -343,6 +343,7 @@ dependencies {
     implementation(libs.activity.compose)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)
+    implementation(libs.billing.ktx) // the tip jar: tips are bought through Google Play
     detektPlugins(libs.detekt.compose.rules)
     testImplementation(libs.junit)
     testImplementation(testFixtures(project(":core:playback")))

@@ -36,10 +36,11 @@ class AboutDialogTest {
     }
 
     @Test
-    fun `it names the app, the site and Winamp`() {
+    fun `it names the app, its site, the maker's site and Winamp`() {
         compose.setContent { AboutBody(onClose = {}) }
 
         compose.onNodeWithText("Andamp").assertIsDisplayed()
+        compose.onNodeWithText("andamp.nl").assertIsDisplayed()
         compose.onNodeWithText("mattix.nl").assertIsDisplayed()
         compose
             .onNodeWithText("Winamp", substring = true)

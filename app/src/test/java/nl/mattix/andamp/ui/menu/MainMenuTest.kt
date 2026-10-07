@@ -57,7 +57,7 @@ class MainMenuTest {
         assertEquals(
             listOf("View file info", "Playlist Editor", "Equalizer") +
                 listOfNotNull("Media Library".takeIf { !asks }) +
-                listOf("Exit"),
+                listOf("Support Andamp...", "Exit"),
             actions(menu.items).map { it.label },
         )
         assertEquals(
@@ -66,6 +66,18 @@ class MainMenuTest {
                 listOf("Options", "Playback", "Visualization", "Skins"),
             menu.items.filterIsInstance<AmpMenuItem.Submenu>().map { it.label },
         )
+    }
+
+    @Test
+    fun `Support Andamp opens Preferences on the page with the tips`() {
+        val vm = testViewModel()
+        var opened = 0
+        val menu = mainMenu(vm, {}, {}, {}, {}, onPreferences = { opened++ })
+
+        actions(menu.items).first { it.label == "Support Andamp..." }.onClick()
+
+        assertEquals(1, opened)
+        assertEquals("support", vm.state.arrivalPage)
     }
 
     /** The entry calls the callback it is given and keeps no state of its own. */

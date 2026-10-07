@@ -145,6 +145,12 @@ the GPL, you may create and distribute effect plug-ins (`.lua`), visualizer pres
 (`.milk`, `.avs`) and skins (`.wsz`) under any terms you choose. This covers files loaded
 through those formats, not modified versions of Andamp itself.
 
+**The tip jar uses Google Play's library.** As an additional permission under section 7
+of the GPL, you may combine Andamp with the Google Play Billing Library
+(`com.android.billingclient`) and the Google Play services libraries it depends on, and
+distribute the combination, although those libraries are not under the GPL. The GPL keeps
+applying to all of Andamp's own code.
+
 **The bundled skins are artwork.** AndAmp Dark, Light and Spot (the `.wsz` files in
 `skin/dist/` and the art inside them) are licensed under
 [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/). The Python build in `skin/`
