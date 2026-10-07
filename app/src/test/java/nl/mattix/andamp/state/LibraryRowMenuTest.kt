@@ -12,7 +12,11 @@ import nl.mattix.andamp.core.model.LibraryArtist
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.playback.BrowseSource
 import nl.mattix.andamp.core.player.PlayerFacade
+import nl.mattix.andamp.ui.menu.libraryRowMenu
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -63,6 +67,34 @@ class LibraryRowMenuTest {
     }
 
     private fun lists() = PlaylistLibrary(temp.newFolder("playlists"))
+
+    private class Saved(
+        val ops: LibraryOps,
+        val state: WinampState,
+        val shelf: PlaylistLibrary,
+        val facade: PlayerFacade,
+    )
+
+    /** The LISTS tab over two saved lists, "Gym" then "Road trip". */
+    private fun savedLists(): Saved {
+        val state = WinampState()
+        val facade = PlayerFacade(MockBackend(emptyList(), scope))
+        val shelf = lists()
+        shelf.save("Road trip", listOf(Shelf.track("r1", "One"), Shelf.track("r2", "Two")))
+        shelf.save("Gym", listOf(Shelf.track("g1", "Three")))
+        val ops = LibraryOps({ Shelf() }, facade, state, scope, shelf, stations())
+        ops.open()
+        ops.switchCategory(LibraryOps.Category.LISTS)
+        return Saved(ops, state, shelf, facade)
+    }
+
+    private fun labels(
+        ops: LibraryOps,
+        row: Int,
+    ) = libraryRowMenu(ops, row, ops.rows[row].label, MenuAnchor("library", 0, 0, 0, 0))
+        .items
+        .filterIsInstance<AmpMenuItem.Action>()
+        .map { it.label }
 
     private fun stations() = StationStore(java.io.File(temp.newFolder("radio"), "stations.m3u"))
 
@@ -123,6 +155,134 @@ class LibraryRowMenuTest {
         assertEquals(
             listOf("t1", "t2"),
             facade.state.value.queue
+                .map { it.id },
+        )
+    }
+
+    @Test
+    fun `a saved list's row offers Delete list, a track in it does not`() {
+        val ops = savedLists().ops
+        assertEquals(listOf("Play", "Enqueue", "Enqueue next", "Delete list"), labels(ops, 0))
+
+        ops.tapRow(0) // into Gym
+        assertEquals(listOf("Play", "Enqueue", "Enqueue next"), labels(ops, 0))
+    }
+
+    @Test
+    fun `an artist's row has nothing to delete`() {
+        val (ops, _, _) = player()
+        ops.open()
+
+        assertEquals(listOf("Play", "Enqueue", "Enqueue next"), labels(ops, 0))
+    }
+
+    @Test
+    fun `playing a saved list's row plays the list`() {
+        val saved = savedLists()
+
+        saved.ops.playRow(1) // Road trip
+
+        assertEquals(
+            listOf("r1", "r2"),
+            saved.facade.state.value.queue
+                .map { it.id },
+        )
+    }
+
+    @Test
+    fun `Delete list asks first, then takes the list off the shelf and the page`() {
+        val saved = savedLists()
+        val (ops, state, shelf) = Triple(saved.ops, saved.state, saved.shelf)
+
+        ops.promptDeleteRow(1) // Road trip
+
+        assertEquals("Delete Road trip?", state.prompt?.title)
+        assertEquals("nothing is deleted before the answer", listOf("Gym", "Road trip"), shelf.list().map { it.name })
+
+        state.prompt?.onConfirm?.invoke()
+
+        assertNull(state.prompt)
+        assertEquals(listOf("Gym"), shelf.list().map { it.name })
+        assertEquals(listOf("Gym"), ops.rows.map { it.label })
+        assertEquals("1 LIST", ops.status)
+    }
+
+    @Test
+    fun `only the inside of a saved list can be deleted as a page`() {
+        val ops = savedLists().ops
+        assertFalse("the page of lists has rows to delete, not itself", ops.canDeletePage)
+
+        ops.tapRow(0) // into Gym
+        assertTrue(ops.canDeletePage)
+
+        ops.switchCategory(LibraryOps.Category.ARTISTS)
+        ops.tapRow(0) // into Autechre
+        ops.tapRow(0) // into Amber, an album's tracks
+        assertFalse(ops.canDeletePage)
+    }
+
+    @Test
+    fun `deleting an opened list goes back up to the lists that are left`() {
+        val saved = savedLists()
+        val (ops, state) = saved.ops to saved.state
+        ops.tapRow(1) // into Road trip
+
+        ops.promptDeletePage()
+
+        assertEquals("Delete Road trip?", state.prompt?.title)
+        assertEquals("still inside the list until the answer", "Road trip", ops.header)
+
+        state.prompt?.onConfirm?.invoke()
+
+        assertEquals("LISTS", ops.header)
+        assertEquals(0, ops.depth)
+        assertEquals(listOf("Gym"), ops.rows.map { it.label })
+        assertEquals(listOf("Gym"), saved.shelf.list().map { it.name })
+    }
+
+    @Test
+    fun `a list deleted elsewhere leaves the page of lists`() {
+        val saved = savedLists()
+        saved.shelf.delete("Gym")
+
+        saved.ops.savedListDeleted("Gym")
+
+        assertEquals(listOf("Road trip"), saved.ops.rows.map { it.label })
+    }
+
+    @Test
+    fun `a list deleted elsewhere closes its own page, and another list's page stays open`() {
+        val saved = savedLists()
+        val ops = saved.ops
+        ops.tapRow(1) // into Road trip
+        saved.shelf.delete("Gym")
+        ops.savedListDeleted("Gym")
+
+        assertEquals("Road trip", ops.header)
+        ops.up()
+        assertEquals("going up finds the lists as they are now", listOf("Road trip"), ops.rows.map { it.label })
+
+        ops.tapRow(0) // into Road trip again
+        saved.shelf.delete("Road trip")
+        ops.savedListDeleted("Road trip")
+
+        assertEquals("LISTS", ops.header)
+        assertTrue(ops.rows.isEmpty())
+    }
+
+    @Test
+    fun `deleting a list leaves the queue it filled alone`() {
+        val saved = savedLists()
+        saved.ops.playRow(1) // Road trip
+
+        saved.ops.promptDeleteRow(1)
+        saved.state.prompt
+            ?.onConfirm
+            ?.invoke()
+
+        assertEquals(
+            listOf("r1", "r2"),
+            saved.facade.state.value.queue
                 .map { it.id },
         )
     }

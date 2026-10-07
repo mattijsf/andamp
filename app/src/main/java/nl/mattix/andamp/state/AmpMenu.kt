@@ -65,9 +65,9 @@ data class NamePrompt(
 )
 
 /**
- * A titled message with one action: a permission the system must grant, or a notice from a
- * backend. The clutter bar's A and the Preferences switch both ask for the overlay
- * permission through this.
+ * A titled message with one action: a permission the system must grant, a notice from a
+ * backend, or a deletion to confirm. The clutter bar's A and the Preferences switch both ask
+ * for the overlay permission through this.
  */
 data class AmpPrompt(
     val title: String,

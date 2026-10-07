@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -138,6 +139,21 @@ fun PresetPickerSheet(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth().padding(top = GAP.dp),
             ) {
+                picker.extra?.let { extra ->
+                    // at the other end from the confirm button, so the two are not mistaken
+                    TextButton(
+                        enabled = selected.isNotEmpty(),
+                        colors =
+                            if (extra.destructive) {
+                                ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                            } else {
+                                ButtonDefaults.textButtonColors()
+                            },
+                        onClick = { extra.onPick(picker.entries.map { it.key }.filter { it in selected }) },
+                        modifier = Modifier.testTag("$TAG.extra"),
+                    ) { Text(extra.label) }
+                    Spacer(Modifier.weight(1f))
+                }
                 TextButton(onClick = onDismiss, modifier = Modifier.padding(end = ROW_GAP.dp)) { Text("Cancel") }
                 // the action is a filled button, in the error colors when it is destructive
                 Button(

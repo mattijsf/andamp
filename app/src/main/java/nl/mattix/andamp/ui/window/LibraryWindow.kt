@@ -169,6 +169,7 @@ private fun libraryWidgets(
     val addLeft = left + listW - LibraryLayout.ADD_CELL_W
     val playLeft = addLeft - LibraryLayout.PLAY_CELL_W
     val newLeft = playLeft - LibraryLayout.NEW_CELL_W
+    val deleteLeft = playLeft - LibraryLayout.DELETE_CELL_W
 
     var downRows: List<LibraryOps.Row> = emptyList()
 
@@ -258,6 +259,13 @@ private fun libraryWidgets(
                 enabled = { ops.category == LibraryOps.Category.RADIO && ops.atTracks && !ops.searching },
                 taps = Widget.Taps(onTap = { ops.promptNewStation() }),
             ),
+            // NEW's place: a saved list is never the radio page
+            Widget(
+                "library.delete",
+                IntRect(deleteLeft, barTop, playLeft, barTop + LibraryLayout.BAR_H),
+                enabled = { ops.canDeletePage },
+                taps = Widget.Taps(onTap = { ops.promptDeletePage() }),
+            ),
             Widget(
                 "library.play",
                 IntRect(playLeft, barTop, addLeft, barTop + LibraryLayout.BAR_H),
@@ -299,6 +307,7 @@ internal fun DrawScope.drawLibraryContent(
                 },
             headerPressed = s.pressedWidget == "library.header",
             newPressed = s.pressedWidget == "library.new",
+            deletePressed = s.pressedWidget == "library.delete",
             playPressed = s.pressedWidget == "library.play",
             addPressed = s.pressedWidget == "library.add",
             playingRow = ops.rowOfTrack(s.currentTrack?.id),
@@ -310,6 +319,7 @@ internal fun DrawScope.drawLibraryContent(
             caretOn = (s.marqueeStep / 2) % 2 == 0,
             canSearch = ops.canSearch,
             newCell = ops.category == LibraryOps.Category.RADIO && ops.atTracks && !ops.searching,
+            deleteCell = ops.canDeletePage,
             width = width,
             visibleRows = layout.visibleRows,
             slack = layout.slack,
@@ -356,6 +366,7 @@ internal class LibraryRasterizer(
         val pressedTab: Int,
         val headerPressed: Boolean,
         val newPressed: Boolean,
+        val deletePressed: Boolean,
         val playPressed: Boolean,
         val addPressed: Boolean,
         val playingRow: Int,
@@ -366,6 +377,7 @@ internal class LibraryRasterizer(
         val caretOn: Boolean,
         val canSearch: Boolean,
         val newCell: Boolean,
+        val deleteCell: Boolean,
         val width: Int,
         val visibleRows: Int,
         val slack: Int,
@@ -591,11 +603,17 @@ internal class LibraryRasterizer(
         val addLeft = w - LibraryLayout.ADD_CELL_W
         val playLeft = addLeft - LibraryLayout.PLAY_CELL_W
         val newLeft = playLeft - LibraryLayout.NEW_CELL_W
+        val deleteLeft = playLeft - LibraryLayout.DELETE_CELL_W
 
         // status on the left; the enqueue flash replaces it, in the current-track color
         val statusText = scene.flash.ifEmpty { ops.status }
         paint.color = (if (scene.flash.isEmpty()) scene.style.normal else scene.style.current).toArgb()
-        val statusRight = (if (scene.newCell) newLeft else playLeft) - DETAIL_GAP
+        val statusRight =
+            when {
+                scene.newCell -> newLeft
+                scene.deleteCell -> deleteLeft
+                else -> playLeft
+            } - DETAIL_GAP
         canvas.save()
         canvas.clipRect(0f, top, statusRight, top + LibraryLayout.BAR_H)
         canvas.drawText(statusText, ListText.LEFT_INSET, baseline, paint)
@@ -604,6 +622,9 @@ internal class LibraryRasterizer(
         if (!ops.atTracks) return
         if (scene.newCell) {
             drawBarButton(canvas, paint, scene, top, baseline, newLeft, playLeft, "NEW", scene.newPressed)
+        }
+        if (scene.deleteCell) {
+            drawBarButton(canvas, paint, scene, top, baseline, deleteLeft, playLeft, "DEL LIST", scene.deletePressed)
         }
         drawBarButton(canvas, paint, scene, top, baseline, playLeft, addLeft, "PLAY", scene.playPressed)
         drawBarButton(canvas, paint, scene, top, baseline, addLeft, w, "ADD", scene.addPressed)
@@ -688,6 +709,7 @@ class LibraryLayout(
         const val SCROLL_HIT_W = 15
         const val HANDLE_H = 18
         const val NEW_CELL_W = 30
+        const val DELETE_CELL_W = 52
         const val PLAY_CELL_W = 34
         const val ADD_CELL_W = 30
         const val MIN_ROWS = 8

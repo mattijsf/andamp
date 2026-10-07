@@ -237,7 +237,17 @@ class WinampViewModel
 
         /** LIST > SAVE/LOAD LIST, which need a document picker and the file system. */
         val playlistFiles =
-            PlaylistFileOps(app, state, facade, playlistStore, viewModelScope, library, mediaFiles, playlistLibrary)
+            PlaylistFileOps(
+                app,
+                state,
+                facade,
+                playlistStore,
+                viewModelScope,
+                library,
+                mediaFiles,
+                playlistLibrary,
+                onListDeleted = libraryOps::savedListDeleted,
+            )
 
         /** The skin every canvas draws with; null until the bundled one decodes. */
         val skin: Skin? get() = skinOps.skin

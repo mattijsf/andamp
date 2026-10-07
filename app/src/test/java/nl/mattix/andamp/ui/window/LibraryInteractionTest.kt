@@ -24,6 +24,8 @@ import nl.mattix.andamp.skin.SkinLoader
 import nl.mattix.andamp.state.FakeTracks
 import nl.mattix.andamp.state.InMemoryEqPresetStore
 import nl.mattix.andamp.state.LibraryAccess
+import nl.mattix.andamp.state.LibraryOps
+import nl.mattix.andamp.state.PlaylistLibrary
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.ui.LibraryAccessHandle
 import org.junit.Assert.assertEquals
@@ -36,6 +38,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import java.io.File
 
 /**
  * Pointer gestures through the library window land on the right widget and follow
@@ -205,6 +208,31 @@ class LibraryInteractionTest {
 
         assertEquals(before + listOf("Song 0", "Song 1", "Song 2"), vm.facadeQueueTitles())
         assertEquals(Transport.Stopped, vm.transport())
+    }
+
+    @Test
+    fun `DEL LIST inside a saved list asks, then deletes it and goes back to the lists`() {
+        val shelf = PlaylistLibrary(File(app.filesDir, "playlists"))
+        shelf.save("Road trip", listOf(Track("r1", "Someone", "One", 60_000, uri = "content://1")))
+        vm.libraryOps.switchCategory(LibraryOps.Category.LISTS)
+        settle()
+        tapWindow(rowX(), rowCenterY(0))
+        settle()
+        assertEquals("Road trip", vm.libraryOps.header)
+
+        val playLeft = layout.listWidth(frame) + frame.leftW - LibraryLayout.ADD_CELL_W - LibraryLayout.PLAY_CELL_W
+        tapWindow(playLeft - LibraryLayout.DELETE_CELL_W / 2f, barY())
+        settle()
+
+        assertEquals("Delete Road trip?", vm.state.prompt?.title)
+        vm.state.prompt
+            ?.onConfirm
+            ?.invoke()
+        settle()
+
+        assertEquals("LISTS", vm.libraryOps.header)
+        assertTrue(vm.libraryOps.rows.isEmpty())
+        assertTrue(shelf.list().isEmpty())
     }
 
     @Test

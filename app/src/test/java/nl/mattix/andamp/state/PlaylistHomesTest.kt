@@ -35,6 +35,7 @@ class PlaylistHomesTest {
     private lateinit var lists: PlaylistLibrary
     private lateinit var ops: PlaylistFileOps
     private lateinit var backend: MockBackend
+    private val deleted = mutableListOf<String>()
 
     /** Rows with a uri: the codec stores only rows that have one. */
     private val queue =
@@ -58,6 +59,7 @@ class PlaylistHomesTest {
                 scope,
                 listsLibrary = lists,
                 io = Dispatchers.Unconfined,
+                onListDeleted = { deleted += it },
             )
         state.playlist = queue
     }
@@ -128,6 +130,28 @@ class PlaylistHomesTest {
         val picker = requireNotNull(state.presetPicker) { "a picker of saved lists is shown" }
         assertEquals("Open playlist", picker.title)
         assertEquals(listOf("Road trip"), picker.entries.map { it.label })
+    }
+
+    @Test
+    fun `the open dialog deletes the picked list after asking, and stays open on the rest`() {
+        lists.save("Road trip", queue.take(3))
+        lists.save("Gym", queue.take(1))
+        ops.loadList {}
+        pick("Open from Andamp")
+        val picker = requireNotNull(state.presetPicker)
+
+        requireNotNull(picker.extra) { "the dialog has a Delete button" }.onPick(listOf("Gym"))
+
+        assertEquals("Delete Gym?", state.prompt?.title)
+        assertEquals("nothing is deleted before the answer", 2, lists.list().size)
+        assertTrue("the dialog is still open under the question", state.presetPicker === picker)
+
+        state.prompt?.onConfirm?.invoke()
+
+        assertNull(state.prompt)
+        assertEquals(listOf("Road trip"), lists.list().map { it.name })
+        assertEquals(listOf("Road trip"), state.presetPicker?.entries?.map { it.label })
+        assertEquals(listOf("Gym"), deleted)
     }
 
     @Test

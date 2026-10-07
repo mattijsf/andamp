@@ -23,8 +23,20 @@ data class PresetPicker(
     /** Paints the confirm button as a warning, for an action that deletes. */
     val destructive: Boolean = false,
     val emptyMessage: String = "Nothing saved yet",
+    val extra: Extra? = null,
     val onConfirm: (keys: List<String>) -> Unit,
 ) {
+    /**
+     * A second button, apart from Cancel and the confirm button, that acts on the picked
+     * rows and leaves the dialog open: Delete in the dialog that opens a saved list.
+     */
+    data class Extra(
+        val label: String,
+        /** Paints the button as a warning, for an action that deletes. */
+        val destructive: Boolean = false,
+        val onPick: (keys: List<String>) -> Unit,
+    )
+
     /** The rows matching [query]; every row while it is blank. */
     fun matching(query: String): List<PresetEntry> {
         val needle = query.trim().lowercase()
