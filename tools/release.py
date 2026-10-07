@@ -18,6 +18,7 @@ same changelog section is trimmed once for each.
 from __future__ import annotations
 
 import argparse
+import html
 import json
 import os
 import re
@@ -125,6 +126,9 @@ def section(name: str) -> list[tuple[str, str]]:
 
     Kept as kinds, because the two outputs format them differently: Discord
     takes markdown, and Play's "what's new" is plain text.
+
+    release-please writes `<`, `>` and `&` as HTML entities. Neither output is
+    HTML, so each entry is given back with the characters themselves.
     """
     if not CHANGELOG.exists():
         fail("no CHANGELOG.md - release-please writes it")
@@ -138,7 +142,7 @@ def section(name: str) -> list[tuple[str, str]]:
     body = rest[: end.start()] if end else rest
     out = []
     for line in body.splitlines():
-        line = line.strip()
+        line = html.unescape(line.strip())
         if line.startswith("###"):
             out.append(("head", line.lstrip("# ").strip()))
         elif line.startswith("*") or line.startswith("-"):
