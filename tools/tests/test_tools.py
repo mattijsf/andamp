@@ -6,17 +6,19 @@ Tests for the release tooling's decisions.
     python3 -m unittest discover -s tools/tests
 
 They cover a version code Play has already seen, release notes that end on a
-heading with nothing under it, and a commit that reaches the changelog and
-ships nothing. Nothing here touches git, Gradle or a network, and the standard
-library is all it needs.
+heading with nothing under it, a changelog entry with HTML entities in it, and
+a commit that reaches the changelog and ships nothing. Nothing here touches
+git, Gradle or a network, and the standard library is all it needs.
 """
 
 from __future__ import annotations
 
 import importlib.util
 import sys
+import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 TOOLS = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(TOOLS))
@@ -74,6 +76,45 @@ class Fit(unittest.TestCase):
     def test_it_never_runs_past_the_limit(self):
         many = [("head", "Features")] + [("item", f"change number {n} with words in it") for n in range(60)]
         self.assertLessEqual(len(release.fit(many, 500, markdown=False)), 500)
+
+
+class Section(unittest.TestCase):
+    """One version's entries, read from a changelog as release-please writes it."""
+
+    CHANGELOG = """# Changelog
+
+## [9.9.9](https://example.org/compare/v9.9.8...v9.9.9) (2026-01-01)
+
+
+### New
+
+* load a list from LIST &gt; LOAD LIST, a &lt;name&gt; &amp; more ([#1](https://example.org/issues/1)) ([abc1234](https://example.org/commit/abc1234))
+
+## [9.9.8](https://example.org/compare/v9.9.7...v9.9.8) (2025-12-31)
+
+
+### Fixed
+
+* something older ([def5678](https://example.org/commit/def5678))
+"""
+
+    def section(self, name: str):
+        with tempfile.TemporaryDirectory() as folder:
+            changelog = Path(folder) / "CHANGELOG.md"
+            changelog.write_text(self.CHANGELOG, encoding="utf-8")
+            with mock.patch.object(release, "CHANGELOG", changelog):
+                return release.section(name)
+
+    def test_it_holds_one_version_without_the_trailing_links(self):
+        self.assertEqual(
+            [("head", "New"), ("item", "Load a list from LIST > LOAD LIST, a <name> & more")],
+            self.section("9.9.9"),
+        )
+
+    def test_no_html_entity_reaches_either_text(self):
+        entries = self.section("9.9.9")
+        for markdown in (False, True):
+            self.assertNotIn("&gt;", release.fit(entries, 500, markdown=markdown))
 
 
 class CommitTypes(unittest.TestCase):
