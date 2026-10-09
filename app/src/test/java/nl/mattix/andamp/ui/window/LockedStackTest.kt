@@ -29,7 +29,8 @@ class LockedStackTest {
         playlist: Playlist = Playlist.OPEN,
         covers: List<String> = emptyList(),
         safeBottom: Int = this.safeBottom,
-    ) = LockedStack.Ask(screenW, safeBottom, mainH, eqH, visChromeH, visSteps, playlist, covers)
+        sideways: Boolean = false,
+    ) = LockedStack.Ask(screenW, safeBottom, mainH, eqH, visChromeH, visSteps, playlist, covers, sideways)
 
     private fun rects(ask: LockedStack.Ask) = LockedStack.layout(ask).rects
 
@@ -142,6 +143,59 @@ class LockedStackTest {
 
         assertEquals(column(14, safeBottom), rects[WindowStore.LIBRARY])
         assertEquals(rects[WindowStore.LIBRARY], rects[WindowStore.SKINS])
+    }
+
+    /** Sideways: a screen two players wide, [safeBottom] rows tall above the system's strip. */
+    private fun sideways(
+        visChromeH: Int? = null,
+        visSteps: Int? = null,
+        playlist: Playlist = Playlist.OPEN,
+        covers: List<String> = emptyList(),
+        safeBottom: Int = 232,
+    ) = ask(
+        screenW = 2 * MAIN_W + 20,
+        safeBottom = safeBottom,
+        visChromeH = visChromeH,
+        visSteps = visSteps,
+        playlist = playlist,
+        covers = covers,
+        sideways = true,
+    )
+
+    @Test
+    fun `sideways, the player and the equalizer are the left column and the playlist the right`() {
+        val rects = rects(sideways())
+
+        assertEquals(IntRect(10, 0, 10 + MAIN_W, 116), rects[WindowStore.MAIN])
+        assertEquals(IntRect(10, 116, 10 + MAIN_W, 232), rects[WindowStore.EQ])
+        assertEquals(IntRect(10 + MAIN_W, 0, 10 + 2 * MAIN_W, 232), rects[WindowStore.PLAYLIST])
+    }
+
+    @Test
+    fun `sideways, the plug-in window has the rest of the left column, the playlist being beside it`() {
+        val places = LockedStack.layout(sideways(visChromeH = chromeH, visSteps = 500, safeBottom = 400))
+
+        // 400 - 232 rows are left under the equalizer, with no playlist to leave room for
+        assertEquals((400 - 232 - chromeH) / MILKDROP_STEP, places.visMaxSteps)
+        val visual = places.rects.getValue(WindowStore.MILKDROP)
+        assertEquals(IntRect(10, 232, 10 + MAIN_W, 232 + chromeH + places.visMaxSteps * MILKDROP_STEP), visual)
+        assertEquals(400, places.rects.getValue(WindowStore.PLAYLIST).bottom)
+    }
+
+    @Test
+    fun `sideways, a collapsed playlist is its bar at the top of the right column`() {
+        val rects = rects(sideways(playlist = Playlist.SHADED))
+
+        assertEquals(IntRect(10 + MAIN_W, 0, 10 + 2 * MAIN_W, SHADE_H), rects[WindowStore.PLAYLIST])
+        assertNull(rects(sideways(playlist = Playlist.CLOSED))[WindowStore.PLAYLIST])
+    }
+
+    @Test
+    fun `sideways, an open library takes the right column and the stack stays`() {
+        val rects = rects(sideways(covers = listOf(WindowStore.LIBRARY)))
+
+        assertEquals(setOf(WindowStore.MAIN, WindowStore.EQ, WindowStore.LIBRARY), rects.keys)
+        assertEquals(IntRect(10 + MAIN_W, 0, 10 + 2 * MAIN_W, 232), rects[WindowStore.LIBRARY])
     }
 
     @Test

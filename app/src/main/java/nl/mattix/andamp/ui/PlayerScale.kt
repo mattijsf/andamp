@@ -62,9 +62,12 @@ data class PlayerViewport(
 /**
  * The surface for a screen of [widthPx] by [heightPx].
  *
- * Filling the screen, the player is as wide as the screen, or as wide as lets a stack of
- * [SMALLEST_STACK_H] fit the height, which leaves room at its sides. Otherwise it is drawn
- * at [playerScale].
+ * Filling the screen upright, the player is as wide as the screen, or as wide as lets a
+ * stack of [SMALLEST_STACK_H] fit the height, which leaves room at its sides. Filling it
+ * [sideways], two columns [SIDEWAYS_STACK_W] wide and [SIDEWAYS_STACK_H] tall fit the width
+ * or the height above the system's strip of [bottomInsetPx]: the left column is the player
+ * over the equalizer, which cannot give up rows the way the playlist does under them.
+ * Not filling the screen, the player is drawn at [playerScale].
  */
 fun playerViewport(
     widthPx: Int,
@@ -72,14 +75,19 @@ fun playerViewport(
     fillScreen: Boolean,
     /** Whether the phone is held sideways; see [playerScale]. */
     sideways: Boolean = false,
+    /** What the bottom of the screen keeps for the system's own gestures. */
+    bottomInsetPx: Int = 0,
 ): PlayerViewport {
     if (!fillScreen || widthPx <= 0 || heightPx <= 0) {
         return PlayerViewport(playerScale(widthPx, heightPx, sideways), 1f)
     }
+    val fitH = if (sideways) (heightPx - bottomInsetPx).coerceAtLeast(1) else heightPx
+    val stackW = if (sideways) SIDEWAYS_STACK_W else MAIN_W
+    val stackH = if (sideways) SIDEWAYS_STACK_H else SMALLEST_STACK_H
     // compared as whole numbers, so a screen of exactly the stack's shape is decided one way
-    val widthDecides = widthPx.toLong() * SMALLEST_STACK_H <= heightPx.toLong() * MAIN_W
-    val screen = if (widthDecides) widthPx else heightPx
-    val virtual = if (widthDecides) MAIN_W else SMALLEST_STACK_H
+    val widthDecides = widthPx.toLong() * stackH <= fitH.toLong() * stackW
+    val screen = if (widthDecides) widthPx else fitH
+    val virtual = if (widthDecides) stackW else stackH
     // the next whole scale up; a screen that is a whole multiple is not shrunk at all
     val scale = ((screen + virtual - 1) / virtual).coerceAtLeast(1)
     return PlayerViewport(scale, screen.toFloat() / (virtual * scale))

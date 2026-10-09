@@ -532,8 +532,8 @@ coordinates changed, compare with webamp.org using the same skin. `adb shell inp
 tap/swipe` works for interactions; content is centered, and a virtual coordinate `v` is at
 `origin + v*S` on the device. With Double Size on, on a phone held upright, the stack starts
 at the screen's left edge under the status bar, and `v` is at `v * screenWidthPx / 275`.
-Where the height decides the size, as on a phone or a tablet on its side, the stack is in
-the middle. After a
+Sideways, Double Size is two columns in the middle: the player over the equalizer on the
+left, the playlist on the right. After a
 change to the skin engine, also test a skin other than the base one.
 
 ## Code style

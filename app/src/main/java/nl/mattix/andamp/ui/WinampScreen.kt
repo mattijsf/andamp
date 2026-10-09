@@ -332,7 +332,14 @@ fun PlayerSurface(
                 FolderAsks(vm)
                 val screenW = constraints.maxWidth
                 val screenH = constraints.maxHeight
-                val viewport = playerViewport(screenW, screenH, fillScreen = locked, sideways = s.sideways)
+                val viewport =
+                    playerViewport(
+                        screenW,
+                        screenH,
+                        fillScreen = locked,
+                        sideways = s.sideways,
+                        bottomInsetPx = surfaceBottomInset(LocalDensity.current),
+                    )
                 val scale = viewport.scale
 
                 val quit = onExit
@@ -494,6 +501,7 @@ private fun BoxWithConstraintsScope.PlayerWindows(
                             WindowStore.LIBRARY.takeIf { s.libraryOpen },
                             WindowStore.SKINS.takeIf { s.skinManagerOpen },
                         ),
+                    sideways = s.sideways,
                 ),
             )
         } else {

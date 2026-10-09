@@ -61,6 +61,18 @@ class PlayerScaleTest {
     }
 
     @Test
+    fun `filling a phone on its side fits two columns above the system's strip`() {
+        // a 1080x2424 phone on its side: 75 px of status bar above, 63 px of gesture strip below
+        val viewport = playerViewport(2424, 1080 - 75, fillScreen = true, sideways = true, bottomInsetPx = 63)
+
+        // the height decides: 942 px for 232 rows is scale 5 shrunk to fit
+        assertEquals(5, viewport.scale)
+        assertEquals(942f / (SIDEWAYS_STACK_H * 5), viewport.shrink, 0f)
+        assertTrue("two columns fit across", viewport.inner(2424) / viewport.scale >= SIDEWAYS_STACK_W)
+        assertEquals("the stack ends on the strip", SIDEWAYS_STACK_H, viewport.inner(942) / viewport.scale)
+    }
+
+    @Test
     fun `a screen that is a whole number of players wide is not shrunk`() {
         assertEquals(PlayerViewport(scale = 4, shrink = 1f), playerViewport(1100, 2400, fillScreen = true))
     }
