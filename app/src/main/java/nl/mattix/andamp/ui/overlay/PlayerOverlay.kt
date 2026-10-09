@@ -128,7 +128,7 @@ object PlayerOverlay {
                 setContent {
                     val skin = vm.skin ?: return@setContent
                     // the activity's own rule, so the two surfaces draw the player the same size
-                    val scale = playerScale(screen.width(), screen.height() - display.statusBar)
+                    val scale = playerScale(screen.width(), screen.height() - display.statusBar, vm.state.sideways)
                     val here =
                         OverlayBounds.windowFor(
                             vm.state.windowRects.values,

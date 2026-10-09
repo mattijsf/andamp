@@ -4,7 +4,8 @@ Andamp is a Winamp 2.8 replica in Jetpack Compose (`nl.mattix.andamp`). It has t
 classic windows: the main player (275x116 virtual pixels), the equalizer (275x116) and the
 playlist (275 wide, as tall as the space left). They are docked in a vertical stack until
 you drag them apart. The screen turns with the device, and the windows keep one
-arrangement for upright and one for sideways. Classic `.wsz` skins work.
+arrangement for upright and one for sideways; sideways they start with the playlist beside
+the player and the equalizer, as tall as the two. Classic `.wsz` skins work.
 
 The skin UI is the front of a real media player. Behind it are several playback backends:
 local files and radio through Media3, and music sources that install as separate APKs

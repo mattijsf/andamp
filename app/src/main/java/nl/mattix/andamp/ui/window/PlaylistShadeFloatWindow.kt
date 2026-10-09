@@ -27,8 +27,11 @@ fun PlaylistShadeFloatWindow(
     scale: Int,
     /** The height the playlist expands back to. */
     expandedH: Int,
-    defaultOffset: IntOffset,
+    /** The row it sits on until it is moved. */
+    dockedTop: Int,
     modifier: Modifier = Modifier,
+    /** The column its left edge sits on until then, or null for the middle of the screen. */
+    dockedLeft: Int? = null,
     /** Where the layout holds it, at its narrowest, or null while it floats. */
     pinnedAt: IntOffset? = null,
 ) {
@@ -43,7 +46,7 @@ fun PlaylistShadeFloatWindow(
         width = width,
         height = SHADE_H,
         offset = s.plOffset,
-        defaultOffset = defaultOffset,
+        defaultOffset = dockedAt(dockedLeft, dockedTop, width, SHADE_H, s.screenW, s.screenH),
         onMove = { s.plOffset = it },
         cut = SkinCut(skin),
         pinnedAt = pinnedAt,

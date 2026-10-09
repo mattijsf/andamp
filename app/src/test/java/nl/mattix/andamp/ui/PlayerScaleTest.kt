@@ -24,6 +24,15 @@ class PlayerScaleTest {
     }
 
     @Test
+    fun `a phone held sideways fits the player and the equalizer with the playlist beside them`() {
+        // the same phones as above, on their sides, under their status bars
+        assertEquals(4, playerScale(2424, 1080 - 75, sideways = true))
+        assertEquals(3, playerScale(2142, 960 - 70, sideways = true))
+        assertEquals(2, playerScale(1600, 720 - 48, sideways = true))
+        assertTrue(SIDEWAYS_STACK_W * 4 <= 2424 && SIDEWAYS_STACK_H * 4 <= 1080 - 75)
+    }
+
+    @Test
     fun `a desktop floats the player rather than filling the screen with it`() {
         assertEquals(3, playerScale(2560, 1440 - 48))
         assertEquals(2, playerScale(1920, 1080 - 32))

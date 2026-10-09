@@ -115,9 +115,11 @@ fun MilkdropWindow(
     vm: WinampViewModel,
     skin: Skin,
     scale: Int,
-    /** Where it sits until the listener drags it. */
-    defaultOffset: IntOffset,
+    /** The row it sits on until the listener drags it. */
+    dockedTop: Int,
     modifier: Modifier = Modifier,
+    /** The column its left edge sits on until then, or null for the middle of the screen. */
+    dockedLeft: Int? = null,
     pinned: PinnedVisual? = null,
 ) {
     val s = vm.state
@@ -137,7 +139,7 @@ fun MilkdropWindow(
         width = width,
         height = height,
         offset = s.milkdropOffset,
-        defaultOffset = defaultOffset,
+        defaultOffset = dockedAt(dockedLeft, dockedTop, width, height, s.screenW, s.screenH),
         onMove = { s.milkdropOffset = it },
         onResizeRaw = { grab ->
             if (pinned != null) {

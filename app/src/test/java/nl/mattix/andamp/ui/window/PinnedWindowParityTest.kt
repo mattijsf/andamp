@@ -212,7 +212,7 @@ class PinnedWindowParityTest(
                         skin,
                         scale,
                         expandedH = PlaylistLayout.ofSegments(PlaylistLayout.MIN_SEGMENTS).height,
-                        defaultOffset = IntOffset.Zero,
+                        dockedTop = 0,
                         modifier = Modifier.fillMaxSize(),
                         pinnedAt = pinned.topLeft,
                     )
@@ -228,7 +228,7 @@ class PinnedWindowParityTest(
                         vm,
                         skin,
                         scale,
-                        defaultOffset = IntOffset.Zero,
+                        dockedTop = 0,
                         modifier = Modifier.fillMaxSize(),
                         pinned = PinnedVisual(pinned, maxSteps = VIS_MAX_STEPS, onSteps = onSteps),
                     )

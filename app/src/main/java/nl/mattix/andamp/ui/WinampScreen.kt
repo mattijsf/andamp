@@ -74,12 +74,14 @@ import nl.mattix.andamp.ui.welcome.WelcomeChoice
 import nl.mattix.andamp.ui.welcome.WelcomeDialog
 import nl.mattix.andamp.ui.widget.Widget
 import nl.mattix.andamp.ui.window.EQ_H
+import nl.mattix.andamp.ui.window.EQ_W
 import nl.mattix.andamp.ui.window.EqFloatWindow
 import nl.mattix.andamp.ui.window.LibraryWindow
 import nl.mattix.andamp.ui.window.LocalSurfaceScreen
 import nl.mattix.andamp.ui.window.LockedStack
 import nl.mattix.andamp.ui.window.LoupeLayer
 import nl.mattix.andamp.ui.window.MAIN_H
+import nl.mattix.andamp.ui.window.MAIN_W
 import nl.mattix.andamp.ui.window.MainFloatWindow
 import nl.mattix.andamp.ui.window.MilkdropSurface
 import nl.mattix.andamp.ui.window.MilkdropWindow
@@ -88,12 +90,11 @@ import nl.mattix.andamp.ui.window.PlaylistFloatWindow
 import nl.mattix.andamp.ui.window.PlaylistLayout
 import nl.mattix.andamp.ui.window.PlaylistMenuActions
 import nl.mattix.andamp.ui.window.PlaylistShadeFloatWindow
-import nl.mattix.andamp.ui.window.SHADE_H
 import nl.mattix.andamp.ui.window.SkinManagerWindow
 import nl.mattix.andamp.ui.window.StackMember
 import nl.mattix.andamp.ui.window.SurfaceScreen
 import nl.mattix.andamp.ui.window.WindowStacking
-import nl.mattix.andamp.ui.window.dockedOffset
+import nl.mattix.andamp.ui.window.dockedAt
 import nl.mattix.andamp.ui.window.dockedStackHeight
 import nl.mattix.andamp.ui.window.eqShadeWidgets
 import nl.mattix.andamp.ui.window.eqWindowWidgets
@@ -331,7 +332,7 @@ fun PlayerSurface(
                 FolderAsks(vm)
                 val screenW = constraints.maxWidth
                 val screenH = constraints.maxHeight
-                val viewport = playerViewport(screenW, screenH, fillScreen = locked)
+                val viewport = playerViewport(screenW, screenH, fillScreen = locked, sideways = s.sideways)
                 val scale = viewport.scale
 
                 val quit = onExit
@@ -514,7 +515,8 @@ private fun BoxWithConstraintsScope.PlayerWindows(
         mainH,
         eqH,
         dockedH,
-        virtualAvail,
+        screenW = constraints.maxWidth / scale,
+        screenH = virtualAvail,
         safeBottom,
         held,
     )
@@ -546,6 +548,7 @@ private fun FloatingWindows(
     mainH: Int,
     eqH: Int,
     dockedH: Int,
+    screenW: Int,
     screenH: Int,
     safeBottom: Int,
     held: LockedStack.Places?,
@@ -554,11 +557,20 @@ private fun FloatingWindows(
 
     // the stack starts below the strip the system keeps for the notification shade
     val top = grabbableTop(scale, LocalDensity.current)
+    // Where the windows sit until they are moved. Upright, one column in the middle of the
+    // screen, with the playlist under the stack and as tall as what is left. Sideways, the
+    // player and the equalizer on the left and the playlist beside them, as tall as the two.
+    val stackLeft = if (s.sideways) (screenW - SIDEWAYS_STACK_W) / 2 else (screenW - MAIN_W) / 2
+    val plDockedLeft = if (s.sideways) stackLeft + MAIN_W else stackLeft
+    val plDockedTop = if (s.sideways) top else top + dockedH
+    val plDockedSegments =
+        if (s.sideways) {
+            PlaylistLayout.segmentsThatFit(SIDEWAYS_STACK_H)
+        } else {
+            PlaylistLayout.segmentsThatFit(safeBottom - top - dockedH)
+        }
     // what a collapsed playlist expands back to
-    val plExpandedH =
-        PlaylistLayout
-            .ofSegments(s.plSegments ?: PlaylistLayout.segmentsThatFit(safeBottom - top - dockedH))
-            .height
+    val plExpandedH = PlaylistLayout.ofSegments(s.plSegments ?: plDockedSegments).height
     // with the shade gesture switched off, every shaded window is opened; this also runs
     // at launch, for a window that was stored shaded, and again when the layout changes or
     // the phone is turned: each layout and each way round has its own collapsed windows
@@ -581,7 +593,7 @@ private fun FloatingWindows(
                         scale,
                         widgets = mainWidgets,
                         height = mainH,
-                        defaultOffset = dockedOffset(top, mainH, screenH),
+                        defaultOffset = dockedAt(stackLeft, top, MAIN_W, mainH, screenW, screenH),
                         modifier = Modifier.fillMaxSize().zIndex(z),
                         onLongPress = onLongPress,
                         pinnedAt = pin?.topLeft,
@@ -596,7 +608,7 @@ private fun FloatingWindows(
                             scale,
                             widgets = eqWidgets,
                             height = eqH,
-                            defaultOffset = dockedOffset(top + mainH, eqH, screenH),
+                            defaultOffset = dockedAt(stackLeft, top + mainH, EQ_W, eqH, screenW, screenH),
                             modifier = Modifier.fillMaxSize().zIndex(z),
                             onLongPress = onLongPress,
                             pinnedAt = pin?.topLeft,
@@ -612,17 +624,14 @@ private fun FloatingWindows(
                             scale,
                             // under what is still docked: an equalizer that was dragged
                             // away leaves no gap
-                            defaultOffset =
-                                dockedOffset(
-                                    top +
-                                        dockedStackHeight(
-                                            top = top,
-                                            anchor = mainH,
-                                            under = listOf(stackMember(s, WindowStore.EQ, eqH, s.eqVisible)),
-                                        ),
-                                    milkdropHeight(frameFor(skin), milkdropContentH(s.milkdropSteps)),
-                                    screenH,
-                                ),
+                            dockedTop =
+                                top +
+                                    dockedStackHeight(
+                                        top = top,
+                                        anchor = mainH,
+                                        under = listOf(stackMember(s, WindowStore.EQ, eqH, s.eqVisible)),
+                                    ),
+                            dockedLeft = stackLeft,
                             modifier = Modifier.fillMaxSize().zIndex(z),
                             // the stack keeps the height its grip asks for
                             pinned =
@@ -643,7 +652,8 @@ private fun FloatingWindows(
                             skin,
                             scale,
                             expandedH = plExpandedH,
-                            defaultOffset = dockedOffset(top + dockedH, SHADE_H, screenH),
+                            dockedTop = plDockedTop,
+                            dockedLeft = plDockedLeft,
                             modifier = Modifier.fillMaxSize().zIndex(z),
                             pinnedAt = pin?.topLeft,
                         )
@@ -653,9 +663,9 @@ private fun FloatingWindows(
                             skin,
                             scale,
                             playlistActions,
-                            // docked under the stack, filling the rest of the height
-                            dockedTop = top + dockedH,
-                            dockedSegments = PlaylistLayout.segmentsThatFit(safeBottom - top - dockedH),
+                            dockedTop = plDockedTop,
+                            dockedSegments = plDockedSegments,
+                            dockedLeft = plDockedLeft,
                             modifier = Modifier.fillMaxSize().zIndex(z),
                             pinned = pin,
                         )

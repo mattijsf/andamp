@@ -272,7 +272,7 @@ class WindowCase(
                     widthResizable = true,
                     open = { it.state.milkdropOn = true },
                 ) { vm, skin, scale, onClose ->
-                    MilkdropWindow(vm, skin, scale, defaultOffset = IntOffset.Zero, modifier = Modifier.fillMaxSize())
+                    MilkdropWindow(vm, skin, scale, dockedTop = 0, modifier = Modifier.fillMaxSize())
                     CloseWatch(vm, onClose) { !it.state.milkdropOn }
                 },
                 WindowCase(

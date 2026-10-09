@@ -11,22 +11,34 @@ import kotlin.math.roundToInt
 /**
  * How many screen pixels each of the player's virtual pixels takes.
  *
- * As many as the width allows, but no more than lets a stack of [SMALLEST_STACK_H] fit the
- * height, so the player, the equalizer and a short playlist fit a wide screen such as a
- * tablet in landscape. Whole numbers only: the skin is pixel art, and drawn at a fractional
- * scale its pixels come out in two widths. A player that fills the screen is laid out at a
- * whole scale too, and shrunk as one picture; see [playerViewport].
+ * Upright, as many as the width allows, but no more than lets a stack of [SMALLEST_STACK_H]
+ * fit the height, so the player, the equalizer and a short playlist fit a wide screen such
+ * as a tablet in landscape. [sideways], as many as let the player and the equalizer stand
+ * on the left with the playlist beside them: [SIDEWAYS_STACK_W] across and
+ * [SIDEWAYS_STACK_H] down. Whole numbers only: the skin is pixel art, and drawn at a
+ * fractional scale its pixels come out in two widths. A player that fills the screen is
+ * laid out at a whole scale too, and shrunk as one picture; see [playerViewport].
  */
 fun playerScale(
     widthPx: Int,
     heightPx: Int,
-): Int = minOf(widthPx / MAIN_W, heightPx / SMALLEST_STACK_H).coerceAtLeast(1)
+    sideways: Boolean = false,
+): Int =
+    if (sideways) {
+        minOf(widthPx / SIDEWAYS_STACK_W, heightPx / SIDEWAYS_STACK_H).coerceAtLeast(1)
+    } else {
+        minOf(widthPx / MAIN_W, heightPx / SMALLEST_STACK_H).coerceAtLeast(1)
+    }
 
 /**
- * The shortest stack the scale leaves room for, in virtual pixels: the player, the equalizer
- * and a playlist of [ROOMY_SEGMENTS] segments.
+ * The shortest stack the scale leaves room for upright, in virtual pixels: the player, the
+ * equalizer and a playlist of [ROOMY_SEGMENTS] segments.
  */
 internal val SMALLEST_STACK_H = MAIN_H + EQ_H + PlaylistLayout.ofSegments(ROOMY_SEGMENTS).height
+
+/** What has to fit sideways: the player over the equalizer, with the playlist beside them. */
+internal const val SIDEWAYS_STACK_W = 2 * MAIN_W
+internal const val SIDEWAYS_STACK_H = MAIN_H + EQ_H
 
 private const val ROOMY_SEGMENTS = 4
 
@@ -58,8 +70,12 @@ fun playerViewport(
     widthPx: Int,
     heightPx: Int,
     fillScreen: Boolean,
+    /** Whether the phone is held sideways; see [playerScale]. */
+    sideways: Boolean = false,
 ): PlayerViewport {
-    if (!fillScreen || widthPx <= 0 || heightPx <= 0) return PlayerViewport(playerScale(widthPx, heightPx), 1f)
+    if (!fillScreen || widthPx <= 0 || heightPx <= 0) {
+        return PlayerViewport(playerScale(widthPx, heightPx, sideways), 1f)
+    }
     // compared as whole numbers, so a screen of exactly the stack's shape is decided one way
     val widthDecides = widthPx.toLong() * SMALLEST_STACK_H <= heightPx.toLong() * MAIN_W
     val screen = if (widthDecides) widthPx else heightPx

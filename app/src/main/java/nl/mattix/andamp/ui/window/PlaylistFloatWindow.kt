@@ -12,7 +12,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.skin.Skin
@@ -44,6 +43,8 @@ fun PlaylistFloatWindow(
     /** How tall it is while it has never been resized: the rest of the screen. */
     dockedSegments: Int,
     modifier: Modifier = Modifier,
+    /** The column its left edge sits on until it is moved, or null for the middle of the screen. */
+    dockedLeft: Int? = null,
     /** The rectangle the layout holds it in, in virtual pixels, or null while it floats. */
     pinned: IntRect? = null,
 ) {
@@ -79,9 +80,9 @@ fun PlaylistFloatWindow(
         // drawn height is not capped by where the window is; a window may hang off the
         // bottom as long as its title bar stays inside the safe area.
         val maxSegments = PlaylistLayout.segmentsThatFit((screen.safeBottom - topWanted).coerceAtLeast(0))
-        // the docked place is a row; its center-relative offset is computed for the
-        // height the playlist has now
-        val docked = IntOffset(0, dockedTop - (screen.height - height) / 2)
+        // the docked place is a row and a column; its center-relative offset is computed
+        // for the size the playlist has now
+        val docked = dockedAt(dockedLeft, dockedTop, layout.width, height, screen.width, screen.height)
         val widgets =
             remember(vm, layout, actions) {
                 playlistWidgets(
