@@ -4,6 +4,7 @@ package nl.mattix.andamp.ui
 
 import android.net.Uri
 import android.provider.DocumentsContract
+import androidx.activity.compose.LocalActivityResultRegistryOwner
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.Composable
@@ -22,6 +23,10 @@ import nl.mattix.andamp.state.WinampViewModel
  */
 @Composable
 fun FolderAsks(vm: WinampViewModel) {
+    // The picker needs an activity's result registry, which the floating player's window
+    // has none of. The ask is left standing: the floating player opens the app for it, and
+    // the app's own surface answers it here.
+    if (LocalActivityResultRegistryOwner.current == null) return
     // what the open picker was asked for: its callback outlives the state that asked
     var waiting by remember { mutableStateOf<FolderAsk?>(null) }
     val picker =

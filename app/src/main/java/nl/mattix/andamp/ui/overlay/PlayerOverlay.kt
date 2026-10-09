@@ -11,6 +11,7 @@ import android.view.View
 import android.view.WindowManager
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.IntRect
@@ -344,6 +345,10 @@ private fun Player(
     onClose: () -> Unit,
     onMinimize: () -> Unit,
 ) {
+    // a folder that has to be asked for again is asked for by the app: the system's picker
+    // needs an activity, and the app's surface opens it for an ask left standing
+    val folderAsk = vm.state.folderAsk
+    LaunchedEffect(folderAsk) { if (folderAsk != null) onOpenApp() }
     PlayerSurface(
         vm,
         skin,
