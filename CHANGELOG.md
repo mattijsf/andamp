@@ -4,6 +4,13 @@ What changed for somebody who uses Andamp, newest first. It is written from the 
 messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `docs:` and
 `chore:` commits do not appear here.
 
+## [0.11.1](https://github.com/mattijsf/andamp/compare/v0.11.0...v0.11.1) (2026-10-09)
+
+
+### Fixed
+
+* Always On Top no longer crashes the player ([#26](https://github.com/mattijsf/andamp/issues/26)) ([97aa5b0](https://github.com/mattijsf/andamp/commit/97aa5b0df43384a5cf48b29a560740ad4e8085ae))
+
 ## [0.11.0](https://github.com/mattijsf/andamp/compare/v0.10.0...v0.11.0) (2026-10-09)
 
 
