@@ -62,9 +62,9 @@ class WindowPersistenceTest {
             WindowLayoutMemory(
                 placements =
                     mapOf(
-                        WindowStore.PLAYLIST to WindowPlacement(x = 4, y = -20, size = 5),
-                        WindowStore.LIBRARY to WindowPlacement(x = -8, y = 12, size = 11),
-                        WindowStore.SKINS to WindowPlacement(x = 2, y = 2, size = null),
+                        WindowStore.PLAYLIST to WindowPlacement(upright = WindowArrangement(x = 4, y = -20, size = 5)),
+                        WindowStore.LIBRARY to WindowPlacement(upright = WindowArrangement(x = -8, y = 12, size = 11)),
+                        WindowStore.SKINS to WindowPlacement(upright = WindowArrangement(x = 2, y = 2, size = null)),
                     ),
                 order = listOf(WindowStore.PLAYLIST, WindowStore.SKINS, WindowStore.LIBRARY),
             ),
@@ -107,7 +107,12 @@ class WindowPersistenceTest {
         await {
             // open too: a placement also says whether the window was on screen
             WindowStore(app).load().placementOf(WindowStore.PLAYLIST) ==
-                WindowPlacement(1, 2, 7, open = true, shaded = false, cols = 0)
+                WindowPlacement(
+                    open = true,
+                    upright = WindowArrangement(1, 2, 7, shaded = false, cols = 0),
+                    // the sideways arrangement is still the default: this one was not turned
+                    sideways = WindowArrangement(shaded = false, cols = 0),
+                )
         }
 
         val next = player()
@@ -211,9 +216,9 @@ class WindowPersistenceTest {
             WindowLayoutMemory(
                 placements =
                     mapOf(
-                        WindowStore.MAIN to WindowPlacement(shaded = true),
-                        WindowStore.EQ to WindowPlacement(shaded = true),
-                        WindowStore.PLAYLIST to WindowPlacement(shaded = true),
+                        WindowStore.MAIN to WindowPlacement(upright = WindowArrangement(shaded = true)),
+                        WindowStore.EQ to WindowPlacement(upright = WindowArrangement(shaded = true)),
+                        WindowStore.PLAYLIST to WindowPlacement(upright = WindowArrangement(shaded = true)),
                     ),
             ),
         )
@@ -231,8 +236,19 @@ class WindowPersistenceTest {
 
         vm.state.mainShaded = true
 
-        await { WindowStore(app).load().placementOf(WindowStore.MAIN).shaded == true }
-        assertEquals(true, WindowStore(app).load().placementOf(WindowStore.MAIN).shaded)
+        await {
+            WindowStore(app)
+                .load()
+                .placementOf(WindowStore.MAIN)
+                .upright.shaded == true
+        }
+        assertEquals(
+            true,
+            WindowStore(app)
+                .load()
+                .placementOf(WindowStore.MAIN)
+                .upright.shaded,
+        )
     }
 
     /**
@@ -246,16 +262,16 @@ class WindowPersistenceTest {
             val placement = fresh.placementOf(id)
             assertNotNull("$id has a placement state", placement)
 
-            placement!!.restore(WindowPlacement(x = 10 + i, y = 20 + i, size = 3 + i, cols = i))
+            placement!!.restore(WindowPlacement(upright = WindowArrangement(x = 10 + i, y = 20 + i, size = 3 + i, cols = i)))
 
             assertEquals("$id keeps its offset", IntOffset(10 + i, 20 + i), placement.offset)
             assertEquals("$id keeps its size", 3 + i, placement.size)
             assertEquals("$id keeps its width steps", i, placement.cols)
             val written = placement.asMemory()
-            assertEquals("$id hands back the offset it took", 10 + i, written.x)
-            assertEquals(20 + i, written.y)
-            assertEquals(3 + i, written.size)
-            assertEquals(i, written.cols)
+            assertEquals("$id hands back the offset it took", 10 + i, written.upright.x)
+            assertEquals(20 + i, written.upright.y)
+            assertEquals(3 + i, written.upright.size)
+            assertEquals(i, written.upright.cols)
         }
     }
 

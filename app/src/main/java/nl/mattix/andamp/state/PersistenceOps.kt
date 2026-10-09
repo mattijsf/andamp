@@ -204,8 +204,11 @@ class PersistenceOps(
         val memory = windowStore.load()
         WindowStore.WINDOWS.forEach { id -> state.placementOf(id)?.restore(memory.placementOf(id)) }
         // a playlist with no stored size fills what is left of the screen; a fresh install
-        // starts smaller
-        if (memory.firstRun) state.plSegments = WindowStore.PLAYLIST_START_SEGMENTS
+        // starts smaller when the phone is upright. Sideways there is little room under the
+        // player, and filling it is right.
+        if (memory.firstRun) {
+            state.placementOf(WindowStore.PLAYLIST)?.upright?.size = WindowStore.PLAYLIST_START_SEGMENTS
+        }
         // a stored order may name fewer windows than this build has (an upgrade); the ones
         // it does not mention are appended after it
         if (memory.order.isNotEmpty()) {

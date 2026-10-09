@@ -91,10 +91,21 @@ class WinampState {
     var eqVisible: Boolean by openOf(WindowStore.EQ)
 
     /**
-     * Every window's placement, one entry per [WindowStore.WINDOWS] id. The named
-     * properties below delegate to this map: `plOffset` is the playlist's `offset`.
+     * Whether the phone is held sideways: the screen is wider than it is tall. Set by
+     * whatever hosts the player (the activity, the floating window) before the windows are
+     * laid out, so the first layout after a turn already shows the right arrangement.
+     *
+     * Each window keeps one arrangement for upright and one for sideways; see
+     * [WindowPlacementState].
      */
-    private val placements = WindowPlacementState.forWindows()
+    var sideways by mutableStateOf(false)
+
+    /**
+     * Every window's placement, one entry per [WindowStore.WINDOWS] id. The named
+     * properties below delegate to this map: `plOffset` is the playlist's `offset`, in the
+     * arrangement for the way the phone is held.
+     */
+    private val placements = WindowPlacementState.forWindows { sideways }
 
     /** One window's placement, for code that loops over the windows. */
     fun placementOf(id: String): WindowPlacementState? = placements[id]

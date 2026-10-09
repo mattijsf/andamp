@@ -93,7 +93,8 @@ fun BookmarkSheetBody(
                 else -> {
                     LazyColumn(
                         verticalArrangement = Arrangement.spacedBy(ROW_GAP.dp),
-                        modifier = Modifier.heightIn(max = LIST_MAX.dp),
+                        // no taller than the screen leaves for it: the buttons under it stay in reach
+                        modifier = Modifier.weight(1f, fill = false).heightIn(max = LIST_MAX.dp),
                     ) {
                         items(rows, key = { it.key }) { entry ->
                             Row(

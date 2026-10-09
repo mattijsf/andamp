@@ -126,6 +126,9 @@ fun FloatingSkinWindow(
                 onTitleDoubleTap = if (shadeable) ({ onDoubleTapNow?.invoke() }) else null,
                 siblings = { widgetsNow },
                 onLongPress = if (onLongPress != null) ({ onLongPressNow?.invoke() }) else null,
+                // every drag works its group out afresh: a gesture cut short by a turn of
+                // the phone, whose up never arrives, must not leave its group behind
+                onStart = { group.release() },
                 onEnd = { group.release() },
             )
         }

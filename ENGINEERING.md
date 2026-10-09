@@ -3,8 +3,8 @@
 Andamp is a Winamp 2.8 replica in Jetpack Compose (`nl.mattix.andamp`). It has three
 classic windows: the main player (275x116 virtual pixels), the equalizer (275x116) and the
 playlist (275 wide, as tall as the space left). They are docked in a vertical stack until
-you drag them apart. A phone is portrait only; a tablet or a Chromebook rotates. Classic
-`.wsz` skins work.
+you drag them apart. The screen turns with the device, and the windows keep one
+arrangement for upright and one for sideways. Classic `.wsz` skins work.
 
 The skin UI is the front of a real media player. Behind it are several playback backends:
 local files and radio through Media3, and music sources that install as separate APKs
@@ -529,9 +529,10 @@ After a UI change: `./gradlew installDebug`, launch, take a screenshot with
 `adb exec-out screencap -p > shot.png`, and look at the changed region pixel by pixel. If
 coordinates changed, compare with webamp.org using the same skin. `adb shell input
 tap/swipe` works for interactions; content is centered, and a virtual coordinate `v` is at
-`origin + v*S` on the device. With Double Size on, on a phone, the stack starts at the
-screen's left edge under the status bar, and `v` is at `v * screenWidthPx / 275`. Where the
-height decides the size, as on a tablet on its side, the stack is in the middle. After a
+`origin + v*S` on the device. With Double Size on, on a phone held upright, the stack starts
+at the screen's left edge under the status bar, and `v` is at `v * screenWidthPx / 275`.
+Where the height decides the size, as on a phone or a tablet on its side, the stack is in
+the middle. After a
 change to the skin engine, also test a skin other than the base one.
 
 ## Code style

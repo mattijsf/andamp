@@ -54,10 +54,18 @@
         android:theme="@style/Theme.AndAmp"
         android:usesCleartextTraffic="true">
 
+        <!--
+          screenOrientation="user": the player turns with the phone when auto-rotate is on,
+          and stays put when it is off. Asked for explicitly because the activity is
+          translucent (see values-v28/themes.xml): a translucent activity that asks for
+          nothing takes the orientation of whatever is behind it, and most launchers do
+          not turn.
+        -->
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
+            android:screenOrientation="user"
             android:windowSoftInputMode="adjustResize"
             android:configChanges="orientation|screenSize|keyboardHidden">
             <intent-filter>

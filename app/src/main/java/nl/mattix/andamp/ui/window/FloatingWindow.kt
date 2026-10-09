@@ -302,6 +302,8 @@ internal fun windowChromeWidget(
      * Winamp's right click on the window, as a long press.
      */
     onLongPress: (() -> Unit)? = null,
+    /** Called when a drag of the window begins, before its first move. */
+    onStart: () -> Unit = {},
 ): Widget {
     val shade = onTitleDoubleTap?.let { TitleDoubleTap(titleH, it) }
     return Widget(
@@ -330,6 +332,7 @@ internal fun windowChromeWidget(
                         drag.origin = drag.live
                         drag.applied = null
                         drag.escaped = false
+                        onStart()
                     }
                 },
                 onDrag = { pos ->

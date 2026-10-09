@@ -28,7 +28,14 @@ class LayoutOwnStateTest {
 
         s.doubleSize = false
         assertFalse("the floating equalizer was not touched", s.eqShaded)
-        assertEquals(false, s.placementOf(WindowStore.EQ)?.asMemory()?.shaded ?: false)
+        assertEquals(
+            false,
+            s
+                .placementOf(WindowStore.EQ)
+                ?.asMemory()
+                ?.upright
+                ?.shaded ?: false,
+        )
     }
 
     @Test

@@ -35,9 +35,9 @@ class WindowStoreTest {
         val memory = WindowStore(app).load()
 
         val playlist = memory.placementOf(WindowStore.PLAYLIST)
-        assertNull(playlist.x)
-        assertNull(playlist.y)
-        assertNull(playlist.size)
+        assertNull(playlist.upright.x)
+        assertNull(playlist.upright.y)
+        assertNull(playlist.upright.size)
         assertEquals(emptyList<String>(), memory.order)
     }
 
@@ -61,8 +61,8 @@ class WindowStoreTest {
             WindowLayoutMemory(
                 placements =
                     mapOf(
-                        WindowStore.PLAYLIST to WindowPlacement(x = -12, y = 40, size = 6),
-                        WindowStore.LIBRARY to WindowPlacement(x = 0, y = -30, size = null),
+                        WindowStore.PLAYLIST to WindowPlacement(upright = WindowArrangement(x = -12, y = 40, size = 6)),
+                        WindowStore.LIBRARY to WindowPlacement(upright = WindowArrangement(x = 0, y = -30, size = null)),
                     ),
                 order = listOf(WindowStore.LIBRARY, WindowStore.PLAYLIST),
             ),
@@ -70,20 +70,31 @@ class WindowStoreTest {
 
         val memory = WindowStore(app).load()
 
-        assertEquals(WindowPlacement(-12, 40, 6), memory.placementOf(WindowStore.PLAYLIST))
-        assertEquals(WindowPlacement(0, -30, null), memory.placementOf(WindowStore.LIBRARY))
+        assertEquals(WindowPlacement(upright = WindowArrangement(-12, 40, 6)), memory.placementOf(WindowStore.PLAYLIST))
+        assertEquals(WindowPlacement(upright = WindowArrangement(0, -30, null)), memory.placementOf(WindowStore.LIBRARY))
         assertEquals(listOf(WindowStore.LIBRARY, WindowStore.PLAYLIST), memory.order)
     }
 
     @Test
     fun `a window moved back to its full size forgets the size and keeps the place`() {
         val store = WindowStore(app)
-        store.save(mapOf(WindowStore.PLAYLIST to WindowPlacement(1, 2, 6)).asMemory())
+        store.save(mapOf(WindowStore.PLAYLIST to WindowPlacement(upright = WindowArrangement(1, 2, 6))).asMemory())
 
-        store.save(mapOf(WindowStore.PLAYLIST to WindowPlacement(1, 2, null)).asMemory())
+        store.save(mapOf(WindowStore.PLAYLIST to WindowPlacement(upright = WindowArrangement(1, 2, null))).asMemory())
 
-        assertNull(WindowStore(app).load().placementOf(WindowStore.PLAYLIST).size)
-        assertEquals(1, WindowStore(app).load().placementOf(WindowStore.PLAYLIST).x)
+        assertNull(
+            WindowStore(app)
+                .load()
+                .placementOf(WindowStore.PLAYLIST)
+                .upright.size,
+        )
+        assertEquals(
+            1,
+            WindowStore(app)
+                .load()
+                .placementOf(WindowStore.PLAYLIST)
+                .upright.x,
+        )
     }
 
     @Test
@@ -97,7 +108,7 @@ class WindowStoreTest {
 
     @Test
     fun `a layout written by a newer build is not read`() {
-        WindowStore(app).save(mapOf(WindowStore.PLAYLIST to WindowPlacement(9, 9, 9)).asMemory())
+        WindowStore(app).save(mapOf(WindowStore.PLAYLIST to WindowPlacement(upright = WindowArrangement(9, 9, 9))).asMemory())
         app
             .getSharedPreferences("windows", 0)
             .edit()
@@ -106,10 +117,60 @@ class WindowStoreTest {
 
         val memory = WindowStore(app).load()
 
-        assertNull(memory.placementOf(WindowStore.PLAYLIST).x)
+        assertNull(memory.placementOf(WindowStore.PLAYLIST).upright.x)
     }
 
     private fun Map<String, WindowPlacement>.asMemory() = WindowLayoutMemory(this, emptyList())
+
+    @Test
+    fun `the sideways arrangement is kept apart from the upright one`() {
+        val placement =
+            WindowPlacement(
+                open = true,
+                upright = WindowArrangement(x = 1, y = 2, size = 6, shaded = false, cols = 0),
+                sideways = WindowArrangement(x = -300, y = 0, size = null, shaded = true, cols = 2),
+            )
+        WindowStore(app).save(mapOf(WindowStore.PLAYLIST to placement).asMemory())
+
+        assertEquals(placement, WindowStore(app).load().placementOf(WindowStore.PLAYLIST))
+    }
+
+    @Test
+    @Config(sdk = [35], qualifiers = "sw600dp")
+    fun `a layout saved on a tablet before there were two arrangements is read for both ways round`() {
+        app
+            .getSharedPreferences("windows", 0)
+            .edit()
+            .putInt("schema", 1)
+            .putInt("pl.x", 4)
+            .putInt("pl.y", -20)
+            .putInt("pl.size", 5)
+            .commit()
+
+        val playlist = WindowStore(app).load().placementOf(WindowStore.PLAYLIST)
+
+        assertEquals(WindowArrangement(x = 4, y = -20, size = 5), playlist.upright)
+        assertEquals("a tablet turned before, so what it had is kept either way", playlist.upright, playlist.sideways)
+    }
+
+    @Test
+    fun `a layout saved before the phone could turn is the upright one`() {
+        app
+            .getSharedPreferences("windows", 0)
+            .edit()
+            .putInt("schema", 1)
+            .putInt("pl.x", 4)
+            .putInt("pl.y", -20)
+            .putInt("pl.size", 5)
+            .putInt("pl.open", 1)
+            .commit()
+
+        val playlist = WindowStore(app).load().placementOf(WindowStore.PLAYLIST)
+
+        assertEquals(WindowArrangement(x = 4, y = -20, size = 5), playlist.upright)
+        assertEquals(WindowArrangement(), playlist.sideways)
+        assertEquals(true, playlist.open)
+    }
 
     @Test
     fun `whether a window is open survives a round trip`() {
@@ -147,16 +208,30 @@ class WindowStoreTest {
     @Test
     fun `a collapsed window is remembered collapsed`() {
         WindowStore(app).save(
-            WindowLayoutMemory(placements = mapOf(WindowStore.MAIN to WindowPlacement(shaded = true))),
+            WindowLayoutMemory(
+                placements = mapOf(WindowStore.MAIN to WindowPlacement(upright = WindowArrangement(shaded = true))),
+            ),
         )
 
-        assertEquals(true, WindowStore(app).load().placementOf(WindowStore.MAIN).shaded)
+        assertEquals(
+            true,
+            WindowStore(app)
+                .load()
+                .placementOf(WindowStore.MAIN)
+                .upright.shaded,
+        )
     }
 
     @Test
     fun `a window nobody has ever collapsed has no answer either way`() {
         WindowStore(app).save(WindowLayoutMemory())
 
-        assertEquals(null, WindowStore(app).load().placementOf(WindowStore.MAIN).shaded)
+        assertEquals(
+            null,
+            WindowStore(app)
+                .load()
+                .placementOf(WindowStore.MAIN)
+                .upright.shaded,
+        )
     }
 }

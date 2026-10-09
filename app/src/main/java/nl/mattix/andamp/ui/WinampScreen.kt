@@ -18,9 +18,13 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.statusBars
+import androidx.compose.foundation.layout.union
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -304,8 +308,8 @@ fun PlayerSurface(
         if (floating && !vm.overlayOps.gate.wanted) onFloatingChanged(false)
     }
     Box(Modifier.fillMaxSize().then(if (locked) Modifier.background(Color.Black) else Modifier)) {
-        // the fullscreen visualizer is drawn over every window and outside the status-bar
-        // inset the windows are held inside
+        // the fullscreen visualizer is drawn over every window and outside the insets the
+        // windows are held inside
         val fullscreen = vm.state.milkdropOn && vm.state.milkdropFullscreen
         ImmersiveWhile(fullscreen)
         CompositionLocalProvider(LocalSurfaceScreen provides surfaceScreen) {
@@ -315,7 +319,11 @@ fun PlayerSurface(
                     .then(
                         surfaceScreen?.let { told ->
                             Modifier.padding(top = with(LocalDensity.current) { told.statusBar.toDp() })
-                        } ?: Modifier.windowInsetsPadding(WindowInsets.statusBars),
+                        } ?: Modifier.windowInsetsPadding(
+                            // the status bar, and whatever sits at the sides of a phone held
+                            // sideways: the camera hole, or a navigation bar with buttons
+                            WindowInsets.statusBars.union(WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)),
+                        ),
                     ),
             ) {
                 val s = vm.state
@@ -552,9 +560,9 @@ private fun FloatingWindows(
             .ofSegments(s.plSegments ?: PlaylistLayout.segmentsThatFit(safeBottom - top - dockedH))
             .height
     // with the shade gesture switched off, every shaded window is opened; this also runs
-    // at launch, for a window that was stored shaded
-    // and again when the layout changes: each layout has its own collapsed windows
-    LaunchedEffect(s.shadeEnabled, plExpandedH, held != null) {
+    // at launch, for a window that was stored shaded, and again when the layout changes or
+    // the phone is turned: each layout and each way round has its own collapsed windows
+    LaunchedEffect(s.shadeEnabled, plExpandedH, held != null, s.sideways) {
         if (!s.shadeEnabled) s.unshadeEverything(plExpandedH)
     }
     // Composition order is fixed and stacking is a zIndex: a window raised by reordering

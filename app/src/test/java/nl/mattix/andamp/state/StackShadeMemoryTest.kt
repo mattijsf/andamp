@@ -44,6 +44,7 @@ class StackShadeMemoryTest {
             vm.state
                 .placementOf(WindowStore.EQ)
                 ?.asMemory()
+                ?.upright
                 ?.shaded ?: false,
         )
     }
