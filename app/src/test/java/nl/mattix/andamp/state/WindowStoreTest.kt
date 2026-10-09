@@ -133,6 +133,17 @@ class WindowStoreTest {
     private fun Map<String, WindowPlacement>.asMemory() = WindowLayoutMemory(this)
 
     @Test
+    fun `each locked workspace's columns survive a reload, and start in their order`() {
+        val columns = listOf(listOf(WindowStore.MAIN, WindowStore.PLAYLIST), listOf(WindowStore.EQ, WindowStore.MILKDROP))
+        WindowStore(app).save(WindowLayoutMemory(stacks = mapOf(Workspace.LOCKED_SIDEWAYS to columns)))
+
+        val memory = WindowStore(app).load()
+
+        assertEquals(columns, memory.stacks[Workspace.LOCKED_SIDEWAYS])
+        assertEquals(LockedColumns.defaultFor(sideways = false), memory.stacks[Workspace.LOCKED])
+    }
+
+    @Test
     fun `the sideways arrangement is kept apart from the upright one`() {
         val placement =
             WindowPlacement(

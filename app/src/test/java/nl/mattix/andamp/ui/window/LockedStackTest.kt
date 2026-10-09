@@ -3,6 +3,7 @@
 package nl.mattix.andamp.ui.window
 
 import androidx.compose.ui.unit.IntRect
+import nl.mattix.andamp.state.LockedColumns
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.ui.window.LockedStack.Playlist
 import org.junit.Assert.assertEquals
@@ -20,6 +21,7 @@ class LockedStackTest {
     private val safeBottom = 584
     private val chromeH = 34
 
+    @Suppress("LongParameterList") // one knob per thing the layout is asked about
     private fun ask(
         screenW: Int = MAIN_W,
         mainH: Int = MAIN_H,
@@ -30,7 +32,79 @@ class LockedStackTest {
         covers: List<String> = emptyList(),
         safeBottom: Int = this.safeBottom,
         sideways: Boolean = false,
-    ) = LockedStack.Ask(screenW, safeBottom, mainH, eqH, visChromeH, visSteps, playlist, covers, sideways)
+        columns: List<List<String>> = LockedColumns.defaultFor(sideways),
+    ) = LockedStack.Ask(
+        screenW,
+        safeBottom,
+        mainH,
+        eqH,
+        visChromeH,
+        visSteps,
+        playlist,
+        covers,
+        sideways,
+        columns,
+    )
+
+    @Test
+    fun `the columns are laid out in the order they are given, the playlist filling wherever it stands`() {
+        val rects = rects(ask(columns = listOf(listOf(WindowStore.PLAYLIST, WindowStore.MAIN, WindowStore.EQ))))
+
+        // the player and the equalizer are 232 rows; the playlist takes the other 352 on top
+        assertEquals(column(0, safeBottom - 232), rects[WindowStore.PLAYLIST])
+        assertEquals(column(safeBottom - 232, safeBottom - 116), rects[WindowStore.MAIN])
+        assertEquals(column(safeBottom - 116, safeBottom), rects[WindowStore.EQ])
+    }
+
+    @Test
+    fun `the plug-in window under the playlist keeps its steps, and the playlist the rest`() {
+        val places =
+            LockedStack.layout(
+                ask(
+                    visChromeH = chromeH,
+                    visSteps = 500,
+                    columns = listOf(listOf(WindowStore.MAIN, WindowStore.EQ, WindowStore.PLAYLIST, WindowStore.MILKDROP)),
+                ),
+            )
+
+        // as when it stands above the playlist: the rows the two fixed windows and the
+        // playlist's least leave
+        assertEquals((safeBottom - 232 - chromeH - 116) / MILKDROP_STEP, places.visMaxSteps)
+        val visual = places.rects.getValue(WindowStore.MILKDROP)
+        val playlist = places.rects.getValue(WindowStore.PLAYLIST)
+        assertEquals(232, playlist.top)
+        assertEquals(playlist.bottom, visual.top)
+        assertEquals(safeBottom, visual.bottom)
+    }
+
+    @Test
+    fun `the covers go under whatever is first in the column`() {
+        val rects =
+            rects(
+                ask(
+                    columns = listOf(listOf(WindowStore.EQ, WindowStore.MAIN, WindowStore.PLAYLIST)),
+                    covers = listOf(WindowStore.LIBRARY),
+                ),
+            )
+
+        assertEquals(setOf(WindowStore.EQ, WindowStore.LIBRARY), rects.keys)
+        assertEquals(column(116, safeBottom), rects[WindowStore.LIBRARY])
+    }
+
+    @Test
+    fun `sideways, the playlist moved to the left column takes what the two leave, and the right column is empty`() {
+        val places =
+            LockedStack.layout(
+                sideways(
+                    columns = listOf(listOf(WindowStore.MAIN, WindowStore.PLAYLIST, WindowStore.EQ), emptyList()),
+                    safeBottom = 400,
+                ),
+            )
+
+        assertEquals(IntRect(10, 116, 10 + MAIN_W, 400 - 116), places.rects[WindowStore.PLAYLIST])
+        assertEquals(IntRect(10, 400 - 116, 10 + MAIN_W, 400), places.rects[WindowStore.EQ])
+        assertEquals(2, places.bands.size)
+    }
 
     private fun rects(ask: LockedStack.Ask) = LockedStack.layout(ask).rects
 
@@ -152,6 +226,7 @@ class LockedStackTest {
         playlist: Playlist = Playlist.OPEN,
         covers: List<String> = emptyList(),
         safeBottom: Int = 232,
+        columns: List<List<String>> = LockedColumns.defaultFor(sideways = true),
     ) = ask(
         screenW = 2 * MAIN_W + 20,
         safeBottom = safeBottom,
@@ -160,6 +235,7 @@ class LockedStackTest {
         playlist = playlist,
         covers = covers,
         sideways = true,
+        columns = columns,
     )
 
     @Test

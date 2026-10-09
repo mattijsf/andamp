@@ -32,9 +32,10 @@ import nl.mattix.andamp.ui.widget.Widget
  * With [dragsGroup], dragging it takes the windows docked to it along, as Winamp's player
  * does.
  *
- * With [pinnedAt] the layout holds the window: it is drawn there, a drag does not move it
- * and [onMove] is never called, so the place it floats at is kept as it was. It has no
- * resize grip either, unless it asks to keep it with [pinnedGrip].
+ * With [pinnedAt] the layout holds the window: it is drawn there and [onMove] is never
+ * called, so the place it floats at is kept as it was. A drag lifts it instead
+ * ([WinampState.liftWindow]): the layout reorders around it and drops it into the slot it
+ * is over. It has no resize grip either, unless it asks to keep it with [pinnedGrip].
  */
 @Composable
 @Suppress("LongParameterList") // a window: its identity, its size, its place, its contents
@@ -111,7 +112,8 @@ fun FloatingSkinWindow(
                 offsetNow = { place() },
                 heightNow = { height },
                 onMove = { place, _ ->
-                    // a pinned window takes the drag and stays where the layout holds it
+                    // a drag lifts a held window out of the layout, which decides where it goes
+                    if (pinned) state.liftWindow(id, IntOffset(place.x - drag.origin.x, place.y - drag.origin.y))
                     if (!pinned) {
                         onMoveNow(place)
                         // measured from where the drag began, so the carried windows do not
@@ -129,7 +131,10 @@ fun FloatingSkinWindow(
                 // every drag works its group out afresh: a gesture cut short by a turn of
                 // the phone, whose up never arrives, must not leave its group behind
                 onStart = { group.release() },
-                onEnd = { group.release() },
+                onEnd = {
+                    group.release()
+                    state.dropWindow()
+                },
             )
         }
     val allWidgets = remember(chrome, widgets) { listOf(chrome) + widgets }
@@ -140,11 +145,13 @@ fun FloatingSkinWindow(
         val screenH = screen.height
         val safeBottom = screen.safeBottom
         val safeTop = screen.safeTop
-        val settleTo: (IntOffset, Boolean) -> IntOffset = { asked, escaped ->
+        val settleTo: (IntOffset, Boolean) -> IntOffset = held@{ asked, escaped ->
             // the group is worked out before the first move, because the window must not
-            // dock to what it is about to carry
-            val carried = if (dragsGroup) group.ensure(state, id) else emptySet()
+            // dock to what it is about to carry. A held window neither docks nor is kept in
+            // reach: it follows the finger, and the layout places it.
+            val carried = if (dragsGroup && !pinned) group.ensure(state, id) else emptySet()
             val luggage = carried.mapNotNull { member -> state.windowRects[member]?.let { member to it } }
+            if (pinned) return@held asked
             settle(
                 asked,
                 width,

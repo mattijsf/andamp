@@ -51,6 +51,8 @@ data class WindowLayoutMemory(
     val placements: Map<String, WindowPlacement> = emptyMap(),
     /** Each workspace's windows, bottom to top; unknown ids are ignored on load. */
     val orders: Map<Workspace, List<String>> = emptyMap(),
+    /** Each locked workspace's columns of windows; see [LockedColumns]. */
+    val stacks: Map<Workspace, List<List<String>>> = emptyMap(),
     /**
      * Whether nothing has ever been written here: a fresh install.
      *
@@ -93,7 +95,12 @@ class WindowStore(
                 // before there were workspaces, one order served every layout
                 readOrder(if (schema < WORKSPACE_SCHEMA) Workspace.FLOATING else workspace)
             }
-        return WindowLayoutMemory(placements, orders, firstRun)
+        val stacks =
+            Workspace.entries.filter { it.locked }.associateWith { workspace ->
+                prefs.getString(workspace.stackKey(), null)?.let { LockedColumns.decode(it) }
+                    ?: LockedColumns.defaultFor(workspace.sideways)
+            }
+        return WindowLayoutMemory(placements, orders, stacks, firstRun)
     }
 
     fun save(memory: WindowLayoutMemory) {
@@ -108,6 +115,7 @@ class WindowStore(
                 Workspace.entries.forEach { workspace ->
                     putString(workspace.orderKey(), memory.orderOf(workspace).joinToString(","))
                 }
+                memory.stacks.forEach { (workspace, columns) -> putString(workspace.stackKey(), LockedColumns.encode(columns)) }
             }.apply()
     }
 
@@ -161,6 +169,8 @@ class WindowStore(
     private fun Workspace.prefix(id: String) = if (key.isEmpty()) id else "$id.$key"
 
     private fun Workspace.orderKey() = if (key.isEmpty()) ORDER else "$key.$ORDER"
+
+    private fun Workspace.stackKey() = "$key.$STACK"
 
     private fun SharedPreferences.readArrangement(prefix: String) =
         WindowArrangement(
@@ -221,6 +231,7 @@ class WindowStore(
         private const val WORKSPACE_SCHEMA = 3
 
         private const val ORDER = "order"
+        private const val STACK = "stack"
         private const val X = "x"
         private const val Y = "y"
         private const val SIZE = "size"

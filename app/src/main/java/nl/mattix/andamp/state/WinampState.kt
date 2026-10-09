@@ -460,6 +460,66 @@ class WinampState {
     /** The windows of [workspace], bottom to top. */
     fun orderOf(workspace: Workspace): List<String> = orders.getValue(workspace)
 
+    /** The columns each locked workspace holds its windows in; see [LockedColumns]. */
+    private val stacks = androidx.compose.runtime.mutableStateMapOf<Workspace, List<List<String>>>()
+
+    /** The columns of the locked workspace on screen, or of the one the way round would show. */
+    var lockedColumns: List<List<String>>
+        get() = columnsOf(Workspace.of(locked = true, sideways = sideways))
+        set(value) {
+            stacks[Workspace.of(locked = true, sideways = sideways)] = value
+        }
+
+    fun columnsOf(workspace: Workspace): List<List<String>> = stacks[workspace] ?: LockedColumns.defaultFor(workspace.sideways)
+
+    fun setColumns(
+        workspace: Workspace,
+        columns: List<List<String>>,
+    ) {
+        stacks[workspace] = columns
+    }
+
+    /** A window lifted out of the locked layout by a drag; see [liftWindow]. */
+    data class LiftedWindow(
+        val id: String,
+        /** Where it was when it was lifted. */
+        val from: androidx.compose.ui.unit.IntRect,
+        /** How far the drag has taken it since. */
+        val by: androidx.compose.ui.unit.IntOffset,
+    )
+
+    var lifted: LiftedWindow? by mutableStateOf(null)
+
+    /**
+     * Each column's band of the locked layout, left to right, as the last layout pass left
+     * them; what a drag finds its column by.
+     */
+    var lockedBands: List<androidx.compose.ui.unit.IntRect> by mutableStateOf(emptyList())
+
+    /**
+     * A drag on a window the locked layout holds: the window follows the finger, and the
+     * columns are reordered as it goes, so the others make room where it would land. Only the
+     * windows of [LockedColumns.STACK] move; see [LockedReorder].
+     */
+    fun liftWindow(
+        id: String,
+        by: androidx.compose.ui.unit.IntOffset,
+    ) {
+        if (!doubleSize || id !in LockedColumns.STACK) return
+        val from = lifted?.takeIf { it.id == id }?.from ?: windowRects[id] ?: return
+        lifted = LiftedWindow(id, from, by)
+        val center =
+            androidx.compose.ui.unit
+                .IntOffset(from.center.x + by.x, from.center.y + by.y)
+        val moved = LockedReorder.moved(id, center, lockedColumns, lockedBands, windowRects - id)
+        if (moved != lockedColumns) lockedColumns = moved
+    }
+
+    /** The drag has ended: the window takes the slot it was over. */
+    fun dropWindow() {
+        lifted = null
+    }
+
     fun setOrder(
         workspace: Workspace,
         order: List<String>,

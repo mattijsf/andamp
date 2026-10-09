@@ -3,6 +3,7 @@
 package nl.mattix.andamp.state
 
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -74,6 +75,41 @@ class WorkspaceTest {
         assertEquals(WindowStore.PLAYLIST, s.windowOrder.last())
         s.enter(Workspace.FLOATING)
         assertEquals(WindowStore.SKINS, s.windowOrder.last())
+    }
+
+    @Test
+    fun `each locked workspace keeps its own columns, and a drag reorders only the one on screen`() {
+        val s = WinampState()
+        s.enter(Workspace.LOCKED)
+        // the layout pass left one column with the player, the equalizer and the playlist in it
+        s.lockedBands = listOf(IntRect(0, 0, 275, 584))
+        s.windowRects[WindowStore.MAIN] = IntRect(0, 0, 275, 116)
+        s.windowRects[WindowStore.EQ] = IntRect(0, 116, 275, 232)
+        s.windowRects[WindowStore.PLAYLIST] = IntRect(0, 232, 275, 584)
+
+        s.liftWindow(WindowStore.EQ, IntOffset(0, 10))
+        assertEquals("not yet past the playlist's middle", LockedColumns.defaultFor(false), s.lockedColumns)
+        s.liftWindow(WindowStore.EQ, IntOffset(0, 300))
+
+        assertEquals(
+            listOf(listOf(WindowStore.MAIN, WindowStore.MILKDROP, WindowStore.PLAYLIST, WindowStore.EQ)),
+            s.lockedColumns,
+        )
+        assertEquals(WindowStore.EQ, s.lifted?.id)
+        s.dropWindow()
+        assertNull(s.lifted)
+        s.enter(Workspace.LOCKED_SIDEWAYS)
+        assertEquals(LockedColumns.defaultFor(true), s.lockedColumns)
+    }
+
+    @Test
+    fun `floating, a drag lifts nothing`() {
+        val s = WinampState()
+        s.windowRects[WindowStore.EQ] = IntRect(0, 116, 275, 232)
+
+        s.liftWindow(WindowStore.EQ, IntOffset(0, 300))
+
+        assertNull(s.lifted)
     }
 
     @Test
