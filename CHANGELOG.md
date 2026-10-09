@@ -4,6 +4,23 @@ What changed for somebody who uses Andamp, newest first. It is written from the 
 messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `docs:` and
 `chore:` commits do not appear here.
 
+## [0.11.0](https://github.com/mattijsf/andamp/compare/v0.10.0...v0.11.0) (2026-10-09)
+
+
+### New
+
+* leave a tip from Preferences &gt; Support Andamp ([#17](https://github.com/mattijsf/andamp/issues/17)) ([55c235a](https://github.com/mattijsf/andamp/commit/55c235aed839944c85edb7ec08a12508e1be921b))
+* music from the phone's storage plays even when Andamp can no longer read its folder ([#24](https://github.com/mattijsf/andamp/issues/24)) ([d2ed725](https://github.com/mattijsf/andamp/commit/d2ed725a8034fea6046000473763bf6a67dcb8b8))
+
+
+### Fixed
+
+* a paused track from a source no longer keeps the phone's processor busy ([#22](https://github.com/mattijsf/andamp/issues/22)) ([1cafc5f](https://github.com/mattijsf/andamp/commit/1cafc5f92a124424f2d3fa72b92bf1adb8c12871))
+* a saved list or a bookmark keeps playing after you play something else ([#24](https://github.com/mattijsf/andamp/issues/24)) ([8c2f168](https://github.com/mattijsf/andamp/commit/8c2f1686d96a8ffa500ceed8cb5a3ce2ed064c9b))
+* Next and Previous follow shuffle ([#23](https://github.com/mattijsf/andamp/issues/23)) ([6de9e4a](https://github.com/mattijsf/andamp/commit/6de9e4a9511c667130a43392feab8378aca38572))
+* the visualizers move with the music a source plays, not ahead of it ([#22](https://github.com/mattijsf/andamp/issues/22)) ([3855255](https://github.com/mattijsf/andamp/commit/3855255bb576076df4185d91a6729ba0139e3750))
+* the visualizers move with the music you hear, not ahead of it ([#21](https://github.com/mattijsf/andamp/issues/21)) ([5dc127f](https://github.com/mattijsf/andamp/commit/5dc127f8a4a8007f1d0819fa6f41b179fc3e9e1c))
+
 ## [0.10.0](https://github.com/mattijsf/andamp/compare/v0.9.0...v0.10.0) (2026-10-07)
 
 
