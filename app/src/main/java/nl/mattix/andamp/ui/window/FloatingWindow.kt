@@ -166,20 +166,29 @@ internal fun settle(
                 },
         )
     val moved = IntOffset(offset.x + (snapped.x - whole.left), offset.y + (snapped.y - whole.top))
-    val clamped =
-        WindowBounds.clamp(moved, width, height, screenW, screenH, titleH, safeTop = safeTop, safeBottom = safeBottom)
-    if (anchorNow == null || carried.isEmpty()) return clamped
+    if (anchorNow == null || carried.isEmpty()) {
+        return WindowBounds.clamp(moved, width, height, screenW, screenH, titleH, safeTop = safeTop, safeBottom = safeBottom)
+    }
 
-    // A group snaps as one rectangle, so it clamps as one too: the vertical travel is
-    // limited to what keeps every member's handle between safeTop and safeBottom.
-    val members =
-        carried.mapIndexed { i, rect -> rect.top to carriedHandles.getOrElse(i) { titleH } } +
-            (anchorNow.top to titleH)
-    val asked = (screenH - height) / 2 + moved.y - anchorNow.top
-    val least = members.maxOf { (top, _) -> safeTop - top }
-    val most = members.minOf { (top, handle) -> safeBottom - handle - top }
-    val travel = asked.coerceIn(least, maxOf(most, least))
-    return IntOffset(clamped.x, moved.y + travel - asked)
+    // A group snaps as one rectangle, so it clamps as one too: on each axis the travel is
+    // limited to what keeps every member where it may be on its own, so no member is
+    // clamped away from the others when it is laid out.
+    val members = carried.mapIndexed { i, rect -> rect to carriedHandles.getOrElse(i) { titleH } } + (anchorNow to titleH)
+    val askedX = (screenW - width) / 2 + moved.x - anchorNow.left
+    val askedY = (screenH - height) / 2 + moved.y - anchorNow.top
+    val travelX =
+        WindowBounds.travel(
+            askedX,
+            members.map { (rect, _) ->
+                WindowBounds.leftRange(rect.width, screenW).shiftedBy(-rect.left)
+            },
+        )
+    val travelY =
+        WindowBounds.travel(
+            askedY,
+            members.map { (rect, handle) -> WindowBounds.topRange(handle, safeTop, safeBottom).shiftedBy(-rect.top) },
+        )
+    return IntOffset(moved.x + travelX - askedX, moved.y + travelY - askedY)
 }
 
 /**
