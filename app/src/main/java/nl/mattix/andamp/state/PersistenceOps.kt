@@ -189,11 +189,11 @@ class PersistenceOps(
         }
     }
 
-    /** The current layout, as [WindowStore] stores it. */
+    /** Every workspace's layout, as [WindowStore] stores it. */
     private fun windowMemory(): WindowLayoutMemory =
         WindowLayoutMemory(
             placements = WindowStore.WINDOWS.associateWith { id -> state.placementOf(id)?.asMemory() ?: WindowPlacement() },
-            order = state.windowOrder,
+            orders = Workspace.entries.associateWith { state.orderOf(it) },
         )
 
     /**
@@ -207,12 +207,13 @@ class PersistenceOps(
         // starts smaller when the phone is upright. Sideways there is little room under the
         // player, and filling it is right.
         if (memory.firstRun) {
-            state.placementOf(WindowStore.PLAYLIST)?.upright?.size = WindowStore.PLAYLIST_START_SEGMENTS
+            state.placementOf(WindowStore.PLAYLIST)?.of(Workspace.FLOATING)?.size = WindowStore.PLAYLIST_START_SEGMENTS
         }
         // a stored order may name fewer windows than this build has (an upgrade); the ones
         // it does not mention are appended after it
-        if (memory.order.isNotEmpty()) {
-            state.windowOrder = memory.order + state.windowOrder.filterNot { it in memory.order }
+        Workspace.entries.forEach { workspace ->
+            val stored = memory.orderOf(workspace)
+            if (stored.isNotEmpty()) state.setOrder(workspace, stored + state.orderOf(workspace).filterNot { it in stored })
         }
         savedWindows = windowMemory()
     }

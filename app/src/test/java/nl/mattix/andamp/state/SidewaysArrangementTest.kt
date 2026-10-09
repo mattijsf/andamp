@@ -44,16 +44,18 @@ class SidewaysArrangementTest {
     }
 
     @Test
-    fun `whether a window is open is the window's own, whichever way round`() {
+    fun `which windows are open is part of the arrangement too`() {
         val s = WinampState()
         s.eqVisible = false
 
         s.sideways = true
 
-        assertEquals(false, s.eqVisible)
-        s.eqVisible = true
+        assertEquals("sideways starts with the equalizer open", true, s.eqVisible)
+        s.eqVisible = false
         s.sideways = false
-        assertEquals(true, s.eqVisible)
+        assertEquals(false, s.eqVisible)
+        s.sideways = true
+        assertEquals(false, s.eqVisible)
     }
 
     @Test
@@ -65,7 +67,7 @@ class SidewaysArrangementTest {
 
         val memory = s.placementOf(WindowStore.LIBRARY)!!.asMemory()
 
-        assertEquals(WindowArrangement(x = 10, y = 20, cols = 0), memory.upright)
-        assertEquals(WindowArrangement(x = -30, y = 0, cols = 0), memory.sideways)
+        assertEquals(WindowArrangement(x = 10, y = 20, cols = 0), memory.of(Workspace.FLOATING))
+        assertEquals(WindowArrangement(x = -30, y = 0, cols = 0), memory.of(Workspace.FLOATING_SIDEWAYS))
     }
 }

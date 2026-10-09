@@ -33,7 +33,7 @@ class LayoutOwnStateTest {
             s
                 .placementOf(WindowStore.EQ)
                 ?.asMemory()
-                ?.upright
+                ?.of(Workspace.FLOATING)
                 ?.shaded ?: false,
         )
     }
@@ -46,7 +46,7 @@ class LayoutOwnStateTest {
         s.doubleSize = true
 
         assertFalse(s.mainShaded)
-        assertEquals(emptySet<String>(), s.stackShaded)
+        assertEquals(false, s.placementOf(WindowStore.MAIN)!!.of(Workspace.LOCKED).shaded)
     }
 
     @Test
@@ -60,7 +60,8 @@ class LayoutOwnStateTest {
         s.doubleSize = false
         assertEquals("floating: only the player", listOf(true, false), listOf(s.mainShaded, s.eqShaded))
         s.doubleSize = true
-        assertEquals(setOf(WindowStore.EQ), s.stackShaded)
+        assertEquals(true, s.placementOf(WindowStore.EQ)!!.of(Workspace.LOCKED).shaded)
+        assertEquals(false, s.placementOf(WindowStore.MAIN)!!.of(Workspace.LOCKED).shaded)
     }
 
     @Test
@@ -71,7 +72,7 @@ class LayoutOwnStateTest {
 
         s.setShaded(WindowStore.PLAYLIST, false, 290)
 
-        assertEquals(emptySet<String>(), s.stackShaded)
+        assertEquals(false, s.placementOf(WindowStore.PLAYLIST)!!.of(Workspace.LOCKED).shaded)
     }
 
     @Test
@@ -82,35 +83,38 @@ class LayoutOwnStateTest {
 
         s.raiseWindow(WindowStore.MAIN)
 
-        assertEquals("the stack has the player in front", WindowStore.MAIN, s.shownOrder.last())
-        assertEquals("the floating order is as it was", floating, s.windowOrder)
+        assertEquals("the stack has the player in front", WindowStore.MAIN, s.windowOrder.last())
+        assertEquals("the floating order is as it was", floating, s.orderOf(Workspace.FLOATING))
         s.doubleSize = false
-        assertEquals(floating, s.shownOrder)
+        assertEquals(floating, s.windowOrder)
     }
 
     @Test
-    fun `a window that is opened is in front in both layouts, since it is open in both`() {
+    fun `a window opened in one workspace is in front there, and the other workspace is not touched`() {
         val s = state()
         s.doubleSize = true
+        s.eqVisible = false
+        val floating = s.orderOf(Workspace.FLOATING)
 
         s.setWindowOpen(WindowStore.EQ, true) { s.eqVisible = it }
 
-        assertEquals(WindowStore.EQ, s.shownOrder.last())
+        assertEquals(WindowStore.EQ, s.windowOrder.last())
         s.doubleSize = false
-        assertEquals("and in front of the floating windows too", WindowStore.EQ, s.shownOrder.last())
+        assertEquals("the floating order is as it was", floating, s.windowOrder)
+        assertEquals("and floating, the equalizer is as it was: open", true, s.eqVisible)
     }
 
     @Test
     fun `a window brought to the front while floating keeps its place in the locked stack`() {
         val s = state()
         s.doubleSize = true
-        val stacked = s.shownOrder
+        val stacked = s.windowOrder
         s.doubleSize = false
 
         s.raiseWindow(WindowStore.EQ)
 
         assertEquals(WindowStore.EQ, s.windowOrder.last())
         s.doubleSize = true
-        assertEquals(stacked, s.shownOrder)
+        assertEquals(stacked, s.windowOrder)
     }
 }

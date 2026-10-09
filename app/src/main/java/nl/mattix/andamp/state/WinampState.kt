@@ -100,12 +100,15 @@ class WinampState {
      */
     var sideways by mutableStateOf(false)
 
+    /** The workspace on screen: floating or locked, upright or sideways; see [Workspace]. */
+    val workspace: Workspace get() = Workspace.of(locked = doubleSize, sideways = sideways)
+
     /**
      * Every window's placement, one entry per [WindowStore.WINDOWS] id. The named
      * properties below delegate to this map: `plOffset` is the playlist's `offset`, in the
-     * arrangement for the way the phone is held.
+     * arrangement for the workspace on screen.
      */
-    private val placements = WindowPlacementState.forWindows { sideways }
+    private val placements = WindowPlacementState.forWindows { workspace }
 
     /** One window's placement, for code that loops over the windows. */
     fun placementOf(id: String): WindowPlacementState? = placements[id]
@@ -193,36 +196,22 @@ class WinampState {
             }
         }
 
-    /**
-     * Whether a window is collapsed in the layout on screen. The floating layout and the
-     * locked stack each keep their own answer ([stackShaded]), so collapsing a window in one
-     * leaves the other as it was.
-     */
+    /** Whether a window is collapsed in the workspace on screen; each keeps its own answer. */
     private fun shadedOf(id: String) =
         object : kotlin.properties.ReadWriteProperty<Any?, Boolean> {
             override fun getValue(
                 thisRef: Any?,
                 property: kotlin.reflect.KProperty<*>,
-            ) = if (doubleSize) id in stackShaded else placement(id).shaded ?: false
+            ) = placement(id).shaded ?: false
 
             override fun setValue(
                 thisRef: Any?,
                 property: kotlin.reflect.KProperty<*>,
                 value: Boolean,
             ) {
-                if (doubleSize) {
-                    stackShaded = if (value) stackShaded + id else stackShaded - id
-                } else {
-                    placement(id).shaded = value
-                }
+                placement(id).shaded = value
             }
         }
-
-    /**
-     * The windows that are collapsed while the layout holds them in one stack, by their ids;
-     * see [doubleSize]. Stored across restarts, apart from the floating layout's own.
-     */
-    var stackShaded: Set<String> by mutableStateOf(emptySet())
 
     /**
      * Window shade: the window collapsed to its title bar, in the layout on screen. Stored
@@ -455,14 +444,28 @@ class WinampState {
      */
     var doubleSize by mutableStateOf(false)
 
-    /** The floating stack, bottom to top; the last one is drawn on top. */
-    var windowOrder by mutableStateOf(listOf("main", "eq", "milkdrop", "pl", "library", "skins"))
+    /** Each workspace's windows, bottom to top; the last one is drawn on top. */
+    private val orders =
+        androidx.compose.runtime.mutableStateMapOf<Workspace, List<String>>().apply {
+            Workspace.entries.forEach { put(it, WindowStore.WINDOWS) }
+        }
 
-    /** The same for the windows while the layout holds them in one stack: its own order, not stored. */
-    private var stackOrder by mutableStateOf(windowOrder)
+    /** The windows of the workspace on screen, bottom to top; the last one is drawn on top. */
+    var windowOrder: List<String>
+        get() = orders.getValue(workspace)
+        set(value) {
+            orders[workspace] = value
+        }
 
-    /** The order of the layout on screen, bottom to top. */
-    val shownOrder: List<String> get() = if (doubleSize) stackOrder else windowOrder
+    /** The windows of [workspace], bottom to top. */
+    fun orderOf(workspace: Workspace): List<String> = orders.getValue(workspace)
+
+    fun setOrder(
+        workspace: Workspace,
+        order: List<String>,
+    ) {
+        orders[workspace] = order
+    }
 
     /** A window's current offset, computed from the rectangle it published. */
     fun offsetOfWindow(id: String): androidx.compose.ui.unit.IntOffset? {
@@ -482,9 +485,8 @@ class WinampState {
     }
 
     /**
-     * Opens or closes a window. An opening window is raised to the front, so it is not
-     * hidden behind another, in the floating layout and in the locked stack alike: it is
-     * open in both. Closing leaves the order alone.
+     * Opens or closes a window in the workspace on screen. An opening window is raised to
+     * the front, so it is not hidden behind another. Closing leaves the order alone.
      */
     fun setWindowOpen(
         id: String,
@@ -492,17 +494,15 @@ class WinampState {
         setOpen: (Boolean) -> Unit,
     ) {
         setOpen(open)
-        if (!open) return
-        windowOrder = windowOrder.withInFront(id)
-        stackOrder = stackOrder.withInFront(id)
+        if (open) windowOrder = windowOrder.withInFront(id)
     }
 
     /**
-     * Brings a window to the front of the layout on screen. Each layout has its own order,
-     * so a press in one does not restack the other.
+     * Brings a window to the front of the workspace on screen. Each workspace has its own
+     * order, so a press in one does not restack another.
      */
     fun raiseWindow(id: String) {
-        if (doubleSize) stackOrder = stackOrder.withInFront(id) else windowOrder = windowOrder.withInFront(id)
+        windowOrder = windowOrder.withInFront(id)
     }
 
     /** This order with [id] last, which is in front; the same list when it is there already or not in it. */

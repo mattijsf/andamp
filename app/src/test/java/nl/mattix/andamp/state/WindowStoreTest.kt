@@ -35,10 +35,10 @@ class WindowStoreTest {
         val memory = WindowStore(app).load()
 
         val playlist = memory.placementOf(WindowStore.PLAYLIST)
-        assertNull(playlist.upright.x)
-        assertNull(playlist.upright.y)
-        assertNull(playlist.upright.size)
-        assertEquals(emptyList<String>(), memory.order)
+        assertNull(playlist.of(Workspace.FLOATING).x)
+        assertNull(playlist.of(Workspace.FLOATING).y)
+        assertNull(playlist.of(Workspace.FLOATING).size)
+        assertEquals(emptyList<String>(), memory.orderOf(Workspace.FLOATING))
     }
 
     /**
@@ -61,54 +61,64 @@ class WindowStoreTest {
             WindowLayoutMemory(
                 placements =
                     mapOf(
-                        WindowStore.PLAYLIST to WindowPlacement(upright = WindowArrangement(x = -12, y = 40, size = 6)),
-                        WindowStore.LIBRARY to WindowPlacement(upright = WindowArrangement(x = 0, y = -30, size = null)),
+                        WindowStore.PLAYLIST to
+                            WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(x = -12, y = 40, size = 6))),
+                        WindowStore.LIBRARY to
+                            WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(x = 0, y = -30, size = null))),
                     ),
-                order = listOf(WindowStore.LIBRARY, WindowStore.PLAYLIST),
+                orders = mapOf(Workspace.FLOATING to listOf(WindowStore.LIBRARY, WindowStore.PLAYLIST)),
             ),
         )
 
         val memory = WindowStore(app).load()
 
-        assertEquals(WindowPlacement(upright = WindowArrangement(-12, 40, 6)), memory.placementOf(WindowStore.PLAYLIST))
-        assertEquals(WindowPlacement(upright = WindowArrangement(0, -30, null)), memory.placementOf(WindowStore.LIBRARY))
-        assertEquals(listOf(WindowStore.LIBRARY, WindowStore.PLAYLIST), memory.order)
+        assertEquals(WindowArrangement(-12, 40, 6), memory.placementOf(WindowStore.PLAYLIST).of(Workspace.FLOATING))
+        assertEquals(WindowArrangement(0, -30, null), memory.placementOf(WindowStore.LIBRARY).of(Workspace.FLOATING))
+        assertEquals(listOf(WindowStore.LIBRARY, WindowStore.PLAYLIST), memory.orderOf(Workspace.FLOATING))
     }
 
     @Test
     fun `a window moved back to its full size forgets the size and keeps the place`() {
         val store = WindowStore(app)
-        store.save(mapOf(WindowStore.PLAYLIST to WindowPlacement(upright = WindowArrangement(1, 2, 6))).asMemory())
+        store.save(
+            mapOf(WindowStore.PLAYLIST to WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(1, 2, 6)))).asMemory(),
+        )
 
-        store.save(mapOf(WindowStore.PLAYLIST to WindowPlacement(upright = WindowArrangement(1, 2, null))).asMemory())
+        store.save(
+            mapOf(WindowStore.PLAYLIST to WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(1, 2, null)))).asMemory(),
+        )
 
         assertNull(
             WindowStore(app)
                 .load()
                 .placementOf(WindowStore.PLAYLIST)
-                .upright.size,
+                .of(Workspace.FLOATING)
+                .size,
         )
         assertEquals(
             1,
             WindowStore(app)
                 .load()
                 .placementOf(WindowStore.PLAYLIST)
-                .upright.x,
+                .of(Workspace.FLOATING)
+                .x,
         )
     }
 
     @Test
     fun `an order naming windows we do not have ignores them`() {
         WindowStore(app).save(
-            WindowLayoutMemory(order = listOf(WindowStore.SKINS, "video", WindowStore.PLAYLIST)),
+            WindowLayoutMemory(orders = mapOf(Workspace.FLOATING to listOf(WindowStore.SKINS, "video", WindowStore.PLAYLIST))),
         )
 
-        assertEquals(listOf(WindowStore.SKINS, WindowStore.PLAYLIST), WindowStore(app).load().order)
+        assertEquals(listOf(WindowStore.SKINS, WindowStore.PLAYLIST), WindowStore(app).load().orderOf(Workspace.FLOATING))
     }
 
     @Test
     fun `a layout written by a newer build is not read`() {
-        WindowStore(app).save(mapOf(WindowStore.PLAYLIST to WindowPlacement(upright = WindowArrangement(9, 9, 9))).asMemory())
+        WindowStore(app).save(
+            mapOf(WindowStore.PLAYLIST to WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(9, 9, 9)))).asMemory(),
+        )
         app
             .getSharedPreferences("windows", 0)
             .edit()
@@ -117,22 +127,27 @@ class WindowStoreTest {
 
         val memory = WindowStore(app).load()
 
-        assertNull(memory.placementOf(WindowStore.PLAYLIST).upright.x)
+        assertNull(memory.placementOf(WindowStore.PLAYLIST).of(Workspace.FLOATING).x)
     }
 
-    private fun Map<String, WindowPlacement>.asMemory() = WindowLayoutMemory(this, emptyList())
+    private fun Map<String, WindowPlacement>.asMemory() = WindowLayoutMemory(this)
 
     @Test
     fun `the sideways arrangement is kept apart from the upright one`() {
         val placement =
             WindowPlacement(
-                open = true,
-                upright = WindowArrangement(x = 1, y = 2, size = 6, shaded = false, cols = 0),
-                sideways = WindowArrangement(x = -300, y = 0, size = null, shaded = true, cols = 2),
+                mapOf(
+                    Workspace.FLOATING to WindowArrangement(x = 1, y = 2, size = 6, shaded = false, cols = 0, open = true),
+                    Workspace.FLOATING_SIDEWAYS to
+                        WindowArrangement(x = -300, y = 0, size = null, shaded = true, cols = 2, open = true),
+                ),
             )
         WindowStore(app).save(mapOf(WindowStore.PLAYLIST to placement).asMemory())
 
-        assertEquals(placement, WindowStore(app).load().placementOf(WindowStore.PLAYLIST))
+        val loaded = WindowStore(app).load().placementOf(WindowStore.PLAYLIST)
+        assertEquals(placement.of(Workspace.FLOATING), loaded.of(Workspace.FLOATING))
+        assertEquals(placement.of(Workspace.FLOATING_SIDEWAYS), loaded.of(Workspace.FLOATING_SIDEWAYS))
+        assertEquals("nothing was said about the locked workspaces", WindowArrangement(), loaded.of(Workspace.LOCKED))
     }
 
     @Test
@@ -149,8 +164,12 @@ class WindowStoreTest {
 
         val playlist = WindowStore(app).load().placementOf(WindowStore.PLAYLIST)
 
-        assertEquals(WindowArrangement(x = 4, y = -20, size = 5), playlist.upright)
-        assertEquals("a tablet turned before, so what it had is kept either way", playlist.upright, playlist.sideways)
+        assertEquals(WindowArrangement(x = 4, y = -20, size = 5), playlist.of(Workspace.FLOATING))
+        assertEquals(
+            "a tablet turned before, so what it had is kept either way",
+            playlist.of(Workspace.FLOATING),
+            playlist.of(Workspace.FLOATING_SIDEWAYS),
+        )
     }
 
     @Test
@@ -167,9 +186,17 @@ class WindowStoreTest {
 
         val playlist = WindowStore(app).load().placementOf(WindowStore.PLAYLIST)
 
-        assertEquals(WindowArrangement(x = 4, y = -20, size = 5), playlist.upright)
-        assertEquals(WindowArrangement(), playlist.sideways)
-        assertEquals(true, playlist.open)
+        assertEquals(WindowArrangement(x = 4, y = -20, size = 5, open = true), playlist.of(Workspace.FLOATING))
+        assertEquals(
+            "sideways: only whether it was open",
+            WindowArrangement(open = true),
+            playlist.of(Workspace.FLOATING_SIDEWAYS),
+        )
+        assertEquals(
+            "locked: only whether it was open",
+            WindowArrangement(open = true, shaded = false),
+            playlist.of(Workspace.LOCKED),
+        )
     }
 
     @Test
@@ -178,12 +205,20 @@ class WindowStoreTest {
 
         store.save(
             WindowLayoutMemory(
-                placements = mapOf(WindowStore.MILKDROP to WindowPlacement(open = true)),
-                order = emptyList(),
+                placements =
+                    mapOf(WindowStore.MILKDROP to WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(open = true)))),
+                orders = mapOf(Workspace.FLOATING to emptyList()),
             ),
         )
 
-        assertEquals(true, WindowStore(app).load().placementOf(WindowStore.MILKDROP).open)
+        assertEquals(
+            true,
+            WindowStore(app)
+                .load()
+                .placementOf(WindowStore.MILKDROP)
+                .of(Workspace.FLOATING)
+                .open,
+        )
     }
 
     @Test
@@ -191,7 +226,14 @@ class WindowStoreTest {
         val store = WindowStore(app)
         store.save(WindowLayoutMemory())
 
-        assertEquals(null, WindowStore(app).load().placementOf(WindowStore.MILKDROP).open)
+        assertEquals(
+            null,
+            WindowStore(app)
+                .load()
+                .placementOf(WindowStore.MILKDROP)
+                .of(Workspace.FLOATING)
+                .open,
+        )
     }
 
     @Test
@@ -199,17 +241,28 @@ class WindowStoreTest {
         val store = WindowStore(app)
 
         store.save(
-            WindowLayoutMemory(placements = mapOf(WindowStore.MILKDROP to WindowPlacement(open = false))),
+            WindowLayoutMemory(
+                placements =
+                    mapOf(WindowStore.MILKDROP to WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(open = false)))),
+            ),
         )
 
-        assertEquals(false, WindowStore(app).load().placementOf(WindowStore.MILKDROP).open)
+        assertEquals(
+            false,
+            WindowStore(app)
+                .load()
+                .placementOf(WindowStore.MILKDROP)
+                .of(Workspace.FLOATING)
+                .open,
+        )
     }
 
     @Test
     fun `a collapsed window is remembered collapsed`() {
         WindowStore(app).save(
             WindowLayoutMemory(
-                placements = mapOf(WindowStore.MAIN to WindowPlacement(upright = WindowArrangement(shaded = true))),
+                placements =
+                    mapOf(WindowStore.MAIN to WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(shaded = true)))),
             ),
         )
 
@@ -218,7 +271,8 @@ class WindowStoreTest {
             WindowStore(app)
                 .load()
                 .placementOf(WindowStore.MAIN)
-                .upright.shaded,
+                .of(Workspace.FLOATING)
+                .shaded,
         )
     }
 
@@ -231,7 +285,8 @@ class WindowStoreTest {
             WindowStore(app)
                 .load()
                 .placementOf(WindowStore.MAIN)
-                .upright.shaded,
+                .of(Workspace.FLOATING)
+                .shaded,
         )
     }
 }

@@ -77,8 +77,14 @@ class PersistenceOpsTest {
     fun `what was left on disk is on screen once it has started`() {
         WindowStore(app).save(
             WindowLayoutMemory(
-                placements = mapOf(WindowStore.LIBRARY to WindowPlacement(upright = WindowArrangement(40, 90, 7, cols = 2))),
-                order = emptyList(),
+                placements =
+                    mapOf(
+                        WindowStore.LIBRARY to
+                            WindowPlacement(
+                                mapOf(Workspace.FLOATING to WindowArrangement(40, 90, 7, cols = 2)),
+                            ),
+                    ),
+                orders = mapOf(Workspace.FLOATING to emptyList()),
             ),
         )
         val state = WinampState()
@@ -124,8 +130,10 @@ class PersistenceOpsTest {
                     mapOf(
                         WindowStore.MAIN to
                             WindowPlacement(
-                                upright = WindowArrangement(x = 0, y = -200),
-                                sideways = WindowArrangement(x = -300, y = 0),
+                                mapOf(
+                                    Workspace.FLOATING to WindowArrangement(x = 0, y = -200),
+                                    Workspace.FLOATING_SIDEWAYS to WindowArrangement(x = -300, y = 0),
+                                ),
                             ),
                     ),
             ),
@@ -144,7 +152,7 @@ class PersistenceOpsTest {
         WindowStore(app).save(
             WindowLayoutMemory(
                 placements =
-                    mapOf(WindowStore.PLAYLIST to WindowPlacement(upright = WindowArrangement(size = null))),
+                    mapOf(WindowStore.PLAYLIST to WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(size = null)))),
             ),
         )
         val state = WinampState()
@@ -160,8 +168,8 @@ class PersistenceOpsTest {
         val store = WindowStore(app)
         store.save(
             WindowLayoutMemory(
-                placements = mapOf(WindowStore.MAIN to WindowPlacement(upright = WindowArrangement(11, 22))),
-                order = emptyList(),
+                placements = mapOf(WindowStore.MAIN to WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(11, 22)))),
+                orders = mapOf(Workspace.FLOATING to emptyList()),
             ),
         )
 
@@ -172,7 +180,7 @@ class PersistenceOpsTest {
             store
                 .load()
                 .placementOf(WindowStore.MAIN)
-                .upright
+                .of(Workspace.FLOATING)
                 .offset(),
         )
     }
@@ -220,7 +228,7 @@ class PersistenceOpsTest {
             WindowStore(app)
                 .load()
                 .placementOf(WindowStore.LIBRARY)
-                .upright
+                .of(Workspace.FLOATING)
                 .offset(),
         )
     }

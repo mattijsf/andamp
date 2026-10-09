@@ -17,7 +17,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
-/** The locked stack's own collapsed windows outlive a launch, apart from the floating layout's. */
+/** The locked workspace's own collapsed windows outlive a launch, apart from the floating one's. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class StackShadeMemoryTest {
@@ -29,7 +29,7 @@ class StackShadeMemoryTest {
     }
 
     @Test
-    fun `a window collapsed in the locked stack is stored with Double Size`() {
+    fun `a window collapsed in the locked workspace is stored with it, not with the floating one`() {
         val vm = testViewModel()
         settle()
         vm.doubleSize.on = true
@@ -37,29 +37,47 @@ class StackShadeMemoryTest {
         vm.state.setShaded(WindowStore.EQ, true, EQ_H)
         settle()
 
-        assertEquals(setOf(WindowStore.EQ), vm.doubleSize.shaded)
-        assertEquals(
-            "not with the floating layout",
-            false,
-            vm.state
-                .placementOf(WindowStore.EQ)
-                ?.asMemory()
-                ?.upright
-                ?.shaded ?: false,
-        )
+        val stored = vm.state.placementOf(WindowStore.EQ)!!.asMemory()
+        assertEquals(true, stored.of(Workspace.LOCKED).shaded)
+        assertEquals("not with the floating layout", false, stored.of(Workspace.FLOATING).shaded)
     }
 
     @Test
-    fun `the next launch finds it collapsed in the stack and open while floating`() {
-        DoubleSizeStore(app).shaded = setOf(WindowStore.MAIN)
+    fun `the next launch finds it collapsed in the locked workspace and open while floating`() {
+        WindowStore(app).save(
+            WindowLayoutMemory(
+                placements =
+                    mapOf(WindowStore.MAIN to WindowPlacement(mapOf(Workspace.LOCKED to WindowArrangement(shaded = true)))),
+            ),
+        )
 
         val vm = testViewModel()
         settle()
 
-        assertEquals(setOf(WindowStore.MAIN), vm.state.stackShaded)
         vm.doubleSize.on = false
         assertEquals("floating, the player stands open", false, vm.state.mainShaded)
         vm.doubleSize.on = true
         assertTrue(vm.state.mainShaded)
+    }
+
+    @Test
+    fun `what Double Size kept of its own before is read into the locked workspace`() {
+        // Double Size's settings as a build before the workspaces wrote them, and no window
+        // layout saved since
+        app
+            .getSharedPreferences("doublesize", 0)
+            .edit()
+            .putStringSet("shaded", setOf(WindowStore.MAIN))
+            .putInt("vis_steps", 7)
+            .commit()
+
+        val vm = testViewModel()
+        settle()
+
+        vm.doubleSize.on = true
+        assertTrue(vm.state.mainShaded)
+        assertEquals(7, vm.state.milkdropSteps)
+        vm.doubleSize.on = false
+        assertEquals(false, vm.state.mainShaded)
     }
 }

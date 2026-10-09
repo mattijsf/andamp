@@ -489,7 +489,7 @@ private fun BoxWithConstraintsScope.PlayerWindows(
                     mainH = mainH,
                     eqH = eqH.takeIf { s.eqVisible },
                     visChromeH = frameFor(skin).chromeH.takeIf { s.milkdropOn && !s.milkdropFullscreen },
-                    visSteps = vm.doubleSize.visSteps ?: s.milkdropSteps,
+                    visSteps = s.milkdropSteps,
                     playlist =
                         when {
                             !s.plVisible -> LockedStack.Playlist.CLOSED
@@ -588,7 +588,7 @@ private fun FloatingWindows(
     // Composition order is fixed and stacking is a zIndex: a window raised by reordering
     // these children would be torn down and rebuilt mid-press, cancelling the gesture
     // that raised it.
-    WindowStacking.stack(WindowStore.WINDOWS, s.shownOrder).forEach { (id, z) ->
+    WindowStacking.stack(WindowStore.WINDOWS, s.windowOrder).forEach { (id, z) ->
         key(id) {
             // the rectangle the stack holds this window in; a window it has none for is not shown
             val pin = held?.rects?.get(id)
@@ -644,7 +644,7 @@ private fun FloatingWindows(
                             // the stack keeps the height its grip asks for
                             pinned =
                                 if (held != null && pin != null) {
-                                    PinnedVisual(pin, held.visMaxSteps) { vm.doubleSize.visSteps = it }
+                                    PinnedVisual(pin, held.visMaxSteps) { s.milkdropSteps = it }
                                 } else {
                                     null
                                 },

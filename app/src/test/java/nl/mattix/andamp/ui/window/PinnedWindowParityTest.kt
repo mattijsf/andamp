@@ -74,7 +74,9 @@ class PinnedWindowParityTest(
 
     /** Where and how large each window floats: a placement without whether it is collapsed. */
     private fun placesOf(placements: List<WindowPlacement?>) =
-        placements.map { it?.copy(upright = it.upright.copy(shaded = false)) }
+        placements.map { placement ->
+            placement?.copy(arrangements = placement.arrangements.mapValues { (_, it) -> it.copy(shaded = false) })
+        }
 
     private fun rect(): IntRect = vm.state.windowRects[case.id] ?: error("${case.label} never published a rectangle")
 

@@ -8,20 +8,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.IntOffset
 
 /**
- * Where one window sits, how big it is and whether it is collapsed, for one way of holding
- * the phone, as snapshot state.
+ * One window as it is set up in one [Workspace], as snapshot state; see [WindowArrangement].
  *
  * Each field is its own `mutableStateOf`, so moving one window does not redraw readers of
  * the other fields.
- *
- * Null means the window does not have that property (the player has no width steps), as
- * in [WindowArrangement].
  */
 class WindowArrangementState(
     offset: IntOffset? = null,
     size: Int? = null,
     cols: Int? = null,
     shaded: Boolean? = null,
+    open: Boolean? = null,
 ) {
     /** Virtual px from screen center; null means the layout places it. */
     var offset by mutableStateOf(offset)
@@ -35,8 +32,11 @@ class WindowArrangementState(
     /** Whether it was left collapsed to its title bar (window shade). */
     var shaded by mutableStateOf(shaded)
 
+    /** Whether it was left open, for the windows a listener can close. */
+    var open by mutableStateOf(open)
+
     /** This arrangement in the store's terms. */
-    fun asMemory() = WindowArrangement(offset?.x, offset?.y, size, shaded, cols)
+    fun asMemory() = WindowArrangement(offset?.x, offset?.y, size, shaded, cols, open)
 
     /**
      * Applies what was remembered. A property the memory does not mention keeps its
@@ -47,27 +47,25 @@ class WindowArrangementState(
         size = memory.size
         memory.cols?.let { cols = it }
         memory.shaded?.let { shaded = it }
+        memory.open?.let { open = it }
     }
 }
 
 /**
- * One window's placement: whether it is open, and an arrangement for each way of holding
- * the phone, of which [sidewaysNow] says which one is in use.
+ * One window's placement: an arrangement per [Workspace], of which [workspaceNow] says which
+ * one is on screen.
  *
- * [offset], [size], [cols] and [shaded] read and write the arrangement in use, so the rest
- * of the app sees one window with one place, and turning the phone swaps the place under
- * it. [open] is the window's own, whichever way the phone is held.
+ * The properties read and write the arrangement on screen, so the rest of the app sees one
+ * window with one place, size and state, and switching workspaces swaps them under it.
  */
 class WindowPlacementState(
-    open: Boolean? = null,
-    val upright: WindowArrangementState,
-    val sideways: WindowArrangementState,
-    private val sidewaysNow: () -> Boolean,
+    private val arrangements: Map<Workspace, WindowArrangementState>,
+    private val workspaceNow: () -> Workspace,
 ) {
-    /** Whether it was left open, for the windows a listener can close. */
-    var open by mutableStateOf(open)
+    /** The window as it is set up in [workspace]. */
+    fun of(workspace: Workspace): WindowArrangementState = arrangements.getValue(workspace)
 
-    private val current: WindowArrangementState get() = if (sidewaysNow()) sideways else upright
+    private val current: WindowArrangementState get() = of(workspaceNow())
 
     /** Virtual px from screen center; null means the layout places it. */
     var offset: IntOffset?
@@ -90,41 +88,46 @@ class WindowPlacementState(
             current.cols = value
         }
 
-    /** Whether it was left collapsed to its title bar (window shade). */
+    /** Whether it is collapsed to its title bar (window shade). */
     var shaded: Boolean?
         get() = current.shaded
         set(value) {
             current.shaded = value
         }
 
-    /** This window in the store's terms. */
-    fun asMemory() = WindowPlacement(open, upright.asMemory(), sideways.asMemory())
+    /** Whether it is open, for the windows a listener can close. */
+    var open: Boolean?
+        get() = current.open
+        set(value) {
+            current.open = value
+        }
 
-    /** Applies what was remembered to both arrangements; see [WindowArrangementState.restore]. */
+    /** This window in the store's terms. */
+    fun asMemory() = WindowPlacement(arrangements.mapValues { (_, arrangement) -> arrangement.asMemory() })
+
+    /** Applies what was remembered to every workspace; see [WindowArrangementState.restore]. */
     fun restore(memory: WindowPlacement) {
-        memory.open?.let { open = it }
-        upright.restore(memory.upright)
-        sideways.restore(memory.sideways)
+        arrangements.forEach { (workspace, arrangement) -> arrangement.restore(memory.of(workspace)) }
     }
 
     companion object {
         /**
-         * One entry per window in [WindowStore.WINDOWS], with its defaults, the same for
-         * both ways round. A null offset leaves the window to the layout;
+         * One entry per window in [WindowStore.WINDOWS], with its defaults, the same in
+         * every workspace. A null offset leaves the window to the layout;
          * [WindowStore.LIBRARY] and [WindowStore.SKINS] start at the center, which is what
          * a zero offset means.
          */
-        fun forWindows(sidewaysNow: () -> Boolean): Map<String, WindowPlacementState> {
+        fun forWindows(workspaceNow: () -> Workspace): Map<String, WindowPlacementState> {
             fun window(
                 open: Boolean? = null,
                 offset: IntOffset? = null,
                 shaded: Boolean? = null,
                 cols: Int? = null,
             ) = WindowPlacementState(
-                open,
-                upright = WindowArrangementState(offset = offset, cols = cols, shaded = shaded),
-                sideways = WindowArrangementState(offset = offset, cols = cols, shaded = shaded),
-                sidewaysNow = sidewaysNow,
+                Workspace.entries.associateWith {
+                    WindowArrangementState(offset = offset, cols = cols, shaded = shaded, open = open)
+                },
+                workspaceNow,
             )
             return mapOf(
                 WindowStore.MAIN to window(shaded = false),
