@@ -43,10 +43,13 @@ import java.io.File
 const val MILKDROP_W = 275
 
 /** webamp's WINDOW_RESIZE_SEGMENT_WIDTH; the plug-in window uses the same one. */
-const val MILKDROP_WIDTH_STEP = 25
+const val MILKDROP_WIDTH_STEP = WidthSteps.WIDTH_STEP
+
+/** How the plug-in window widens. */
+val MILKDROP_WIDTH_STEPS = WidthSteps(MILKDROP_W, MILKDROP_WIDTH_STEP)
 
 /** The window's width for a width index. */
-fun milkdropWidth(cols: Int) = MILKDROP_W + cols.coerceAtLeast(0) * MILKDROP_WIDTH_STEP
+fun milkdropWidth(cols: Int) = MILKDROP_WIDTH_STEPS.widthOf(cols)
 
 /** The visual's default height; the window adds the frame's chrome. */
 const val MILKDROP_CONTENT_H = 120
@@ -135,8 +138,7 @@ fun MilkdropWindow(
     BoxWithConstraints(modifier) {
         val screen = windowScreen(scale, s)
         // the width is limited to the screen's
-        val maxCols = ((screen.width - MILKDROP_W) / MILKDROP_WIDTH_STEP).coerceAtLeast(0)
-        val cols = s.milkdropCols.coerceIn(0, maxCols)
+        val cols = MILKDROP_WIDTH_STEPS.clamp(s.milkdropCols, screen.width)
         val width = pinned?.width ?: milkdropWidth(cols)
         val widgets = remember(vm, frame, width) { milkdropWidgets(vm, frame, width) }
         FloatingSkinWindow(
@@ -179,14 +181,7 @@ fun MilkdropWindow(
                                 current = s.milkdropSteps ?: MILKDROP_DEFAULT_STEPS,
                             ),
                         heightOf = { steps -> milkdropHeight(frame, steps * MILKDROP_STEP) },
-                        widthAxis =
-                            SizeAxis(
-                                furniture = MILKDROP_W,
-                                step = MILKDROP_WIDTH_STEP,
-                                min = 0,
-                                max = maxCols,
-                                current = cols,
-                            ),
+                        widthAxis = MILKDROP_WIDTH_STEPS.axis(cols, screen.width),
                         widthOf = ::milkdropWidth,
                     )
                 s.milkdropCols = resized.cols

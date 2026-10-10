@@ -60,8 +60,7 @@ fun PlaylistFloatWindow(
         val screen = windowScreen(scale, s)
         val segments = wanted
         // the width is limited to the screen's
-        val maxCols = ((screen.width - PL_W) / PlaylistLayout.WIDTH_STEP).coerceAtLeast(0)
-        val cols = s.plCols.coerceIn(0, maxCols)
+        val cols = PlaylistLayout.WIDTH_STEPS.clamp(s.plCols, screen.width)
         val layout =
             pinned?.let { PlaylistLayout(it.height, it.width) }
                 ?: PlaylistLayout.ofSegments(segments, PlaylistLayout.widthOfCols(cols))
@@ -114,7 +113,7 @@ fun PlaylistFloatWindow(
             titleH = Dest.PL_TOP_H,
             widgets = widgets,
             onResizeRaw = { grab ->
-                resizeTo(s, grab, cols, maxCols, segments, maxSegments, screen)
+                resizeTo(s, grab, cols, segments, maxSegments, screen)
             },
             onTitleDoubleTap = { s.setShaded(WindowStore.PLAYLIST, true, height) },
             cut = SkinCut(skin),
@@ -135,7 +134,6 @@ private fun resizeTo(
     s: WinampState,
     grab: WindowGrab,
     cols: Int,
-    maxCols: Int,
     segments: Int,
     maxSegments: Int,
     screen: WindowScreen,
@@ -153,14 +151,7 @@ private fun resizeTo(
                     current = segments,
                 ),
             heightOf = { asked -> PlaylistLayout.ofSegments(asked).height },
-            widthAxis =
-                SizeAxis(
-                    furniture = PL_W,
-                    step = PlaylistLayout.WIDTH_STEP,
-                    min = 0,
-                    max = maxCols,
-                    current = cols,
-                ),
+            widthAxis = PlaylistLayout.WIDTH_STEPS.axis(cols, screen.width),
             widthOf = PlaylistLayout::widthOfCols,
         )
     s.plCols = resized.cols

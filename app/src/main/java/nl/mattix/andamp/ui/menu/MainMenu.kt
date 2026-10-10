@@ -218,7 +218,7 @@ internal fun skinItems(
         add(
             AmpMenuItem.Action("Skin Browser...", needsTheApp = true) {
                 vm.state.skinManagerOpen = true
-                vm.state.raiseWindow("skins")
+                vm.state.raiseWindow(WindowStore.SKINS)
             },
         )
         // Winamp's browser is a folder of skins; on a phone a skin arrives

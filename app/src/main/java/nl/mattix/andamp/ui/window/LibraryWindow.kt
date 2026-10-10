@@ -78,8 +78,7 @@ fun LibraryWindow(
         val fits = LibraryLayout.rowsThatFit(screen.safeBottom, frame)
         val rows = WindowSizing.effectiveSteps(s.libraryRows, fits, LibraryLayout.MIN_ROWS)
         // the width is limited to the screen's
-        val maxCols = ((screen.width - LibraryLayout.WIDTH) / LibraryLayout.WIDTH_STEP).coerceAtLeast(0)
-        val cols = s.libraryCols.coerceIn(0, maxCols)
+        val cols = LibraryLayout.WIDTH_STEPS.clamp(s.libraryCols, screen.width)
         val layout =
             remember(rows, cols, pinned, frame) {
                 pinned?.let { LibraryLayout.filling(it.height, it.width, frame) }
@@ -114,14 +113,7 @@ fun LibraryWindow(
                                         current = rows,
                                     ),
                                 heightOf = { asked -> LibraryLayout(asked, layout.width).height(frame) },
-                                widthAxis =
-                                    SizeAxis(
-                                        furniture = LibraryLayout.WIDTH,
-                                        step = LibraryLayout.WIDTH_STEP,
-                                        min = 0,
-                                        max = maxCols,
-                                        current = cols,
-                                    ),
+                                widthAxis = LibraryLayout.WIDTH_STEPS.axis(cols, screen.width),
                                 widthOf = LibraryLayout::widthOfCols,
                             )
                         s.libraryCols = resized.cols
@@ -736,9 +728,12 @@ class LibraryLayout(
         }
 
         /** webamp's WINDOW_RESIZE_SEGMENT_WIDTH. */
-        const val WIDTH_STEP = 25
+        const val WIDTH_STEP = WidthSteps.WIDTH_STEP
 
-        fun widthOfCols(cols: Int) = WIDTH + cols.coerceAtLeast(0) * WIDTH_STEP
+        /** How the library widens. */
+        val WIDTH_STEPS = WidthSteps(WIDTH, WIDTH_STEP)
+
+        fun widthOfCols(cols: Int) = WIDTH_STEPS.widthOf(cols)
 
         /**
          * The strip divided over [n] tabs; the last cell absorbs the division

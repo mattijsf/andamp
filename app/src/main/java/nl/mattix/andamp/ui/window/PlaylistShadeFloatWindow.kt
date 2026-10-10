@@ -38,9 +38,8 @@ fun PlaylistShadeFloatWindow(
     val s = vm.state
     BoxWithConstraints(modifier) {
         val screen = windowScreen(scale, s)
-        val maxCols = ((screen.width - PL_W) / PlaylistLayout.WIDTH_STEP).coerceAtLeast(0)
-        val cols = if (pinned != null) 0 else s.plCols.coerceIn(0, maxCols)
-        val width = PL_W + cols * PlaylistLayout.WIDTH_STEP
+        val cols = if (pinned != null) 0 else PlaylistLayout.WIDTH_STEPS.clamp(s.plCols, screen.width)
+        val width = PlaylistLayout.widthOfCols(cols)
         FloatingSkinWindow(
             id = WindowStore.PLAYLIST,
             state = s,
@@ -60,14 +59,7 @@ fun PlaylistShadeFloatWindow(
                         // shaded, the height is fixed
                         heightAxis = SizeAxis(furniture = SHADE_H, step = 1, min = 0, max = 0, current = 0),
                         heightOf = { SHADE_H },
-                        widthAxis =
-                            SizeAxis(
-                                furniture = PL_W,
-                                step = PlaylistLayout.WIDTH_STEP,
-                                min = 0,
-                                max = maxCols,
-                                current = cols,
-                            ),
+                        widthAxis = PlaylistLayout.WIDTH_STEPS.axis(cols, screen.width),
                         widthOf = { steps -> PL_W + steps * PlaylistLayout.WIDTH_STEP },
                     )
                 s.plCols = resized.cols

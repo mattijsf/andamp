@@ -17,6 +17,9 @@ import nl.mattix.andamp.core.model.displayName
 import nl.mattix.andamp.ui.window.LockedStack
 import nl.mattix.andamp.ui.window.WindowScreen
 import nl.mattix.andamp.visualizer.core.PresetGaps
+import kotlin.properties.ReadWriteProperty
+import kotlin.reflect.KMutableProperty0
+import kotlin.reflect.KProperty
 
 /**
  * The commands the plug-in window accepts from the rest of the app. Implemented by
@@ -92,8 +95,6 @@ class WinampState {
     val eqBands = mutableStateListOf<Int>().apply { repeat(EQ_BANDS) { add(EqOps.CENTER) } }
     var preamp by mutableIntStateOf(EqOps.CENTER) // 0..63
 
-    var eqVisible: Boolean by openOf(WindowStore.EQ)
-
     /**
      * Whether the phone is held sideways: the screen is wider than it is tall. Set by
      * whatever hosts the player (the activity, the floating window) before the windows are
@@ -124,47 +125,32 @@ class WinampState {
     /** One window's placement; every id in play is one of [WindowStore.WINDOWS]. */
     fun placementOf(id: String): WindowPlacementState = placements.getValue(id)
 
-    /** A property of one window, read and written through its placement; the defaults stand in for null. */
-    private fun <T> windowField(
-        id: String,
-        get: (WindowPlacementState) -> T,
-        set: (WindowPlacementState, T) -> Unit,
-    ) = object : kotlin.properties.ReadWriteProperty<Any?, T> {
-        override fun getValue(
-            thisRef: Any?,
-            property: kotlin.reflect.KProperty<*>,
-        ) = get(placementOf(id))
+    /** A window's property that may be unset, read with [default] in its place. */
+    private fun <T : Any> KMutableProperty0<T?>.orDefault(default: T) =
+        object : ReadWriteProperty<Any?, T> {
+            override fun getValue(
+                thisRef: Any?,
+                property: KProperty<*>,
+            ) = get() ?: default
 
-        override fun setValue(
-            thisRef: Any?,
-            property: kotlin.reflect.KProperty<*>,
-            value: T,
-        ) = set(placementOf(id), value)
-    }
+            override fun setValue(
+                thisRef: Any?,
+                property: KProperty<*>,
+                value: T,
+            ) = set(value)
+        }
 
-    private fun offsetOf(id: String) = windowField(id, { it.offset }) { p, v -> p.offset = v }
-
-    /** For the two list windows, whose offset defaults to the center. */
-    private fun placedOf(id: String) = windowField(id, { it.offset ?: IntOffset.Zero }) { p, v -> p.offset = v }
-
-    private fun sizeOf(id: String) = windowField(id, { it.size }) { p, v -> p.size = v }
-
-    private fun colsOf(id: String) = windowField(id, { it.cols ?: 0 }) { p, v -> p.cols = v }
-
-    private fun openOf(id: String) = windowField(id, { it.open ?: false }) { p, v -> p.open = v }
-
-    /** Whether a window is collapsed in the workspace on screen; each keeps its own answer. */
-    private fun shadedOf(id: String) = windowField(id, { it.shaded ?: false }) { p, v -> p.shaded = v }
+    var eqVisible: Boolean by (placementOf(WindowStore.EQ)::open).orDefault(false)
 
     /**
      * Window shade: the window collapsed to its title bar, in the layout on screen. Stored
      * per window and per layout across restarts.
      */
-    var mainShaded: Boolean by shadedOf(WindowStore.MAIN)
+    var mainShaded: Boolean by (placementOf(WindowStore.MAIN)::shaded).orDefault(false)
 
-    var eqShaded: Boolean by shadedOf(WindowStore.EQ)
+    var eqShaded: Boolean by (placementOf(WindowStore.EQ)::shaded).orDefault(false)
 
-    var plShaded: Boolean by shadedOf(WindowStore.PLAYLIST)
+    var plShaded: Boolean by (placementOf(WindowStore.PLAYLIST)::shaded).orDefault(false)
 
     /**
      * Whether collapsing is offered at all; see [ShadeStore]. It is mirrored here so the
@@ -182,11 +168,11 @@ class WinampState {
      * How many 25px steps wider than 275 the playlist is: Winamp's width index, as in
      * webamp (`size: [width, height]`, W = 275 + 25 * width).
      */
-    var plCols: Int by colsOf(WindowStore.PLAYLIST)
-    var plVisible: Boolean by openOf(WindowStore.PLAYLIST)
+    var plCols: Int by (placementOf(WindowStore.PLAYLIST)::cols).orDefault(0)
+    var plVisible: Boolean by (placementOf(WindowStore.PLAYLIST)::open).orDefault(false)
 
     // The plug-in window (AVS or Milkdrop), independent of the in-player visualizer.
-    var milkdropOn: Boolean by openOf(WindowStore.MILKDROP)
+    var milkdropOn: Boolean by (placementOf(WindowStore.MILKDROP)::open).orDefault(false)
     var milkdropFullscreen by mutableStateOf(false)
     var visPlugin by mutableStateOf(VisPlugin.Avs)
 
@@ -311,45 +297,49 @@ class WinampState {
     var skinScroll by mutableIntStateOf(0)
 
     /** Where the skin manager floats, in virtual px from screen center. */
-    var skinManagerOffset: androidx.compose.ui.unit.IntOffset by placedOf(WindowStore.SKINS)
+    var skinManagerOffset: androidx.compose.ui.unit.IntOffset by (
+        placementOf(
+            WindowStore.SKINS,
+        )::offset
+    ).orDefault(IntOffset.Zero)
 
     /** How many rows the skin manager shows; null until the listener resizes it. */
-    var skinRows: Int? by sizeOf(WindowStore.SKINS)
+    var skinRows: Int? by placementOf(WindowStore.SKINS)::size
 
     // the media library window
     var libraryOpen by mutableStateOf(false)
     var libraryScroll by mutableIntStateOf(0)
-    var libraryOffset: androidx.compose.ui.unit.IntOffset by placedOf(WindowStore.LIBRARY)
+    var libraryOffset: androidx.compose.ui.unit.IntOffset by (placementOf(WindowStore.LIBRARY)::offset).orDefault(IntOffset.Zero)
 
     /** How many rows the library shows; null fills the space there is. */
-    var libraryRows: Int? by sizeOf(WindowStore.LIBRARY)
+    var libraryRows: Int? by placementOf(WindowStore.LIBRARY)::size
 
     /** How many 25px steps wider than its narrowest the library is drawn. */
-    var libraryCols: Int by colsOf(WindowStore.LIBRARY)
+    var libraryCols: Int by (placementOf(WindowStore.LIBRARY)::cols).orDefault(0)
 
     /**
      * Where the playlist floats, and how tall it is. A null offset means the layout places
      * it: docked under the stack. A null size fills what is left.
      */
-    var plOffset: androidx.compose.ui.unit.IntOffset? by offsetOf(WindowStore.PLAYLIST)
-    var plSegments: Int? by sizeOf(WindowStore.PLAYLIST)
+    var plOffset: androidx.compose.ui.unit.IntOffset? by placementOf(WindowStore.PLAYLIST)::offset
+    var plSegments: Int? by placementOf(WindowStore.PLAYLIST)::size
 
     /**
      * Where the player, the equalizer and the plug-in window float. Null means the layout
      * places them in the classic stack, until the listener drags one.
      */
-    var mainOffset: androidx.compose.ui.unit.IntOffset? by offsetOf(WindowStore.MAIN)
-    var eqOffset: androidx.compose.ui.unit.IntOffset? by offsetOf(WindowStore.EQ)
-    var milkdropOffset: androidx.compose.ui.unit.IntOffset? by offsetOf(WindowStore.MILKDROP)
+    var mainOffset: androidx.compose.ui.unit.IntOffset? by placementOf(WindowStore.MAIN)::offset
+    var eqOffset: androidx.compose.ui.unit.IntOffset? by placementOf(WindowStore.EQ)::offset
+    var milkdropOffset: androidx.compose.ui.unit.IntOffset? by placementOf(WindowStore.MILKDROP)::offset
 
     /** How tall the visual is, in resize steps; null is its default height. */
-    var milkdropSteps: Int? by sizeOf(WindowStore.MILKDROP)
+    var milkdropSteps: Int? by placementOf(WindowStore.MILKDROP)::size
 
     /** Steps wider than 275, like the playlist's; Winamp's width index. */
-    var milkdropCols: Int by colsOf(WindowStore.MILKDROP)
+    var milkdropCols: Int by (placementOf(WindowStore.MILKDROP)::cols).orDefault(0)
 
     /** The skin browser's width index. */
-    var skinCols: Int by colsOf(WindowStore.SKINS)
+    var skinCols: Int by (placementOf(WindowStore.SKINS)::cols).orDefault(0)
 
     /** The first row a window's handle may be on: below the strip kept for the notification shade. */
     var safeTop by mutableIntStateOf(0)

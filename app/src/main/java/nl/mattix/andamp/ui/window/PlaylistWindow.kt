@@ -75,12 +75,15 @@ class PlaylistLayout(
         const val MIN_SEGMENTS = 2
 
         /** webamp's WINDOW_RESIZE_SEGMENT_WIDTH: one step sideways. */
-        const val WIDTH_STEP = 25
+        const val WIDTH_STEP = WidthSteps.WIDTH_STEP
+
+        /** How the playlist widens. */
+        val WIDTH_STEPS = WidthSteps(PL_W, WIDTH_STEP)
 
         /** The width of the bottom bar's right-hand cap. */
         const val PL_RIGHT_CAP_W = 150
 
-        fun widthOfCols(cols: Int) = PL_W + cols.coerceAtLeast(0) * WIDTH_STEP
+        fun widthOfCols(cols: Int) = WIDTH_STEPS.widthOf(cols)
 
         /** The height of the top and bottom bars together. */
         const val FURNITURE_H = Dest.PL_TOP_H + Dest.PL_BOTTOM_H

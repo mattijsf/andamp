@@ -8,7 +8,7 @@ or sideways, each is a workspace of its own (`Workspace`): which windows are ope
 collapsed, where they sit and which is in front is kept per workspace. Sideways they start
 with the playlist beside the player and the equalizer, as tall as the two. In Double Size
 the windows stand in columns (`LockedColumns`), and a drag lifts one and drops it into the
-slot it is over (`LockedReorder`). Classic `.wsz` skins work.
+slot it is over (`LockedColumns.moved`). Classic `.wsz` skins work.
 
 The skin UI is the front of a real media player. Behind it are several playback backends:
 local files and radio through Media3, and music sources that install as separate APKs
