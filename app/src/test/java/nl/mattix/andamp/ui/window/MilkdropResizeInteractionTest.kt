@@ -10,6 +10,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.IntOffset
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SkinLoader
@@ -50,7 +51,13 @@ class MilkdropResizeInteractionTest {
         compose.setContent {
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 screenH = constraints.maxHeight / SCALE
-                MilkdropWindow(vm, skin, SCALE, dockedTop = 0, modifier = Modifier.fillMaxSize())
+                MilkdropWindow(
+                    vm,
+                    skin,
+                    SCALE,
+                    docked = IntOffset((constraints.maxWidth / SCALE - MILKDROP_W) / 2, 0),
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         }
         compose.waitForIdle()

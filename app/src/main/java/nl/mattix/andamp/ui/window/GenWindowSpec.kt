@@ -3,6 +3,7 @@
 package nl.mattix.andamp.ui.window
 
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
 
 /** What a generic-frame window needs: a title, a size, and where it floats. */
 data class GenWindowSpec(
@@ -19,6 +20,6 @@ data class GenWindowSpec(
      * to the window's own step. A window without one has no grip and cannot be resized.
      */
     val onResizeRaw: ((WindowGrab) -> Unit)? = null,
-    /** Where the layout holds the window, or null while it floats; see [FloatingSkinWindow]. */
-    val pinnedAt: IntOffset? = null,
+    /** The rectangle the layout holds the window in, or null while it floats; see [FloatingSkinWindow]. */
+    val pinned: IntRect? = null,
 )

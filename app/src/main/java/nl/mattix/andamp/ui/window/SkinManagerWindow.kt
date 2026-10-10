@@ -80,7 +80,7 @@ fun SkinManagerWindow(
                     onMove = { place -> s.skinManagerOffset = place },
                     onClose = { s.skinManagerOpen = false },
                     id = WindowStore.SKINS,
-                    pinnedAt = pinned?.topLeft,
+                    pinned = pinned,
                     onResizeRaw = { grab ->
                         val resized =
                             WindowSizing.resize(

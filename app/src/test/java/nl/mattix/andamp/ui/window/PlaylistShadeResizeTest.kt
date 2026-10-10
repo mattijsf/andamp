@@ -10,6 +10,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.IntOffset
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SkinLoader
@@ -56,7 +57,7 @@ class PlaylistShadeResizeTest {
                     skin,
                     SCALE,
                     expandedH = 116,
-                    dockedTop = 0,
+                    docked = IntOffset.Zero,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

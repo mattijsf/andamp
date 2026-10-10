@@ -73,6 +73,7 @@ class PlaylistFloatInteractionTest {
                 // down as it is raised, and take the press with it
                 key(WindowStore.PLAYLIST) {
                     // the screen the window centers in, measured where it is known
+                    val virtualW = constraints.maxWidth / SCALE
                     val virtualH = constraints.maxHeight / SCALE
                     measuredScreenH = virtualH
                     // the way the screen composes it: hidden when closed, and a
@@ -85,7 +86,7 @@ class PlaylistFloatInteractionTest {
                             width = PL_W,
                             height = SHADE_H,
                             offset = vm.state.plOffset,
-                            defaultOffset = IntOffset(0, dockedTop - (virtualH - SHADE_H) / 2),
+                            docked = IntOffset((virtualW - PL_W) / 2, dockedTop),
                             onMove = { vm.state.plOffset = it },
                             titleH = SHADE_H,
                             widgets = emptyList(),
@@ -97,7 +98,7 @@ class PlaylistFloatInteractionTest {
                             skin,
                             SCALE,
                             PlaylistMenuActions(),
-                            dockedTop = dockedTop,
+                            docked = IntOffset((virtualW - PL_W) / 2, dockedTop),
                             dockedSegments = dockedSegments,
                             modifier =
                                 Modifier

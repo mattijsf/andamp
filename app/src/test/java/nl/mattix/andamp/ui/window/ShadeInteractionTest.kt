@@ -217,17 +217,22 @@ class ShadeInteractionTest {
 
     @Test
     fun `shading a window takes its height out of the stack`() {
-        fun stack(
+        val screen = WindowScreen(width = MAIN_W, height = 800, safeTop = 0, safeBottom = 800)
+
+        fun playlistRow(
             playerH: Int,
             eqShown: Boolean,
-        ) = dockedStackHeight(top = 0, anchor = playerH, under = listOf(StackMember(EQ_H, eqShown, top = null, placed = false)))
+        ): Int {
+            val eq = if (eqShown) ClassicStack.Member(EQ_H, top = null, placed = false) else null
+            return ClassicStack.layout(ClassicStack.Ask(screen, sideways = false, playerH, eq, vis = null)).playlist.y
+        }
 
-        assertEquals(MAIN_H + EQ_H, stack(MAIN_H, eqShown = true))
-        assertEquals(SHADE_H + EQ_H, stack(heightOf(MAIN_H, true), eqShown = true))
+        assertEquals(MAIN_H + EQ_H, playlistRow(MAIN_H, eqShown = true))
+        assertEquals(SHADE_H + EQ_H, playlistRow(heightOf(MAIN_H, true), eqShown = true))
         assertEquals(
             "an equalizer that is not shown takes no room",
             SHADE_H,
-            stack(heightOf(MAIN_H, true), eqShown = false),
+            playlistRow(heightOf(MAIN_H, true), eqShown = false),
         )
     }
 

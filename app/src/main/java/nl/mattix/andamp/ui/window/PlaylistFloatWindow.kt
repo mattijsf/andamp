@@ -40,13 +40,11 @@ fun PlaylistFloatWindow(
     skin: Skin,
     scale: Int,
     actions: PlaylistMenuActions,
-    /** The row the stack ends on: where the playlist sits until it is moved. */
-    dockedTop: Int,
+    /** Its top-left corner until it is moved; see [FloatingSkinWindow]. */
+    docked: IntOffset,
     /** How tall it is while it has never been resized: the rest of the screen. */
     dockedSegments: Int,
     modifier: Modifier = Modifier,
-    /** The column its left edge sits on until it is moved, or null for the middle of the screen. */
-    dockedLeft: Int? = null,
     /** The rectangle the layout holds it in, in virtual pixels, or null while it floats. */
     pinned: IntRect? = null,
 ) {
@@ -77,18 +75,11 @@ fun PlaylistFloatWindow(
         // Where the top edge is asking to be: under the stack while the window has never
         // been moved, and otherwise the row its offset puts it on. Offsets are
         // center-relative, so the row depends on the height it is drawn at.
-        val topWanted = s.plOffset?.let { (screen.height - height) / 2 + it.y } ?: dockedTop
+        val topWanted = s.plOffset?.let { screen.topLeftOf(it, IntSize(layout.width, height)).y } ?: docked.y
         // What the grip may ask for: what fits under this window's own top edge. The
         // drawn height is not capped by where the window is; a window may hang off the
         // bottom as long as its title bar stays inside the safe area.
         val maxSegments = PlaylistLayout.segmentsThatFit((screen.safeBottom - topWanted).coerceAtLeast(0))
-        // the docked place is a row and a column; its center-relative offset is computed
-        // for the size the playlist has now
-        val docked =
-            screen.offsetOf(
-                IntOffset(dockedLeft ?: (screen.width - layout.width) / 2, dockedTop),
-                IntSize(layout.width, height),
-            )
         val widgets =
             remember(vm, layout, actions) {
                 playlistWidgets(
@@ -118,7 +109,7 @@ fun PlaylistFloatWindow(
             width = layout.width,
             height = height,
             offset = s.plOffset,
-            defaultOffset = docked,
+            docked = docked,
             onMove = { place -> s.plOffset = place },
             titleH = Dest.PL_TOP_H,
             widgets = widgets,
@@ -127,7 +118,7 @@ fun PlaylistFloatWindow(
             },
             onTitleDoubleTap = { s.setShaded(WindowStore.PLAYLIST, true, height) },
             cut = SkinCut(skin),
-            pinnedAt = pinned?.topLeft,
+            pinned = pinned,
             modifier = Modifier.matchParentSize(),
         ) {
             drawPlaylistWindow(skin, s, layout, text, scale)

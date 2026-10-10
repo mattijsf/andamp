@@ -104,6 +104,13 @@ class WinampState {
      */
     var sideways by mutableStateOf(false)
 
+    /**
+     * Winamp's Double Size as it is set; see [DoubleSizeStore]. While it is on, the layout
+     * holds every window in one stack: [windowRects] are the stack's and no window's own
+     * place changes. The clutter bar's D is lit from it.
+     */
+    var doubleSize by mutableStateOf(false)
+
     /** The workspace on screen: floating or locked, upright or sideways; see [Workspace]. */
     val workspace: Workspace get() = Workspace.of(locked = doubleSize, sideways = sideways)
 
@@ -381,13 +388,6 @@ class WinampState {
     /** The screen size in virtual px; published by the layout pass. */
     var screenW by mutableIntStateOf(0)
     var screenH by mutableIntStateOf(0)
-
-    /**
-     * Winamp's Double Size as it is set; see [DoubleSizeStore]. While it is on, the layout
-     * holds every window in one stack: [windowRects] are the stack's and no window's own
-     * place changes. The clutter bar's D is lit from it.
-     */
-    var doubleSize by mutableStateOf(false)
 
     /** Each workspace's windows, bottom to top; the last one is drawn on top. */
     private val orders =

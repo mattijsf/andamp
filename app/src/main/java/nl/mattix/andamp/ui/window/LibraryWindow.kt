@@ -99,7 +99,7 @@ fun LibraryWindow(
                     onMove = { place -> s.libraryOffset = place },
                     onClose = { s.libraryOpen = false },
                     id = WindowStore.LIBRARY,
-                    pinnedAt = pinned?.topLeft,
+                    pinned = pinned,
                     onResizeRaw = { grab ->
                         val resized =
                             WindowSizing.resize(

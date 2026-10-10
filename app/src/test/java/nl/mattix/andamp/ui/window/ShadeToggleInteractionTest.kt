@@ -50,12 +50,14 @@ class ShadeToggleInteractionTest {
     private val width = MAIN_W
     private val mainTop = 60
 
+    private var screenW = 0
     private var screenH = 0
 
     @Before
     fun setUp() {
         compose.setContent {
             BoxWithConstraints(Modifier.fillMaxSize()) {
+                screenW = constraints.maxWidth / SCALE
                 screenH = constraints.maxHeight / SCALE
                 val height = heightOf(MAIN_H, state.mainShaded)
                 FloatingSkinWindow(
@@ -65,7 +67,7 @@ class ShadeToggleInteractionTest {
                     width = width,
                     height = height,
                     offset = state.mainOffset,
-                    defaultOffset = IntOffset(0, mainTop - (screenH - height) / 2),
+                    docked = IntOffset((screenW - width) / 2, mainTop),
                     onMove = { state.mainOffset = it },
                     titleH = TITLE_BAR_H,
                     widgets = widgets,

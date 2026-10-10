@@ -44,6 +44,7 @@ class GroupDragInteractionTest {
     private val eqTop = 116
     private val playlistTop = 252
 
+    private var screenW = 0
     private var screenH = 0
 
     @Before
@@ -51,6 +52,7 @@ class GroupDragInteractionTest {
         state.windowRects[WindowStore.PLAYLIST] = IntRect(0, playlistTop, width, playlistTop + 200)
         compose.setContent {
             BoxWithConstraints(Modifier.fillMaxSize()) {
+                screenW = constraints.maxWidth / SCALE
                 screenH = constraints.maxHeight / SCALE
                 FloatingSkinWindow(
                     id = WindowStore.MAIN,
@@ -59,7 +61,7 @@ class GroupDragInteractionTest {
                     width = width,
                     height = height,
                     offset = state.mainOffset,
-                    defaultOffset = IntOffset(0, mainTop - (screenH - height) / 2),
+                    docked = IntOffset((screenW - width) / 2, mainTop),
                     onMove = { state.mainOffset = it },
                     titleH = TITLE_BAR_H,
                     widgets = emptyList(),
@@ -73,7 +75,7 @@ class GroupDragInteractionTest {
                     width = width,
                     height = height,
                     offset = state.eqOffset,
-                    defaultOffset = IntOffset(0, eqTop - (screenH - height) / 2),
+                    docked = IntOffset((screenW - width) / 2, eqTop),
                     onMove = { state.eqOffset = it },
                     titleH = TITLE_BAR_H,
                     widgets = emptyList(),
