@@ -9,9 +9,12 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.core.model.displayName
+import nl.mattix.andamp.ui.window.LockedStack
 import nl.mattix.andamp.visualizer.core.PresetGaps
 
 /**
@@ -110,108 +113,40 @@ class WinampState {
      */
     private val placements = WindowPlacementState.forWindows { workspace }
 
-    /** One window's placement, for code that loops over the windows. */
-    fun placementOf(id: String): WindowPlacementState? = placements[id]
+    /** One window's placement; every id in play is one of [WindowStore.WINDOWS]. */
+    fun placementOf(id: String): WindowPlacementState = placements.getValue(id)
 
-    private fun placement(id: String) = placements.getValue(id)
+    /** A property of one window, read and written through its placement; the defaults stand in for null. */
+    private fun <T> windowField(
+        id: String,
+        get: (WindowPlacementState) -> T,
+        set: (WindowPlacementState, T) -> Unit,
+    ) = object : kotlin.properties.ReadWriteProperty<Any?, T> {
+        override fun getValue(
+            thisRef: Any?,
+            property: kotlin.reflect.KProperty<*>,
+        ) = get(placementOf(id))
 
-    private fun offsetOf(id: String) =
-        object : kotlin.properties.ReadWriteProperty<Any?, androidx.compose.ui.unit.IntOffset?> {
-            override fun getValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-            ) = placement(id).offset
+        override fun setValue(
+            thisRef: Any?,
+            property: kotlin.reflect.KProperty<*>,
+            value: T,
+        ) = set(placementOf(id), value)
+    }
 
-            override fun setValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-                value: androidx.compose.ui.unit.IntOffset?,
-            ) {
-                placement(id).offset = value
-            }
-        }
+    private fun offsetOf(id: String) = windowField(id, { it.offset }) { p, v -> p.offset = v }
 
     /** For the two list windows, whose offset defaults to the center. */
-    private fun placedOf(id: String) =
-        object : kotlin.properties.ReadWriteProperty<Any?, androidx.compose.ui.unit.IntOffset> {
-            override fun getValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-            ) = placement(id).offset ?: androidx.compose.ui.unit.IntOffset.Zero
+    private fun placedOf(id: String) = windowField(id, { it.offset ?: IntOffset.Zero }) { p, v -> p.offset = v }
 
-            override fun setValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-                value: androidx.compose.ui.unit.IntOffset,
-            ) {
-                placement(id).offset = value
-            }
-        }
+    private fun sizeOf(id: String) = windowField(id, { it.size }) { p, v -> p.size = v }
 
-    private fun sizeOf(id: String) =
-        object : kotlin.properties.ReadWriteProperty<Any?, Int?> {
-            override fun getValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-            ) = placement(id).size
+    private fun colsOf(id: String) = windowField(id, { it.cols ?: 0 }) { p, v -> p.cols = v }
 
-            override fun setValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-                value: Int?,
-            ) {
-                placement(id).size = value
-            }
-        }
-
-    private fun colsOf(id: String) =
-        object : kotlin.properties.ReadWriteProperty<Any?, Int> {
-            override fun getValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-            ) = placement(id).cols ?: 0
-
-            override fun setValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-                value: Int,
-            ) {
-                placement(id).cols = value
-            }
-        }
-
-    private fun openOf(id: String) =
-        object : kotlin.properties.ReadWriteProperty<Any?, Boolean> {
-            override fun getValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-            ) = placement(id).open ?: false
-
-            override fun setValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-                value: Boolean,
-            ) {
-                placement(id).open = value
-            }
-        }
+    private fun openOf(id: String) = windowField(id, { it.open ?: false }) { p, v -> p.open = v }
 
     /** Whether a window is collapsed in the workspace on screen; each keeps its own answer. */
-    private fun shadedOf(id: String) =
-        object : kotlin.properties.ReadWriteProperty<Any?, Boolean> {
-            override fun getValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-            ) = placement(id).shaded ?: false
-
-            override fun setValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-                value: Boolean,
-            ) {
-                placement(id).shaded = value
-            }
-        }
+    private fun shadedOf(id: String) = windowField(id, { it.shaded ?: false }) { p, v -> p.shaded = v }
 
     /**
      * Window shade: the window collapsed to its title bar, in the layout on screen. Stored
@@ -461,57 +396,64 @@ class WinampState {
     fun orderOf(workspace: Workspace): List<String> = orders.getValue(workspace)
 
     /** The columns each locked workspace holds its windows in; see [LockedColumns]. */
-    private val stacks = androidx.compose.runtime.mutableStateMapOf<Workspace, List<List<String>>>()
-
-    /** The columns of the locked workspace on screen, or of the one the way round would show. */
-    var lockedColumns: List<List<String>>
-        get() = columnsOf(Workspace.of(locked = true, sideways = sideways))
-        set(value) {
-            stacks[Workspace.of(locked = true, sideways = sideways)] = value
+    private val columns =
+        androidx.compose.runtime.mutableStateMapOf<Workspace, List<List<String>>>().apply {
+            Workspace.entries.filter { it.locked }.forEach { put(it, LockedColumns.defaultFor(it.sideways)) }
         }
 
-    fun columnsOf(workspace: Workspace): List<List<String>> = stacks[workspace] ?: LockedColumns.defaultFor(workspace.sideways)
+    /** The locked workspace the way the phone is held: on screen while Double Size is on. */
+    private val lockedWorkspace get() = Workspace.of(locked = true, sideways = sideways)
+
+    /** The columns of the locked workspace the way the phone is held. */
+    var lockedColumns: List<List<String>>
+        get() = columns.getValue(lockedWorkspace)
+        set(value) {
+            columns[lockedWorkspace] = value
+        }
+
+    fun columnsOf(workspace: Workspace): List<List<String>> = columns.getValue(workspace)
 
     fun setColumns(
         workspace: Workspace,
         columns: List<List<String>>,
     ) {
-        stacks[workspace] = columns
+        this.columns[workspace] = columns
     }
 
     /** A window lifted out of the locked layout by a drag; see [liftWindow]. */
     data class LiftedWindow(
         val id: String,
         /** Where it was when it was lifted. */
-        val from: androidx.compose.ui.unit.IntRect,
+        val from: IntRect,
         /** How far the drag has taken it since. */
-        val by: androidx.compose.ui.unit.IntOffset,
-    )
+        val by: IntOffset,
+    ) {
+        /** Where the drag has taken its top-left corner. */
+        val topLeft: IntOffset get() = IntOffset(from.left + by.x, from.top + by.y)
+
+        val center: IntOffset get() = IntOffset(from.center.x + by.x, from.center.y + by.y)
+
+        /** Drawn where the drag has taken it, at the size of the slot it would drop into. */
+        fun drawnIn(slot: IntRect) = IntRect(topLeft, slot.size)
+    }
 
     var lifted: LiftedWindow? by mutableStateOf(null)
 
     /**
-     * Each column's band of the locked layout, left to right, as the last layout pass left
-     * them; what a drag finds its column by.
-     */
-    var lockedBands: List<androidx.compose.ui.unit.IntRect> by mutableStateOf(emptyList())
-
-    /**
      * A drag on a window the locked layout holds: the window follows the finger, and the
      * columns are reordered as it goes, so the others make room where it would land. Only the
-     * windows of [LockedColumns.STACK] move; see [LockedReorder].
+     * windows of [LockedColumns.STACK] move; see [LockedColumns.moved].
      */
     fun liftWindow(
         id: String,
-        by: androidx.compose.ui.unit.IntOffset,
+        by: IntOffset,
     ) {
         if (!doubleSize || id !in LockedColumns.STACK) return
         val from = lifted?.takeIf { it.id == id }?.from ?: windowRects[id] ?: return
-        lifted = LiftedWindow(id, from, by)
-        val center =
-            androidx.compose.ui.unit
-                .IntOffset(from.center.x + by.x, from.center.y + by.y)
-        val moved = LockedReorder.moved(id, center, lockedColumns, lockedBands, windowRects - id)
+        val lift = LiftedWindow(id, from, by)
+        lifted = lift
+        val column = LockedStack.columnAt(lift.center.x, screenW, lockedColumns.size)
+        val moved = LockedColumns.moved(id, lift.center, column, lockedColumns, windowRects - id)
         if (moved != lockedColumns) lockedColumns = moved
     }
 
@@ -539,9 +481,9 @@ class WinampState {
     /** Puts a window at [moved]; used for the carried windows of a group drag. */
     fun placeWindow(
         id: String,
-        moved: androidx.compose.ui.unit.IntOffset,
+        moved: IntOffset,
     ) {
-        placements[id]?.offset = moved
+        placementOf(id).offset = moved
     }
 
     /**

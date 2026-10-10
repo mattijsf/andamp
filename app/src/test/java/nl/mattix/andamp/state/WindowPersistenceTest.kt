@@ -316,9 +316,9 @@ class WindowPersistenceTest {
         val fresh = WinampState()
 
         WindowStore.WINDOWS.forEach { id ->
-            val before = fresh.placementOf(id)!!.offset
-            fresh.placementOf(id)!!.restore(WindowPlacement())
-            assertEquals("$id stays put on an empty memory", before, fresh.placementOf(id)!!.offset)
+            val before = fresh.placementOf(id).offset
+            fresh.placementOf(id).restore(WindowPlacement())
+            assertEquals("$id stays put on an empty memory", before, fresh.placementOf(id).offset)
         }
     }
 }

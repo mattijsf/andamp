@@ -39,8 +39,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -107,7 +105,6 @@ import nl.mattix.andamp.ui.window.mainShadeWidgets
 import nl.mattix.andamp.ui.window.mainWindowWidgets
 import nl.mattix.andamp.ui.window.milkdropContentH
 import nl.mattix.andamp.ui.window.milkdropHeight
-import nl.mattix.andamp.ui.window.offsetInState
 import nl.mattix.andamp.ui.window.surfaceBottomInset
 import nl.mattix.andamp.ui.window.unshadeEverything
 
@@ -503,15 +500,12 @@ private fun BoxWithConstraintsScope.PlayerWindows(
                             WindowStore.LIBRARY.takeIf { s.libraryOpen },
                             WindowStore.SKINS.takeIf { s.skinManagerOpen },
                         ),
-                    sideways = s.sideways,
                     columns = s.lockedColumns,
                 ),
             )
         } else {
             null
         }
-    // the columns' bands, for a drag through the stack to find its column
-    s.lockedBands = held?.bands.orEmpty()
 
     InPlayerVisualizerDriver(vm)
     UiClocks(s)
@@ -596,14 +590,8 @@ private fun FloatingWindows(
     WindowStacking.stack(WindowStore.WINDOWS, s.windowOrder).forEach { (id, z) ->
         key(id) {
             // the rectangle the stack holds this window in; a window it has none for is not
-            // shown. One lifted by a drag is drawn where the drag has taken it, at the size of
-            // the slot it would drop into
-            val pin =
-                held?.rects?.get(id)?.let { slot ->
-                    s.lifted?.takeIf { it.id == id }?.let { lift ->
-                        IntRect(IntOffset(lift.from.left + lift.by.x, lift.from.top + lift.by.y), slot.size)
-                    } ?: slot
-                }
+            // shown, and one lifted by a drag is drawn where the drag has taken it
+            val pin = held?.rects?.get(id)?.let { slot -> s.lifted?.takeIf { it.id == id }?.drawnIn(slot) ?: slot }
             val shown = held == null || pin != null
             when (id) {
                 WindowStore.MAIN -> {
@@ -839,7 +827,7 @@ private fun stackMember(
     height = height,
     shown = shown,
     top = s.windowRects[id]?.top,
-    placed = s.offsetInState(id) != null,
+    placed = s.placementOf(id).offset != null,
 )
 
 /**

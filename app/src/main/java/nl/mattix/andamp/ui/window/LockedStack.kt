@@ -39,10 +39,8 @@ object LockedStack {
         val playlist: Playlist = Playlist.CLOSED,
         /** The open windows that cover the column under the player, by their ids. */
         val covers: List<String> = emptyList(),
-        /** Whether the phone is held sideways; see [LockedStack]. */
-        val sideways: Boolean = false,
-        /** The windows of each column, top to bottom. */
-        val columns: List<List<String>> = LockedColumns.defaultFor(sideways),
+        /** The windows of each column, top to bottom: one column upright, two sideways. */
+        val columns: List<List<String>> = LockedColumns.defaultFor(sideways = false),
     )
 
     /** Each window's rectangle by its id; a window that is not listed is not shown. */
@@ -50,13 +48,24 @@ object LockedStack {
         val rects: Map<String, IntRect>,
         /** The most steps the plug-in window's visual may take and still leave the playlist its room. */
         val visMaxSteps: Int = MILKDROP_MIN_STEPS,
-        /** Each column's band of the surface, left to right, for a drag to find its column. */
-        val bands: List<IntRect> = emptyList(),
     )
+
+    /** The column of the surface [x] falls in, with [across] columns; outside them, the nearest. */
+    fun columnAt(
+        x: Int,
+        screenW: Int,
+        across: Int,
+    ): Int = ((x - firstLeft(screenW, across)) / MAIN_W).coerceIn(0, across - 1)
+
+    /** Where the first column begins: the columns stand in the middle of the surface. */
+    private fun firstLeft(
+        screenW: Int,
+        across: Int,
+    ) = (screenW - across * MAIN_W) / 2
 
     fun layout(ask: Ask): Places {
         val across = ask.columns.size
-        val first = (ask.screenW - across * MAIN_W) / 2
+        val first = firstLeft(ask.screenW, across)
         val bands = ask.columns.indices.map { i -> IntRect(first + i * MAIN_W, 0, first + (i + 1) * MAIN_W, ask.safeBottom) }
         val rects = LinkedHashMap<String, IntRect>()
         var visMaxSteps = MILKDROP_MIN_STEPS
@@ -73,7 +82,7 @@ object LockedStack {
             }
         }
         if (ask.covers.isNotEmpty()) cover(ask, rects, bands)
-        return Places(rects, visMaxSteps, bands)
+        return Places(rects, visMaxSteps)
     }
 
     /** How tall each window of one column is; see [heightsOf]. */
@@ -147,9 +156,9 @@ object LockedStack {
         bands: List<IntRect>,
     ) {
         val covered: IntRect
-        if (ask.sideways) {
-            ask.columns[1].forEach { rects.remove(it) }
-            covered = bands[1]
+        if (ask.columns.size > 1) {
+            ask.columns.last().forEach { rects.remove(it) }
+            covered = bands.last()
         } else {
             val top = ask.columns[0].firstOrNull { it in rects } ?: return
             ask.columns[0].drop(1).forEach { rects.remove(it) }

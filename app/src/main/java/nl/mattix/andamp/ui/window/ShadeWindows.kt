@@ -91,17 +91,13 @@ fun WinampState.setShaded(
     val oldH = heightOf(expandedH, was)
     val newH = heightOf(expandedH, shaded)
     if (!doubleSize) {
-        val offset = offsetInState(id)
+        val offset = placementOf(id).offset
         if (offset != null && screenH > 0) {
             placeWindow(id, WindowSizing.anchorTop(offset, oldH = oldH, newH = newH, screenH = screenH))
         }
         carryDockedBelow(id, newH - oldH)
     }
-    when (id) {
-        WindowStore.MAIN -> mainShaded = shaded
-        WindowStore.EQ -> eqShaded = shaded
-        WindowStore.PLAYLIST -> plShaded = shaded
-    }
+    placementOf(id).shaded = shaded
 }
 
 /**
@@ -115,10 +111,4 @@ fun WinampState.unshadeEverything(playlistExpandedH: Int) {
 }
 
 /** Whether [id] is collapsed right now. */
-fun WinampState.isShaded(id: String) =
-    when (id) {
-        WindowStore.MAIN -> mainShaded
-        WindowStore.EQ -> eqShaded
-        WindowStore.PLAYLIST -> plShaded
-        else -> false
-    }
+fun WinampState.isShaded(id: String) = placementOf(id).shaded ?: false

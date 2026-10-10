@@ -46,7 +46,7 @@ class LayoutOwnStateTest {
         s.doubleSize = true
 
         assertFalse(s.mainShaded)
-        assertEquals(false, s.placementOf(WindowStore.MAIN)!!.of(Workspace.LOCKED).shaded)
+        assertEquals(false, s.placementOf(WindowStore.MAIN).of(Workspace.LOCKED).shaded)
     }
 
     @Test
@@ -60,8 +60,8 @@ class LayoutOwnStateTest {
         s.doubleSize = false
         assertEquals("floating: only the player", listOf(true, false), listOf(s.mainShaded, s.eqShaded))
         s.doubleSize = true
-        assertEquals(true, s.placementOf(WindowStore.EQ)!!.of(Workspace.LOCKED).shaded)
-        assertEquals(false, s.placementOf(WindowStore.MAIN)!!.of(Workspace.LOCKED).shaded)
+        assertEquals(true, s.placementOf(WindowStore.EQ).of(Workspace.LOCKED).shaded)
+        assertEquals(false, s.placementOf(WindowStore.MAIN).of(Workspace.LOCKED).shaded)
     }
 
     @Test
@@ -72,7 +72,7 @@ class LayoutOwnStateTest {
 
         s.setShaded(WindowStore.PLAYLIST, false, 290)
 
-        assertEquals(false, s.placementOf(WindowStore.PLAYLIST)!!.of(Workspace.LOCKED).shaded)
+        assertEquals(false, s.placementOf(WindowStore.PLAYLIST).of(Workspace.LOCKED).shaded)
     }
 
     @Test

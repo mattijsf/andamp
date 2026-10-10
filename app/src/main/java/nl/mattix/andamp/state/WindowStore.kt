@@ -52,7 +52,7 @@ data class WindowLayoutMemory(
     /** Each workspace's windows, bottom to top; unknown ids are ignored on load. */
     val orders: Map<Workspace, List<String>> = emptyMap(),
     /** Each locked workspace's columns of windows; see [LockedColumns]. */
-    val stacks: Map<Workspace, List<List<String>>> = emptyMap(),
+    val columns: Map<Workspace, List<List<String>>> = emptyMap(),
     /**
      * Whether nothing has ever been written here: a fresh install.
      *
@@ -65,6 +65,8 @@ data class WindowLayoutMemory(
     fun placementOf(id: String) = placements[id] ?: WindowPlacement()
 
     fun orderOf(workspace: Workspace) = orders[workspace].orEmpty()
+
+    fun columnsOf(workspace: Workspace) = columns[workspace] ?: LockedColumns.defaultFor(workspace.sideways)
 }
 
 class WindowStore(
@@ -95,12 +97,12 @@ class WindowStore(
                 // before there were workspaces, one order served every layout
                 readOrder(if (schema < WORKSPACE_SCHEMA) Workspace.FLOATING else workspace)
             }
-        val stacks =
+        val columns =
             Workspace.entries.filter { it.locked }.associateWith { workspace ->
-                prefs.getString(workspace.stackKey(), null)?.let { LockedColumns.decode(it) }
+                prefs.getString(workspace.columnsKey(), null)?.let { LockedColumns.decode(it) }
                     ?: LockedColumns.defaultFor(workspace.sideways)
             }
-        return WindowLayoutMemory(placements, orders, stacks, firstRun)
+        return WindowLayoutMemory(placements, orders, columns, firstRun)
     }
 
     fun save(memory: WindowLayoutMemory) {
@@ -115,7 +117,9 @@ class WindowStore(
                 Workspace.entries.forEach { workspace ->
                     putString(workspace.orderKey(), memory.orderOf(workspace).joinToString(","))
                 }
-                memory.stacks.forEach { (workspace, columns) -> putString(workspace.stackKey(), LockedColumns.encode(columns)) }
+                Workspace.entries.filter { it.locked }.forEach { workspace ->
+                    putString(workspace.columnsKey(), LockedColumns.encode(memory.columnsOf(workspace)))
+                }
             }.apply()
     }
 
@@ -170,7 +174,7 @@ class WindowStore(
 
     private fun Workspace.orderKey() = if (key.isEmpty()) ORDER else "$key.$ORDER"
 
-    private fun Workspace.stackKey() = "$key.$STACK"
+    private fun Workspace.columnsKey() = "$key.$COLUMNS"
 
     private fun SharedPreferences.readArrangement(prefix: String) =
         WindowArrangement(
@@ -231,7 +235,7 @@ class WindowStore(
         private const val WORKSPACE_SCHEMA = 3
 
         private const val ORDER = "order"
-        private const val STACK = "stack"
+        private const val COLUMNS = "stack"
         private const val X = "x"
         private const val Y = "y"
         private const val SIZE = "size"

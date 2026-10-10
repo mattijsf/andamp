@@ -70,7 +70,7 @@ class PinnedWindowParityTest(
     }
 
     /** Every window's placement as the store would save it. */
-    private fun stored() = WindowStore.WINDOWS.map { vm.state.placementOf(it)?.asMemory() }
+    private fun stored() = WindowStore.WINDOWS.map { vm.state.placementOf(it).asMemory() }
 
     /** Where and how large each window floats: a placement without whether it is collapsed. */
     private fun placesOf(placements: List<WindowPlacement?>) =

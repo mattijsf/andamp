@@ -2,6 +2,9 @@
 
 package nl.mattix.andamp.state
 
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+
 /**
  * The columns a locked workspace holds its windows in: each a list of window ids, top to
  * bottom. Upright one column, sideways two. A listener reorders them by dragging a window
@@ -45,4 +48,28 @@ object LockedColumns {
 
     fun decode(text: String): List<List<String>> =
         text.split('|').map { column -> column.split(',').map { it.trim() }.filter { it.isNotEmpty() } }
+
+    /**
+     * [columns] with [id] moved to the slot under [center]: into [column], before the first
+     * window whose middle is below it. [rects] are where the other windows are; a window
+     * without one is not shown and keeps its place in the list. The others are judged where
+     * they are now, so once the dragged window has passed one, that one moves out of its way
+     * and the two do not trade places again until the drag comes back past its new middle.
+     */
+    fun moved(
+        id: String,
+        center: IntOffset,
+        column: Int,
+        columns: List<List<String>>,
+        rects: Map<String, IntRect>,
+    ): List<List<String>> {
+        if (columns.none { id in it } || column !in columns.indices) return columns
+        val without = columns.map { it.filterNot { other -> other == id } }
+        val shown = without[column].filter { it in rects }
+        val passed = shown.count { rects.getValue(it).center.y <= center.y }
+        val target = without[column].toMutableList()
+        val at = if (passed == 0) 0 else target.indexOf(shown[passed - 1]) + 1
+        target.add(at, id)
+        return without.mapIndexed { i, c -> if (i == column) target else c }
+    }
 }

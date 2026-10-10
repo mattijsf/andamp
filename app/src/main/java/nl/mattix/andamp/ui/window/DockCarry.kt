@@ -42,7 +42,7 @@ internal fun WinampState.carryDockedBelow(
 
     (moving - id).forEach { member ->
         val rect = windowRects[member] ?: return@forEach
-        val offset = offsetInState(member) ?: return@forEach
+        val offset = placementOf(member).offset ?: return@forEach
         // clamped before it is stored, so the stored offset and the published rectangle agree
         placeWindow(
             member,
@@ -75,18 +75,6 @@ private fun hangsUnder(
     val overlaps = above.left < under.right && under.left < above.right
     return flush && overlaps
 }
-
-/** The place a window was put by hand; null while it still follows the stack. */
-internal fun WinampState.offsetInState(id: String): IntOffset? =
-    when (id) {
-        WindowStore.MAIN -> mainOffset
-        WindowStore.EQ -> eqOffset
-        WindowStore.MILKDROP -> milkdropOffset
-        WindowStore.PLAYLIST -> plOffset
-        WindowStore.LIBRARY -> libraryOffset
-        WindowStore.SKINS -> skinManagerOffset
-        else -> null
-    }
 
 /** How many pixels apart two docked edges may read back; the same slack [DockGroup] allows. */
 private const val FLUSH_SLACK = 2

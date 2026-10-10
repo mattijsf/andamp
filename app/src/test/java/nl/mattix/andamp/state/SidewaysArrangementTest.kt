@@ -65,7 +65,7 @@ class SidewaysArrangementTest {
         s.sideways = true
         s.libraryOffset = IntOffset(-30, 0)
 
-        val memory = s.placementOf(WindowStore.LIBRARY)!!.asMemory()
+        val memory = s.placementOf(WindowStore.LIBRARY).asMemory()
 
         assertEquals(WindowArrangement(x = 10, y = 20, cols = 0), memory.of(Workspace.FLOATING))
         assertEquals(WindowArrangement(x = -30, y = 0, cols = 0), memory.of(Workspace.FLOATING_SIDEWAYS))

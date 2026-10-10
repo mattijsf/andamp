@@ -31,20 +31,8 @@ class LockedStackTest {
         playlist: Playlist = Playlist.OPEN,
         covers: List<String> = emptyList(),
         safeBottom: Int = this.safeBottom,
-        sideways: Boolean = false,
-        columns: List<List<String>> = LockedColumns.defaultFor(sideways),
-    ) = LockedStack.Ask(
-        screenW,
-        safeBottom,
-        mainH,
-        eqH,
-        visChromeH,
-        visSteps,
-        playlist,
-        covers,
-        sideways,
-        columns,
-    )
+        columns: List<List<String>> = LockedColumns.defaultFor(sideways = false),
+    ) = LockedStack.Ask(screenW, safeBottom, mainH, eqH, visChromeH, visSteps, playlist, covers, columns)
 
     @Test
     fun `the columns are laid out in the order they are given, the playlist filling wherever it stands`() {
@@ -103,7 +91,6 @@ class LockedStackTest {
 
         assertEquals(IntRect(10, 116, 10 + MAIN_W, 400 - 116), places.rects[WindowStore.PLAYLIST])
         assertEquals(IntRect(10, 400 - 116, 10 + MAIN_W, 400), places.rects[WindowStore.EQ])
-        assertEquals(2, places.bands.size)
     }
 
     private fun rects(ask: LockedStack.Ask) = LockedStack.layout(ask).rects
@@ -234,7 +221,6 @@ class LockedStackTest {
         visSteps = visSteps,
         playlist = playlist,
         covers = covers,
-        sideways = true,
         columns = columns,
     )
 
@@ -272,6 +258,16 @@ class LockedStackTest {
 
         assertEquals(setOf(WindowStore.MAIN, WindowStore.EQ, WindowStore.LIBRARY), rects.keys)
         assertEquals(IntRect(10 + MAIN_W, 0, 10 + 2 * MAIN_W, 232), rects[WindowStore.LIBRARY])
+    }
+
+    @Test
+    fun `a drag finds its column by where it is across the surface`() {
+        // two columns in the middle of a 601 wide surface: 25..300 and 300..575
+        assertEquals(0, LockedStack.columnAt(100, screenW = 601, across = 2))
+        assertEquals(1, LockedStack.columnAt(400, screenW = 601, across = 2))
+        assertEquals("outside the columns, the nearest", 1, LockedStack.columnAt(600, screenW = 601, across = 2))
+        assertEquals(0, LockedStack.columnAt(-50, screenW = 601, across = 2))
+        assertEquals(0, LockedStack.columnAt(900, screenW = 601, across = 1))
     }
 
     @Test

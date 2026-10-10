@@ -37,7 +37,7 @@ class StackShadeMemoryTest {
         vm.state.setShaded(WindowStore.EQ, true, EQ_H)
         settle()
 
-        val stored = vm.state.placementOf(WindowStore.EQ)!!.asMemory()
+        val stored = vm.state.placementOf(WindowStore.EQ).asMemory()
         assertEquals(true, stored.of(Workspace.LOCKED).shaded)
         assertEquals("not with the floating layout", false, stored.of(Workspace.FLOATING).shaded)
     }

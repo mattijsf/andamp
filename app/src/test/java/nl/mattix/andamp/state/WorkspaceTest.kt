@@ -82,7 +82,7 @@ class WorkspaceTest {
         val s = WinampState()
         s.enter(Workspace.LOCKED)
         // the layout pass left one column with the player, the equalizer and the playlist in it
-        s.lockedBands = listOf(IntRect(0, 0, 275, 584))
+        s.screenW = 275
         s.windowRects[WindowStore.MAIN] = IntRect(0, 0, 275, 116)
         s.windowRects[WindowStore.EQ] = IntRect(0, 116, 275, 232)
         s.windowRects[WindowStore.PLAYLIST] = IntRect(0, 232, 275, 584)
@@ -120,7 +120,7 @@ class WorkspaceTest {
         s.libraryOpen = true
         s.eqVisible = false
 
-        val memory = s.placementOf(WindowStore.EQ)!!.asMemory()
+        val memory = s.placementOf(WindowStore.EQ).asMemory()
 
         assertEquals(false, memory.of(Workspace.LOCKED).open)
         assertEquals(true, memory.of(Workspace.FLOATING).open)
