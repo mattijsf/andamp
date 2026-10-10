@@ -6,6 +6,7 @@ import android.os.SystemClock
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
 import nl.mattix.andamp.ui.widget.HIT_SLOP
 import nl.mattix.andamp.ui.widget.Widget
 import nl.mattix.andamp.ui.widget.distanceSquaredTo
@@ -28,7 +29,29 @@ data class WindowScreen(
     val height: Int,
     val safeTop: Int,
     val safeBottom: Int,
-)
+) {
+    /** The top-left corner of a window of [size] whose center-relative offset is [offset]. */
+    fun topLeftOf(
+        offset: IntOffset,
+        size: IntSize,
+    ): IntOffset = IntOffset((width - size.width) / 2 + offset.x, (height - size.height) / 2 + offset.y)
+
+    /** The center-relative offset that puts a window of [size] with its top-left corner at [topLeft]. */
+    fun offsetOf(
+        topLeft: IntOffset,
+        size: IntSize,
+    ): IntOffset = IntOffset(topLeft.x - (width - size.width) / 2, topLeft.y - (height - size.height) / 2)
+
+    fun offsetOf(rect: IntRect): IntOffset = offsetOf(rect.topLeft, rect.size)
+
+    fun rectOf(
+        offset: IntOffset,
+        size: IntSize,
+    ): IntRect = IntRect(topLeftOf(offset, size), size)
+
+    /** The band a window's handle stays in; the snap offers its edges. */
+    val safeArea: IntRect get() = IntRect(0, safeTop, width, safeBottom)
+}
 
 /**
  * The screen this window sits on, measured from the container it was given and published to
@@ -54,78 +77,30 @@ internal fun androidx.compose.foundation.layout.BoxWithConstraintsScope.windowSc
     androidx.compose.runtime.SideEffect {
         state.screenW = screen.width
         state.screenH = screen.height
+        state.safeTop = screen.safeTop
         state.safeBottom = screen.safeBottom
     }
     return screen
 }
 
-/** A window's top-left on screen, from its center-relative offset. */
-internal fun topLeftOf(
-    offset: IntOffset,
-    width: Int,
-    height: Int,
-    screenW: Int,
-    screenH: Int,
-): IntOffset = IntOffset((screenW - width) / 2 + offset.x, (screenH - height) / 2 + offset.y)
-
-/**
- * Where a window's top-left lands on the screen, in device pixels.
- *
- * The centering is done in virtual pixels. [androidx.compose.ui.Alignment.Center] rounds in
- * device pixels, which would put the drawn window a pixel away from the rectangle other
- * windows dock against.
- */
-internal fun devicePlacementOf(
-    offset: IntOffset,
-    width: Int,
-    height: Int,
-    screenW: Int,
-    screenH: Int,
-    scale: Int,
-): IntOffset {
-    val topLeft = topLeftOf(offset, width, height, screenW, screenH)
-    return IntOffset(topLeft.x * scale, topLeft.y * scale)
-}
-
-/**
- * The center-relative offset that puts a window's top-left corner at [topLeft]: what
- * [topLeftOf] is undone by.
- */
-internal fun offsetOfTopLeft(
-    topLeft: IntOffset,
-    width: Int,
-    height: Int,
-    screenW: Int,
-    screenH: Int,
-): IntOffset = IntOffset(topLeft.x - (screenW - width) / 2, topLeft.y - (screenH - height) / 2)
-
-internal fun rectOf(
-    offset: IntOffset,
-    width: Int,
-    height: Int,
-    screenW: Int,
-    screenH: Int,
-): IntRect {
-    val topLeft = topLeftOf(offset, width, height, screenW, screenH)
-    return IntRect(topLeft.x, topLeft.y, topLeft.x + width, topLeft.y + height)
-}
+/** A window traveling with the dragged one: where it is now, and how tall its handle is. */
+class CarriedWindow(
+    val rect: IntRect,
+    val handle: Int,
+)
 
 /**
  * Where a window asked to sit at [offset] ends up: docked against whatever is near it, then
  * clamped to stay grabbable.
  *
  * The clamp runs last, because a title bar under the gesture bar cannot be picked up again.
- * The screen the window docks against ends at [safeBottom] for the same reason.
+ * The screen the window docks against ends at the safe bottom for the same reason.
  */
 @Suppress("LongParameterList") // one window, one screen, and the neighbours between them
 internal fun settle(
     offset: IntOffset,
-    width: Int,
-    height: Int,
-    screenW: Int,
-    screenH: Int,
-    safeTop: Int,
-    safeBottom: Int,
+    size: IntSize,
+    screen: WindowScreen,
     titleH: Int,
     neighbours: List<IntRect>,
     /**
@@ -135,60 +110,42 @@ internal fun settle(
      * first pixel.
      */
     escaped: Boolean = true,
-    /** The windows traveling with this one. */
-    carried: List<IntRect> = emptyList(),
-    /** Each carried window's handle height, in [carried]'s order. */
-    carriedHandles: List<Int> = emptyList(),
-    /** Where this window is now; null when nothing is carried. */
+    /** Where this window is now; null before it has been laid out. */
     anchorNow: IntRect? = null,
+    /** The windows traveling with this one. */
+    carried: List<CarriedWindow> = emptyList(),
 ): IntOffset {
-    val topLeft = topLeftOf(offset, width, height, screenW, screenH)
-    val target = IntRect(topLeft.x, topLeft.y, topLeft.x + width, topLeft.y + height)
+    val target = screen.rectOf(offset, size)
+    val rects = carried.map { it.rect }
     // a group docks by its outer edges
-    val whole = if (anchorNow == null) target else DockGroup.bounds(target, anchorNow, carried)
-    val here = if (anchorNow == null) null else DockGroup.bounds(anchorNow, anchorNow, carried)
-    val candidates =
-        if (escaped || here == null) {
-            neighbours
-        } else {
-            neighbours.filterNot { DockGroup.touching(here, it) }
-        }
-    val snapped =
-        WindowSnap.snap(
-            target = whole,
-            others = candidates,
-            // until the drag has escaped, the screen's edges are moved out of reach
-            screen =
-                if (escaped) {
-                    IntRect(0, safeTop, screenW, safeBottom)
-                } else {
-                    IntRect(-SCREEN_AWAY, safeTop - SCREEN_AWAY, screenW + SCREEN_AWAY, safeBottom + SCREEN_AWAY)
-                },
-        )
-    val moved = IntOffset(offset.x + (snapped.x - whole.left), offset.y + (snapped.y - whole.top))
-    if (anchorNow == null || carried.isEmpty()) {
-        return WindowBounds.clamp(moved, width, height, screenW, screenH, titleH, safeTop = safeTop, safeBottom = safeBottom)
-    }
+    val whole = if (anchorNow == null) target else DockGroup.bounds(target, anchorNow, rects)
+    val here = if (anchorNow == null) null else DockGroup.bounds(anchorNow, anchorNow, rects)
+    val candidates = if (escaped || here == null) neighbours else neighbours.filterNot { DockGroup.touching(here, it) }
+    // until the drag has escaped, the screen's edges are not offered either
+    val snapped = WindowSnap.snap(whole, candidates, screen = screen.safeArea.takeIf { escaped })
+    val moved = offset + (snapped - whole.topLeft)
+    if (anchorNow == null || carried.isEmpty()) return WindowBounds.clamp(moved, size, screen, titleH)
 
     // A group snaps as one rectangle, so it clamps as one too: on each axis the travel is
     // limited to what keeps every member where it may be on its own, so no member is
     // clamped away from the others when it is laid out.
-    val members = carried.mapIndexed { i, rect -> rect to carriedHandles.getOrElse(i) { titleH } } + (anchorNow to titleH)
-    val askedX = (screenW - width) / 2 + moved.x - anchorNow.left
-    val askedY = (screenH - height) / 2 + moved.y - anchorNow.top
+    val members = carried.map { it.rect to it.handle } + (anchorNow to titleH)
+    val asked = screen.topLeftOf(moved, size) - anchorNow.topLeft
     val travelX =
         WindowBounds.travel(
-            askedX,
+            asked.x,
             members.map { (rect, _) ->
-                WindowBounds.leftRange(rect.width, screenW).shiftedBy(-rect.left)
+                WindowBounds.leftRange(rect.width, screen.width).shiftedBy(-rect.left)
             },
         )
     val travelY =
         WindowBounds.travel(
-            askedY,
-            members.map { (rect, handle) -> WindowBounds.topRange(handle, safeTop, safeBottom).shiftedBy(-rect.top) },
+            asked.y,
+            members.map { (rect, handle) ->
+                WindowBounds.topRange(handle, screen.safeTop, screen.safeBottom).shiftedBy(-rect.top)
+            },
         )
-    return IntOffset(moved.x + travelX - askedX, moved.y + travelY - askedY)
+    return IntOffset(moved.x + travelX - asked.x, moved.y + travelY - asked.y)
 }
 
 /**
@@ -282,8 +239,8 @@ internal fun windowChromeWidget(
     resize: WindowResize,
     offsetNow: () -> IntOffset,
     heightNow: () -> Int,
-    /** Where the window now is, and how far this event moved it. */
-    onMove: (place: IntOffset, delta: IntOffset) -> Unit,
+    /** Where the window now is, and how far the drag has taken it since the grab. */
+    onMove: (place: IntOffset, travelled: IntOffset) -> Unit,
     /** The size the finger is asking for, unquantized, with the grab it is measured from. */
     onResize: (WindowGrab) -> Unit,
     onEnd: () -> Unit = {},
@@ -362,8 +319,7 @@ internal fun windowChromeWidget(
                     val next = drag.settle?.invoke(target, drag.escaped) ?: target
                     // the place is absolute: several events land per frame, and a caller
                     // adding a delta to what it last composed would lose all but the first
-                    val previous = drag.applied ?: drag.live
-                    onMove(next, IntOffset(next.x - previous.x, next.y - previous.y))
+                    onMove(next, next - drag.origin)
                     drag.applied = next
                 },
                 onUp = { pos, inside ->
@@ -438,9 +394,6 @@ private fun travelled(
     target: IntOffset,
     origin: IntOffset,
 ) = maxOf(abs(target.x - origin.x), abs(target.y - origin.y))
-
-/** How far the screen's edges are moved out while a drag has not escaped, so they do not snap. */
-private const val SCREEN_AWAY = 10_000
 
 /** The side of the square in the bottom-right corner that the resize grip answers to. */
 internal const val RESIZE_GRIP = 20

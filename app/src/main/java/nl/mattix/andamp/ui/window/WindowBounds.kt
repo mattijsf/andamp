@@ -3,34 +3,30 @@
 package nl.mattix.andamp.ui.window
 
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 
 /**
  * Keeps floating windows reachable.
  *
  * A window may hang off the left or right edge by up to half its width. Vertically its title
- * bar must stay between [clamp]'s `safeTop` and `safeBottom`: the system's gesture bar sits
+ * bar must stay between the screen's safe top and safe bottom: the system's gesture bar sits
  * inside the screen bounds, and a title bar under it cannot be grabbed.
  *
  * The rules are stated once, as the rows and columns a window's top-left corner may take, so
  * a window clamped on its own and one clamped as part of a group land on the same pixel.
  */
 object WindowBounds {
-    @Suppress("LongParameterList") // the safe area needs both edges
     fun clamp(
         offset: IntOffset,
-        windowW: Int,
-        windowH: Int,
-        screenW: Int,
-        screenH: Int,
+        size: IntSize,
+        screen: WindowScreen,
         titleH: Int,
-        safeTop: Int = 0,
-        safeBottom: Int = screenH,
     ): IntOffset {
         // offsets are measured from the container's center
-        val centeredLeft = (screenW - windowW) / 2
-        val centeredTop = (screenH - windowH) / 2
-        val lefts = leftRange(windowW, screenW)
-        val tops = topRange(titleH, safeTop, safeBottom)
+        val centeredLeft = (screen.width - size.width) / 2
+        val centeredTop = (screen.height - size.height) / 2
+        val lefts = leftRange(size.width, screen.width)
+        val tops = topRange(titleH, screen.safeTop, screen.safeBottom)
         return IntOffset(
             offset.x.coerceIn(lefts.first - centeredLeft, lefts.last - centeredLeft),
             offset.y.coerceIn(tops.first - centeredTop, tops.last - centeredTop),

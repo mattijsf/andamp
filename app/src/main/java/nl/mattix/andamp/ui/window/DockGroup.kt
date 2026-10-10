@@ -10,10 +10,34 @@ import androidx.compose.ui.unit.IntRect
  * what a snap leaves.
  */
 object DockGroup {
+    /**
+     * How many pixels apart two docked edges may read back: a window's place is a
+     * center-relative offset that goes through integer division, so a stack snapped flush
+     * can read back a pixel apart.
+     */
+    const val FLUSH_SLACK = 2
+
     /** [anchor] and everything flush against it, directly or through others. */
     fun of(
         anchor: String,
         rects: Map<String, IntRect>,
+    ): Set<String> = closure(anchor, rects, ::touching)
+
+    /**
+     * [anchor] and everything hanging under it, directly or through others: what follows
+     * it when it changes height. The group also reaches sideways, and a window under a
+     * side-by-side neighbor stays with that neighbor.
+     */
+    fun below(
+        anchor: String,
+        rects: Map<String, IntRect>,
+    ): Set<String> = closure(anchor, rects) { above, under -> hangsUnder(above, under) }
+
+    /** [anchor] and every window reached from it through [attached], grown until nothing more joins. */
+    private fun closure(
+        anchor: String,
+        rects: Map<String, IntRect>,
+        attached: (IntRect, IntRect) -> Boolean,
     ): Set<String> {
         val group = mutableSetOf(anchor)
         var grew = true
@@ -21,7 +45,7 @@ object DockGroup {
             grew = false
             rects.forEach { (id, rect) ->
                 if (id in group) return@forEach
-                if (group.any { member -> rects[member]?.let { touching(it, rect) } == true }) {
+                if (group.any { member -> rects[member]?.let { attached(it, rect) } == true }) {
                     group += id
                     grew = true
                 }
@@ -29,6 +53,12 @@ object DockGroup {
         }
         return group
     }
+
+    /** Whether [under] sits directly beneath [above], sharing some width with it. */
+    fun hangsUnder(
+        above: IntRect,
+        under: IntRect,
+    ): Boolean = near(above.bottom, under.top) && above.left < under.right && under.left < above.right
 
     /**
      * The rectangle a whole group covers once its anchor has been moved to [anchorAt], so a
@@ -56,13 +86,7 @@ object DockGroup {
             )
         }
 
-    /**
-     * Edge against edge, with an overlap along the other axis.
-     *
-     * Edges up to [FLUSH_SLACK] px apart count: a window's place is a center-relative offset
-     * that goes through integer division, so a stack snapped flush can read back a pixel
-     * apart.
-     */
+    /** Edge against edge, with an overlap along the other axis; see [FLUSH_SLACK]. */
     fun touching(
         a: IntRect,
         b: IntRect,
@@ -79,6 +103,4 @@ object DockGroup {
         a: Int,
         b: Int,
     ) = kotlin.math.abs(a - b) <= FLUSH_SLACK
-
-    private const val FLUSH_SLACK = 2
 }

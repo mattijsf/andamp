@@ -15,6 +15,7 @@ import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.core.model.displayName
 import nl.mattix.andamp.ui.window.LockedStack
+import nl.mattix.andamp.ui.window.WindowScreen
 import nl.mattix.andamp.visualizer.core.PresetGaps
 
 /**
@@ -343,8 +344,17 @@ class WinampState {
     /** The skin browser's width index. */
     var skinCols: Int by colsOf(WindowStore.SKINS)
 
+    /** The first row a window's handle may be on: below the strip kept for the notification shade. */
+    var safeTop by mutableIntStateOf(0)
+
     /** The lowest row a window may reach: the screen minus the gesture bar. */
     var safeBottom by mutableIntStateOf(0)
+
+    /**
+     * The screen as the layout pass last published it, for the code that places windows
+     * outside a layout pass; before the first one, the whole screen is safe.
+     */
+    fun screen() = WindowScreen(screenW, screenH, safeTop, safeBottom.takeIf { it > 0 } ?: screenH)
 
     /**
      * Every visible window's rectangle in screen space, for docking. Written by the
@@ -470,13 +480,7 @@ class WinampState {
     }
 
     /** A window's current offset, computed from the rectangle it published. */
-    fun offsetOfWindow(id: String): androidx.compose.ui.unit.IntOffset? {
-        val rect = windowRects[id] ?: return null
-        return androidx.compose.ui.unit.IntOffset(
-            rect.left - (screenW - rect.width) / 2,
-            rect.top - (screenH - rect.height) / 2,
-        )
-    }
+    fun offsetOfWindow(id: String): IntOffset? = windowRects[id]?.let { screen().offsetOf(it) }
 
     /** Puts a window at [moved]; used for the carried windows of a group drag. */
     fun placeWindow(

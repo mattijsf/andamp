@@ -29,7 +29,8 @@ object WindowSnap {
     fun snap(
         target: IntRect,
         others: List<IntRect>,
-        screen: IntRect,
+        /** The screen whose edges attract too, or null while they are not to. */
+        screen: IntRect?,
         distance: Int = SNAP_DISTANCE,
     ): IntOffset {
         val x = Axis(distance)
@@ -50,10 +51,12 @@ object WindowSnap {
             }
         }
         // the screen's edges are offered after the windows, so a window wins a tie
-        x.offer(screen.left - target.left)
-        x.offer(screen.right - target.right)
-        y.offer(screen.top - target.top)
-        y.offer(screen.bottom - target.bottom)
+        if (screen != null) {
+            x.offer(screen.left - target.left)
+            x.offer(screen.right - target.right)
+            y.offer(screen.top - target.top)
+            y.offer(screen.bottom - target.bottom)
+        }
         return IntOffset(target.left + x.correction, target.top + y.correction)
     }
 

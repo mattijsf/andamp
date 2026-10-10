@@ -39,6 +39,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -93,8 +95,8 @@ import nl.mattix.andamp.ui.window.PlaylistShadeFloatWindow
 import nl.mattix.andamp.ui.window.SkinManagerWindow
 import nl.mattix.andamp.ui.window.StackMember
 import nl.mattix.andamp.ui.window.SurfaceScreen
+import nl.mattix.andamp.ui.window.WindowScreen
 import nl.mattix.andamp.ui.window.WindowStacking
-import nl.mattix.andamp.ui.window.dockedAt
 import nl.mattix.andamp.ui.window.dockedStackHeight
 import nl.mattix.andamp.ui.window.eqShadeWidgets
 import nl.mattix.andamp.ui.window.eqWindowWidgets
@@ -564,6 +566,7 @@ private fun FloatingWindows(
 
     // the stack starts below the strip the system keeps for the notification shade
     val top = grabbableTop(scale, LocalDensity.current)
+    val screen = WindowScreen(screenW, screenH, safeTop = top, safeBottom = safeBottom)
     // Where the windows sit until they are moved. Upright, one column in the middle of the
     // screen, with the playlist under the stack and as tall as what is left. Sideways, the
     // player and the equalizer on the left and the playlist beside them, as tall as the two.
@@ -601,7 +604,7 @@ private fun FloatingWindows(
                         scale,
                         widgets = mainWidgets,
                         height = mainH,
-                        defaultOffset = dockedAt(stackLeft, top, MAIN_W, mainH, screenW, screenH),
+                        defaultOffset = screen.offsetOf(IntOffset(stackLeft, top), IntSize(MAIN_W, mainH)),
                         modifier = Modifier.fillMaxSize().zIndex(z),
                         onLongPress = onLongPress,
                         pinnedAt = pin?.topLeft,
@@ -616,7 +619,7 @@ private fun FloatingWindows(
                             scale,
                             widgets = eqWidgets,
                             height = eqH,
-                            defaultOffset = dockedAt(stackLeft, top + mainH, EQ_W, eqH, screenW, screenH),
+                            defaultOffset = screen.offsetOf(IntOffset(stackLeft, top + mainH), IntSize(EQ_W, eqH)),
                             modifier = Modifier.fillMaxSize().zIndex(z),
                             onLongPress = onLongPress,
                             pinnedAt = pin?.topLeft,

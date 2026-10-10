@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.ui.ScaledWindowCanvas
 import nl.mattix.andamp.ui.SkinCut
@@ -111,16 +112,15 @@ fun FloatingSkinWindow(
                 resize = resize,
                 offsetNow = { place() },
                 heightNow = { height },
-                onMove = { place, _ ->
-                    // a drag lifts a held window out of the layout, which decides where it goes
-                    if (pinned) state.liftWindow(id, IntOffset(place.x - drag.origin.x, place.y - drag.origin.y))
-                    if (!pinned) {
+                onMove = { place, travelled ->
+                    if (pinned) {
+                        // a drag lifts a held window out of the layout, which decides where it goes
+                        state.liftWindow(id, travelled)
+                    } else {
                         onMoveNow(place)
                         // measured from where the drag began, so the carried windows do not
                         // drift from it event by event
-                        if (dragsGroup) {
-                            group.carry(state, id, IntOffset(place.x - drag.origin.x, place.y - drag.origin.y))
-                        }
+                        if (dragsGroup) group.carry(state, id, travelled)
                     }
                 },
                 onResize = { grab -> onResizeNow?.invoke(grab) },
@@ -141,32 +141,26 @@ fun FloatingSkinWindow(
 
     BoxWithConstraints(modifier) {
         val screen = windowScreen(scale, state)
-        val screenW = screen.width
-        val screenH = screen.height
-        val safeBottom = screen.safeBottom
-        val safeTop = screen.safeTop
+        val size = IntSize(width, height)
         val settleTo: (IntOffset, Boolean) -> IntOffset = held@{ asked, escaped ->
-            // the group is worked out before the first move, because the window must not
-            // dock to what it is about to carry. A held window neither docks nor is kept in
-            // reach: it follows the finger, and the layout places it.
-            val carried = if (dragsGroup && !pinned) group.ensure(state, id) else emptySet()
-            val luggage = carried.mapNotNull { member -> state.windowRects[member]?.let { member to it } }
+            // a held window neither docks nor is kept in reach: it follows the finger, and
+            // the layout places it
             if (pinned) return@held asked
+            // the group is worked out before the first move, because the window must not
+            // dock to what it is about to carry
+            val carried = if (dragsGroup) group.ensure(state, id) else emptySet()
             settle(
                 asked,
-                width,
-                height,
-                screenW,
-                screenH,
-                safeTop,
-                safeBottom,
+                size,
+                screen,
                 titleH,
                 neighbours = state.neighboursOf(id, carried),
                 escaped = escaped,
-                // a group docks by its outer edges
-                carried = luggage.map { it.second },
-                carriedHandles = luggage.map { state.windowHandles[it.first] ?: titleH },
                 anchorNow = state.windowRects[id],
+                carried =
+                    carried.mapNotNull { member ->
+                        state.windowRects[member]?.let { CarriedWindow(it, state.windowHandles[member] ?: titleH) }
+                    },
             )
         }
         SideEffect {
@@ -177,19 +171,8 @@ fun FloatingSkinWindow(
             drag.syncToLayout()
         }
         // a pinned window is where the layout says, with nothing to keep in reach
-        val bounded =
-            pinnedAt?.let { offsetOfTopLeft(it, width, height, screenW, screenH) }
-                ?: WindowBounds.clamp(
-                    place(),
-                    width,
-                    height,
-                    screenW,
-                    screenH,
-                    titleH,
-                    safeTop = safeTop,
-                    safeBottom = safeBottom,
-                )
-        val rect = rectOf(bounded, width, height, screenW, screenH)
+        val bounded = pinnedAt?.let { screen.offsetOf(it, size) } ?: WindowBounds.clamp(place(), size, screen, titleH)
+        val rect = screen.rectOf(bounded, size)
         SideEffect { state.windowRects[id] = rect }
         DisposableEffect(id) {
             onDispose {
@@ -197,10 +180,10 @@ fun FloatingSkinWindow(
                 state.windowHandles.remove(id)
             }
         }
-        Box(
-            Modifier
-                .offset { devicePlacementOf(bounded, width, height, screenW, screenH, scale) },
-        ) {
+        // centered in virtual pixels and scaled after: Alignment.Center rounds in device
+        // pixels, which would put the drawn window a pixel away from the rectangle other
+        // windows dock against
+        Box(Modifier.offset { IntOffset(rect.left * scale, rect.top * scale) }) {
             ScaledWindowCanvas(
                 width,
                 height,

@@ -2,7 +2,6 @@
 
 package nl.mattix.andamp.ui.window
 
-import androidx.compose.ui.unit.IntOffset
 import nl.mattix.andamp.core.model.durationSec
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WindowStore
@@ -16,30 +15,6 @@ import nl.mattix.andamp.state.WindowStore
  * rectangles with no pressed art.
  */
 const val SHADE_H = 14
-
-/**
- * The center-relative offset that puts the top edge of a window [height] tall on [row], in
- * the middle of the screen.
- */
-fun dockedOffset(
-    row: Int,
-    height: Int,
-    screenH: Int,
-) = dockedAt(left = null, row = row, width = 0, height = height, screenW = 0, screenH = screenH)
-
-/**
- * The center-relative offset that puts a window's top-left corner on [row], with its left
- * edge on [left], or in the middle of the screen when it has no column of its own.
- */
-@Suppress("LongParameterList") // a corner, a size and a screen
-fun dockedAt(
-    left: Int?,
-    row: Int,
-    width: Int,
-    height: Int,
-    screenW: Int,
-    screenH: Int,
-) = IntOffset(left?.let { it - (screenW - width) / 2 } ?: 0, row - (screenH - height) / 2)
 
 /** A window's height, given whether it is collapsed. */
 fun heightOf(

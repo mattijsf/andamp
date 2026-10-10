@@ -104,8 +104,7 @@ fun LibraryWindow(
                         val resized =
                             WindowSizing.resize(
                                 grab,
-                                screenW = screen.width,
-                                screenH = screen.height,
+                                screen,
                                 heightAxis =
                                     SizeAxis(
                                         furniture = frame.chromeH + LibraryLayout.FURNITURE_H,

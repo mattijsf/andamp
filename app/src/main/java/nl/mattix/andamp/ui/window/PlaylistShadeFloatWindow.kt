@@ -6,6 +6,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
@@ -46,7 +47,7 @@ fun PlaylistShadeFloatWindow(
         width = width,
         height = SHADE_H,
         offset = s.plOffset,
-        defaultOffset = dockedAt(dockedLeft, dockedTop, width, SHADE_H, s.screenW, s.screenH),
+        defaultOffset = s.screen().offsetOf(IntOffset(dockedLeft ?: (s.screenW - width) / 2, dockedTop), IntSize(width, SHADE_H)),
         onMove = { s.plOffset = it },
         cut = SkinCut(skin),
         pinnedAt = pinnedAt,
@@ -54,8 +55,7 @@ fun PlaylistShadeFloatWindow(
             val resized =
                 WindowSizing.resize(
                     grab,
-                    screenW = s.screenW,
-                    screenH = s.screenH,
+                    s.screen(),
                     // shaded, the height is fixed
                     heightAxis = SizeAxis(furniture = SHADE_H, step = 1, min = 0, max = 0, current = 0),
                     heightOf = { SHADE_H },

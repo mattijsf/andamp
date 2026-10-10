@@ -85,8 +85,7 @@ fun SkinManagerWindow(
                         val resized =
                             WindowSizing.resize(
                                 grab,
-                                screenW = screen.width,
-                                screenH = screen.height,
+                                screen,
                                 heightAxis =
                                     SizeAxis(
                                         furniture = SkinManagerLayout.furnitureH(frame),

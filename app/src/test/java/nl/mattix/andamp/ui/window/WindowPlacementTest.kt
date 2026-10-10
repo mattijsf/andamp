@@ -3,6 +3,7 @@
 package nl.mattix.andamp.ui.window
 
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Test
@@ -89,3 +90,25 @@ class WindowPlacementTest {
         assertEquals(rect.top * scale, placed.y)
     }
 }
+
+/** Where a window's top-left lands in device pixels: centered in virtual pixels, then scaled. */
+@Suppress("LongParameterList") // a window, a screen and the scale, as the layout sees them
+private fun devicePlacementOf(
+    offset: IntOffset,
+    w: Int,
+    h: Int,
+    screenW: Int,
+    screenH: Int,
+    scale: Int,
+): IntOffset {
+    val topLeft = WindowScreen(screenW, screenH, 0, screenH).topLeftOf(offset, IntSize(w, h))
+    return IntOffset(topLeft.x * scale, topLeft.y * scale)
+}
+
+private fun rectOf(
+    offset: IntOffset,
+    w: Int,
+    h: Int,
+    screenW: Int,
+    screenH: Int,
+) = WindowScreen(screenW, screenH, 0, screenH).rectOf(offset, IntSize(w, h))

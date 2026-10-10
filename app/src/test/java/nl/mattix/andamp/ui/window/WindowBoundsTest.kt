@@ -3,6 +3,7 @@
 package nl.mattix.andamp.ui.window
 
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import kotlin.math.abs
@@ -19,7 +20,7 @@ class WindowBoundsTest {
     private fun clamp(
         x: Int,
         y: Int,
-    ) = WindowBounds.clamp(IntOffset(x, y), w, h, screenW, screenH, titleH)
+    ) = WindowBounds.clamp(IntOffset(x, y), IntSize(w, h), WindowScreen(screenW, screenH, 0, screenH), titleH)
 
     private fun top(y: Int) = (screenH - h) / 2 + clamp(0, y).y
 
@@ -56,13 +57,19 @@ class WindowBoundsTest {
 
     @Test
     fun `a window wider than the screen still cannot vanish`() {
-        val wide = WindowBounds.clamp(IntOffset(10_000, 0), 400, h, screenW, screenH, titleH)
+        val wide = WindowBounds.clamp(IntOffset(10_000, 0), IntSize(400, h), WindowScreen(screenW, screenH, 0, screenH), titleH)
         assertEquals(true, wide.x <= 400 / 2)
     }
 
     @Test
     fun `a window taller than the screen still keeps its title bar reachable`() {
-        val tall = WindowBounds.clamp(IntOffset(0, -100_000), w, 2000, screenW, screenH, titleH)
+        val tall =
+            WindowBounds.clamp(
+                IntOffset(0, -100_000),
+                IntSize(w, 2000),
+                WindowScreen(screenW, screenH, 0, screenH),
+                titleH,
+            )
         val topOfTall = (screenH - 2000) / 2 + tall.y
         assertEquals(0, topOfTall)
     }
@@ -74,16 +81,7 @@ class WindowBoundsTest {
         val gestureBar = 24
         val safeBottom = screenH - gestureBar
         val far =
-            WindowBounds.clamp(
-                IntOffset(0, 100_000),
-                w,
-                h,
-                screenW,
-                screenH,
-                titleH,
-                safeTop = 0,
-                safeBottom = safeBottom,
-            )
+            WindowBounds.clamp(IntOffset(0, 100_000), IntSize(w, h), WindowScreen(screenW, screenH, 0, safeBottom), titleH)
         val topEdge = (screenH - h) / 2 + far.y
         assertEquals(safeBottom - titleH, topEdge)
     }
@@ -92,16 +90,7 @@ class WindowBoundsTest {
     fun `the title bar stays below a status bar inset too`() {
         val statusBar = 40
         val far =
-            WindowBounds.clamp(
-                IntOffset(0, -100_000),
-                w,
-                h,
-                screenW,
-                screenH,
-                titleH,
-                safeTop = statusBar,
-                safeBottom = screenH,
-            )
+            WindowBounds.clamp(IntOffset(0, -100_000), IntSize(w, h), WindowScreen(screenW, screenH, statusBar, screenH), titleH)
         assertEquals(statusBar, (screenH - h) / 2 + far.y)
     }
 }

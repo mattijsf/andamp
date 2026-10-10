@@ -6,6 +6,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.IntOffset
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WinampViewModel
@@ -237,8 +238,8 @@ class ShadeInteractionTest {
         val screen = 533
         val row = 60
 
-        val full = dockedOffset(row, MAIN_H, screen)
-        val shaded = dockedOffset(row, SHADE_H, screen)
+        val full = IntOffset(0, row - (screen - MAIN_H) / 2)
+        val shaded = IntOffset(0, row - (screen - SHADE_H) / 2)
 
         assertEquals(row, (screen - MAIN_H) / 2 + full.y)
         assertEquals(row, (screen - SHADE_H) / 2 + shaded.y)

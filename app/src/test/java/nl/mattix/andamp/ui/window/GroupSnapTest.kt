@@ -4,6 +4,7 @@ package nl.mattix.andamp.ui.window
 
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -43,16 +44,12 @@ class GroupSnapTest {
         others: List<IntRect>,
     ) = settle(
         offset = offsetForTop(askedTop),
-        width = width,
-        height = height,
-        screenW = screenW,
-        screenH = screenH,
-        safeTop = 0,
-        safeBottom = screenH,
+        size = IntSize(width, height),
+        screen = WindowScreen(screenW, screenH, 0, screenH),
         titleH = 14,
         neighbours = others,
         escaped = true,
-        carried = listOf(rect(eqNow)),
+        carried = listOf(CarriedWindow(rect(eqNow), 14)),
         anchorNow = rect(mainNow),
     )
 
@@ -75,12 +72,8 @@ class GroupSnapTest {
         val landed =
             settle(
                 offset = offsetForTop(220),
-                width = width,
-                height = height,
-                screenW = screenW,
-                screenH = screenH,
-                safeTop = 0,
-                safeBottom = screenH,
+                size = IntSize(width, height),
+                screen = WindowScreen(screenW, screenH, 0, screenH),
                 titleH = 14,
                 neighbours = listOf(playlist),
                 escaped = true,
@@ -98,16 +91,12 @@ class GroupSnapTest {
         val landed =
             settle(
                 offset = offsetForTop(105),
-                width = width,
-                height = height,
-                screenW = screenW,
-                screenH = screenH,
-                safeTop = 0,
-                safeBottom = screenH,
+                size = IntSize(width, height),
+                screen = WindowScreen(screenW, screenH, 0, screenH),
                 titleH = 14,
                 neighbours = listOf(playlist),
                 escaped = false, // still within the pull of where it started
-                carried = listOf(rect(216)),
+                carried = listOf(CarriedWindow(rect(216), 14)),
                 anchorNow = rect(100),
             )
 
@@ -123,12 +112,8 @@ class GroupSnapTest {
         val landed =
             settle(
                 offset = offsetForTop(4),
-                width = width,
-                height = height,
-                screenW = screenW,
-                screenH = screenH,
-                safeTop = 0,
-                safeBottom = screenH,
+                size = IntSize(width, height),
+                screen = WindowScreen(screenW, screenH, 0, screenH),
                 titleH = 14,
                 neighbours = listOf(above),
                 escaped = false,

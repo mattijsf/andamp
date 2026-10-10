@@ -17,7 +17,7 @@ fun dockedStackHeight(
     var edge = top + anchor
     under.forEach { member ->
         if (!member.shown) return@forEach
-        val attached = !member.placed || member.top?.let { kotlin.math.abs(it - edge) <= SLACK } == true
+        val attached = !member.placed || member.top?.let { kotlin.math.abs(it - edge) <= DockGroup.FLUSH_SLACK } == true
         if (attached) edge += member.height
     }
     return edge - top
@@ -26,7 +26,7 @@ fun dockedStackHeight(
 /**
  * One window as [dockedStackHeight] sees it.
  *
- * It is in the stack when it has no place of its own, or when its top is within [SLACK] px of
+ * It is in the stack when it has no place of its own, or when its top is within [DockGroup.FLUSH_SLACK] px of
  * the run above it, which is what snapping a window back under the stack leaves.
  */
 data class StackMember(
@@ -39,6 +39,3 @@ data class StackMember(
     /** Whether it has a place of its own; false means it still follows the stack. */
     val placed: Boolean,
 )
-
-/** How many pixels apart two docked edges may read back; the same slack [DockGroup] allows. */
-private const val SLACK = 2

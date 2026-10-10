@@ -12,7 +12,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
 import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.WinampState
@@ -82,7 +84,11 @@ fun PlaylistFloatWindow(
         val maxSegments = PlaylistLayout.segmentsThatFit((screen.safeBottom - topWanted).coerceAtLeast(0))
         // the docked place is a row and a column; its center-relative offset is computed
         // for the size the playlist has now
-        val docked = dockedAt(dockedLeft, dockedTop, layout.width, height, screen.width, screen.height)
+        val docked =
+            screen.offsetOf(
+                IntOffset(dockedLeft ?: (screen.width - layout.width) / 2, dockedTop),
+                IntSize(layout.width, height),
+            )
         val widgets =
             remember(vm, layout, actions) {
                 playlistWidgets(
@@ -117,7 +123,7 @@ fun PlaylistFloatWindow(
             titleH = Dest.PL_TOP_H,
             widgets = widgets,
             onResizeRaw = { grab ->
-                resizeTo(s, grab, cols, maxCols, segments, maxSegments, screen.width, screen.height)
+                resizeTo(s, grab, cols, maxCols, segments, maxSegments, screen)
             },
             onTitleDoubleTap = { s.setShaded(WindowStore.PLAYLIST, true, height) },
             cut = SkinCut(skin),
@@ -141,14 +147,12 @@ private fun resizeTo(
     maxCols: Int,
     segments: Int,
     maxSegments: Int,
-    screenW: Int,
-    screenH: Int,
+    screen: WindowScreen,
 ) {
     val resized =
         WindowSizing.resize(
             grab,
-            screenW = screenW,
-            screenH = screenH,
+            screen,
             heightAxis =
                 SizeAxis(
                     furniture = PlaylistLayout.FURNITURE_H,

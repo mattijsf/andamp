@@ -179,6 +179,7 @@ class ShadeDockTest {
     fun `a carried window is kept inside the safe area`() {
         val s = stack()
         s.safeBottom = 200 // a short safe area: expanding pushes the playlist's bar past it
+        s.windowHandles[WindowStore.PLAYLIST] = Dest.PL_TOP_H // as the playlist publishes its bar
 
         s.setShaded(WindowStore.MAIN, true, MAIN_H) // collapse first, so expanding pushes down
         relayout(s, SHADE_H, EQ_H, 290)

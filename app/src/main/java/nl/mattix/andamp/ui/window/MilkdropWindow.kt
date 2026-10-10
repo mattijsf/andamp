@@ -18,6 +18,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.viewinterop.AndroidView
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.PresetImport
@@ -139,7 +140,7 @@ fun MilkdropWindow(
         width = width,
         height = height,
         offset = s.milkdropOffset,
-        defaultOffset = dockedAt(dockedLeft, dockedTop, width, height, s.screenW, s.screenH),
+        defaultOffset = s.screen().offsetOf(IntOffset(dockedLeft ?: (s.screenW - width) / 2, dockedTop), IntSize(width, height)),
         onMove = { s.milkdropOffset = it },
         onResizeRaw = { grab ->
             if (pinned != null) {
@@ -148,13 +149,13 @@ fun MilkdropWindow(
             }
             // the height is capped at what fits between this window's top edge and the
             // safe bottom
-            val topAtGrab = (s.screenH - grab.atHeight) / 2 + grab.atOffset.y
-            val room = (s.safeBottom.takeIf { it > 0 } ?: s.screenH) - topAtGrab
+            val screen = s.screen()
+            val topAtGrab = screen.topLeftOf(grab.atOffset, IntSize(grab.atWidth, grab.atHeight)).y
+            val room = screen.safeBottom - topAtGrab
             val resized =
                 WindowSizing.resize(
                     grab,
-                    screenW = s.screenW,
-                    screenH = s.screenH,
+                    screen,
                     heightAxis =
                         SizeAxis(
                             furniture = frame.chromeH,

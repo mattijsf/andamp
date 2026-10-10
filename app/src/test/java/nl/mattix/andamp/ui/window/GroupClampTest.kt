@@ -4,6 +4,7 @@ package nl.mattix.andamp.ui.window
 
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
 import org.junit.Assert.assertEquals
 import org.junit.Test
 
@@ -20,6 +21,7 @@ class GroupClampTest {
     private val width = 275
     private val height = 116
     private val titleH = 14
+    private val screen = WindowScreen(screenW, screenH, 0, screenH)
 
     /** The player at [left], carrying [carried], asked to move by [dx] and [dy]. */
     private fun settleGroup(
@@ -32,21 +34,16 @@ class GroupClampTest {
         val now = IntRect(left, 100, left + width, 100 + height)
         val landed =
             settle(
-                offset = offsetOfTopLeft(IntOffset(now.left + dx, now.top + dy), width, height, screenW, screenH),
-                width = width,
-                height = height,
-                screenW = screenW,
-                screenH = screenH,
-                safeTop = 0,
-                safeBottom = screenH,
+                offset = screen.offsetOf(IntOffset(now.left + dx, now.top + dy), IntSize(width, height)),
+                size = IntSize(width, height),
+                screen = screen,
                 titleH = titleH,
                 neighbours = emptyList(),
                 escaped = true,
-                carried = carried,
-                carriedHandles = handles,
                 anchorNow = now,
+                carried = carried.mapIndexed { i, rect -> CarriedWindow(rect, handles.getOrElse(i) { titleH }) },
             )
-        return rectOf(landed, width, height, screenW, screenH)
+        return screen.rectOf(landed, IntSize(width, height))
     }
 
     /** Whether [rect], moved along with the player, is where it may be on its own. */
@@ -56,9 +53,8 @@ class GroupClampTest {
         handle: Int = titleH,
     ): Boolean {
         val moved = IntOffset(rect.left + travel.x, rect.top + travel.y)
-        val own = offsetOfTopLeft(moved, rect.width, rect.height, screenW, screenH)
-        val clamped =
-            WindowBounds.clamp(own, rect.width, rect.height, screenW, screenH, handle, safeTop = 0, safeBottom = screenH)
+        val own = screen.offsetOf(moved, rect.size)
+        val clamped = WindowBounds.clamp(own, rect.size, screen, handle)
         return own == clamped
     }
 

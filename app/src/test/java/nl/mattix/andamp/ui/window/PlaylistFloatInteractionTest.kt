@@ -85,7 +85,7 @@ class PlaylistFloatInteractionTest {
                             width = PL_W,
                             height = SHADE_H,
                             offset = vm.state.plOffset,
-                            defaultOffset = dockedOffset(dockedTop, SHADE_H, virtualH),
+                            defaultOffset = IntOffset(0, dockedTop - (virtualH - SHADE_H) / 2),
                             onMove = { vm.state.plOffset = it },
                             titleH = SHADE_H,
                             widgets = emptyList(),
