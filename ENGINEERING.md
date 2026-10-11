@@ -56,7 +56,7 @@ after a toolchain upgrade.
 - `verifyRoborazziDebug`, which is `:app`'s unit tests with the golden comparison on
 - the JVM unit tests of `:core:model`, `:core:playback`, `:core:player`, `:core:dsp`,
   `:core:plugin`, `:core:packapi`, `:backend:media3` (release variant, because its
-  benchmarks measure that one), `:backend:pack`, `:pack:common`, `:car`,
+  benchmarks measure that one), `:backend:pack`, `:pack:common`, `:androidauto`,
   `:visualizer:avs` and `:visualizer:projectm`
 
 It is a single task so the hook, CI and this file cannot disagree about what it contains.
@@ -187,7 +187,7 @@ ui  ──▶  player domain  ◀──  backends  ──▶  dsp        skin (s
 :visualizer:projectm libprojectM through JNI. The only module that sees GL.
 :visualizer:avs      AVS: parser, pipeline, and the ns-eel evaluator through JNI
 :app                 the rest: skin engine, UI, state, the home-screen widget
-:car                 an app of its own for Android Auto: it lends the car's surface to
+:androidauto         an app of its own for Android Auto: it lends the car's surface to
                      the player and holds no skin and no player
 ```
 
@@ -372,33 +372,34 @@ Rules:
   are null, and the UI hides or blanks the readout, as Winamp did for streams.
 - **Backends are held to the shared contract test** (see Testing).
 
-### In a car
+### In Android Auto
 
 Android Auto meets the player in two ways.
 
 **As a media app.** `PlaybackService` is a `MediaLibraryService`, and the manifest of
-`:backend:media3` declares the app to Android Auto. The car draws its own player from the
+`:backend:media3` declares the app to Android Auto, which draws its own player from the
 session. The library a browser sees is one folder that holds the playlist (`SessionRows`,
 `SessionCallback`). A row picked from it, and a song asked for by voice, arrive as a request
 to set a media item, and `BackendPlayer` answers with a jump to that row, so no controller
 edits the playlist. A car can be the first thing in the process to ask for the session;
 `Media3PlaybackHost.wake` is how it gets a player then.
 
-**With its own window, through `:car`.** Android Auto gives a drawing surface to navigation
-apps only, so the app that declares itself one is a separate app, installed by hand, and
-the player stays a media app. `:car` has one screen. `LentSurface` hands the car's surface
-to the player over `IRemoteWindow` and passes on taps and drags. In the player,
+**With its own window, through `:androidauto`.** Android Auto gives a drawing surface to
+navigation apps only, so the app that declares itself one is a separate app, installed by
+hand, and the player stays a media app. `:androidauto` has one screen. `LentSurface` hands
+Android Auto's surface to the player over `IRemoteWindow` and passes on taps and drags. In the player,
 `RemoteWindowService` takes the calls of an app signed with the player's own key, and
 `RemoteWindow` puts a virtual display over the surface with a presentation that composes
 `RemoteScreen`: the main window at the largest whole scale that fits, on black. Its EQ
 button swaps the screen to the equalizer, and its PL button to `RemoteList`, a list with
 rows a finger can hit, each with a play button that plays it. The skin there is the one
-chosen on Preferences > Car. The D in that main window is the car's own Double Size: the
-window then fills the screen, laid out at the next whole scale up and shrunk as one
-picture, as on a phone. Both choices are kept in `CarStore`, apart from the phone's.
+chosen on Preferences > Android Auto. The D in that main window is Android Auto's own
+Double Size: the window then fills the screen, laid out at the next whole scale up and
+shrunk as one picture, as on a phone. Both choices are kept in `AndroidAutoStore`, apart
+from the phone's.
 
-There is one renderer: the draw functions and widgets of the phone's own windows. `:car`
-never learns what is on the surface. With the player on two surfaces at once, one of them
+There is one renderer: the draw functions and widgets of the phone's own windows.
+`:androidauto` never learns what is on the surface. With the player on two surfaces at once, one of them
 steps the clocks (`WinampState.clocksTurn`).
 
 ### State
@@ -578,7 +579,7 @@ needs a device: real marshalling, a source that dies, a version mismatch.
 
 Two more need a device because they cross a process or a display.
 `PlatformBrowserOnDeviceTest` in `:backend:media3` connects the platform's media browser to
-`PlaybackService`, as a car does. `LendToPlayerOnDeviceTest` in `:car` lends a surface of
+`PlaybackService`, as a car does. `LendToPlayerOnDeviceTest` in `:androidauto` lends a surface of
 its own to the player installed on the device and reads back what the player drew; it
 writes the pictures to the test app's files directory. Android Auto itself is checked with
 the Desktop Head Unit and a phone whose Android Auto has "Unknown sources" switched on in

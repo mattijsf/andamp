@@ -38,8 +38,8 @@
         <intent>
             <action android:name="nl.mattix.andamp.source.SETTINGS" />
         </intent>
-        <!-- the app Android Auto talks to; Preferences offers the car's page when it is here -->
-        <package android:name="nl.mattix.andamp.car" />
+        <!-- the app Android Auto talks to; Preferences offers the Android Auto page when it is here -->
+        <package android:name="nl.mattix.andamp.androidauto" />
     </queries>
 
     <!--
@@ -155,8 +155,8 @@
             android:launchMode="singleTop"
             android:exported="false" />
         <!--
-          The main window on a surface another app lends: a car's screen, through the
-          companion app Android Auto talks to. The service checks who is calling; see
+          The main window on a surface another app lends: a car's screen, through the app
+          Android Auto talks to (:androidauto). The service checks who is calling; see
           RemoteWindowTrust.
         -->
         <service

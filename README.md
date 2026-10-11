@@ -31,8 +31,8 @@ What works:
 - DSP effects in Preferences, extendable with `.lua` plug-ins.
 - A visualizer window running AVS and Milkdrop presets.
 - A floating player that stays on top of other apps (Android 11+), and a home-screen widget.
-- Android Auto: the car's own player with the playlist to pick from. A companion app,
-  built from `car/` and installed by hand, puts the skinned main window on the car's screen.
+- Android Auto: its own player with the playlist to pick from. A companion app, built from
+  `androidauto/` and installed by hand, puts the skinned main window on the car's screen.
 - A browser for the Winamp Skin Museum.
 - Jellyfin, Plex and Subsonic servers, through music sources that install as separate apps
   beside the player. See [docs/source-packs.md](docs/source-packs.md).
@@ -80,7 +80,7 @@ backend/media3   playback through ExoPlayer
 backend/pack     the client side of a music source
 pack/common      the source side of that contract
 visualizer/      AVS, and Milkdrop through projectM
-car/             the companion app for Android Auto, which lends the car's screen
+androidauto/     the companion app for Android Auto, which lends the car's screen
 app/
   skin/          .wsz loader, sprite tables, bitmap font, PLEDIT/VISCOLOR/REGION parsers
   state/         render state and the ViewModel

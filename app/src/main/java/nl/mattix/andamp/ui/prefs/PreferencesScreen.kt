@@ -65,7 +65,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.flow.first
 import nl.mattix.andamp.BuildConfig
-import nl.mattix.andamp.state.CarStore
+import nl.mattix.andamp.state.AndroidAutoStore
 import nl.mattix.andamp.state.DspOps
 import nl.mattix.andamp.state.LibraryAccess
 import nl.mattix.andamp.state.PackSources
@@ -198,7 +198,7 @@ fun PreferencesScreen(
                         skinOf = vm.sourceSkinOps.skins::of,
                         onSkin = vm.sourceSkinOps::choose,
                     ),
-                car = carPrefsOf(vm, offered = remember { CarStore.companionInstalled(context) }),
+                androidAuto = androidAutoPrefsOf(vm, offered = remember { AndroidAutoStore.companionInstalled(context) }),
                 widget =
                     WidgetPrefs(
                         settings = widgetSettings,
@@ -270,7 +270,7 @@ data class PrefsSections(
     val volume: VolumePrefs = VolumePrefs(),
     val widget: WidgetPrefs = WidgetPrefs(),
     val sources: SourcesPrefs = SourcesPrefs(),
-    val car: CarPrefs = CarPrefs(),
+    val androidAuto: AndroidAutoPrefs = AndroidAutoPrefs(),
     val support: SupportPrefs = SupportPrefs(),
     /** What the output stage is doing to peaks, for the limiter's card; asked while the rack is on screen. */
     val peaks: () -> nl.mattix.andamp.core.playback.PeakReading = { nl.mattix.andamp.core.playback.PeakReading.NONE },
@@ -300,7 +300,7 @@ private enum class PrefsPage(
     VISUALIZER("Visualizer", "visualizer", Icons.Outlined.AutoAwesome),
     PLAYER("Player", "player", Icons.Outlined.PlayCircleOutline),
     WIDGET("Home screen widget", WIDGET_PAGE, Icons.Outlined.Widgets),
-    CAR("Car", "car", Icons.Outlined.DirectionsCar),
+    ANDROID_AUTO("Android Auto", "android-auto", Icons.Outlined.DirectionsCar),
     SUPPORT("Support Andamp", SUPPORT_PAGE, Icons.Outlined.Favorite),
     ABOUT("About Andamp", "about", Icons.Outlined.Info),
     LICENCES("Open-source licenses", "licences"),
@@ -436,7 +436,7 @@ fun PreferencesPage(
                         page(PrefsPage.VISUALIZER.route) { VisualizerSettings(sections.visualizer) }
                         page(PrefsPage.PLAYER.route) { PlayerPage(sections) }
                         page(PrefsPage.WIDGET.route) { WidgetRows(sections.widget) }
-                        page(PrefsPage.CAR.route) { CarPage(sections.car) }
+                        page(PrefsPage.ANDROID_AUTO.route) { AndroidAutoPage(sections.androidAuto) }
                         page(PrefsPage.SUPPORT.route) { SupportPage(sections.support) }
                         page(PrefsPage.ABOUT.route) { AboutPage(pages::navigate) }
                         page(PrefsPage.LICENCES.route) { LicencesPage() }
@@ -555,10 +555,10 @@ private fun Root(
             summary = sections.widget.summary(),
             onOpen = { onOpen(it.route) },
         )
-        if (sections.car.offered) {
+        if (sections.androidAuto.offered) {
             PageRow(
-                page = PrefsPage.CAR,
-                summary = sections.car.summary(),
+                page = PrefsPage.ANDROID_AUTO,
+                summary = sections.androidAuto.summary(),
                 onOpen = { onOpen(it.route) },
             )
         }

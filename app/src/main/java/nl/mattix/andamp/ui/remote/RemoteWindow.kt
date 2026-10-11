@@ -38,7 +38,7 @@ import nl.mattix.andamp.ui.overlay.OverlayOwners
  * The surface becomes a display of this app's own, a virtual display, and a presentation on
  * that display holds the window, composed as it is on the phone's screen. So the skin, the
  * visualizer and the title are drawn by the code that draws them there. The skin is the one
- * chosen for the car; see [nl.mattix.andamp.state.CarStore].
+ * chosen for Android Auto; see [nl.mattix.andamp.state.AndroidAutoStore].
  *
  * The owner of the surface reports a tap by its place. It is given to the window as a press
  * and, [PRESS_MS] later, a release, so a button is seen going down. A drag is reported by
@@ -97,8 +97,8 @@ internal class RemoteWindow(
                 setContent {
                     val own = vm.skin ?: return@setContent
                     val skin = skinHere(own) ?: return@setContent
-                    val car = vm.carStore
-                    RemoteScreen(vm, skin, kept, list, fill = car.fill, onFill = { car.fill = !car.fill })
+                    val chosen = vm.androidAutoStore
+                    RemoteScreen(vm, skin, kept, list, fill = chosen.fill, onFill = { chosen.fill = !chosen.fill })
                 }
             }
         shown.setContentView(content)
@@ -115,13 +115,13 @@ internal class RemoteWindow(
     }
 
     /**
-     * The skin worn on the surface: the one chosen for the car, once it has been read, or the
+     * The skin worn on the surface: the one chosen for Android Auto, once it has been read, or the
      * player's [own] when none is chosen or the chosen one will not load. Null while it is
      * being read.
      */
     @Composable
     private fun skinHere(own: Skin): Skin? {
-        val asked = vm.carStore.worn ?: return own
+        val asked = vm.androidAutoStore.worn ?: return own
         val read by produceState<Skin?>(null, asked, own) {
             value = withContext(Dispatchers.IO) { CurrentSkin.load(context, id = asked) } ?: own
         }
