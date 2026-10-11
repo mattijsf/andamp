@@ -35,6 +35,10 @@ abstract class VisualizerView<T>(
     @Volatile
     var onPresetChanged: ((String) -> Unit)? = null
 
+    /** Told what the engine could not show of each preset as it starts, on the main thread. */
+    @Volatile
+    var onPresetGaps: ((PresetGaps) -> Unit)? = null
+
     /**
      * The loaded presets, in playlist order, told once per pack. The index into this list
      * is what [goToPreset] takes.
@@ -104,6 +108,11 @@ abstract class VisualizerView<T>(
     /** Hops a preset name to the main thread: listeners drive Compose state. */
     protected fun announcePreset(name: String) {
         post { onPresetChanged?.invoke(name) }
+    }
+
+    /** Hops what a preset is missing to the main thread, as [announcePreset] does its name. */
+    protected fun announceGaps(gaps: PresetGaps) {
+        post { onPresetGaps?.invoke(gaps) }
     }
 
     /**

@@ -8,6 +8,7 @@ import nl.mattix.andamp.state.VisualCommands
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.ui.window.testViewModel
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -75,6 +76,7 @@ class MilkdropMenuTest {
                 "Previous preset",
                 "---",
                 "Shuffle",
+                "Show what a preset is missing",
                 "---",
                 "Manage presets...",
                 "Load preset pack...",
@@ -191,6 +193,28 @@ class MilkdropMenuTest {
         action(vm, "Shuffle").onClick()
         assertTrue(vm.state.presetShuffle)
         assertTrue(ticked(visualMenu(vm).items).contains("Shuffle"))
+    }
+
+    @Test
+    fun `saying what a preset is missing is on, and the AVS menu switches it off`() {
+        val vm = testViewModel()
+        vm.presetOps.selectPlugin(VisPlugin.Avs)
+        val label = "Show what a preset is missing"
+
+        assertTrue(ticked(visualMenu(vm).items).contains(label))
+        action(vm, label).onClick()
+
+        assertFalse(vm.state.presetNotices)
+        assertFalse(ticked(visualMenu(vm).items).contains(label))
+    }
+
+    /** Only AVS reports what it left out of a preset. */
+    @Test
+    fun `the Milkdrop menu has no such switch`() {
+        val vm = testViewModel()
+        vm.presetOps.selectPlugin(VisPlugin.Milkdrop)
+
+        assertFalse(labels(visualMenu(vm).items).contains("Show what a preset is missing"))
     }
 
     @Test

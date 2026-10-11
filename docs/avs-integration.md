@@ -111,7 +111,10 @@ the engine itself and is not in the map. The built-ins not
 implemented are SVP, Text, Picture and AVI.
 
 - A component the build lacks is named in `AvsEngine.unimplemented` and skipped; the rest of
-  the preset still draws.
+  the preset still draws. `AvsView` hands that list to the app as a `PresetGaps` when the
+  preset starts, and a preset that cannot be read at all as an unreadable one. The plug-in
+  window shows it as one line for a few seconds (`PresetNotice`), which the visual menu
+  switches off.
 - A scripted component reports what would not compile and keeps running what did
   (`AvsScripted`); its errors are listed with the missing components.
 - The engine builds one runtime node per *position* in the preset, so two identical stateful
