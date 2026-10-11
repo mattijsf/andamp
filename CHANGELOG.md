@@ -4,6 +4,13 @@ What changed for somebody who uses Andamp, newest first. It is written from the 
 messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `docs:` and
 `chore:` commits do not appear here.
 
+## [0.13.0](https://github.com/mattijsf/andamp/compare/v0.12.1...v0.13.0) (2026-10-11)
+
+
+### New
+
+* turn the phone sideways and the player turns with it, with its own window layout each way ([#42](https://github.com/mattijsf/andamp/issues/42)) ([a73b13b](https://github.com/mattijsf/andamp/commit/a73b13bc52234f3d7b42e0ab414342b9e8c83d9a))
+
 ## [0.12.1](https://github.com/mattijsf/andamp/compare/v0.12.0...v0.12.1) (2026-10-11)
 
 
