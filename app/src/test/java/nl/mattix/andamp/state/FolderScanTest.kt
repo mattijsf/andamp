@@ -31,8 +31,7 @@ class FolderScanTest {
 
         val scan = FolderScan.audioFiles(tree, "root")
 
-        assertEquals(listOf("a.mp3", "B.mp3", "c.mp3"), scan.files.map { it.name })
-        assertEquals(0, scan.dropped)
+        assertEquals(listOf("a.mp3", "B.mp3", "c.mp3"), scan.map { it.name })
     }
 
     @Test
@@ -47,7 +46,7 @@ class FolderScanTest {
 
         val scan = FolderScan.audioFiles(tree, "root")
 
-        assertEquals(listOf("top.mp3", "one.mp3", "deep.mp3", "two.mp3"), scan.files.map { it.name })
+        assertEquals(listOf("top.mp3", "one.mp3", "deep.mp3", "two.mp3"), scan.map { it.name })
     }
 
     @Test
@@ -63,7 +62,7 @@ class FolderScanTest {
                     ),
             )
 
-        assertEquals(listOf("song.mp3"), FolderScan.audioFiles(tree, "root").files.map { it.name })
+        assertEquals(listOf("song.mp3"), FolderScan.audioFiles(tree, "root").map { it.name })
     }
 
     @Test
@@ -78,7 +77,7 @@ class FolderScanTest {
                     ),
             )
 
-        assertEquals(listOf("song.flac"), FolderScan.audioFiles(tree, "root").files.map { it.name })
+        assertEquals(listOf("song.flac"), FolderScan.audioFiles(tree, "root").map { it.name })
     }
 
     @Test
@@ -91,25 +90,23 @@ class FolderScanTest {
 
         val scan = FolderScan.audioFiles(tree, "root")
 
-        assertEquals(listOf("a.mp3", "b.mp3"), scan.files.map { it.name })
+        assertEquals(listOf("a.mp3", "b.mp3"), scan.map { it.name })
     }
 
     @Test
-    fun `an enormous folder is capped, and says how much it left out`() {
-        val many = (1..FolderScan.MAX_FILES + 25).map { file("track%04d.mp3".format(it)) }
+    fun `an enormous folder is added whole`() {
+        val many = (1..2_000).map { file("track%04d.mp3".format(it)) }
         val tree = treeOf("root" to many)
 
         val scan = FolderScan.audioFiles(tree, "root")
 
-        assertEquals(FolderScan.MAX_FILES, scan.files.size)
-        assertEquals(25, scan.dropped)
+        assertEquals(many.map { it.name }, scan.map { it.name })
     }
 
     @Test
     fun `an empty folder adds nothing`() {
         val scan = FolderScan.audioFiles(FolderScan.Tree { emptyList() }, "root")
 
-        assertTrue(scan.files.isEmpty())
-        assertEquals(0, scan.dropped)
+        assertTrue(scan.isEmpty())
     }
 }
