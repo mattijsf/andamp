@@ -366,6 +366,79 @@ class BackendPlayerTest {
         assertEquals(1, player.mediaItemCount)
     }
 
+    /** The queue with its second row retitled, as a tag read does it. */
+    private fun Fake.tagSecondRow(title: String) {
+        val queue = flow.value.queue
+        flow.value = flow.value.copy(queue = queue.take(1) + queue[1].copy(title = title) + queue.drop(2))
+        ShadowLooper.idleMainLooper()
+    }
+
+    private fun BackendPlayer.titleOfSecondRow() = getMediaItemAt(1).mediaMetadata.title
+
+    private fun idleFor(ms: Long) = ShadowLooper.idleMainLooper(ms, java.util.concurrent.TimeUnit.MILLISECONDS)
+
+    @Test
+    fun `tags of a row that is not on are handed over once they stop arriving`() {
+        val backend = Fake()
+        val player = playerOver(backend)
+        ShadowLooper.idleMainLooper()
+
+        backend.tagSecondRow("Sour Times (live)")
+        backend.tagSecondRow("Sour Times (Roseland)")
+
+        assertEquals("the session is not told row by row", "Sour Times", player.titleOfSecondRow())
+
+        idleFor(SESSION_QUEUE_SETTLE_MS)
+
+        assertEquals("Sour Times (Roseland)", player.titleOfSecondRow())
+    }
+
+    @Test
+    fun `the session waits for as long as tags keep arriving`() {
+        val backend = Fake()
+        val player = playerOver(backend)
+        ShadowLooper.idleMainLooper()
+
+        repeat(5) {
+            backend.tagSecondRow("Sour Times, take $it")
+            idleFor(SESSION_QUEUE_SETTLE_MS / 2)
+        }
+
+        assertEquals("Sour Times", player.titleOfSecondRow())
+
+        idleFor(SESSION_QUEUE_SETTLE_MS / 2)
+
+        assertEquals("Sour Times, take 4", player.titleOfSecondRow())
+    }
+
+    @Test
+    fun `the track that is on never waits`() {
+        val backend = Fake()
+        val player = playerOver(backend)
+        ShadowLooper.idleMainLooper()
+
+        backend.tagSecondRow("Sour Times (live)")
+        backend.flow.value = backend.flow.value.copy(currentIndex = 1, transport = Transport.Playing)
+        ShadowLooper.idleMainLooper()
+
+        assertEquals("Sour Times (live)", player.mediaMetadata.title)
+        assertTrue(player.playWhenReady)
+    }
+
+    @Test
+    fun `rows added while tags arrive are shown at once`() {
+        val backend = Fake()
+        val player = playerOver(backend)
+        ShadowLooper.idleMainLooper()
+
+        backend.tagSecondRow("Sour Times (live)")
+        backend.flow.value = backend.flow.value.copy(queue = backend.flow.value.queue + STATION)
+        ShadowLooper.idleMainLooper()
+
+        assertEquals(3, player.mediaItemCount)
+        assertEquals("Sour Times (live)", player.titleOfSecondRow())
+    }
+
     private companion object {
         val SONGS =
             listOf(

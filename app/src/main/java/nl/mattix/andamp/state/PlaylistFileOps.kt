@@ -139,12 +139,17 @@ class PlaylistFileOps(
 
             // The tags are read one row at a time, so the list stays readable and playable
             // meanwhile.
-            arriving.forEach { entry ->
-                val uri = entry.uri ?: return@forEach
-                // kept under the tree's uri, not the library's; see readInTree
-                val read = withContext(io) { mediaFiles.readInTree(Uri.parse(uri)) }
-                facade.patchTracks(listOf(read.copy(id = entry.id, defaultName = entry.defaultName)))
-            }
+            TagFill.run(
+                rows = arriving,
+                io = io,
+                read = { entry ->
+                    // kept under the tree's uri, not the library's; see readInTree
+                    entry.uri?.let { uri ->
+                        mediaFiles.readInTree(Uri.parse(uri)).copy(id = entry.id, defaultName = entry.defaultName)
+                    }
+                },
+                patch = facade::patchTracks,
+            )
         }
     }
 

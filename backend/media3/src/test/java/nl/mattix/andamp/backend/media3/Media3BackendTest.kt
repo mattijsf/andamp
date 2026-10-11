@@ -356,6 +356,31 @@ class Media3BackendTest {
     }
 
     @Test
+    fun `tags for several rows at once reach each row's media item, and no other`() {
+        val b = backend(10, 20, 30, 40, 50)
+        idleEverything()
+        val queue = b.state.value.queue
+        val titled = { at: Int -> queue[at].copy(title = "Tagged $at") }
+
+        // rows 0 and 1 are neighbours, row 3 stands alone
+        b.patchTracks(listOf(titled(0), titled(1), titled(3)))
+        idleEverything()
+
+        val shown =
+            (0 until 5).map {
+                b.playerForSession
+                    .getMediaItemAt(it)
+                    .mediaMetadata.title
+                    .toString()
+            }
+        assertEquals(
+            listOf("Tagged 0", "Tagged 1", queue[2].title, "Tagged 3", queue[4].title),
+            shown,
+        )
+        assertEquals(queue.map { it.id }, (0 until 5).map { b.playerForSession.getMediaItemAt(it).mediaId })
+    }
+
+    @Test
     fun `tags arriving late reach the notification, not just the playlist`() {
         // ADD > DIR queues rows with no tags, so their media items are built
         // with an empty title. The tags arrive later, and have to reach the

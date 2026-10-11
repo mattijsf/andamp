@@ -735,11 +735,20 @@ class Media3Backend(
             nl.mattix.andamp.core.playback.QueuePatch
                 .apply(s.queue, patched)
         _state.value = s.copy(queue = queue)
-        val byId = patched.associateBy { it.id }
-        queue.forEachIndexed { at, entry ->
-            if (entry.id in byId) {
-                runCatching { player.replaceMediaItem(at, mediaItem(entry)) }
+        // neighbouring rows go to the player in one call: every call makes it
+        // rebuild its whole playlist, and a folder's tags arrive in runs
+        val ids = patched.mapTo(HashSet()) { it.id }
+        var at = 0
+        while (at < queue.size) {
+            if (queue[at].id !in ids) {
+                at++
+                continue
             }
+            var end = at + 1
+            while (end < queue.size && queue[end].id in ids) end++
+            val from = at
+            runCatching { player.replaceMediaItems(from, end, queue.subList(from, end).map(::mediaItem)) }
+            at = end
         }
     }
 

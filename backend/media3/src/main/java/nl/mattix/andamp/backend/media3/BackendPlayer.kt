@@ -11,13 +11,17 @@ import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.launch
 import nl.mattix.andamp.core.model.BackendState
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.core.playback.PlaybackBackend
+
+/** How long rows have to stop gaining metadata before the session is handed them; see [BackendPlayer]. */
+internal const val SESSION_QUEUE_SETTLE_MS = 1_000L
 
 /**
  * Any backend, as a Media3 `Player`.
@@ -37,8 +41,14 @@ import nl.mattix.andamp.core.playback.PlaybackBackend
 @UnstableApi
 internal class BackendPlayer(
     private val backend: PlaybackBackend,
-    scope: CoroutineScope,
+    private val scope: CoroutineScope,
 ) : SimpleBasePlayer(Looper.getMainLooper()) {
+    /** What the session was last told of [frontOf]. */
+    private var shown: Front? = null
+
+    /** Waits for rows to stop gaining metadata, then hands them to the session. */
+    private var settling: Job? = null
+
     init {
         scope.launch(Dispatchers.Main) {
             // Invalidate on what changes the shape of the state, not on the
@@ -46,10 +56,36 @@ internal class BackendPlayer(
             // getState, and invalidating on each position update would rebuild
             // the whole playlist on the main thread for no new information.
             backend.state
-                .map(::shapeOf)
-                .distinctUntilChanged()
-                .collect { invalidateState() }
+                .distinctUntilChangedBy(::shapeOf)
+                .collect { state ->
+                    val front = frontOf(state)
+                    if (front != shown) tellSession(front) else tellSessionOnceSettled()
+                }
         }
+    }
+
+    /** Hands the session the state as it is now, every row of it. */
+    private fun tellSession(front: Front) {
+        shown = front
+        settling?.cancel()
+        settling = null
+        invalidateState()
+    }
+
+    /**
+     * Hands the session the rows once none has gained metadata for
+     * [SESSION_QUEUE_SETTLE_MS]. Media3 rebuilds and sends the whole playlist
+     * for one changed row, on the main thread, and a folder's tags arrive a
+     * few rows at a time, many times a second.
+     */
+    private fun tellSessionOnceSettled() {
+        settling?.cancel()
+        settling =
+            scope.launch(Dispatchers.Main) {
+                delay(SESSION_QUEUE_SETTLE_MS)
+                settling = null
+                tellSession(frontOf(backend.state.value))
+            }
     }
 
     /**
@@ -66,6 +102,33 @@ internal class BackendPlayer(
             state.repeat,
             state.volumeFraction,
             state.queue,
+        )
+
+    /**
+     * The part of the shape a listener can be looking at or waiting for: the
+     * transport, the track that is on, and which rows the queue holds. A
+     * change here goes to the session at once. What is left is metadata of
+     * the other rows, which waits until it has settled.
+     */
+    private data class Front(
+        val transport: Transport,
+        val currentIndex: Int,
+        val shuffle: Boolean,
+        val repeat: Boolean,
+        val volumeFraction: Float,
+        val current: Track?,
+        val rows: List<String>,
+    )
+
+    private fun frontOf(state: BackendState) =
+        Front(
+            state.transport,
+            state.currentIndex,
+            state.shuffle,
+            state.repeat,
+            state.volumeFraction,
+            state.queue.getOrNull(state.currentIndex),
+            state.queue.map { it.id },
         )
 
     override fun getState(): State {
