@@ -6,7 +6,9 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.ServiceConnection
 import android.graphics.Rect
+import android.os.Handler
 import android.os.IBinder
+import android.os.Looper
 import androidx.car.app.SurfaceCallback
 import androidx.car.app.SurfaceContainer
 import nl.mattix.andamp.core.remotewindow.IRemoteWindow
@@ -20,7 +22,8 @@ import nl.mattix.andamp.core.remotewindow.IRemoteWindow
  * back, the player is told and let go.
  *
  * The player can come and go while the surface stays: each time it is reached, it is handed
- * the surface as it is then.
+ * the surface as it is then. A player that was replaced, by an update, is reached for again:
+ * the binding to the one before it brings no player back.
  */
 internal class LentSurface(
     private val context: Context,
@@ -29,6 +32,11 @@ internal class LentSurface(
     private var uncovered: Rect? = null
     private var player: IRemoteWindow? = null
     private var bound = false
+    private val main = Handler(Looper.getMainLooper())
+
+    /** How many more times the player is reached for after a try that found none. */
+    private var tries = 0
+    private val again = Runnable { reach() }
 
     private val connection =
         object : ServiceConnection {
@@ -43,13 +51,19 @@ internal class LentSurface(
             override fun onServiceDisconnected(name: ComponentName) {
                 player = null
             }
+
+            /** The player was replaced. This binding is over, and another is made. */
+            override fun onBindingDied(name: ComponentName) {
+                player = null
+                letGo()
+                tries = RETRIES
+                reach()
+            }
         }
 
     override fun onSurfaceAvailable(surfaceContainer: SurfaceContainer) {
         held = surfaceContainer
-        if (!bound) {
-            bound = Player.reach(context)?.let { context.bindService(it, connection, Context.BIND_AUTO_CREATE) } ?: false
-        }
+        reach()
         lend()
     }
 
@@ -82,10 +96,31 @@ internal class LentSurface(
     /** Ends the loan: the player takes its window down, and is let go. */
     fun takeBack() {
         held = null
+        main.removeCallbacks(again)
+        tries = 0
         tell { hide() }
+        letGo()
+        player = null
+    }
+
+    /**
+     * Binds to the player, while there is a surface to lend and no binding. A player that is
+     * not there is tried for again as long as [tries] lasts: an update takes it away for a
+     * moment.
+     */
+    private fun reach() {
+        main.removeCallbacks(again)
+        if (held == null || bound) return
+        bound = Player.reach(context)?.let { context.bindService(it, connection, Context.BIND_AUTO_CREATE) } ?: false
+        if (!bound && tries > 0) {
+            tries--
+            main.postDelayed(again, RETRY_MS)
+        }
+    }
+
+    private fun letGo() {
         if (bound) context.unbindService(connection)
         bound = false
-        player = null
     }
 
     /** Hands the player the surface, once there is both a surface and a player. */
@@ -99,5 +134,11 @@ internal class LentSurface(
     /** A call to the player, dropped when the player is not there or has just gone. */
     private fun tell(call: IRemoteWindow.() -> Unit) {
         player?.let { runCatching { it.call() } }
+    }
+
+    private companion object {
+        /** How often, and how long apart, a player that was replaced is reached for. */
+        const val RETRIES = 10
+        const val RETRY_MS = 1_000L
     }
 }

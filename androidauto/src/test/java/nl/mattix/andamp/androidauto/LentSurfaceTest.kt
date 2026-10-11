@@ -21,6 +21,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import java.util.concurrent.TimeUnit
 
 /**
  * What the player is told as the car hands over a surface, reports what happens on it, and
@@ -79,9 +80,10 @@ class LentSurfaceTest {
             }
         }
 
+    private val service = ComponentName(RemoteWindowLink.playerOf(app.packageName), "RemoteWindowService")
+
     @Before
     fun installThePlayer() {
-        val service = ComponentName(RemoteWindowLink.playerOf(app.packageName), "RemoteWindowService")
         shadowOf(app.packageManager).apply {
             addServiceIfNotPresent(service)
             addIntentFilterForService(service, IntentFilter(RemoteWindowLink.ACTION))
@@ -185,5 +187,49 @@ class LentSurfaceTest {
 
         assertEquals("show 800x480@120", told.last())
         assertEquals("the player is bound once", 1, shadowOf(app).boundServiceConnections.size)
+    }
+
+    /** An update replaces the player while the car has its window on screen. */
+    @Test
+    fun `when the binding to the player dies it is made again and the surface is lent again`() {
+        handedOver()
+        told.clear()
+
+        shadowOf(app).boundServiceConnections.single().onBindingDied(service)
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertEquals(listOf("show 1280x720@160"), told)
+    }
+
+    @Test
+    fun `a player that is gone for a moment after its binding died is reached for until it is back`() {
+        handedOver()
+        told.clear()
+        val binding = shadowOf(app).boundServiceConnections.single()
+        shadowOf(app.packageManager).removeService(service)
+
+        binding.onBindingDied(service)
+        shadowOf(Looper.getMainLooper()).idleFor(3, TimeUnit.SECONDS)
+        assertEquals("nothing to bind to yet", emptyList<String>(), told)
+
+        installThePlayer()
+        shadowOf(Looper.getMainLooper()).idleFor(2, TimeUnit.SECONDS)
+
+        assertEquals(listOf("show 1280x720@160"), told)
+    }
+
+    @Test
+    fun `a surface the car took back is not lent to a player that comes back`() {
+        val lent = handedOver()
+        val binding = shadowOf(app).boundServiceConnections.single()
+        shadowOf(app.packageManager).removeService(service)
+        binding.onBindingDied(service)
+
+        lent.onSurfaceDestroyed(container())
+        told.clear()
+        installThePlayer()
+        shadowOf(Looper.getMainLooper()).idleFor(5, TimeUnit.SECONDS)
+
+        assertEquals(emptyList<String>(), told)
     }
 }
