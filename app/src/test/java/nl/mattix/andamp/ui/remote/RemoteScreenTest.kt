@@ -59,15 +59,48 @@ class RemoteScreenTest {
     }
 
     @Test
-    fun `the main window keeps the controls that need no other window`() {
-        val ids = mainAlone(vm, onEq = {}, onPl = {}).map { it.id }.toSet()
+    fun `left sharp, the window is not shrunk`() {
+        val fit = remoteViewport(1280, 720, fill = false)
 
-        assertEquals(MAIN_ALONE + "main.eqToggle" + "main.plToggle", ids)
+        assertEquals(4, fit.scale)
+        assertEquals(1f, fit.shrink)
+    }
+
+    @Test
+    fun `filling a wide room, the window is as wide as the room`() {
+        val fit = remoteViewport(1280, 720, fill = true)
+
+        assertEquals("laid out at the next whole scale up", 5, fit.scale)
+        assertEquals("275 at five to one, drawn 1280 wide", 1280f, 275 * fit.scale * fit.shrink, 0.01f)
+        assertTrue("and no taller than the room", 116 * fit.scale * fit.shrink <= 720f)
+    }
+
+    @Test
+    fun `filling a tall room, the window is as tall as the room`() {
+        val fit = remoteViewport(1920, 500, fill = true)
+
+        assertEquals(500f, 116 * fit.scale * fit.shrink, 0.01f)
+        assertTrue("and no wider than the room", 275 * fit.scale * fit.shrink <= 1920f)
+    }
+
+    @Test
+    fun `a room that is a whole multiple of the window is filled without shrinking`() {
+        val fit = remoteViewport(1100, 720, fill = true)
+
+        assertEquals(4, fit.scale)
+        assertEquals(1f, fit.shrink)
+    }
+
+    @Test
+    fun `the main window keeps the controls that need no other window`() {
+        val ids = mainAlone(vm, onEq = {}, onPl = {}, onFill = {}).map { it.id }.toSet()
+
+        assertEquals(MAIN_ALONE + "main.eqToggle" + "main.plToggle" + "main.clutter.d", ids)
     }
 
     @Test
     fun `the transport still works from there`() {
-        tap(mainAlone(vm, onEq = {}, onPl = {}).named("main.play"))
+        tap(mainAlone(vm, onEq = {}, onPl = {}, onFill = {}).named("main.play"))
 
         assertEquals(Transport.Playing, vm.state.transport)
     }
@@ -77,7 +110,7 @@ class RemoteScreenTest {
         var swaps = 0
         val before = vm.state.eqVisible
 
-        tap(mainAlone(vm, onEq = { swaps++ }, onPl = {}).named("main.eqToggle"))
+        tap(mainAlone(vm, onEq = { swaps++ }, onPl = {}, onFill = {}).named("main.eqToggle"))
 
         assertEquals(1, swaps)
         assertEquals("the phone's equalizer window is left as it was", before, vm.state.eqVisible)
@@ -88,10 +121,28 @@ class RemoteScreenTest {
         var swaps = 0
         val before = vm.state.plVisible
 
-        tap(mainAlone(vm, onEq = {}, onPl = { swaps++ }).named("main.plToggle"))
+        tap(mainAlone(vm, onEq = {}, onPl = { swaps++ }, onFill = {}).named("main.plToggle"))
 
         assertEquals(1, swaps)
         assertEquals("the phone's playlist window is left as it was", before, vm.state.plVisible)
+    }
+
+    @Test
+    fun `the D is this surface's own and leaves the phone's Double Size alone`() {
+        var presses = 0
+        val before = vm.state.doubleSize
+
+        tap(mainAlone(vm, onEq = {}, onPl = {}, onFill = { presses++ }).named("main.clutter.d"))
+
+        assertEquals(1, presses)
+        assertEquals(before, vm.state.doubleSize)
+    }
+
+    @Test
+    fun `the A does nothing there`() {
+        val ids = mainAlone(vm, onEq = {}, onPl = {}, onFill = {}).map { it.id }
+
+        assertFalse("main.clutter.a" in ids)
     }
 
     @Test

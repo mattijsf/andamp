@@ -392,8 +392,10 @@ to the player over `IRemoteWindow` and passes on taps and drags. In the player,
 `RemoteWindow` puts a virtual display over the surface with a presentation that composes
 `RemoteScreen`: the main window at the largest whole scale that fits, on black. Its EQ
 button swaps the screen to the equalizer, and its PL button to `RemoteList`, a list with
-rows a finger can hit that plays the row it is tapped on. The skin there is the one chosen
-on Preferences > Car (`CarStore`).
+rows a finger can hit, each with a play button that plays it. The skin there is the one
+chosen on Preferences > Car. The D in that main window is the car's own Double Size: the
+window then fills the screen, laid out at the next whole scale up and shrunk as one
+picture, as on a phone. Both choices are kept in `CarStore`, apart from the phone's.
 
 There is one renderer: the draw functions and widgets of the phone's own windows. `:car`
 never learns what is on the surface. With the player on two surfaces at once, one of them

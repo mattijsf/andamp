@@ -97,7 +97,8 @@ internal class RemoteWindow(
                 setContent {
                     val own = vm.skin ?: return@setContent
                     val skin = skinHere(own) ?: return@setContent
-                    RemoteScreen(vm, skin, kept, list)
+                    val car = vm.carStore
+                    RemoteScreen(vm, skin, kept, list, fill = car.fill, onFill = { car.fill = !car.fill })
                 }
             }
         shown.setContentView(content)

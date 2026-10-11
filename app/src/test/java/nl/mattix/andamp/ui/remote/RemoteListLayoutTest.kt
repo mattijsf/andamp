@@ -78,6 +78,19 @@ class RemoteListLayoutTest {
     }
 
     @Test
+    fun `a row begins with a play button as wide as the row is high`() {
+        assertTrue("just inside the frame", car.onPlay(12f))
+        assertTrue("at the button's far side", car.onPlay(37f))
+        assertEquals(12 + 26, car.playRight)
+    }
+
+    @Test
+    fun `the row's text and its length are not the play button`() {
+        assertTrue(!car.onPlay(38f))
+        assertTrue(!car.onPlay(250f))
+    }
+
+    @Test
     fun `the close button reaches well left of its X and down to the rows`() {
         assertTrue(car.closeReach.contains(IntOffset(265, 10)))
         assertTrue(car.closeReach.contains(IntOffset(289, 19)))

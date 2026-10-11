@@ -79,6 +79,19 @@ class CarStoreTest {
     }
 
     @Test
+    fun `the window is sharp until it is told to fill the screen`() {
+        assertEquals(false, CarStore(prefs()).fill)
+    }
+
+    @Test
+    fun `filling the screen is kept`() {
+        val kept = prefs()
+        CarStore(kept).fill = true
+
+        assertEquals(true, CarStore(kept).fill)
+    }
+
+    @Test
     fun `a phone without the car's app is not offered its settings`() {
         assertEquals(false, CarStore.companionInstalled(app))
     }

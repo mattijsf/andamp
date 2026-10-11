@@ -13,8 +13,9 @@ import nl.mattix.andamp.ui.window.PlaylistLayout
  * It is the skin's playlist frame without the bottom bar: the top bar, the two sides, and
  * between them rows made for a finger. A row is at least twice the height of the playlist
  * window's, and at least [touchPx] surface pixels, the smallest thing a car's screen asks a
- * driver to hit. The window is as wide as whole steps of the frame allow in a room [roomW] by
- * [roomH] surface pixels at [scale], and as tall as the room.
+ * driver to hit. Each row begins with a square button as high as the row, which plays it.
+ * The window is as wide as whole steps of the frame allow in a room [roomW] by [roomH]
+ * surface pixels at [scale], and as tall as the room.
  */
 internal class RemoteListLayout(
     roomW: Int,
@@ -35,6 +36,12 @@ internal class RemoteListLayout(
     val listRight = width - Dest.PL_RIGHT_W
     val listTop = Dest.PL_TOP_H
     val listH = height - listTop
+
+    /** Where the rows' play buttons end and their text begins. */
+    val playRight = listLeft + rowH
+
+    /** Whether [x] is on the column of play buttons. */
+    fun onPlay(x: Float): Boolean = x >= listLeft && x < playRight
 
     /** The right end of the top bar: the close button's reach, which is wider than its X. */
     val closeReach = IntRect(width - CLOSE_REACH_W, 0, width, listTop)

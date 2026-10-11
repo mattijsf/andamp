@@ -34,7 +34,8 @@ import java.util.concurrent.atomic.AtomicReference
  * device, and what the player draws on it is read back.
  *
  * The pictures are also written to this app's files directory, to be looked at. The test is
- * skipped on a device without the player.
+ * skipped on a device without the player, and expects a player whose window on a car's screen
+ * is not filling it.
  *
  * Method names are plain identifiers: a name with spaces is illegal in DEX below version 040.
  */
@@ -130,8 +131,10 @@ class LendToPlayerOnDeviceTest {
         val top = pictureAfter(SETTLE_MS, "lent-10-list-top.png")
         player?.drag(0f, -2f * ROW_PX)
         val scrolled = pictureAfter(SETTLE_MS, "lent-11-list-scrolled.png")
-        // the second row from the top of what is showing
+        // the second row from the top of what is showing: first its name, then its play button
         player?.tap(WIDTH / 2f, LIST_TOP_PX + 1.5f * ROW_PX)
+        val touched = pictureAfter(SETTLE_MS, "lent-12-list-touched.png")
+        player?.tap(LIST_PLAY_X, LIST_TOP_PX + 1.5f * ROW_PX)
         val picked = pictureAfter(SETTLE_MS, "lent-12-list-picked.png")
         player?.tap(LIST_CLOSE_X, LIST_TOP_PX / 2f)
         val back = pictureAfter(SETTLE_MS, "lent-13-main-playing.png")
@@ -141,8 +144,25 @@ class LendToPlayerOnDeviceTest {
 
         assertFalse("the list has taken the main window's place", main.contentEquals(buttonsOf(top)))
         assertFalse("a drag scrolls the list", top.sameAs(scrolled))
-        assertFalse("the row that was picked is shown as the one that is on", scrolled.sameAs(picked))
+        assertTrue("a touch on a row's name plays nothing", scrolled.sameAs(touched))
+        assertFalse("the row whose button was pressed is shown as the one that is on", scrolled.sameAs(picked))
         assertTrue("the main window is back", main.contentEquals(buttonsOf(back)))
+    }
+
+    @Test
+    fun theDInTheWindowMakesItFillTheScreenAndBack() {
+        player?.show(reader.surface, WIDTH, HEIGHT, DPI)
+        pictureAfter(SETTLE_MS, "lent-14-sharp.png")
+
+        player?.tap(WINDOW_LEFT + D_X * SCALE, WINDOW_TOP + D_Y * SCALE)
+        val filled = pictureAfter(SETTLE_MS, "lent-15-filled.png")
+        // filling, the window is as wide as the screen: 1280 / 275 of its pixels to one
+        val per = WIDTH / 275f
+        player?.tap(D_X * per, (HEIGHT - 116 * per) / 2f + D_Y * per)
+        val sharp = pictureAfter(SETTLE_MS, "lent-16-sharp-again.png")
+
+        assertFalse("filling, the window reaches the screen's left edge", allBlack(filled, 0, 0, WINDOW_LEFT, HEIGHT))
+        assertTrue("sharp again, there is black beside it", allBlack(sharp, 0, 0, WINDOW_LEFT, HEIGHT))
     }
 
     @Test
@@ -228,6 +248,10 @@ class LendToPlayerOnDeviceTest {
         const val CLOSE_X = 245f
         const val CLOSE_Y = 12f
 
+        // the middle of the D in the clutter bar
+        const val D_X = 14f
+        const val D_Y = 51f
+
         // the middle of the PL button, on the EQ button's row
         const val PL_X = 253f
 
@@ -236,6 +260,9 @@ class LendToPlayerOnDeviceTest {
         const val LIST_TOP_PX = 20f * SCALE
         const val ROW_PX = 26f * SCALE
         const val LIST_CLOSE_X = (WIDTH + 300 * SCALE) / 2f - 20f * SCALE
+
+        // the middle of a row's play button: a square as wide as the row is high, 12 in from the list's left
+        const val LIST_PLAY_X = (WIDTH - 300 * SCALE) / 2f + 12f * SCALE + ROW_PX / 2f
         const val FAR = 100_000f
 
         // where the transport buttons are

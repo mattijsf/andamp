@@ -11,6 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -19,8 +20,11 @@ import androidx.compose.ui.unit.IntRect
 import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.skin.RegionTxt
 import nl.mattix.andamp.skin.Skin
+import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.ui.InPlayerVisualizerDriver
+import nl.mattix.andamp.ui.PlayerViewport
+import nl.mattix.andamp.ui.PlayerViewportBox
 import nl.mattix.andamp.ui.ScaledWindowCanvas
 import nl.mattix.andamp.ui.SkinCut
 import nl.mattix.andamp.ui.UiClocks
@@ -39,8 +43,11 @@ import nl.mattix.andamp.ui.window.eqWindowWidgets
 import nl.mattix.andamp.ui.window.mainWindowWidgets
 
 /**
- * What a lent surface shows: one window at a time, on black, in the middle of [within] at the
- * largest whole scale that fits there. [within] is in the surface's pixels; null is all of it.
+ * What a lent surface shows: one window at a time, on black, in the middle of [within].
+ * [within] is in the surface's pixels; null is all of it. The window is drawn at the largest
+ * whole scale that fits there, or with [fill] as large as fits at all; see [remoteViewport].
+ * The D in the main window's clutter bar is lit by [fill] and calls [onFill]: this surface's
+ * own Double Size. The A is never lit here, and does nothing.
  *
  * It starts on the main window. The EQ button there swaps the screen to the equalizer and the
  * PL button to the playlist; the close button of either swaps it back. Which one is up belongs
@@ -56,42 +63,69 @@ internal fun RemoteScreen(
     skin: Skin,
     within: IntRect?,
     scroll: ListScroll,
+    fill: Boolean = false,
+    onFill: () -> Unit = {},
 ) {
     val s = vm.state
     var up by remember { mutableStateOf(Up.MAIN) }
-    val main = remember(vm) { mainAlone(vm, onEq = { up = Up.EQUALIZER }, onPl = { up = Up.PLAYLIST }) }
+    val onFillNow by rememberUpdatedState(onFill)
+    val main =
+        remember(vm) {
+            mainAlone(vm, onEq = { up = Up.EQUALIZER }, onPl = { up = Up.PLAYLIST }, onFill = { onFillNow() })
+        }
     val eq = remember(vm) { eqAlone(vm, onClose = { up = Up.MAIN }) }
     InPlayerVisualizerDriver(vm)
     UiClocks(s)
     BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black)) {
-        val room = within ?: IntRect(0, 0, constraints.maxWidth, constraints.maxHeight)
-        // the two windows are one size, so the swap moves nothing
-        val scale = wholeScale(room.width, room.height)
-        val left = room.left + (room.width - MAIN_W * scale) / 2
-        val top = room.top + (room.height - MAIN_H * scale) / 2
-        if (up == Up.PLAYLIST) {
-            RemoteList(vm, skin, room, scale, scroll, onClose = { up = Up.MAIN })
-            return@BoxWithConstraints
-        }
-        Box(Modifier.offset { IntOffset(left, top) }) {
-            if (up == Up.EQUALIZER) {
-                ScaledWindowCanvas(EQ_W, EQ_H, scale, s, eq, cut = SkinCut(skin, RegionTxt.Window.EQ)) {
-                    drawEqWindow(skin, s)
-                }
+        val asked = within ?: IntRect(0, 0, constraints.maxWidth, constraints.maxHeight)
+        val fit = remoteViewport(asked.width, asked.height, fill)
+        // the windows are laid out on the viewport's surface, so the room is in its pixels
+        PlayerViewportBox(fit) {
+            val room = IntRect(fit.inner(asked.left), fit.inner(asked.top), fit.inner(asked.right), fit.inner(asked.bottom))
+            if (up == Up.PLAYLIST) {
+                RemoteList(vm, skin, room, fit, scroll, onClose = { up = Up.MAIN })
             } else {
-                ScaledWindowCanvas(MAIN_W, MAIN_H, scale, s, main, cut = SkinCut(skin, RegionTxt.Window.MAIN)) {
-                    drawMainWindow(skin, s)
+                // the two windows are one size, so the swap moves nothing
+                val left = room.left + (room.width - MAIN_W * fit.scale) / 2
+                val top = room.top + (room.height - MAIN_H * fit.scale) / 2
+                Box(Modifier.offset { IntOffset(left, top) }) {
+                    if (up == Up.EQUALIZER) EqualizerAlone(skin, s, fit.scale, eq) else MainAlone(skin, s, fit.scale, main, fill)
                 }
-                // the visualizer animates on its own canvas, so a frame repaints only that box
-                VisualizerOverlay(
-                    skin,
-                    s,
-                    scale,
-                    VisBox.FULL,
-                    Modifier.offset { IntOffset(Dest.VISUALIZER.x * scale, Dest.VISUALIZER.y * scale) },
-                )
             }
         }
+    }
+}
+
+@Composable
+private fun MainAlone(
+    skin: Skin,
+    s: WinampState,
+    scale: Int,
+    widgets: List<Widget>,
+    fill: Boolean,
+) {
+    ScaledWindowCanvas(MAIN_W, MAIN_H, scale, s, widgets, cut = SkinCut(skin, RegionTxt.Window.MAIN)) {
+        drawMainWindow(skin, s, alwaysOnTop = false, doubleSize = fill)
+    }
+    // the visualizer animates on its own canvas, so a frame repaints only that box
+    VisualizerOverlay(
+        skin,
+        s,
+        scale,
+        VisBox.FULL,
+        Modifier.offset { IntOffset(Dest.VISUALIZER.x * scale, Dest.VISUALIZER.y * scale) },
+    )
+}
+
+@Composable
+private fun EqualizerAlone(
+    skin: Skin,
+    s: WinampState,
+    scale: Int,
+    widgets: List<Widget>,
+) {
+    ScaledWindowCanvas(EQ_W, EQ_H, scale, s, widgets, cut = SkinCut(skin, RegionTxt.Window.EQ)) {
+        drawEqWindow(skin, s)
     }
 }
 
@@ -105,21 +139,46 @@ internal fun wholeScale(
 ): Int = minOf(width / MAIN_W, height / MAIN_H).coerceAtLeast(1)
 
 /**
+ * How a window is fitted into a room of [width] by [height] surface pixels.
+ *
+ * Without [fill], it is drawn at [wholeScale] and not shrunk, so every pixel of the skin is a
+ * whole number of the surface's. With [fill], it is as large as the room takes in its own
+ * shape: laid out at the next whole scale up and drawn smaller as one picture, as a player
+ * that fills a phone's screen is (see [nl.mattix.andamp.ui.playerViewport]). A room that is a
+ * whole multiple of the window is filled without shrinking.
+ */
+internal fun remoteViewport(
+    width: Int,
+    height: Int,
+    fill: Boolean,
+): PlayerViewport {
+    if (!fill || width <= 0 || height <= 0) return PlayerViewport(wholeScale(width, height), 1f)
+    // compared as whole numbers, so a room of exactly the window's shape is decided one way
+    val widthDecides = width.toLong() * MAIN_H <= height.toLong() * MAIN_W
+    val room = if (widthDecides) width else height
+    val window = if (widthDecides) MAIN_W else MAIN_H
+    val scale = ((room + window - 1) / window).coerceAtLeast(1)
+    return PlayerViewport(scale, room.toFloat() / (window * scale))
+}
+
+/**
  * The main window's controls on a surface that shows one window: those that need nothing but
- * the window itself ([MAIN_ALONE]), and the EQ and PL buttons, which call [onEq] and [onPl] in
- * place of opening a window beside it.
+ * the window itself ([MAIN_ALONE]), the EQ and PL buttons, which call [onEq] and [onPl] in
+ * place of opening a window beside it, and the clutter bar's D, which calls [onFill] in place
+ * of the phone's Double Size.
  */
 internal fun mainAlone(
     vm: WindowControls,
     onEq: () -> Unit,
     onPl: () -> Unit,
+    onFill: () -> Unit,
 ): List<Widget> =
-    mainWindowWidgets(vm, onOptions = {}).mapNotNull { stock ->
+    mainWindowWidgets(vm, onDoubleSize = onFill, onOptions = {}).mapNotNull { stock ->
         val at = stock.bounds
         when (stock.id) {
             EQ_SWITCH -> button(EQ_SWITCH, at.left, at.top, at.width, at.height, onTap = onEq)
             PL_SWITCH -> button(PL_SWITCH, at.left, at.top, at.width, at.height, onTap = onPl)
-            in MAIN_ALONE -> stock
+            in MAIN_ALONE, FILL_SWITCH -> stock
             else -> null
         }
     }
@@ -139,6 +198,7 @@ internal fun eqAlone(
 
 private const val EQ_SWITCH = "main.eqToggle"
 private const val PL_SWITCH = "main.plToggle"
+private const val FILL_SWITCH = "main.clutter.d"
 private const val EQ_CLOSE = "eq.close"
 
 /** The right end of the equalizer's title bar, down to the row of buttons under it. */

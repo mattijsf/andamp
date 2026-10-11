@@ -181,6 +181,12 @@ fun mainWindowWidgets(
 fun DrawScope.drawMainWindow(
     skin: Skin,
     s: WinampState,
+    /**
+     * Whether the clutter bar's A and D are lit. They show the phone's own floating window and
+     * Double Size, unless the surface this is drawn on keeps those two for itself.
+     */
+    alwaysOnTop: Boolean = s.alwaysOnTop,
+    doubleSize: Boolean = s.doubleSize,
 ) {
     val pressed = s.pressedWidget
     val stopped = s.transport == Transport.Stopped
@@ -190,7 +196,7 @@ fun DrawScope.drawMainWindow(
     sprite(titlebar, SpriteMap.MAIN_TITLE_BAR_SELECTED, Dest.TITLE_BAR)
     sprite(titlebar, SpriteMap.MAIN_CLUTTER_BAR_BACKGROUND, Dest.CLUTTER_BAR)
     // the bar's art has the unlit letters, so only the lit ones are drawn over it
-    clutterLit(pressed, s.alwaysOnTop, s.doubleSize).forEach { (art, at) -> sprite(titlebar, art, at.left, at.top) }
+    clutterLit(pressed, alwaysOnTop, doubleSize).forEach { (art, at) -> sprite(titlebar, art, at.left, at.top) }
 
     // titlebar buttons: normal art is part of the titlebar strip; draw pressed art only
     when (pressed) {
