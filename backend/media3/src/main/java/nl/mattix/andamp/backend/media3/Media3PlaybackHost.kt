@@ -142,10 +142,8 @@ object Media3PlaybackHost {
         val player = playerInstance ?: return null
         return MediaLibrarySession
             .Builder(app, player, SessionCallback(player))
-            // the cover on the notification and the lock screen. Wrapped in
-            // Media3's cache because the same cover is asked for repeatedly,
-            // and reading a file's tags is slow
-            .setBitmapLoader(androidx.media3.session.CacheBitmapLoader(CoverBitmapLoader(app)))
+            // the cover on the notification, the lock screen and a car's screen
+            .setBitmapLoader(CoverBitmapLoader(app))
             .apply {
                 // what tapping the notification opens. The launch intent is
                 // used because this module cannot see the app's activities.

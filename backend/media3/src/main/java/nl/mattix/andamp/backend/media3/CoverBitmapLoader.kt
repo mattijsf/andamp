@@ -10,8 +10,10 @@ import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
 import android.util.Size
+import androidx.media3.common.MediaMetadata
 import androidx.media3.common.util.BitmapLoader
 import androidx.media3.datasource.DataSourceBitmapLoader
+import androidx.media3.session.CacheBitmapLoader
 import com.google.common.util.concurrent.AsyncFunction
 import com.google.common.util.concurrent.Futures
 import com.google.common.util.concurrent.ListenableFuture
@@ -21,7 +23,8 @@ import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 
 /**
- * Loads the notification's cover for a song stored on the phone.
+ * Loads a row's cover, for the notification, the lock screen and whatever else
+ * shows the row, a car among them.
  *
  * Media3's own loader fetches an address and decodes what comes back, which
  * works for a picture's `https://…` address but not for a local file, whose
@@ -35,6 +38,11 @@ import java.util.concurrent.Executors
  * Any other address, and a local one with no picture in either place, goes to
  * Media3's loader.
  *
+ * A song on the phone names its file in its metadata, under [COVER_IN], and
+ * not as its artwork's address; see [toMediaMetadata]. The last file's answer
+ * is kept, because the same cover is asked for repeatedly and reading a file's
+ * tags is slow.
+ *
  * A cover is decoded no larger than [MAX_SIDE] on its longer side, wherever it
  * comes from. A picture in a file's tags or behind an address can be thousands
  * of pixels wide, and a decoded pixel takes four bytes.
@@ -44,10 +52,14 @@ import java.util.concurrent.Executors
  */
 internal class CoverBitmapLoader(
     context: Context,
-    private val elsewhere: BitmapLoader = DataSourceBitmapLoader(context.applicationContext, MAX_SIDE),
+    /** Fetches a picture by its address; it keeps its own last answer. */
+    private val elsewhere: BitmapLoader = CacheBitmapLoader(DataSourceBitmapLoader(context.applicationContext, MAX_SIDE)),
 ) : BitmapLoader {
     private val app = context.applicationContext
     private val work: ExecutorService = Executors.newSingleThreadExecutor { job -> Thread(job, "andamp-cover") }
+
+    /** The file last read for a cover, and what came of it. */
+    private var last: Pair<Uri, ListenableFuture<Bitmap>>? = null
 
     /** Delegated to the loader that fetches addresses. */
     override fun supportsMimeType(mimeType: String): Boolean = elsewhere.supportsMimeType(mimeType)
@@ -55,8 +67,22 @@ internal class CoverBitmapLoader(
     /** Delegated: the bytes are already an encoded picture. */
     override fun decodeBitmap(data: ByteArray): ListenableFuture<Bitmap> = elsewhere.decodeBitmap(data)
 
-    override fun loadBitmap(uri: Uri): ListenableFuture<Bitmap> {
-        if (!onThisPhone(uri)) return elsewhere.loadBitmap(uri)
+    override fun loadBitmap(uri: Uri): ListenableFuture<Bitmap> = if (onThisPhone(uri)) inFile(uri) else elsewhere.loadBitmap(uri)
+
+    /** The cover of the row [metadata] describes: read from the file it names, or loaded as Media3 would. */
+    override fun loadBitmapFromMetadata(metadata: MediaMetadata): ListenableFuture<Bitmap>? {
+        val file = metadata.extras?.getString(COVER_IN) ?: return super.loadBitmapFromMetadata(metadata)
+        return inFile(Uri.parse(file))
+    }
+
+    /** The cover in the file at [uri], read once for as long as the same file is asked for. */
+    @Synchronized
+    private fun inFile(uri: Uri): ListenableFuture<Bitmap> {
+        last?.let { (file, answer) -> if (file == uri) return answer }
+        return read(uri).also { last = uri to it }
+    }
+
+    private fun read(uri: Uri): ListenableFuture<Bitmap> {
         // The uri the file can be read under now, worked out on the worker and used by all
         // three places a cover is looked for; see Media3PlaybackHost.readableUri.
         val readable =

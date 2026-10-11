@@ -63,6 +63,19 @@ class SessionRowsTest {
         )
     }
 
+    /** A browser is another app: where a song is stored on the phone is not its to know. */
+    @Test
+    fun `a row does not name the file its cover is read from`() {
+        val onThePhone = SONGS.map { it.copy(uri = "content://media/audio/${it.id}") }
+
+        assertNull(
+            rowsOf(onThePhone)
+                .all()
+                .first()
+                .mediaMetadata.extras,
+        )
+    }
+
     @Test
     fun `a song that is in twice is listed under two ids`() {
         val ids = rowsOf(SONGS + SONGS.take(1)).all().map { it.mediaId }

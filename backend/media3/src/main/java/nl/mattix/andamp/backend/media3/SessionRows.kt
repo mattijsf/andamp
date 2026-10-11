@@ -70,6 +70,7 @@ internal class SessionRows(
                     .setIsPlayable(true)
                     .setIsBrowsable(false)
                     .setArtworkUri(null)
+                    .setExtras(null)
                     .build(),
             ).build()
 
