@@ -11,6 +11,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
+import kotlinx.coroutines.sync.Mutex
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.core.model.displayName
@@ -594,6 +595,14 @@ class WinampState {
     var marqueeHeld by mutableStateOf(false)
     var blinkOn by mutableStateOf(true) // pause blink phase
     var visFrame by mutableLongStateOf(0L) // bumped per vis frame
+
+    /**
+     * Held by the surface that is stepping the clocks, and the one that is stepping the
+     * visualizer. The player can be on the phone's screen and on a lent surface at once, and
+     * each would step this state; the second waits here until the first stops.
+     */
+    val clocksTurn = Mutex()
+    val visualizerTurn = Mutex()
     var visMode by mutableStateOf(VisMode.Analyzer)
 
     // visualizer scratch data: plain arrays, invalidated via visFrame

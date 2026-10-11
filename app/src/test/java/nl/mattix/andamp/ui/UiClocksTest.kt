@@ -97,6 +97,47 @@ class UiClocksTest {
         assertEquals("the time is back a second later", true, state.blinkOn)
     }
 
+    /** The player on the phone's screen and on a car's at once: two surfaces over one state. */
+    @Test
+    fun `two surfaces step the marquee no faster than one`() {
+        val alone = WinampState()
+        val shared = WinampState()
+        compose.mainClock.autoAdvance = false
+        owner.registry.currentState = Lifecycle.State.RESUMED
+        compose.setContent {
+            CompositionLocalProvider(LocalLifecycleOwner provides owner) {
+                UiClocks(alone)
+                UiClocks(shared)
+                UiClocks(shared)
+            }
+        }
+
+        compose.mainClock.advanceTimeBy(2_000)
+
+        assertTrue("the marquee steps: ${alone.marqueeStep}", alone.marqueeStep > 0)
+        assertEquals(alone.marqueeStep, shared.marqueeStep)
+    }
+
+    @Test
+    fun `when the surface that steps the clocks stops, the other takes over`() {
+        val state = WinampState()
+        val second = TestOwner()
+        compose.mainClock.autoAdvance = false
+        owner.registry.currentState = Lifecycle.State.RESUMED
+        second.registry.currentState = Lifecycle.State.RESUMED
+        compose.setContent {
+            CompositionLocalProvider(LocalLifecycleOwner provides owner) { UiClocks(state) }
+            CompositionLocalProvider(LocalLifecycleOwner provides second) { UiClocks(state) }
+        }
+        compose.mainClock.advanceTimeBy(1_000)
+
+        owner.registry.currentState = Lifecycle.State.CREATED
+        val whenFirstStopped = state.marqueeStep
+        compose.mainClock.advanceTimeBy(1_000)
+
+        assertTrue("the marquee goes on stepping", state.marqueeStep > whenFirstStopped)
+    }
+
     private class TestOwner : LifecycleOwner {
         val registry = LifecycleRegistry.createUnsafe(this)
 
