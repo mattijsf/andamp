@@ -60,10 +60,10 @@ internal class ColorModifierRenderer(
 
     override val errors: List<String> =
         buildList {
-            if (init.isNotBlank() && initCode == null) add("init")
-            if (perFrame.isNotBlank() && frameCode == null) add("per frame")
-            if (onBeat.isNotBlank() && beatCode == null) add("on beat")
-            if (perPointSource.isNotBlank() && pointCode == null) add("per point")
+            if (MovementEffect.hasCode(init) && initCode == null) add("init")
+            if (MovementEffect.hasCode(perFrame) && frameCode == null) add("per frame")
+            if (MovementEffect.hasCode(onBeat) && beatCode == null) add("on beat")
+            if (MovementEffect.hasCode(perPointSource) && pointCode == null) add("per point")
         }
 
     private val redTable = IntArray(LEVELS)

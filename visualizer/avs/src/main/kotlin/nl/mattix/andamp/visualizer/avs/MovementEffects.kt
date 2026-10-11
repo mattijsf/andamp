@@ -34,6 +34,16 @@ data class MovementEffect(
 
     companion object {
         /**
+         * The rewrite the preset being loaded applies to all of its code: set
+         * while a preset with an AVSTrans component loads, on the thread that
+         * loads it. See [AvsTrans].
+         */
+        internal val translator = ThreadLocal<((String) -> String)?>()
+
+        /** Whether [source] holds anything to run: a section that is only a comment does not, and has not failed. */
+        fun hasCode(source: String): Boolean = asEel(source).isNotBlank()
+
+        /**
          * The built-in scripts separate statements with commas and end on one;
          * projectm-eval wants semicolons and rejects a trailing separator.
          *
@@ -49,7 +59,8 @@ data class MovementEffect(
          * become a separator, and a comment reaching the end of a section
          * would swallow the statement joined after it.
          */
-        fun asEel(code: String): String {
+        fun asEel(source: String): String {
+            val code = translator.get()?.invoke(source) ?: source
             val bare = if ('/' in code) code.lineSequence().map { it.substringBefore("//") }.joinToString("\n") else code
             val out = StringBuilder(bare.length)
             var depth = 0

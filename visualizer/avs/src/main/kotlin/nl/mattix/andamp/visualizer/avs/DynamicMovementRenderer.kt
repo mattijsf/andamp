@@ -41,10 +41,10 @@ internal class DynamicMovementRenderer(
     /** The sections that did not compile. */
     override val errors: List<String> =
         buildList {
-            if (config.init.isNotBlank() && init == null) add("init")
-            if (config.perFrame.isNotBlank() && perFrame == null) add("per frame")
-            if (config.onBeat.isNotBlank() && onBeat == null) add("on beat")
-            if (config.perPoint.isNotBlank() && perPoint == null) add("per point")
+            if (MovementEffect.hasCode(config.init) && init == null) add("init")
+            if (MovementEffect.hasCode(config.perFrame) && perFrame == null) add("per frame")
+            if (MovementEffect.hasCode(config.onBeat) && onBeat == null) add("on beat")
+            if (MovementEffect.hasCode(config.perPoint) && perPoint == null) add("per point")
         }
 
     private val mesh = WarpMesh(config.gridWidth, config.gridHeight)

@@ -67,6 +67,24 @@ internal class BodyReader(
         return bytes[at++].toInt() and 0xFF
     }
 
+    /** Text up to the next null byte, or to the end of the body; the null is consumed. */
+    fun cString(): String {
+        val end = (at until bytes.size).firstOrNull { bytes[it].toInt() == 0 } ?: bytes.size
+        return String(bytes, at, end - at, Charsets.ISO_8859_1).also { at = minOf(end + 1, bytes.size) }
+    }
+
+    /** Text in a field of [length] bytes: up to the first null in it. The whole field is consumed. */
+    fun cStringWithin(length: Int): String {
+        val until = minOf(at + length.coerceAtLeast(0), bytes.size)
+        val end = (at until until).firstOrNull { bytes[it].toInt() == 0 } ?: until
+        return String(bytes, at, end - at, Charsets.ISO_8859_1).also { at = until }
+    }
+
+    /** Skips [count] bytes, or to the end of the body. */
+    fun skip(count: Int) {
+        at = minOf(at + count.coerceAtLeast(0), bytes.size)
+    }
+
     private companion object {
         const val INT_SIZE = 4
     }

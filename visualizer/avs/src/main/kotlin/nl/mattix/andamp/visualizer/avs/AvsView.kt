@@ -64,6 +64,9 @@ class AvsView(
     ) {
         val surface = Surface(texture)
         val engine = AvsEngine(MAX_WIDTH, MAX_WIDTH * 3 / 4)
+        val images = PackImages()
+        engine.images = images
+        engine.text = AndroidTextPainter()
         try {
             val fps = targetFps()
             val pacer = FramePacer(fps)
@@ -87,6 +90,8 @@ class AvsView(
                 if (loadedPath == null && restore != null) playlist.goTo(restore)
                 if (playlist.current != loadedPath) {
                     loadedPath = playlist.current
+                    // a preset's pictures are looked up in the pack it came from
+                    images.directory = presetDirectory
                     announceGaps(load(engine, loadedPath))
                     stickyPreset = loadedPath
                 }

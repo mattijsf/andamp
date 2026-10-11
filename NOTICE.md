@@ -70,6 +70,14 @@ spectrum's log curve, component field semantics) the code is transcribed from th
 and marked "Transcribed from vis_avs". No C++ is vendored or linked. This notice is the
 attribution the license asks for. The name Nullsoft is not used to promote this app.
 
+That repository also carries, under the same license, effects that were separate plug-ins
+for the original: the Convolution Filter by Tom Holden, Texer II and Picture II by Steven
+Wittens, AVSTrans by TomyLobo, and rewrites of Normalise and Triangle (TomyLobo), Color Map
+and Texer (Steven Wittens), Add Borders and Framerate Limiter (Goebish), and Global
+Variables and MultiFilter (Semi Essessi). `:visualizer:avs` implements them from that source
+the same way. The dot Texer II draws when a preset names no picture is the plug-in's own
+21 by 21 image from that repository.
+
 ## AVS-File-Decoder: MIT
 
 <https://github.com/grandchild/AVS-File-Decoder>

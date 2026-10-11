@@ -28,6 +28,23 @@ class AvsEngine(
     private var state = AvsRenderState(buffers)
 
     /**
+     * Where a preset's pictures come from. Set it before [load]: a component
+     * that draws with a picture takes it then.
+     */
+    var images: AvsImages = AvsImages.NONE
+        set(value) {
+            field = value
+            state.images = value
+        }
+
+    /** What draws a preset's text. Without one, Text draws nothing. */
+    var text: AvsTextPainter = AvsTextPainter.NONE
+        set(value) {
+            field = value
+            state.text = value
+        }
+
+    /**
      * Components in the loaded preset that got no renderer, by name, once each, and scripted
      * ones whose code did not all compile, with the failed sections.
      */
@@ -41,7 +58,11 @@ class AvsEngine(
         if (frame.width == width && frame.height == height) return
         frame = AvsFrame(width, height)
         buffers = buffers.resizedTo(width, height)
-        state = AvsRenderState(buffers)
+        state =
+            AvsRenderState(buffers).also {
+                it.images = images
+                it.text = text
+            }
     }
 
     /**
@@ -90,7 +111,14 @@ class AvsEngine(
         releaseRenderers()
         loaded = preset
         val missing = linkedSetOf<String>()
-        nodes = build(preset.components, missing)
+        // an AVSTrans component rewrites every piece of code in its preset
+        val trans = AvsTrans.settingsOf(preset.flatten().filter { it.name == AVS_TRANS }.map { it.body })
+        MovementEffect.translator.set(trans?.let(AvsTrans::translatorFor))
+        try {
+            nodes = build(preset.components, missing)
+        } finally {
+            MovementEffect.translator.remove()
+        }
         unimplemented = missing.toList()
     }
 
@@ -109,6 +137,9 @@ class AvsEngine(
                 } else {
                     if (renderer is AvsScripted && renderer.errors.isNotEmpty()) {
                         missing += "${component.name} (${renderer.errors.joinToString()})"
+                    }
+                    if (renderer is AvsPictured) {
+                        renderer.attach(images)?.let { missing += "${component.name} ($it)" }
                     }
                     Node.Leaf(renderer)
                 }
@@ -133,6 +164,8 @@ class AvsEngine(
         // every frame starts at the default render mode; a Set Render Mode
         // inside the preset changes it until the end of the frame
         state.reset(audio.beat)
+        // what a preset's code reads through getosc and getspec
+        Eel.hear(audio)
         run(nodes, frame, audio)
         return frame
     }
@@ -267,6 +300,7 @@ class AvsEngine(
 
     companion object {
         private const val FULL = 255
+        private const val AVS_TRANS = "Misc: AVSTrans Automation"
 
         /**
          * Hands [read] the evaluator its renderer will own, and closes that
@@ -346,6 +380,25 @@ class AvsEngine(
                 "Dot Fountain" to { body -> DotFountainRenderer.read(body) },
                 "Dot Plane" to { body -> DotPlaneRenderer.read(body) },
                 "Bump" to { body -> scripted { BumpRenderer.read(body, it) } },
+                // the rest are APEs, under the names they carry in a file
+                "Multiplier" to { body -> MultiplierRenderer.read(body) },
+                "Trans: Normalise" to { body -> NormaliseRenderer.read(body) },
+                "Virtual Effect: Addborders" to { body -> AddBordersRenderer.read(body) },
+                "Jheriko : MULTIFILTER" to { body -> MultiFilterRenderer.read(body) },
+                "VFX FRAMERATE LIMITER" to { _ -> FramerateLimiterRenderer() },
+                "Holden04: Video Delay" to { body -> VideoDelayRenderer.read(body) },
+                "Holden05: Multi Delay" to { body -> MultiDelayRenderer.read(body) },
+                "Color Map" to { body -> ColorMapRenderer.read(body) },
+                "Holden03: Convolution Filter" to { body -> ConvolutionRenderer.read(body) },
+                "Render: Triangle" to { body -> scripted { TriangleRenderer.read(body, it) } },
+                "Picture" to { body -> PictureRenderer.read(body) },
+                "Text" to { body -> TextRenderer.read(body) },
+                "Picture II" to { body -> Picture2Renderer.read(body) },
+                "Texer" to { body -> TexerRenderer.read(body) },
+                "Acko.net: Texer II" to { body -> scripted { Texer2Renderer.read(body, it) } },
+                "Jheriko: Global" to { body -> scripted { GlobalVariablesRenderer.read(body, it) } },
+                // read by load, which hands its code to every other component; it draws nothing
+                AVS_TRANS to { _ -> CommentRenderer() },
             )
 
         /** The names of the components this build can run. */

@@ -105,10 +105,33 @@ beat for every component after it.
 ## What runs
 
 `AvsEngine.supported` lists the components this build runs. It is the key set of
-`AvsEngine.READERS`, the map the engine builds renderers from. It holds 44 components: 42 of
-AVS's 46 built-ins, plus two APEs (Color Reduction, Channel Shift). Effect List is handled by
-the engine itself and is not in the map. The built-ins not
-implemented are SVP, Text, Picture and AVI.
+`AvsEngine.READERS`, the map the engine builds renderers from. It holds 61 components: 44 of
+AVS's 46 built-ins, and 17 that were APEs, plug-ins, for the original. Effect List is handled
+by the engine itself and is not in the map. The built-ins not implemented are SVP and AVI.
+
+An APE is a Windows DLL, so each one here is built in, under the name it carries in a file:
+Color Reduction, Channel Shift, Multiplier, Video Delay, Multi Delay, Normalise, Add Borders,
+MultiFilter, Color Map, Convolution Filter, Triangle, Texer, Texer II, Picture II, Global
+Variables, AVSTrans and Framerate Limiter. The vis_avs tree carries the source of each, from
+Nullsoft, from its author, or rewritten. FyrewurX, which Winamp shipped as a DLL alone, has
+no source and is not among them.
+
+Three of them reach outside the frame:
+
+- **Pictures.** Picture, Picture II, Texer and Texer II draw with a picture the preset names
+  by file. `AvsEngine.images` is where they come from; `AvsView` sets it to `PackImages`,
+  which matches the name against every picture file under the pack's folder. A picture that is
+  not there is listed in `unimplemented` with its name. Texer II draws the plug-in's own dot
+  instead.
+- **Text.** The engine has no fonts. `AvsEngine.text` draws a line as a mask, and `AvsView`
+  sets it to `AndroidTextPainter`. The fields AVS fills in from the player (`$(title)`,
+  `$(playpos)`) are left out of the line.
+- **AVSTrans** rewrites every piece of code in its preset before it is compiled: macros, and
+  several statements inside a function's arguments. `AvsEngine.load` reads its settings and
+  sets `MovementEffect.translator` for the length of the load.
+
+Framerate Limiter is accepted and does nothing: the view paces its own frames. Global
+Variables runs its code and has no file to load from or save to.
 
 - A component the build lacks is named in `AvsEngine.unimplemented` and skipped; the rest of
   the preset still draws. `AvsView` hands that list to the app as a `PresetGaps` when the
@@ -143,6 +166,13 @@ PRJM_EVAL_F  projectm_eval_code_execute(code_handle);
 
 A binding registers a variable, gets a `double*`, writes it, runs compiled code and reads the
 variable back.
+
+AVS adds five functions of its own to ns-eel: `getosc`
+and `getspec` read the frame's audio, `gettime` is a clock, and `getkbmouse` and `setmousepos`
+are the PC's mouse and keys. The evaluator has no call to add a function, so
+`avs_eel_jni.cpp` puts them in the context's function list, which it reaches through the
+evaluator's internal header. `Eel.hear` hands over the audio once a frame. With no mouse or
+keys, `getkbmouse` answers zero, and so does `gettime` for the song's position and length.
 
 The module has its own copy of the evaluator because `libprojectM-4.so` does not export
 projectM's. The two visualizer modules are therefore independent, and the AVS module does not
