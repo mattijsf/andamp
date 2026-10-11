@@ -114,6 +114,9 @@ class WinampViewModel
         /** The skin each music source asks for, worn while its tracks play; see [SourceSkins]. */
         val sourceSkinOps = SourceSkinOps(SourceSkins(app), skinOps::wear)
 
+        /** What the car's screen shows; see [CarStore]. */
+        val carStore = CarStore(app)
+
         val presetOps = PresetOps(app, state, viewModelScope)
 
         /**
@@ -145,10 +148,11 @@ class WinampViewModel
             // an install that was left with both starts floating, with Double Size off
             if (overlayOps.gate.wanted && doubleSize.on) doubleSize.on = false
             // a skin removed in the Skin Manager also loses its museum record, and a source
-            // that asked for it goes back to Default
+            // or a car that asked for it goes back to Default
             skinOps.onRemoved = { id ->
                 onlineSkins.ops.forgetId(id)
                 sourceSkinOps.skins.forgetSkin(id)
+                carStore.forgetSkin(id)
             }
         }
 

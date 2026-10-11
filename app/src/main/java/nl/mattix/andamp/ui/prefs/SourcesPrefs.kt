@@ -9,37 +9,28 @@ import android.graphics.drawable.Drawable
 import android.os.Build
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.outlined.AddCircleOutline
 import androidx.compose.material.icons.outlined.LibraryMusic
 import androidx.compose.material.icons.outlined.PhoneAndroid
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ImageBitmap
@@ -47,8 +38,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
 import nl.mattix.andamp.state.ExtraSource
@@ -331,67 +320,19 @@ internal fun SourceSkinRow(
     source: MusicSource,
     sources: SourcesPrefs,
 ) {
-    var choosing by remember { mutableStateOf(false) }
-    val chosen = sources.skinOf(source)?.let { id -> sources.skins.firstOrNull { it.id == id } }
     Text(
         "While a track from ${source.label} is playing, the player wears this skin. " +
             "Default keeps the one you picked for the player.",
         style = MaterialTheme.typography.bodyMedium,
     )
-    NavRow(
-        title = chosen?.name ?: DEFAULT_SKIN,
-        summary = if (chosen == null) "The player's own skin" else "Instead of the player's own skin",
-        tag = "prefs.skin.row",
-        onClick = { choosing = true },
-    )
-    if (!choosing) return
-    AlertDialog(
-        onDismissRequest = { choosing = false },
-        title = { Text("Skin for ${source.label}") },
-        text = {
-            Column(Modifier.verticalScroll(rememberScrollState())) {
-                SkinChoice(DEFAULT_SKIN, selected = chosen == null, tag = "prefs.skin.default") {
-                    sources.onSkin(source, null)
-                    choosing = false
-                }
-                sources.skins.forEach { entry ->
-                    SkinChoice(entry.name, selected = entry.id == chosen?.id, tag = "prefs.skin.${entry.id}") {
-                        sources.onSkin(source, entry.id)
-                        choosing = false
-                    }
-                }
-            }
-        },
-        confirmButton = { TextButton(onClick = { choosing = false }) { Text("Close") } },
+    SkinPickRow(
+        skins = sources.skins,
+        chosen = sources.skinOf(source),
+        heading = "Skin for ${source.label}",
+        tag = "prefs.skin",
+        onPick = { sources.onSkin(source, it) },
     )
 }
-
-/**
- * One skin in the list. The whole row is the radio, so a screen reader stops once and hears whether
- * it is selected.
- */
-@Composable
-private fun SkinChoice(
-    name: String,
-    selected: Boolean,
-    tag: String,
-    onPick: () -> Unit,
-) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .selectable(selected = selected, role = Role.RadioButton, onClick = onPick)
-            .testTag(tag)
-            .padding(vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RadioButton(selected = selected, onClick = null)
-        Text(name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
-    }
-}
-
-/** The label for following the player's own skin. */
-internal const val DEFAULT_SKIN = "Default"
 
 /**
  * Whether the source is the newest there is, checked each time the page opens. It offers the

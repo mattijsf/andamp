@@ -15,14 +15,20 @@ import android.view.InputDevice
 import android.view.MotionEvent
 import android.view.Surface
 import android.view.View
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.unit.IntRect
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import nl.mattix.andamp.skin.Skin
+import nl.mattix.andamp.state.CurrentSkin
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.ui.overlay.OverlayOwners
 
@@ -31,7 +37,8 @@ import nl.mattix.andamp.ui.overlay.OverlayOwners
  *
  * The surface becomes a display of this app's own, a virtual display, and a presentation on
  * that display holds the window, composed as it is on the phone's screen. So the skin, the
- * visualizer and the title are drawn by the code that draws them there.
+ * visualizer and the title are drawn by the code that draws them there. The skin is the one
+ * chosen for the car; see [nl.mattix.andamp.state.CarStore].
  *
  * The owner of the surface reports a tap by its place. It is given to the window as a press
  * and, [PRESS_MS] later, a release, so a button is seen going down.
@@ -84,7 +91,8 @@ internal class RemoteWindow(
                 setViewTreeViewModelStoreOwner(holders)
                 setViewTreeSavedStateRegistryOwner(holders)
                 setContent {
-                    val skin = vm.skin ?: return@setContent
+                    val own = vm.skin ?: return@setContent
+                    val skin = skinHere(own) ?: return@setContent
                     RemoteScreen(vm, skin, kept)
                 }
             }
@@ -99,6 +107,20 @@ internal class RemoteWindow(
         display = made
         presentation = shown
         owners = holders
+    }
+
+    /**
+     * The skin worn on the surface: the one chosen for the car, once it has been read, or the
+     * player's [own] when none is chosen or the chosen one will not load. Null while it is
+     * being read.
+     */
+    @Composable
+    private fun skinHere(own: Skin): Skin? {
+        val asked = vm.carStore.worn ?: return own
+        val read by produceState<Skin?>(null, asked, own) {
+            value = withContext(Dispatchers.IO) { CurrentSkin.load(context, id = asked) } ?: own
+        }
+        return read
     }
 
     /** Keeps the window inside [area] of the surface, in its pixels. */
