@@ -37,6 +37,7 @@ import nl.mattix.andamp.ui.window.EQ_H
 import nl.mattix.andamp.ui.window.EQ_W
 import nl.mattix.andamp.ui.window.MAIN_H
 import nl.mattix.andamp.ui.window.MAIN_W
+import nl.mattix.andamp.ui.window.SliderMath
 import nl.mattix.andamp.ui.window.VisBox
 import nl.mattix.andamp.ui.window.VisualizerOverlay
 import nl.mattix.andamp.ui.window.WindowControls
@@ -214,14 +215,21 @@ internal fun remoteViewport(
  * the window itself ([MAIN_ALONE]), the EQ and PL buttons, which call [onEq] and [onPl] in
  * place of opening a window beside it, and the clutter bar's D, which calls [onFill] in place
  * of the phone's Double Size.
+ *
+ * The balance finds its middle from farther off here ([WIDE_BALANCE_DETENT]): on a car's
+ * screen its whole travel is about a finger wide, and a drag is no way to hit one pixel of it.
  */
 internal fun mainAlone(
     vm: WindowControls,
     onEq: () -> Unit,
     onPl: () -> Unit,
     onFill: () -> Unit,
-): List<Widget> =
-    mainWindowWidgets(vm, onDoubleSize = onFill, onOptions = {}).mapNotNull { stock ->
+): List<Widget> {
+    val here =
+        object : WindowControls by vm {
+            override fun setBalance(balance: Int) = vm.setBalance(SliderMath.stickyBalance(balance, WIDE_BALANCE_DETENT))
+        }
+    return mainWindowWidgets(here, onDoubleSize = onFill, onOptions = {}).mapNotNull { stock ->
         val at = stock.bounds
         when (stock.id) {
             EQ_SWITCH -> button(EQ_SWITCH, at.left, at.top, at.width, at.height, onTap = onEq)
@@ -230,6 +238,10 @@ internal fun mainAlone(
             else -> null
         }
     }
+}
+
+/** How near its middle the balance has to be brought on a lent surface to rest there, of 100 either way. */
+internal const val WIDE_BALANCE_DETENT = 40
 
 /**
  * The equalizer's controls on a surface that shows one window: everything but the preset

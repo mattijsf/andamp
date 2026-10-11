@@ -40,10 +40,13 @@ object SliderMath {
     fun balanceThumbOffset(balance: Int): Int = ((balance.coerceIn(-100, 100) + 100) / 200f * 24).roundToInt()
 
     /**
-     * Sticky center: a balance within [BALANCE_DETENT] of center becomes 0, a detent wide
-     * enough for a finger to find.
+     * Sticky center: a balance within [detent] of center becomes 0. [BALANCE_DETENT] is wide
+     * enough for a finger on a phone to find.
      */
-    fun stickyBalance(raw: Int): Int = if (abs(raw) <= BALANCE_DETENT) 0 else raw
+    fun stickyBalance(
+        raw: Int,
+        detent: Int = BALANCE_DETENT,
+    ): Int = if (abs(raw) <= detent) 0 else raw
 
     const val BALANCE_DETENT = 18
 

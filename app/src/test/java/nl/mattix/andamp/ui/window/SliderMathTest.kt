@@ -107,6 +107,13 @@ class FormatTimeTest {
     }
 
     @Test
+    fun `a wider detent takes the balance to center from farther off`() {
+        assertEquals(0, SliderMath.stickyBalance(40, detent = 40))
+        assertEquals(0, SliderMath.stickyBalance(-40, detent = 40))
+        assertEquals(41, SliderMath.stickyBalance(41, detent = 40))
+    }
+
+    @Test
     fun `the detent is wide enough to feel on a phone but leaves most of the travel usable`() {
         // 24 virtual px of travel: the snap zone must not eat the slider
         val detent = SliderMath.BALANCE_DETENT

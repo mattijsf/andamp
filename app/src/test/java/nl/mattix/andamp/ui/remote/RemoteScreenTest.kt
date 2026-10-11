@@ -10,6 +10,7 @@ import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.ui.PlayerViewport
 import nl.mattix.andamp.ui.widget.Widget
+import nl.mattix.andamp.ui.window.mainWindowWidgets
 import nl.mattix.andamp.ui.window.testViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -270,5 +271,45 @@ class RemoteScreenTest {
         val sliders = mainAlone(vm, onEq = {}, onPl = {}, onFill = {}).filter { it.handle != null }.map { it.id }
 
         assertEquals(setOf("main.posbar", "main.volume", "main.balance"), sliders.toSet())
+    }
+
+    /** A press and a release on the balance where its thumb shows [balance], of 100 either way. */
+    private fun setBalance(
+        on: Widget,
+        balance: Int,
+    ) {
+        val at = Offset(Dest.BALANCE.x + 7 + (balance + 100) / 200f * 24, Dest.BALANCE.y + 6f)
+        on.down(vm.state, at)
+        on.up(vm.state, at)
+    }
+
+    /** Its whole travel is about a finger wide on a car's screen. */
+    @Test
+    fun `a balance brought near its middle rests in the middle`() {
+        val balance = mainAlone(vm, onEq = {}, onPl = {}, onFill = {}).named("main.balance")
+
+        setBalance(balance, 35)
+        assertEquals(0, vm.state.balance)
+
+        setBalance(balance, -35)
+        assertEquals(0, vm.state.balance)
+    }
+
+    @Test
+    fun `a balance put well to one side stays there`() {
+        val balance = mainAlone(vm, onEq = {}, onPl = {}, onFill = {}).named("main.balance")
+
+        setBalance(balance, 70)
+
+        assertEquals(70, vm.state.balance)
+    }
+
+    @Test
+    fun `on the phone the balance keeps its narrower middle`() {
+        val balance = mainWindowWidgets(vm, onOptions = {}).named("main.balance")
+
+        setBalance(balance, 35)
+
+        assertEquals(35, vm.state.balance)
     }
 }
