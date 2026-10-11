@@ -15,8 +15,8 @@ import kotlinx.coroutines.withContext
 import nl.mattix.andamp.core.player.PlayerFacade
 
 /**
- * What a session leaves for the next one: shuffle and repeat, the queue and its current
- * row, the visualizer's mode, and where the windows were left.
+ * What a session leaves for the next one: shuffle and repeat, the equalizer, the queue and
+ * its current row, the visualizer's mode, and where the windows were left.
  *
  * Every writer is fed by what the backend or the snapshot state reports, so a change is
  * saved whichever code made it. Every writer debounces, because a drag emits per frame and
@@ -34,6 +34,7 @@ class PersistenceOps(
     private val transportStore: TransportStore,
     private val windowStore: WindowStore,
     private val visualsStore: VisualsStore,
+    private val eqStore: EqStore,
     /** Where the writes happen. */
     private val io: kotlin.coroutines.CoroutineContext = Dispatchers.IO,
     /**
@@ -57,16 +58,20 @@ class PersistenceOps(
     private var savedSnapshot: PlaylistCodec.Saved? = null
     private var pendingWindows: WindowLayoutMemory? = null
     private var savedWindows: WindowLayoutMemory? = null
+    private var pendingEq: EqMemory? = null
+    private var savedEq: EqMemory? = null
 
     /** Restores what was remembered, then watches everything that can change it. */
     fun start() {
         restoreTransport()
+        restoreEqualizer()
         restoreWindows()
         state.visMode = visualsStore.load().mode
         collectTransport()
         collectPlaylist()
         collectVisuals()
         collectWindows()
+        collectEqualizer()
     }
 
     /**
@@ -78,6 +83,7 @@ class PersistenceOps(
     fun flush() {
         pendingSave?.takeIf { it != savedSnapshot }?.let(::storePlaylist)
         pendingWindows?.takeIf { it != savedWindows }?.let(windowStore::save)
+        pendingEq?.takeIf { it != savedEq }?.let(eqStore::save)
     }
 
     /** Restores shuffle and repeat. Volume is not restored: it is the phone's media volume. */
@@ -85,6 +91,39 @@ class PersistenceOps(
         transportStore.load().let { stored ->
             facade.setShuffle(stored.shuffle)
             facade.setRepeat(stored.repeat)
+        }
+    }
+
+    /**
+     * Puts the equalizer back as it was left, on screen and in the backend. The backend
+     * is told even when nothing was stored: it can outlive the windows, and would
+     * otherwise keep a curve the sliders no longer show.
+     */
+    private fun restoreEqualizer() {
+        eqStore.load()?.let { stored ->
+            state.eqOn = stored.on
+            state.eqAuto = stored.auto
+            state.preamp = stored.preamp.coerceIn(0, EQ_MAX)
+            for (i in state.eqBands.indices) state.eqBands[i] = (stored.bands.getOrNull(i) ?: EqOps.CENTER).coerceIn(0, EQ_MAX)
+        }
+        savedEq = eqMemory()
+        facade.setEqualizer(EqOps.settingsOf(state))
+    }
+
+    /** The equalizer on screen, as [EqStore] stores it. */
+    private fun eqMemory() = EqMemory(state.eqOn, state.eqAuto, state.preamp, state.eqBands.toList())
+
+    private fun collectEqualizer() {
+        scope.launch {
+            snapshotFlow { eqMemory() }
+                .distinctUntilChanged()
+                .drop(1) // the restored value is already on disk
+                .collectLatest { memory ->
+                    pendingEq = memory
+                    delay(SAVE_DEBOUNCE_MS) // a slider drag emits per step; one write when it rests
+                    withContext(io) { eqStore.save(memory) }
+                    savedEq = memory
+                }
         }
     }
 
@@ -178,5 +217,8 @@ class PersistenceOps(
     private companion object {
         /** Long enough to coalesce a burst of edits. */
         const val SAVE_DEBOUNCE_MS = 400L
+
+        /** The top of an equalizer slider. */
+        const val EQ_MAX = 63
     }
 }

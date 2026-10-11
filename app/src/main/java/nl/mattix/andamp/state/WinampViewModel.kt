@@ -68,6 +68,7 @@ class WinampViewModel
 
         /** Not a constructor parameter: tests reach it through the prefs the app writes. */
         private val visualsStore = VisualsStore(app)
+        private val eqStore = EqStore(app)
         private val library = MediaStoreAudio(app)
         private val readable = ReadableUri(app, library)
         private val mediaFiles = MediaFiles(app, library, readable::of)
@@ -260,6 +261,7 @@ class WinampViewModel
                 transportStore,
                 windowStore,
                 visualsStore,
+                eqStore,
                 namedElsewhere = {
                     val lists = playlistLibrary.uris()
                     val bookmarks = bookmarkStore.uris()
