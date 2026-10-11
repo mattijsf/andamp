@@ -23,10 +23,13 @@ internal class WindowScreen(
     private fun surface(): Template =
         NavigationTemplate
             .Builder()
-            .setActionStrip(ActionStrip.Builder().addAction(Action.APP_ICON).build())
+            .setActionStrip(ActionStrip.Builder().addAction(markButton()).build())
             // the car reports what happens on the surface only to a template with this button
             .setMapActionStrip(ActionStrip.Builder().addAction(Action.PAN).build())
             .build()
+
+    /** The one button the template requires: the app's mark, which does nothing when pressed. */
+    private fun markButton(): Action = Mark.of(carContext)?.let { Action.Builder().setIcon(it).build() } ?: Action.APP_ICON
 
     private fun noPlayer(): Template =
         MessageTemplate
