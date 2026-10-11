@@ -27,7 +27,7 @@ visualizer/projectm/
     EglSurface             an ES 3 context on a SurfaceTexture
     ProjectMView           the render loop, on :visualizer:core's VisualizerView
     PresetPack, PresetLoader, PresetRestore   which presets, and what comes back after a rebuild
-  third_party/projectm/    git submodule, pinned to v4.1.7
+  third_party/projectm/    git submodule, pinned to v4.1.8
 ```
 
 The native code lives in its own module. `:app` uses `ProjectMView` and `PresetPack` and

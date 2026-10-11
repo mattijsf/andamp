@@ -38,7 +38,7 @@ data class Notice(
 /** The list itself, and the projectM version the LGPL source offer names. */
 object Notices {
     /** The projectM revision this build links against; `NOTICE.md` records the same tag. */
-    const val PROJECTM_PIN = "4.1.7"
+    const val PROJECTM_PIN = "4.1.8"
 
     /** projectM's LGPL-2.1 text in the APK's assets, copied there by `:app:bundledLicenses`. */
     const val PROJECTM_LICENSE_ASSET = "licenses/projectM-LGPL-2.1.txt"

@@ -34,6 +34,16 @@ set(CMAKE_DISABLE_FIND_PACKAGE_FLEX ON CACHE BOOL "" FORCE)
 # library name would differ per build type.
 set(ENABLE_DEBUG_POSTFIX OFF CACHE BOOL "" FORCE)
 
+# projectM writes CMAKE_PROJECT_VERSION into its version header, and its own
+# project() sets that only while it is undefined. The first configure caches
+# it; on every later one the project() above, which has no version, blanks the
+# cached value, and the header comes out without numbers. Dropping it here
+# lets projectM's project() set it on every configure.
+foreach(part "" _MAJOR _MINOR _PATCH _TWEAK)
+    unset(CMAKE_PROJECT_VERSION${part})
+    unset(CMAKE_PROJECT_VERSION${part} CACHE)
+endforeach()
+
 add_subdirectory("${PROJECTM_DIR}" projectm)
 
 add_library(andamp_projectm SHARED projectm_jni.cpp)
