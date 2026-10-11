@@ -4,6 +4,24 @@ What changed for somebody who uses Andamp, newest first. It is written from the 
 messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `docs:` and
 `chore:` commits do not appear here.
 
+## [0.12.0](https://github.com/mattijsf/andamp/compare/v0.11.1...v0.12.0) (2026-10-11)
+
+
+### New
+
+* AVS runs fifteen plug-in effects, and presets with pictures and text ([#37](https://github.com/mattijsf/andamp/issues/37)) ([68c1b23](https://github.com/mattijsf/andamp/commit/68c1b2311a814e0687edfac646118e99bb7b0ba1))
+* AVS runs Winamp's own presets, with eight more effects ([#34](https://github.com/mattijsf/andamp/issues/34)) ([2f98e35](https://github.com/mattijsf/andamp/commit/2f98e3527e393b357eebb498a802b69ea1adf64b))
+* the AVS window says when a preset has effects it cannot show ([#36](https://github.com/mattijsf/andamp/issues/36)) ([efbc590](https://github.com/mattijsf/andamp/commit/efbc590de438697ea68762ca8f6b2bc2092c2a63))
+
+
+### Fixed
+
+* a bitrate above 999 kbps no longer runs into its label ([#33](https://github.com/mattijsf/andamp/issues/33)) ([156a909](https://github.com/mattijsf/andamp/commit/156a90930dae5843c50c07f54c68a75cea656b79))
+* a folder with more than 500 songs is added whole ([#30](https://github.com/mattijsf/andamp/issues/30)) ([bceea3f](https://github.com/mattijsf/andamp/commit/bceea3f072a626277dfdc552d1af8f2bb6ec392a))
+* a skin opened in the museum fits a tablet's screen ([#25](https://github.com/mattijsf/andamp/issues/25)) ([376092e](https://github.com/mattijsf/andamp/commit/376092e4348cd77d82608e56ac1428a6563044f9))
+* more MilkDrop presets draw as they should, with projectM 4.1.8 ([#35](https://github.com/mattijsf/andamp/issues/35)) ([e0d1feb](https://github.com/mattijsf/andamp/commit/e0d1febff4542621ce60f97e8e1d054e3a7efa6d))
+* the equalizer comes back as you left it after closing the app ([#32](https://github.com/mattijsf/andamp/issues/32)) ([eb0eba3](https://github.com/mattijsf/andamp/commit/eb0eba3edbd6ec8aa529315fb10dcc7c38590f75))
+
 ## [0.11.1](https://github.com/mattijsf/andamp/compare/v0.11.0...v0.11.1) (2026-10-09)
 
 
