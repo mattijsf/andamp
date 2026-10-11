@@ -29,4 +29,16 @@ oneway interface IRemoteWindow {
 
     /** Takes the window off the surface, which the caller is about to lose. */
     void hide();
+
+    /**
+     * A finger dragging across the surface: how far it has moved since the last
+     * report, in pixels. Right and down are positive.
+     */
+    void drag(float dx, float dy);
+
+    /**
+     * A finger that left the surface while moving: its speed at that moment, in
+     * pixels a second. Right and down are positive.
+     */
+    void fling(float vx, float vy);
 }

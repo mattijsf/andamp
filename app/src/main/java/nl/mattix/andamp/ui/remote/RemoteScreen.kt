@@ -42,23 +42,25 @@ import nl.mattix.andamp.ui.window.mainWindowWidgets
  * What a lent surface shows: one window at a time, on black, in the middle of [within] at the
  * largest whole scale that fits there. [within] is in the surface's pixels; null is all of it.
  *
- * It starts on the main window. The EQ button there swaps the screen to the equalizer, and the
- * equalizer's close button swaps it back. Which of the two is up belongs to this surface and
- * is not kept.
+ * It starts on the main window. The EQ button there swaps the screen to the equalizer and the
+ * PL button to the playlist; the close button of either swaps it back. Which one is up belongs
+ * to this surface and is not kept.
  *
- * Each window is drawn whole. The controls that need another window or a menu do nothing here;
- * see [mainAlone] and [eqAlone].
+ * The main window and the equalizer are drawn whole. The controls that need another window or
+ * a menu do nothing here; see [mainAlone] and [eqAlone]. The playlist is [RemoteList], a list
+ * to pick a song from, which fills the room.
  */
 @Composable
 internal fun RemoteScreen(
     vm: WinampViewModel,
     skin: Skin,
     within: IntRect?,
+    scroll: ListScroll,
 ) {
     val s = vm.state
-    var equalizer by remember { mutableStateOf(false) }
-    val main = remember(vm) { mainAlone(vm, onEq = { equalizer = true }) }
-    val eq = remember(vm) { eqAlone(vm, onClose = { equalizer = false }) }
+    var up by remember { mutableStateOf(Up.MAIN) }
+    val main = remember(vm) { mainAlone(vm, onEq = { up = Up.EQUALIZER }, onPl = { up = Up.PLAYLIST }) }
+    val eq = remember(vm) { eqAlone(vm, onClose = { up = Up.MAIN }) }
     InPlayerVisualizerDriver(vm)
     UiClocks(s)
     BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black)) {
@@ -67,8 +69,12 @@ internal fun RemoteScreen(
         val scale = wholeScale(room.width, room.height)
         val left = room.left + (room.width - MAIN_W * scale) / 2
         val top = room.top + (room.height - MAIN_H * scale) / 2
+        if (up == Up.PLAYLIST) {
+            RemoteList(vm, skin, room, scale, scroll, onClose = { up = Up.MAIN })
+            return@BoxWithConstraints
+        }
         Box(Modifier.offset { IntOffset(left, top) }) {
-            if (equalizer) {
+            if (up == Up.EQUALIZER) {
                 ScaledWindowCanvas(EQ_W, EQ_H, scale, s, eq, cut = SkinCut(skin, RegionTxt.Window.EQ)) {
                     drawEqWindow(skin, s)
                 }
@@ -89,6 +95,9 @@ internal fun RemoteScreen(
     }
 }
 
+/** The window a lent surface is showing. */
+private enum class Up { MAIN, EQUALIZER, PLAYLIST }
+
 /** How many pixels a virtual pixel gets in a room of this size: whole, and at least one. */
 internal fun wholeScale(
     width: Int,
@@ -97,27 +106,21 @@ internal fun wholeScale(
 
 /**
  * The main window's controls on a surface that shows one window: those that need nothing but
- * the window itself ([MAIN_ALONE]), and the EQ button, which calls [onEq] in place of opening
- * the equalizer beside it.
+ * the window itself ([MAIN_ALONE]), and the EQ and PL buttons, which call [onEq] and [onPl] in
+ * place of opening a window beside it.
  */
 internal fun mainAlone(
     vm: WindowControls,
     onEq: () -> Unit,
+    onPl: () -> Unit,
 ): List<Widget> =
     mainWindowWidgets(vm, onOptions = {}).mapNotNull { stock ->
+        val at = stock.bounds
         when (stock.id) {
-            EQ_SWITCH -> {
-                val at = stock.bounds
-                button(EQ_SWITCH, at.left, at.top, at.width, at.height, onTap = onEq)
-            }
-
-            in MAIN_ALONE -> {
-                stock
-            }
-
-            else -> {
-                null
-            }
+            EQ_SWITCH -> button(EQ_SWITCH, at.left, at.top, at.width, at.height, onTap = onEq)
+            PL_SWITCH -> button(PL_SWITCH, at.left, at.top, at.width, at.height, onTap = onPl)
+            in MAIN_ALONE -> stock
+            else -> null
         }
     }
 
@@ -135,6 +138,7 @@ internal fun eqAlone(
     ) + eqWindowWidgets(vm).filter { it.id !in EQ_NOT_ALONE }
 
 private const val EQ_SWITCH = "main.eqToggle"
+private const val PL_SWITCH = "main.plToggle"
 private const val EQ_CLOSE = "eq.close"
 
 /** The right end of the equalizer's title bar, down to the row of buttons under it. */

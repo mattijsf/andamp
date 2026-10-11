@@ -62,6 +62,20 @@ class LentSurfaceTest {
             override fun hide() {
                 told += "hide"
             }
+
+            override fun drag(
+                dx: Float,
+                dy: Float,
+            ) {
+                told += "drag $dx,$dy"
+            }
+
+            override fun fling(
+                vx: Float,
+                vy: Float,
+            ) {
+                told += "fling $vx,$vy"
+            }
         }
 
     @Before
@@ -115,6 +129,25 @@ class LentSurfaceTest {
         lent.onClick(292f, 516f)
 
         assertEquals("tap 292.0,516.0", told.last())
+    }
+
+    /** The car says how far the picture should scroll; the finger went the other way. */
+    @Test
+    fun `a drag is passed on as the way the finger went`() {
+        val lent = handedOver()
+
+        lent.onScroll(0f, 40f)
+
+        assertEquals("drag -0.0,-40.0", told.last())
+    }
+
+    @Test
+    fun `a fling is passed on with the finger's speed`() {
+        val lent = handedOver()
+
+        lent.onFling(0f, -1500f)
+
+        assertEquals("fling 0.0,-1500.0", told.last())
     }
 
     @Test

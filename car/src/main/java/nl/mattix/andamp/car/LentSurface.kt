@@ -17,9 +17,9 @@ import nl.mattix.andamp.core.remotewindow.RemoteWindowLink
  * The car's surface, lent to the player.
  *
  * When the car hands over a surface, this binds to the player and passes the surface on; the
- * player shows its main window there. A tap the car reports is passed on as well, and so is
- * the part of the surface the car leaves uncovered. When the car takes the surface back, the
- * player is told and let go.
+ * player shows its main window there. A tap or a drag the car reports is passed on as well,
+ * and so is the part of the surface the car leaves uncovered. When the car takes the surface
+ * back, the player is told and let go.
  *
  * The player can come and go while the surface stays: each time it is reached, it is handed
  * the surface as it is then.
@@ -65,6 +65,20 @@ internal class LentSurface(
         x: Float,
         y: Float,
     ) = tell { tap(x, y) }
+
+    /**
+     * The car reports a drag as the distance the picture should scroll, which is the
+     * opposite of the way the finger went; the player is told the finger's way.
+     */
+    override fun onScroll(
+        distanceX: Float,
+        distanceY: Float,
+    ) = tell { drag(-distanceX, -distanceY) }
+
+    override fun onFling(
+        velocityX: Float,
+        velocityY: Float,
+    ) = tell { fling(velocityX, velocityY) }
 
     override fun onSurfaceDestroyed(surfaceContainer: SurfaceContainer) = takeBack()
 

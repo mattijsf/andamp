@@ -119,6 +119,33 @@ class LendToPlayerOnDeviceTest {
     }
 
     @Test
+    fun thePlButtonOpensAListToPickASongFrom() {
+        player?.show(reader.surface, WIDTH, HEIGHT, DPI)
+        val main = buttonsOf(pictureAfter(SETTLE_MS, "lent-9-main.png"))
+
+        player?.tap(WINDOW_LEFT + PL_X * SCALE, WINDOW_TOP + EQ_Y * SCALE)
+        Thread.sleep(SETTLE_MS)
+        // a long drag down the screen brings the list to its top, whichever row it opened on
+        player?.drag(0f, FAR)
+        val top = pictureAfter(SETTLE_MS, "lent-10-list-top.png")
+        player?.drag(0f, -2f * ROW_PX)
+        val scrolled = pictureAfter(SETTLE_MS, "lent-11-list-scrolled.png")
+        // the second row from the top of what is showing
+        player?.tap(WIDTH / 2f, LIST_TOP_PX + 1.5f * ROW_PX)
+        val picked = pictureAfter(SETTLE_MS, "lent-12-list-picked.png")
+        player?.tap(LIST_CLOSE_X, LIST_TOP_PX / 2f)
+        val back = pictureAfter(SETTLE_MS, "lent-13-main-playing.png")
+        // left as it was found
+        player?.tap(WINDOW_LEFT + STOP_X * SCALE, WINDOW_TOP + PLAY_Y * SCALE)
+        Thread.sleep(SETTLE_MS)
+
+        assertFalse("the list has taken the main window's place", main.contentEquals(buttonsOf(top)))
+        assertFalse("a drag scrolls the list", top.sameAs(scrolled))
+        assertFalse("the row that was picked is shown as the one that is on", scrolled.sameAs(picked))
+        assertTrue("the main window is back", main.contentEquals(buttonsOf(back)))
+    }
+
+    @Test
     fun theWindowKeepsToThePartItIsGiven() {
         player?.show(reader.surface, WIDTH, HEIGHT, DPI)
         player?.keepTo(WIDTH / 2, 0, WIDTH, HEIGHT)
@@ -200,6 +227,16 @@ class LendToPlayerOnDeviceTest {
         const val EQ_Y = 64f
         const val CLOSE_X = 245f
         const val CLOSE_Y = 12f
+
+        // the middle of the PL button, on the EQ button's row
+        const val PL_X = 253f
+
+        // the list: its rows start under a top bar 20 of its pixels high and are 26 high, it is
+        // 300 wide in the middle of the screen, and its close button reaches 40 in from the right
+        const val LIST_TOP_PX = 20f * SCALE
+        const val ROW_PX = 26f * SCALE
+        const val LIST_CLOSE_X = (WIDTH + 300 * SCALE) / 2f - 20f * SCALE
+        const val FAR = 100_000f
 
         // where the transport buttons are
         const val BUTTONS_X = 16

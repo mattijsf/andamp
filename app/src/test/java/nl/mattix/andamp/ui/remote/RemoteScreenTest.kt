@@ -60,14 +60,14 @@ class RemoteScreenTest {
 
     @Test
     fun `the main window keeps the controls that need no other window`() {
-        val ids = mainAlone(vm, onEq = {}).map { it.id }.toSet()
+        val ids = mainAlone(vm, onEq = {}, onPl = {}).map { it.id }.toSet()
 
-        assertEquals(MAIN_ALONE + "main.eqToggle", ids)
+        assertEquals(MAIN_ALONE + "main.eqToggle" + "main.plToggle", ids)
     }
 
     @Test
     fun `the transport still works from there`() {
-        tap(mainAlone(vm, onEq = {}).named("main.play"))
+        tap(mainAlone(vm, onEq = {}, onPl = {}).named("main.play"))
 
         assertEquals(Transport.Playing, vm.state.transport)
     }
@@ -77,10 +77,21 @@ class RemoteScreenTest {
         var swaps = 0
         val before = vm.state.eqVisible
 
-        tap(mainAlone(vm, onEq = { swaps++ }).named("main.eqToggle"))
+        tap(mainAlone(vm, onEq = { swaps++ }, onPl = {}).named("main.eqToggle"))
 
         assertEquals(1, swaps)
         assertEquals("the phone's equalizer window is left as it was", before, vm.state.eqVisible)
+    }
+
+    @Test
+    fun `the PL button swaps the screen and opens no window beside it`() {
+        var swaps = 0
+        val before = vm.state.plVisible
+
+        tap(mainAlone(vm, onEq = {}, onPl = { swaps++ }).named("main.plToggle"))
+
+        assertEquals(1, swaps)
+        assertEquals("the phone's playlist window is left as it was", before, vm.state.plVisible)
     }
 
     @Test

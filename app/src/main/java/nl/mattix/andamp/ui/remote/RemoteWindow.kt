@@ -41,7 +41,8 @@ import nl.mattix.andamp.ui.overlay.OverlayOwners
  * chosen for the car; see [nl.mattix.andamp.state.CarStore].
  *
  * The owner of the surface reports a tap by its place. It is given to the window as a press
- * and, [PRESS_MS] later, a release, so a button is seen going down.
+ * and, [PRESS_MS] later, a release, so a button is seen going down. A drag is reported by
+ * its distance only, which is what scrolling [list] takes.
  *
  * Every call is made on the main thread.
  */
@@ -56,6 +57,9 @@ internal class RemoteWindow(
 
     /** The part of the surface the window keeps to, or null for all of it. */
     private var kept by mutableStateOf<IntRect?>(null)
+
+    /** Where the playlist on the surface is scrolled to; a drag on the surface moves it. */
+    val list = ListScroll()
 
     /** The release of the tap that is down, until it has been sent. */
     private var release: Runnable? = null
@@ -93,7 +97,7 @@ internal class RemoteWindow(
                 setContent {
                     val own = vm.skin ?: return@setContent
                     val skin = skinHere(own) ?: return@setContent
-                    RemoteScreen(vm, skin, kept)
+                    RemoteScreen(vm, skin, kept, list)
                 }
             }
         shown.setContentView(content)

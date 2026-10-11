@@ -254,6 +254,62 @@ private fun DrawScope.fillTiles(
     }
 }
 
+/**
+ * The playlist's top bar across [width], always in the focused variants: a corner at each
+ * end, the title plate centered, and the gaps filled with tiles, the odd remainder first.
+ * The close and shade buttons show their pressed art.
+ */
+internal fun DrawScope.drawPlaylistTop(
+    skin: Skin,
+    s: WinampState,
+    width: Int,
+) {
+    val sheet = skin[Sheet.PLEDIT]
+    sprite(sheet, SpriteMap.PLAYLIST_TOP_LEFT_SELECTED, 0, 0)
+    val tile = SpriteMap.PLAYLIST_TOP_TILE_SELECTED
+    val titleW = SpriteMap.PLAYLIST_TITLE_BAR_SELECTED.w
+    // webamp's row: corner, a 12px spacer, fill, the title plate, a 13px spacer, fill,
+    // corner, with the two spacers only when the width index is even
+    // (PlaylistWindow/index.tsx: showSpacers = size[0] % 2 === 0)
+    val spacers = (width - PL_W) / PlaylistLayout.WIDTH_STEP % 2 == 0
+    val leftSpacer = if (spacers) 12 else 0
+    val rightSpacer = if (spacers) 13 else 0
+    val slack = width - 50 - titleW - leftSpacer - rightSpacer
+    val leftFill = slack / 2
+    if (leftSpacer > 0) sprite(sheet, Sprite(tile.x, tile.y, leftSpacer, tile.h), 25, 0)
+    fillTiles(sheet, tile, 25 + leftSpacer, 25 + leftSpacer + leftFill)
+    val titleX = 25 + leftSpacer + leftFill
+    sprite(sheet, SpriteMap.PLAYLIST_TITLE_BAR_SELECTED, titleX, 0)
+    if (rightSpacer > 0) sprite(sheet, Sprite(tile.x, tile.y, rightSpacer, tile.h), titleX + titleW, 0)
+    fillTiles(sheet, tile, titleX + titleW + rightSpacer, width - 25)
+    sprite(sheet, SpriteMap.PLAYLIST_TOP_RIGHT_CORNER_SELECTED, width - 25, 0)
+
+    if (s.pressedWidget == "pl.close") sprite(sheet, SpriteMap.PLAYLIST_CLOSE_SELECTED, width - 11, Dest.PL_CLOSE.y)
+    if (s.pressedWidget == "pl.shade") sprite(sheet, SpriteMap.PLAYLIST_COLLAPSE_SELECTED, width - 21, Dest.PL_SHADE.y)
+}
+
+/**
+ * The playlist's side tiles at the two edges of [width], from [top] down to [bottom]. The
+ * last tile is cut where the rectangle ends.
+ */
+internal fun DrawScope.drawPlaylistSides(
+    skin: Skin,
+    width: Int,
+    top: Int,
+    bottom: Int,
+) {
+    val sheet = skin[Sheet.PLEDIT]
+    var ty = top
+    while (ty < bottom) {
+        val tileH = minOf(Dest.PL_TILE_STEP, bottom - ty)
+        val left = SpriteMap.PLAYLIST_LEFT_TILE
+        val right = SpriteMap.PLAYLIST_RIGHT_TILE
+        sprite(sheet, Sprite(left.x, left.y, left.w, tileH), 0, ty)
+        sprite(sheet, Sprite(right.x, right.y, right.w, tileH), width - Dest.PL_RIGHT_W, ty)
+        ty += tileH
+    }
+}
+
 fun DrawScope.drawPlaylistWindow(
     skin: Skin,
     s: WinampState,
@@ -264,42 +320,10 @@ fun DrawScope.drawPlaylistWindow(
     val sheet = skin[Sheet.PLEDIT]
     val style = skin.pledit
     val h = layout.height
-
-    // --- top bar, always in the focused variants: a corner at each end, the title plate
-    // centered, and the gaps filled with tiles, the odd remainder first ---
-    sprite(sheet, SpriteMap.PLAYLIST_TOP_LEFT_SELECTED, 0, 0)
-    val tile = SpriteMap.PLAYLIST_TOP_TILE_SELECTED
     val w = layout.width
-    val titleW = SpriteMap.PLAYLIST_TITLE_BAR_SELECTED.w
-    // webamp's row: corner, a 12px spacer, fill, the title plate, a 13px spacer, fill,
-    // corner, with the two spacers only when the width index is even
-    // (PlaylistWindow/index.tsx: showSpacers = size[0] % 2 === 0)
-    val spacers = layout.cols % 2 == 0
-    val leftSpacer = if (spacers) 12 else 0
-    val rightSpacer = if (spacers) 13 else 0
-    val slack = w - 50 - titleW - leftSpacer - rightSpacer
-    val leftFill = slack / 2
-    if (leftSpacer > 0) sprite(sheet, Sprite(tile.x, tile.y, leftSpacer, tile.h), 25, 0)
-    fillTiles(sheet, tile, 25 + leftSpacer, 25 + leftSpacer + leftFill)
-    val titleX = 25 + leftSpacer + leftFill
-    sprite(sheet, SpriteMap.PLAYLIST_TITLE_BAR_SELECTED, titleX, 0)
-    if (rightSpacer > 0) sprite(sheet, Sprite(tile.x, tile.y, rightSpacer, tile.h), titleX + titleW, 0)
-    fillTiles(sheet, tile, titleX + titleW + rightSpacer, w - 25)
-    sprite(sheet, SpriteMap.PLAYLIST_TOP_RIGHT_CORNER_SELECTED, w - 25, 0)
 
-    if (s.pressedWidget == "pl.close") sprite(sheet, SpriteMap.PLAYLIST_CLOSE_SELECTED, w - 11, Dest.PL_CLOSE.y)
-    if (s.pressedWidget == "pl.shade") sprite(sheet, SpriteMap.PLAYLIST_COLLAPSE_SELECTED, w - 21, Dest.PL_SHADE.y)
-
-    // --- middle: side tiles + text area ---
-    var ty = Dest.PL_TOP_H
-    while (ty < h - Dest.PL_BOTTOM_H) {
-        val tileH = minOf(Dest.PL_TILE_STEP, h - Dest.PL_BOTTOM_H - ty)
-        val left = SpriteMap.PLAYLIST_LEFT_TILE
-        val right = SpriteMap.PLAYLIST_RIGHT_TILE
-        sprite(sheet, Sprite(left.x, left.y, left.w, tileH), 0, ty)
-        sprite(sheet, Sprite(right.x, right.y, right.w, tileH), w - Dest.PL_RIGHT_W, ty)
-        ty += tileH
-    }
+    drawPlaylistTop(skin, s, w)
+    drawPlaylistSides(skin, w, Dest.PL_TOP_H, h - Dest.PL_BOTTOM_H)
     drawRect(
         style.normalBg,
         Offset(layout.textLeft.toFloat(), Dest.PL_TOP_H.toFloat()),
