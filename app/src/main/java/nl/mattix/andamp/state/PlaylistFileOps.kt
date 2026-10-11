@@ -125,15 +125,12 @@ class PlaylistFileOps(
         scope.launch {
             store.rememberTree(treeUri)
             val tree = SafDocumentTree(app.contentResolver, treeUri)
-            val scan = withContext(io) { FolderScan.audioFiles(tree, tree.rootId) }
-            if (scan.dropped > 0) {
-                Log.w(TAG, "Folder holds more than ${FolderScan.MAX_FILES} tracks; ${scan.dropped} left out")
-            }
-            if (scan.files.isEmpty()) return@launch
+            val files = withContext(io) { FolderScan.audioFiles(tree, tree.rootId) }
+            if (files.isEmpty()) return@launch
 
             // The whole folder is added at once, each row named by its file, because the
             // per-file tag read is slow.
-            val arriving = FolderScan.arrivals(scan.files, System.nanoTime()) { tree.uriFor(it).toString() }
+            val arriving = FolderScan.arrivals(files, System.nanoTime()) { tree.uriFor(it).toString() }
             val base = if (replace) emptyList() else state.playlist
             facade.setQueue(base + arriving)
             // Play directory... starts at the top of what was picked; ADD > DIR leaves the
@@ -142,12 +139,17 @@ class PlaylistFileOps(
 
             // The tags are read one row at a time, so the list stays readable and playable
             // meanwhile.
-            arriving.forEach { entry ->
-                val uri = entry.uri ?: return@forEach
-                // kept under the tree's uri, not the library's; see readInTree
-                val read = withContext(io) { mediaFiles.readInTree(Uri.parse(uri)) }
-                facade.patchTracks(listOf(read.copy(id = entry.id, defaultName = entry.defaultName)))
-            }
+            TagFill.run(
+                rows = arriving,
+                io = io,
+                read = { entry ->
+                    // kept under the tree's uri, not the library's; see readInTree
+                    entry.uri?.let { uri ->
+                        mediaFiles.readInTree(Uri.parse(uri)).copy(id = entry.id, defaultName = entry.defaultName)
+                    }
+                },
+                patch = facade::patchTracks,
+            )
         }
     }
 

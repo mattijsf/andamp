@@ -10,12 +10,6 @@ import nl.mattix.andamp.core.model.Track
  * real documents.
  */
 object FolderScan {
-    /**
-     * The most files one scan adds. A larger tree is likely a mispick (an SD card root,
-     * "Download"), and tags are read for every entry.
-     */
-    const val MAX_FILES = 500
-
     data class Doc(
         val id: String,
         val name: String,
@@ -28,12 +22,6 @@ object FolderScan {
     fun interface Tree {
         fun children(documentId: String): List<Doc>
     }
-
-    data class Result(
-        val files: List<Doc>,
-        /** How many audio files were left out by [MAX_FILES]. */
-        val dropped: Int,
-    )
 
     const val MIME_DIRECTORY = "vnd.android.document/directory"
 
@@ -59,14 +47,13 @@ object FolderScan {
 
     /**
      * Depth-first from [rootId]: each folder's own files in name order, then its subfolders,
-     * as a file manager shows them.
+     * as a file manager shows them. Every audio file in the tree is returned, however many.
      */
     fun audioFiles(
         tree: Tree,
         rootId: String,
-    ): Result {
+    ): List<Doc> {
         val files = mutableListOf<Doc>()
-        var dropped = 0
         val pending = ArrayDeque(listOf(rootId))
         val seen = mutableSetOf(rootId)
         while (pending.isNotEmpty()) {
@@ -76,13 +63,11 @@ object FolderScan {
                         pending.removeFirst(),
                     ).sortedBy { it.name.lowercase() }
                     .partition { it.isDirectory }
-            entries.filter(::isAudio).forEach { doc ->
-                if (files.size < MAX_FILES) files += doc else dropped++
-            }
+            files += entries.filter(::isAudio)
             // a shortcut can point back up the tree; visiting it twice would loop
             dirs.filter { seen.add(it.id) }.reversed().forEach { pending.addFirst(it.id) }
         }
-        return Result(files, dropped)
+        return files
     }
 
     /**
