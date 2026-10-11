@@ -43,7 +43,8 @@ import nl.mattix.andamp.ui.overlay.OverlayOwners
  * The owner of the surface reports a tap by its place. It is given to the window as a press
  * and, [PRESS_MS] later, a release, so a button is seen going down. A drag is reported by
  * its distance only. It moves the slider the last tap landed on ([HeldSlider]), and with no
- * slider held it scrolls [list].
+ * slider held it scrolls [list]. The list's scrollbar is such a slider, and is let go again
+ * once it has been left alone for [SCROLLBAR_MS]: a drag over a list is the list's own.
  *
  * Every call is made on the main thread.
  */
@@ -73,6 +74,9 @@ internal class RemoteWindow(
 
     /** Lifts that finger once the drag has gone quiet: its owner does not say when it ends. */
     private val lift = Runnable { slider.letGo() }
+
+    /** Lets go of the list's scrollbar once it has been left alone. */
+    private val forget = Runnable { slider.tapped(null) }
 
     /** The release of the tap that is down, until it has been sent. */
     private var release: Runnable? = null
@@ -156,7 +160,9 @@ internal class RemoteWindow(
         finishTap()
         // asked before the tap is passed on, which may put another window up
         main.removeCallbacks(lift)
-        slider.tapped(sliders.at(x, y))
+        val on = sliders.at(x, y)
+        slider.tapped(on)
+        keepTheScrollbar(held = on != null)
         val downAt = SystemClock.uptimeMillis()
         send(view, downAt, downAt, MotionEvent.ACTION_DOWN, x, y)
         val up =
@@ -177,6 +183,16 @@ internal class RemoteWindow(
         if (!slider.dragBy(dx, dy, sliders.at)) return list.dragBy(dy)
         main.removeCallbacks(lift)
         main.postDelayed(lift, LIFT_MS)
+        keepTheScrollbar(held = true)
+    }
+
+    /**
+     * Starts the wait after which the list's scrollbar is let go, or ends it. Only the list has
+     * a slider that a drag would otherwise mean something else for.
+     */
+    private fun keepTheScrollbar(held: Boolean) {
+        main.removeCallbacks(forget)
+        if (held && list.shown) main.postDelayed(forget, SCROLLBAR_MS)
     }
 
     /** The owner's finger left the surface at this speed, which ends a drag and throws the list. */
@@ -193,6 +209,7 @@ internal class RemoteWindow(
     fun hide() {
         finishTap()
         main.removeCallbacks(lift)
+        main.removeCallbacks(forget)
         slider.tapped(null)
         presentation?.let { runCatching { it.dismiss() } }
         owners?.onHidden()
@@ -249,5 +266,8 @@ internal class RemoteWindow(
 
         /** How long after the last move of a drag the finger on a slider is lifted. */
         const val LIFT_MS = 300L
+
+        /** How long the list's scrollbar stays held after the last touch of it. */
+        const val SCROLLBAR_MS = 3_000L
     }
 }

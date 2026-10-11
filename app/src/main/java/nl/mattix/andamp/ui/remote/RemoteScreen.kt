@@ -92,8 +92,7 @@ internal fun RemoteScreen(
         PlayerViewportBox(fit) {
             val room = IntRect(fit.inner(asked.left), fit.inner(asked.top), fit.inner(asked.right), fit.inner(asked.bottom))
             if (up == Up.PLAYLIST) {
-                SideEffect { sliders.at = Sliders.NONE }
-                RemoteList(vm, skin, room, fit, scroll, onClose = { up = Up.MAIN })
+                RemoteList(vm, skin, room, fit, scroll, sliders, onClose = { up = Up.MAIN })
             } else {
                 // the two windows are one size, so the swap moves nothing
                 val left = room.left + (room.width - MAIN_W * fit.scale) / 2

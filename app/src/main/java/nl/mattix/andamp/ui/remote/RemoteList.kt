@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
@@ -45,6 +46,7 @@ import nl.mattix.andamp.ui.SkinCut
 import nl.mattix.andamp.ui.sprite
 import nl.mattix.andamp.ui.widget.Widget
 import nl.mattix.andamp.ui.widget.button
+import nl.mattix.andamp.ui.widget.vSlider
 import nl.mattix.andamp.ui.window.ListText
 import nl.mattix.andamp.ui.window.PlaylistTextRasterizer
 import nl.mattix.andamp.ui.window.PleditFrame
@@ -59,6 +61,10 @@ import kotlin.math.roundToInt
  * to move it plays nothing, and nothing here changes the list. A drag reported by the
  * surface's owner scrolls it through [scroll], and the close button calls [onClose].
  *
+ * The scrollbar is a control as well: a touch on its groove brings the list to that place.
+ * [sliders] is told where it is, so that a drag which follows a tap on it moves it; see
+ * [HeldSlider].
+ *
  * It fills [room], which is in the pixels of [fit]'s surface, and opens with the row that is
  * on in the middle.
  */
@@ -70,6 +76,7 @@ internal fun RemoteList(
     room: IntRect,
     fit: PlayerViewport,
     scroll: ListScroll,
+    sliders: Sliders,
     onClose: () -> Unit,
 ) {
     val s = vm.state
@@ -116,14 +123,46 @@ internal fun RemoteList(
             listOf(
                 button(CLOSE, reach.left, reach.top, reach.width, reach.height, onTap = onClose),
                 rowsWidget(vm, layout, scroll, rowAt = { y -> layout.rowAt(y, scroll.offset / perPixel) }) { pressed = it },
+                scrollbar(layout, scroll, perPixel) { s.playlist.size },
             )
         }
-    Box(Modifier.offset { IntOffset(room.left + (room.width - layout.width * scale) / 2, room.top) }) {
+    val corner = IntOffset(room.left + (room.width - layout.width * scale) / 2, room.top)
+    SideEffect { sliders.at = { x, y -> sliderAt(widgets, corner, fit, x, y) } }
+    Box(Modifier.offset { corner }) {
         // cut with the skin's corner, as the playlist window is at whatever size it has
         ScaledWindowCanvas(layout.width, layout.height, scale, s, widgets, cut = SkinCut(skin)) {
             drawRemoteList(skin, s, layout, scroll.offset / perPixel, pressed, paint)
         }
     }
+}
+
+/**
+ * The scrollbar as a control. A touch on its groove brings the list to that place, and stops
+ * a list that is still travelling. It says where its handle is, so a drag that follows a
+ * tap on it can move it. [rows] is how many rows the list has now, and [perPixel] how many of
+ * the surface's pixels a pixel of the window takes, which is what [scroll] counts in.
+ */
+internal fun scrollbar(
+    layout: RemoteListLayout,
+    scroll: ListScroll,
+    perPixel: Float,
+    rows: () -> Int,
+): Widget {
+    fun farthest() = layout.farthest(rows()) * perPixel
+    return vSlider(
+        SCROLLBAR,
+        layout.listRight,
+        layout.listTop,
+        Dest.PL_RIGHT_W,
+        layout.listH,
+        thumbH = SpriteMap.PLAYLIST_SCROLL_HANDLE.h,
+        // a slider's top is its largest value, and the list's top is where it is scrolled least
+        shown = { farthest().let { if (it <= 0f) 1f else 1f - scroll.offset / it } },
+        onChange = {
+            scroll.rest()
+            scroll.moveTo((1f - it) * farthest())
+        },
+    )
 }
 
 /**
@@ -198,7 +237,7 @@ private fun DrawScope.drawRemoteList(
         }
     }
 
-    // the scrollbar's handle, which shows where the list is and takes no touch
+    // the scrollbar's handle, where [scrollbar] says it is
     val handle = SpriteMap.PLAYLIST_SCROLL_HANDLE
     val farthest = layout.farthest(s.playlist.size)
     val along = if (farthest == 0) 0f else offset / farthest
@@ -253,6 +292,7 @@ private fun DrawScope.drawRow(
 
 private const val CLOSE = "pl.close"
 private const val ROWS = "remote.rows"
+private const val SCROLLBAR = "remote.scrollbar"
 private const val NO_ROW = -1
 
 /** The margin between a row's length and the frame, and half of that between its name and its length. */
