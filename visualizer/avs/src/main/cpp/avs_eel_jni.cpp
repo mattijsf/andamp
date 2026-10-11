@@ -8,7 +8,7 @@
 
 #include <jni.h>
 
-#include <projectM-eval.h>
+#include <projectm-eval.h>
 
 extern "C" {
 // the context's function list; see addAvsFunctions
