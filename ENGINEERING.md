@@ -81,6 +81,15 @@ are set once in the root build for every Android module.
 - **One APK, no flavors.** Nothing source-specific is compiled into `:app`, so the tasks
   are the plain ones: `assembleDebug`, `testDebugUnitTest`, `bundleRelease`,
   `publishReleaseBundle`.
+- **Two stores, one property.** `-Pandamp.store=none` builds the APK handed out without
+  Google Play; the default, `play`, is the build Play gets. The property picks one source
+  directory, `app/src/storePlay` or `app/src/storeNone`, and decides whether the Play
+  Billing Library is a dependency. Each directory holds a `Store` object with the same
+  members, and everything else is shared: `storeNone` has no till, so the support page
+  opens the website. The task names do not change. `assemble*` on a `none` build reads the
+  APK back and fails if the library is in it (`verify*ApkCarriesNoBilling`). The gate runs
+  the `play` build; `.github/workflows/apk.yml` builds, signs and attaches the other to
+  each GitHub release.
 - **The unsigned-release check reads the task graph.** `:app` refuses a release that would
   come out unsigned because a keystore password is missing. It checks
   `gradle.taskGraph.whenReady`, not the task names typed on the command line, because an

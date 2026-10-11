@@ -87,6 +87,24 @@ interface Till {
     ): Boolean
 }
 
+/** The till of a build no store hands out: it is never reached and sells nothing. */
+object NoTill : Till {
+    override var onNews: (SaleNews) -> Unit = {}
+
+    override suspend fun connect() = false
+
+    override suspend fun tips(ids: List<String>): List<Tip> = emptyList()
+
+    override suspend fun sales(): List<Sale>? = null
+
+    override suspend fun settle(sale: Sale) = false
+
+    override fun sell(
+        activity: Activity,
+        tip: Tip,
+    ) = false
+}
+
 /**
  * The tip jar: what can be given, giving it, and thanking for it.
  *

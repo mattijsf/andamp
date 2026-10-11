@@ -125,7 +125,8 @@ APK as the asset `licenses/LiberationSans-OFL-1.1.txt`.
 The tip jar on Preferences > Support Andamp buys its tips through Google Play, and Google
 Play accepts purchases only through this library. It comes from Google's Maven repository
 as `com.android.billingclient:billing-ktx`, brings the Google Play services libraries it
-depends on, and ships inside the APK. Only `PlayTill.kt` in `:app` uses it.
+depends on, and ships inside the build Google Play hands out. Only `PlayTill.kt` in `:app`
+uses it. The APK on the releases page is built without it (`-Pandamp.store=none`).
 
 It is under the Android Software Development Kit License
 (<https://developer.android.com/studio/terms>), which is not an open-source license and

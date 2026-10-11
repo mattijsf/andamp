@@ -15,6 +15,10 @@ nearest-neighbor filtering.
 Andamp is in internal testing on Google Play. [CHANGELOG.md](CHANGELOG.md) lists what each
 release changed.
 
+Each [release](https://github.com/mattijsf/andamp/releases) also carries an APK for installing
+without Google Play. It is signed with a different key than a Play install, so the two do not
+update each other.
+
 What works:
 
 - Local files, folders and the phone's music library, plus internet radio streams, through
@@ -149,7 +153,8 @@ through those formats, not modified versions of Andamp itself.
 of the GPL, you may combine Andamp with the Google Play Billing Library
 (`com.android.billingclient`) and the Google Play services libraries it depends on, and
 distribute the combination, although those libraries are not under the GPL. The GPL keeps
-applying to all of Andamp's own code.
+applying to all of Andamp's own code. The APK on the releases page is built without that
+library (`-Pandamp.store=none`), and its support page opens the website instead.
 
 **The bundled skins are artwork.** AndAmp Dark, Light and Spot (the `.wsz` files in
 `skin/dist/` and the art inside them) are licensed under
