@@ -439,6 +439,68 @@ class BackendPlayerTest {
         assertEquals("Sour Times (live)", player.titleOfSecondRow())
     }
 
+    @Test
+    fun `a row picked from a list is played`() {
+        val backend = Fake()
+        val player = playerOver(backend)
+
+        player.setMediaItem(rowNamed("t2"))
+
+        assertEquals(listOf("playAt(1)"), backend.told)
+    }
+
+    @Test
+    fun `picking the row that is on does not start it again`() {
+        val backend = Fake()
+        val player = playerOver(backend)
+
+        player.setMediaItem(rowNamed("t1"))
+
+        assertEquals(emptyList<String>(), backend.told)
+    }
+
+    @Test
+    fun `the second copy of a song is picked by its own id`() {
+        val backend = Fake(queue = SONGS + SONGS)
+        val player = playerOver(backend)
+
+        player.setMediaItem(rowNamed("t1#2"))
+
+        assertEquals(listOf("playAt(2)"), backend.told)
+    }
+
+    @Test
+    fun `an item that is no row of the playlist changes nothing`() {
+        val backend = Fake()
+        val player = playerOver(backend)
+
+        player.setMediaItem(rowNamed("somewhere-else"))
+        ShadowLooper.idleMainLooper()
+
+        assertEquals(emptyList<String>(), backend.told)
+        assertEquals(2, player.mediaItemCount)
+    }
+
+    @Test
+    fun `repeats of a track are numbered after its first row`() {
+        assertEquals(listOf("a", "b", "a#2", "a#3"), rowIds(listOf("a", "b", "a", "a")))
+    }
+
+    @Test
+    fun `a row whose tags are not read yet goes by its file name`() {
+        val unread = Track("p1", "", "", 0, uri = "content://music/04", defaultName = "04 - Cryogen.mp3")
+
+        val player = playerOver(Fake(queue = listOf(unread)))
+
+        assertEquals("04 - Cryogen.mp3", player.mediaMetadata.title)
+    }
+
+    private fun rowNamed(id: String) =
+        androidx.media3.common.MediaItem
+            .Builder()
+            .setMediaId(id)
+            .build()
+
     private companion object {
         val SONGS =
             listOf(

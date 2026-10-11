@@ -5,18 +5,20 @@ package nl.mattix.andamp.backend.media3
 import android.net.Uri
 import androidx.media3.common.MediaMetadata
 import nl.mattix.andamp.core.model.Track
+import nl.mattix.andamp.core.model.displayName
 
 /**
- * What the notification and the lock screen say about a row.
+ * What the notification, the lock screen and a car say about a row.
  *
  * Shared by the two players that build media items from rows: ExoPlayer's, in
  * [Media3Backend], and [BackendPlayer]. The artist is set even when it is
- * empty.
+ * empty. A row with no title yet, whose tags are still being read, goes by the
+ * name the playlist window shows for it.
  */
 internal fun Track.toMediaMetadata(): MediaMetadata =
     MediaMetadata
         .Builder()
-        .setTitle(title)
+        .setTitle(title.ifBlank { displayName })
         .setArtist(artist.trim())
         // loaded by the session's bitmap loader; see CoverBitmapLoader
         .setArtworkUri(cover()?.let(Uri::parse))

@@ -7,7 +7,8 @@ import android.content.Context
 import android.content.Intent
 import androidx.annotation.VisibleForTesting
 import androidx.media3.common.Player
-import androidx.media3.session.MediaSession
+import androidx.media3.common.Timeline
+import androidx.media3.session.MediaLibraryService.MediaLibrarySession
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -26,18 +27,18 @@ object Media3PlaybackHost {
     private var scope: CoroutineScope? = null
     private var playerInstance: Player? = null
     private var backendInstance: Media3Backend? = null
-    private var sessionInstance: MediaSession? = null
+    private var sessionInstance: MediaLibrarySession? = null
     private var serviceStarted = false
 
     /**
-     * The listener that keeps the session's shuffle and repeat buttons
-     * current, and the player it is on.
+     * The listener that keeps what the session shows current, and the player
+     * it is on: the shuffle and repeat buttons, and the rows a browser lists.
      *
      * Kept so it can be removed when the session is released: the player
      * lives for the process and a session does not.
      */
-    private var layoutListener: Player.Listener? = null
-    private var layoutPlayer: Player? = null
+    private var sessionListener: Player.Listener? = null
+    private var listenedPlayer: Player? = null
 
     /**
      * The icon of the media notification, set by the app, whose resources hold
@@ -57,6 +58,16 @@ object Media3PlaybackHost {
      */
     @Volatile
     var readableUri: (android.net.Uri) -> android.net.Uri = { it }
+
+    /**
+     * Builds the player when the session is asked for before the app has one.
+     * A car that connects while Andamp is not running starts the process with
+     * [PlaybackService] and no window.
+     *
+     * Set by the app, which is the one place that builds a player. It is
+     * expected to end in [host], after which [session] has a player.
+     */
+    var wake: (Context) -> Unit = {}
 
     fun backend(
         context: Context,
@@ -120,13 +131,17 @@ object Media3PlaybackHost {
         )
     }
 
-    /** Called by [PlaybackService]. Null until [backend] or [host] has set a player. */
-    internal fun session(context: Context): MediaSession? {
+    /**
+     * Called by [PlaybackService]. With no player yet, the app is asked for
+     * one through [wake]; null when that gives none.
+     */
+    internal fun session(context: Context): MediaLibrarySession? {
         sessionInstance?.let { return it }
-        val player = playerInstance ?: return null
         val app = context.applicationContext
-        return MediaSession
-            .Builder(app, player)
+        if (playerInstance == null) wake(app)
+        val player = playerInstance ?: return null
+        return MediaLibrarySession
+            .Builder(app, player, SessionCallback(player))
             // the cover on the notification and the lock screen. Wrapped in
             // Media3's cache because the same cover is asked for repeatedly,
             // and reading a file's tags is slow
@@ -139,14 +154,13 @@ object Media3PlaybackHost {
                         PendingIntent.getActivity(app, 0, launch, PendingIntent.FLAG_IMMUTABLE),
                     )
                 }
-            }.setCallback(TransportExtras(player))
-            .build()
+            }.build()
             .also { session ->
                 sessionInstance = session
                 session.setCustomLayout(shuffleAndRepeat(player))
                 // the buttons show the player's state, so they follow the
                 // player and not only the presses that arrive through them
-                val layout =
+                val shown =
                     object : Player.Listener {
                         override fun onShuffleModeEnabledChanged(enabled: Boolean) {
                             session.setCustomLayout(shuffleAndRepeat(player))
@@ -155,18 +169,26 @@ object Media3PlaybackHost {
                         override fun onRepeatModeChanged(mode: Int) {
                             session.setCustomLayout(shuffleAndRepeat(player))
                         }
+
+                        // a browser that is showing the playlist reads it again
+                        override fun onTimelineChanged(
+                            timeline: Timeline,
+                            reason: Int,
+                        ) {
+                            session.notifyChildrenChanged(SessionCallback.ROOT, timeline.windowCount, null)
+                        }
                     }
-                player.addListener(layout)
-                layoutListener = layout
-                layoutPlayer = player
+                player.addListener(shown)
+                sessionListener = shown
+                listenedPlayer = player
             }
     }
 
-    /** Releases the session and removes the listener that kept its buttons current. */
+    /** Releases the session and removes the listener that kept it current. */
     private fun letSessionGo() {
-        layoutListener?.let { listener -> layoutPlayer?.removeListener(listener) }
-        layoutListener = null
-        layoutPlayer = null
+        sessionListener?.let { listener -> listenedPlayer?.removeListener(listener) }
+        sessionListener = null
+        listenedPlayer = null
         sessionInstance?.release()
         sessionInstance = null
     }
@@ -187,7 +209,7 @@ object Media3PlaybackHost {
                         androidx.media3.session.CommandButton.ICON_SHUFFLE_OFF
                     },
                 ).setDisplayName("Shuffle")
-                .setSessionCommand(androidx.media3.session.SessionCommand(SHUFFLE, android.os.Bundle.EMPTY))
+                .setSessionCommand(androidx.media3.session.SessionCommand(SessionCallback.SHUFFLE, android.os.Bundle.EMPTY))
                 .build(),
             androidx.media3.session.CommandButton
                 .Builder(
@@ -197,56 +219,9 @@ object Media3PlaybackHost {
                         androidx.media3.session.CommandButton.ICON_REPEAT_ALL
                     },
                 ).setDisplayName("Repeat")
-                .setSessionCommand(androidx.media3.session.SessionCommand(REPEAT, android.os.Bundle.EMPTY))
+                .setSessionCommand(androidx.media3.session.SessionCommand(SessionCallback.REPEAT, android.os.Bundle.EMPTY))
                 .build(),
         )
-
-    /** Grants the two extra commands, and does what they ask. */
-    private class TransportExtras(
-        private val player: Player,
-    ) : MediaSession.Callback {
-        override fun onConnect(
-            session: MediaSession,
-            controller: MediaSession.ControllerInfo,
-        ): MediaSession.ConnectionResult =
-            MediaSession.ConnectionResult
-                .AcceptedResultBuilder(session)
-                .setAvailableSessionCommands(
-                    MediaSession.ConnectionResult.DEFAULT_SESSION_COMMANDS
-                        .buildUpon()
-                        .add(androidx.media3.session.SessionCommand(SHUFFLE, android.os.Bundle.EMPTY))
-                        .add(androidx.media3.session.SessionCommand(REPEAT, android.os.Bundle.EMPTY))
-                        .build(),
-                ).build()
-
-        override fun onCustomCommand(
-            session: MediaSession,
-            controller: MediaSession.ControllerInfo,
-            customCommand: androidx.media3.session.SessionCommand,
-            args: android.os.Bundle,
-        ): com.google.common.util.concurrent.ListenableFuture<androidx.media3.session.SessionResult> {
-            when (customCommand.customAction) {
-                SHUFFLE -> {
-                    player.shuffleModeEnabled = !player.shuffleModeEnabled
-                }
-
-                REPEAT -> {
-                    player.repeatMode =
-                        if (player.repeatMode == Player.REPEAT_MODE_OFF) {
-                            Player.REPEAT_MODE_ALL
-                        } else {
-                            Player.REPEAT_MODE_OFF
-                        }
-                }
-            }
-            return com.google.common.util.concurrent.Futures.immediateFuture(
-                androidx.media3.session.SessionResult(androidx.media3.session.SessionResult.RESULT_SUCCESS),
-            )
-        }
-    }
-
-    private const val SHUFFLE = "nl.mattix.andamp.SHUFFLE"
-    private const val REPEAT = "nl.mattix.andamp.REPEAT"
 
     /**
      * The floating player calls this for as long as it is on screen. A process
