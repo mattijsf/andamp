@@ -6,7 +6,8 @@ package nl.mattix.andamp.visualizer.avs
  * Warps the frame through a piece of ns-eel, once per grid vertex.
  *
  * A preset picks one of AVS's built-in effects by number, or carries its own
- * script; the built-ins are scripts too (see [MovementEffects]).
+ * script; the built-ins are scripts too (see [MovementEffects]), apart from
+ * the two that move single pixels, which [MovementTableRenderer] runs.
  *
  * The code has no per-frame section: a Movement's warp is the same every frame,
  * so the mesh is evaluated once per frame size and then only sampled. AVS
@@ -119,133 +120,119 @@ internal class MovementRenderer(
         /** The oldest presets mark a cartesian custom script with this prefix on the code itself. */
         private const val RECT_PREFIX = "!rect "
 
+        /** The scripted renderer for [body], or null when it holds no script this build runs. */
         fun read(
             body: ByteArray,
             eel: Eel,
-        ): MovementRenderer? =
-            parse(body)?.let {
-                MovementRenderer(
-                    code = it.effect.code,
-                    coordinates = it.effect.coordinates,
-                    blend = if (it.fiftyFifty) AvsBlendMode.FIFTY_FIFTY else AvsBlendMode.REPLACE,
-                    wrap = it.wrap,
-                    eel = eel,
-                )
-            }
+        ): MovementRenderer? = parse(body)?.takeIf { it.effect.table == null }?.let { of(it, eel) }
+
+        fun of(
+            parsed: ParsedMovement,
+            eel: Eel,
+        ) = MovementRenderer(
+            code = parsed.effect.code,
+            coordinates = parsed.effect.coordinates,
+            blend = if (parsed.fiftyFifty) AvsBlendMode.FIFTY_FIFTY else AvsBlendMode.REPLACE,
+            wrap = parsed.wrap,
+            eel = eel,
+        )
 
         /**
-         * Reads Movement's body.
+         * Reads Movement's body. Transcribed from vis_avs `r_trans.cpp`
+         * `load_config` (BSD; see NOTICE.md).
          *
-         * The effect id comes first. Zero means "look at the end of the block",
-         * which is where AVS puts ids above 15, so that older builds reading
-         * the file see a 0 and show "None". 0x7FFF means the preset carries
-         * its own script.
+         * The effect id comes first. 0x7FFF means the preset carries its own
+         * script, as a length-counted string after a marker byte or, in the
+         * oldest presets, as a fixed 256 bytes. Five settings follow, and a
+         * body may end before any of them: older builds wrote fewer, and each
+         * one missing keeps its default. A zero id is replaced by the id
+         * stored after the settings, which is where AVS puts ids above 15.
          *
          * This is the parse alone, so a JVM test can call it without the
          * evaluator's native library.
          */
         internal fun parse(body: ByteArray): ParsedMovement? {
-            val reader = BodyReader(body)
-            val oldId = reader.int32()
-            val custom = if (oldId == MovementEffects.CUSTOM) customCode(body) else null
-            val settings = settings(body, custom?.consumed ?: 0)
-            if (!settings.ok) return null
-
-            val effect = effectFor(oldId, body, custom, settings)
-            return effect?.let { ParsedMovement(it, settings.fiftyFifty, settings.wrap) }
-        }
-
-        /** A preset's own script: a new-version marker, then a sized string, or a fixed 256 bytes. */
-        private fun customCode(body: ByteArray): CustomCode? {
-            val reader = BodyReader(body)
-            reader.int32()
-            val marker = reader.byte()
-            if (marker == CUSTOM_NEW_VERSION) {
-                val cursor = SizedText(body, INT_SIZE + 1)
-                // the marker byte is part of what the code cost: the settings
-                // that follow start one byte later than the cursor says
-                return cursor.sized()?.let { CustomCode(it, cursor.consumed + 1) }
+            val cursor = Cursor(body)
+            var id = if (cursor.has(INT_SIZE)) cursor.int32() else MovementEffects.DEFAULT
+            var cartesian = false
+            var code = ""
+            if (id == MovementEffects.CUSTOM) {
+                // the oldest presets mark a cartesian script with a prefix on the code itself
+                cartesian = cursor.startsWith(RECT_PREFIX)
+                if (cartesian) cursor.skip(RECT_PREFIX.length)
+                code = customCode(cursor, prefixed = cartesian) ?: return null
             }
-            // the old fixed-256 form: a "!rect " prefix marks cartesian and the
-            // code fills the remaining 250 bytes (e_movement.cpp's load_legacy).
-            // The prefix is only stripped here: the coordinates settings int
-            // overrides it in AVS too, and settings() requires that int
-            val prefixed = rectPrefixed(body)
-            val from = INT_SIZE + if (prefixed) RECT_PREFIX.length else 0
-            val cursor = SizedText(body, from)
-            return cursor.fixed(LEGACY_CODE - if (prefixed) RECT_PREFIX.length else 0)?.let {
-                CustomCode(it, LEGACY_CODE)
-            }
+            val fiftyFifty = cursor.has(INT_SIZE) && cursor.int32() != 0
+            if (cursor.has(INT_SIZE)) cursor.int32() // source mapped: not implemented
+            if (cursor.has(INT_SIZE)) cartesian = cursor.int32() != 0
+            if (cursor.has(INT_SIZE)) cursor.int32() // bilinear: not implemented
+            val wrap = cursor.has(INT_SIZE) && cursor.int32() != 0
+            if (id == 0 && cursor.has(INT_SIZE)) id = cursor.int32()
+
+            val effect =
+                if (id == MovementEffects.CUSTOM) {
+                    MovementEffect("Custom", code, if (cartesian) AvsCoordinates.CARTESIAN else AvsCoordinates.POLAR)
+                } else {
+                    // an id outside the table is "None" in the original
+                    MovementEffects[id] ?: MovementEffects[0]
+                }
+            return effect?.takeIf { it.runnable }?.let { ParsedMovement(it, fiftyFifty, wrap) }
         }
 
-        private fun rectPrefixed(body: ByteArray): Boolean {
-            if (body.size < INT_SIZE + RECT_PREFIX.length) return false
-            return RECT_PREFIX.indices.all { body[INT_SIZE + it].toInt().toChar() == RECT_PREFIX[it] }
-        }
-
-        private fun effectFor(
-            oldId: Int,
-            body: ByteArray,
-            custom: CustomCode?,
-            settings: Settings,
-        ): MovementEffect? =
+        /** A preset's own script, in either form; null when its length cannot be right. */
+        private fun customCode(
+            cursor: Cursor,
+            prefixed: Boolean,
+        ): String? =
             when {
-                custom != null -> {
-                    MovementEffect(
-                        "Custom",
-                        custom.code,
-                        // a custom script uses the coordinates the file says
-                        if (settings.cartesian) AvsCoordinates.CARTESIAN else AvsCoordinates.POLAR,
-                    )
+                cursor.peek() == CUSTOM_NEW_VERSION -> {
+                    cursor.skip(1)
+                    cursor.sized()
                 }
 
-                oldId == 0 -> {
-                    MovementEffects[newId(body)]?.takeIf { it.runnable }
+                // the fixed form is 256 bytes with the prefix counted in
+                cursor.has(LEGACY_CODE) -> {
+                    cursor.fixed(LEGACY_CODE - if (prefixed) RECT_PREFIX.length else 0)
                 }
 
                 else -> {
-                    MovementEffects[oldId]?.takeIf { it.runnable }
+                    ""
                 }
             }
 
-        /** Ids above 15 live past the five settings, where an old AVS would not look. */
-        private fun newId(body: ByteArray): Int {
-            val reader = BodyReader(body)
-            repeat(SETTINGS_BEFORE_NEW_ID) { reader.int32() }
-            val id = reader.int32()
-            return if (reader.ok) id else 0
-        }
-
         private const val INT_SIZE = 4
         private const val LEGACY_CODE = 256
-        private const val SETTINGS_BEFORE_NEW_ID = 6
 
-        private fun settings(
-            body: ByteArray,
-            codeBytes: Int,
-        ): Settings {
-            val reader = BodyReader(body)
-            reader.int32() // the effect id, already read
-            repeat(codeBytes) { reader.byte() }
-            val fiftyFifty = reader.int32() != 0
-            reader.int32() // source mapped: skipped
-            val cartesian = reader.int32() != 0
-            reader.int32() // bilinear: skipped
-            val wrap = reader.int32() != 0
-            return Settings(reader.ok, fiftyFifty, cartesian, wrap)
+        /** Walks a body, with the length checks the original makes before each read. */
+        private class Cursor(
+            private val bytes: ByteArray,
+        ) {
+            private var at = 0
+
+            fun has(count: Int) = bytes.size - at >= count
+
+            fun peek(): Int = if (has(1)) bytes[at].toInt() and 0xFF else -1
+
+            fun skip(count: Int) {
+                at += count
+            }
+
+            fun int32(): Int = SizedText(bytes, at).int32(at).also { at += INT_SIZE }
+
+            fun startsWith(prefix: String) =
+                has(prefix.length) && prefix.indices.all { bytes[at + it].toInt().toChar() == prefix[it] }
+
+            /** A length and that many bytes; null when the length cannot be right. */
+            fun sized(): String? {
+                val text = SizedText(bytes, at)
+                return text.sized()?.also { at += text.consumed }
+            }
+
+            fun fixed(length: Int): String {
+                val text = SizedText(bytes, at)
+                return text.fixed(length).orEmpty().also { at += text.consumed }
+            }
         }
-
-        private data class Settings(
-            val ok: Boolean,
-            val fiftyFifty: Boolean,
-            val cartesian: Boolean,
-            val wrap: Boolean,
-        )
-
-        private class CustomCode(
-            val code: String,
-            val consumed: Int,
-        )
     }
 
     /** What a Movement body says. */
@@ -279,7 +266,7 @@ internal class SizedText(
         return text(from, length)
     }
 
-    private fun int32(at: Int) =
+    internal fun int32(at: Int) =
         (bytes[at].toInt() and 0xFF) or
             ((bytes[at + 1].toInt() and 0xFF) shl 8) or
             ((bytes[at + 2].toInt() and 0xFF) shl 16) or

@@ -93,28 +93,29 @@ internal class MovingParticleRenderer(
         private const val ON_BEAT_BIT = 0x02
         private const val SEED = 0x70617274L
 
-        fun read(body: ByteArray): MovingParticleRenderer? {
+        fun read(body: ByteArray): MovingParticleRenderer {
             val reader = BodyReader(body)
-            val flags = reader.int32()
-            val colour = AvsFrame.fromConfig(reader.int32())
-            val distance = reader.int32()
-            val size = reader.int32()
-            val beatSize = reader.int32()
-            // the same four-value list Dot Grid uses: 3 means the render mode
-            val blend = shortBlendOrDefault(reader.int32())
-            return if (reader.ok) {
-                MovingParticleRenderer(
-                    enabled = flags and ENABLED_BIT != 0,
-                    growOnBeat = flags and ON_BEAT_BIT != 0,
-                    colour = colour,
-                    distance = distance,
-                    size = size,
-                    beatSize = beatSize,
-                    blend = blend,
-                )
-            } else {
-                null
-            }
+            val flags = reader.int32Or(ENABLED_BIT)
+            val colour = AvsFrame.fromConfig(reader.int32Or(WHITE))
+            val distance = reader.int32Or(DEFAULT_DISTANCE)
+            val size = reader.int32Or(DEFAULT_SIZE)
+            val beatSize = reader.int32Or(DEFAULT_SIZE)
+            // the same four-value list Dot Grid uses: 3 means the render mode.
+            // A new Moving Particle is additive
+            val blend = shortBlendOrDefault(reader.int32Or(1))
+            return MovingParticleRenderer(
+                enabled = flags and ENABLED_BIT != 0,
+                growOnBeat = flags and ON_BEAT_BIT != 0,
+                colour = colour,
+                distance = distance,
+                size = size,
+                beatSize = beatSize,
+                blend = blend,
+            )
         }
+
+        private const val WHITE = 0xFFFFFF
+        private const val DEFAULT_DISTANCE = 16
+        private const val DEFAULT_SIZE = 8
     }
 }

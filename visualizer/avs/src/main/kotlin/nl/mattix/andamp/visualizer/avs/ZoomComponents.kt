@@ -141,15 +141,17 @@ internal class BlitterFeedbackRenderer(
          * the on-beat flag the original wrote there; vis_avs reads it as a
          * second beat zoom.
          */
-        fun read(body: ByteArray): BlitterFeedbackRenderer? {
+        fun read(body: ByteArray): BlitterFeedbackRenderer {
             val reader = BodyReader(body)
-            val zoom = reader.int32()
-            val beatZoom = reader.int32()
-            val blend = if (reader.int32() == 1) AvsBlendMode.FIFTY_FIFTY else AvsBlendMode.REPLACE
-            val onBeat = reader.int32() != 0
+            val zoom = reader.int32Or(DEFAULT_ZOOM)
+            val beatZoom = reader.int32Or(DEFAULT_ZOOM)
+            val blend = if (reader.int32Or(0) != 0) AvsBlendMode.FIFTY_FIFTY else AvsBlendMode.REPLACE
+            val onBeat = reader.int32Or(0) != 0
             // bilinear follows and is not read
-            return if (reader.ok) BlitterFeedbackRenderer(zoom, beatZoom, onBeat, blend) else null
+            return BlitterFeedbackRenderer(zoom, beatZoom, onBeat, blend)
         }
+
+        private const val DEFAULT_ZOOM = 30
     }
 }
 
@@ -291,22 +293,21 @@ internal class RotoBlitterRenderer(
         private const val CENTER_BIAS = 1 shl 20
         private const val DEGREES_HALF_TURN = 180.0
 
-        fun read(body: ByteArray): RotoBlitterRenderer? {
+        fun read(body: ByteArray): RotoBlitterRenderer {
             val reader = BodyReader(body)
-            val zoom = reader.int32()
-            val rotate = reader.int32()
-            val blend = if (reader.int32() == 1) AvsBlendMode.FIFTY_FIFTY else AvsBlendMode.REPLACE
-            val onBeatReverse = reader.int32() != 0
-            val reversalSpeed = reader.int32()
-            val beatZoom = reader.int32()
-            val onBeat = reader.int32() != 0
+            // a new Roto Blitter neither zooms nor turns: 31 is the middle of both
+            val zoom = reader.int32Or(MIDDLE)
+            val rotate = reader.int32Or(MIDDLE)
+            val blend = if (reader.int32Or(0) != 0) AvsBlendMode.FIFTY_FIFTY else AvsBlendMode.REPLACE
+            val onBeatReverse = reader.int32Or(0) != 0
+            val reversalSpeed = reader.int32Or(0)
+            val beatZoom = reader.int32Or(MIDDLE)
+            val onBeat = reader.int32Or(0) != 0
             // bilinear follows and is not read
-            return if (reader.ok) {
-                RotoBlitterRenderer(zoom, rotate, blend, onBeatReverse, reversalSpeed, beatZoom, onBeat)
-            } else {
-                null
-            }
+            return RotoBlitterRenderer(zoom, rotate, blend, onBeatReverse, reversalSpeed, beatZoom, onBeat)
         }
+
+        private const val MIDDLE = 31
     }
 }
 
@@ -516,9 +517,10 @@ internal class DynamicShiftRenderer(
             val reader = CodeSectionReader(body, if (current) 1 else 0, current)
             val code = List(SECTIONS) { reader.next() }
             val rest = reader.rest()
-            val blend = if (rest.int32() == 1) AvsBlendMode.FIFTY_FIFTY else AvsBlendMode.REPLACE
+            // an old preset ends before the blend, which then replaces
+            val blend = if (rest.int32Or(0) != 0) AvsBlendMode.FIFTY_FIFTY else AvsBlendMode.REPLACE
             // bilinear follows and is not read
-            return if (reader.ok && rest.ok) DynamicShiftRenderer(code[0], code[1], code[2], blend, eel) else null
+            return if (reader.ok) DynamicShiftRenderer(code[0], code[1], code[2], blend, eel) else null
         }
     }
 }
@@ -638,9 +640,10 @@ internal class DynamicDistanceModifierRenderer(
             val reader = CodeSectionReader(body, if (current) 1 else 0, current)
             val code = List(SECTIONS) { reader.next() }
             val rest = reader.rest()
-            val blend = rest.int32() == 1
+            // an old preset ends before the blend, which then replaces
+            val blend = rest.int32Or(0) != 0
             // bilinear follows and is not read
-            return if (reader.ok && rest.ok) {
+            return if (reader.ok) {
                 DdmConfig(
                     init = code[3],
                     perFrame = code[1],

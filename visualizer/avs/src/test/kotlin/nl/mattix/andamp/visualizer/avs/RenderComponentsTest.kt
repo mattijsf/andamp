@@ -380,13 +380,47 @@ class RenderComponentsTest {
     }
 
     @Test
-    fun `every one of them refuses a body that runs out`() {
-        assertNull(SimpleRenderer.read(ByteArray(2)))
-        assertNull(TimescopeRenderer.read(ByteArray(2)))
-        assertNull(DotGridRenderer.read(ByteArray(2)))
-        assertNull(RingRenderer.read(ByteArray(2)))
-        assertNull(StarfieldRenderer.read(ByteArray(2)))
-        assertNull(BassSpinRenderer.read(ByteArray(2)))
+    fun `every one of them draws what AVS starts it with when its body holds nothing`() {
+        val readers: List<Pair<String, (ByteArray) -> AvsComponentRenderer>> =
+            listOf(
+                "Simple" to SimpleRenderer::read,
+                "Timescope" to TimescopeRenderer::read,
+                "Dot Grid" to DotGridRenderer::read,
+                "Ring" to RingRenderer::read,
+                "Starfield" to StarfieldRenderer::read,
+                "Bass Spin" to BassSpinRenderer::read,
+            )
+        val loud =
+            AvsAudioFrame(
+                waveform = FloatArray(AvsAudioFrame.SAMPLES) { if (it % 2 == 0) 0.8f else -0.8f },
+                spectrum = FloatArray(AvsAudioFrame.SAMPLES) { 0.8f },
+            )
+
+        readers.forEach { (name, read) ->
+            val frame = AvsFrame(64, 48)
+            val renderer = read(ByteArray(0))
+            val state = AvsRenderState(AvsBuffers(64, 48))
+
+            repeat(2) { renderer.render(frame, loud, state) }
+
+            assertTrue("$name draws", frame.pixels.any { it != AvsFrame.OPAQUE })
+        }
+    }
+
+    @Test
+    fun `a color list the body ends inside keeps its count, white first and black after`() {
+        val one = BodyReader(int32(1)).colourListOr()
+        val three = BodyReader(int32(3) + int32(0x0000FF)).colourListOr()
+
+        assertEquals(listOf(0xFFFFFFFF.toInt()), one)
+        assertEquals(listOf(0xFF0000FF.toInt(), AvsFrame.OPAQUE, AvsFrame.OPAQUE), three)
+    }
+
+    @Test
+    fun `a color count the format does not allow leaves what the component says`() {
+        assertEquals(emptyList<Int>(), BodyReader(int32(17)).colourListOr())
+        assertEquals(listOf(0xFFFFFFFF.toInt()), BodyReader(int32(17)).colourListOr(whenTooMany = 1))
+        assertEquals("no count at all is one white", listOf(0xFFFFFFFF.toInt()), BodyReader(ByteArray(0)).colourListOr())
     }
 
     /** The indices of every pixel a render touched. */

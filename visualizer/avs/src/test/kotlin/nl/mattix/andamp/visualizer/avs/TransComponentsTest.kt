@@ -4,7 +4,6 @@ package nl.mattix.andamp.visualizer.avs
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -41,7 +40,35 @@ class TransComponentsTest {
                 true
             },
         )
-        assertNull("a body too short reads as null", InvertRenderer.read(byteArrayOf(1, 2)))
+    }
+
+    @Test
+    fun `invert with no settings is switched on`() {
+        val frame = filled(RED)
+
+        InvertRenderer.read(ByteArray(0)).render(frame, audio(), state())
+
+        assertEquals(0xFF00FFFF.toInt(), frame[0, 0])
+    }
+
+    @Test
+    fun `fade out and blur with no settings are the ones AVS starts with`() {
+        val faded = filled(0xFF808080.toInt())
+        FadeOutRenderer.read(ByteArray(0)).render(faded, audio(), state())
+
+        assertEquals("sixteen levels toward black", 0xFF707070.toInt(), faded[0, 0])
+        // a medium blur, which a flat frame comes through unchanged
+        BlurRenderer.read(ByteArray(0)).render(filled(RED), audio(), state())
+    }
+
+    @Test
+    fun `a set render mode with no settings is on and changes nothing`() {
+        val state = state()
+
+        SetRenderModeRenderer.read(ByteArray(0)).render(filled(RED), audio(), state)
+
+        assertEquals(AvsBlendMode.REPLACE, state.renderBlend)
+        assertEquals(1, state.lineSize)
     }
 
     /** Integer steps, so a channel within one step of the target lands on it. */
@@ -187,14 +214,33 @@ class TransComponentsTest {
     }
 
     @Test
-    fun `buffer save numbers its buffers from one`() {
-        // e_buffersave passes config.buffer - 1 to get_buffer; so do the
-        // Effect List's buffer fields
-        val renderer = BufferSaveRenderer.read(int32(0) + int32(1) + int32(0) + int32(255))!!
+    fun `buffer save numbers its buffers from zero`() {
         val state = state()
-        renderer.render(filled(RED), audio(), state)
 
-        assertEquals("buffer 1 in the file is bank 0", RED, state.buffers[0]!![0, 0])
+        BufferSaveRenderer.read(int32(0) + int32(0) + int32(0) + int32(255)).render(filled(RED), audio(), state)
+        BufferSaveRenderer.read(int32(0) + int32(3) + int32(0) + int32(255)).render(filled(GREEN), audio(), state)
+
+        assertEquals("the first buffer is 0 in the file", RED, state.buffers[0]!![0, 0])
+        assertEquals(GREEN, state.buffers[3]!![0, 0])
+        assertEquals(2, state.buffers.allocated())
+    }
+
+    @Test
+    fun `a buffer number past the last is the last`() {
+        val state = state()
+
+        BufferSaveRenderer.read(int32(0) + int32(99) + int32(0) + int32(255)).render(filled(RED), audio(), state)
+
+        assertEquals(RED, state.buffers[7]!![0, 0])
+    }
+
+    @Test
+    fun `a buffer save with no settings saves to the first buffer`() {
+        val state = state()
+
+        BufferSaveRenderer.read(ByteArray(0)).render(filled(RED), audio(), state)
+
+        assertEquals(RED, state.buffers[0]!![0, 0])
     }
 
     /** The blend applies to a save too, and a restore of an unwritten buffer does nothing. */

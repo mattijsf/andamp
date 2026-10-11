@@ -79,6 +79,30 @@ object AvsComponents {
 
     operator fun get(id: Int): AvsComponentType? = byId[id]
 
+    /**
+     * Built-ins that were plug-ins first. A preset saved back then names the
+     * plug-in, and AVS loads the built-in that replaced it. Transcribed from
+     * vis_avs `rlib.cpp` `NamedApeToBuiltinTrans` (BSD; see NOTICE.md).
+     */
+    private val formerApes: Map<String, Int> =
+        mapOf(
+            "Winamp Brightness APE v1" to 22,
+            "Winamp Interleave APE v1" to 23,
+            "Winamp Grain APE v1" to 24,
+            "Winamp ClearScreen APE v1" to 25,
+            "Nullsoft MIRROR v1" to 26,
+            "Winamp Starfield v1" to 27,
+            "Winamp Text v1" to 28,
+            "Winamp Bump v1" to 29,
+            "Winamp Mosaic v1" to 30,
+            "Winamp AVIAPE v1" to 32,
+            "Nullsoft Picture Rendering v1" to 34,
+            "Winamp Interf APE v1" to 41,
+        )
+
+    /** The id of the built-in that replaced the plug-in called [apeName], or null when it is a plug-in still. */
+    fun replacing(apeName: String): Int? = formerApes[apeName]
+
     /** The id of every built-in in the table. */
     val ids: Set<Int> get() = byId.keys
 }

@@ -27,9 +27,11 @@ internal fun shortBlendOrDefault(code: Int) = if (code == 3) null else shortBlen
  * being 1 means fifty-fifty. Null is the format's DEFAULT (Clear Screen and
  * Timescope offer it): the preset's current render mode, resolved at draw time.
  */
-internal fun BodyReader.pairBlend(): AvsBlendMode? {
-    val low = int32()
-    val high = int32()
+internal fun BodyReader.pairBlend(whenMissing: Int = 0): AvsBlendMode? {
+    // a body that ends before the first int takes [whenMissing] for it, the
+    // value the component starts with: 0 is replace, 2 the render mode
+    val low = int32Or(whenMissing)
+    val high = int32Or(0)
     return when {
         high == 1 -> AvsBlendMode.FIFTY_FIFTY
         low == 1 -> AvsBlendMode.ADDITIVE
@@ -38,11 +40,42 @@ internal fun BodyReader.pairBlend(): AvsBlendMode? {
     }
 }
 
-/** A count and then that many colors. A count outside 0..16 reads as no colors. */
-internal fun BodyReader.colourList(): List<Int> {
+/**
+ * A color list as vis_avs loads one: a count, one white color when the body
+ * ends before it, then as many colors as the body still holds. A color the
+ * body does not reach is black. A count above 16 leaves [whenTooMany] colors
+ * (the components differ: none, or the one white), and a negative count draws
+ * with the first color alone.
+ */
+internal fun BodyReader.colourListOr(whenTooMany: Int = 0): List<Int> {
+    val white = AvsFrame.fromConfig(WHITE)
+    if (!has(INT_SIZE)) return listOf(white)
     val count = int32()
-    if (count !in 0..MAX_COLOURS) return emptyList()
-    return List(count) { AvsFrame.fromConfig(int32()) }
+    return when {
+        count > MAX_COLOURS -> {
+            List(whenTooMany) { white }
+        }
+
+        count < 0 -> {
+            listOf(white)
+        }
+
+        else -> {
+            List(count) { index ->
+                if (has(INT_SIZE)) {
+                    AvsFrame.fromConfig(int32())
+                } else if (index ==
+                    0
+                ) {
+                    white
+                } else {
+                    AvsFrame.OPAQUE
+                }
+            }
+        }
+    }
 }
 
 private const val MAX_COLOURS = 16
+private const val INT_SIZE = 4
+private const val WHITE = 0xFFFFFF

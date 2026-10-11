@@ -39,7 +39,7 @@ class AvsBuffers(
     ) = if (width == this.width && height == this.height) this else AvsBuffers(width, height, frames.size)
 
     private companion object {
-        /** AVS has eight; a preset file numbers them from 1. */
+        /** AVS has eight; a preset file numbers them from 0. */
         const val COUNT = 8
     }
 }

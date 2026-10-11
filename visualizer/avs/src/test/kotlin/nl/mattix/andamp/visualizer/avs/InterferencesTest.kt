@@ -3,7 +3,6 @@
 package nl.mattix.andamp.visualizer.avs
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -65,8 +64,13 @@ class InterferencesTest {
     }
 
     @Test
-    fun `a body that runs out is null`() {
-        assertNull(InterferencesRenderer.read(ByteArray(6)))
+    fun `a body that runs out keeps what a new Interferences has for the rest`() {
+        val frame = AvsFrame(8, 8).also { it.pixels.fill(0xFF808080.toInt()) }
+
+        // enabled, and nothing after it: two layers, split by color, as AVS starts one
+        InterferencesRenderer.read(int32(1)).render(frame, AvsAudioFrame(), AvsRenderState(AvsBuffers(8, 8)))
+
+        assertTrue("two layers at half strength change the frame", frame.pixels.any { it != 0xFF808080.toInt() })
     }
 
     @Test

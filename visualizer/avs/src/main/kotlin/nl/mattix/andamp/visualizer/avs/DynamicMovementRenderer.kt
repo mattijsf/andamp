@@ -119,6 +119,8 @@ internal class DynamicMovementRenderer(
          *
          * The code is stored as per point, per frame, on beat, init.
          */
+        private const val DEFAULT_GRID = 16
+
         fun read(body: ByteArray): DynamicMovementConfig? {
             if (body.isEmpty()) return null
             val current = body[0].toInt() == 1
@@ -126,15 +128,17 @@ internal class DynamicMovementRenderer(
             val code = List(SECTIONS) { reader.next() }
             val rest = reader.rest()
 
-            rest.int32() // bilinear filtering: skipped
-            val coordinates = if (rest.int32() == 1) AvsCoordinates.CARTESIAN else AvsCoordinates.POLAR
-            val gridWidth = rest.int32().coerceIn(MIN_GRID, MAX_GRID)
-            val gridHeight = rest.int32().coerceIn(MIN_GRID, MAX_GRID)
-            val blend = rest.int32() != 0
-            val wrap = rest.int32() != 0
+            // each setting is optional: a preset from before one was added
+            // ends before it, and it keeps what a new Dynamic Movement has
+            rest.int32Or(1) // bilinear filtering: skipped
+            val coordinates = if (rest.int32Or(0) != 0) AvsCoordinates.CARTESIAN else AvsCoordinates.POLAR
+            val gridWidth = rest.int32Or(DEFAULT_GRID).coerceIn(MIN_GRID, MAX_GRID)
+            val gridHeight = rest.int32Or(DEFAULT_GRID).coerceIn(MIN_GRID, MAX_GRID)
+            val blend = rest.int32Or(0) != 0
+            val wrap = rest.int32Or(0) != 0
             // buffer and alphaOnly follow and are not read
 
-            return if (!reader.ok || !rest.ok) {
+            return if (!reader.ok) {
                 null
             } else {
                 DynamicMovementConfig(

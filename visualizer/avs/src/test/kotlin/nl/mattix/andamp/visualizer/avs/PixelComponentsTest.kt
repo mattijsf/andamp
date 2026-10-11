@@ -3,7 +3,6 @@
 package nl.mattix.andamp.visualizer.avs
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.Random
@@ -687,19 +686,59 @@ class PixelComponentsTest {
     // the blitters and the distance modifier are tested in ZoomComponentsTest
 
     @Test
-    fun `every one of them refuses a body that runs out`() {
-        assertNull(FastBrightnessRenderer.read(ByteArray(2)))
-        assertNull(BrightnessRenderer.read(ByteArray(2)))
-        assertNull(ColorfadeRenderer.read(ByteArray(2)))
-        assertNull(ColorClipRenderer.read(ByteArray(2)))
-        assertNull(UniqueToneRenderer.read(ByteArray(2)))
-        assertNull(MirrorRenderer.read(ByteArray(2)))
-        assertNull(ClearScreenRenderer.read(ByteArray(2)))
-        assertNull(OnBeatClearRenderer.read(ByteArray(2)))
-        assertNull(MosaicRenderer.read(ByteArray(2)))
-        assertNull(InterleaveRenderer.read(ByteArray(2)))
-        assertNull(BlitterFeedbackRenderer.read(ByteArray(2)))
-        assertNull(RotoBlitterRenderer.read(ByteArray(2)))
+    fun `a body that holds nothing gives the component AVS starts with`() {
+        val grey = 0xFF404040.toInt()
+
+        assertEquals("fast brightness doubles", 0xFF808080.toInt(), FastBrightnessRenderer.read(ByteArray(0)).run(grey))
+        assertEquals("a clear screen clears to black", AvsFrame.OPAQUE, ClearScreenRenderer.read(ByteArray(0)).run(grey))
+        assertEquals(
+            "color clip replaces what is under 0x202020 with it",
+            0xFF202020.toInt(),
+            ColorClipRenderer.read(ByteArray(0)).run(0xFF101010.toInt()),
+        )
+        assertEquals("unique tone is white's tone of the pixel", grey, UniqueToneRenderer.read(ByteArray(0)).run(grey))
+        assertEquals("an on-beat clear waits for the beat", grey, OnBeatClearRenderer.read(ByteArray(0)).run(grey))
+        assertEquals(
+            "and then clears to white",
+            0xFFFFFFFF.toInt(),
+            OnBeatClearRenderer.read(ByteArray(0)).run(grey, beat = true),
+        )
+    }
+
+    @Test
+    fun `every reader takes a body that ends early`() {
+        val readers: List<(ByteArray) -> AvsComponentRenderer> =
+            listOf(
+                BrightnessRenderer::read,
+                ColorfadeRenderer::read,
+                MirrorRenderer::read,
+                MosaicRenderer::read,
+                InterleaveRenderer::read,
+                BlitterFeedbackRenderer::read,
+                RotoBlitterRenderer::read,
+            )
+
+        readers.forEach { read ->
+            listOf(ByteArray(0), ByteArray(2), int32(1), int32(1) + int32(1)).forEach { body ->
+                read(body).render(AvsFrame(16, 16), AvsAudioFrame(), AvsRenderState(AvsBuffers(16, 16)))
+            }
+        }
+    }
+
+    /** An 8-byte Color Clip from before the replacement color clips to the color it tests against. */
+    @Test
+    fun `a color clip without a replacement uses its own color`() {
+        val clip = ColorClipRenderer.read(int32(1) + int32(0x303030))
+
+        assertEquals(0xFF303030.toInt(), clip.run(0xFF101010.toInt()))
+    }
+
+    @Test
+    fun `a brightness that ends before its blend is fifty-fifty`() {
+        // enabled alone: no gain, mixed half and half with the pixel itself
+        val brightness = BrightnessRenderer.read(int32(1))
+
+        assertEquals(0xFF404040.toInt(), brightness.run(0xFF404040.toInt()))
     }
 
     private fun fast(level: Int) = FastBrightnessRenderer.read(int32(level))!!
