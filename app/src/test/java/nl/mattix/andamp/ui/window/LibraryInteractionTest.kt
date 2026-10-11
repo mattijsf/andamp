@@ -153,6 +153,23 @@ class LibraryInteractionTest {
         compose.waitForIdle()
     }
 
+    /**
+     * Settles until [reached]. A saved list is read on a background thread, which
+     * [settle] does not wait for: it only runs what is already queued for the main one.
+     */
+    private fun settleUntil(
+        what: String,
+        reached: () -> Boolean,
+    ) {
+        val deadline = System.nanoTime() + SETTLE_TIMEOUT_NS
+        while (true) {
+            settle()
+            if (reached()) return
+            if (System.nanoTime() > deadline) throw AssertionError("timed out waiting for $what")
+            Thread.sleep(SETTLE_STEP_MS)
+        }
+    }
+
     private fun drillToTracks() {
         tapWindow(rowX(), rowCenterY(0))
         settle()
@@ -215,20 +232,19 @@ class LibraryInteractionTest {
         val shelf = PlaylistLibrary(File(app.filesDir, "playlists"))
         shelf.save("Road trip", listOf(Track("r1", "Someone", "One", 60_000, uri = "content://1")))
         vm.libraryOps.switchCategory(LibraryOps.Category.LISTS)
-        settle()
+        settleUntil("the saved lists") { vm.libraryOps.rows.isNotEmpty() }
         tapWindow(rowX(), rowCenterY(0))
-        settle()
-        assertEquals("Road trip", vm.libraryOps.header)
+        settleUntil("the list to open") { vm.libraryOps.header == "Road trip" }
 
         val playLeft = layout.listWidth(frame) + frame.leftW - LibraryLayout.ADD_CELL_W - LibraryLayout.PLAY_CELL_W
         tapWindow(playLeft - LibraryLayout.DELETE_CELL_W / 2f, barY())
-        settle()
+        settleUntil("the question") { vm.state.prompt != null }
 
         assertEquals("Delete Road trip?", vm.state.prompt?.title)
         vm.state.prompt
             ?.onConfirm
             ?.invoke()
-        settle()
+        settleUntil("the list to be gone") { vm.libraryOps.header == "LISTS" && vm.libraryOps.rows.isEmpty() }
 
         assertEquals("LISTS", vm.libraryOps.header)
         assertTrue(vm.libraryOps.rows.isEmpty())
@@ -292,3 +308,7 @@ class LibraryInteractionTest {
 private fun WinampViewModel.facadeQueueTitles() = state.playlist.map { it.title }
 
 private fun WinampViewModel.transport() = state.transport
+
+/** Long enough for a busy machine; a healthy run takes a few milliseconds. */
+private const val SETTLE_TIMEOUT_NS = 10_000_000_000L
+private const val SETTLE_STEP_MS = 5L
