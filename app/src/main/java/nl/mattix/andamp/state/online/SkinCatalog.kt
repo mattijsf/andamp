@@ -5,6 +5,7 @@ package nl.mattix.andamp.state.online
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -46,6 +47,19 @@ class SkinCatalog(
     /** How many skins the museum has; [UNKNOWN] until the first page lands. */
     var total by mutableIntStateOf(UNKNOWN)
         private set
+
+    /**
+     * Whether [total] is still growing: the source gives no count, and no page has come
+     * back short yet. The list is at least as long as what is loaded.
+     */
+    var growing by mutableStateOf(false)
+        private set
+
+    /** How many skins there are for certain: what is loaded while [growing], else [total]. */
+    val counted: Int get() = if (growing) (skins.keys.maxOrNull() ?: -1) + 1 else total
+
+    /** Whether any page said its total was a guess. */
+    private var guessed = false
 
     /** What is loaded, by position in the museum. */
     val skins = mutableStateMapOf<Int, OnlineSkin>()
@@ -163,7 +177,10 @@ class SkinCatalog(
             end = minOf(end, fetched.offset + fetched.items.size)
             if (fetched.items.isEmpty()) findEnd(below = fetched.offset)
         }
-        total = minOf(fetched.total, end)
+        if (fetched.more) guessed = true
+        // a guess only ever grows: a page that lands late must not shorten the list
+        total = minOf(if (guessed) maxOf(total, fetched.total) else fetched.total, end)
+        growing = guessed && end == UNBOUNDED
     }
 
     /** Binary search for the last position that holds a skin, with one-item requests. */
@@ -180,6 +197,7 @@ class SkinCatalog(
                 }
                 end = minOf(end, low)
                 total = minOf(total, end)
+                growing = false
             }
     }
 

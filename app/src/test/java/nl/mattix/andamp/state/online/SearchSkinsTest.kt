@@ -33,6 +33,7 @@ class SearchSkinsTest {
 
             assertEquals(listOf("a", "b"), page.items.map { it.md5 })
             assertTrue("a full page reports more behind it", page.total > page.items.size)
+            assertTrue("and says its total is a guess", page.more)
         }
 
     @Test
@@ -41,6 +42,7 @@ class SearchSkinsTest {
             val page = SearchSkins("zelda") { answer("a") }.page(offset = 40, count = 20)
 
             assertEquals(41, page.total)
+            assertTrue("the end is a count, not a guess", !page.more)
         }
 
     @Test

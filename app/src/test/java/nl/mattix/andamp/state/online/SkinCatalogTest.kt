@@ -61,7 +61,7 @@ class SkinCatalogTest {
     private val scopes = mutableListOf<CoroutineScope>()
 
     /** The catalog gets a scope of its own, which [catalogTest] cancels. */
-    private fun TestScope.catalog(museum: FakeMuseum): SkinCatalog {
+    private fun TestScope.catalog(museum: SkinsSource): SkinCatalog {
         val scope = CoroutineScope(UnconfinedTestDispatcher(testScheduler))
         scopes += scope
         return SkinCatalog(
@@ -214,6 +214,79 @@ class SkinCatalogTest {
             settle()
 
             assertEquals(3_456, catalog.total)
+        }
+
+    /** A search: it gives no count, so a full page only says there may be more. */
+    private class CountlessSearch(
+        val holds: Int,
+    ) : SkinsSource {
+        override suspend fun page(
+            offset: Int,
+            count: Int,
+        ): SkinsPage {
+            val items =
+                (offset until minOf(offset + count, holds))
+                    .map { n -> OnlineSkin("m$n", "skin$n.wsz", "s$n", "d$n", museumUrl = null, nsfw = false) }
+            val more = items.size == count
+            return SkinsPage(if (more) offset + items.size + count else offset + items.size, offset, items, more)
+        }
+    }
+
+    @Test
+    fun `a search with more to hand out counts what it has loaded, not its guess`() =
+        catalogTest {
+            val catalog = catalog(CountlessSearch(holds = PAGE * 5 + 3))
+
+            catalog.show(0..9)
+            settle()
+
+            assertTrue("full pages leave the count open", catalog.growing)
+            assertEquals("what is loaded is what is certain", catalog.skins.size, catalog.counted)
+            assertTrue("the list has room for the page behind what is loaded", catalog.total > catalog.counted)
+        }
+
+    @Test
+    fun `a search read to its end knows its count`() =
+        catalogTest {
+            val holds = PAGE * 5 + 3
+            val catalog = catalog(CountlessSearch(holds))
+
+            // reading on, as a listener scrolling down does
+            var at = 0
+            while (catalog.growing || catalog.total == SkinCatalog.UNKNOWN) {
+                catalog.show(at..at + 9)
+                settle()
+                at = (catalog.total - 10).coerceAtLeast(0)
+            }
+
+            assertEquals(holds, catalog.total)
+            assertEquals(holds, catalog.counted)
+        }
+
+    @Test
+    fun `a page of a search that lands late does not shorten the list`() =
+        catalogTest {
+            val catalog = catalog(CountlessSearch(holds = PAGE * 5 + 3))
+            catalog.show(PAGE * 2..PAGE * 2 + 9)
+            settle()
+            val reached = catalog.total
+
+            catalog.show(0..9)
+            settle()
+
+            assertTrue("the first page's guess is shorter than what was reached", catalog.total >= reached)
+        }
+
+    @Test
+    fun `a museum that counts its skins is never growing`() =
+        catalogTest {
+            val catalog = catalog(FakeMuseum())
+
+            catalog.show(0..9)
+            settle()
+
+            assertTrue(!catalog.growing)
+            assertEquals(1_000, catalog.counted)
         }
 
     @Test

@@ -25,6 +25,7 @@ class SearchSkins(
             total = if (more) offset + items.size + count else offset + items.size,
             offset = offset,
             items = items,
+            more = more,
         )
     }
 

@@ -46,6 +46,8 @@ data class SkinsPage(
     val total: Int,
     val offset: Int,
     val items: List<OnlineSkin>,
+    /** True when [total] is a guess: the source gives no count, and this page came back full. */
+    val more: Boolean = false,
 )
 
 /** Where a page of the museum comes from. */

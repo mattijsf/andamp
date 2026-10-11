@@ -230,6 +230,7 @@ private fun Browser(
                 BrowserBar(
                     online = online,
                     total = catalog.total,
+                    count = catalog.countText(),
                     filtering = filtering,
                     onFiltering = onFiltering,
                     onClose = onClose,
@@ -312,7 +313,7 @@ private fun Browser(
                             onScrollTo = scrollTo,
                         )
                     }
-                    steering?.let { at -> Steering(at, catalog.total, Modifier.align(Alignment.CenterEnd)) }
+                    steering?.let { at -> Steering(at, catalog.countText(), Modifier.align(Alignment.CenterEnd)) }
                 }
             }
         }
@@ -382,6 +383,7 @@ private fun BrowserEffects(
 private fun BrowserBar(
     online: OnlineSkins,
     total: Int,
+    count: String,
     filtering: Boolean,
     onFiltering: (Boolean) -> Unit,
     onClose: () -> Unit,
@@ -389,15 +391,13 @@ private fun BrowserBar(
     TopAppBar(
         title = {
             if (online.searchOpen) {
-                SearchField(online, total)
+                SearchField(online, total, count)
             } else {
                 Column {
                     Text("Skin Museum")
                     Text(
-                        if (total >
-                            0
-                        ) {
-                            "${total.asCount()} ${if (online.query.isBlank()) "in the museum" else "found"}"
+                        if (total > 0) {
+                            "$count ${if (online.query.isBlank()) "in the museum" else "found"}"
                         } else {
                             "from the Winamp Skin Museum"
                         },
@@ -455,6 +455,7 @@ private fun BrowserBar(
 private fun SearchField(
     online: OnlineSkins,
     total: Int,
+    count: String,
 ) {
     var typed by remember { mutableStateOf(online.query) }
     // opening the field is asking to type in it
@@ -470,7 +471,7 @@ private fun SearchField(
         singleLine = true,
         placeholder = { Text("Search the museum") },
         // the count sits in the field, since the field has taken the title's place
-        suffix = { if (online.query.isNotBlank() && total >= 0) Text("$total found") },
+        suffix = { if (online.query.isNotBlank() && total >= 0) Text("$count found") },
         colors =
             TextFieldDefaults.colors(
                 focusedContainerColor = Color.Transparent,
@@ -487,7 +488,7 @@ private fun SearchField(
 @Composable
 private fun Steering(
     at: Int,
-    total: Int,
+    total: String,
     modifier: Modifier = Modifier,
 ) {
     Text(
