@@ -2,8 +2,6 @@
 
 package nl.mattix.andamp.ui.prefs
 
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import nl.mattix.andamp.state.SkinEntry
 import nl.mattix.andamp.state.WinampViewModel
@@ -41,16 +39,14 @@ fun AndroidAutoPrefs.summary(): String =
 @Composable
 internal fun AndroidAutoPage(prefs: AndroidAutoPrefs) {
     Section("Skin")
-    Text(
-        "In Android Auto the main window wears this skin. " +
-            "Default keeps the one you picked for the player.",
-        style = MaterialTheme.typography.bodyMedium,
-    )
-    SkinPickRow(
-        skins = prefs.skins,
-        chosen = prefs.skin,
-        heading = "Skin in Android Auto",
-        tag = "prefs.androidauto.skin",
-        onPick = prefs.onSkin,
-    )
+    Note("In Android Auto the main window wears this skin. Default keeps the one you picked for the player.")
+    Group {
+        SkinPickRow(
+            skins = prefs.skins,
+            chosen = prefs.skin,
+            heading = "Skin in Android Auto",
+            tag = "prefs.androidauto.skin",
+            onPick = prefs.onSkin,
+        )
+    }
 }
