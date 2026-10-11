@@ -30,17 +30,26 @@ fun versionCodeOf(name: String): Int {
     return parts.getOrElse(0) { 0 } * 10_000 + parts.getOrElse(1) { 0 } * 100 + parts.getOrElse(2) { 0 }
 }
 
+/**
+ * The id of the player this app belongs to. It follows `:app`, which `-Pandamp.id.suffix`
+ * gives a second id for trying a change beside the Andamp a store installed; this app's own id
+ * is that one with `.androidauto` after it (`RemoteWindowLink`).
+ */
+val player = "nl.mattix.andamp" + (findProperty("andamp.id.suffix") as String?).orEmpty()
+
 android {
     namespace = "nl.mattix.andamp.androidauto"
 
     defaultConfig {
-        applicationId = "nl.mattix.andamp.androidauto"
+        applicationId = "$player.androidauto"
         targetSdk = 36
         // release-please owns this line; it is the player's version, which this app is released with
         versionName = "0.13.0" // x-release-please-version
         versionCode = versionCodeOf(versionName!!)
         // the runner for the on-device test that lends a surface to the installed player
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        // the manifest names the player, whose service this app binds to
+        manifestPlaceholders["player"] = player
     }
 
     signingConfigs {

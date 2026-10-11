@@ -4,12 +4,14 @@ package nl.mattix.andamp.state
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.content.pm.PackageInfo
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
 /** The skin chosen for the car's screen: kept, and given up when the skin goes. */
@@ -94,5 +96,13 @@ class AndroidAutoStoreTest {
     @Test
     fun `without the Android Auto app on the phone the settings are not offered`() {
         assertEquals(false, AndroidAutoStore.companionInstalled(app))
+    }
+
+    /** The app is the one whose id is this player's with a word after it. */
+    @Test
+    fun `with the Android Auto app on the phone the settings are offered`() {
+        shadowOf(app.packageManager).installPackage(PackageInfo().apply { packageName = "${app.packageName}.androidauto" })
+
+        assertEquals(true, AndroidAutoStore.companionInstalled(app))
     }
 }

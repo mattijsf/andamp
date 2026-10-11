@@ -65,6 +65,19 @@ require(store in setOf("play", "none")) { "andamp.store is '$store'; it is 'play
 val storeSources = "src/store${store.replaceFirstChar { it.uppercase() }}/java"
 
 /**
+ * A second id for the app, so that a build installs beside the Andamp a store put on a phone
+ * and leaves it and its playlist alone:
+ *
+ * ```
+ * ./gradlew :app:installDebug -Pandamp.id.suffix=.dev
+ * ```
+ *
+ * installs `nl.mattix.andamp.dev`. It is for trying a change on such a phone. `:androidauto`
+ * reads the same property and then belongs to this second app. No release is built with it.
+ */
+val idSuffix: String? = (findProperty("andamp.id.suffix") as String?)?.takeIf { it.isNotBlank() }
+
+/**
  * A semver name as one climbing integer: 1.2.3 becomes 10203.
  *
  * Two digits each for minor and patch, which caps a release at 99 of either. Play only requires
@@ -247,6 +260,7 @@ android {
         // The code is derived from the name, not assigned by Play, so the repository records which
         // commit has which version code.
         versionCode = versionCodeOf(versionName!!)
+        idSuffix?.let { applicationIdSuffix = it }
     }
 
     // One app, and no flavors. No source is compiled in: a source is an app the listener installed,

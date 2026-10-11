@@ -11,7 +11,7 @@
 
     <!-- the player, whose service this app binds to -->
     <queries>
-        <package android:name="nl.mattix.andamp" />
+        <package android:name="${player}" />
     </queries>
 
     <application

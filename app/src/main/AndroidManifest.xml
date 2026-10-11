@@ -39,7 +39,7 @@
             <action android:name="nl.mattix.andamp.source.SETTINGS" />
         </intent>
         <!-- the app Android Auto talks to; Preferences offers the Android Auto page when it is here -->
-        <package android:name="nl.mattix.andamp.androidauto" />
+        <package android:name="${applicationId}.androidauto" />
     </queries>
 
     <!--

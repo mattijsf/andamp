@@ -7,6 +7,7 @@ import android.content.SharedPreferences
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import nl.mattix.andamp.core.remotewindow.RemoteWindowLink
 
 /**
  * What the listener chose for Android Auto.
@@ -68,11 +69,13 @@ class AndroidAutoStore(
         private const val SKIN = "skin"
         private const val FILL = "fill"
 
-        /** The package of the app Android Auto talks to. */
-        const val COMPANION = "nl.mattix.andamp.androidauto"
-
-        /** Whether that app is on this phone, which is when these settings mean anything. */
-        fun companionInstalled(context: Context): Boolean =
-            runCatching { context.packageManager.getPackageInfo(COMPANION, 0) }.isSuccess
+        /**
+         * Whether the app Android Auto talks to is on this phone, which is when these settings
+         * mean anything.
+         */
+        fun companionInstalled(context: Context): Boolean {
+            val companion = RemoteWindowLink.lenderOf(context.packageName)
+            return runCatching { context.packageManager.getPackageInfo(companion, 0) }.isSuccess
+        }
     }
 }
