@@ -5,9 +5,10 @@
 # release-please run takes seconds and its release PR has to stay up to date
 # with main.
 #
-# It does not ship anything. Merging its PR bumps the version, writes the
-# changelog and tags. Uploading that tag to Play is tools/release.py, run by
-# hand, because the signing key lives in a keychain on one machine.
+# Merging its PR bumps the version, writes the changelog and tags. Uploading
+# that tag to Play is tools/release.py, run by hand, because the upload key
+# lives in a keychain on one machine. The APK for installing without Play is
+# built here, by apk.yml, as soon as the release exists.
 name: release-please
 
 on:
@@ -22,8 +23,22 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    outputs:
+      released: ${{ steps.release.outputs.release_created }}
+      tag: ${{ steps.release.outputs.tag_name }}
     steps:
-      - uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
+      - id: release
+        uses: googleapis/release-please-action@5c625bfb5d1ff62eadeeb3772007f7f66fdcf071 # v4.4.1
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+  # Called from here, not started by the release itself: a release made with
+  # this workflow's own token starts no other workflow.
+  apk:
+    needs: release-please
+    if: needs.release-please.outputs.released == 'true'
+    uses: ./.github/workflows/apk.yml
+    with:
+      tag: ${{ needs.release-please.outputs.tag }}
+    secrets: inherit

@@ -60,6 +60,7 @@ import nl.mattix.andamp.state.DspOps
 import nl.mattix.andamp.state.LibraryAccess
 import nl.mattix.andamp.state.PackSources
 import nl.mattix.andamp.state.PluginOps
+import nl.mattix.andamp.state.Store
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.sourceRoute
 import nl.mattix.andamp.widget.WidgetSettings
@@ -202,6 +203,12 @@ fun PreferencesScreen(
                         onShown = vm.tipJar::open,
                         // the store's purchase screen opens over an activity
                         onGive = { tip -> (context as? Activity)?.let { vm.tipJar.give(it, tip) } },
+                        outside = Store.supportPage,
+                        onOutside = { page ->
+                            context.startActivity(
+                                Intent(Intent.ACTION_VIEW, Uri.parse(page)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),
+                            )
+                        },
                     ),
             ),
     )

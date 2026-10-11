@@ -106,6 +106,15 @@ class TipJarTest {
     }
 
     @Test
+    fun `a build no store hands out has a closed shelf`() {
+        val jar = TipJar(NoTill, TipLedger(prefs), scope)
+
+        jar.open()
+
+        assertEquals(TipShelf.Closed, jar.shelf)
+    }
+
+    @Test
     fun `a store with no tips for this app leaves the shelf closed`() {
         val jar = jar(FakeTill())
 

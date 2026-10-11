@@ -55,6 +55,34 @@ class SupportPageTest {
     }
 
     @Test
+    fun `a build no store hands out sends the listener to the website, and asks no store`() {
+        var shown = 0
+        val opened = mutableListOf<String>()
+        show(
+            SupportPrefs(
+                shelf = TipShelf.Open(listOf(small)),
+                onShown = { shown++ },
+                outside = "https://andamp.nl/#donate",
+                onOutside = { opened += it },
+            ),
+        )
+
+        compose.onNodeWithText("Open andamp.nl").assertIsDisplayed()
+        compose.onNodeWithTag("prefs.support.tip.tip_small").assertDoesNotExist()
+        compose.onNodeWithTag("prefs.support.outside").performClick()
+
+        assertEquals(listOf("https://andamp.nl/#donate"), opened)
+        assertEquals("no store is asked what it sells", 0, shown)
+    }
+
+    @Test
+    fun `the row in the list says where support goes`() {
+        assertEquals("Leave a tip", SupportPrefs().summary())
+        assertEquals("Thank you for your tip", SupportPrefs(given = true).summary())
+        assertEquals("On andamp.nl", SupportPrefs(given = true, outside = "https://andamp.nl/#donate").summary())
+    }
+
+    @Test
     fun `without a store the page says tips are not available`() {
         show(SupportPrefs(shelf = TipShelf.Closed))
 

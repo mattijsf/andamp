@@ -47,6 +47,24 @@ fun secret(
 val storePath: String? = signing.getProperty("storeFile")
 
 /**
+ * The store that hands this build out, which decides how the app takes support.
+ *
+ * `play`, the default, is the build Google Play gets: tips are bought through the Play Billing
+ * Library. `none` is the APK installed without Play:
+ *
+ * ```
+ * ./gradlew :app:assembleRelease -Pandamp.store=none
+ * ```
+ *
+ * It leaves that library out, since it is not open source, and its support page opens the website.
+ * The two differ by one directory of sources, `src/storePlay` or `src/storeNone`, and by that one
+ * dependency.
+ */
+val store: String = (findProperty("andamp.store") as String?) ?: "play"
+require(store in setOf("play", "none")) { "andamp.store is '$store'; it is 'play' or 'none'" }
+val storeSources = "src/store${store.replaceFirstChar { it.uppercase() }}/java"
+
+/**
  * A semver name as one climbing integer: 1.2.3 becomes 10203.
  *
  * Two digits each for minor and patch, which caps a release at 99 of either. Play only requires
@@ -179,7 +197,7 @@ abstract class NamesNothing : DefaultTask() {
             }
         if (found.isNotEmpty()) {
             throw GradleException(
-                "the app that goes to Play names \"$needle\" in:\n\n" + found.joinToString("\n") { "  $it" } + "\n",
+                "the packaged app names \"$needle\" in:\n\n" + found.joinToString("\n") { "  $it" } + "\n",
             )
         }
         val said = verdict.get().asFile
@@ -236,6 +254,8 @@ android {
     //
     // This APK names no service. NamesNothing (wired below) reads the packaged APK back for the
     // word, and NamesNoServiceTest reads what was compiled.
+    sourceSets.getByName("main").kotlin.srcDir(storeSources)
+
     signingConfigs {
         create("upload") {
             if (storePath != null) {
@@ -298,6 +318,18 @@ androidComponents {
                 word.set("spotify")
                 verdict.set(layout.buildDirectory.file("reports/names-nothing/${variant.name}-bundle.txt"))
             }
+        // The build no store hands out, read back for the library it leaves out: nothing in the APK,
+        // this project's code or a dependency's, may bring the Play Billing Library back in.
+        if (store == "none") {
+            val free =
+                tasks.register<NamesNothing>("verify${named}ApkCarriesNoBilling") {
+                    description = "Reads the packaged $named APK for the Play Billing Library, which this build leaves out."
+                    packages.from(variant.artifacts.get(SingleArtifact.APK))
+                    word.set("billingclient")
+                    verdict.set(layout.buildDirectory.file("reports/names-nothing/${variant.name}-apk-billing.txt"))
+                }
+            tasks.configureEach { if (name == "assemble$named") dependsOn(free) }
+        }
         // by name, because AGP and Play Publisher make these tasks after this
         // runs; configureEach reaches them whenever they appear
         tasks.configureEach {
@@ -343,7 +375,9 @@ dependencies {
     implementation(libs.activity.compose)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)
-    implementation(libs.billing.ktx) // the tip jar: tips are bought through Google Play
+    if (store == "play") {
+        implementation(libs.billing.ktx) // the tip jar: tips are bought through Google Play
+    }
     detektPlugins(libs.detekt.compose.rules)
     testImplementation(libs.junit)
     testImplementation(testFixtures(project(":core:playback")))

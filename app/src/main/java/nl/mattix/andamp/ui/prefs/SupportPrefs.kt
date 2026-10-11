@@ -34,9 +34,20 @@ data class SupportPrefs(
     /** The page is on screen, so the store is asked what it sells. */
     val onShown: () -> Unit = {},
     val onGive: (Tip) -> Unit = {},
+    /**
+     * The page outside the app that takes support, in a build no store hands out; null where a
+     * store sells the tips.
+     */
+    val outside: String? = null,
+    val onOutside: (String) -> Unit = {},
 ) {
     /** The line under the page's row in the list. */
-    fun summary() = if (given) "Thank you for your tip" else "Leave a tip"
+    fun summary() =
+        when {
+            outside != null -> "On andamp.nl"
+            given -> "Thank you for your tip"
+            else -> "Leave a tip"
+        }
 }
 
 /** The route of the page, which the main menu's entry opens Preferences on. */
@@ -45,6 +56,10 @@ internal const val SUPPORT_PAGE = "support"
 /** Preferences > Support Andamp: what a tip is for, and the tips. */
 @Composable
 internal fun SupportPage(prefs: SupportPrefs) {
+    if (prefs.outside != null) {
+        OutsideSupport(prefs.outside) { prefs.onOutside(prefs.outside) }
+        return
+    }
     LaunchedEffect(Unit) { prefs.onShown() }
     Spacer(Modifier.height(16.dp))
     Text(
@@ -86,6 +101,24 @@ internal fun SupportPage(prefs: SupportPrefs) {
             }
             Text(said, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 12.dp))
         }
+    }
+}
+
+/** The page of a build no store hands out: one button, to the page that takes support. */
+@Composable
+private fun OutsideSupport(
+    page: String,
+    onOpen: () -> Unit,
+) {
+    Spacer(Modifier.height(16.dp))
+    Text(
+        "Andamp is free and has no ads. If you enjoy it, you can support it on its website. " +
+            "That unlocks nothing: everything in Andamp stays free, with or without it.",
+        style = MaterialTheme.typography.bodyMedium,
+    )
+    Spacer(Modifier.height(16.dp))
+    FilledTonalButton(onClick = onOpen, modifier = Modifier.fillMaxWidth().testTag("prefs.support.outside")) {
+        Text("Open ${page.substringAfter("://").substringBefore('/')}")
     }
 }
 

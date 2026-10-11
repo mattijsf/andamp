@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.ui.prefs
 
+import nl.mattix.andamp.state.Store
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -25,6 +26,8 @@ class NoticesTest {
             aliases
                 .map { alias -> alias to (catalogue[alias] ?: error("no entry for $alias in libs.versions.toml")) }
                 .filterNot { (_, group) -> group == OWN_GROUP || Notices.covers(group) }
+                // the build file names the store's library for the build a store hands out only
+                .filterNot { (_, group) -> Store.supportPage != null && group == STORE_ONLY_GROUP }
         assertTrue("every dependency has a notice; missing: $missing", missing.isEmpty())
     }
 
@@ -96,6 +99,9 @@ class NoticesTest {
     private companion object {
         /** Low enough not to be a second copy of the dependency list, high enough to catch a broken scan. */
         const val EXPECTED_AT_LEAST = 8
+
+        /** The Play Billing Library, which `-Pandamp.store=none` leaves out of the build. */
+        const val STORE_ONLY_GROUP = "com.android.billingclient"
 
         /** This project's own group, which needs no notice. */
         const val OWN_GROUP = "nl.mattix.andamp"

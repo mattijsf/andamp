@@ -1,0 +1,119 @@
+# The APK for installing Andamp without Google Play, attached to a GitHub release.
+#
+# Google Play gets a bundle from tools/release.py, run by hand. This is the other build,
+# `-Pandamp.store=none`: it leaves the Play Billing Library out, so it is open source all the way
+# down, and its support page opens the website. Direct downloads, Obtainium and app catalogs that
+# read GitHub releases all take this one file.
+#
+# release-please.yml calls this when it has made a release. It can also be run by hand, from the
+# Actions tab or with `gh workflow run apk.yml -f tag=v1.2.3`, to build a tag again; without a
+# tag it builds the branch it was started on and keeps the APK as a workflow artifact, which is
+# how a change to this file is tried out.
+#
+# The APK is signed with a key of its own, kept in this repository's secrets:
+#
+#   APK_KEYSTORE_BASE64     the keystore file, base64
+#   APK_KEYSTORE_PASSWORD   its password
+#   APK_KEY_ALIAS           the key's name in it
+#   APK_KEY_PASSWORD        the key's password
+#
+# It is not the key Play uploads are signed with, and it cannot be: Play signs what it hands
+# out with a key only Google holds. An install from Play and an install of this APK therefore
+# do not update each other.
+name: apk
+
+on:
+  workflow_call:
+    inputs:
+      tag:
+        description: The release tag to build and attach the APK to
+        type: string
+        required: true
+    secrets:
+      APK_KEYSTORE_BASE64:
+        required: true
+      APK_KEYSTORE_PASSWORD:
+        required: true
+      APK_KEY_ALIAS:
+        required: true
+      APK_KEY_PASSWORD:
+        required: true
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: A release tag to build and attach the APK to; empty builds this branch and attaches nothing
+        type: string
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    env:
+      TAG: ${{ inputs.tag }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+          # the visualizers are compiled from source, and projectM vendors
+          # projectm-eval inside its own tree
+          submodules: recursive
+
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4.9.1
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1 # v4.4.4
+
+      # The build reads where the keystore is from keystore.properties and the two passwords from
+      # the environment, as it does on the machine that uploads to Play.
+      - name: Put the signing key in place
+        env:
+          KEYSTORE_BASE64: ${{ secrets.APK_KEYSTORE_BASE64 }}
+          KEY_ALIAS: ${{ secrets.APK_KEY_ALIAS }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEY_ALIAS" ]; then
+            echo "::error::The APK_* signing secrets are not set; see the top of .github/workflows/apk.yml"
+            exit 1
+          fi
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/apk.keystore"
+          printf 'storeFile=%s\nkeyAlias=%s\n' "$RUNNER_TEMP/apk.keystore" "$KEY_ALIAS" > keystore.properties
+
+      # assembleRelease also reads the packaged APK back and fails if the Play Billing Library is
+      # in it (verifyReleaseApkCarriesNoBilling).
+      - name: Build the APK
+        env:
+          RT_STORE_PASSWORD: ${{ secrets.APK_KEYSTORE_PASSWORD }}
+          RT_KEY_PASSWORD: ${{ secrets.APK_KEY_PASSWORD }}
+        run: ./gradlew :app:assembleRelease -Pandamp.store=none
+
+      - name: Name it and check its signature
+        id: apk
+        run: |
+          built=app/build/outputs/apk/release/app-release.apk
+          version=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts)
+          named="andamp-$version.apk"
+          cp "$built" "$named"
+          tools=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
+          "$tools/apksigner" verify --print-certs "$named" | grep -E "Signer #1 certificate (DN|SHA-256)"
+          echo "file=$named" >> "$GITHUB_OUTPUT"
+
+      - name: Attach it to the release
+        if: env.TAG != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release upload "$TAG" "${{ steps.apk.outputs.file }}" --clobber
+
+      - name: Keep it as a workflow artifact
+        if: env.TAG == ''
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ${{ steps.apk.outputs.file }}
+          path: ${{ steps.apk.outputs.file }}
+
+      - name: Remove the signing key
+        if: always()
+        run: rm -f "$RUNNER_TEMP/apk.keystore" keystore.properties
