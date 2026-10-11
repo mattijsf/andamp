@@ -50,6 +50,38 @@ class PlaylistLayoutTest {
     }
 
     @Test
+    fun `a song already in view leaves the list where it is`() {
+        val layout = PlaylistLayout(116) // four rows
+        assertEquals(10, layout.scrollShowing(row = 10, scroll = 10, rows = 100))
+        assertEquals(10, layout.scrollShowing(row = 13, scroll = 10, rows = 100))
+    }
+
+    @Test
+    fun `a song out of view is brought to the middle of the list`() {
+        val layout = PlaylistLayout(20 + 8 * 29 + 38) // seventeen rows
+        assertEquals(17, layout.visibleRows)
+        // the row after the last one showing, and one far above
+        assertEquals(17 - 8, layout.scrollShowing(row = 17, scroll = 0, rows = 100))
+        assertEquals(50 - 8, layout.scrollShowing(row = 50, scroll = 80, rows = 100))
+    }
+
+    @Test
+    fun `the list does not scroll past its ends to center a song`() {
+        val layout = PlaylistLayout(20 + 8 * 29 + 38)
+        assertEquals(0, layout.scrollShowing(row = 3, scroll = 40, rows = 100))
+        assertEquals(100 - 17, layout.scrollShowing(row = 98, scroll = 0, rows = 100))
+        // a list shorter than the window never scrolls
+        assertEquals(0, layout.scrollShowing(row = 4, scroll = 0, rows = 5))
+    }
+
+    @Test
+    fun `no song playing leaves the list where it is`() {
+        val layout = PlaylistLayout(116)
+        assertEquals(7, layout.scrollShowing(row = -1, scroll = 7, rows = 100))
+        assertEquals(0, layout.scrollShowing(row = 0, scroll = 0, rows = 0))
+    }
+
+    @Test
     fun `text area spans between the 12px left and 20px right edge tiles`() {
         val layout = PlaylistLayout(116)
         assertEquals(12, layout.textLeft)
