@@ -3,12 +3,18 @@
 package nl.mattix.andamp.ui.prefs
 
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.drawable.AdaptiveIconDrawable
+import android.graphics.drawable.Drawable
+import android.os.Build
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
@@ -20,6 +26,7 @@ import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
@@ -34,12 +41,16 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.ColorFilter
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.unit.dp
+import androidx.core.graphics.drawable.toBitmap
 import nl.mattix.andamp.state.ExtraSource
 import nl.mattix.andamp.state.LibraryAccess
 import nl.mattix.andamp.state.MusicPermission
@@ -124,6 +135,7 @@ internal fun SourcesSection(
                 tag = "prefs.${sourceRoute(extra.source).replace('/', '.')}",
                 onClick = { onSource(extra.source) },
                 leading = Icons.Outlined.LibraryMusic,
+                leadingContent = sourceIcon(extra),
                 route = sourceRoute(extra.source),
             )
         }
@@ -138,6 +150,46 @@ internal fun SourcesSection(
         )
     }
 }
+
+/** The icon of the source's app, drawn like the glyphs beside it; null falls back to the generic one. */
+@Composable
+private fun sourceIcon(extra: ExtraSource): (@Composable () -> Unit)? {
+    val context = LocalContext.current
+    val glyph = remember(extra) { extra.icon(context)?.glyph() } ?: return null
+    return {
+        Image(
+            glyph.image,
+            contentDescription = null,
+            colorFilter = if (glyph.tinted) ColorFilter.tint(LocalContentColor.current) else null,
+            modifier = Modifier.size(24.dp),
+        )
+    }
+}
+
+/** An app icon reduced to a row's glyph; [tinted] says it is a shape to draw in the row's color. */
+private class Glyph(
+    val image: ImageBitmap,
+    val tinted: Boolean,
+)
+
+/**
+ * An adaptive icon's monochrome layer, where it has one, is a shape and takes the row's color like
+ * the glyphs beside it. Without one the icon's foreground is shown as drawn, in color; a flat icon
+ * is taken whole. Either layer is cropped to the zone an adaptive icon keeps its art in.
+ */
+private fun Drawable.glyph(): Glyph {
+    val adaptive = this as? AdaptiveIconDrawable ?: return Glyph(toBitmap().asImageBitmap(), tinted = false)
+    val monochrome = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) adaptive.monochrome else null
+    val layer = monochrome ?: adaptive.foreground ?: return Glyph(toBitmap().asImageBitmap(), tinted = false)
+    val whole = layer.toBitmap(ADAPTIVE_CANVAS, ADAPTIVE_CANVAS)
+    val inset = (ADAPTIVE_CANVAS - ADAPTIVE_SAFE) / 2
+    val art = Bitmap.createBitmap(whole, inset, inset, ADAPTIVE_SAFE, ADAPTIVE_SAFE)
+    return Glyph(art.asImageBitmap(), tinted = monochrome != null)
+}
+
+/** An adaptive icon layer's canvas, in pixels here, and the zone in its middle the art is kept to: 72 of 108. */
+private const val ADAPTIVE_CANVAS = 216
+private const val ADAPTIVE_SAFE = 144
 
 /** The phone row's summary: the permission when it is missing, otherwise the count. */
 internal fun phoneSummary(

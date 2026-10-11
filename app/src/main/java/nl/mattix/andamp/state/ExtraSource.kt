@@ -4,6 +4,7 @@ package nl.mattix.andamp.state
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.Drawable
 import androidx.compose.runtime.Composable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -26,6 +27,12 @@ interface ExtraSource {
      * installed and updated separately from the app; see [SourceUpdates] for the file.
      */
     val updates: String? get() = null
+
+    /**
+     * The icon for the list of sources, or null to be drawn with the generic one. A source that
+     * is a separate app answers with that app's icon.
+     */
+    fun icon(context: Context): Drawable? = null
 
     /**
      * Whether a skin can be chosen for it, to be worn while its tracks play; see

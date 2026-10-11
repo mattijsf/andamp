@@ -109,13 +109,15 @@ internal fun NavRow(
     onClick: () -> Unit,
     icon: ImageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
     leading: ImageVector? = null,
+    /** What leads the row when it is not an icon from the set; takes precedence over [leading]. */
+    leadingContent: (@Composable () -> Unit)? = null,
     route: String? = null,
 ) {
     val selected = route != null && route == LocalShowingPage.current
     ListItem(
         headlineContent = { Text(title) },
         supportingContent = { Text(summary) },
-        leadingContent = leading?.let { { Icon(it, contentDescription = null) } },
+        leadingContent = leadingContent ?: leading?.let { { Icon(it, contentDescription = null) } },
         trailingContent = { Icon(icon, contentDescription = null) },
         colors = rowColors(),
         modifier =
