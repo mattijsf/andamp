@@ -3,6 +3,8 @@
 package nl.mattix.andamp.visualizer.avs
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -25,6 +27,13 @@ class MovementEffectsTest {
     fun `doubled and trailing separators collapse`() {
         assertEquals("a=1;b=2", MovementEffect.asEel("a=1;;b=2;"))
         assertEquals("a=1;b=2", MovementEffect.asEel("a=1,,b=2,,"))
+    }
+
+    @Test
+    fun `a section that is only a comment holds no code`() {
+        assertFalse(MovementEffect.hasCode("// This example needs Maximum render mode\r\n"))
+        assertFalse(MovementEffect.hasCode("  \r\n"))
+        assertTrue(MovementEffect.hasCode("// set up\r\nn=4"))
     }
 
     @Test

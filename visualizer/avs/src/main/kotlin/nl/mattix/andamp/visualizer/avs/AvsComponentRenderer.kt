@@ -39,6 +39,12 @@ interface AvsScripted {
 class AvsRenderState(
     val buffers: AvsBuffers,
 ) {
+    /** Where the preset's pictures come from; the engine sets it. */
+    var images: AvsImages = AvsImages.NONE
+
+    /** What draws a preset's text; the engine sets it. */
+    var text: AvsTextPainter = AvsTextPainter.NONE
+
     /**
      * Whether this frame is a beat, as the components see it. Custom BPM
      * rewrites the beat for everything after it, so this can differ from the
@@ -65,8 +71,22 @@ class AvsRenderState(
         this.lineSize = lineSize.coerceIn(1, MAX_LINE_SIZE)
     }
 
+    /**
+     * How many frames have started. A component whose instances share state
+     * (Multi Delay) uses it to tell the first of them in a frame.
+     */
+    var frameNumber: Long = 0
+        private set
+
+    /** What the Multi Delays of this preset share: six delay lines. */
+    internal val multiDelay = MultiDelayBank()
+
+    /** The depth buffer the Triangles of this preset share. */
+    internal val triangleDepth = TriangleDepth()
+
     /** Back to the defaults, which is where every frame starts. */
     fun reset(beat: Boolean = false) {
+        frameNumber++
         this.beat = beat
         renderBlend = AvsBlendMode.REPLACE
         renderAdjust = FULL

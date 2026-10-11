@@ -345,9 +345,9 @@ internal class DynamicShiftRenderer(
 
     override val errors: List<String> =
         buildList {
-            if (init.isNotBlank() && initCode == null) add("init")
-            if (perFrame.isNotBlank() && frameCode == null) add("per frame")
-            if (onBeat.isNotBlank() && beatCode == null) add("on beat")
+            if (MovementEffect.hasCode(init) && initCode == null) add("init")
+            if (MovementEffect.hasCode(perFrame) && frameCode == null) add("per frame")
+            if (MovementEffect.hasCode(onBeat) && beatCode == null) add("on beat")
         }
 
     private var scratch: AvsFrame? = null
@@ -549,10 +549,10 @@ internal class DynamicDistanceModifierRenderer(
 
     override val errors: List<String> =
         buildList {
-            if (config.init.isNotBlank() && init == null) add("init")
-            if (config.perFrame.isNotBlank() && perFrame == null) add("per frame")
-            if (config.onBeat.isNotBlank() && onBeat == null) add("on beat")
-            if (config.perPoint.isNotBlank() && perPoint == null) add("per point")
+            if (MovementEffect.hasCode(config.init) && init == null) add("init")
+            if (MovementEffect.hasCode(config.perFrame) && perFrame == null) add("per frame")
+            if (MovementEffect.hasCode(config.onBeat) && onBeat == null) add("on beat")
+            if (MovementEffect.hasCode(config.perPoint) && perPoint == null) add("per point")
         }
 
     private var table = IntArray(0)

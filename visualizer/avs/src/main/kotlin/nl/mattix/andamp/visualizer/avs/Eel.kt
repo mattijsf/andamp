@@ -10,6 +10,11 @@ internal object EelNative {
 
     external fun contextCreate(): Long
 
+    external fun setAudio(
+        waveform: FloatArray,
+        spectrum: FloatArray,
+    )
+
     external fun contextDestroy(context: Long)
 
     external fun contextResetVariables(context: Long)
@@ -82,6 +87,10 @@ class EelCode internal constructor(
  * Variables are registered once and then written and read through the pointer
  * the evaluator hands back, so a per-point loop looks nothing up by name.
  *
+ * Every context also has the functions AVS adds to ns-eel: `getosc`,
+ * `getspec` and `gettime`, and `getkbmouse` and `setmousepos`, which have no
+ * mouse or keys to read here and answer zero.
+ *
  * Not thread-safe. A context belongs to one component on one render thread,
  * which is why the host mutex hooks in the JNI glue are empty.
  */
@@ -95,6 +104,7 @@ class Eel : AutoCloseable {
 
     init {
         check(context != 0L) { "could not create an ns-eel context" }
+        open.incrementAndGet()
     }
 
     /** The variable called [name], made on first use. The same name is the same variable. */
@@ -129,6 +139,24 @@ class Eel : AutoCloseable {
         compiled.clear()
         variables.clear()
         EelNative.contextDestroy(context)
+        open.decrementAndGet()
+    }
+
+    companion object {
+        /** How many contexts exist. With none, nothing needs the native library, and [hear] leaves it alone. */
+        private val open =
+            java.util.concurrent.atomic
+                .AtomicInteger(0)
+
+        /**
+         * Hands the evaluator this frame's audio, which AVS code reads through
+         * `getosc` and `getspec`. Call it once a frame, before any code runs.
+         * It does nothing while no context exists, so a preset with no code
+         * never loads the native library.
+         */
+        fun hear(audio: AvsAudioFrame) {
+            if (open.get() > 0) EelNative.setAudio(audio.waveform, audio.spectrum)
+        }
     }
 
     private fun alive(): Long {

@@ -55,9 +55,9 @@ internal class BumpRenderer(
 
     override val errors: List<String> =
         buildList {
-            if (perFrame.isNotBlank() && frameCode == null) add("per frame")
-            if (onBeat.isNotBlank() && beatCode == null) add("on beat")
-            if (init.isNotBlank() && initCode == null) add("init")
+            if (MovementEffect.hasCode(perFrame) && frameCode == null) add("per frame")
+            if (MovementEffect.hasCode(onBeat) && beatCode == null) add("on beat")
+            if (MovementEffect.hasCode(init) && initCode == null) add("init")
         }
 
     private var started = false

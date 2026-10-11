@@ -34,7 +34,7 @@ internal class MovementRenderer(
         MovementEffect.asEel(code).takeIf { it.isNotBlank() }?.let { eel.compile(it) }
 
     /** Whether the preset's script did not compile. */
-    val failed = code.isNotBlank() && compiled == null
+    val failed = MovementEffect.hasCode(code) && compiled == null
 
     override val errors: List<String> get() = if (failed) listOf("script") else emptyList()
 

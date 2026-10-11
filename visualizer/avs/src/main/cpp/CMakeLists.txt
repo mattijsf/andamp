@@ -29,6 +29,10 @@ add_library(andamp_avs SHARED avs_eel_jni.cpp)
 # Static: this is one small evaluator, it is MIT licensed, and nothing outside
 # this module calls it. :visualizer:projectm links its own copy, so the two
 # modules do not depend on each other.
+# avs_eel_jni.cpp adds AVS's own functions to a context's function list,
+# which is declared in the evaluator's internal headers
+target_include_directories(andamp_avs PRIVATE "${EVAL_DIR}/projectm-eval")
+
 target_link_libraries(andamp_avs
         PRIVATE
         projectM::Eval

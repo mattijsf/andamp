@@ -56,16 +56,16 @@ class AvsRealPresetTest {
         }
     }
 
-    /** A Text has no renderer in this build, so it is listed, and the scope still draws. */
+    /** An SVP has no renderer in this build, so it is listed, and the scope still draws. */
     @Test
     fun a_preset_with_a_component_that_cannot_be_built_still_draws_the_rest() {
-        val bytes = presetBytes(perPoint = "x = 0; y = i * 2 - 1;", init = "n = $HEIGHT", extra = builtin(TEXT))
+        val bytes = presetBytes(perPoint = "x = 0; y = i * 2 - 1;", init = "n = $HEIGHT", extra = builtin(SVP))
         val preset = AvsParser.parse(bytes)
 
         AvsEngine(WIDTH, HEIGHT).use { engine ->
             engine.load(preset)
 
-            assertEquals(listOf("Text"), engine.unimplemented)
+            assertEquals(listOf("SVP"), engine.unimplemented)
             assertTrue(engine.render().pixels.any { it != AvsFrame.OPAQUE })
         }
     }
@@ -123,7 +123,7 @@ class AvsRealPresetTest {
         const val WIDTH = 33
         const val HEIGHT = 33
         const val SUPER_SCOPE = 0x24
-        const val TEXT = 28
+        const val SVP = 10
         const val EFFECT_LIST = -2
         const val CONFIG_SIZE = 37
         const val MODE_BIT = 0x80
