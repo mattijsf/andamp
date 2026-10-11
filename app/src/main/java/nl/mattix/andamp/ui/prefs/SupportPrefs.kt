@@ -61,41 +61,36 @@ internal fun SupportPage(prefs: SupportPrefs) {
         return
     }
     LaunchedEffect(Unit) { prefs.onShown() }
-    Spacer(Modifier.height(16.dp))
-    Text(
+    Spacer(Modifier.height(8.dp))
+    Note(
         "Andamp is free and has no ads. If you enjoy it, you can leave a tip. " +
             "A tip unlocks nothing: everything in Andamp stays free, with or without one.",
-        style = MaterialTheme.typography.bodyMedium,
     )
-    Spacer(Modifier.height(16.dp))
+    Spacer(Modifier.height(8.dp))
     when (val shelf = prefs.shelf) {
         TipShelf.Loading -> {
-            CircularProgressIndicator(Modifier.size(24.dp).testTag("prefs.support.loading"), strokeWidth = 2.dp)
+            CircularProgressIndicator(
+                Modifier.padding(horizontal = 16.dp).size(24.dp).testTag("prefs.support.loading"),
+                strokeWidth = 2.dp,
+            )
         }
 
         TipShelf.Closed -> {
-            Text(
-                "Tips are not available on this phone right now.",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.testTag("prefs.support.closed"),
-            )
+            Note("Tips are not available on this phone right now.", Modifier.testTag("prefs.support.closed"))
         }
 
         is TipShelf.Open -> {
             shelf.tips.forEach { tip -> TipButton(tip) { prefs.onGive(tip) } }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "Google Play takes the payment. A tip can be given more than once.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
+            Note("Google Play takes the payment. A tip can be given more than once.")
         }
     }
     val said = prefs.note?.let(::wordsFor) ?: "You have supported Andamp. Thank you.".takeIf { prefs.given }
     if (said != null) {
         Spacer(Modifier.height(20.dp))
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.testTag("prefs.support.note")) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(horizontal = 16.dp).testTag("prefs.support.note"),
+        ) {
             if (prefs.note != TipNote.FAILED) {
                 Icon(Icons.Filled.Favorite, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
             }
@@ -110,14 +105,16 @@ private fun OutsideSupport(
     page: String,
     onOpen: () -> Unit,
 ) {
-    Spacer(Modifier.height(16.dp))
-    Text(
+    Spacer(Modifier.height(8.dp))
+    Note(
         "Andamp is free and has no ads. If you enjoy it, you can support it on its website. " +
             "That unlocks nothing: everything in Andamp stays free, with or without it.",
-        style = MaterialTheme.typography.bodyMedium,
     )
-    Spacer(Modifier.height(16.dp))
-    FilledTonalButton(onClick = onOpen, modifier = Modifier.fillMaxWidth().testTag("prefs.support.outside")) {
+    Spacer(Modifier.height(8.dp))
+    FilledTonalButton(
+        onClick = onOpen,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("prefs.support.outside"),
+    ) {
         Text("Open ${page.substringAfter("://").substringBefore('/')}")
     }
 }
@@ -129,7 +126,7 @@ private fun TipButton(
 ) {
     FilledTonalButton(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp).testTag("prefs.support.tip.${tip.id}"),
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).testTag("prefs.support.tip.${tip.id}"),
     ) {
         Text(tip.name, modifier = Modifier.weight(1f))
         Text(tip.price)

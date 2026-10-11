@@ -10,12 +10,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -34,17 +32,12 @@ import androidx.compose.ui.unit.dp
 @Composable
 internal fun ColumnScope.LicencesPage(notices: List<Notice> = Notices.ALL) {
     Spacer(Modifier.height(8.dp))
-    Text(
+    Note(
         "Andamp is built on other people's work. Each entry links to its source, " +
             "where the full license text lives.",
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     Spacer(Modifier.height(8.dp))
-    notices.forEachIndexed { index, notice ->
-        if (index > 0) HorizontalDivider()
-        NoticeRow(notice)
-    }
+    Group { notices.forEach { notice -> NoticeRow(notice) } }
 }
 
 /** One notice. The whole row opens its source. */
@@ -53,7 +46,7 @@ private fun NoticeRow(notice: Notice) {
     val context = LocalContext.current
     Row(
         Modifier
-            .fillMaxWidth()
+            .prefsRow()
             .clickable {
                 val view = Intent(Intent.ACTION_VIEW, Uri.parse(notice.url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 // on a device with no browser the row does nothing
@@ -61,7 +54,7 @@ private fun NoticeRow(notice: Notice) {
                     if (error !is ActivityNotFoundException) throw error
                 }
             }.testTag("licence.${notice.name}")
-            .padding(vertical = 14.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
         verticalAlignment = Alignment.Top,
     ) {
         Column(Modifier.weight(1f)) {

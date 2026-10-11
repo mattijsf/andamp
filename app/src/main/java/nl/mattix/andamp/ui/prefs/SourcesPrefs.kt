@@ -3,8 +3,6 @@
 package nl.mattix.andamp.ui.prefs
 
 import android.content.Intent
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -15,12 +13,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
+import androidx.compose.material.icons.outlined.AddCircleOutline
+import androidx.compose.material.icons.outlined.LibraryMusic
+import androidx.compose.material.icons.outlined.PhoneAndroid
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -36,14 +34,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.selected
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import nl.mattix.andamp.state.ExtraSource
 import nl.mattix.andamp.state.LibraryAccess
@@ -113,30 +108,35 @@ internal fun SourcesSection(
 ) {
     val links = LocalUriHandler.current
     Section("Music sources")
-    NavRow(
-        title = MusicSource.LOCAL.label,
-        summary = phoneSummary(access, sources.phone.stats),
-        tag = "prefs.source.phone",
-        onClick = onPhone,
-        route = PHONE_PAGE,
-    )
-    sources.extras.forEach { extra ->
+    Group {
         NavRow(
-            title = extra.source.label,
-            summary = extra.Summary(signedIn = extra.source in sources.signedIn),
-            tag = "prefs.${sourceRoute(extra.source).replace('/', '.')}",
-            onClick = { onSource(extra.source) },
-            route = sourceRoute(extra.source),
+            title = MusicSource.LOCAL.label,
+            summary = phoneSummary(access, sources.phone.stats),
+            tag = "prefs.source.phone",
+            onClick = onPhone,
+            leading = Icons.Outlined.PhoneAndroid,
+            route = PHONE_PAGE,
+        )
+        sources.extras.forEach { extra ->
+            NavRow(
+                title = extra.source.label,
+                summary = extra.Summary(signedIn = extra.source in sources.signedIn),
+                tag = "prefs.${sourceRoute(extra.source).replace('/', '.')}",
+                onClick = { onSource(extra.source) },
+                leading = Icons.Outlined.LibraryMusic,
+                route = sourceRoute(extra.source),
+            )
+        }
+        // always last, and a link: the available sources are listed on the site, not in this build
+        NavRow(
+            title = "More sources",
+            summary = "Other places Andamp can play music from, and how to add them",
+            tag = "prefs.source.more",
+            icon = Icons.AutoMirrored.Filled.OpenInNew,
+            leading = Icons.Outlined.AddCircleOutline,
+            onClick = { links.openUri(MORE_SOURCES_URL) },
         )
     }
-    // always last, and a link: the available sources are listed on the site, not in this build
-    NavRow(
-        title = "More sources",
-        summary = "Other places Andamp can play music from, and how to add them",
-        tag = "prefs.source.more",
-        icon = Icons.AutoMirrored.Filled.OpenInNew,
-        onClick = { links.openUri(MORE_SOURCES_URL) },
-    )
 }
 
 /** The phone row's summary: the permission when it is missing, otherwise the count. */
@@ -165,63 +165,60 @@ internal fun PhonePage(
     val context = LocalContext.current
 
     Section("Access")
-    Text(access.summary(MusicPermission.current), style = MaterialTheme.typography.bodyMedium)
+    Note(access.summary(MusicPermission.current))
     access.action?.let { action ->
-        Spacer(Modifier.height(12.dp))
         Button(
             // when access is blocked the button opens the app's system settings directly
             onClick = { if (access == LibraryAccess.BLOCKED) context.openAppSettings() else onRequestAccess() },
-            modifier = Modifier.testTag("prefs.library.action"),
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp).testTag("prefs.library.action"),
         ) { Text(action) }
     }
     // counting and scanning read the index the permission guards, so they are not shown without it
     if (access != LibraryAccess.GRANTED) return
 
-    Spacer(Modifier.height(16.dp))
-    HorizontalDivider()
     Section("Library")
     val stats = phone.stats
     if (stats == null) {
-        Text("Counting…", style = MaterialTheme.typography.bodyMedium)
+        Note("Counting…")
     } else {
-        StatRow("Tracks", String.format(Locale.US, "%,d", stats.tracks))
-        StatRow("Artists", String.format(Locale.US, "%,d", stats.artists))
-        StatRow("Albums", String.format(Locale.US, "%,d", stats.albums))
-        StatRow("Playing time", stats.listening)
-        StatRow("On storage", stats.size)
+        Group {
+            StatRow("Tracks", String.format(Locale.US, "%,d", stats.tracks))
+            StatRow("Artists", String.format(Locale.US, "%,d", stats.artists))
+            StatRow("Albums", String.format(Locale.US, "%,d", stats.albums))
+            StatRow("Playing time", stats.listening)
+            StatRow("On storage", stats.size)
+        }
     }
 
-    Spacer(Modifier.height(16.dp))
-    HorizontalDivider()
     Section("Scan")
-    Text(
+    Note(
         "Android keeps track of the music on this phone by itself, but not always straight away. " +
             "A scan asks it to look through the music folders now, so music you have just copied over shows up.",
-        style = MaterialTheme.typography.bodyMedium,
     )
-    Spacer(Modifier.height(12.dp))
     val scanning = phone.scanning
-    Button(
-        onClick = phone.onScan,
-        enabled = scanning == null,
-        modifier = Modifier.testTag("prefs.phone.scan"),
-    ) { Text(if (scanning == null) "Scan now" else "Scanning…") }
-    if (scanning != null) {
-        Spacer(Modifier.height(12.dp))
-        LinearProgressIndicator(
-            progress = { scanning.fraction },
-            modifier = Modifier.fillMaxWidth().testTag("prefs.phone.progress"),
-        )
-        Spacer(Modifier.height(4.dp))
-        Text(scanning.words, style = MaterialTheme.typography.bodySmall)
-    } else {
-        phone.lastScan?.let { said ->
-            Spacer(Modifier.height(8.dp))
-            Text(
-                said,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.testTag("prefs.phone.outcome"),
+    Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
+        Button(
+            onClick = phone.onScan,
+            enabled = scanning == null,
+            modifier = Modifier.testTag("prefs.phone.scan"),
+        ) { Text(if (scanning == null) "Scan now" else "Scanning…") }
+        if (scanning != null) {
+            Spacer(Modifier.height(12.dp))
+            LinearProgressIndicator(
+                progress = { scanning.fraction },
+                modifier = Modifier.fillMaxWidth().testTag("prefs.phone.progress"),
             )
+            Spacer(Modifier.height(4.dp))
+            Text(scanning.words, style = MaterialTheme.typography.bodySmall)
+        } else {
+            phone.lastScan?.let { said ->
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    said,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.testTag("prefs.phone.outcome"),
+                )
+            }
         }
     }
 }
@@ -244,28 +241,31 @@ internal fun ExtraSourcePage(
         extra.Page(onSignedIn = { sources.onSignedIn(extra.source) }, onSignedOut = { sources.onSignedOut(extra.source) })
     } else {
         Section("Settings")
-        NavRow(
-            title = "${extra.source.label} settings",
-            summary = "Its account and whatever else it offers, on its own screen",
-            tag = "prefs.source.settings",
-            icon = Icons.AutoMirrored.Filled.OpenInNew,
-            onClick = { sources.openSettings(settings) },
-        )
+        Group {
+            NavRow(
+                title = "${extra.source.label} settings",
+                summary = "Its account and whatever else it offers, on its own screen",
+                tag = "prefs.source.settings",
+                icon = Icons.AutoMirrored.Filled.OpenInNew,
+                onClick = { sources.openSettings(settings) },
+            )
+        }
         // who made the source: it plays the listener's music in its own app, so the page shows what
         // [ExtraSource.provenance] reports about it
         extra.provenance(context)?.let { whose ->
-            Text(whose, style = MaterialTheme.typography.bodySmall, modifier = Modifier.testTag("prefs.source.whose"))
+            Text(
+                whose,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp).testTag("prefs.source.whose"),
+            )
         }
     }
     if (extra.skinnable) {
-        Spacer(Modifier.height(16.dp))
-        HorizontalDivider()
         Section("Skin")
         SourceSkinRow(extra.source, sources)
     }
     val updates = extra.updates ?: return
-    Spacer(Modifier.height(16.dp))
-    HorizontalDivider()
     Section("Updates")
     UpdatesSection(updates, extra.version, sources.checkUpdate)
 }
@@ -397,59 +397,5 @@ internal fun UpdatesSection(
             Spacer(Modifier.height(8.dp))
             OutlinedButton(onClick = { attempt++ }) { Text("Try again") }
         }
-    }
-}
-
-@Composable
-private fun StatRow(
-    label: String,
-    value: String,
-) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
-        Text(label, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
-        Text(value, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
-    }
-}
-
-/**
- * A row that goes somewhere: a page of this screen, or out of the app. The whole row is the target.
- *
- * [route] is the page it opens, when it opens one; the row is marked as selected while that page
- * shows beside the list.
- */
-@Composable
-internal fun NavRow(
-    title: String,
-    summary: String,
-    tag: String,
-    onClick: () -> Unit,
-    icon: ImageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
-    route: String? = null,
-) {
-    val showing = LocalShowingPage.current
-    val selected = route != null && route == showing
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .then(
-                if (selected) {
-                    Modifier
-                        .clip(MaterialTheme.shapes.medium)
-                        .background(MaterialTheme.colorScheme.secondaryContainer)
-                } else {
-                    Modifier
-                },
-            ).clickable(onClick = onClick)
-            .semantics { this.selected = selected }
-            .testTag(tag)
-            // beside a page the rows carry a highlight, which needs padding either side of the text
-            .padding(horizontal = if (showing != null) 12.dp else 0.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.titleMedium)
-            Text(summary, style = MaterialTheme.typography.bodySmall)
-        }
-        Icon(icon, contentDescription = null)
     }
 }

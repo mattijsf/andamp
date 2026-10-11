@@ -20,7 +20,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.SingleChoiceSegmentedButtonRow
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -75,61 +74,64 @@ private val VisMode.summary: String
 @Composable
 fun WidgetRows(prefs: WidgetPrefs) {
     Column {
-        // Off is one of the modes, as in VisMode and the player's own visualizer menu, so there is
-        // no separate switch
-        Choice(
-            title = "Visualizer",
-            summary = prefs.settings.mode.summary,
-            // in VisMode's own order
-            options = VisMode.entries.map { it to it.shortLabel() },
-            selected = prefs.settings.mode,
-            tag = "prefs.widget.vis",
-            onPick = { prefs.onSettings(prefs.settings.copy(mode = it)) },
-        )
+        Spacer(Modifier.height(8.dp))
+        Group {
+            // Off is one of the modes, as in VisMode and the player's own visualizer menu, so there is
+            // no separate switch
+            Choice(
+                title = "Visualizer",
+                summary = prefs.settings.mode.summary,
+                // in VisMode's own order
+                options = VisMode.entries.map { it to it.shortLabel() },
+                selected = prefs.settings.mode,
+                tag = "prefs.widget.vis",
+                onPick = { prefs.onSettings(prefs.settings.copy(mode = it)) },
+            )
 
-        // the refresh rate drives the clock as well as the visualizer, so it stays offered with the
-        // visualizer off, with a summary about the time only
-        Choice(
-            title = "Refresh rate",
-            summary =
-                if (prefs.settings.mode == VisMode.Off) {
-                    prefs.settings.refresh.timeOnly
-                } else {
-                    prefs.settings.refresh.summary
-                },
-            options = WidgetRefresh.entries.map { it to it.label },
-            selected = prefs.settings.refresh,
-            tag = "prefs.widget.refresh",
-            onPick = { prefs.onSettings(prefs.settings.copy(refresh = it)) },
-        )
+            // the refresh rate drives the clock as well as the visualizer, so it stays offered with the
+            // visualizer off, with a summary about the time only
+            Choice(
+                title = "Refresh rate",
+                summary =
+                    if (prefs.settings.mode == VisMode.Off) {
+                        prefs.settings.refresh.timeOnly
+                    } else {
+                        prefs.settings.refresh.summary
+                    },
+                options = WidgetRefresh.entries.map { it to it.label },
+                selected = prefs.settings.refresh,
+                tag = "prefs.widget.refresh",
+                onPick = { prefs.onSettings(prefs.settings.copy(refresh = it)) },
+            )
 
-        // a choice, because a cell is almost never a whole number of players wide: either the art
-        // stops short of the edge or it leaves the whole-pixel grid. The trimmed corners are not
-        // part of this choice; Android trims them either way
-        Choice(
-            title = "Size",
-            summary = prefs.settings.size.summary,
-            options = WidgetSize.entries.map { it to it.label },
-            selected = prefs.settings.size,
-            tag = "prefs.widget.size",
-            onPick = { prefs.onSettings(prefs.settings.copy(size = it)) },
-        )
+            // a choice, because a cell is almost never a whole number of players wide: either the art
+            // stops short of the edge or it leaves the whole-pixel grid. The trimmed corners are not
+            // part of this choice; Android trims them either way
+            Choice(
+                title = "Size",
+                summary = prefs.settings.size.summary,
+                options = WidgetSize.entries.map { it to it.label },
+                selected = prefs.settings.size,
+                tag = "prefs.widget.size",
+                onPick = { prefs.onSettings(prefs.settings.copy(size = it)) },
+            )
 
-        Toggle(
-            title = "Only the logo opens Andamp",
-            summary = "Tapping the player does nothing, so a near miss on a button stays on the home screen.",
-            checked = prefs.settings.openOnLogo,
-            tag = "prefs.widget.logo",
-            onChange = { prefs.onSettings(prefs.settings.copy(openOnLogo = it)) },
-        )
+            Toggle(
+                title = "Only the logo opens Andamp",
+                summary = "Tapping the player does nothing, so a near miss on a button stays on the home screen.",
+                checked = prefs.settings.openOnLogo,
+                tag = "prefs.widget.logo",
+                onChange = { prefs.onSettings(prefs.settings.copy(openOnLogo = it)) },
+            )
 
-        Toggle(
-            title = "Volume control",
-            summary = "Lets the volume slider be tapped. It sits close to the seek bar and is easy to hit by mistake.",
-            checked = prefs.settings.volumeControl,
-            tag = "prefs.widget.volume",
-            onChange = { prefs.onSettings(prefs.settings.copy(volumeControl = it)) },
-        )
+            Toggle(
+                title = "Volume control",
+                summary = "Lets the volume slider be tapped. It sits close to the seek bar and is easy to hit by mistake.",
+                checked = prefs.settings.volumeControl,
+                tag = "prefs.widget.volume",
+                onChange = { prefs.onSettings(prefs.settings.copy(volumeControl = it)) },
+            )
+        }
 
         Spacer(Modifier.height(28.dp))
         Limits()
@@ -213,15 +215,7 @@ private fun Toggle(
     checked: Boolean,
     tag: String,
     onChange: (Boolean) -> Unit,
-) {
-    Row(Modifier.fillMaxWidth().padding(vertical = 8.dp), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f).padding(end = 16.dp)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
-            Text(summary, style = MaterialTheme.typography.bodySmall)
-        }
-        Switch(checked = checked, onCheckedChange = onChange, modifier = Modifier.testTag(tag))
-    }
-}
+) = SwitchRow(title = title, summary = summary, checked = checked, tag = tag, onChange = onChange)
 
 /** One exclusive choice, as a row of segmented buttons. */
 @Composable
@@ -233,11 +227,12 @@ private fun <T> Choice(
     tag: String,
     onPick: (T) -> Unit,
 ) {
-    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+    Column(Modifier.prefsRow().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Text(title, style = MaterialTheme.typography.bodyLarge)
         Text(
             summary,
-            style = MaterialTheme.typography.bodySmall,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(bottom = 8.dp),
         )
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) {

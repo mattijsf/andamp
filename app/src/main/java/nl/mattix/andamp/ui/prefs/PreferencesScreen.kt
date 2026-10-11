@@ -27,14 +27,20 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AutoAwesome
+import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material.icons.outlined.GraphicEq
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.PlayCircleOutline
+import androidx.compose.material.icons.outlined.Widgets
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -47,6 +53,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraphBuilder
@@ -224,6 +232,9 @@ private const val ASIDE = 6
  */
 private val BESIDE = 840.dp
 
+/** From this height the bar has room to open large over the page; a phone on its side has not. */
+private val TALL = 480.dp
+
 /** The list's width when it sits beside a page. */
 private val LIST_W = 360.dp
 
@@ -276,15 +287,17 @@ data class PrefsArrival(
 private enum class PrefsPage(
     val title: String,
     val route: String,
+    /** The row's icon in the list, for the pages the list names directly. */
+    val icon: ImageVector? = null,
 ) {
     PHONE("This Phone", PHONE_PAGE),
-    DSP("Effects", "effects"),
+    DSP("Effects", "effects", Icons.Outlined.GraphicEq),
     INSTALLED("Plug-ins", PLUGINS_PAGE),
-    VISUALIZER("Visualizer", "visualizer"),
-    PLAYER("Player", "player"),
-    WIDGET("Home screen widget", WIDGET_PAGE),
-    SUPPORT("Support Andamp", SUPPORT_PAGE),
-    ABOUT("About Andamp", "about"),
+    VISUALIZER("Visualizer", "visualizer", Icons.Outlined.AutoAwesome),
+    PLAYER("Player", "player", Icons.Outlined.PlayCircleOutline),
+    WIDGET("Home screen widget", WIDGET_PAGE, Icons.Outlined.Widgets),
+    SUPPORT("Support Andamp", SUPPORT_PAGE, Icons.Outlined.Favorite),
+    ABOUT("About Andamp", "about", Icons.Outlined.Info),
     LICENCES("Open-source licenses", "licences"),
     ;
 
@@ -361,8 +374,11 @@ fun PreferencesPage(
             if (beside && here == PrefsPage.ROOT && arrival.page == null) open(PrefsPage.PHONE.route)
         }
         KeepStackInShape(pages, beside, here, list = PrefsPage.ROOT, open = open)
+        val tall = maxHeight >= TALL
+        val bar = barBehavior(tall, here)
         Surface(Modifier.fillMaxSize()) {
             Scaffold(
+                modifier = Modifier.nestedScroll(bar.nestedScrollConnection),
                 snackbarHost = { SnackbarHost(snackbars) },
                 topBar = {
                     // beside the list, only a page opened from inside another
@@ -376,8 +392,10 @@ fun PreferencesPage(
                                     ?.label
                                 ?: "Preferences",
                         deeper = if (beside) pages.previousBackStackEntry != null else here != PrefsPage.ROOT,
+                        tall = tall,
                         onBack = { pages.popBackStack() },
                         onClose = onClose,
+                        scrollBehavior = bar,
                     )
                 },
             ) { padding ->
@@ -444,6 +462,22 @@ fun PreferencesPage(
 }
 
 /**
+ * How the bar answers the page's scroll: where the window is tall it folds as a page scrolls, and
+ * every page starts with it open; a short window keeps a plain bar in place.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun barBehavior(
+    tall: Boolean,
+    here: String?,
+): TopAppBarScrollBehavior {
+    val bar =
+        if (tall) TopAppBarDefaults.exitUntilCollapsedScrollBehavior() else TopAppBarDefaults.pinnedScrollBehavior()
+    LaunchedEffect(here) { bar.state.heightOffset = 0f }
+    return bar
+}
+
+/**
  * One page of preferences, scrolling by itself. Each keeps its own scroll position by being its own
  * destination.
  */
@@ -487,69 +521,64 @@ private fun Root(
     )
     // three groups under the sources: Sound, Look & feel, and the app itself. An area with several
     // settings is a page one tap away; a single switch stays here
-    Divided()
     Section("Sound")
-    // one entry: managing installed plug-ins is a button on the Effects page
-    PageRow(
-        page = PrefsPage.DSP,
-        summary = dsp.summary(),
-        onOpen = { onOpen(it.route) },
-    )
-    VolumeRow(sections.volume)
+    Group {
+        // one entry: managing installed plug-ins is a button on the Effects page
+        PageRow(
+            page = PrefsPage.DSP,
+            summary = dsp.summary(),
+            onOpen = { onOpen(it.route) },
+        )
+        VolumeRow(sections.volume)
+    }
 
-    Divided()
     Section("Look & feel")
-    PageRow(
-        page = PrefsPage.PLAYER,
-        summary = sections.playerSummary(),
-        onOpen = { onOpen(it.route) },
-    )
-    PageRow(
-        page = PrefsPage.VISUALIZER,
-        summary = sections.visualizer.summary(),
-        onOpen = { onOpen(it.route) },
-    )
-    PageRow(
-        page = PrefsPage.WIDGET,
-        summary = sections.widget.summary(),
-        onOpen = { onOpen(it.route) },
-    )
+    Group {
+        PageRow(
+            page = PrefsPage.PLAYER,
+            summary = sections.playerSummary(),
+            onOpen = { onOpen(it.route) },
+        )
+        PageRow(
+            page = PrefsPage.VISUALIZER,
+            summary = sections.visualizer.summary(),
+            onOpen = { onOpen(it.route) },
+        )
+        PageRow(
+            page = PrefsPage.WIDGET,
+            summary = sections.widget.summary(),
+            onOpen = { onOpen(it.route) },
+        )
+    }
 
-    Divided()
-    PageRow(
-        page = PrefsPage.SUPPORT,
-        summary = sections.support.summary(),
-        onOpen = { onOpen(it.route) },
-    )
-    PageRow(
-        page = PrefsPage.ABOUT,
-        summary = "Version ${BuildConfig.VERSION_NAME} · open-source licenses",
-        onOpen = { onOpen(it.route) },
-    )
+    Spacer(Modifier.height(24.dp))
+    Group {
+        PageRow(
+            page = PrefsPage.SUPPORT,
+            summary = sections.support.summary(),
+            onOpen = { onOpen(it.route) },
+        )
+        PageRow(
+            page = PrefsPage.ABOUT,
+            summary = "Version ${BuildConfig.VERSION_NAME} · open-source licenses",
+            onOpen = { onOpen(it.route) },
+        )
+    }
 }
 
 /** Preferences > About Andamp: what this is, and what it is built on. */
 @Composable
 private fun AboutPage(onOpen: (String) -> Unit) {
-    Spacer(Modifier.height(16.dp))
-    Text(
-        "Andamp ${BuildConfig.VERSION_NAME} — a Winamp 2.8 replica, not affiliated with Winamp or its owners.",
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-    )
     Spacer(Modifier.height(8.dp))
-    PageRow(
-        page = PrefsPage.LICENCES,
-        summary = "${Notices.ALL.size} projects Andamp is built on",
-        onOpen = { onOpen(it.route) },
-    )
-}
-
-@Composable
-private fun Divided() {
-    Spacer(Modifier.height(16.dp))
-    HorizontalDivider()
+    Note("Andamp ${BuildConfig.VERSION_NAME} — a Winamp 2.8 replica, not affiliated with Winamp or its owners.")
     Spacer(Modifier.height(8.dp))
+    Group {
+        PageRow(
+            page = PrefsPage.LICENCES,
+            summary = "${Notices.ALL.size} projects Andamp is built on",
+            onOpen = { onOpen(it.route) },
+        )
+    }
 }
 
 /** A row that opens one of this screen's fixed pages; see [NavRow]. */
@@ -558,14 +587,14 @@ private fun PageRow(
     page: PrefsPage,
     summary: String,
     onOpen: (PrefsPage) -> Unit,
-) = NavRow(page.title, summary, tag = "prefs.open.${page.name.lowercase()}", onClick = { onOpen(page) }, route = page.route)
-
-@Composable
-internal fun Section(title: String) {
-    Spacer(Modifier.height(20.dp))
-    Text(title, style = MaterialTheme.typography.titleLarge)
-    Spacer(Modifier.height(8.dp))
-}
+) = NavRow(
+    page.title,
+    summary,
+    tag = "prefs.open.${page.name.lowercase()}",
+    onClick = { onOpen(page) },
+    leading = page.icon,
+    route = page.route,
+)
 
 internal fun android.content.Context.openAppSettings() {
     startActivity(
