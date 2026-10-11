@@ -49,7 +49,7 @@ The current build:
 
 | | |
 |---|---|
-| Source | `visualizer/projectm/third_party/projectm`, git submodule pinned to tag `v4.1.7` |
+| Source | `visualizer/projectm/third_party/projectm`, git submodule pinned to tag `v4.1.8` |
 | Build | `visualizer/projectm/src/main/cpp/CMakeLists.txt` (`add_subdirectory`; shared libs, playlist on, SDL UI/tests/docs off, vendored GLM and projectM-eval) |
 | Toolchain | NDK 28.2.13676358, CMake 3.22.1, `ANDROID_STL=c++_shared` |
 | Shipped | `libprojectM-4.so` and `libprojectM-4-playlist.so`, separate shared objects, per ABI |

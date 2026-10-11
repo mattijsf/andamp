@@ -8,7 +8,7 @@ object ProjectM {
         System.loadLibrary("andamp_projectm")
     }
 
-    /** The linked libprojectM version, e.g. `4.1.7`. */
+    /** The linked libprojectM version, e.g. `4.1.8`. */
     fun version(): String = nativeVersion()
 
     /** Touching the object runs [init]; this says so at the call site. */
