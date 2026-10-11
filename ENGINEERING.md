@@ -89,7 +89,12 @@ are set once in the root build for every Android module.
   opens the website. The task names do not change. `assemble*` on a `none` build reads the
   APK back and fails if the library is in it (`verify*ApkCarriesNoBilling`). The gate runs
   the `play` build; `.github/workflows/apk.yml` builds, signs and attaches the other to
-  each GitHub release.
+  each GitHub release, with the APK of `:androidauto` beside it.
+- **A second id, for a phone that has the store's Andamp.** `-Pandamp.id.suffix=.dev`
+  makes the app `nl.mattix.andamp.dev`, which installs beside the other and leaves it and
+  its playlist alone. `:androidauto` built with the same property is
+  `nl.mattix.andamp.dev.androidauto` and lends to that second app: its id is always its
+  player's with `.androidauto` after it (`RemoteWindowLink`). No release is built this way.
 - **The unsigned-release check reads the task graph.** `:app` refuses a release that would
   come out unsigned because a keystore password is missing. It checks
   `gradle.taskGraph.whenReady`, not the task names typed on the command line, because an
@@ -187,8 +192,8 @@ ui  ──▶  player domain  ◀──  backends  ──▶  dsp        skin (s
 :visualizer:projectm libprojectM through JNI. The only module that sees GL.
 :visualizer:avs      AVS: parser, pipeline, and the ns-eel evaluator through JNI
 :app                 the rest: skin engine, UI, state, the home-screen widget
-:androidauto         an app of its own for Android Auto: it lends the car's surface to
-                     the player and holds no skin and no player
+:androidauto         the app Android Auto talks to: one screen that lends its surface to
+                     the player. It holds no skin and no player
 ```
 
 `skin/` is a Python build, not a Gradle module. It writes the three bundled skins from one
@@ -385,22 +390,28 @@ edits the playlist. A car can be the first thing in the process to ask for the s
 `Media3PlaybackHost.wake` is how it gets a player then.
 
 **With its own window, through `:androidauto`.** Android Auto gives a drawing surface to
-navigation apps only, so the app that declares itself one is a separate app, installed by
-hand, and the player stays a media app. `:androidauto` has one screen. `LentSurface` hands
-Android Auto's surface to the player over `IRemoteWindow` and passes on taps and drags. In the player,
-`RemoteWindowService` takes the calls of an app signed with the player's own key, and
-`RemoteWindow` puts a virtual display over the surface with a presentation that composes
-`RemoteScreen`: the main window at the largest whole scale that fits, on black. Its EQ
-button swaps the screen to the equalizer, and its PL button to `RemoteList`, a list with
-rows a finger can hit, each with a play button that plays it. The skin there is the one
-chosen on Preferences > Android Auto. The D in that main window is Android Auto's own
-Double Size: the window then fills the screen, laid out at the next whole scale up and
-shrunk as one picture, as on a phone. Both choices are kept in `AndroidAutoStore`, apart
-from the phone's.
+navigation apps only, and Play's review of a car app turns down a music player that says it
+is one. So the player stays a media app in every build, and the screen is an app of its
+own, installed beside it, whose id is the player's with `.androidauto` after it. Android
+Auto shows such an app in a car only when the phone records Google Play as its installer;
+its "Unknown sources" switch covers media apps, not these. The Desktop Head Unit shows it
+however it was installed.
+
+`:androidauto` has one screen. `LentSurface` hands Android Auto's surface to the player over
+`IRemoteWindow` and passes on taps and drags. In the player, `RemoteWindowService` takes the
+calls of an app signed with the player's own key or with the key of the releases page
+(`RemoteWindowTrust`), and `RemoteWindow` puts a virtual display over the surface with a
+presentation that composes `RemoteScreen`: the main window at the largest whole scale that
+fits, on black. Its EQ button swaps the screen to the equalizer, and its PL button to
+`RemoteList`, a list with rows a finger can hit, each with a play button that plays it. The
+skin there is the one chosen on Preferences > Android Auto. The D in that main window is
+Android Auto's own Double Size: the window then fills the screen, laid out at the next whole
+scale up and shrunk as one picture, as on a phone. Both choices are kept in
+`AndroidAutoStore`, apart from the phone's.
 
 There is one renderer: the draw functions and widgets of the phone's own windows.
-`:androidauto` never learns what is on the surface. With the player on two surfaces at once, one of them
-steps the clocks (`WinampState.clocksTurn`).
+`:androidauto` never learns what is on the surface. With the player on two surfaces at once,
+one of them steps the clocks (`WinampState.clocksTurn`).
 
 ### State
 
@@ -579,11 +590,11 @@ needs a device: real marshalling, a source that dies, a version mismatch.
 
 Two more need a device because they cross a process or a display.
 `PlatformBrowserOnDeviceTest` in `:backend:media3` connects the platform's media browser to
-`PlaybackService`, as a car does. `LendToPlayerOnDeviceTest` in `:androidauto` lends a surface of
-its own to the player installed on the device and reads back what the player drew; it
-writes the pictures to the test app's files directory. Android Auto itself is checked with
-the Desktop Head Unit and a phone whose Android Auto has "Unknown sources" switched on in
-its developer settings.
+`PlaybackService`, as a car does. `LendToPlayerOnDeviceTest` in `:androidauto` lends a
+surface of its own to the player installed on the device and reads back what the player
+drew; it writes the pictures to the test app's files directory. Android Auto itself is
+checked with the Desktop Head Unit and a phone whose Android Auto has "Unknown sources"
+switched on in its developer settings.
 
 The push hook cannot run device tests, so run them yourself after touching native code or
 the binder. Keep what can be pure Kotlin out of the native side (preset import, path
