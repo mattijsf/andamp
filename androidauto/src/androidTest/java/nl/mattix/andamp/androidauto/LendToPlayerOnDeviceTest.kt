@@ -66,9 +66,10 @@ class LendToPlayerOnDeviceTest {
 
     @Before
     fun bind() {
-        assumeTrue("the player is installed", installed(RemoteWindowLink.PLAYER))
+        val id = RemoteWindowLink.playerOf(context.packageName)
+        assumeTrue("the player is installed", installed(id))
         reader.setOnImageAvailableListener({ from -> keep(from) }, Handler(reading.looper))
-        val toPlayer = Intent(RemoteWindowLink.ACTION).setPackage(RemoteWindowLink.PLAYER)
+        val toPlayer = Intent(RemoteWindowLink.ACTION).setPackage(id)
         assertTrue("the player's service is found", context.bindService(toPlayer, connection, Context.BIND_AUTO_CREATE))
         assertTrue("the player answers", connected.await(WAIT_S, TimeUnit.SECONDS))
     }

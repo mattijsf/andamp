@@ -5,6 +5,7 @@ package nl.mattix.andamp.androidauto
 import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
+import android.content.IntentFilter
 import android.graphics.Rect
 import android.graphics.SurfaceTexture
 import android.os.Looper
@@ -80,9 +81,14 @@ class LentSurfaceTest {
 
     @Before
     fun installThePlayer() {
+        val service = ComponentName(RemoteWindowLink.playerOf(app.packageName), "RemoteWindowService")
+        shadowOf(app.packageManager).apply {
+            addServiceIfNotPresent(service)
+            addIntentFilterForService(service, IntentFilter(RemoteWindowLink.ACTION))
+        }
         shadowOf(app).setComponentNameAndServiceForBindServiceForIntent(
-            Intent(RemoteWindowLink.ACTION).setPackage(RemoteWindowLink.PLAYER),
-            ComponentName(RemoteWindowLink.PLAYER, "RemoteWindowService"),
+            Intent(RemoteWindowLink.ACTION).setPackage(RemoteWindowLink.playerOf(app.packageName)),
+            service,
             player,
         )
     }

@@ -4,20 +4,18 @@ package nl.mattix.andamp.androidauto
 
 import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
 import android.content.ServiceConnection
 import android.graphics.Rect
 import android.os.IBinder
 import androidx.car.app.SurfaceCallback
 import androidx.car.app.SurfaceContainer
 import nl.mattix.andamp.core.remotewindow.IRemoteWindow
-import nl.mattix.andamp.core.remotewindow.RemoteWindowLink
 
 /**
  * The car's surface, lent to the player.
  *
- * When the car hands over a surface, this binds to the player and passes the surface on; the
- * player shows its main window there. A tap or a drag the car reports is passed on as well,
+ * When the car hands over a surface, this binds to the player ([Player]) and passes the surface
+ * on; the player shows its main window there. A tap or a drag the car reports is passed on as well,
  * and so is the part of the surface the car leaves uncovered. When the car takes the surface
  * back, the player is told and let go.
  *
@@ -50,8 +48,7 @@ internal class LentSurface(
     override fun onSurfaceAvailable(surfaceContainer: SurfaceContainer) {
         held = surfaceContainer
         if (!bound) {
-            val toPlayer = Intent(RemoteWindowLink.ACTION).setPackage(RemoteWindowLink.PLAYER)
-            bound = context.bindService(toPlayer, connection, Context.BIND_AUTO_CREATE)
+            bound = Player.reach(context)?.let { context.bindService(it, connection, Context.BIND_AUTO_CREATE) } ?: false
         }
         lend()
     }

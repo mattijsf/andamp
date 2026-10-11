@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Andamp for Android Auto</string>
-    <string name="no_player">Andamp is not installed on this phone.</string>
+    <string name="no_player">Install or update Andamp on this phone to see it here.</string>
 </resources>

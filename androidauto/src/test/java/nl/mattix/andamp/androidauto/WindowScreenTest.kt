@@ -2,6 +2,8 @@
 
 package nl.mattix.andamp.androidauto
 
+import android.content.ComponentName
+import android.content.IntentFilter
 import android.content.pm.PackageInfo
 import androidx.car.app.model.Action
 import androidx.car.app.model.MessageTemplate
@@ -23,8 +25,16 @@ import org.robolectric.annotation.Config
 class WindowScreenTest {
     private val car = TestCarContext.createCarContext(ApplicationProvider.getApplicationContext())
 
+    /** The id of the player this app belongs to. */
+    private val player = RemoteWindowLink.playerOf(car.packageName)
+
+    /** A player that lends its window. */
     private fun installThePlayer() {
-        shadowOf(car.packageManager).installPackage(PackageInfo().apply { packageName = RemoteWindowLink.PLAYER })
+        val service = ComponentName(player, "RemoteWindowService")
+        shadowOf(car.packageManager).apply {
+            addServiceIfNotPresent(service)
+            addIntentFilterForService(service, IntentFilter(RemoteWindowLink.ACTION))
+        }
     }
 
     @Test
@@ -47,10 +57,35 @@ class WindowScreenTest {
     }
 
     @Test
-    fun `without the player the screen says so`() {
+    fun `without a player that lends its window the screen says what to do`() {
         val template = WindowScreen(car).onGetTemplate()
 
         assertTrue(template is MessageTemplate)
-        assertEquals("Andamp is not installed on this phone.", (template as MessageTemplate).message.toString())
+        assertEquals(
+            "Install or update Andamp on this phone to see it here.",
+            (template as MessageTemplate).message.toString(),
+        )
+    }
+
+    /** An Andamp from before it could lend its window is installed, and has nothing to bind to. */
+    @Test
+    fun `a player too old to lend its window counts as none`() {
+        shadowOf(car.packageManager).installPackage(PackageInfo().apply { packageName = player })
+
+        assertTrue(WindowScreen(car).onGetTemplate() is MessageTemplate)
+    }
+
+    @Test
+    fun `the screen lends to the Andamp this app's id is named after`() {
+        installThePlayer()
+
+        assertEquals(car.packageName.removeSuffix(".androidauto"), Player.reach(car)?.`package`)
+    }
+
+    /** A build with a second id belongs to the player with that id, and leaves the other alone. */
+    @Test
+    fun `an id names its player by what comes before the last word`() {
+        assertEquals("nl.mattix.andamp", RemoteWindowLink.playerOf("nl.mattix.andamp.androidauto"))
+        assertEquals("nl.mattix.andamp.dev", RemoteWindowLink.playerOf("nl.mattix.andamp.dev.androidauto"))
     }
 }
