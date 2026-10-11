@@ -5,12 +5,16 @@
 # down, and its support page opens the website. Direct downloads, Obtainium and app catalogs that
 # read GitHub releases all take this one file.
 #
+# A second, small APK goes with it: the app Android Auto talks to (:androidauto), which lends the
+# car's screen to Andamp. Both are signed with the same key, which is how an Andamp from Play,
+# signed by Google, knows the second; see RemoteWindowTrust.
+#
 # release-please.yml calls this when it has made a release, which is a draft at that point: a
 # published release in this repository is immutable and takes no more files. This attaches the
-# APK and then publishes. A run that fails leaves the draft, and running it again for the tag,
+# APKs and then publishes. A run that fails leaves the draft, and running it again for the tag,
 # from the Actions tab or with `gh workflow run apk.yml -f tag=v1.2.3`, finishes the job.
 #
-# Without a tag it builds the branch it was started on and keeps the APK as a workflow artifact,
+# Without a tag it builds the branch it was started on and keeps the APKs as a workflow artifact,
 # which is how a change to this file is tried out.
 #
 # The APK is signed with a key of its own, kept in this repository's secrets:
@@ -90,41 +94,46 @@ jobs:
 
       # assembleRelease also reads the packaged APK back and fails if the Play Billing Library is
       # in it (verifyReleaseApkCarriesNoBilling).
-      - name: Build the APK
+      - name: Build the APKs
         env:
           RT_STORE_PASSWORD: ${{ secrets.APK_KEYSTORE_PASSWORD }}
           RT_KEY_PASSWORD: ${{ secrets.APK_KEY_PASSWORD }}
-        run: ./gradlew :app:assembleRelease -Pandamp.store=none
+        run: ./gradlew :app:assembleRelease :androidauto:assembleRelease -Pandamp.store=none
 
-      - name: Name it and check its signature
+      - name: Name them and check their signatures
         id: apk
         run: |
-          built=app/build/outputs/apk/release/app-release.apk
           version=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' app/build.gradle.kts)
-          named="andamp-$version.apk"
-          cp "$built" "$named"
           tools=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
-          "$tools/apksigner" verify --print-certs "$named" 2>&1 | tee signed.txt
-          if ! grep -q -i "$CERTIFICATE" signed.txt; then
-            echo "::error::$named is not signed with the certificate $CERTIFICATE"
-            exit 1
-          fi
-          echo "file=$named" >> "$GITHUB_OUTPUT"
+          named() {
+            cp "$1" "$2"
+            "$tools/apksigner" verify --print-certs "$2" 2>&1 | tee signed.txt
+            if ! grep -q -i "$CERTIFICATE" signed.txt; then
+              echo "::error::$2 is not signed with the certificate $CERTIFICATE"
+              exit 1
+            fi
+          }
+          named app/build/outputs/apk/release/app-release.apk "andamp-$version.apk"
+          named androidauto/build/outputs/apk/release/androidauto-release.apk "andamp-android-auto-$version.apk"
+          echo "file=andamp-$version.apk" >> "$GITHUB_OUTPUT"
+          echo "auto=andamp-android-auto-$version.apk" >> "$GITHUB_OUTPUT"
 
-      - name: Attach it to the release, then publish the release
+      - name: Attach them to the release, then publish the release
         if: env.TAG != ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload "$TAG" "${{ steps.apk.outputs.file }}" --clobber
+          gh release upload "$TAG" "${{ steps.apk.outputs.file }}" "${{ steps.apk.outputs.auto }}" --clobber
           gh release edit "$TAG" --draft=false --latest
 
-      - name: Keep it as a workflow artifact
+      - name: Keep them as a workflow artifact
         if: env.TAG == ''
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ${{ steps.apk.outputs.file }}
-          path: ${{ steps.apk.outputs.file }}
+          path: |
+            ${{ steps.apk.outputs.file }}
+            ${{ steps.apk.outputs.auto }}
 
       - name: Remove the signing key
         if: always()
