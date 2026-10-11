@@ -12,6 +12,7 @@ import androidx.compose.runtime.setValue
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.core.model.displayName
+import nl.mattix.andamp.visualizer.core.PresetGaps
 
 /**
  * The commands the plug-in window accepts from the rest of the app. Implemented by
@@ -252,6 +253,12 @@ class WinampState {
 
     /** The preset now showing, as the engine reported it. Shown in the window's title. */
     var presetName by mutableStateOf<String?>(null)
+
+    /** What the engine could not show of that preset. */
+    var presetGaps by mutableStateOf(PresetGaps.NONE)
+
+    /** Whether the window says so when a preset is missing something; see [PresetNotice]. */
+    var presetNotices by mutableStateOf(true)
 
     /**
      * Every preset in the loaded pack, by name, in the engine's playlist order, so an index

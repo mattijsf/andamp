@@ -24,6 +24,7 @@ class VisualizerStoreTest {
         assertEquals(null, loaded.packFor(VisPlugin.Avs))
         assertEquals(null, loaded.packFor(VisPlugin.Milkdrop))
         assertEquals(false, loaded.shuffle)
+        assertEquals("the window says what a preset is missing until told not to", true, loaded.notices)
     }
 
     @Test
@@ -33,6 +34,7 @@ class VisualizerStoreTest {
                 plugin = VisPlugin.Milkdrop,
                 packs = mapOf(VisPlugin.Milkdrop to "Cream of the Crop", VisPlugin.Avs to "Winamp AVS"),
                 shuffle = true,
+                notices = false,
             )
         store.save(memory)
         assertEquals(memory, store.load())

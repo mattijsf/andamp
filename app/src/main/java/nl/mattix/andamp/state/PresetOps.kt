@@ -18,6 +18,7 @@ import nl.mattix.andamp.state.presets.InstalledPack
 import nl.mattix.andamp.state.presets.PresetLibrary
 import nl.mattix.andamp.state.presets.runsOn
 import nl.mattix.andamp.visualizer.avs.author.AndAmpPack
+import nl.mattix.andamp.visualizer.core.PresetGaps
 import nl.mattix.andamp.visualizer.projectm.PresetPack
 import java.io.File
 import java.io.InputStream
@@ -71,6 +72,7 @@ class PresetOps(
         state.visPlugin = remembered.plugin
         state.presetPack = remembered.packFor(remembered.plugin)
         state.presetShuffle = remembered.shuffle
+        state.presetNotices = remembered.notices
         scope.launch {
             lock.withLock {
                 installBundled()
@@ -98,6 +100,7 @@ class PresetOps(
         state.visPlugin = plugin
         state.presetPack = packMemory[plugin]
         state.presetName = null
+        state.presetGaps = PresetGaps.NONE
         state.presetNames = emptyList()
         remember()
         scope.launch { lock.withLock { refresh() } }
@@ -105,6 +108,12 @@ class PresetOps(
 
     fun setShuffle(shuffle: Boolean) {
         state.presetShuffle = shuffle
+        remember()
+    }
+
+    /** Whether the window says what a preset is missing. */
+    fun setNotices(notices: Boolean) {
+        state.presetNotices = notices
         remember()
     }
 
@@ -150,6 +159,7 @@ class PresetOps(
     fun select(name: String?) {
         state.presetPack = name
         state.presetName = null
+        state.presetGaps = PresetGaps.NONE
         packMemory = packMemory + (state.visPlugin to name)
         remember()
     }
@@ -186,6 +196,7 @@ class PresetOps(
                 plugin = state.visPlugin,
                 packs = packMemory + (state.visPlugin to state.presetPack),
                 shuffle = state.presetShuffle,
+                notices = state.presetNotices,
             ),
         )
 

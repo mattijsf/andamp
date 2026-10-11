@@ -12,6 +12,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
@@ -244,6 +245,7 @@ fun MilkdropSurface(
                 VisPlugin.Milkdrop -> MilkdropEngineView(vm)
             }
         }
+        PresetNoticeLine(s, Modifier.align(Alignment.BottomStart))
         // The gestures are on a layer above the engine's view: a pointerInput on the
         // AndroidView itself does not receive them.
         Box(
@@ -343,6 +345,7 @@ private fun <V : VisualizerView<*>> EngineSurface(
             factory(context)
                 .apply {
                     onPresetChanged = { name -> s.presetName = name }
+                    onPresetGaps = { gaps -> s.presetGaps = gaps }
                     // the engine's own listener runs first, so the list is in state before
                     // the resume
                     val engines = onPlaylistChanged

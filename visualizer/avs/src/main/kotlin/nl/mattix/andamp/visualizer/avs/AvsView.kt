@@ -13,6 +13,7 @@ import android.util.Size
 import android.view.Surface
 import nl.mattix.andamp.core.player.FramePacer
 import nl.mattix.andamp.core.player.PcmSource
+import nl.mattix.andamp.visualizer.core.PresetGaps
 import nl.mattix.andamp.visualizer.core.VisualizerView
 import java.io.File
 
@@ -77,7 +78,7 @@ class AvsView(
             // the idle preset is loaded first: an empty playlist's current is
             // null, the same as the initial loadedPath, so the loop below
             // would not load it
-            load(engine, null)
+            announceGaps(load(engine, null))
 
             while (stillCurrent()) {
                 sync(playlistSync, playlist)
@@ -86,7 +87,7 @@ class AvsView(
                 if (loadedPath == null && restore != null) playlist.goTo(restore)
                 if (playlist.current != loadedPath) {
                     loadedPath = playlist.current
-                    load(engine, loadedPath)
+                    announceGaps(load(engine, loadedPath))
                     stickyPreset = loadedPath
                 }
                 announced = announce(loadedPath, announced)
@@ -101,6 +102,7 @@ class AvsView(
                         // the idle preset, and the loop goes on
                         Log.e(TAG, "preset $loadedPath crashed; falling back to idle", e)
                         load(engine, null)
+                        announceGaps(PresetGaps(unreadable = true))
                         true
                     }
                 if (!painted) break
@@ -133,12 +135,15 @@ class AvsView(
         drainCommands(playlist)
     }
 
-    /** Loads the preset at [path]; the idle preset when [path] is null, unreadable or does not parse. */
+    /**
+     * Loads the preset at [path]; the idle preset when [path] is null, unreadable or does not parse.
+     * Answers what of the preset is not showing.
+     */
     private fun load(
         engine: AvsEngine,
         path: String?,
-    ) {
-        val preset =
+    ): PresetGaps {
+        val read =
             path?.let {
                 try {
                     val file = File(it)
@@ -151,9 +156,9 @@ class AvsView(
                     Log.w(TAG, "cannot read $it: ${e.message}")
                     null
                 }
-            } ?: AvsIdlePreset.preset()
+            }
         try {
-            engine.load(preset)
+            engine.load(read ?: AvsIdlePreset.preset())
         } catch (
             // whatever a reader throws over a body it cannot read
             @Suppress("TooGenericExceptionCaught")
@@ -161,7 +166,9 @@ class AvsView(
         ) {
             Log.e(TAG, "preset $path would not load; falling back to idle", e)
             engine.load(AvsIdlePreset.preset())
+            return PresetGaps(unreadable = true)
         }
+        return PresetGaps(unreadable = path != null && read == null, missing = engine.unimplemented)
     }
 
     private fun audioFrame(

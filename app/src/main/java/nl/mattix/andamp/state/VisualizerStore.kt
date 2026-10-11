@@ -7,13 +7,15 @@ import android.content.SharedPreferences
 
 /**
  * What the plug-in window was left showing: which engine, which pack per engine, shuffled
- * or not. The pack is remembered per engine because the engines cannot read each other's
- * packs.
+ * or not, and whether it says what a preset is missing. The pack is remembered per engine
+ * because the engines cannot read each other's packs.
  */
 data class VisualizerMemory(
     val plugin: VisPlugin = VisPlugin.Avs,
     val packs: Map<VisPlugin, String?> = emptyMap(),
     val shuffle: Boolean = false,
+    /** Whether the window says what a preset is missing; see [PresetNotice]. */
+    val notices: Boolean = true,
 ) {
     fun packFor(plugin: VisPlugin): String? = packs[plugin]
 }
@@ -36,10 +38,16 @@ class VisualizerStore(
                         ?: prefs.getString(PACK, null).takeIf { plugin == VisPlugin.Milkdrop }
                 },
             shuffle = prefs.getBoolean(SHUFFLE, false),
+            notices = prefs.getBoolean(NOTICES, true),
         )
 
     fun save(memory: VisualizerMemory) {
-        val edit = prefs.edit().putString(PLUGIN, memory.plugin.name).putBoolean(SHUFFLE, memory.shuffle)
+        val edit =
+            prefs
+                .edit()
+                .putString(PLUGIN, memory.plugin.name)
+                .putBoolean(SHUFFLE, memory.shuffle)
+                .putBoolean(NOTICES, memory.notices)
         VisPlugin.entries.forEach { edit.putString(PACK_PREFIX + it.name, memory.packs[it]) }
         // drops the migrated key, so a cleared selection does not come back from it
         edit.remove(PACK)
@@ -54,5 +62,6 @@ class VisualizerStore(
         const val PACK = "pack"
         const val PACK_PREFIX = "pack."
         const val SHUFFLE = "shuffle"
+        const val NOTICES = "notices"
     }
 }
