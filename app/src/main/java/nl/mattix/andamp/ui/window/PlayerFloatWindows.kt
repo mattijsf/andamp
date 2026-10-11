@@ -12,6 +12,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
 import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.skin.RegionTxt
 import nl.mattix.andamp.skin.Skin
@@ -33,12 +34,13 @@ fun MainFloatWindow(
     widgets: List<Widget>,
     /** The current height: the full window, or the title bar when shaded. */
     height: Int,
-    defaultOffset: IntOffset,
+    /** Its top-left corner until it is moved; see [FloatingSkinWindow]. */
+    docked: IntOffset,
     modifier: Modifier = Modifier,
     /** Winamp's right click on the window: the main menu, from a long press. */
     onLongPress: (() -> Unit)? = null,
-    /** Where the layout holds it, or null while it floats; see [FloatingSkinWindow]. */
-    pinnedAt: IntOffset? = null,
+    /** The rectangle the layout holds it in, or null while it floats; see [FloatingSkinWindow]. */
+    pinned: IntRect? = null,
 ) {
     val s: WinampState = vm.state
     FloatingSkinWindow(
@@ -48,7 +50,7 @@ fun MainFloatWindow(
         width = MAIN_W,
         height = height,
         offset = s.mainOffset,
-        defaultOffset = defaultOffset,
+        docked = docked,
         onMove = { s.mainOffset = it },
         titleH = TITLE_BAR_H,
         widgets = widgets,
@@ -57,7 +59,7 @@ fun MainFloatWindow(
         onTitleDoubleTap = { s.setShaded(WindowStore.MAIN, !s.mainShaded, MAIN_H) },
         onLongPress = onLongPress,
         cut = SkinCut(skin, if (s.mainShaded) RegionTxt.Window.MAIN_SHADE else RegionTxt.Window.MAIN),
-        pinnedAt = pinnedAt,
+        pinned = pinned,
         modifier = modifier,
         overlay = {
             // the visualizer animates on its own canvas, so a frame repaints only that
@@ -83,12 +85,13 @@ fun EqFloatWindow(
     scale: Int,
     widgets: List<Widget>,
     height: Int,
-    defaultOffset: IntOffset,
+    /** Its top-left corner until it is moved; see [FloatingSkinWindow]. */
+    docked: IntOffset,
     modifier: Modifier = Modifier,
     /** Winamp's right click on the window: the main menu, from a long press. */
     onLongPress: (() -> Unit)? = null,
-    /** Where the layout holds it, or null while it floats; see [FloatingSkinWindow]. */
-    pinnedAt: IntOffset? = null,
+    /** The rectangle the layout holds it in, or null while it floats; see [FloatingSkinWindow]. */
+    pinned: IntRect? = null,
 ) {
     val s: WinampState = vm.state
     FloatingSkinWindow(
@@ -98,14 +101,14 @@ fun EqFloatWindow(
         width = EQ_W,
         height = height,
         offset = s.eqOffset,
-        defaultOffset = defaultOffset,
+        docked = docked,
         onMove = { s.eqOffset = it },
         titleH = TITLE_BAR_H,
         widgets = widgets,
         onTitleDoubleTap = { s.setShaded(WindowStore.EQ, !s.eqShaded, EQ_H) },
         onLongPress = onLongPress,
         cut = SkinCut(skin, if (s.eqShaded) RegionTxt.Window.EQ_SHADE else RegionTxt.Window.EQ),
-        pinnedAt = pinnedAt,
+        pinned = pinned,
         modifier = modifier,
     ) { if (s.eqShaded) drawEqShade(skin, s) else drawEqWindow(skin, s) }
 }

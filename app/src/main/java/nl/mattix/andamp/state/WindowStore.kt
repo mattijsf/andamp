@@ -6,33 +6,53 @@ import android.content.Context
 import android.content.SharedPreferences
 
 /**
- * Where a window sits, how big it is, and how it was left.
+ * One window as it is set up in one [Workspace]: whether it is open and collapsed, where it
+ * sits and how big it is.
  *
  * Positions are offsets from the screen center, so a remembered window lands in the same
- * place on a bigger screen. Sizes are counts (playlist segments, list rows), never pixels,
- * so they survive a skin change. A null size means "fill what is there", which is the
- * default and what dragging a window to full size gives.
+ * place on a bigger screen. Sizes are counts (playlist segments, list rows, resize steps),
+ * never pixels, so they survive a skin change. A null size means "fill what is there", which
+ * is the default and what dragging a window to full size gives. In a locked workspace the
+ * layout places and sizes the windows, and only [open], [shaded] and the plug-in window's
+ * [size], its height in steps, are its own.
  */
-data class WindowPlacement(
+data class WindowArrangement(
     val x: Int? = null,
     val y: Int? = null,
     val size: Int? = null,
+    /** Whether the window was collapsed to its title bar (Winamp's window shade). */
+    val shaded: Boolean? = null,
+    /** Steps wider than the base width; Winamp's width index. */
+    val cols: Int? = null,
     /**
      * Whether the window was open when the app was last left, for the windows a listener
      * can close. Null when nothing is stored.
      */
     val open: Boolean? = null,
-    /** Whether the window was collapsed to its title bar (Winamp's window shade). */
-    val shaded: Boolean? = null,
-    /** Steps wider than the base width; Winamp's width index. */
-    val cols: Int? = null,
-)
+) {
+    /** Where the window was left, or null while it has never been moved. */
+    fun offset(): androidx.compose.ui.unit.IntOffset? {
+        val x = x ?: return null
+        val y = y ?: return null
+        return androidx.compose.ui.unit
+            .IntOffset(x, y)
+    }
+}
 
-/** Every window's placement, plus the stack they are in. */
+/** One window as it is remembered: an arrangement per [Workspace]. */
+data class WindowPlacement(
+    val arrangements: Map<Workspace, WindowArrangement> = emptyMap(),
+) {
+    fun of(workspace: Workspace) = arrangements[workspace] ?: WindowArrangement()
+}
+
+/** Every window's placement, plus each workspace's stack. */
 data class WindowLayoutMemory(
     val placements: Map<String, WindowPlacement> = emptyMap(),
-    /** Floating windows, bottom to top; unknown ids are ignored on load. */
-    val order: List<String> = emptyList(),
+    /** Each workspace's windows, bottom to top; unknown ids are ignored on load. */
+    val orders: Map<Workspace, List<String>> = emptyMap(),
+    /** Each locked workspace's columns of windows; see [LockedColumns]. */
+    val columns: Map<Workspace, List<List<String>>> = emptyMap(),
     /**
      * Whether nothing has ever been written here: a fresh install.
      *
@@ -44,14 +64,9 @@ data class WindowLayoutMemory(
 ) {
     fun placementOf(id: String) = placements[id] ?: WindowPlacement()
 
-    /** Where a window was left, or null while it has never been moved. */
-    fun offsetOf(id: String): androidx.compose.ui.unit.IntOffset? {
-        val placement = placementOf(id)
-        val x = placement.x ?: return null
-        val y = placement.y ?: return null
-        return androidx.compose.ui.unit
-            .IntOffset(x, y)
-    }
+    fun orderOf(workspace: Workspace) = orders[workspace].orEmpty()
+
+    fun columnsOf(workspace: Workspace) = columns[workspace] ?: LockedColumns.defaultFor(workspace.sideways)
 }
 
 class WindowStore(
@@ -59,27 +74,35 @@ class WindowStore(
 ) {
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
+    /** Where Double Size kept the locked layout's collapsed windows and visual height before [WORKSPACE_SCHEMA]. */
+    private val oldStack: SharedPreferences = context.getSharedPreferences(OLD_STACK_PREFS, Context.MODE_PRIVATE)
+
+    /**
+     * Whether this screen turned before a window had an arrangement per way round: a tablet
+     * or a Chromebook did, a phone did not. Android's line between the two: 600dp on the
+     * shorter side.
+     */
+    private val turnedBefore = context.resources.configuration.smallestScreenWidthDp >= LARGE_SCREEN_DP
+
     fun load(): WindowLayoutMemory {
-        if (prefs.getInt(SCHEMA, 0) > SCHEMA_VERSION) return WindowLayoutMemory() // written by a newer build
+        val schema = prefs.getInt(SCHEMA, 0)
+        if (schema > SCHEMA_VERSION) return WindowLayoutMemory() // written by a newer build
         val firstRun = !prefs.contains(SCHEMA)
         val placements =
             WINDOWS.associateWith { id ->
-                WindowPlacement(
-                    x = prefs.readOrNull("$id.$X"),
-                    y = prefs.readOrNull("$id.$Y"),
-                    size = prefs.readOrNull("$id.$SIZE")?.takeIf { it > 0 },
-                    open = prefs.readOrNull("$id.$OPEN")?.let { it != 0 },
-                    shaded = prefs.readOrNull("$id.$SHADED")?.let { it != 0 },
-                    cols = prefs.readOrNull("$id.$COLS"),
-                )
+                if (schema < WORKSPACE_SCHEMA) placementBeforeWorkspaces(id, schema) else placementOf(id)
             }
-        val order =
-            prefs
-                .getString(ORDER, null)
-                ?.split(',')
-                ?.filter { it in WINDOWS }
-                .orEmpty()
-        return WindowLayoutMemory(placements, order, firstRun)
+        val orders =
+            Workspace.entries.associateWith { workspace ->
+                // before there were workspaces, one order served every layout
+                readOrder(if (schema < WORKSPACE_SCHEMA) Workspace.FLOATING else workspace)
+            }
+        val columns =
+            Workspace.entries.filter { it.locked }.associateWith { workspace ->
+                prefs.getString(workspace.columnsKey(), null)?.let { LockedColumns.decode(it) }
+                    ?: LockedColumns.defaultFor(workspace.sideways)
+            }
+        return WindowLayoutMemory(placements, orders, columns, firstRun)
     }
 
     fun save(memory: WindowLayoutMemory) {
@@ -89,15 +112,90 @@ class WindowStore(
                 putInt(SCHEMA, SCHEMA_VERSION)
                 WINDOWS.forEach { id ->
                     val placement = memory.placementOf(id)
-                    write("$id.$X", placement.x)
-                    write("$id.$Y", placement.y)
-                    write("$id.$SIZE", placement.size)
-                    write("$id.$OPEN", placement.open?.let { if (it) 1 else 0 })
-                    write("$id.$SHADED", placement.shaded?.let { if (it) 1 else 0 })
-                    write("$id.$COLS", placement.cols)
+                    Workspace.entries.forEach { workspace -> writeArrangement(workspace.prefix(id), placement.of(workspace)) }
                 }
-                putString(ORDER, memory.order.joinToString(","))
+                Workspace.entries.forEach { workspace ->
+                    putString(workspace.orderKey(), memory.orderOf(workspace).joinToString(","))
+                }
+                Workspace.entries.filter { it.locked }.forEach { workspace ->
+                    putString(workspace.columnsKey(), LockedColumns.encode(memory.columnsOf(workspace)))
+                }
             }.apply()
+    }
+
+    private fun placementOf(id: String) =
+        WindowPlacement(Workspace.entries.associateWith { workspace -> prefs.readArrangement(workspace.prefix(id)) })
+
+    /**
+     * A layout from before there was an arrangement per workspace. The floating layout had
+     * one arrangement, and from [SIDEWAYS_SCHEMA] one for sideways as well; whether a window
+     * was open was shared by every layout; and Double Size kept the locked layout's collapsed
+     * windows and its visual's height in settings of its own. Read so that nothing moves on
+     * the update.
+     */
+    private fun placementBeforeWorkspaces(
+        id: String,
+        schema: Int,
+    ): WindowPlacement {
+        val open = prefs.readOrNull("$id.$OPEN")?.let { it != 0 }
+        val upright = prefs.readArrangement(id).copy(open = open)
+        val sideways =
+            if (schema < SIDEWAYS_SCHEMA && turnedBefore) {
+                // a tablet turned before, so what it had serves either way round
+                upright
+            } else {
+                prefs.readArrangement(Workspace.FLOATING_SIDEWAYS.prefix(id)).copy(open = open)
+            }
+        val locked =
+            WindowArrangement(
+                size = oldStack.readOrNull(OLD_STACK_VIS_STEPS).takeIf { id == MILKDROP },
+                shaded = id in oldStack.getStringSet(OLD_STACK_SHADED, emptySet()).orEmpty(),
+                open = open,
+            )
+        return WindowPlacement(
+            mapOf(
+                Workspace.FLOATING to upright,
+                Workspace.FLOATING_SIDEWAYS to sideways,
+                Workspace.LOCKED to locked,
+                Workspace.LOCKED_SIDEWAYS to locked,
+            ),
+        )
+    }
+
+    private fun readOrder(workspace: Workspace): List<String> =
+        prefs
+            .getString(workspace.orderKey(), null)
+            ?.split(',')
+            ?.filter { it in WINDOWS }
+            .orEmpty()
+
+    /** The key segment a window's arrangement in [this] workspace is kept under. */
+    private fun Workspace.prefix(id: String) = if (key.isEmpty()) id else "$id.$key"
+
+    private fun Workspace.orderKey() = if (key.isEmpty()) ORDER else "$key.$ORDER"
+
+    private fun Workspace.columnsKey() = "$key.$COLUMNS"
+
+    private fun SharedPreferences.readArrangement(prefix: String) =
+        WindowArrangement(
+            x = readOrNull("$prefix.$X"),
+            y = readOrNull("$prefix.$Y"),
+            size = readOrNull("$prefix.$SIZE")?.takeIf { it > 0 },
+            shaded = readOrNull("$prefix.$SHADED")?.let { it != 0 },
+            cols = readOrNull("$prefix.$COLS"),
+            open = readOrNull("$prefix.$OPEN")?.let { it != 0 },
+        )
+
+    private fun SharedPreferences.Editor.writeArrangement(
+        prefix: String,
+        arrangement: WindowArrangement,
+    ) {
+        write("$prefix.$X", arrangement.x)
+        write("$prefix.$Y", arrangement.y)
+        write("$prefix.$SIZE", arrangement.size)
+        write("$prefix.$SHADED", arrangement.shaded?.let { if (it) 1 else 0 })
+        write("$prefix.$COLS", arrangement.cols)
+        write("$prefix.$OPEN", arrangement.open?.let { if (it) 1 else 0 })
     }
 
     private fun SharedPreferences.readOrNull(key: String): Int? = getInt(key, UNSET).takeIf { it != UNSET }
@@ -128,14 +226,30 @@ class WindowStore(
 
         private const val PREFS = "windows"
         private const val SCHEMA = "schema"
-        private const val SCHEMA_VERSION = 1
+        private const val SCHEMA_VERSION = 3
+
+        /** The first schema with an arrangement for the floating layout held sideways. */
+        private const val SIDEWAYS_SCHEMA = 2
+
+        /** The first schema with an arrangement per [Workspace], open windows included. */
+        private const val WORKSPACE_SCHEMA = 3
+
         private const val ORDER = "order"
+        private const val COLUMNS = "stack"
         private const val X = "x"
         private const val Y = "y"
         private const val SIZE = "size"
         private const val OPEN = "open"
         private const val SHADED = "shaded"
         private const val COLS = "cols"
+
+        /** Double Size's own settings, where it kept the locked layout's state before [WORKSPACE_SCHEMA]. */
+        private const val OLD_STACK_PREFS = "doublesize"
+        private const val OLD_STACK_SHADED = "shaded"
+        private const val OLD_STACK_VIS_STEPS = "vis_steps"
+
+        /** Android's line between a phone and a tablet: 600dp on the shorter side. */
+        private const val LARGE_SCREEN_DP = 600
 
         /** Stands for "absent", since `getInt` needs a default value. */
         private const val UNSET = Int.MIN_VALUE

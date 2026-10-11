@@ -3,6 +3,7 @@
 package nl.mattix.andamp.ui.window
 
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntSize
 
 /**
  * One axis of a window's size, held as a count of steps: the pixels the window takes before
@@ -15,6 +16,36 @@ data class SizeAxis(
     val max: Int,
     val current: Int,
 )
+
+/**
+ * A window that widens from [base] in [step]s of [WIDTH_STEP] px: Winamp's width index, as
+ * in webamp's `size: [width, height]`.
+ */
+class WidthSteps(
+    val base: Int,
+    val step: Int = WIDTH_STEP,
+) {
+    fun widthOf(cols: Int) = base + cols.coerceAtLeast(0) * step
+
+    /** The most steps that still fit a screen [screenW] wide. */
+    fun colsThatFit(screenW: Int) = ((screenW - base) / step).coerceAtLeast(0)
+
+    fun clamp(
+        cols: Int,
+        screenW: Int,
+    ) = cols.coerceIn(0, colsThatFit(screenW))
+
+    /** The axis a grip drag widens along, from [cols] steps now. */
+    fun axis(
+        cols: Int,
+        screenW: Int,
+    ) = SizeAxis(furniture = base, step = step, min = 0, max = colsThatFit(screenW), current = cols)
+
+    companion object {
+        /** webamp's WINDOW_RESIZE_SEGMENT_WIDTH: one step sideways. */
+        const val WIDTH_STEP = 25
+    }
+}
 
 /** The result of a grip drag: the window's new counts, and where it sits. */
 data class Resized(
@@ -138,8 +169,7 @@ object WindowSizing {
     @Suppress("LongParameterList") // two axes, two size functions and the screen they live on
     fun resize(
         grab: WindowGrab,
-        screenW: Int,
-        screenH: Int,
+        screen: WindowScreen,
         heightAxis: SizeAxis,
         heightOf: (steps: Int) -> Int,
         widthAxis: SizeAxis? = null,
@@ -152,7 +182,7 @@ object WindowSizing {
         return Resized(
             cols = cols,
             steps = steps,
-            offset = anchorTopLeft(grab.atOffset, grab.atWidth, newW, grab.atHeight, newH, screenW, screenH),
+            offset = anchorTopLeft(grab.atOffset, IntSize(grab.atWidth, grab.atHeight), IntSize(newW, newH), screen),
             height = newH,
         )
     }
@@ -172,23 +202,15 @@ object WindowSizing {
         )
 
     /**
-     * The offset that keeps a window's top-left corner still while it changes size in both
-     * axes. Offsets are center-relative, so an unchanged offset would grow the window out
-     * of its middle.
+     * The offset that keeps a window's top-left corner still while it changes size. Offsets
+     * are center-relative, so an unchanged offset would grow the window out of its middle.
      */
     fun anchorTopLeft(
         offset: IntOffset,
-        oldW: Int,
-        newW: Int,
-        oldH: Int,
-        newH: Int,
-        screenW: Int,
-        screenH: Int,
-    ): IntOffset =
-        IntOffset(
-            offset.x + (screenW - oldW) / 2 - (screenW - newW) / 2,
-            anchorTop(offset, oldH, newH, screenH).y,
-        )
+        oldSize: IntSize,
+        newSize: IntSize,
+        screen: WindowScreen,
+    ): IntOffset = screen.offsetOf(screen.topLeftOf(offset, oldSize), newSize)
 
     /**
      * The offset that keeps a window's top edge still while its height changes: offsets are

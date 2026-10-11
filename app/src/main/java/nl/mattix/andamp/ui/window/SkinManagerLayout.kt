@@ -55,9 +55,12 @@ class SkinManagerLayout(
         fun furnitureH(frame: WindowFrame) = frame.chromeH + ListText.TOP_PAD.toInt()
 
         /** webamp's WINDOW_RESIZE_SEGMENT_WIDTH. */
-        const val WIDTH_STEP = 25
+        const val WIDTH_STEP = WidthSteps.WIDTH_STEP
 
-        fun widthOfCols(cols: Int) = WIDTH + cols.coerceAtLeast(0) * WIDTH_STEP
+        /** How the skin browser widens. */
+        val WIDTH_STEPS = WidthSteps(WIDTH, WIDTH_STEP)
+
+        fun widthOfCols(cols: Int) = WIDTH_STEPS.widthOf(cols)
 
         fun listWidth(frame: WindowFrame) = WIDTH - frame.chromeW
 

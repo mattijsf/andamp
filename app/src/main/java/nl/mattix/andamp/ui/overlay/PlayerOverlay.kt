@@ -2,7 +2,9 @@
 
 package nl.mattix.andamp.ui.overlay
 
+import android.content.ComponentCallbacks
 import android.content.Context
+import android.content.res.Configuration
 import android.graphics.PixelFormat
 import android.os.Build
 import android.view.Gravity
@@ -64,6 +66,9 @@ object PlayerOverlay {
     /** When the feeler may move and where to; this class only carries it out. */
     private var plan = TouchWindowPlan()
 
+    /** Hears the display turn while the windows are up; see [show]. */
+    private var turned: ComponentCallbacks? = null
+
     val showing: Boolean get() = picture != null
 
     /**
@@ -112,6 +117,8 @@ object PlayerOverlay {
         val screen = windows.currentWindowMetrics.bounds
         val holders = OverlayOwners()
         val display = displayScreen(windows)
+        // the arrangement for the way the phone is held now; this window is measured once
+        vm.state.sideways = screen.width() > screen.height()
 
         val shown =
             ComposeView(app).apply {
@@ -121,7 +128,7 @@ object PlayerOverlay {
                 setContent {
                     val skin = vm.skin ?: return@setContent
                     // the activity's own rule, so the two surfaces draw the player the same size
-                    val scale = playerScale(screen.width(), screen.height() - display.statusBar)
+                    val scale = playerScale(screen.width(), screen.height() - display.statusBar, vm.state.sideways)
                     val here =
                         OverlayBounds.windowFor(
                             vm.state.windowRects.values,
@@ -187,6 +194,25 @@ object PlayerOverlay {
         picture = shown
         touch = feeler
         owners = holders
+        // Both windows were measured for the display as it is now. When it turns, they are
+        // taken down and put up again, measured afresh; the callback is the application's,
+        // because no activity need be alive while the player floats.
+        val sidewaysNow = screen.width() > screen.height()
+        turned =
+            object : ComponentCallbacks {
+                override fun onConfigurationChanged(newConfig: Configuration) {
+                    if ((newConfig.orientation == Configuration.ORIENTATION_LANDSCAPE) == sidewaysNow) return
+                    // posted: not from inside a callback the teardown would unregister
+                    shown.post {
+                        if (picture !== shown) return@post
+                        hide()
+                        show(app, vm, onOpenApp, onOpenAppAt, onClose, onMinimize)
+                    }
+                }
+
+                @Deprecated("the platform's own; nothing here to drop")
+                override fun onLowMemory() = Unit
+            }.also { app.registerComponentCallbacks(it) }
     }
 
     fun hide() {
@@ -195,6 +221,8 @@ object PlayerOverlay {
         val windows = app.getSystemService(WindowManager::class.java)
         runCatching { touch?.let { windows?.removeView(it) } }
         runCatching { windows?.removeView(shown) }
+        turned?.let { app.unregisterComponentCallbacks(it) }
+        turned = null
         owners?.onHidden()
         picture = null
         touch = null

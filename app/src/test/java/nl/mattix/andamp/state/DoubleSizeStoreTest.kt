@@ -7,7 +7,6 @@ import android.content.SharedPreferences
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -47,30 +46,5 @@ class DoubleSizeStoreTest {
         store.on = false
 
         assertEquals(listOf(false, true, false), told)
-    }
-
-    @Test
-    fun `the windows collapsed in the stack come back, and none are to begin with`() {
-        val prefs = prefs()
-        assertEquals(emptySet<String>(), DoubleSizeStore(prefs).shaded)
-
-        DoubleSizeStore(prefs).shaded = setOf("eq", "pl")
-
-        assertEquals(setOf("eq", "pl"), DoubleSizeStore(prefs).shaded)
-    }
-
-    @Test
-    fun `the plug-in window has no height of its own until its grip is dragged`() {
-        assertNull(DoubleSizeStore(prefs()).visSteps)
-    }
-
-    @Test
-    fun `the plug-in window's height comes back, and can be given up again`() {
-        val prefs = prefs()
-        DoubleSizeStore(prefs).visSteps = 21
-        assertEquals(21, DoubleSizeStore(prefs).visSteps)
-
-        DoubleSizeStore(prefs).visSteps = null
-        assertNull(DoubleSizeStore(prefs).visSteps)
     }
 }

@@ -2,10 +2,12 @@
 
 package nl.mattix.andamp.ui.window
 
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
@@ -27,52 +29,47 @@ fun PlaylistShadeFloatWindow(
     scale: Int,
     /** The height the playlist expands back to. */
     expandedH: Int,
-    defaultOffset: IntOffset,
+    /** Its top-left corner until it is moved; see [FloatingSkinWindow]. */
+    docked: IntOffset,
     modifier: Modifier = Modifier,
-    /** Where the layout holds it, at its narrowest, or null while it floats. */
-    pinnedAt: IntOffset? = null,
+    /** The rectangle the layout holds it in, at its narrowest, or null while it floats. */
+    pinned: IntRect? = null,
 ) {
     val s = vm.state
-    val maxCols = ((s.screenW - PL_W) / PlaylistLayout.WIDTH_STEP).coerceAtLeast(0)
-    val cols = if (pinnedAt != null) 0 else s.plCols.coerceIn(0, maxCols)
-    val width = PL_W + cols * PlaylistLayout.WIDTH_STEP
-    FloatingSkinWindow(
-        id = WindowStore.PLAYLIST,
-        state = s,
-        scale = scale,
-        width = width,
-        height = SHADE_H,
-        offset = s.plOffset,
-        defaultOffset = defaultOffset,
-        onMove = { s.plOffset = it },
-        cut = SkinCut(skin),
-        pinnedAt = pinnedAt,
-        onResizeRaw = { grab ->
-            val resized =
-                WindowSizing.resize(
-                    grab,
-                    screenW = s.screenW,
-                    screenH = s.screenH,
-                    // shaded, the height is fixed
-                    heightAxis = SizeAxis(furniture = SHADE_H, step = 1, min = 0, max = 0, current = 0),
-                    heightOf = { SHADE_H },
-                    widthAxis =
-                        SizeAxis(
-                            furniture = PL_W,
-                            step = PlaylistLayout.WIDTH_STEP,
-                            min = 0,
-                            max = maxCols,
-                            current = cols,
-                        ),
-                    widthOf = { steps -> PL_W + steps * PlaylistLayout.WIDTH_STEP },
-                )
-            s.plCols = resized.cols
-            s.plOffset = resized.offset
-        },
-        gripAt = playlistShadeGrip(width),
-        titleH = SHADE_H,
-        widgets = remember(vm, expandedH, width) { playlistShadeWidgets(vm, expandedH, width) },
-        onTitleDoubleTap = { s.setShaded(WindowStore.PLAYLIST, false, expandedH) },
-        modifier = modifier,
-    ) { drawPlaylistShade(skin, s, width) }
+    BoxWithConstraints(modifier) {
+        val screen = windowScreen(scale, s)
+        val cols = if (pinned != null) 0 else PlaylistLayout.WIDTH_STEPS.clamp(s.plCols, screen.width)
+        val width = PlaylistLayout.widthOfCols(cols)
+        FloatingSkinWindow(
+            id = WindowStore.PLAYLIST,
+            state = s,
+            scale = scale,
+            width = width,
+            height = SHADE_H,
+            offset = s.plOffset,
+            docked = docked,
+            onMove = { s.plOffset = it },
+            cut = SkinCut(skin),
+            pinned = pinned,
+            onResizeRaw = { grab ->
+                val resized =
+                    WindowSizing.resize(
+                        grab,
+                        screen,
+                        // shaded, the height is fixed
+                        heightAxis = SizeAxis(furniture = SHADE_H, step = 1, min = 0, max = 0, current = 0),
+                        heightOf = { SHADE_H },
+                        widthAxis = PlaylistLayout.WIDTH_STEPS.axis(cols, screen.width),
+                        widthOf = { steps -> PL_W + steps * PlaylistLayout.WIDTH_STEP },
+                    )
+                s.plCols = resized.cols
+                s.plOffset = resized.offset
+            },
+            gripAt = playlistShadeGrip(width),
+            titleH = SHADE_H,
+            widgets = remember(vm, expandedH, width) { playlistShadeWidgets(vm, expandedH, width) },
+            onTitleDoubleTap = { s.setShaded(WindowStore.PLAYLIST, false, expandedH) },
+            modifier = Modifier.matchParentSize(),
+        ) { drawPlaylistShade(skin, s, width) }
+    }
 }

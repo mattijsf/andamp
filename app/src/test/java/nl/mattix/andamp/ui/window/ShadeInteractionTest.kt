@@ -6,6 +6,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.IntOffset
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WinampViewModel
@@ -216,17 +217,22 @@ class ShadeInteractionTest {
 
     @Test
     fun `shading a window takes its height out of the stack`() {
-        fun stack(
+        val screen = WindowScreen(width = MAIN_W, height = 800, safeTop = 0, safeBottom = 800)
+
+        fun playlistRow(
             playerH: Int,
             eqShown: Boolean,
-        ) = dockedStackHeight(top = 0, anchor = playerH, under = listOf(StackMember(EQ_H, eqShown, top = null, placed = false)))
+        ): Int {
+            val eq = if (eqShown) ClassicStack.Member(EQ_H, top = null, placed = false) else null
+            return ClassicStack.layout(ClassicStack.Ask(screen, sideways = false, playerH, eq, vis = null)).playlist.y
+        }
 
-        assertEquals(MAIN_H + EQ_H, stack(MAIN_H, eqShown = true))
-        assertEquals(SHADE_H + EQ_H, stack(heightOf(MAIN_H, true), eqShown = true))
+        assertEquals(MAIN_H + EQ_H, playlistRow(MAIN_H, eqShown = true))
+        assertEquals(SHADE_H + EQ_H, playlistRow(heightOf(MAIN_H, true), eqShown = true))
         assertEquals(
             "an equalizer that is not shown takes no room",
             SHADE_H,
-            stack(heightOf(MAIN_H, true), eqShown = false),
+            playlistRow(heightOf(MAIN_H, true), eqShown = false),
         )
     }
 
@@ -237,8 +243,8 @@ class ShadeInteractionTest {
         val screen = 533
         val row = 60
 
-        val full = dockedOffset(row, MAIN_H, screen)
-        val shaded = dockedOffset(row, SHADE_H, screen)
+        val full = IntOffset(0, row - (screen - MAIN_H) / 2)
+        val shaded = IntOffset(0, row - (screen - SHADE_H) / 2)
 
         assertEquals(row, (screen - MAIN_H) / 2 + full.y)
         assertEquals(row, (screen - SHADE_H) / 2 + shaded.y)

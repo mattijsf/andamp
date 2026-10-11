@@ -9,10 +9,17 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.core.model.displayName
+import nl.mattix.andamp.ui.window.LockedStack
+import nl.mattix.andamp.ui.window.WindowScreen
 import nl.mattix.andamp.visualizer.core.PresetGaps
+import kotlin.properties.ReadWriteProperty
+import kotlin.reflect.KMutableProperty0
+import kotlin.reflect.KProperty
 
 /**
  * The commands the plug-in window accepts from the rest of the app. Implemented by
@@ -88,140 +95,62 @@ class WinampState {
     val eqBands = mutableStateListOf<Int>().apply { repeat(EQ_BANDS) { add(EqOps.CENTER) } }
     var preamp by mutableIntStateOf(EqOps.CENTER) // 0..63
 
-    var eqVisible: Boolean by openOf(WindowStore.EQ)
+    /**
+     * Whether the phone is held sideways: the screen is wider than it is tall. Set by
+     * whatever hosts the player (the activity, the floating window) before the windows are
+     * laid out, so the first layout after a turn already shows the right arrangement.
+     *
+     * Each window keeps one arrangement for upright and one for sideways; see
+     * [WindowPlacementState].
+     */
+    var sideways by mutableStateOf(false)
+
+    /**
+     * Winamp's Double Size as it is set; see [DoubleSizeStore]. While it is on, the layout
+     * holds every window in one stack: [windowRects] are the stack's and no window's own
+     * place changes. The clutter bar's D is lit from it.
+     */
+    var doubleSize by mutableStateOf(false)
+
+    /** The workspace on screen: floating or locked, upright or sideways; see [Workspace]. */
+    val workspace: Workspace get() = Workspace.of(locked = doubleSize, sideways = sideways)
 
     /**
      * Every window's placement, one entry per [WindowStore.WINDOWS] id. The named
-     * properties below delegate to this map: `plOffset` is the playlist's `offset`.
+     * properties below delegate to this map: `plOffset` is the playlist's `offset`, in the
+     * arrangement for the workspace on screen.
      */
-    private val placements = WindowPlacementState.forWindows()
+    private val placements = WindowPlacementState.forWindows { workspace }
 
-    /** One window's placement, for code that loops over the windows. */
-    fun placementOf(id: String): WindowPlacementState? = placements[id]
+    /** One window's placement; every id in play is one of [WindowStore.WINDOWS]. */
+    fun placementOf(id: String): WindowPlacementState = placements.getValue(id)
 
-    private fun placement(id: String) = placements.getValue(id)
-
-    private fun offsetOf(id: String) =
-        object : kotlin.properties.ReadWriteProperty<Any?, androidx.compose.ui.unit.IntOffset?> {
+    /** A window's property that may be unset, read with [default] in its place. */
+    private fun <T : Any> KMutableProperty0<T?>.orDefault(default: T) =
+        object : ReadWriteProperty<Any?, T> {
             override fun getValue(
                 thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-            ) = placement(id).offset
+                property: KProperty<*>,
+            ) = get() ?: default
 
             override fun setValue(
                 thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-                value: androidx.compose.ui.unit.IntOffset?,
-            ) {
-                placement(id).offset = value
-            }
+                property: KProperty<*>,
+                value: T,
+            ) = set(value)
         }
 
-    /** For the two list windows, whose offset defaults to the center. */
-    private fun placedOf(id: String) =
-        object : kotlin.properties.ReadWriteProperty<Any?, androidx.compose.ui.unit.IntOffset> {
-            override fun getValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-            ) = placement(id).offset ?: androidx.compose.ui.unit.IntOffset.Zero
-
-            override fun setValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-                value: androidx.compose.ui.unit.IntOffset,
-            ) {
-                placement(id).offset = value
-            }
-        }
-
-    private fun sizeOf(id: String) =
-        object : kotlin.properties.ReadWriteProperty<Any?, Int?> {
-            override fun getValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-            ) = placement(id).size
-
-            override fun setValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-                value: Int?,
-            ) {
-                placement(id).size = value
-            }
-        }
-
-    private fun colsOf(id: String) =
-        object : kotlin.properties.ReadWriteProperty<Any?, Int> {
-            override fun getValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-            ) = placement(id).cols ?: 0
-
-            override fun setValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-                value: Int,
-            ) {
-                placement(id).cols = value
-            }
-        }
-
-    private fun openOf(id: String) =
-        object : kotlin.properties.ReadWriteProperty<Any?, Boolean> {
-            override fun getValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-            ) = placement(id).open ?: false
-
-            override fun setValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-                value: Boolean,
-            ) {
-                placement(id).open = value
-            }
-        }
-
-    /**
-     * Whether a window is collapsed in the layout on screen. The floating layout and the
-     * locked stack each keep their own answer ([stackShaded]), so collapsing a window in one
-     * leaves the other as it was.
-     */
-    private fun shadedOf(id: String) =
-        object : kotlin.properties.ReadWriteProperty<Any?, Boolean> {
-            override fun getValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-            ) = if (doubleSize) id in stackShaded else placement(id).shaded ?: false
-
-            override fun setValue(
-                thisRef: Any?,
-                property: kotlin.reflect.KProperty<*>,
-                value: Boolean,
-            ) {
-                if (doubleSize) {
-                    stackShaded = if (value) stackShaded + id else stackShaded - id
-                } else {
-                    placement(id).shaded = value
-                }
-            }
-        }
-
-    /**
-     * The windows that are collapsed while the layout holds them in one stack, by their ids;
-     * see [doubleSize]. Stored across restarts, apart from the floating layout's own.
-     */
-    var stackShaded: Set<String> by mutableStateOf(emptySet())
+    var eqVisible: Boolean by (placementOf(WindowStore.EQ)::open).orDefault(false)
 
     /**
      * Window shade: the window collapsed to its title bar, in the layout on screen. Stored
      * per window and per layout across restarts.
      */
-    var mainShaded: Boolean by shadedOf(WindowStore.MAIN)
+    var mainShaded: Boolean by (placementOf(WindowStore.MAIN)::shaded).orDefault(false)
 
-    var eqShaded: Boolean by shadedOf(WindowStore.EQ)
+    var eqShaded: Boolean by (placementOf(WindowStore.EQ)::shaded).orDefault(false)
 
-    var plShaded: Boolean by shadedOf(WindowStore.PLAYLIST)
+    var plShaded: Boolean by (placementOf(WindowStore.PLAYLIST)::shaded).orDefault(false)
 
     /**
      * Whether collapsing is offered at all; see [ShadeStore]. It is mirrored here so the
@@ -239,11 +168,11 @@ class WinampState {
      * How many 25px steps wider than 275 the playlist is: Winamp's width index, as in
      * webamp (`size: [width, height]`, W = 275 + 25 * width).
      */
-    var plCols: Int by colsOf(WindowStore.PLAYLIST)
-    var plVisible: Boolean by openOf(WindowStore.PLAYLIST)
+    var plCols: Int by (placementOf(WindowStore.PLAYLIST)::cols).orDefault(0)
+    var plVisible: Boolean by (placementOf(WindowStore.PLAYLIST)::open).orDefault(false)
 
     // The plug-in window (AVS or Milkdrop), independent of the in-player visualizer.
-    var milkdropOn: Boolean by openOf(WindowStore.MILKDROP)
+    var milkdropOn: Boolean by (placementOf(WindowStore.MILKDROP)::open).orDefault(false)
     var milkdropFullscreen by mutableStateOf(false)
     var visPlugin by mutableStateOf(VisPlugin.Avs)
 
@@ -368,48 +297,61 @@ class WinampState {
     var skinScroll by mutableIntStateOf(0)
 
     /** Where the skin manager floats, in virtual px from screen center. */
-    var skinManagerOffset: androidx.compose.ui.unit.IntOffset by placedOf(WindowStore.SKINS)
+    var skinManagerOffset: androidx.compose.ui.unit.IntOffset by (
+        placementOf(
+            WindowStore.SKINS,
+        )::offset
+    ).orDefault(IntOffset.Zero)
 
     /** How many rows the skin manager shows; null until the listener resizes it. */
-    var skinRows: Int? by sizeOf(WindowStore.SKINS)
+    var skinRows: Int? by placementOf(WindowStore.SKINS)::size
 
     // the media library window
     var libraryOpen by mutableStateOf(false)
     var libraryScroll by mutableIntStateOf(0)
-    var libraryOffset: androidx.compose.ui.unit.IntOffset by placedOf(WindowStore.LIBRARY)
+    var libraryOffset: androidx.compose.ui.unit.IntOffset by (placementOf(WindowStore.LIBRARY)::offset).orDefault(IntOffset.Zero)
 
     /** How many rows the library shows; null fills the space there is. */
-    var libraryRows: Int? by sizeOf(WindowStore.LIBRARY)
+    var libraryRows: Int? by placementOf(WindowStore.LIBRARY)::size
 
     /** How many 25px steps wider than its narrowest the library is drawn. */
-    var libraryCols: Int by colsOf(WindowStore.LIBRARY)
+    var libraryCols: Int by (placementOf(WindowStore.LIBRARY)::cols).orDefault(0)
 
     /**
      * Where the playlist floats, and how tall it is. A null offset means the layout places
      * it: docked under the stack. A null size fills what is left.
      */
-    var plOffset: androidx.compose.ui.unit.IntOffset? by offsetOf(WindowStore.PLAYLIST)
-    var plSegments: Int? by sizeOf(WindowStore.PLAYLIST)
+    var plOffset: androidx.compose.ui.unit.IntOffset? by placementOf(WindowStore.PLAYLIST)::offset
+    var plSegments: Int? by placementOf(WindowStore.PLAYLIST)::size
 
     /**
      * Where the player, the equalizer and the plug-in window float. Null means the layout
      * places them in the classic stack, until the listener drags one.
      */
-    var mainOffset: androidx.compose.ui.unit.IntOffset? by offsetOf(WindowStore.MAIN)
-    var eqOffset: androidx.compose.ui.unit.IntOffset? by offsetOf(WindowStore.EQ)
-    var milkdropOffset: androidx.compose.ui.unit.IntOffset? by offsetOf(WindowStore.MILKDROP)
+    var mainOffset: androidx.compose.ui.unit.IntOffset? by placementOf(WindowStore.MAIN)::offset
+    var eqOffset: androidx.compose.ui.unit.IntOffset? by placementOf(WindowStore.EQ)::offset
+    var milkdropOffset: androidx.compose.ui.unit.IntOffset? by placementOf(WindowStore.MILKDROP)::offset
 
     /** How tall the visual is, in resize steps; null is its default height. */
-    var milkdropSteps: Int? by sizeOf(WindowStore.MILKDROP)
+    var milkdropSteps: Int? by placementOf(WindowStore.MILKDROP)::size
 
     /** Steps wider than 275, like the playlist's; Winamp's width index. */
-    var milkdropCols: Int by colsOf(WindowStore.MILKDROP)
+    var milkdropCols: Int by (placementOf(WindowStore.MILKDROP)::cols).orDefault(0)
 
     /** The skin browser's width index. */
-    var skinCols: Int by colsOf(WindowStore.SKINS)
+    var skinCols: Int by (placementOf(WindowStore.SKINS)::cols).orDefault(0)
+
+    /** The first row a window's handle may be on: below the strip kept for the notification shade. */
+    var safeTop by mutableIntStateOf(0)
 
     /** The lowest row a window may reach: the screen minus the gesture bar. */
     var safeBottom by mutableIntStateOf(0)
+
+    /**
+     * The screen as the layout pass last published it, for the code that places windows
+     * outside a layout pass; before the first one, the whole screen is safe.
+     */
+    fun screen() = WindowScreen(screenW, screenH, safeTop, safeBottom.takeIf { it > 0 } ?: screenH)
 
     /**
      * Every visible window's rectangle in screen space, for docking. Written by the
@@ -437,43 +379,110 @@ class WinampState {
     var screenW by mutableIntStateOf(0)
     var screenH by mutableIntStateOf(0)
 
+    /** Each workspace's windows, bottom to top; the last one is drawn on top. */
+    private val orders =
+        androidx.compose.runtime.mutableStateMapOf<Workspace, List<String>>().apply {
+            Workspace.entries.forEach { put(it, WindowStore.WINDOWS) }
+        }
+
+    /** The windows of the workspace on screen, bottom to top; the last one is drawn on top. */
+    var windowOrder: List<String>
+        get() = orders.getValue(workspace)
+        set(value) {
+            orders[workspace] = value
+        }
+
+    /** The windows of [workspace], bottom to top. */
+    fun orderOf(workspace: Workspace): List<String> = orders.getValue(workspace)
+
+    /** The columns each locked workspace holds its windows in; see [LockedColumns]. */
+    private val columns =
+        androidx.compose.runtime.mutableStateMapOf<Workspace, List<List<String>>>().apply {
+            Workspace.entries.filter { it.locked }.forEach { put(it, LockedColumns.defaultFor(it.sideways)) }
+        }
+
+    /** The locked workspace the way the phone is held: on screen while Double Size is on. */
+    private val lockedWorkspace get() = Workspace.of(locked = true, sideways = sideways)
+
+    /** The columns of the locked workspace the way the phone is held. */
+    var lockedColumns: List<List<String>>
+        get() = columns.getValue(lockedWorkspace)
+        set(value) {
+            columns[lockedWorkspace] = value
+        }
+
+    fun columnsOf(workspace: Workspace): List<List<String>> = columns.getValue(workspace)
+
+    fun setColumns(
+        workspace: Workspace,
+        columns: List<List<String>>,
+    ) {
+        this.columns[workspace] = columns
+    }
+
+    /** A window lifted out of the locked layout by a drag; see [liftWindow]. */
+    data class LiftedWindow(
+        val id: String,
+        /** Where it was when it was lifted. */
+        val from: IntRect,
+        /** How far the drag has taken it since. */
+        val by: IntOffset,
+    ) {
+        /** Where the drag has taken its top-left corner. */
+        val topLeft: IntOffset get() = IntOffset(from.left + by.x, from.top + by.y)
+
+        val center: IntOffset get() = IntOffset(from.center.x + by.x, from.center.y + by.y)
+
+        /** Drawn where the drag has taken it, at the size of the slot it would drop into. */
+        fun drawnIn(slot: IntRect) = IntRect(topLeft, slot.size)
+    }
+
+    var lifted: LiftedWindow? by mutableStateOf(null)
+
     /**
-     * Winamp's Double Size as it is set; see [DoubleSizeStore]. While it is on, the layout
-     * holds every window in one stack: [windowRects] are the stack's and no window's own
-     * place changes. The clutter bar's D is lit from it.
+     * A drag on a window the locked layout holds: the window follows the finger, and the
+     * columns are reordered as it goes, so the others make room where it would land. Only the
+     * windows of [LockedColumns.STACK] move; see [LockedColumns.moved].
      */
-    var doubleSize by mutableStateOf(false)
+    fun liftWindow(
+        id: String,
+        by: IntOffset,
+    ) {
+        if (!doubleSize || id !in LockedColumns.STACK) return
+        val from = lifted?.takeIf { it.id == id }?.from ?: windowRects[id] ?: return
+        val lift = LiftedWindow(id, from, by)
+        lifted = lift
+        val column = LockedStack.columnAt(lift.center.x, screenW, lockedColumns.size)
+        val moved = LockedColumns.moved(id, lift.center, column, lockedColumns, windowRects - id)
+        if (moved != lockedColumns) lockedColumns = moved
+    }
 
-    /** The floating stack, bottom to top; the last one is drawn on top. */
-    var windowOrder by mutableStateOf(listOf("main", "eq", "milkdrop", "pl", "library", "skins"))
+    /** The drag has ended: the window takes the slot it was over. */
+    fun dropWindow() {
+        lifted = null
+    }
 
-    /** The same for the windows while the layout holds them in one stack: its own order, not stored. */
-    private var stackOrder by mutableStateOf(windowOrder)
-
-    /** The order of the layout on screen, bottom to top. */
-    val shownOrder: List<String> get() = if (doubleSize) stackOrder else windowOrder
+    fun setOrder(
+        workspace: Workspace,
+        order: List<String>,
+    ) {
+        orders[workspace] = order
+    }
 
     /** A window's current offset, computed from the rectangle it published. */
-    fun offsetOfWindow(id: String): androidx.compose.ui.unit.IntOffset? {
-        val rect = windowRects[id] ?: return null
-        return androidx.compose.ui.unit.IntOffset(
-            rect.left - (screenW - rect.width) / 2,
-            rect.top - (screenH - rect.height) / 2,
-        )
-    }
+    fun offsetOfWindow(id: String): IntOffset? = windowRects[id]?.let { screen().offsetOf(it) }
 
     /** Puts a window at [moved]; used for the carried windows of a group drag. */
     fun placeWindow(
         id: String,
-        moved: androidx.compose.ui.unit.IntOffset,
+        moved: IntOffset,
     ) {
-        placements[id]?.offset = moved
+        placementOf(id).offset = moved
     }
 
     /**
-     * Opens or closes a window. An opening window is raised to the front, so it is not
-     * hidden behind another, in the floating layout and in the locked stack alike: it is
-     * open in both. Closing leaves the order alone.
+     * Opens or closes a window in the workspace on screen. An opening window is raised to
+     * the front, so it is not hidden behind another. Closing leaves the order alone.
      */
     fun setWindowOpen(
         id: String,
@@ -481,17 +490,15 @@ class WinampState {
         setOpen: (Boolean) -> Unit,
     ) {
         setOpen(open)
-        if (!open) return
-        windowOrder = windowOrder.withInFront(id)
-        stackOrder = stackOrder.withInFront(id)
+        if (open) windowOrder = windowOrder.withInFront(id)
     }
 
     /**
-     * Brings a window to the front of the layout on screen. Each layout has its own order,
-     * so a press in one does not restack the other.
+     * Brings a window to the front of the workspace on screen. Each workspace has its own
+     * order, so a press in one does not restack another.
      */
     fun raiseWindow(id: String) {
-        if (doubleSize) stackOrder = stackOrder.withInFront(id) else windowOrder = windowOrder.withInFront(id)
+        windowOrder = windowOrder.withInFront(id)
     }
 
     /** This order with [id] last, which is in front; the same list when it is there already or not in it. */

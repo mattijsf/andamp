@@ -161,11 +161,11 @@ fun mainWindowWidgets(
         ),
         button("main.eqToggle", Dest.EQ_TOGGLE.x, Dest.EQ_TOGGLE.y, 23, 12) {
             s.eqVisible = !s.eqVisible
-            if (s.eqVisible) s.raiseWindow("eq")
+            if (s.eqVisible) s.raiseWindow(WindowStore.EQ)
         },
         button("main.plToggle", Dest.PL_TOGGLE.x, Dest.PL_TOGGLE.y, 23, 12) {
             s.plVisible = !s.plVisible
-            if (s.plVisible) s.raiseWindow("pl")
+            if (s.plVisible) s.raiseWindow(WindowStore.PLAYLIST)
         },
         button("main.prev", Dest.PREV.x, Dest.PREV.y, 23, 18, onTap = vm::previous),
         button("main.play", Dest.PLAY.x, Dest.PLAY.y, 23, 18) { playOrOpen(s.playlist, vm::play) { onOpenFile(true) } },

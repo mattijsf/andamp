@@ -4,7 +4,7 @@ package nl.mattix.andamp.ui.window
 
 import android.app.Application
 import android.view.View
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
@@ -64,7 +64,9 @@ class WindowScreenSpaceTest {
         var view: View? = null
         compose.setContent {
             view = LocalView.current
-            Box(Modifier.fillMaxSize()) {
+            BoxWithConstraints(Modifier.fillMaxSize()) {
+                val screenW = constraints.maxWidth / SCALE
+                val screenH = constraints.maxHeight / SCALE
                 FloatingSkinWindow(
                     id = WindowStore.MAIN,
                     state = vm.state,
@@ -72,7 +74,7 @@ class WindowScreenSpaceTest {
                     width = mainW,
                     height = mainH,
                     offset = vm.state.mainOffset,
-                    defaultOffset = IntOffset.Zero,
+                    docked = null,
                     onMove = { vm.state.mainOffset = it },
                     titleH = TITLE_BAR_H,
                     widgets = emptyList(),
@@ -86,7 +88,8 @@ class WindowScreenSpaceTest {
                     width = mainW,
                     height = mainH,
                     offset = vm.state.eqOffset,
-                    defaultOffset = IntOffset(0, mainH),
+                    // flush under the centered player
+                    docked = IntOffset((screenW - mainW) / 2, (screenH - mainH) / 2 + mainH),
                     onMove = { vm.state.eqOffset = it },
                     titleH = TITLE_BAR_H,
                     widgets = emptyList(),

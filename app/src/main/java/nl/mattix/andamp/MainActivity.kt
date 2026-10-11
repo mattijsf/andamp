@@ -3,7 +3,7 @@
 package nl.mattix.andamp
 
 import android.content.Intent
-import android.content.pm.ActivityInfo
+import android.content.res.Configuration
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -37,16 +37,8 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        // Upright on a phone, where the player is a column as wide as the screen; any way round on
-        // a tablet or a Chromebook, where playerScale fits the stack to the height. Set here
-        // because the manifest can only lock every screen or none.
-        requestedOrientation =
-            if (resources.configuration.smallestScreenWidthDp >= LARGE_SCREEN_DP) {
-                ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-            } else {
-                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-            }
         super.onCreate(savedInstanceState)
+        player.state.sideways = resources.configuration.isSideways()
         enableEdgeToEdge()
         // museum thumbnails: memory for this session, disk for the next one
         SkinThumbnails.install(applicationContext)
@@ -84,6 +76,16 @@ class MainActivity : ComponentActivity() {
                 },
             )
         }
+    }
+
+    /**
+     * The manifest keeps this activity through a turn of the phone, so the turn arrives
+     * here instead of as a new activity. Told before the next layout, the windows come up
+     * in the arrangement for the new way round at once.
+     */
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        player.state.sideways = newConfig.isSideways()
     }
 
     /**
@@ -196,8 +198,8 @@ class MainActivity : ComponentActivity() {
 
         /** The page of that screen, where it has pages. */
         const val GO_TO_PAGE = "nl.mattix.andamp.go_to_page"
-
-        /** Android's line between a phone and a tablet: 600dp on the shorter side. */
-        const val LARGE_SCREEN_DP = 600
     }
 }
+
+/** Whether the screen is wider than it is tall, which is the phone held sideways. */
+private fun Configuration.isSideways() = orientation == Configuration.ORIENTATION_LANDSCAPE

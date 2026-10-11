@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
 import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.WinampState
@@ -39,8 +40,8 @@ fun PlaylistFloatWindow(
     skin: Skin,
     scale: Int,
     actions: PlaylistMenuActions,
-    /** The row the stack ends on: where the playlist sits until it is moved. */
-    dockedTop: Int,
+    /** Its top-left corner until it is moved; see [FloatingSkinWindow]. */
+    docked: IntOffset,
     /** How tall it is while it has never been resized: the rest of the screen. */
     dockedSegments: Int,
     modifier: Modifier = Modifier,
@@ -59,8 +60,7 @@ fun PlaylistFloatWindow(
         val screen = windowScreen(scale, s)
         val segments = wanted
         // the width is limited to the screen's
-        val maxCols = ((screen.width - PL_W) / PlaylistLayout.WIDTH_STEP).coerceAtLeast(0)
-        val cols = s.plCols.coerceIn(0, maxCols)
+        val cols = PlaylistLayout.WIDTH_STEPS.clamp(s.plCols, screen.width)
         val layout =
             pinned?.let { PlaylistLayout(it.height, it.width) }
                 ?: PlaylistLayout.ofSegments(segments, PlaylistLayout.widthOfCols(cols))
@@ -74,14 +74,11 @@ fun PlaylistFloatWindow(
         // Where the top edge is asking to be: under the stack while the window has never
         // been moved, and otherwise the row its offset puts it on. Offsets are
         // center-relative, so the row depends on the height it is drawn at.
-        val topWanted = s.plOffset?.let { (screen.height - height) / 2 + it.y } ?: dockedTop
+        val topWanted = s.plOffset?.let { screen.topLeftOf(it, IntSize(layout.width, height)).y } ?: docked.y
         // What the grip may ask for: what fits under this window's own top edge. The
         // drawn height is not capped by where the window is; a window may hang off the
         // bottom as long as its title bar stays inside the safe area.
         val maxSegments = PlaylistLayout.segmentsThatFit((screen.safeBottom - topWanted).coerceAtLeast(0))
-        // the docked place is a row; its center-relative offset is computed for the
-        // height the playlist has now
-        val docked = IntOffset(0, dockedTop - (screen.height - height) / 2)
         val widgets =
             remember(vm, layout, actions) {
                 playlistWidgets(
@@ -111,16 +108,16 @@ fun PlaylistFloatWindow(
             width = layout.width,
             height = height,
             offset = s.plOffset,
-            defaultOffset = docked,
+            docked = docked,
             onMove = { place -> s.plOffset = place },
             titleH = Dest.PL_TOP_H,
             widgets = widgets,
             onResizeRaw = { grab ->
-                resizeTo(s, grab, cols, maxCols, segments, maxSegments, screen.width, screen.height)
+                resizeTo(s, grab, cols, segments, maxSegments, screen)
             },
             onTitleDoubleTap = { s.setShaded(WindowStore.PLAYLIST, true, height) },
             cut = SkinCut(skin),
-            pinnedAt = pinned?.topLeft,
+            pinned = pinned,
             modifier = Modifier.matchParentSize(),
         ) {
             drawPlaylistWindow(skin, s, layout, text, scale)
@@ -137,17 +134,14 @@ private fun resizeTo(
     s: WinampState,
     grab: WindowGrab,
     cols: Int,
-    maxCols: Int,
     segments: Int,
     maxSegments: Int,
-    screenW: Int,
-    screenH: Int,
+    screen: WindowScreen,
 ) {
     val resized =
         WindowSizing.resize(
             grab,
-            screenW = screenW,
-            screenH = screenH,
+            screen,
             heightAxis =
                 SizeAxis(
                     furniture = PlaylistLayout.FURNITURE_H,
@@ -157,14 +151,7 @@ private fun resizeTo(
                     current = segments,
                 ),
             heightOf = { asked -> PlaylistLayout.ofSegments(asked).height },
-            widthAxis =
-                SizeAxis(
-                    furniture = PL_W,
-                    step = PlaylistLayout.WIDTH_STEP,
-                    min = 0,
-                    max = maxCols,
-                    current = cols,
-                ),
+            widthAxis = PlaylistLayout.WIDTH_STEPS.axis(cols, screen.width),
             widthOf = PlaylistLayout::widthOfCols,
         )
     s.plCols = resized.cols

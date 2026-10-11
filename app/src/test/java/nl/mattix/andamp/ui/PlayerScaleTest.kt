@@ -24,6 +24,15 @@ class PlayerScaleTest {
     }
 
     @Test
+    fun `a phone held sideways fits the player and the equalizer with the playlist beside them`() {
+        // the same phones as above, on their sides, under their status bars
+        assertEquals(4, playerScale(2424, 1080 - 75, sideways = true))
+        assertEquals(3, playerScale(2142, 960 - 70, sideways = true))
+        assertEquals(2, playerScale(1600, 720 - 48, sideways = true))
+        assertTrue(SIDEWAYS_STACK_W * 4 <= 2424 && SIDEWAYS_STACK_H * 4 <= 1080 - 75)
+    }
+
+    @Test
     fun `a desktop floats the player rather than filling the screen with it`() {
         assertEquals(3, playerScale(2560, 1440 - 48))
         assertEquals(2, playerScale(1920, 1080 - 32))
@@ -49,6 +58,18 @@ class PlayerScaleTest {
         assertEquals(4, viewport.scale)
         assertEquals(MAIN_W * 4, viewport.inner(1080))
         assertEquals(1080f / 1100f, viewport.shrink, 0f)
+    }
+
+    @Test
+    fun `filling a phone on its side fits two columns above the system's strip`() {
+        // a 1080x2424 phone on its side: 75 px of status bar above, 63 px of gesture strip below
+        val viewport = playerViewport(2424, 1080 - 75, fillScreen = true, sideways = true, bottomInsetPx = 63)
+
+        // the height decides: 942 px for 232 rows is scale 5 shrunk to fit
+        assertEquals(5, viewport.scale)
+        assertEquals(942f / (SIDEWAYS_STACK_H * 5), viewport.shrink, 0f)
+        assertTrue("two columns fit across", viewport.inner(2424) / viewport.scale >= SIDEWAYS_STACK_W)
+        assertEquals("the stack ends on the strip", SIDEWAYS_STACK_H, viewport.inner(942) / viewport.scale)
     }
 
     @Test

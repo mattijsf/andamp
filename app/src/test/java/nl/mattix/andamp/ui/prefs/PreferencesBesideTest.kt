@@ -3,6 +3,10 @@
 package nl.mattix.andamp.ui.prefs
 
 import android.app.Application
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotSelected
@@ -12,6 +16,8 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -63,20 +69,62 @@ class PreferencesBesideTest {
         override fun setDsp(rack: RackSettings) = Unit
     }
 
+    /** How wide the screen is, as a turn of the phone changes it; null is the window's own width. */
+    private val width = mutableStateOf<Dp?>(null)
+
     private fun show(arrival: PrefsArrival = PrefsArrival()) {
         val facade = PlayerFacade(EffectBackend(scope))
         val dsp = DspOps(app, facade)
         compose.setContent {
-            PreferencesPage(
-                access = LibraryAccess.GRANTED,
-                dsp = dsp,
-                plugins = PluginOps(app, facade, dsp, scope),
-                onRequestAccess = {},
-                onPickPlugin = {},
-                onClose = {},
-                arrival = arrival,
-            )
+            Box(width.value?.let { Modifier.requiredWidth(it) } ?: Modifier) {
+                PreferencesPage(
+                    access = LibraryAccess.GRANTED,
+                    dsp = dsp,
+                    plugins = PluginOps(app, facade, dsp, scope),
+                    onRequestAccess = {},
+                    onPickPlugin = {},
+                    onClose = {},
+                    arrival = arrival,
+                )
+            }
         }
+    }
+
+    /** The phone turned upright: too narrow for the list to stay beside a page. */
+    private fun turnUpright() {
+        width.value = 600.dp
+        compose.waitForIdle()
+    }
+
+    private fun turnSideways() {
+        width.value = null
+        compose.waitForIdle()
+    }
+
+    @Test
+    fun `turned upright, the page that was beside the list has the list under it`() {
+        show()
+        tag("prefs.open.dsp").performClick()
+
+        turnUpright()
+
+        tag("prefs.plugins.manage").performScrollTo().assertIsDisplayed()
+        tag("prefs.back").assertIsDisplayed()
+        tag("prefs.back").performClick()
+        tag("prefs.open.dsp").assertIsDisplayed()
+    }
+
+    @Test
+    fun `turned sideways, the page opened from the list stands beside it with nothing under`() {
+        width.value = 600.dp
+        show()
+        tag("prefs.open.dsp").performClick()
+
+        turnSideways()
+
+        tag("prefs.plugins.manage").performScrollTo().assertIsDisplayed()
+        tag("prefs.open.dsp").assertIsSelected()
+        noBack()
     }
 
     private fun tag(value: String) = compose.onNodeWithTag(value, useUnmergedTree = true)

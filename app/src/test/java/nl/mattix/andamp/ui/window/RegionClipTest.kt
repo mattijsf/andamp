@@ -78,7 +78,7 @@ class RegionClipTest {
                     SCALE,
                     widgets = mainWindowWidgets(vm, onExit = {}) {},
                     height = MAIN_H,
-                    defaultOffset = IntOffset.Zero,
+                    docked = IntOffset.Zero,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

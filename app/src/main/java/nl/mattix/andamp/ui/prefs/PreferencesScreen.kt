@@ -351,6 +351,7 @@ fun PreferencesPage(
         LaunchedEffect(beside, here, arrival.page) {
             if (beside && here == PrefsPage.ROOT && arrival.page == null) open(PrefsPage.PHONE.route)
         }
+        KeepStackInShape(pages, beside, here, list = PrefsPage.ROOT, open = open)
         Surface(Modifier.fillMaxSize()) {
             Scaffold(
                 snackbarHost = { SnackbarHost(snackbars) },

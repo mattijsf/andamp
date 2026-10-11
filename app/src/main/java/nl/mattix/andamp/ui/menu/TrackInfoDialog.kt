@@ -56,7 +56,11 @@ fun TrackInfoBody(
                 fontWeight = FontWeight.SemiBold,
                 modifier = Modifier.padding(bottom = GAP).testTag("info.heading"),
             )
-            LazyColumn(Modifier.heightIn(max = LIST_MAX), verticalArrangement = Arrangement.spacedBy(ROW_GAP)) {
+            // no taller than the screen leaves for it: the button under it stays in reach
+            LazyColumn(
+                Modifier.weight(1f, fill = false).heightIn(max = LIST_MAX),
+                verticalArrangement = Arrangement.spacedBy(ROW_GAP),
+            ) {
                 items(info.lines) { line ->
                     Row(Modifier.fillMaxWidth().testTag("info.${line.label}")) {
                         Text(

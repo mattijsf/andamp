@@ -56,8 +56,7 @@ fun SkinManagerWindow(
         val screen = windowScreen(scale, s)
         val fits = SkinManagerLayout.rowsThatFit(screen.safeBottom, frame)
         // the width is limited to the screen's
-        val maxCols = ((screen.width - SkinManagerLayout.WIDTH) / SkinManagerLayout.WIDTH_STEP).coerceAtLeast(0)
-        val cols = s.skinCols.coerceIn(0, maxCols)
+        val cols = SkinManagerLayout.WIDTH_STEPS.clamp(s.skinCols, screen.width)
         // capped at what fits; with no stored size it uses DEFAULT_ROWS
         val rows =
             (s.skinRows ?: SkinManagerLayout.DEFAULT_ROWS)
@@ -80,13 +79,12 @@ fun SkinManagerWindow(
                     onMove = { place -> s.skinManagerOffset = place },
                     onClose = { s.skinManagerOpen = false },
                     id = WindowStore.SKINS,
-                    pinnedAt = pinned?.topLeft,
+                    pinned = pinned,
                     onResizeRaw = { grab ->
                         val resized =
                             WindowSizing.resize(
                                 grab,
-                                screenW = screen.width,
-                                screenH = screen.height,
+                                screen,
                                 heightAxis =
                                     SizeAxis(
                                         furniture = SkinManagerLayout.furnitureH(frame),
@@ -96,14 +94,7 @@ fun SkinManagerWindow(
                                         current = layout.visibleRows,
                                     ),
                                 heightOf = { rows -> SkinManagerLayout(rows).height(frame) },
-                                widthAxis =
-                                    SizeAxis(
-                                        furniture = SkinManagerLayout.WIDTH,
-                                        step = SkinManagerLayout.WIDTH_STEP,
-                                        min = 0,
-                                        max = maxCols,
-                                        current = cols,
-                                    ),
+                                widthAxis = SkinManagerLayout.WIDTH_STEPS.axis(cols, screen.width),
                                 widthOf = SkinManagerLayout::widthOfCols,
                             )
                         s.skinCols = resized.cols

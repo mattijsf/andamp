@@ -6,6 +6,7 @@ import android.app.Application
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -60,6 +61,8 @@ class PinnedWindowParityTest(
     fun setUp() {
         skin = SkinLoader.loadBase(app)
         vm = testViewModel()
+        // the layout holds the windows while Double Size is on: what a held grip changes is that workspace's
+        vm.doubleSize.on = true
         case.open(vm)
         pinned = IntRect(LEFT, TOP, LEFT + MAIN_W, TOP + case.height(skin))
         floatingLayout = placesOf(stored())
@@ -70,10 +73,13 @@ class PinnedWindowParityTest(
     }
 
     /** Every window's placement as the store would save it. */
-    private fun stored() = WindowStore.WINDOWS.map { vm.state.placementOf(it)?.asMemory() }
+    private fun stored() = WindowStore.WINDOWS.map { vm.state.placementOf(it).asMemory() }
 
-    /** Where and how large each window floats: a placement without whether it is collapsed. */
-    private fun placesOf(placements: List<WindowPlacement?>) = placements.map { it?.copy(shaded = false) }
+    /** Where and how large each window floats: the floating workspaces' arrangements, collapsed or not. */
+    private fun placesOf(placements: List<WindowPlacement?>) =
+        placements.map { placement ->
+            placement?.arrangements?.filterKeys { !it.locked }?.mapValues { (_, it) -> it.copy(shaded = false) }
+        }
 
     private fun rect(): IntRect = vm.state.windowRects[case.id] ?: error("${case.label} never published a rectangle")
 
@@ -165,9 +171,9 @@ class PinnedWindowParityTest(
                         scale,
                         widgets = mainWindowWidgets(vm) {},
                         height = MAIN_H,
-                        defaultOffset = IntOffset.Zero,
+                        docked = IntOffset.Zero,
                         modifier = Modifier.fillMaxSize(),
-                        pinnedAt = pinned.topLeft,
+                        pinned = pinned,
                     )
                 },
                 PinnedCase(WindowStore.EQ, "equalizer", height = { EQ_H }, shades = true) { vm, skin, scale, pinned, _ ->
@@ -177,9 +183,9 @@ class PinnedWindowParityTest(
                         scale,
                         widgets = eqWindowWidgets(vm),
                         height = EQ_H,
-                        defaultOffset = IntOffset.Zero,
+                        docked = IntOffset.Zero,
                         modifier = Modifier.fillMaxSize(),
-                        pinnedAt = pinned.topLeft,
+                        pinned = pinned,
                     )
                 },
                 PinnedCase(
@@ -193,7 +199,7 @@ class PinnedWindowParityTest(
                         skin,
                         scale,
                         PlaylistMenuActions(),
-                        dockedTop = 0,
+                        docked = IntOffset.Zero,
                         dockedSegments = PlaylistLayout.MIN_SEGMENTS,
                         modifier = Modifier.fillMaxSize(),
                         pinned = pinned,
@@ -211,9 +217,9 @@ class PinnedWindowParityTest(
                         skin,
                         scale,
                         expandedH = PlaylistLayout.ofSegments(PlaylistLayout.MIN_SEGMENTS).height,
-                        defaultOffset = IntOffset.Zero,
+                        docked = IntOffset.Zero,
                         modifier = Modifier.fillMaxSize(),
-                        pinnedAt = pinned.topLeft,
+                        pinned = pinned,
                     )
                 },
                 PinnedCase(
@@ -227,10 +233,14 @@ class PinnedWindowParityTest(
                         vm,
                         skin,
                         scale,
-                        defaultOffset = IntOffset.Zero,
+                        docked = IntOffset.Zero,
                         modifier = Modifier.fillMaxSize(),
-                        pinned = PinnedVisual(pinned, maxSteps = VIS_MAX_STEPS, onSteps = onSteps),
+                        pinned = pinned,
+                        visMaxSteps = VIS_MAX_STEPS,
                     )
+                    // held, the grip writes the stack's height into the state; the case hears it from there
+                    val steps = vm.state.milkdropSteps
+                    LaunchedEffect(steps) { steps?.let(onSteps) }
                 },
                 PinnedCase(
                     WindowStore.SKINS,

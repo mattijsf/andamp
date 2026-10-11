@@ -14,6 +14,7 @@ import nl.mattix.andamp.skin.SkinLoader
 import nl.mattix.andamp.state.LibraryAccess
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
+import nl.mattix.andamp.state.Workspace
 import nl.mattix.andamp.ui.window.BIG_WINDOW
 import nl.mattix.andamp.ui.window.EQ_H
 import nl.mattix.andamp.ui.window.MAIN_H
@@ -100,8 +101,15 @@ class DoubleSizeSurfaceTest {
         y: Int,
     ) = Offset(x * FILLED_PIXEL + 1f, y * FILLED_PIXEL + 1f)
 
-    /** The floating layout as the store would save it: every window's placement, and their order. */
-    private fun floatingLayout() = WindowStore.WINDOWS.map { vm.state.placementOf(it)?.asMemory() } to vm.state.windowOrder
+    /** The floating workspace as the store would save it: every window's arrangement, and their order. */
+    private fun floatingLayout() =
+        WindowStore.WINDOWS.map {
+            vm.state
+                .placementOf(it)
+                ?.asMemory()
+                ?.of(Workspace.FLOATING)
+        } to
+            vm.state.orderOf(Workspace.FLOATING)
 
     @Test
     fun `the player, the equalizer and the playlist fill the screen from top to bottom`() {
@@ -221,8 +229,19 @@ class DoubleSizeSurfaceTest {
             IntRect(0, after.bottom, MAIN_W, vm.state.safeBottom),
             rect(WindowStore.PLAYLIST),
         )
-        assertNotNull(vm.doubleSize.visSteps)
-        assertNull("the height it floats at is not stored", vm.state.milkdropSteps)
+        assertNotNull(
+            vm.state
+                .placementOf(WindowStore.MILKDROP)!!
+                .of(Workspace.LOCKED)
+                .size,
+        )
+        assertNull(
+            "the height it floats at is not touched",
+            vm.state
+                .placementOf(WindowStore.MILKDROP)!!
+                .of(Workspace.FLOATING)
+                .size,
+        )
     }
 
     @Test

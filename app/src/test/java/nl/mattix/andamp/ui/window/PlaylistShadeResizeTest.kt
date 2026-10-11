@@ -57,7 +57,7 @@ class PlaylistShadeResizeTest {
                     skin,
                     SCALE,
                     expandedH = 116,
-                    defaultOffset = IntOffset(0, 0),
+                    docked = IntOffset.Zero,
                     modifier = Modifier.fillMaxSize(),
                 )
             }

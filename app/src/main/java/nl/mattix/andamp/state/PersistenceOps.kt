@@ -189,11 +189,12 @@ class PersistenceOps(
         }
     }
 
-    /** The current layout, as [WindowStore] stores it. */
+    /** Every workspace's layout, as [WindowStore] stores it. */
     private fun windowMemory(): WindowLayoutMemory =
         WindowLayoutMemory(
-            placements = WindowStore.WINDOWS.associateWith { id -> state.placementOf(id)?.asMemory() ?: WindowPlacement() },
-            order = state.windowOrder,
+            placements = WindowStore.WINDOWS.associateWith { id -> state.placementOf(id).asMemory() },
+            orders = Workspace.entries.associateWith { state.orderOf(it) },
+            columns = Workspace.entries.filter { it.locked }.associateWith { state.columnsOf(it) },
         )
 
     /**
@@ -202,14 +203,22 @@ class PersistenceOps(
      */
     private fun restoreWindows() {
         val memory = windowStore.load()
-        WindowStore.WINDOWS.forEach { id -> state.placementOf(id)?.restore(memory.placementOf(id)) }
+        WindowStore.WINDOWS.forEach { id -> state.placementOf(id).restore(memory.placementOf(id)) }
         // a playlist with no stored size fills what is left of the screen; a fresh install
-        // starts smaller
-        if (memory.firstRun) state.plSegments = WindowStore.PLAYLIST_START_SEGMENTS
+        // starts smaller when the phone is upright. Sideways there is little room under the
+        // player, and filling it is right.
+        if (memory.firstRun) {
+            state.placementOf(WindowStore.PLAYLIST).of(Workspace.FLOATING).size = WindowStore.PLAYLIST_START_SEGMENTS
+        }
         // a stored order may name fewer windows than this build has (an upgrade); the ones
         // it does not mention are appended after it
-        if (memory.order.isNotEmpty()) {
-            state.windowOrder = memory.order + state.windowOrder.filterNot { it in memory.order }
+        Workspace.entries.forEach { workspace ->
+            val stored = memory.orderOf(workspace)
+            if (stored.isNotEmpty()) state.setOrder(workspace, stored + state.orderOf(workspace).filterNot { it in stored })
+        }
+        // made whole, for a column that names a window this build does not have, or misses one
+        Workspace.entries.filter { it.locked }.forEach { workspace ->
+            state.setColumns(workspace, LockedColumns.normalize(memory.columnsOf(workspace), workspace.sideways))
         }
         savedWindows = windowMemory()
     }

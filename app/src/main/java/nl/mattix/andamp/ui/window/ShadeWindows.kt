@@ -2,7 +2,6 @@
 
 package nl.mattix.andamp.ui.window
 
-import androidx.compose.ui.unit.IntOffset
 import nl.mattix.andamp.core.model.durationSec
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WindowStore
@@ -16,15 +15,6 @@ import nl.mattix.andamp.state.WindowStore
  * rectangles with no pressed art.
  */
 const val SHADE_H = 14
-
-/**
- * The center-relative offset that puts the top edge of a window [height] tall on [row].
- */
-fun dockedOffset(
-    row: Int,
-    height: Int,
-    screenH: Int,
-) = IntOffset(0, row - (screenH - height) / 2)
 
 /** A window's height, given whether it is collapsed. */
 fun heightOf(
@@ -76,17 +66,13 @@ fun WinampState.setShaded(
     val oldH = heightOf(expandedH, was)
     val newH = heightOf(expandedH, shaded)
     if (!doubleSize) {
-        val offset = offsetInState(id)
+        val offset = placementOf(id).offset
         if (offset != null && screenH > 0) {
             placeWindow(id, WindowSizing.anchorTop(offset, oldH = oldH, newH = newH, screenH = screenH))
         }
         carryDockedBelow(id, newH - oldH)
     }
-    when (id) {
-        WindowStore.MAIN -> mainShaded = shaded
-        WindowStore.EQ -> eqShaded = shaded
-        WindowStore.PLAYLIST -> plShaded = shaded
-    }
+    placementOf(id).shaded = shaded
 }
 
 /**
@@ -100,10 +86,4 @@ fun WinampState.unshadeEverything(playlistExpandedH: Int) {
 }
 
 /** Whether [id] is collapsed right now. */
-fun WinampState.isShaded(id: String) =
-    when (id) {
-        WindowStore.MAIN -> mainShaded
-        WindowStore.EQ -> eqShaded
-        WindowStore.PLAYLIST -> plShaded
-        else -> false
-    }
+fun WinampState.isShaded(id: String) = placementOf(id).shaded ?: false

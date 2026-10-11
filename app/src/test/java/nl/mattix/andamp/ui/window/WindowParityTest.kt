@@ -232,7 +232,7 @@ class WindowCase(
                         scale,
                         widgets = mainWindowWidgets(vm, onExit = onClose) {},
                         height = MAIN_H,
-                        defaultOffset = IntOffset.Zero,
+                        docked = IntOffset.Zero,
                         modifier = Modifier.fillMaxSize(),
                     )
                 },
@@ -243,7 +243,7 @@ class WindowCase(
                         scale,
                         widgets = eqWindowWidgets(vm),
                         height = EQ_H,
-                        defaultOffset = IntOffset(0, MAIN_H),
+                        docked = IntOffset(0, MAIN_H),
                         modifier = Modifier.fillMaxSize(),
                     )
                     CloseWatch(vm, onClose) { !it.state.eqVisible }
@@ -259,7 +259,7 @@ class WindowCase(
                         skin,
                         scale,
                         PlaylistMenuActions(),
-                        dockedTop = 0,
+                        docked = IntOffset.Zero,
                         dockedSegments = PlaylistLayout.MIN_SEGMENTS + 2,
                         modifier = Modifier.fillMaxSize(),
                     )
@@ -272,7 +272,7 @@ class WindowCase(
                     widthResizable = true,
                     open = { it.state.milkdropOn = true },
                 ) { vm, skin, scale, onClose ->
-                    MilkdropWindow(vm, skin, scale, defaultOffset = IntOffset.Zero, modifier = Modifier.fillMaxSize())
+                    MilkdropWindow(vm, skin, scale, docked = IntOffset.Zero, modifier = Modifier.fillMaxSize())
                     CloseWatch(vm, onClose) { !it.state.milkdropOn }
                 },
                 WindowCase(

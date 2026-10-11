@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.ui.ScaledWindowCanvas
 import nl.mattix.andamp.ui.SkinCut
@@ -32,9 +33,10 @@ import nl.mattix.andamp.ui.widget.Widget
  * With [dragsGroup], dragging it takes the windows docked to it along, as Winamp's player
  * does.
  *
- * With [pinnedAt] the layout holds the window: it is drawn there, a drag does not move it
- * and [onMove] is never called, so the place it floats at is kept as it was. It has no
- * resize grip either, unless it asks to keep it with [pinnedGrip].
+ * With [pinned] the layout holds the window: it is drawn there and [onMove] is never
+ * called, so the place it floats at is kept as it was. A drag lifts it instead
+ * ([WinampState.liftWindow]): the layout reorders around it and drops it into the slot it
+ * is over. It has no resize grip either, unless it asks to keep it with [pinnedGrip].
  */
 @Composable
 @Suppress("LongParameterList") // a window: its identity, its size, its place, its contents
@@ -46,8 +48,8 @@ fun FloatingSkinWindow(
     height: Int,
     /** Where it sits; null while it has never been moved. */
     offset: IntOffset?,
-    /** Where the layout puts it until then. */
-    defaultOffset: IntOffset,
+    /** Its top-left corner until then, in virtual px; null for the middle of the screen. */
+    docked: IntOffset?,
     onMove: (IntOffset) -> Unit,
     /** The height of the title bar, the part that has to stay reachable on screen. */
     titleH: Int,
@@ -73,8 +75,8 @@ fun FloatingSkinWindow(
      * canvas applies it to both the art and the touches.
      */
     cut: SkinCut? = null,
-    /** Where the layout holds this window's top-left corner, in virtual pixels, or null while it floats. */
-    pinnedAt: IntOffset? = null,
+    /** The rectangle the layout holds this window in, in virtual pixels, or null while it floats. */
+    pinned: IntRect? = null,
     /** Whether a pinned window keeps its grip; what a drag on it does is then [onResizeRaw]'s to decide. */
     pinnedGrip: Boolean = false,
     modifier: Modifier = Modifier,
@@ -85,7 +87,6 @@ fun FloatingSkinWindow(
     val resize = remember { WindowResize() }
     val group = remember { GroupDrag() }
     val onMoveNow by rememberUpdatedState(onMove)
-    val defaultNow by rememberUpdatedState(defaultOffset)
     val offsetNow by rememberUpdatedState(offset)
     val onResizeNow by rememberUpdatedState(onResizeRaw)
     val onDoubleTapNow by rememberUpdatedState(onTitleDoubleTap)
@@ -94,69 +95,74 @@ fun FloatingSkinWindow(
     val density = LocalDensity.current
     // a fingertip in this window's virtual pixels, however large those are drawn
     val loupe = rememberLoupe(id, state, Loupe.Edge.of(density.density / scale), draw) { widgetsNow }
-    val pinned = pinnedAt != null
-    val resizable = onResizeRaw != null && (!pinned || pinnedGrip)
+    val held = pinned != null
+    val resizable = onResizeRaw != null && (!held || pinnedGrip)
     val shadeable = onTitleDoubleTap != null
-
-    fun place() = offsetNow ?: defaultNow
-
-    val chrome =
-        remember(id, width, height, titleH, dragsGroup, resizable, shadeable, gripAt, onLongPress != null, pinned) {
-            windowChromeWidget(
-                id = "$id.chrome",
-                bounds = IntRect(0, 0, width, height),
-                grip = if (resizable) gripOf(gripAt, width, height) else null,
-                drag = drag,
-                resize = resize,
-                offsetNow = { place() },
-                heightNow = { height },
-                onMove = { place, _ ->
-                    // a pinned window takes the drag and stays where the layout holds it
-                    if (!pinned) {
-                        onMoveNow(place)
-                        // measured from where the drag began, so the carried windows do not
-                        // drift from it event by event
-                        if (dragsGroup) {
-                            group.carry(state, id, IntOffset(place.x - drag.origin.x, place.y - drag.origin.y))
-                        }
-                    }
-                },
-                onResize = { grab -> onResizeNow?.invoke(grab) },
-                titleH = titleH,
-                onTitleDoubleTap = if (shadeable) ({ onDoubleTapNow?.invoke() }) else null,
-                siblings = { widgetsNow },
-                onLongPress = if (onLongPress != null) ({ onLongPressNow?.invoke() }) else null,
-                onEnd = { group.release() },
-            )
-        }
-    val allWidgets = remember(chrome, widgets) { listOf(chrome) + widgets }
 
     BoxWithConstraints(modifier) {
         val screen = windowScreen(scale, state)
-        val screenW = screen.width
-        val screenH = screen.height
-        val safeBottom = screen.safeBottom
-        val safeTop = screen.safeTop
-        val settleTo: (IntOffset, Boolean) -> IntOffset = { asked, escaped ->
+        val size = IntSize(width, height)
+        // the docked corner is a place on the screen; the window's own place is an offset
+        val dockedNow by rememberUpdatedState(docked?.let { screen.offsetOf(it, size) } ?: IntOffset.Zero)
+
+        fun place() = offsetNow ?: dockedNow
+
+        val chrome =
+            remember(id, width, height, titleH, dragsGroup, resizable, shadeable, gripAt, onLongPress != null, held) {
+                windowChromeWidget(
+                    id = "$id.chrome",
+                    bounds = IntRect(0, 0, width, height),
+                    grip = if (resizable) gripOf(gripAt, width, height) else null,
+                    drag = drag,
+                    resize = resize,
+                    offsetNow = { place() },
+                    heightNow = { height },
+                    onMove = { place, travelled ->
+                        if (held) {
+                            // a drag lifts a held window out of the layout, which decides where it goes
+                            state.liftWindow(id, travelled)
+                        } else {
+                            onMoveNow(place)
+                            // measured from where the drag began, so the carried windows do not
+                            // drift from it event by event
+                            if (dragsGroup) group.carry(state, id, travelled)
+                        }
+                    },
+                    onResize = { grab -> onResizeNow?.invoke(grab) },
+                    titleH = titleH,
+                    onTitleDoubleTap = if (shadeable) ({ onDoubleTapNow?.invoke() }) else null,
+                    siblings = { widgetsNow },
+                    onLongPress = if (onLongPress != null) ({ onLongPressNow?.invoke() }) else null,
+                    // every drag works its group out afresh: a gesture cut short by a turn of
+                    // the phone, whose up never arrives, must not leave its group behind
+                    onStart = { group.release() },
+                    onEnd = {
+                        group.release()
+                        state.dropWindow()
+                    },
+                )
+            }
+        val allWidgets = remember(chrome, widgets) { listOf(chrome) + widgets }
+
+        val settleTo: (IntOffset, Boolean) -> IntOffset = settled@{ asked, escaped ->
+            // a held window neither docks nor is kept in reach: it follows the finger, and
+            // the layout places it
+            if (held) return@settled asked
             // the group is worked out before the first move, because the window must not
             // dock to what it is about to carry
             val carried = if (dragsGroup) group.ensure(state, id) else emptySet()
-            val luggage = carried.mapNotNull { member -> state.windowRects[member]?.let { member to it } }
             settle(
                 asked,
-                width,
-                height,
-                screenW,
-                screenH,
-                safeTop,
-                safeBottom,
+                size,
+                screen,
                 titleH,
                 neighbours = state.neighboursOf(id, carried),
                 escaped = escaped,
-                // a group docks by its outer edges
-                carried = luggage.map { it.second },
-                carriedHandles = luggage.map { state.windowHandles[it.first] ?: titleH },
                 anchorNow = state.windowRects[id],
+                carried =
+                    carried.mapNotNull { member ->
+                        state.windowRects[member]?.let { CarriedWindow(it, state.windowHandles[member] ?: titleH) }
+                    },
             )
         }
         SideEffect {
@@ -166,20 +172,9 @@ fun FloatingSkinWindow(
             // from there
             drag.syncToLayout()
         }
-        // a pinned window is where the layout says, with nothing to keep in reach
-        val bounded =
-            pinnedAt?.let { offsetOfTopLeft(it, width, height, screenW, screenH) }
-                ?: WindowBounds.clamp(
-                    place(),
-                    width,
-                    height,
-                    screenW,
-                    screenH,
-                    titleH,
-                    safeTop = safeTop,
-                    safeBottom = safeBottom,
-                )
-        val rect = rectOf(bounded, width, height, screenW, screenH)
+        // a held window is where the layout says, with nothing to keep in reach
+        val bounded = pinned?.let { screen.offsetOf(it.topLeft, size) } ?: WindowBounds.clamp(place(), size, screen, titleH)
+        val rect = screen.rectOf(bounded, size)
         SideEffect { state.windowRects[id] = rect }
         DisposableEffect(id) {
             onDispose {
@@ -187,10 +182,10 @@ fun FloatingSkinWindow(
                 state.windowHandles.remove(id)
             }
         }
-        Box(
-            Modifier
-                .offset { devicePlacementOf(bounded, width, height, screenW, screenH, scale) },
-        ) {
+        // centered in virtual pixels and scaled after: Alignment.Center rounds in device
+        // pixels, which would put the drawn window a pixel away from the rectangle other
+        // windows dock against
+        Box(Modifier.offset { IntOffset(rect.left * scale, rect.top * scale) }) {
             ScaledWindowCanvas(
                 width,
                 height,

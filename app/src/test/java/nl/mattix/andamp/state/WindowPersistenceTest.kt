@@ -62,11 +62,14 @@ class WindowPersistenceTest {
             WindowLayoutMemory(
                 placements =
                     mapOf(
-                        WindowStore.PLAYLIST to WindowPlacement(x = 4, y = -20, size = 5),
-                        WindowStore.LIBRARY to WindowPlacement(x = -8, y = 12, size = 11),
-                        WindowStore.SKINS to WindowPlacement(x = 2, y = 2, size = null),
+                        WindowStore.PLAYLIST to
+                            WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(x = 4, y = -20, size = 5))),
+                        WindowStore.LIBRARY to
+                            WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(x = -8, y = 12, size = 11))),
+                        WindowStore.SKINS to
+                            WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(x = 2, y = 2, size = null))),
                     ),
-                order = listOf(WindowStore.PLAYLIST, WindowStore.SKINS, WindowStore.LIBRARY),
+                orders = mapOf(Workspace.FLOATING to listOf(WindowStore.PLAYLIST, WindowStore.SKINS, WindowStore.LIBRARY)),
             ),
         )
 
@@ -87,7 +90,7 @@ class WindowPersistenceTest {
 
     @Test
     fun `a stored stack that names only some windows keeps the rest`() {
-        WindowStore(app).save(WindowLayoutMemory(order = listOf(WindowStore.LIBRARY)))
+        WindowStore(app).save(WindowLayoutMemory(orders = mapOf(Workspace.FLOATING to listOf(WindowStore.LIBRARY))))
 
         val vm = player()
 
@@ -106,8 +109,8 @@ class WindowPersistenceTest {
         // the saver is debounced; Robolectric's clock has to be moved on for it
         await {
             // open too: a placement also says whether the window was on screen
-            WindowStore(app).load().placementOf(WindowStore.PLAYLIST) ==
-                WindowPlacement(1, 2, 7, open = true, shaded = false, cols = 0)
+            WindowStore(app).load().placementOf(WindowStore.PLAYLIST).of(Workspace.FLOATING) ==
+                WindowArrangement(1, 2, 7, shaded = false, cols = 0, open = true)
         }
 
         val next = player()
@@ -134,7 +137,10 @@ class WindowPersistenceTest {
     @Test
     fun `the visualizer window comes back the way it was left`() {
         WindowStore(app).save(
-            WindowLayoutMemory(placements = mapOf(WindowStore.MILKDROP to WindowPlacement(open = true))),
+            WindowLayoutMemory(
+                placements =
+                    mapOf(WindowStore.MILKDROP to WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(open = true)))),
+            ),
         )
 
         assertTrue("the visualizer window comes back open", player().state.milkdropOn)
@@ -143,7 +149,10 @@ class WindowPersistenceTest {
     @Test
     fun `a visualizer window that was closed stays closed`() {
         WindowStore(app).save(
-            WindowLayoutMemory(placements = mapOf(WindowStore.MILKDROP to WindowPlacement(open = false))),
+            WindowLayoutMemory(
+                placements =
+                    mapOf(WindowStore.MILKDROP to WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(open = false)))),
+            ),
         )
 
         assertEquals(false, player().state.milkdropOn)
@@ -155,9 +164,22 @@ class WindowPersistenceTest {
 
         vm.state.milkdropOn = true
 
-        await { WindowStore(app).load().placementOf(WindowStore.MILKDROP).open == true }
+        await {
+            WindowStore(app)
+                .load()
+                .placementOf(WindowStore.MILKDROP)
+                .of(Workspace.FLOATING)
+                .open == true
+        }
 
-        assertEquals(true, WindowStore(app).load().placementOf(WindowStore.MILKDROP).open)
+        assertEquals(
+            true,
+            WindowStore(app)
+                .load()
+                .placementOf(WindowStore.MILKDROP)
+                .of(Workspace.FLOATING)
+                .open,
+        )
     }
 
     @Test
@@ -183,8 +205,8 @@ class WindowPersistenceTest {
             WindowLayoutMemory(
                 placements =
                     mapOf(
-                        WindowStore.EQ to WindowPlacement(open = false),
-                        WindowStore.PLAYLIST to WindowPlacement(open = false),
+                        WindowStore.EQ to WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(open = false))),
+                        WindowStore.PLAYLIST to WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(open = false))),
                     ),
             ),
         )
@@ -201,8 +223,21 @@ class WindowPersistenceTest {
 
         vm.state.eqVisible = false
 
-        await { WindowStore(app).load().placementOf(WindowStore.EQ).open == false }
-        assertEquals(false, WindowStore(app).load().placementOf(WindowStore.EQ).open)
+        await {
+            WindowStore(app)
+                .load()
+                .placementOf(WindowStore.EQ)
+                .of(Workspace.FLOATING)
+                .open == false
+        }
+        assertEquals(
+            false,
+            WindowStore(app)
+                .load()
+                .placementOf(WindowStore.EQ)
+                .of(Workspace.FLOATING)
+                .open,
+        )
     }
 
     @Test
@@ -211,9 +246,9 @@ class WindowPersistenceTest {
             WindowLayoutMemory(
                 placements =
                     mapOf(
-                        WindowStore.MAIN to WindowPlacement(shaded = true),
-                        WindowStore.EQ to WindowPlacement(shaded = true),
-                        WindowStore.PLAYLIST to WindowPlacement(shaded = true),
+                        WindowStore.MAIN to WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(shaded = true))),
+                        WindowStore.EQ to WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(shaded = true))),
+                        WindowStore.PLAYLIST to WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(shaded = true))),
                     ),
             ),
         )
@@ -231,8 +266,21 @@ class WindowPersistenceTest {
 
         vm.state.mainShaded = true
 
-        await { WindowStore(app).load().placementOf(WindowStore.MAIN).shaded == true }
-        assertEquals(true, WindowStore(app).load().placementOf(WindowStore.MAIN).shaded)
+        await {
+            WindowStore(app)
+                .load()
+                .placementOf(WindowStore.MAIN)
+                .of(Workspace.FLOATING)
+                .shaded == true
+        }
+        assertEquals(
+            true,
+            WindowStore(app)
+                .load()
+                .placementOf(WindowStore.MAIN)
+                .of(Workspace.FLOATING)
+                .shaded,
+        )
     }
 
     /**
@@ -246,16 +294,20 @@ class WindowPersistenceTest {
             val placement = fresh.placementOf(id)
             assertNotNull("$id has a placement state", placement)
 
-            placement!!.restore(WindowPlacement(x = 10 + i, y = 20 + i, size = 3 + i, cols = i))
+            placement!!.restore(
+                WindowPlacement(
+                    mapOf(Workspace.FLOATING to WindowArrangement(x = 10 + i, y = 20 + i, size = 3 + i, cols = i)),
+                ),
+            )
 
             assertEquals("$id keeps its offset", IntOffset(10 + i, 20 + i), placement.offset)
             assertEquals("$id keeps its size", 3 + i, placement.size)
             assertEquals("$id keeps its width steps", i, placement.cols)
             val written = placement.asMemory()
-            assertEquals("$id hands back the offset it took", 10 + i, written.x)
-            assertEquals(20 + i, written.y)
-            assertEquals(3 + i, written.size)
-            assertEquals(i, written.cols)
+            assertEquals("$id hands back the offset it took", 10 + i, written.of(Workspace.FLOATING).x)
+            assertEquals(20 + i, written.of(Workspace.FLOATING).y)
+            assertEquals(3 + i, written.of(Workspace.FLOATING).size)
+            assertEquals(i, written.of(Workspace.FLOATING).cols)
         }
     }
 
@@ -264,9 +316,9 @@ class WindowPersistenceTest {
         val fresh = WinampState()
 
         WindowStore.WINDOWS.forEach { id ->
-            val before = fresh.placementOf(id)!!.offset
-            fresh.placementOf(id)!!.restore(WindowPlacement())
-            assertEquals("$id stays put on an empty memory", before, fresh.placementOf(id)!!.offset)
+            val before = fresh.placementOf(id).offset
+            fresh.placementOf(id).restore(WindowPlacement())
+            assertEquals("$id stays put on an empty memory", before, fresh.placementOf(id).offset)
         }
     }
 }

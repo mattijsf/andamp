@@ -51,7 +51,13 @@ class MilkdropResizeInteractionTest {
         compose.setContent {
             BoxWithConstraints(Modifier.fillMaxSize()) {
                 screenH = constraints.maxHeight / SCALE
-                MilkdropWindow(vm, skin, SCALE, defaultOffset = IntOffset(0, 0), modifier = Modifier.fillMaxSize())
+                MilkdropWindow(
+                    vm,
+                    skin,
+                    SCALE,
+                    docked = IntOffset((constraints.maxWidth / SCALE - MILKDROP_W) / 2, 0),
+                    modifier = Modifier.fillMaxSize(),
+                )
             }
         }
         compose.waitForIdle()
@@ -61,7 +67,7 @@ class MilkdropResizeInteractionTest {
 
     private fun height() = milkdropHeight(frame, milkdropContentH(vm.state.milkdropSteps))
 
-    private fun top() = (screenH - height()) / 2 + (vm.state.milkdropOffset?.y ?: 0)
+    private fun top() = vm.state.milkdropOffset?.let { (screenH - height()) / 2 + it.y } ?: 0
 
     private fun devicePoint(
         x: Float,

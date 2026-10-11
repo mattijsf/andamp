@@ -372,7 +372,7 @@ class LibraryOps(
         abandonLoad()
         state.libraryOpen = true
         // raised, so it is not opened behind another window
-        state.raiseWindow("library")
+        state.raiseWindow(WindowStore.LIBRARY)
         crumbs.clear()
         depth = 0
         needsAccess = false

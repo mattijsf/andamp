@@ -77,8 +77,14 @@ class PersistenceOpsTest {
     fun `what was left on disk is on screen once it has started`() {
         WindowStore(app).save(
             WindowLayoutMemory(
-                placements = mapOf(WindowStore.LIBRARY to WindowPlacement(40, 90, 7, cols = 2)),
-                order = emptyList(),
+                placements =
+                    mapOf(
+                        WindowStore.LIBRARY to
+                            WindowPlacement(
+                                mapOf(Workspace.FLOATING to WindowArrangement(40, 90, 7, cols = 2)),
+                            ),
+                    ),
+                orders = mapOf(Workspace.FLOATING to emptyList()),
             ),
         )
         val state = WinampState()
@@ -105,9 +111,49 @@ class PersistenceOpsTest {
     }
 
     @Test
+    fun `a fresh install started with the phone sideways still fills the playlist sideways`() {
+        val state = WinampState()
+        state.sideways = true
+
+        opsFor(state).start()
+
+        assertEquals("sideways fills what little is left under the player", null, state.plSegments)
+        state.sideways = false
+        assertEquals(WindowStore.PLAYLIST_START_SEGMENTS, state.plSegments)
+    }
+
+    @Test
+    fun `both arrangements come back from disk`() {
+        WindowStore(app).save(
+            WindowLayoutMemory(
+                placements =
+                    mapOf(
+                        WindowStore.MAIN to
+                            WindowPlacement(
+                                mapOf(
+                                    Workspace.FLOATING to WindowArrangement(x = 0, y = -200),
+                                    Workspace.FLOATING_SIDEWAYS to WindowArrangement(x = -300, y = 0),
+                                ),
+                            ),
+                    ),
+            ),
+        )
+        val state = WinampState()
+
+        opsFor(state).start()
+
+        assertEquals(IntOffset(0, -200), state.mainOffset)
+        state.sideways = true
+        assertEquals(IntOffset(-300, 0), state.mainOffset)
+    }
+
+    @Test
     fun `a playlist that was left filling the screen comes back that way`() {
         WindowStore(app).save(
-            WindowLayoutMemory(placements = mapOf(WindowStore.PLAYLIST to WindowPlacement(size = null))),
+            WindowLayoutMemory(
+                placements =
+                    mapOf(WindowStore.PLAYLIST to WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(size = null)))),
+            ),
         )
         val state = WinampState()
 
@@ -122,14 +168,21 @@ class PersistenceOpsTest {
         val store = WindowStore(app)
         store.save(
             WindowLayoutMemory(
-                placements = mapOf(WindowStore.MAIN to WindowPlacement(11, 22)),
-                order = emptyList(),
+                placements = mapOf(WindowStore.MAIN to WindowPlacement(mapOf(Workspace.FLOATING to WindowArrangement(11, 22)))),
+                orders = mapOf(Workspace.FLOATING to emptyList()),
             ),
         )
 
         opsFor(WinampState()).start()
 
-        assertEquals(IntOffset(11, 22), store.load().offsetOf(WindowStore.MAIN))
+        assertEquals(
+            IntOffset(11, 22),
+            store
+                .load()
+                .placementOf(WindowStore.MAIN)
+                .of(Workspace.FLOATING)
+                .offset(),
+        )
     }
 
     /** Shuffle and repeat are restored through the facade, so they are read from the backend. */
@@ -170,7 +223,14 @@ class PersistenceOpsTest {
 
         ops.flush()
 
-        assertEquals(IntOffset(5, 6), WindowStore(app).load().offsetOf(WindowStore.LIBRARY))
+        assertEquals(
+            IntOffset(5, 6),
+            WindowStore(app)
+                .load()
+                .placementOf(WindowStore.LIBRARY)
+                .of(Workspace.FLOATING)
+                .offset(),
+        )
     }
 
     /**

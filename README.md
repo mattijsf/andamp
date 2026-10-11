@@ -44,7 +44,7 @@ git submodule update --init --recursive                       # the visualizer e
 ./gradlew installDebug
 ```
 
-Min SDK is 26. Portrait on a phone; on a tablet or a Chromebook it turns with the screen.
+Min SDK is 26. It turns with the phone, and remembers one window arrangement for upright and one for sideways.
 
 ### Skins
 
