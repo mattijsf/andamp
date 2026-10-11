@@ -4,6 +4,14 @@ What changed for somebody who uses Andamp, newest first. It is written from the 
 messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `docs:` and
 `chore:` commits do not appear here.
 
+## [0.12.1](https://github.com/mattijsf/andamp/compare/v0.12.0...v0.12.1) (2026-10-11)
+
+
+### Fixed
+
+* a skin search no longer looks capped at 160 results ([#40](https://github.com/mattijsf/andamp/issues/40)) ([98e936f](https://github.com/mattijsf/andamp/commit/98e936f800fdee3ef2f6fb879fe7c68f2939c55b))
+* the playlist follows the song that is playing ([#39](https://github.com/mattijsf/andamp/issues/39)) ([fc3eda8](https://github.com/mattijsf/andamp/commit/fc3eda8d872a56496414fc56213f7c2d9cd793e7))
+
 ## [0.12.0](https://github.com/mattijsf/andamp/compare/v0.11.1...v0.12.0) (2026-10-11)
 
 
