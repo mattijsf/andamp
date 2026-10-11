@@ -52,7 +52,8 @@ import kotlin.math.roundToInt
  * [within] is in the surface's pixels; null is all of it. The window is drawn at the largest
  * whole scale that fits there, or with [fill] as large as fits at all; see [remoteViewport].
  * The D in the main window's clutter bar is lit by [fill] and calls [onFill]: this surface's
- * own Double Size. The A is never lit here, and does nothing.
+ * own Double Size. The A is never lit here, and does nothing. Nor are the EQ and PL buttons
+ * lit: neither window is open beside this one.
  *
  * It starts on the main window. The EQ button there swaps the screen to the equalizer and the
  * PL button to the playlist; the close button of either swaps it back. Which one is up belongs
@@ -116,7 +117,7 @@ private fun MainAlone(
     fill: Boolean,
 ) {
     ScaledWindowCanvas(MAIN_W, MAIN_H, scale, s, widgets, cut = SkinCut(skin, RegionTxt.Window.MAIN)) {
-        drawMainWindow(skin, s, alwaysOnTop = false, doubleSize = fill)
+        drawMainWindow(skin, s, alwaysOnTop = false, doubleSize = fill, equalizerOpen = false, playlistOpen = false)
     }
     // the visualizer animates on its own canvas, so a frame repaints only that box
     VisualizerOverlay(

@@ -190,6 +190,12 @@ fun DrawScope.drawMainWindow(
      */
     alwaysOnTop: Boolean = s.alwaysOnTop,
     doubleSize: Boolean = s.doubleSize,
+    /**
+     * Whether the EQ and PL buttons are lit. They show that the phone's equalizer and playlist
+     * windows are open, unless the surface this is drawn on shows one window at a time.
+     */
+    equalizerOpen: Boolean = s.eqVisible,
+    playlistOpen: Boolean = s.plVisible,
 ) {
     val pressed = s.pressedWidget
     val stopped = s.transport == Transport.Stopped
@@ -244,7 +250,7 @@ fun DrawScope.drawMainWindow(
     sprite(
         shufrep,
         fourState(
-            s.eqVisible,
+            equalizerOpen,
             pressed == "main.eqToggle",
             SpriteMap.MAIN_EQ_BUTTON,
             SpriteMap.MAIN_EQ_BUTTON_DEPRESSED,
@@ -256,7 +262,7 @@ fun DrawScope.drawMainWindow(
     sprite(
         shufrep,
         fourState(
-            s.plVisible,
+            playlistOpen,
             pressed == "main.plToggle",
             SpriteMap.MAIN_PLAYLIST_BUTTON,
             SpriteMap.MAIN_PLAYLIST_BUTTON_DEPRESSED,
