@@ -17,6 +17,7 @@ import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.Sprite
 import nl.mattix.andamp.skin.SpriteMap
 import nl.mattix.andamp.state.AmpMenu
+import nl.mattix.andamp.state.PlaylistFont
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.ui.bitmapText
@@ -32,6 +33,8 @@ class PlaylistLayout(
     val height: Int,
     /** The window's width: 275 at its narrowest, growing in steps of [WIDTH_STEP]. */
     val width: Int = PL_W,
+    /** How tall a row of the list is: Winamp's 13 px, or what the listener picked. */
+    val rowH: Int = Dest.PL_ROW_H,
 ) {
     /** The width index: width = 275 + 25 * cols. */
     val cols = (width - PL_W) / WIDTH_STEP
@@ -47,7 +50,7 @@ class PlaylistLayout(
     val scrollX = width - Dest.PL_RIGHT_W + 5
     val middleH = height - Dest.PL_TOP_H - Dest.PL_BOTTOM_H
     val textTop = Dest.PL_TOP_H + 3
-    val visibleRows = ((middleH - 6) / Dest.PL_ROW_H).coerceAtLeast(1)
+    val visibleRows = ((middleH - 6) / rowH).coerceAtLeast(1)
     val textLeft = Dest.PL_LEFT_W
     val textRight = width - Dest.PL_RIGHT_W
     val scrollTrackTop = Dest.PL_TOP_H
@@ -94,9 +97,11 @@ class PlaylistLayout(
         fun ofSegments(
             segments: Int,
             width: Int = PL_W,
+            rowH: Int = Dest.PL_ROW_H,
         ) = PlaylistLayout(
             Dest.PL_TOP_H + segments.coerceAtLeast(MIN_SEGMENTS) * Dest.PL_TILE_STEP + Dest.PL_BOTTOM_H,
             width,
+            rowH,
         )
 
         fun segmentsThatFit(availableVirtual: Int): Int =
@@ -370,17 +375,18 @@ private fun DrawScope.drawTracks(
             val index = s.playlistScroll + visRow
             if (index >= s.playlist.size) break
             if (index in s.selectedRows) {
-                val rowY = layout.textTop + visRow * Dest.PL_ROW_H
+                val rowY = layout.textTop + visRow * layout.rowH
                 drawRect(
                     style.selectedBg,
                     Offset(layout.textLeft.toFloat(), rowY.toFloat()),
-                    Size((layout.textRight - layout.textLeft).toFloat(), Dest.PL_ROW_H.toFloat()),
+                    Size((layout.textRight - layout.textLeft).toFloat(), layout.rowH.toFloat()),
                 )
             }
         }
-        // text pre-rasterized at device resolution; the virtual dst size makes the
-        // canvas transform map it 1:1 to device pixels, so glyphs stay crisp
-        val layer = textLayer.textLayer(s, layout, style, scale)
+        // text pre-rasterized, the outline font at device resolution and the skin's font at
+        // its own; the virtual dst size makes the canvas transform map the first 1:1 to
+        // device pixels and the second to whole squares, so glyphs stay crisp
+        val layer = textLayer.textLayer(s, layout, style, scale, skin[Sheet.TEXT].takeIf { s.playlistFont == PlaylistFont.SKIN })
         drawImage(
             image = layer,
             srcOffset = IntOffset.Zero,
@@ -407,8 +413,8 @@ private fun playlistRows(
         androidx.compose.ui.unit
             .IntRect(layout.textLeft, Dest.PL_TOP_H, layout.textRight, Dest.PL_TOP_H + layout.middleH),
         s,
-        Dest.PL_ROW_H,
-        rowAt = { y -> ((y - layout.textTop) / Dest.PL_ROW_H).toInt() },
+        layout.rowH,
+        rowAt = { y -> ((y - layout.textTop) / layout.rowH).toInt() },
         rows = { s.playlist.size },
         visibleRows = { layout.visibleRows },
         scroll = { s.playlistScroll },

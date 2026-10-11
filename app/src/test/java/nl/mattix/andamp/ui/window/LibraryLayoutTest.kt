@@ -129,4 +129,38 @@ class LibraryLayoutTest {
         assertEquals(0, cells.first().start)
         assertEquals(listW, cells.last().end)
     }
+
+    @Test
+    fun `taller rows map back from their own pixels, and make the rows' area taller`() {
+        val layout = LibraryLayout(6, rowH = 25)
+        val top = frame.titleH + LibraryLayout.ROWS_TOP
+
+        assertEquals(0, layout.rowAt((top + 24).toFloat(), frame))
+        assertEquals(1, layout.rowAt((top + 25).toFloat(), frame))
+        assertEquals(6 * 25, layout.rowsH)
+        assertEquals(LibraryLayout.FURNITURE_H + 6 * 25, layout.contentH)
+    }
+
+    @Test
+    fun `the smallest window is no taller with taller rows`() {
+        val classic = LibraryLayout(LibraryLayout.MIN_ROWS).height(frame)
+
+        assertEquals(LibraryLayout.MIN_ROWS, LibraryLayout.minRows(LibraryLayout.ROW_H))
+        for (rowH in listOf(19, 25)) {
+            val smallest = LibraryLayout(LibraryLayout.minRows(rowH), rowH = rowH).height(frame)
+            assertTrue("$rowH px rows: $smallest <= $classic", smallest <= classic)
+            // held at the classic minimum, it fits and the rest is slack
+            val held = LibraryLayout.filling(classic, LibraryLayout.WIDTH, frame, rowH)
+            assertEquals(classic, held.height(frame))
+            assertEquals(rowH, held.rowH)
+        }
+    }
+
+    @Test
+    fun `available height fills with as many taller rows as fit`() {
+        val tall = LibraryLayout.forAvailableHeight(800, frame, rowH = 25)
+
+        assertEquals((800 - frame.chromeH - LibraryLayout.FURNITURE_H) / 25, tall.visibleRows)
+        assertTrue(tall.height(frame) <= 800)
+    }
 }

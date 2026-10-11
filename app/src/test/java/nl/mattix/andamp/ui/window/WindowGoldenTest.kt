@@ -21,6 +21,8 @@ import nl.mattix.andamp.skin.LiveSkins
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SkinDist
 import nl.mattix.andamp.skin.SkinLoader
+import nl.mattix.andamp.state.PlaylistFont
+import nl.mattix.andamp.state.RowHeight
 import nl.mattix.andamp.state.SkinEntry
 import nl.mattix.andamp.state.WinampState
 import org.junit.Assert.assertArrayEquals
@@ -70,10 +72,12 @@ class WindowGoldenTest {
         return PlaylistTextRasterizer(Typeface.createFromAsset(context.assets, PlaylistTextRasterizer.ASSET_PATH))
     }
 
-    private fun stoppedState() = WinampState()
+    // the playlist's rows are in the outline font in these two; the skin's font has goldens of its own
+    private fun stoppedState() = WinampState().apply { playlistFont = PlaylistFont.REGULAR }
 
     private fun playingState() =
         WinampState().apply {
+            playlistFont = PlaylistFont.REGULAR
             transport = Transport.Playing
             currentIndex = 3
             currentTimeSec = 83
@@ -251,6 +255,30 @@ class WindowGoldenTest {
     }
 
     @Test
+    fun `playlist window in the skin's font`() {
+        val layout = PlaylistLayout.ofSegments(4)
+        val state = playingState().apply { playlistFont = PlaylistFont.SKIN }
+        render(PL_W, layout.height) { drawPlaylistWindow(skin, state, layout, measurer()) }
+            .captureRoboImage("$SNAPSHOT_DIR/playlist_window_skin_font.png")
+    }
+
+    @Test
+    fun `playlist window with large rows`() {
+        // the band, the titles and the durations all step by the taller row
+        val layout = PlaylistLayout.ofSegments(6, rowH = RowHeight.LARGE.px)
+        render(PL_W, layout.height) { drawPlaylistWindow(skin, playingState(), layout, measurer()) }
+            .captureRoboImage("$SNAPSHOT_DIR/playlist_window_large_rows.png")
+    }
+
+    @Test
+    fun `playlist window with roomy rows in the skin's font`() {
+        val layout = PlaylistLayout.ofSegments(6, rowH = RowHeight.ROOMY.px)
+        val state = playingState().apply { playlistFont = PlaylistFont.SKIN }
+        render(PL_W, layout.height) { drawPlaylistWindow(skin, state, layout, measurer()) }
+            .captureRoboImage("$SNAPSHOT_DIR/playlist_window_roomy_rows_skin_font.png")
+    }
+
+    @Test
     fun `playlist window held at a height between two segments`() {
         // the frame's ninth tile and the list's last row are cut where the window ends
         val layout = PlaylistLayout(20 + 8 * 29 + 11 + 38)
@@ -309,6 +337,21 @@ class WindowGoldenTest {
                 layout = held,
             )
         }.captureRoboImage("$SNAPSHOT_DIR/skin_manager_slack.png")
+
+        // taller rows: the band and the names step by the row the listener picked
+        val large = SkinManagerLayout(4, rowH = RowHeight.LARGE.px)
+        render(width, large.listHeight()) {
+            drawSkinList(
+                rasterizer,
+                entries,
+                scroll = 0,
+                currentId = "aaaa",
+                style = skin.pledit,
+                scale = 1,
+                frame = frame,
+                layout = large,
+            )
+        }.captureRoboImage("$SNAPSHOT_DIR/skin_manager_large_rows.png")
     }
 
     // --- the media library: deterministic fixtures over a hand-rolled shelf ---
@@ -395,9 +438,10 @@ class WindowGoldenTest {
         state: WinampState,
         cols: Int = 0,
         slack: Int = 0,
+        rowH: Int = LibraryLayout.ROW_H,
     ) {
         val frame = GenFrame
-        val layout = LibraryLayout(8, LibraryLayout.widthOfCols(cols), slack)
+        val layout = LibraryLayout(8, LibraryLayout.widthOfCols(cols), slack, rowH)
         render(layout.listWidth(frame), layout.contentH) {
             drawLibraryContent(libraryRasterizer(), ops, state, skin, 1, frame, layout)
         }.captureRoboImage("$SNAPSHOT_DIR/$name.png")
@@ -440,6 +484,16 @@ class WindowGoldenTest {
             )
         state.currentIndex = 1
         renderLibrary("library_tracks", ops, state)
+    }
+
+    @Test
+    fun `library tracks with large rows`() {
+        // the tabs, the header and the bar keep their height; only the rows grow
+        val (ops, state) = libraryFixture()
+        ops.tapRow(0) // Autechre
+        ops.tapRow(0) // Amber
+        state.librarySelected = 0
+        renderLibrary("library_large_rows", ops, state, rowH = RowHeight.LARGE.px)
     }
 
     @Test

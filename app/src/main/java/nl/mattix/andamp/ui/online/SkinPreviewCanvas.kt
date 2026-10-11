@@ -20,6 +20,7 @@ import androidx.compose.ui.platform.LocalContext
 import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.skin.RegionTxt
 import nl.mattix.andamp.skin.Skin
+import nl.mattix.andamp.state.ListStyleStore
 import nl.mattix.andamp.ui.ScaledWindowCanvas
 import nl.mattix.andamp.ui.SkinCut
 import nl.mattix.andamp.ui.window.EQ_H
@@ -51,10 +52,12 @@ internal fun SkinPreviewCanvas(
     interactive: Boolean = true,
 ) {
     val context = LocalContext.current
-    val state = remember { SkinDemo.state() }
+    // the demo playlist looks the way the listener's own does
+    val lists = remember { ListStyleStore(context) }
+    val state = remember { SkinDemo.state().apply { playlistFont = lists.font } }
     val player = remember(state) { SkinDemo.Player(state) }
     val text = remember { PlaylistTextRasterizer(Typeface.createFromAsset(context.assets, PlaylistTextRasterizer.ASSET_PATH)) }
-    val layout = remember { PlaylistLayout(height = PLAYLIST_H, width = PL_W) }
+    val layout = remember { PlaylistLayout(height = PLAYLIST_H, width = PL_W, rowH = lists.rowHeight.px) }
     var frame by remember { mutableLongStateOf(0L) }
     LaunchedEffect(skin) {
         // the infinite-animation clock, not the frame clock: a preview runs for as long as it is

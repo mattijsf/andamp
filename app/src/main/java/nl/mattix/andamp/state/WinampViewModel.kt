@@ -84,6 +84,9 @@ class WinampViewModel
         /** Whether a hold opens the magnifier; see [TapAssistStore]. */
         val tapAssistStore = TapAssistStore(app)
 
+        /** The playlist's font and the height of a list's rows; see [ListStyleStore]. */
+        val listStyleStore = ListStyleStore(app)
+
         /** Whether the welcome screen has been shown; see [WelcomeStore]. */
         val welcome = WelcomeStore(app)
 
@@ -310,11 +313,19 @@ class WinampViewModel
             // render state follows them
             state.shadeEnabled = shadeStore.enabled
             state.tapAssist = tapAssistStore.enabled
+            state.playlistFont = listStyleStore.font
+            state.rowHeight = listStyleStore.rowHeight
             viewModelScope.launch {
                 snapshotFlow { shadeStore.enabled }.collect { state.shadeEnabled = it }
             }
             viewModelScope.launch {
                 snapshotFlow { tapAssistStore.enabled }.collect { state.tapAssist = it }
+            }
+            viewModelScope.launch {
+                snapshotFlow { listStyleStore.font }.collect { state.playlistFont = it }
+            }
+            viewModelScope.launch {
+                snapshotFlow { listStyleStore.rowHeight }.collect { state.rowHeight = it }
             }
             // restores what a previous session left: settings, queue, visuals, windows
             persistence.start()

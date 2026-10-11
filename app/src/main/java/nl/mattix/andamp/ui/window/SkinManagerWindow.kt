@@ -54,18 +54,20 @@ fun SkinManagerWindow(
         // bar takes is the screen's safe bottom. A stored row count is drawn at what
         // fits, and the grip is offered no more than that.
         val screen = windowScreen(scale, s)
-        val fits = SkinManagerLayout.rowsThatFit(screen.safeBottom, frame)
+        val rowH = s.rowHeight.px
+        val minRows = SkinManagerLayout.minRows(rowH)
+        val fits = SkinManagerLayout.rowsThatFit(screen.safeBottom, frame, rowH)
         // the width is limited to the screen's
         val cols = SkinManagerLayout.WIDTH_STEPS.clamp(s.skinCols, screen.width)
         // capped at what fits; with no stored size it uses DEFAULT_ROWS
         val rows =
             (s.skinRows ?: SkinManagerLayout.DEFAULT_ROWS)
-                .coerceIn(SkinManagerLayout.MIN_ROWS, fits.coerceAtLeast(SkinManagerLayout.MIN_ROWS))
+                .coerceIn(minRows, fits.coerceAtLeast(minRows))
         val layout =
-            pinned?.let { SkinManagerLayout.filling(it.height, it.width, frame) }
-                ?: SkinManagerLayout(rows, SkinManagerLayout.widthOfCols(cols))
+            pinned?.let { SkinManagerLayout.filling(it.height, it.width, frame, rowH) }
+                ?: SkinManagerLayout(rows, SkinManagerLayout.widthOfCols(cols), rowH = rowH)
         val widgets =
-            remember(vm, frame, layout.visibleRows, layout.width, layout.slack) { skinManagerWidgets(vm, frame, layout) }
+            remember(vm, frame, layout.visibleRows, layout.width, layout.slack, rowH) { skinManagerWidgets(vm, frame, layout) }
         GenSkinWindow(
             skin = skin,
             state = s,
@@ -88,12 +90,12 @@ fun SkinManagerWindow(
                                 heightAxis =
                                     SizeAxis(
                                         furniture = SkinManagerLayout.furnitureH(frame),
-                                        step = SkinManagerLayout.ROW_H,
-                                        min = SkinManagerLayout.MIN_ROWS,
+                                        step = rowH,
+                                        min = minRows,
                                         max = fits,
                                         current = layout.visibleRows,
                                     ),
-                                heightOf = { rows -> SkinManagerLayout(rows).height(frame) },
+                                heightOf = { rows -> SkinManagerLayout(rows, rowH = rowH).height(frame) },
                                 widthAxis = SkinManagerLayout.WIDTH_STEPS.axis(cols, screen.width),
                                 widthOf = SkinManagerLayout::widthOfCols,
                             )
@@ -134,8 +136,8 @@ private fun skinManagerWidgets(
             pointer =
                 rowListPointer(
                     s,
-                    SkinManagerLayout.ROW_H,
-                    rowAt = { y -> SkinManagerLayout.rowAt(y, frame.titleH) },
+                    layout.rowH,
+                    rowAt = { y -> layout.rowAt(y, frame.titleH) },
                     rows = { s.skinEntries.size },
                     visibleRows = { layout.visibleRows },
                     scroll = { s.skinScroll },
@@ -167,7 +169,7 @@ internal fun DrawScope.drawSkinList(
     val width = layout.listWidth(frame)
     val height = layout.listHeight()
     drawRect(style.normalBg, Offset.Zero, Size(width.toFloat(), height.toFloat()))
-    val layer = rasterizer.layer(entries, scroll, currentId, style, width, height, scale, layout.visibleRows)
+    val layer = rasterizer.layer(entries, scroll, currentId, style, width, height, scale, layout.visibleRows, layout.rowH)
     drawImage(
         layer,
         dstOffset = IntOffset.Zero,
@@ -198,8 +200,9 @@ internal class SkinListRasterizer(
         height: Int,
         scale: Int,
         visibleRows: Int = SkinManagerLayout.DEFAULT_ROWS,
+        rowH: Int = SkinManagerLayout.ROW_H,
     ): ImageBitmap {
-        val key = listOf(entries, scroll, currentId, style, width, height, scale, visibleRows)
+        val key = listOf(entries, scroll, currentId, style, width, height, scale, visibleRows, rowH)
         cache?.let { if (key == cacheKey) return it }
 
         val bitmap = Bitmap.createBitmap(width * scale, height * scale, Bitmap.Config.ARGB_8888)
@@ -207,12 +210,12 @@ internal class SkinListRasterizer(
         canvas.scale(scale.toFloat(), scale.toFloat())
         val paint = ListText.paint(ListText.typefaceFor(style.fontName, arialLike))
         entries.drop(scroll).take(visibleRows).forEachIndexed { row, entry ->
-            val top = SkinManagerLayout.rowY(row).toFloat()
-            val baseline = ListText.baseline(paint, top, SkinManagerLayout.ROW_H)
+            val top = SkinManagerLayout.rowY(row, rowH).toFloat()
+            val baseline = ListText.baseline(paint, top, rowH)
             val active = entry.id == currentId
             if (active) {
                 paint.color = style.selectedBg.toArgb()
-                canvas.drawRect(0f, top, width.toFloat(), top + SkinManagerLayout.ROW_H, paint)
+                canvas.drawRect(0f, top, width.toFloat(), top + rowH, paint)
             }
             paint.color = (if (active) style.current else style.normal).toArgb()
 
@@ -224,7 +227,7 @@ internal class SkinListRasterizer(
                 nameRight = (width - SkinManagerLayout.REMOVE_W).toFloat()
             }
             canvas.save()
-            canvas.clipRect(0f, top, nameRight, top + SkinManagerLayout.ROW_H)
+            canvas.clipRect(0f, top, nameRight, top + rowH)
             canvas.drawText(entry.name, ListText.LEFT_INSET, baseline, paint)
             canvas.restore()
         }

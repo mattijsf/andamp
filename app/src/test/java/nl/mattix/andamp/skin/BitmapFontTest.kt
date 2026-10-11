@@ -3,6 +3,8 @@
 package nl.mattix.andamp.skin
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class BitmapFontTest {
@@ -40,5 +42,25 @@ class BitmapFontTest {
     fun `unknown characters become spaces`() {
         assertEquals(" ", BitmapFont.normalize("→"))
         assertEquals(BitmapFont.sprite(' '), BitmapFont.sprite('~'))
+    }
+
+    @Test
+    fun `a title in letters the font has, accented ones among them, can be spelled`() {
+        assertTrue(BitmapFont.covers("1. Björk - Jóga (Live) [2003]"))
+        assertTrue(BitmapFont.covers("Sigur Rós – Hoppípolla"))
+    }
+
+    @Test
+    fun `a title with a letter the font lacks cannot be spelled`() {
+        assertFalse(BitmapFont.covers("1. Кино - Группа крови"))
+        assertFalse(BitmapFont.covers("東京事変"))
+        assertFalse(BitmapFont.covers("Straße"))
+    }
+
+    @Test
+    fun `every glyph is a cell of the grid, and the space is one of them`() {
+        assertTrue(BitmapFont.sprite(' ') in BitmapFont.glyphs)
+        assertTrue(BitmapFont.glyphs.all { it.x % BitmapFont.CHAR_W == 0 && it.y % BitmapFont.CHAR_H == 0 })
+        assertEquals(BitmapFont.glyphs.size, BitmapFont.glyphs.distinct().size)
     }
 }

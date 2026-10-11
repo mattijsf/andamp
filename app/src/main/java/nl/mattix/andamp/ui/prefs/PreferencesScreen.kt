@@ -140,6 +140,7 @@ fun PreferencesScreen(
                         // the windows follow the store
                         onEnabled = { on -> vm.tapAssistStore.enabled = on },
                     ),
+                lists = listPrefsOf(vm),
                 shade =
                     ShadePrefs(
                         shadeEnabled = vm.state.shadeEnabled,
@@ -250,6 +251,7 @@ data class PrefsSections(
     val overlay: OverlayPrefs = OverlayPrefs(),
     val shade: ShadePrefs = ShadePrefs(),
     val tapAssist: TapAssistPrefs = TapAssistPrefs(),
+    val lists: ListPrefs = ListPrefs(),
     val palette: PalettePrefs = PalettePrefs(),
     val volume: VolumePrefs = VolumePrefs(),
     val widget: WidgetPrefs = WidgetPrefs(),

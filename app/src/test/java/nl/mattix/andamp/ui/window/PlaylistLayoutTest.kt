@@ -114,4 +114,21 @@ class PlaylistLayoutTest {
         assertEquals(175, wide.rightCapX)
         assertEquals(narrow.width - narrow.rightCapX, wide.width - wide.rightCapX)
     }
+
+    @Test
+    fun `taller rows leave the window its size and show fewer of them`() {
+        val classic = PlaylistLayout(116)
+        val large = PlaylistLayout(116, rowH = 25)
+
+        assertEquals(classic.height, large.height)
+        assertEquals(classic.middleH, large.middleH)
+        assertEquals(25, large.rowH)
+        assertEquals((58 - 6) / 25, large.visibleRows)
+        assertEquals(25, PlaylistLayout.ofSegments(4, rowH = 25).rowH)
+    }
+
+    @Test
+    fun `a row too tall for the window still shows one`() {
+        assertEquals(1, PlaylistLayout(116, rowH = 80).visibleRows)
+    }
 }

@@ -138,6 +138,17 @@ object WindowSizing {
     }
 
     /**
+     * The fewest rows of [rowH] a list is drawn with, where [classicRows] rows of
+     * [classicRowH] are its smallest in Winamp's own row height: as many as fit that same
+     * height, and one at least.
+     */
+    fun minRows(
+        classicRows: Int,
+        classicRowH: Int,
+        rowH: Int,
+    ): Int = (classicRows * classicRowH / rowH).coerceAtLeast(1)
+
+    /**
      * The size to remember: null once a window is as big as fits, which restores the
      * fill-the-screen default, so the window is not pinned to a height that only matches the
      * current screen.
