@@ -6,14 +6,15 @@ import androidx.compose.ui.unit.IntRect
 import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.ui.window.ListText
 import nl.mattix.andamp.ui.window.PlaylistLayout
+import nl.mattix.andamp.ui.window.PleditFrame
 
 /**
  * Where the playlist on a lent surface puts its parts, in the window's own pixels.
  *
- * It is the skin's playlist frame without the bottom bar: the top bar, the two sides, and
- * between them rows made for a finger. A row is at least twice the height of the playlist
- * window's, and at least [touchPx] surface pixels, the smallest thing a car's screen asks a
- * driver to hit. Each row begins with a square button as high as the row, which plays it.
+ * It is the skin's playlist frame with a thin border in place of the bottom bar and its
+ * buttons: the top bar, the two sides, and between them rows made for a finger. A row is at
+ * least twice the height of the playlist window's, and at least [touchPx] surface pixels, the
+ * smallest thing a car's screen asks a driver to hit. Each row begins with a square button as high as the row, which plays it.
  * The window is as wide as whole steps of the frame allow in a room [roomW] by [roomH]
  * surface pixels at [scale], and as tall as the room.
  */
@@ -30,12 +31,15 @@ internal class RemoteListLayout(
     val fontSize = rowH * ListText.FONT_SIZE / Dest.PL_ROW_H * TEXT_SHARE
 
     val width = PlaylistLayout.widthOfCols(PlaylistLayout.WIDTH_STEPS.colsThatFit(roomW / scale))
-    val height = (roomH / scale).coerceAtLeast(Dest.PL_TOP_H + rowH)
+    val height = (roomH / scale).coerceAtLeast(Dest.PL_TOP_H + rowH + PleditFrame.BOTTOM_H)
 
     val listLeft = Dest.PL_LEFT_W
     val listRight = width - Dest.PL_RIGHT_W
     val listTop = Dest.PL_TOP_H
-    val listH = height - listTop
+
+    /** Where the rows end and the bottom border begins. */
+    val listBottom = height - PleditFrame.BOTTOM_H
+    val listH = listBottom - listTop
 
     /** Where the rows' play buttons end and their text begins. */
     val playRight = listLeft + rowH

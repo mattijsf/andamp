@@ -44,6 +44,12 @@ class RemoteListLayoutTest {
     }
 
     @Test
+    fun `the rows end at a thin border along the bottom`() {
+        assertEquals("the frame's 14 pixels", 180 - 14, car.listBottom)
+        assertEquals(146, car.listH)
+    }
+
+    @Test
     fun `the rows start under the top bar`() {
         assertEquals(0, car.rowAt(20f, offset = 0f))
         assertEquals(1, car.rowAt(46f, offset = 0f))
@@ -61,14 +67,14 @@ class RemoteListLayoutTest {
 
     @Test
     fun `a long list scrolls until its last row is at the bottom`() {
-        assertEquals(100 * 26 - 160, car.farthest(rows = 100))
+        assertEquals(100 * 26 - 146, car.farthest(rows = 100))
     }
 
     @Test
     fun `the row that is on opens in the middle`() {
         val offset = car.showing(row = 50, rows = 100)
 
-        assertEquals("the row's middle is the list's middle", 20 + 160 / 2, 20 + 50 * 26 + 13 - offset)
+        assertEquals("the row's middle is the list's middle", 20 + 146 / 2, 20 + 50 * 26 + 13 - offset)
     }
 
     @Test

@@ -40,11 +40,13 @@ import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.rowLabel
 import nl.mattix.andamp.ui.PlayerViewport
 import nl.mattix.andamp.ui.ScaledWindowCanvas
+import nl.mattix.andamp.ui.SkinCut
 import nl.mattix.andamp.ui.sprite
 import nl.mattix.andamp.ui.widget.Widget
 import nl.mattix.andamp.ui.widget.button
 import nl.mattix.andamp.ui.window.ListText
 import nl.mattix.andamp.ui.window.PlaylistTextRasterizer
+import nl.mattix.andamp.ui.window.PleditFrame
 import nl.mattix.andamp.ui.window.drawPlaylistSides
 import nl.mattix.andamp.ui.window.drawPlaylistTop
 import nl.mattix.andamp.ui.window.formatTime
@@ -109,7 +111,8 @@ internal fun RemoteList(
             )
         }
     Box(Modifier.offset { IntOffset(room.left + (room.width - layout.width * scale) / 2, room.top) }) {
-        ScaledWindowCanvas(layout.width, layout.height, scale, s, widgets) {
+        // cut with the skin's corner, as the playlist window is at whatever size it has
+        ScaledWindowCanvas(layout.width, layout.height, scale, s, widgets, cut = SkinCut(skin)) {
             drawRemoteList(skin, s, layout, scroll.offset / perPixel, pressed, paint)
         }
     }
@@ -136,7 +139,7 @@ private fun rowsWidget(
     fun buttonAt(at: Offset): Int = rowAt(at.y).takeIf { layout.onPlay(at.x) && it in s.playlist.indices } ?: NO_ROW
     return Widget(
         id = ROWS,
-        bounds = IntRect(layout.listLeft, layout.listTop, layout.listRight, layout.height),
+        bounds = IntRect(layout.listLeft, layout.listTop, layout.listRight, layout.listBottom),
         pointer =
             Widget.Pointer(
                 onDown = { at ->
@@ -167,12 +170,13 @@ private fun DrawScope.drawRemoteList(
     val style = skin.pledit
     val listW = (layout.listRight - layout.listLeft).toFloat()
     drawPlaylistTop(skin, s, layout.width)
-    drawPlaylistSides(skin, layout.width, layout.listTop, layout.height)
+    drawPlaylistSides(skin, layout.width, layout.listTop, layout.listBottom)
+    with(PleditFrame) { drawThinBottom(skin, layout.width, layout.height, grip = false, corners = true) }
     drawRect(style.normalBg, Offset(layout.listLeft.toFloat(), layout.listTop.toFloat()), Size(listW, layout.listH.toFloat()))
 
-    clipRect(layout.listLeft.toFloat(), layout.listTop.toFloat(), layout.listRight.toFloat(), layout.height.toFloat()) {
+    clipRect(layout.listLeft.toFloat(), layout.listTop.toFloat(), layout.listRight.toFloat(), layout.listBottom.toFloat()) {
         val first = (offset / layout.rowH).toInt()
-        val last = minOf(s.playlist.lastIndex, layout.rowAt(layout.height.toFloat(), offset))
+        val last = minOf(s.playlist.lastIndex, layout.rowAt(layout.listBottom.toFloat(), offset))
         for (row in first..last) {
             val top = layout.listTop + row * layout.rowH - offset
             val color = if (row == s.currentIndex) style.current else style.normal

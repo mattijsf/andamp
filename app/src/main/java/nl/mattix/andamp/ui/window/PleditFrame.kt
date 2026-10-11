@@ -9,6 +9,7 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import nl.mattix.andamp.skin.BitmapFont
 import nl.mattix.andamp.skin.Sheet
 import nl.mattix.andamp.skin.Skin
+import nl.mattix.andamp.skin.Sprite
 import nl.mattix.andamp.skin.SpriteMap
 import nl.mattix.andamp.ui.bitmapText
 import nl.mattix.andamp.ui.sprite
@@ -57,7 +58,7 @@ object PleditFrame {
         val sheet = skin[Sheet.PLEDIT]
         drawTitleBar(sheet, skin, windowW, title)
         drawSides(sheet, windowW, windowH)
-        drawBottom(sheet, windowW, windowH)
+        drawThinBottom(skin, windowW, windowH)
         // the unpressed X is part of the corner art; only the lit one is a sprite
         if (closePressed) {
             sprite(sheet, SpriteMap.PLAYLIST_CLOSE_SELECTED, closeX(windowW), CLOSE_INSET_TOP)
@@ -105,15 +106,25 @@ object PleditFrame {
     }
 
     /**
-     * A thin bottom border. The playlist's own 38px bar has its buttons and time display in
-     * the art, so this uses the border line from the top of that art and its outer edge,
-     * with the skin's resize grip.
+     * A thin bottom border, [BOTTOM_H] high, along the bottom of a window [windowW] by
+     * [windowH]. The playlist's own 38px bar has its buttons and time display in the art, so
+     * this uses the border line from the top of that art and its outer edge, with the skin's
+     * resize grip unless the window cannot be resized ([grip] false).
+     *
+     * With [corners], the two ends of the border are the ends of the bar's own corner pieces,
+     * as wide as the side tiles above them. A skin whose side borders differ from the inside
+     * of its bar then has them run on down to the bottom edge, and its scrollbar's groove
+     * ends as it does in the playlist window. What a skin draws in those ends comes with
+     * them, the lowest lines of its grip included.
      */
-    private fun DrawScope.drawBottom(
-        sheet: ImageBitmap,
+    fun DrawScope.drawThinBottom(
+        skin: Skin,
         windowW: Int,
         windowH: Int,
+        grip: Boolean = true,
+        corners: Boolean = false,
     ) {
+        val sheet = skin[Sheet.PLEDIT]
         val top = SpriteMap.PLAYLIST_BOTTOM_BORDER_TOP
         val edge = SpriteMap.PLAYLIST_BOTTOM_BORDER_EDGE
         val topY = windowH - BOTTOM_H
@@ -121,8 +132,20 @@ object PleditFrame {
         clipRect(0f, topY.toFloat(), windowW.toFloat(), windowH.toFloat()) {
             spriteRow(sheet, top, 0, topY, windowW)
             spriteRow(sheet, edge, 0, edgeY, windowW)
-            val grip = SpriteMap.PLAYLIST_RESIZE_GRIP
-            sprite(sheet, grip, windowW - grip.w - GRIP_INSET_RIGHT, windowH - grip.h - GRIP_INSET_BOTTOM)
+            if (corners) {
+                val left = SpriteMap.PLAYLIST_BOTTOM_LEFT_CORNER
+                val right = SpriteMap.PLAYLIST_BOTTOM_RIGHT_CORNER
+                val rightX = right.x + right.w - RIGHT_W
+                // the same two bands of rows as the middle: the top of the bar and its outer edge
+                sprite(sheet, Sprite(left.x, left.y, LEFT_W, top.h), 0, topY)
+                sprite(sheet, Sprite(left.x, left.y + left.h - edge.h, LEFT_W, edge.h), 0, edgeY)
+                sprite(sheet, Sprite(rightX, right.y, RIGHT_W, top.h), windowW - RIGHT_W, topY)
+                sprite(sheet, Sprite(rightX, right.y + right.h - edge.h, RIGHT_W, edge.h), windowW - RIGHT_W, edgeY)
+            }
+            if (grip) {
+                val art = SpriteMap.PLAYLIST_RESIZE_GRIP
+                sprite(sheet, art, windowW - art.w - GRIP_INSET_RIGHT, windowH - art.h - GRIP_INSET_BOTTOM)
+            }
         }
     }
 }
