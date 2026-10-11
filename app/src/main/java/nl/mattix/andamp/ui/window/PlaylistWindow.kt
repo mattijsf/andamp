@@ -56,6 +56,20 @@ class PlaylistLayout(
     /** How many 29px middle tiles this window is made of. */
     val segments = (height - Dest.PL_TOP_H - Dest.PL_BOTTOM_H) / Dest.PL_TILE_STEP
 
+    /**
+     * The first row to show so that [row] of [rows] is in view, coming from [scroll]: where
+     * the list is while the row already shows, and otherwise the place that puts the row in
+     * the middle, with rows before and after it.
+     */
+    fun scrollShowing(
+        row: Int,
+        scroll: Int,
+        rows: Int,
+    ): Int {
+        if (row !in 0 until rows || row in scroll until scroll + visibleRows) return scroll
+        return (row - visibleRows / 2).coerceIn(0, (rows - visibleRows).coerceAtLeast(0))
+    }
+
     companion object {
         /** Winamp's minimum: two tiles, a 116px window. */
         const val MIN_SEGMENTS = 2

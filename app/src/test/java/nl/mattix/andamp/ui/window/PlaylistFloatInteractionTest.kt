@@ -149,6 +149,37 @@ class PlaylistFloatInteractionTest {
     }
 
     @Test
+    fun `the list follows the song when it starts out of view`() {
+        // two segments show four rows of the eleven
+        vm.state.plSegments = PlaylistLayout.MIN_SEGMENTS
+        compose.waitForIdle()
+        val rows = PlaylistLayout.ofSegments(PlaylistLayout.MIN_SEGMENTS).visibleRows
+
+        repeat(rows - 1) { vm.next() }
+        compose.waitForIdle()
+        assertEquals("the last row showing is still in view", 0, vm.state.playlistScroll)
+
+        vm.next()
+        compose.waitForIdle()
+
+        assertEquals(rows, vm.state.currentIndex)
+        assertEquals("the song sits in the middle, with rows before and after it", rows - rows / 2, vm.state.playlistScroll)
+    }
+
+    @Test
+    fun `a list scrolled away comes back when the next song starts`() {
+        vm.state.plSegments = PlaylistLayout.MIN_SEGMENTS
+        compose.waitForIdle()
+        vm.state.playlistScroll = 7
+
+        vm.next()
+        compose.waitForIdle()
+
+        assertEquals(1, vm.state.currentIndex)
+        assertEquals(0, vm.state.playlistScroll)
+    }
+
+    @Test
     fun `a window behind another moves on the first drag, without a tap to wake it`() {
         // it is not in front: the press both raises it and drags it, in one go
         vm.state.windowOrder = listOf(WindowStore.PLAYLIST, WindowStore.LIBRARY)

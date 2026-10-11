@@ -6,8 +6,10 @@ import android.graphics.Typeface
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
@@ -63,6 +65,11 @@ fun PlaylistFloatWindow(
             pinned?.let { PlaylistLayout(it.height, it.width) }
                 ?: PlaylistLayout.ofSegments(segments, PlaylistLayout.widthOfCols(cols))
         val height = layout.height
+        // the list follows the song: one that starts out of view is brought to the middle
+        val shown by rememberUpdatedState(layout)
+        LaunchedEffect(s.currentTrack?.id) {
+            s.playlistScroll = shown.scrollShowing(s.currentIndex, s.playlistScroll, s.playlist.size)
+        }
 
         // Where the top edge is asking to be: under the stack while the window has never
         // been moved, and otherwise the row its offset puts it on. Offsets are
