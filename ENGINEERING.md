@@ -56,8 +56,8 @@ after a toolchain upgrade.
 - `verifyRoborazziDebug`, which is `:app`'s unit tests with the golden comparison on
 - the JVM unit tests of `:core:model`, `:core:playback`, `:core:player`, `:core:dsp`,
   `:core:plugin`, `:core:packapi`, `:backend:media3` (release variant, because its
-  benchmarks measure that one), `:backend:pack`, `:pack:common`, `:visualizer:avs` and
-  `:visualizer:projectm`
+  benchmarks measure that one), `:backend:pack`, `:pack:common`, `:car`,
+  `:visualizer:avs` and `:visualizer:projectm`
 
 It is a single task so the hook, CI and this file cannot disagree about what it contains.
 A module that gains tests is added to it. The push hook also runs
@@ -174,6 +174,8 @@ ui  ──▶  player domain  ◀──  backends  ──▶  dsp        skin (s
 :core:network        whether the phone has a network. Shared by the player's radio and
                      the server sources.
 :core:packapi        the AIDL and the parcels that a source and the player exchange
+:core:remotewindow   the AIDL through which an app has the player draw its main window
+                     on a surface that app owns
 :backend:media3      ExoPlayer playback. The only module that sees Media3 types.
 :backend:pack        the client side of a source: a PlaybackBackend and a BrowseSource
                      that forward over the binder, and the states for a source that is
@@ -185,6 +187,8 @@ ui  ──▶  player domain  ◀──  backends  ──▶  dsp        skin (s
 :visualizer:projectm libprojectM through JNI. The only module that sees GL.
 :visualizer:avs      AVS: parser, pipeline, and the ns-eel evaluator through JNI
 :app                 the rest: skin engine, UI, state, the home-screen widget
+:car                 an app of its own for Android Auto: it lends the car's surface to
+                     the player and holds no skin and no player
 ```
 
 `skin/` is a Python build, not a Gradle module. It writes the three bundled skins from one
@@ -368,6 +372,33 @@ Rules:
   are null, and the UI hides or blanks the readout, as Winamp did for streams.
 - **Backends are held to the shared contract test** (see Testing).
 
+### In a car
+
+Android Auto meets the player in two ways.
+
+**As a media app.** `PlaybackService` is a `MediaLibraryService`, and the manifest of
+`:backend:media3` declares the app to Android Auto. The car draws its own player from the
+session. The library a browser sees is one folder that holds the playlist (`SessionRows`,
+`SessionCallback`). A row picked from it, and a song asked for by voice, arrive as a request
+to set a media item, and `BackendPlayer` answers with a jump to that row, so no controller
+edits the playlist. A car can be the first thing in the process to ask for the session;
+`Media3PlaybackHost.wake` is how it gets a player then.
+
+**With its own window, through `:car`.** Android Auto gives a drawing surface to navigation
+apps only, so the app that declares itself one is a separate app, installed by hand, and
+the player stays a media app. `:car` has one screen. `LentSurface` hands the car's surface
+to the player over `IRemoteWindow` and passes on taps and drags. In the player,
+`RemoteWindowService` takes the calls of an app signed with the player's own key, and
+`RemoteWindow` puts a virtual display over the surface with a presentation that composes
+`RemoteScreen`: the main window at the largest whole scale that fits, on black. Its EQ
+button swaps the screen to the equalizer, and its PL button to `RemoteList`, a list with
+rows a finger can hit that plays the row it is tapped on. The skin there is the one chosen
+on Preferences > Car (`CarStore`).
+
+There is one renderer: the draw functions and widgets of the phone's own windows. `:car`
+never learns what is on the surface. With the player on two surfaces at once, one of them
+steps the clocks (`WinampState.clocksTurn`).
+
 ### State
 
 - **Domain.** `PlayerFacade` (`:core:player`) is the UI's only entry to playback. It
@@ -542,6 +573,14 @@ cover the engine, the playlist and the GL surface. AVS components that run prese
 scripts need the native ns-eel evaluator, so their tests are in
 `:visualizer:avs`'s `androidTest` too. The binder between the player and a source also
 needs a device: real marshalling, a source that dies, a version mismatch.
+
+Two more need a device because they cross a process or a display.
+`PlatformBrowserOnDeviceTest` in `:backend:media3` connects the platform's media browser to
+`PlaybackService`, as a car does. `LendToPlayerOnDeviceTest` in `:car` lends a surface of
+its own to the player installed on the device and reads back what the player drew; it
+writes the pictures to the test app's files directory. Android Auto itself is checked with
+the Desktop Head Unit and a phone whose Android Auto has "Unknown sources" switched on in
+its developer settings.
 
 The push hook cannot run device tests, so run them yourself after touching native code or
 the binder. Keep what can be pure Kotlin out of the native side (preset import, path
