@@ -11,6 +11,7 @@ import nl.mattix.andamp.core.model.RackSettings
 import nl.mattix.andamp.core.model.RackSlot
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.lang.management.ManagementFactory
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
@@ -38,14 +39,22 @@ class IdleChainCostTest {
             it.flush()
         }
 
+    /**
+     * Seconds of audio processed per second of this thread's own processor time, the best of
+     * [RUNS] runs. The clock on the wall also counts the time this thread waits for a
+     * processor while other work has it, which a build running tests side by side makes
+     * long and uneven; that wait is not the chain's cost.
+     */
     private fun secondsOfAudioPerSecond(pipeline: AudioProcessingPipeline): Double {
-        val buffers = 2000 // about 46 seconds of audio
-        repeat(200) { push(pipeline) } // warm up the JIT
-        val start = System.nanoTime()
-        repeat(buffers) { push(pipeline) }
-        val elapsedSec = (System.nanoTime() - start) / 1e9
+        val buffers = 1000 // about 23 seconds of audio
         val audioSec = buffers * framesPerBuffer.toDouble() / rate
-        return audioSec / elapsedSec
+        val clock = ManagementFactory.getThreadMXBean()
+        repeat(200) { push(pipeline) } // warm up the JIT
+        return (1..RUNS).maxOf {
+            val start = clock.currentThreadCpuTime
+            repeat(buffers) { push(pipeline) }
+            audioSec / ((clock.currentThreadCpuTime - start) / NANOS_PER_SECOND)
+        }
     }
 
     private fun push(pipeline: AudioProcessingPipeline) {
@@ -92,5 +101,11 @@ class IdleChainCostTest {
         println("full rack: ${"%.0f".format(ratio)}x real time")
         // a floor well above real time for the whole rack
         assertTrue("the whole rack runs more than 15x real time: ${"%.0f".format(ratio)}x", ratio > 15)
+    }
+
+    private companion object {
+        /** Short runs and several of them: one is enough to have had a processor to itself. */
+        const val RUNS = 6
+        const val NANOS_PER_SECOND = 1e9
     }
 }
