@@ -114,7 +114,7 @@ fun EqFloatWindow(
 }
 
 @Composable
-private fun VisualizerOverlay(
+internal fun VisualizerOverlay(
     skin: nl.mattix.andamp.skin.Skin,
     s: nl.mattix.andamp.state.WinampState,
     scale: Int,

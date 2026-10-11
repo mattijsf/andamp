@@ -96,6 +96,7 @@ val gate =
             ":core:packapi:testDebugUnitTest",
             ":backend:media3:testReleaseUnitTest",
             ":backend:pack:testDebugUnitTest",
+            ":car:testDebugUnitTest",
             ":pack:common:testDebugUnitTest",
             ":visualizer:avs:testDebugUnitTest",
             ":visualizer:projectm:testDebugUnitTest",

@@ -353,6 +353,8 @@ dependencies {
     // installed
     implementation(project(":core:plugin"))
     implementation(project(":backend:media3"))
+    // the contract a companion app lends a surface through; see RemoteWindowService
+    implementation(project(":core:remotewindow"))
     // The client end of a pack, and the contract it implements. A source is found on the phone, not
     // compiled in, and neither module names a service, so the word scan over the shipped app finds
     // nothing.

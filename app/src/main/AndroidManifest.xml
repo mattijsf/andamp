@@ -152,6 +152,19 @@
             android:excludeFromRecents="true"
             android:launchMode="singleTop"
             android:exported="false" />
+        <!--
+          The main window on a surface another app lends: a car's screen, through the
+          companion app Android Auto talks to. The service checks who is calling; see
+          RemoteWindowTrust.
+        -->
+        <service
+            android:name=".ui.remote.RemoteWindowService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="nl.mattix.andamp.window.BIND" />
+            </intent-filter>
+        </service>
+
     </application>
 
 </manifest>
