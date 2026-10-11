@@ -163,15 +163,7 @@ class EqOps(
 
     private fun currentAsPreset(name: String) = EqPreset(name, state.preamp, state.eqBands.toList())
 
-    private fun push() {
-        facade.setEqualizer(
-            EqSettings(
-                enabled = state.eqOn,
-                preampDb = eqDb(state.preamp),
-                bandsDb = state.eqBands.map(::eqDb),
-            ),
-        )
-    }
+    private fun push() = facade.setEqualizer(settingsOf(state))
 
     companion object {
         /** The 0 dB position, where the factory presets put a flat band. */
@@ -185,5 +177,13 @@ class EqOps(
 
         /** Winamp slider 0..63 onto dB, with [CENTER] at 0. */
         fun eqDb(value: Int): Float = (value - CENTER) / CENTER.toFloat() * RANGE_DB
+
+        /** The equalizer on screen, as a backend takes it. */
+        fun settingsOf(state: WinampState) =
+            EqSettings(
+                enabled = state.eqOn,
+                preampDb = eqDb(state.preamp),
+                bandsDb = state.eqBands.map(::eqDb),
+            )
     }
 }

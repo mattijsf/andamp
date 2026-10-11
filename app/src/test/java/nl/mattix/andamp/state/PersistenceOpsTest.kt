@@ -45,7 +45,7 @@ class PersistenceOpsTest {
     @Before
     fun setUp() {
         app = ApplicationProvider.getApplicationContext()
-        listOf("windows", "transport", "visuals").forEach {
+        listOf("windows", "transport", "visuals", "equalizer").forEach {
             app
                 .getSharedPreferences(it, 0)
                 .edit()
@@ -68,6 +68,7 @@ class PersistenceOpsTest {
             TransportStore(app),
             WindowStore(app),
             VisualsStore(app),
+            EqStore(app),
             io = Dispatchers.Unconfined,
         )
     }
@@ -199,6 +200,7 @@ class PersistenceOpsTest {
                 TransportStore(app),
                 WindowStore(app),
                 VisualsStore(app),
+                EqStore(app),
                 io = Dispatchers.Unconfined,
             )
         ops.start()
@@ -230,6 +232,7 @@ class PersistenceOpsTest {
                 TransportStore(app),
                 WindowStore(app),
                 VisualsStore(app),
+                EqStore(app),
                 io = Dispatchers.Unconfined,
                 namedElsewhere = { null },
             )
