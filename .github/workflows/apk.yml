@@ -14,8 +14,11 @@
 #
 #   APK_KEYSTORE_BASE64     the keystore file, base64
 #   APK_KEYSTORE_PASSWORD   its password
-#   APK_KEY_ALIAS           the key's name in it
 #   APK_KEY_PASSWORD        the key's password
+#
+# The key's name in the keystore and its certificate's fingerprint are not secret and are
+# written below. A secret's value is starred out wherever it appears in a log, which a name
+# as short as this one would do to half of every line.
 #
 # It is not the key Play uploads are signed with, and it cannot be: Play signs what it hands
 # out with a key only Google holds. An install from Play and an install of this APK therefore
@@ -34,8 +37,6 @@ on:
         required: true
       APK_KEYSTORE_PASSWORD:
         required: true
-      APK_KEY_ALIAS:
-        required: true
       APK_KEY_PASSWORD:
         required: true
   workflow_dispatch:
@@ -53,6 +54,9 @@ jobs:
     runs-on: ubuntu-latest
     env:
       TAG: ${{ inputs.tag }}
+      KEY_ALIAS: apk
+      # the SHA-256 of the signing certificate, which every APK from here must carry
+      CERTIFICATE: 3ecaa6978a708ed3799433ad000b214ad7c389f8e22ab4bb908e67f80cd7a4ce
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
@@ -73,9 +77,8 @@ jobs:
       - name: Put the signing key in place
         env:
           KEYSTORE_BASE64: ${{ secrets.APK_KEYSTORE_BASE64 }}
-          KEY_ALIAS: ${{ secrets.APK_KEY_ALIAS }}
         run: |
-          if [ -z "$KEYSTORE_BASE64" ] || [ -z "$KEY_ALIAS" ]; then
+          if [ -z "$KEYSTORE_BASE64" ]; then
             echo "::error::The APK_* signing secrets are not set; see the top of .github/workflows/apk.yml"
             exit 1
           fi
@@ -98,7 +101,11 @@ jobs:
           named="andamp-$version.apk"
           cp "$built" "$named"
           tools=$(ls -d "$ANDROID_HOME"/build-tools/* | sort -V | tail -1)
-          "$tools/apksigner" verify --print-certs "$named" | grep -E "Signer #1 certificate (DN|SHA-256)"
+          "$tools/apksigner" verify --print-certs "$named" 2>&1 | tee signed.txt
+          if ! grep -q -i "$CERTIFICATE" signed.txt; then
+            echo "::error::$named is not signed with the certificate $CERTIFICATE"
+            exit 1
+          fi
           echo "file=$named" >> "$GITHUB_OUTPUT"
 
       - name: Attach it to the release
