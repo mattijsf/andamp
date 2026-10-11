@@ -16,17 +16,18 @@ enum class AvsCoordinates { POLAR, CARTESIAN }
  * +pi/2 offset (hence the `r - pi/2` terms) and `d` is isotropic over the
  * half-diagonal in pixels.
  *
- * "Slight Fuzzify" and "Blocky Partial Out" have no script here: they work per
- * pixel, which the grid mesh cannot do. They are listed so that a preset using
- * one is reported as unimplemented.
+ * "Slight Fuzzify" and "Blocky Partial Out" have no script: they move single
+ * pixels, which the grid mesh cannot do, and carry a [table] instead.
  */
 data class MovementEffect(
     val name: String,
     val code: String,
     val coordinates: AvsCoordinates,
+    /** For an effect that is not a script: where each pixel is read from. */
+    val table: MovementTable? = null,
 ) {
-    /** Whether this build can produce it. The two without a script cannot. */
-    val runnable get() = code.isNotBlank() || name == "None"
+    /** Whether this build can produce it. */
+    val runnable get() = code.isNotBlank() || name == "None" || table != null
 
     /** The script in a form the evaluator accepts. See [asEel]. */
     val eel get() = asEel(code)
@@ -73,7 +74,7 @@ object MovementEffects {
     private val byId: Map<Int, MovementEffect> =
         mapOf(
             0 to MovementEffect("None", "", AvsCoordinates.POLAR),
-            1 to MovementEffect("Slight Fuzzify", "", AvsCoordinates.POLAR),
+            1 to MovementEffect("Slight Fuzzify", "", AvsCoordinates.POLAR, MovementTables.slightFuzzify()),
             2 to MovementEffect("Shift Rotate Left", "x=x+(1/32)-(1/sw),", AvsCoordinates.CARTESIAN),
             3 to MovementEffect("Big Swirl Out", "r = r + (0.1 - (0.2 * d)), d = d * 0.96,", AvsCoordinates.POLAR),
             4 to
@@ -96,7 +97,7 @@ object MovementEffects {
                         "3.141592653589793 * 4)),",
                     AvsCoordinates.POLAR,
                 ),
-            7 to MovementEffect("Blocky Partial Out", "", AvsCoordinates.POLAR),
+            7 to MovementEffect("Blocky Partial Out", "", AvsCoordinates.POLAR, MovementTables.BLOCKY_PARTIAL_OUT),
             8 to
                 MovementEffect(
                     "Swirling Around Both Ways At Once",
@@ -199,4 +200,87 @@ object MovementEffects {
 
     /** The effect id AVS writes when a preset carries its own script. */
     const val CUSTOM = 0x7FFF
+
+    /** The effect a Movement has before its body says otherwise: Slight Fuzzify. */
+    const val DEFAULT = 1
+}
+
+/** For every pixel of a frame, the index of the pixel it is read from. */
+fun interface MovementTable {
+    fun build(
+        width: Int,
+        height: Int,
+    ): IntArray
+}
+
+/**
+ * The two built-in effects that are tables and not scripts. Transcribed from
+ * vis_avs `r_trans.cpp` `smp_begin` (BSD; see NOTICE.md).
+ */
+object MovementTables {
+    /**
+     * Each pixel is read from itself or one of its eight neighbors, picked
+     * once when the table is built.
+     */
+    fun slightFuzzify(random: java.util.Random = java.util.Random()) =
+        MovementTable { width, height ->
+            val last = width * height - 1
+            IntArray(width * height) { at ->
+                val from = at + (random.nextInt(SPREAD) - 1) + (random.nextInt(SPREAD) - 1) * width
+                from.coerceIn(0, last)
+            }
+        }
+
+    /**
+     * One pixel in four, where neither coordinate has its second bit set, is
+     * read from seven eighths of the way out from the center; the rest stay.
+     */
+    val BLOCKY_PARTIAL_OUT =
+        MovementTable { width, height ->
+            IntArray(width * height) { at ->
+                val x = at % width
+                val y = at / width
+                if (x and 2 != 0 || y and 2 != 0) {
+                    at
+                } else {
+                    val fromX = width / 2 + ((x and 1.inv()) - width / 2) * OUT_NUMERATOR / OUT_DENOMINATOR
+                    val fromY = height / 2 + ((y and 1.inv()) - height / 2) * OUT_NUMERATOR / OUT_DENOMINATOR
+                    fromX + fromY * width
+                }
+            }
+        }
+
+    private const val SPREAD = 3
+    private const val OUT_NUMERATOR = 7
+    private const val OUT_DENOMINATOR = 8
+}
+
+/**
+ * A Movement whose effect is a [MovementTable]: every pixel is replaced by the
+ * one its table entry names, read from the frame as it came in. The table is
+ * built once per frame size.
+ */
+internal class MovementTableRenderer(
+    private val table: MovementTable,
+    private val blend: AvsBlendMode,
+) : AvsComponentRenderer {
+    private var indices = IntArray(0)
+    private var source: AvsFrame? = null
+
+    override fun render(
+        frame: AvsFrame,
+        audio: AvsAudioFrame,
+        state: AvsRenderState,
+    ) {
+        val scratch =
+            source?.takeIf { it.sameSizeAs(frame) } ?: AvsFrame(frame.width, frame.height).also {
+                source = it
+                indices = table.build(frame.width, frame.height)
+            }
+        scratch.copyFrom(frame)
+        val from = scratch.pixels
+        val to = frame.pixels
+        for (at in to.indices) to[at] = from[indices[at]]
+        if (blend != AvsBlendMode.REPLACE) AvsBlend.blend(blend, scratch, frame)
+    }
 }

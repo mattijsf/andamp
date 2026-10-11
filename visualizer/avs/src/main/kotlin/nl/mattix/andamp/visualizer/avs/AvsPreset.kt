@@ -38,7 +38,7 @@ data class AvsEffectListConfig(
     val output: AvsBlendMode = AvsBlendMode.REPLACE,
     val inAdjust: Int = 0,
     val outAdjust: Int = 0,
-    /** Which global buffer the [AvsBlendMode.BUFFER] modes mean, counted from one. */
+    /** Which global buffer the [AvsBlendMode.BUFFER] modes mean, counted from zero. */
     val inBuffer: Int = 0,
     val outBuffer: Int = 0,
     val inBufferInvert: Boolean = false,

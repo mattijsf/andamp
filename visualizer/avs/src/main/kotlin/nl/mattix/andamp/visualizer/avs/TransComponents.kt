@@ -34,6 +34,31 @@ internal class BodyReader(
     /** A 4-byte IEEE float. */
     fun float(): Float = Float.fromBits(int32())
 
+    /** A float, or [default] when the body ends before it. */
+    fun floatOr(default: Float): Float = if (has(INT_SIZE)) float() else default
+
+    /** Whether [count] more bytes are left to read. */
+    fun has(count: Int) = bytes.size - at >= count
+
+    /**
+     * The next int32, or [default] when the body ends before it. AVS reads
+     * every setting this way: an older build wrote fewer of them, and a
+     * setting that is not there keeps the value a new component starts with.
+     */
+    fun int32Or(default: Int): Int = if (has(INT_SIZE)) int32() else default
+
+    /**
+     * A length and that many bytes of text, as vis_avs `load_string` reads
+     * it; empty when the length is not positive or runs past the body.
+     */
+    fun string(): String {
+        if (!has(INT_SIZE)) return ""
+        val length = int32()
+        if (length <= 0 || !has(length)) return ""
+        val end = (at until at + length).firstOrNull { bytes[it].toInt() == 0 } ?: (at + length)
+        return String(bytes, at, end - at, Charsets.ISO_8859_1).also { at += length }
+    }
+
     fun byte(): Int {
         if (at >= bytes.size) {
             ok = false
@@ -65,11 +90,7 @@ internal class InvertRenderer(
     companion object {
         private const val CHANNELS = 0x00FFFFFF
 
-        fun read(body: ByteArray): InvertRenderer? {
-            val reader = BodyReader(body)
-            val enabled = reader.int32() != 0
-            return if (reader.ok) InvertRenderer(enabled) else null
-        }
+        fun read(body: ByteArray) = InvertRenderer(enabled = BodyReader(body).int32Or(1) != 0)
     }
 }
 
@@ -114,12 +135,14 @@ internal class FadeOutRenderer(
         /** The top of AVS's own range. */
         private const val MAX_SPEED = 92
 
-        fun read(body: ByteArray): FadeOutRenderer? {
+        fun read(body: ByteArray): FadeOutRenderer {
             val reader = BodyReader(body)
-            val speed = reader.int32().coerceIn(0, MAX_SPEED)
-            val colour = AvsFrame.fromConfig(reader.int32())
-            return if (reader.ok) FadeOutRenderer(speed, colour) else null
+            val speed = reader.int32Or(DEFAULT_SPEED).coerceIn(0, MAX_SPEED)
+            val colour = AvsFrame.fromConfig(reader.int32Or(0))
+            return FadeOutRenderer(speed, colour)
         }
+
+        private const val DEFAULT_SPEED = 16
     }
 }
 
@@ -213,16 +236,14 @@ internal class BlurRenderer(
          */
         private val LEVELS = listOf(AvsBlurLevel.NONE, AvsBlurLevel.MEDIUM, AvsBlurLevel.LIGHT, AvsBlurLevel.HEAVY)
 
-        fun read(body: ByteArray): BlurRenderer? {
+        fun read(body: ByteArray): BlurRenderer {
             val reader = BodyReader(body)
-            val level = LEVELS.getOrNull(reader.int32()) ?: AvsBlurLevel.NONE
-            if (!reader.ok) return null
+            // a new Blur is medium, and so is any level the list does not name
+            val level = LEVELS.getOrNull(reader.int32Or(1)) ?: AvsBlurLevel.MEDIUM
             // old bodies end before the round field
-            val roundUp = body.size >= ROUNDED_BODY && reader.int32() == 1
+            val roundUp = reader.int32Or(0) != 0
             return BlurRenderer(level, roundUp)
         }
-
-        private const val ROUNDED_BODY = 8
     }
 }
 
@@ -264,16 +285,19 @@ internal class BufferSaveRenderer(
     }
 
     companion object {
-        fun read(body: ByteArray): BufferSaveRenderer? {
+        fun read(body: ByteArray): BufferSaveRenderer {
             val reader = BodyReader(body)
-            val action = AvsBufferAction.entries.getOrNull(reader.int32()) ?: AvsBufferAction.SAVE
-            // one-based in the file: e_buffersave passes config.buffer - 1 to
-            // get_buffer, and so do the Effect List's buffer fields
-            val buffer = reader.int32() - 1
-            val blend = AvsBlendMode.buffered(reader.int32())
-            val adjust = reader.int32()
-            return if (reader.ok) BufferSaveRenderer(action, buffer, blend, adjust) else null
+            val action = AvsBufferAction.entries.getOrNull(reader.int32Or(0)) ?: AvsBufferAction.SAVE
+            // the file counts buffers from zero, and r_stack.cpp clamps the
+            // number into the eight there are
+            val buffer = reader.int32Or(0).coerceIn(0, LAST_BUFFER)
+            val blend = AvsBlendMode.buffered(reader.int32Or(0))
+            val adjust = reader.int32Or(DEFAULT_ADJUST)
+            return BufferSaveRenderer(action, buffer, blend, adjust)
         }
+
+        private const val LAST_BUFFER = 7
+        private const val DEFAULT_ADJUST = 128
     }
 }
 
@@ -316,22 +340,21 @@ internal class SetRenderModeRenderer(
          * flag as the top bit of the fourth byte, which is bit 31 of the whole
          * int (`r_linemode.cpp`'s 0x80000000).
          */
-        fun read(body: ByteArray): SetRenderModeRenderer? {
-            val reader = BodyReader(body)
-            val blendByte = reader.byte()
-            val adjust = reader.byte()
-            val lineSize = reader.byte()
-            val flags = reader.byte()
-            return if (reader.ok) {
-                SetRenderModeRenderer(
-                    enabled = flags and ENABLED_BIT != 0,
-                    blend = AvsBlendMode.rendering(blendByte),
-                    adjust = adjust,
-                    lineSize = lineSize,
-                )
-            } else {
-                null
-            }
+        fun read(body: ByteArray): SetRenderModeRenderer {
+            val mode = BodyReader(body).int32Or(DEFAULT_MODE)
+            return SetRenderModeRenderer(
+                enabled = (mode ushr FLAGS_SHIFT) and ENABLED_BIT != 0,
+                blend = AvsBlendMode.rendering(mode and BYTE),
+                adjust = (mode ushr ADJUST_SHIFT) and BYTE,
+                lineSize = (mode ushr LINE_SHIFT) and BYTE,
+            )
         }
+
+        /** What a new Set Render Mode holds: enabled, replace, lines one pixel wide. */
+        private const val DEFAULT_MODE = 0x80010000.toInt()
+        private const val BYTE = 0xFF
+        private const val ADJUST_SHIFT = 8
+        private const val LINE_SHIFT = 16
+        private const val FLAGS_SHIFT = 24
     }
 }

@@ -51,7 +51,7 @@ internal class ColorModifierRenderer(
     private val red = eel.variable("red")
     private val green = eel.variable("green")
     private val blue = eel.variable("blue")
-    private val beat = eel.variable("b")
+    private val beat = eel.variable("beat")
 
     private val initCode = compile(init)
     private val frameCode = compile(perFrame)
@@ -112,13 +112,15 @@ internal class ColorModifierRenderer(
         }
     }
 
-    private fun level(value: Double) = (value * (LEVELS - 1)).toInt().coerceIn(0, LEVELS - 1)
+    private fun level(value: Double) = (value * (LEVELS - 1) + ROUND).toInt().coerceIn(0, LEVELS - 1)
 
     private fun compile(source: String) = MovementEffect.asEel(source).takeIf { it.isNotBlank() }?.let { eel.compile(it) }
 
     override fun close() = eel.close()
 
     companion object {
+        /** AVS rounds a curve's value to the nearest level. */
+        private const val ROUND = 0.5
         private const val LEVELS = 256
         private const val SECTIONS = 4
 
@@ -132,8 +134,9 @@ internal class ColorModifierRenderer(
             val reader = CodeSectionReader(body, if (current) 1 else 0, current)
             val code = List(SECTIONS) { reader.next() }
             if (!reader.ok) return null
-            // the flag is the last field, and old presets end before it
-            val recompute = reader.rest().int32() != 0
+            // the flag is the last field; an old preset ends before it and
+            // recomputes every frame, as a new Color Modifier does
+            val recompute = reader.rest().int32Or(1) != 0
             return ColorModifierRenderer(code[3], code[1], code[2], code[0], recompute, eel)
         }
     }
@@ -239,15 +242,21 @@ internal class ChannelShiftRenderer(
                 1022 to "GRB",
             )
 
-        fun read(body: ByteArray): ChannelShiftRenderer? {
-            val reader = BodyReader(body)
-            val mode = reader.int32()
-            if (!reader.ok) return null
-            // the second int is on-beat random; e_channelshift.cpp reads it
-            // only when the body is long enough, so absent means off
-            val onBeatRandom = reader.int32() != 0
+        /**
+         * The body is a struct of two ints, the order and whether a beat picks
+         * a new one. r_chanshift.cpp copies as much of it as the body holds
+         * over what a new Channel Shift starts with (RBG, changing on the
+         * beat), and ignores a body longer than the struct.
+         */
+        fun read(body: ByteArray): ChannelShiftRenderer {
+            val reader = BodyReader(if (body.size <= STRUCT_SIZE) body else ByteArray(0))
+            val mode = reader.int32Or(DEFAULT_ORDER)
+            val onBeatRandom = reader.int32Or(1) != 0
             return ChannelShiftRenderer(ORDERS[mode] ?: "RGB", onBeatRandom)
         }
+
+        private const val STRUCT_SIZE = 8
+        private const val DEFAULT_ORDER = 1020
     }
 }
 
@@ -325,23 +334,25 @@ internal class GrainRenderer(
         /** Fixed, so the grain is the same on every run of a test. */
         private const val SEED = 0x6772616EL
 
-        fun read(body: ByteArray): GrainRenderer? {
+        fun read(body: ByteArray): GrainRenderer {
             val reader = BodyReader(body)
-            val enabled = reader.int32() != 0
+            val enabled = reader.int32Or(1) != 0
             // grain's own pair: the 50/50 int only counts when additive is not
             // set (`GET_INT() && blend_mode == 0`), the opposite priority of
             // pairBlend, and there is no default-render-blend option
-            val additive = reader.int32() != 0
-            val fifty = reader.int32() != 0
+            val additive = reader.int32Or(0) != 0
+            val fifty = reader.int32Or(0) != 0
             val blend =
                 when {
                     additive -> AvsBlendMode.ADDITIVE
                     fifty -> AvsBlendMode.FIFTY_FIFTY
                     else -> AvsBlendMode.REPLACE
                 }
-            val amount = reader.int32()
-            val static = reader.int32() != 0
-            return if (reader.ok) GrainRenderer(enabled, amount, static, blend) else null
+            val amount = reader.int32Or(DEFAULT_AMOUNT)
+            val static = reader.int32Or(0) != 0
+            return GrainRenderer(enabled, amount, static, blend)
         }
+
+        private const val DEFAULT_AMOUNT = 100
     }
 }

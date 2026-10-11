@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.visualizer.avs
 
+import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
@@ -208,6 +209,59 @@ class AvsParserTest {
         val parsed = AvsParser.parse(preset(body = list)).components.single() as AvsComponent.EffectList
 
         assertEquals(false, parsed.config.enabled)
+    }
+
+    /**
+     * The oldest lists are one mode byte and then their children. Such a list
+     * replaces what is under it, and nothing of its first child is taken for a
+     * setting.
+     */
+    @Test
+    fun `a list from before the extended settings is its mode byte and its children`() {
+        val children = builtin(BLUR, byteArrayOf(1, 0, 0, 0)) + builtin(INVERT, byteArrayOf(1, 0, 0, 0))
+        val body = byteArrayOf(0x01) + children
+        val list = int32(AvsComponents.EFFECT_LIST) + int32(body.size) + body
+
+        val parsed = AvsParser.parse(preset(body = list)).components.single() as AvsComponent.EffectList
+
+        assertEquals(listOf("Blur", "Invert"), parsed.components.map { it.name })
+        assertTrue(parsed.config.clearFrame)
+        assertTrue(parsed.config.enabled)
+        assertEquals(AvsBlendMode.IGNORE, parsed.config.input)
+        assertEquals(AvsBlendMode.REPLACE, parsed.config.output)
+    }
+
+    /** The mode bit with a zero length for the extended settings: the mode int, then the children. */
+    @Test
+    fun `a list with a mode int and no extended settings starts its children after the int`() {
+        val body = byteArrayOf(MODE_BIT.toByte(), 0, 0, 0, 0) + builtin(BLUR) + builtin(INVERT)
+        val list = int32(AvsComponents.EFFECT_LIST) + int32(body.size) + body
+
+        val parsed = AvsParser.parse(preset(body = list)).components.single() as AvsComponent.EffectList
+
+        assertEquals(listOf("Blur", "Invert"), parsed.components.map { it.name })
+        assertEquals(0, parsed.config.inAdjust)
+    }
+
+    @Test
+    fun `an empty list is a list with nothing in it`() {
+        val list = int32(AvsComponents.EFFECT_LIST) + int32(0)
+
+        val parsed = AvsParser.parse(preset(body = list)).components.single() as AvsComponent.EffectList
+
+        assertEquals(emptyList<AvsComponent>(), parsed.components)
+    }
+
+    /** AVS loads the built-in for a preset that still names the plug-in it replaced. */
+    @Test
+    fun `a plug-in that became a built-in is read as the built-in`() {
+        val body = byteArrayOf(1, 2, 3, 4)
+
+        val parsed = AvsParser.parse(preset(body = ape("Winamp Starfield v1", body) + ape("Nullsoft MIRROR v1")))
+
+        assertEquals(listOf("Starfield", "Mirror"), parsed.components.map { it.name })
+        assertTrue(parsed.components.all { it is AvsComponent.Builtin })
+        assertArrayEquals(body, parsed.components[0].body)
     }
 
     @Test

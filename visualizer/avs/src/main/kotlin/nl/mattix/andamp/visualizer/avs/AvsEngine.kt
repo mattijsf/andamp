@@ -162,7 +162,7 @@ class AvsEngine(
      * - otherwise the list's own canvas persists across frames, is freed the
      *   moment the list goes disabled, and the input blend decides what of
      *   the frame below comes in - including BUFFER, a per-pixel mask blend
-     *   through a global buffer, one-based in the file;
+     *   through a global buffer, numbered from zero in the file;
      * - each list zeroes the render mode for its children and restores the
      *   outer one afterwards, and a beat rewritten inside stays inside.
      */
@@ -211,8 +211,7 @@ class AvsEngine(
     ) {
         if (config.input == AvsBlendMode.IGNORE) return
         if (config.input == AvsBlendMode.BUFFER) {
-            // one-based in the file, like every buffer field in the format
-            val buffer = buffers.peek(config.inBuffer - 1) ?: return
+            val buffer = buffers.peek(config.inBuffer) ?: return
             if (buffer.sameSizeAs(canvas)) maskBlend(target, canvas, buffer, config.inBufferInvert)
             return
         }
@@ -225,7 +224,7 @@ class AvsEngine(
         target: AvsFrame,
     ) {
         if (config.output == AvsBlendMode.BUFFER) {
-            val buffer = buffers.peek(config.outBuffer - 1) ?: return
+            val buffer = buffers.peek(config.outBuffer) ?: return
             if (buffer.sameSizeAs(target)) maskBlend(canvas, target, buffer, config.outBufferInvert)
             return
         }
@@ -285,6 +284,13 @@ class AvsEngine(
             return made
         }
 
+        /** A Movement is a table for the two effects that move single pixels, and a script otherwise. */
+        private fun movement(parsed: MovementRenderer.ParsedMovement): AvsComponentRenderer? {
+            val blend = if (parsed.fiftyFifty) AvsBlendMode.FIFTY_FIFTY else AvsBlendMode.REPLACE
+            return parsed.effect.table?.let { MovementTableRenderer(it, blend) }
+                ?: scripted { MovementRenderer.of(parsed, it) }
+        }
+
         /**
          * Every component this build runs, by the name AVS's own editor shows,
          * and the reader that turns a body into a renderer.
@@ -302,7 +308,7 @@ class AvsEngine(
                 "Buffer Save" to { body -> BufferSaveRenderer.read(body) },
                 "Set Render Mode" to { body -> SetRenderModeRenderer.read(body) },
                 "Comment" to { _ -> CommentRenderer() },
-                "Movement" to { body -> scripted { MovementRenderer.read(body, it) } },
+                "Movement" to { body -> MovementRenderer.parse(body)?.let(::movement) },
                 "Moving Particle" to { body -> MovingParticleRenderer.read(body) },
                 "Custom BPM" to { body -> CustomBpmRenderer.read(body) },
                 "Dynamic Movement" to { body -> DynamicMovementRenderer.read(body)?.let { DynamicMovementRenderer(it) } },
@@ -332,6 +338,14 @@ class AvsEngine(
                 "Color Reduction" to { body -> ColorReductionRenderer.read(body) },
                 "Channel Shift" to { body -> ChannelShiftRenderer.read(body) },
                 "Interferences" to { body -> InterferencesRenderer.read(body) },
+                "Water" to { body -> WaterRenderer.read(body) },
+                "Water Bump" to { body -> WaterBumpRenderer.read(body) },
+                "Scatter" to { body -> ScatterRenderer.read(body) },
+                "Oscilliscope Star" to { body -> OscilloscopeStarRenderer.read(body) },
+                "Rotating Stars" to { body -> RotatingStarsRenderer.read(body) },
+                "Dot Fountain" to { body -> DotFountainRenderer.read(body) },
+                "Dot Plane" to { body -> DotPlaneRenderer.read(body) },
+                "Bump" to { body -> scripted { BumpRenderer.read(body, it) } },
             )
 
         /** The names of the components this build can run. */

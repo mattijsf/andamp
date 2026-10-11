@@ -18,7 +18,7 @@ import kotlin.random.Random
 // the byte views over this app's float tap are defined here.
 
 /** `fa_data[i] ^ 128` for a waveform channel: 0..255 with silence at 128. */
-private fun waveByte(
+internal fun waveByte(
     audio: AvsAudioFrame,
     index: Int,
 ): Int {
@@ -28,7 +28,7 @@ private fun waveByte(
 }
 
 /** `fa_data[i]` for the spectrum: a magnitude byte, 0..255. */
-private fun specByte(
+internal fun specByte(
     audio: AvsAudioFrame,
     index: Int,
 ): Int {
@@ -36,6 +36,12 @@ private fun specByte(
     if (samples.isEmpty()) return 0
     return (samples[index.coerceIn(0, samples.size - 1)] * 255f).toInt().coerceIn(0, 255)
 }
+
+/** White as a preset writes it, the color most Render components start with. */
+private const val WHITE = 0xFFFFFF
+
+/** What Simple and Ring start with: the center channel, in the center of the frame. */
+private const val DEFAULT_EFFECT = (2 shl 2) or (2 shl 4)
 
 /** The pi these effects write out by hand: `3.14159`, not `M_PI`. */
 private const val AVS_PI = 3.14159
@@ -251,11 +257,10 @@ internal class SimpleRenderer(
         private const val WAVEFORM_BIT = 2
         private val POSITIONS = listOf(AvsPosition.TOP, AvsPosition.BOTTOM, AvsPosition.CENTER)
 
-        fun read(body: ByteArray): SimpleRenderer? {
+        fun read(body: ByteArray): SimpleRenderer {
             val reader = BodyReader(body)
-            val effect = reader.int32()
-            val colours = reader.colourList()
-            if (!reader.ok) return null
+            val effect = reader.int32Or(DEFAULT_EFFECT)
+            val colours = reader.colourListOr()
 
             val dots = effect and DOTS_BIT != 0
             val source =
@@ -318,14 +323,15 @@ internal class TimescopeRenderer(
     }
 
     companion object {
-        fun read(body: ByteArray): TimescopeRenderer? {
+        fun read(body: ByteArray): TimescopeRenderer {
             val reader = BodyReader(body)
-            val enabled = reader.int32() != 0
-            val colour = AvsFrame.fromConfig(reader.int32())
-            val blend = reader.pairBlend()
-            reader.int32() // audio channel: this app's tap is mono, see AvsAudioFrame
-            val bands = reader.int32()
-            return if (reader.ok) TimescopeRenderer(enabled, colour, blend, bands) else null
+            val enabled = reader.int32Or(1) != 0
+            val colour = AvsFrame.fromConfig(reader.int32Or(WHITE))
+            // a new Timescope draws with the render mode
+            val blend = reader.pairBlend(whenMissing = 2)
+            reader.int32Or(0) // audio channel: this app's tap is mono, see AvsAudioFrame
+            val bands = reader.int32Or(AvsAudioFrame.SAMPLES)
+            return TimescopeRenderer(enabled, colour, blend, bands)
         }
     }
 }
@@ -386,15 +392,20 @@ internal class DotGridRenderer(
          */
         private const val MAX_SPACING = 1 shl 16
 
-        fun read(body: ByteArray): DotGridRenderer? {
+        fun read(body: ByteArray): DotGridRenderer {
             val reader = BodyReader(body)
-            val colours = reader.colourList()
-            val spacing = reader.int32()
-            val speedX = reader.int32()
-            val speedY = reader.int32()
-            val blend = shortBlendOrDefault(reader.int32())
-            return if (reader.ok) DotGridRenderer(colours, spacing, speedX, speedY, blend) else null
+            val colours = reader.colourListOr()
+            val spacing = reader.int32Or(DEFAULT_SPACING)
+            val speedX = reader.int32Or(DEFAULT_SPEED)
+            val speedY = reader.int32Or(DEFAULT_SPEED)
+            // a new Dot Grid draws with the render mode
+            val blend = shortBlendOrDefault(reader.int32Or(RENDER_MODE))
+            return DotGridRenderer(colours, spacing, speedX, speedY, blend)
         }
+
+        private const val DEFAULT_SPACING = 8
+        private const val DEFAULT_SPEED = 128
+        private const val RENDER_MODE = 3
     }
 }
 
@@ -468,15 +479,17 @@ internal class RingRenderer(
     companion object {
         private val POSITIONS = listOf(AvsPosition.LEFT, AvsPosition.RIGHT, AvsPosition.CENTER)
 
-        fun read(body: ByteArray): RingRenderer? {
+        fun read(body: ByteArray): RingRenderer {
             val reader = BodyReader(body)
-            val flags = reader.int32()
-            val colours = reader.colourList()
-            val size = reader.int32()
-            val source = if (reader.int32() == 1) AvsAudioSource.SPECTRUM else AvsAudioSource.WAVEFORM
+            val flags = reader.int32Or(DEFAULT_EFFECT)
+            val colours = reader.colourListOr(whenTooMany = 1)
+            val size = reader.int32Or(DEFAULT_SIZE)
+            val source = if (reader.int32Or(0) != 0) AvsAudioSource.SPECTRUM else AvsAudioSource.WAVEFORM
             val position = POSITIONS.getOrNull((flags shr 4) and 3) ?: AvsPosition.CENTER
-            return if (reader.ok) RingRenderer(source, position, colours, size) else null
+            return RingRenderer(source, position, colours, size)
         }
+
+        private const val DEFAULT_SIZE = 8
     }
 }
 
@@ -600,22 +613,23 @@ internal class StarfieldRenderer(
         private const val FAR_PLANE = 255f
         private const val SEED = 0x73746172L
 
-        fun read(body: ByteArray): StarfieldRenderer? {
+        fun read(body: ByteArray): StarfieldRenderer {
             val reader = BodyReader(body)
-            val enabled = reader.int32() != 0
-            val colour = AvsFrame.fromConfig(reader.int32())
+            val enabled = reader.int32Or(1) != 0
+            val colour = AvsFrame.fromConfig(reader.int32Or(WHITE))
             val blend = reader.pairBlend()
-            val warpSpeed = reader.float()
-            val stars = reader.int32()
-            val onBeat = reader.int32() != 0
-            val beatSpeed = reader.float()
-            val beatFrames = reader.int32()
-            return if (reader.ok) {
-                StarfieldRenderer(enabled, colour, blend, warpSpeed, stars, onBeat, beatSpeed, beatFrames)
-            } else {
-                null
-            }
+            val warpSpeed = reader.floatOr(DEFAULT_WARP)
+            val stars = reader.int32Or(DEFAULT_STARS)
+            val onBeat = reader.int32Or(0) != 0
+            val beatSpeed = reader.floatOr(DEFAULT_BEAT_WARP)
+            val beatFrames = reader.int32Or(DEFAULT_BEAT_FRAMES)
+            return StarfieldRenderer(enabled, colour, blend, warpSpeed, stars, onBeat, beatSpeed, beatFrames)
         }
+
+        private const val DEFAULT_WARP = 6f
+        private const val DEFAULT_STARS = 350
+        private const val DEFAULT_BEAT_WARP = 4f
+        private const val DEFAULT_BEAT_FRAMES = 15
     }
 }
 
@@ -816,18 +830,17 @@ internal class BassSpinRenderer(
     }
 
     companion object {
-        fun read(body: ByteArray): BassSpinRenderer? {
+        fun read(body: ByteArray): BassSpinRenderer {
             val reader = BodyReader(body)
-            val flags = reader.int32()
-            val colourLeft = AvsFrame.fromConfig(reader.int32())
-            val colourRight = AvsFrame.fromConfig(reader.int32())
+            // a new Bass Spin has both arms, white, as triangles
+            val flags = reader.int32Or(BOTH_ARMS)
+            val colourLeft = AvsFrame.fromConfig(reader.int32Or(WHITE))
+            val colourRight = AvsFrame.fromConfig(reader.int32Or(WHITE))
             // e_bassspin.cpp: `GET_INT() ? BASSSPIN_MODE_FILLED : BASSSPIN_MODE_OUTLINE`
-            val triangles = reader.int32() != 0
-            return if (reader.ok) {
-                BassSpinRenderer(flags and 1 != 0, flags and 2 != 0, colourLeft, colourRight, triangles)
-            } else {
-                null
-            }
+            val triangles = reader.int32Or(1) != 0
+            return BassSpinRenderer(flags and 1 != 0, flags and 2 != 0, colourLeft, colourRight, triangles)
         }
+
+        private const val BOTH_ARMS = 3
     }
 }

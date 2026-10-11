@@ -133,17 +133,18 @@ internal class InterferencesRenderer(
         private const val FULL = 255
         private const val CHANNELS_SPLIT = 3
 
-        fun read(body: ByteArray): InterferencesRenderer? {
+        /** Every setting is optional, and one the body ends before keeps what a new Interferences starts with. */
+        fun read(body: ByteArray): InterferencesRenderer {
             val reader = BodyReader(body)
-            val enabled = reader.int32() != 0
-            val layers = reader.int32().coerceIn(0, MAX_LAYERS)
-            val initRotation = reader.int32()
-            val distance = reader.int32()
-            val alpha = reader.int32()
-            val rotation = reader.int32()
+            val enabled = reader.int32Or(1) != 0
+            val layers = reader.int32Or(2).coerceIn(0, MAX_LAYERS)
+            val initRotation = reader.int32Or(0)
+            val distance = reader.int32Or(10)
+            val alpha = reader.int32Or(128)
+            val rotation = reader.int32Or(0)
             // two ints, first wins: additive, else fifty-fifty, else replace
-            val additive = reader.int32() != 0
-            val fifty = reader.int32() != 0
+            val additive = reader.int32Or(0) != 0
+            val fifty = reader.int32Or(0) != 0
             val blend =
                 when {
                     additive -> AvsBlendMode.ADDITIVE
@@ -159,14 +160,14 @@ internal class InterferencesRenderer(
                     alpha = alpha,
                     rotation = rotation,
                     blend = blend,
-                    onBeatDistance = reader.int32(),
-                    onBeatAlpha = reader.int32(),
-                    onBeatRotation = reader.int32(),
-                    separateRgb = reader.int32() != 0,
-                    onBeat = reader.int32() != 0,
-                    onBeatSpeed = reader.float(),
+                    onBeatDistance = reader.int32Or(32),
+                    onBeatAlpha = reader.int32Or(192),
+                    onBeatRotation = reader.int32Or(25),
+                    separateRgb = reader.int32Or(1) != 0,
+                    onBeat = reader.int32Or(1) != 0,
+                    onBeatSpeed = reader.floatOr(0.2f),
                 )
-            return if (reader.ok) InterferencesRenderer(config) else null
+            return InterferencesRenderer(config)
         }
 
         /** INTERFERENCES_MAX_POINTS in the original. */

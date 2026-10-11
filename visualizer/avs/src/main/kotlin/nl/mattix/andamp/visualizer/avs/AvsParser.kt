@@ -24,7 +24,6 @@ class AvsFormatException(
 object AvsParser {
     private const val HEADER_LENGTH = 25
     private const val INT_SIZE = 4
-    private const val MIN_LIST_CONFIG = 5
     private const val APE_NAME_SIZE = 32
     private const val MODE_BIT = 0x80
 
@@ -125,17 +124,29 @@ object AvsParser {
         }
         val blob = bytes.copyOfRange(body, body + size)
         return when {
-            isApe -> AvsComponent.Ape(bytes.nullTerminated(at + INT_SIZE, APE_NAME_SIZE), blob)
+            isApe -> ape(bytes.nullTerminated(at + INT_SIZE, APE_NAME_SIZE), blob)
             code == AvsComponents.EFFECT_LIST -> effectList(bytes, body, size, blob, depth)
             else -> AvsComponents[code]?.let { AvsComponent.Builtin(code, it, blob) } ?: AvsComponent.Unknown(code, blob)
         }
     }
 
+    /** A plug-in by name, or the built-in that has since replaced it; see [AvsComponents.replacing]. */
+    private fun ape(
+        name: String,
+        blob: ByteArray,
+    ): AvsComponent {
+        val builtin = AvsComponents.replacing(name) ?: return AvsComponent.Ape(name, blob)
+        return AvsComponents[builtin]?.let { AvsComponent.Builtin(builtin, it, blob) } ?: AvsComponent.Ape(name, blob)
+    }
+
     /**
      * An Effect List's body: its own config, then its children.
      *
-     * The config's length is a byte, and which byte depends on a mode flag in
-     * the first one, as in AVS-File-Decoder.
+     * Transcribed from vis_avs `r_list.cpp` `load_config` (BSD; see NOTICE.md).
+     * The oldest lists store one mode byte and their children follow it. A
+     * newer list sets the top bit of that byte and stores the whole mode as an
+     * int32 after it; the top byte of that mode is how long the extended
+     * settings are, and each of those is read only when the length covers it.
      */
     private fun effectList(
         bytes: ByteArray,
@@ -144,17 +155,34 @@ object AvsParser {
         blob: ByteArray,
         depth: Int,
     ): AvsComponent.EffectList {
-        if (size < MIN_LIST_CONFIG) throw AvsFormatException("effect list with a $size-byte body cannot hold its config")
-        val modeBit = bytes[body].toInt() and MODE_BIT != 0
-        val configSize = (if (modeBit) bytes[body + 4] else bytes[body]).toInt().and(0xFF) + 1
-        var content = body + configSize
-        if (bytes.startsAt(content, EFFECT_LIST_28)) content = afterCodeBlock(bytes, content + EFFECT_LIST_28.size, body + size)
-        if (content > body + size) {
-            throw AvsFormatException("effect list config runs ${content - (body + size)} bytes past its own body")
+        val end = body + size
+        var mode = if (size > 0) bytes[body].toInt() and 0xFF else 0
+        var at = body + minOf(size, 1)
+        if (mode and MODE_BIT != 0) {
+            if (size < 1 + INT_SIZE) throw AvsFormatException("effect list with a $size-byte body cannot hold its mode")
+            mode = (mode and MODE_BIT.inv()) or bytes.int32(at)
+            at += INT_SIZE
+        }
+        // offsets below are from the start of the body, as the original counts them
+        val extended = ((mode ushr EXTENDED_SHIFT) and 0xFF) + EXTENDED_FROM
+        val settings = IntArray(EXTENDED_FIELDS)
+        if (extended > EXTENDED_FROM) {
+            for (field in 0 until EXTENDED_FIELDS) {
+                // the last two were added later and are read four bytes more cautiously
+                val limit = if (field < EXTENDED_FIELDS - 2) extended else extended - INT_SIZE
+                if (at - body >= limit || at + INT_SIZE > end) continue
+                settings[field] = bytes.int32(at)
+                at += INT_SIZE
+            }
+        }
+        var content = at
+        if (bytes.startsAt(content, EFFECT_LIST_28)) content = afterCodeBlock(bytes, content + EFFECT_LIST_28.size, end)
+        if (content > end) {
+            throw AvsFormatException("effect list config runs ${content - end} bytes past its own body")
         }
         return AvsComponent.EffectList(
-            config = effectListConfig(bytes, body, configSize),
-            components = components(bytes, content, body + size, depth + 1),
+            config = effectListConfig(mode, settings),
+            components = components(bytes, content, end, depth + 1),
             body = blob,
         )
     }
@@ -180,44 +208,42 @@ object AvsParser {
     }
 
     /**
-     * An Effect List's settings, at fixed offsets into its own body.
-     *
-     * The flags and the two blend modes are always read; each later field is
-     * read only when the config is long enough to hold it, and is 0 otherwise.
+     * An Effect List's settings. The flags and the two blend modes are bits of
+     * [mode]; [extended] holds the later settings in file order, zero where the
+     * file did not carry one.
      */
     private fun effectListConfig(
-        bytes: ByteArray,
-        body: Int,
-        configSize: Int,
-    ): AvsEffectListConfig {
-        val flags = bytes[body].toInt()
+        mode: Int,
+        extended: IntArray,
+    ) = AvsEffectListConfig(
+        enabled = mode and 0x02 == 0,
+        clearFrame = mode and 0x01 != 0,
+        input = AvsBlendMode.incoming((mode ushr IN_BLEND_SHIFT) and BLEND_MASK),
+        output = AvsBlendMode.outgoing((mode ushr OUT_BLEND_SHIFT) and BLEND_MASK),
+        inAdjust = extended[IN_ADJUST],
+        outAdjust = extended[OUT_ADJUST],
+        inBuffer = extended[IN_BUFFER],
+        outBuffer = extended[OUT_BUFFER],
+        inBufferInvert = extended[IN_INVERT] == 1,
+        outBufferInvert = extended[OUT_INVERT] == 1,
+        onlyOnBeat = extended[ON_BEAT] == 1,
+        onBeatFrames = extended[ON_BEAT_FRAMES],
+    )
 
-        fun intAt(offset: Int) = if (configSize >= offset + INT_SIZE) bytes.int32(body + offset) else 0
-
-        return AvsEffectListConfig(
-            enabled = flags and 0x02 == 0,
-            clearFrame = flags and 0x01 != 0,
-            input = AvsBlendMode.incoming(bytes[body + 2].toInt() and 0xFF),
-            output = AvsBlendMode.outgoing(bytes[body + 3].toInt() and 0xFF),
-            inAdjust = intAt(IN_ADJUST),
-            outAdjust = intAt(OUT_ADJUST),
-            inBuffer = intAt(IN_BUFFER),
-            outBuffer = intAt(OUT_BUFFER),
-            inBufferInvert = intAt(IN_INVERT) == 1,
-            outBufferInvert = intAt(OUT_INVERT) == 1,
-            onlyOnBeat = intAt(ON_BEAT) == 1,
-            onBeatFrames = intAt(ON_BEAT_FRAMES),
-        )
-    }
-
-    private const val IN_ADJUST = 5
-    private const val OUT_ADJUST = 9
-    private const val IN_BUFFER = 13
-    private const val OUT_BUFFER = 17
-    private const val IN_INVERT = 21
-    private const val OUT_INVERT = 25
-    private const val ON_BEAT = 29
-    private const val ON_BEAT_FRAMES = 33
+    private const val EXTENDED_SHIFT = 24
+    private const val EXTENDED_FROM = 5
+    private const val EXTENDED_FIELDS = 8
+    private const val IN_BLEND_SHIFT = 8
+    private const val OUT_BLEND_SHIFT = 16
+    private const val BLEND_MASK = 31
+    private const val IN_ADJUST = 0
+    private const val OUT_ADJUST = 1
+    private const val IN_BUFFER = 2
+    private const val OUT_BUFFER = 3
+    private const val IN_INVERT = 4
+    private const val OUT_INVERT = 5
+    private const val ON_BEAT = 6
+    private const val ON_BEAT_FRAMES = 7
 
     private fun ByteArray.int32(at: Int): Int =
         (this[at].toInt() and 0xFF) or

@@ -88,12 +88,12 @@ class MovementRendererTest {
         }
     }
 
-    /** Two of the built-ins have no script in the table. */
+    /** Two of the built-ins have no script in the table; they carry a pixel table. */
     @Test
-    fun the_two_effects_without_a_script_say_so() {
+    fun the_two_effects_without_a_script_carry_a_table() {
         assertTrue(MovementEffects[1]!!.name == "Slight Fuzzify")
-        assertTrue("a scriptless effect is not runnable", !MovementEffects[1]!!.runnable)
-        assertTrue(!MovementEffects[7]!!.runnable)
+        assertTrue(MovementEffects[1]!!.table != null && MovementEffects[1]!!.runnable)
+        assertTrue(MovementEffects[7]!!.table != null && MovementEffects[7]!!.runnable)
         assertTrue("None is runnable", MovementEffects[0]!!.runnable)
     }
 
@@ -128,7 +128,7 @@ class MovementRendererTest {
     }
 
     @Test
-    fun an_effect_number_with_no_script_produces_no_renderer() {
+    fun an_effect_that_is_a_table_has_no_scripted_renderer() {
         assertNull(MovementRenderer.read(builtInMovement(id = 1), Eel()))
     }
 

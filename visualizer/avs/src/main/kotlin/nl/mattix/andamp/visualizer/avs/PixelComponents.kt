@@ -35,11 +35,7 @@ internal class FastBrightnessRenderer(
     companion object {
         private val FACTORS = listOf(2.0, 0.5, 1.0)
 
-        fun read(body: ByteArray): FastBrightnessRenderer? {
-            val reader = BodyReader(body)
-            val factor = FACTORS.getOrNull(reader.int32()) ?: 1.0
-            return if (reader.ok) FastBrightnessRenderer(factor) else null
-        }
+        fun read(body: ByteArray) = FastBrightnessRenderer(FACTORS.getOrNull(BodyReader(body).int32Or(0)) ?: 1.0)
     }
 }
 
@@ -104,44 +100,43 @@ internal class BrightnessRenderer(
             return IntArray(FULL + 1) { n -> ((n * scale) shr 16).coerceIn(0, FULL) }
         }
 
-        fun read(body: ByteArray): BrightnessRenderer? {
+        fun read(body: ByteArray): BrightnessRenderer {
             val reader = BodyReader(body)
-            val enabled = reader.int32() != 0
+            val enabled = reader.int32Or(1) != 0
             // e_brightness.cpp reads the additive int first, lets the 50/50
             // int override it, and treats any nonzero as set, so this is not
             // the shared pairBlend (whose low word 2 would mean "default")
-            val additive = reader.int32() != 0
-            val fifty = reader.int32() != 0
+            val additive = reader.int32Or(0) != 0
+            // a new Brightness is fifty-fifty
+            val fifty = reader.int32Or(1) != 0
             val blend =
                 when {
                     fifty -> AvsBlendMode.FIFTY_FIFTY
                     additive -> AvsBlendMode.ADDITIVE
                     else -> AvsBlendMode.REPLACE
                 }
-            val red = reader.int32()
-            val green = reader.int32()
-            val blue = reader.int32()
+            val red = reader.int32Or(0)
+            val green = reader.int32Or(0)
+            val blue = reader.int32Or(0)
             // on_separate_toggle at load: linked sliders mean the red gain
             // rules all three, whatever the file stored for the other two
-            val separate = reader.int32() != 0
-            val excludeColour = AvsFrame.fromConfig(reader.int32())
-            val exclude = reader.int32() != 0
-            val distance = reader.int32()
-            return if (reader.ok) {
-                BrightnessRenderer(
-                    enabled,
-                    red,
-                    if (separate) green else red,
-                    if (separate) blue else red,
-                    blend,
-                    exclude,
-                    excludeColour,
-                    distance,
-                )
-            } else {
-                null
-            }
+            val separate = reader.int32Or(0) != 0
+            val excludeColour = AvsFrame.fromConfig(reader.int32Or(0))
+            val exclude = reader.int32Or(0) != 0
+            val distance = reader.int32Or(DEFAULT_DISTANCE)
+            return BrightnessRenderer(
+                enabled,
+                red,
+                if (separate) green else red,
+                if (separate) blue else red,
+                blend,
+                exclude,
+                excludeColour,
+                distance,
+            )
         }
+
+        private const val DEFAULT_DISTANCE = 16
     }
 }
 
@@ -242,6 +237,7 @@ internal class ColorfadeRenderer(
 
     companion object {
         private const val ENABLED_BIT = 0x01
+        private const val DEFAULT_FADER = 8
         private const val RANDOM_BIT = 0x02
         private const val ON_BEAT_BIT = 0x04
         private const val VERSION_SHIFT = 24
@@ -260,16 +256,16 @@ internal class ColorfadeRenderer(
          * ends before the beat set gets the normal set for it, as
          * e_colorfade.cpp's length-guarded reads do.
          */
-        fun read(body: ByteArray): ColorfadeRenderer? {
+        fun read(body: ByteArray): ColorfadeRenderer {
             val reader = BodyReader(body)
-            val flags = reader.int32()
-            val fader2nd = reader.int32()
-            val faderMax = reader.int32()
-            val fader3rdGray = reader.int32()
-            if (!reader.ok) return null
-            val beat2nd = reader.int32().takeIf { reader.ok } ?: fader2nd
-            val beatMax = reader.int32().takeIf { reader.ok } ?: faderMax
-            val beat3rdGray = reader.int32().takeIf { reader.ok } ?: fader3rdGray
+            val flags = reader.int32Or(ENABLED_BIT)
+            val fader2nd = reader.int32Or(DEFAULT_FADER)
+            val faderMax = reader.int32Or(-DEFAULT_FADER)
+            val fader3rdGray = reader.int32Or(-DEFAULT_FADER)
+            // a body from before the beat faders uses the steady ones on a beat too
+            val beat2nd = reader.int32Or(fader2nd)
+            val beatMax = reader.int32Or(faderMax)
+            val beat3rdGray = reader.int32Or(fader3rdGray)
             return ColorfadeRenderer(
                 enabled = flags and ENABLED_BIT != 0,
                 fader2nd = fader2nd,
@@ -340,22 +336,26 @@ internal class ColorClipRenderer(
     }
 
     companion object {
-        fun read(body: ByteArray): ColorClipRenderer? {
+        fun read(body: ByteArray): ColorClipRenderer {
             val reader = BodyReader(body)
             // e_colorclip.cpp: 0 is off, 1 below, 2 above, and anything else
             // falls into the NEAR case with the effect enabled
             val mode =
-                when (reader.int32()) {
+                when (reader.int32Or(1)) {
                     0 -> AvsClipMode.OFF
                     1 -> AvsClipMode.BELOW
                     2 -> AvsClipMode.ABOVE
                     else -> AvsClipMode.NEAR
                 }
-            val against = AvsFrame.fromConfig(reader.int32())
-            val replacement = AvsFrame.fromConfig(reader.int32())
-            val level = reader.int32()
-            return if (reader.ok) ColorClipRenderer(mode, against, replacement, level) else null
+            val clip = reader.int32Or(DEFAULT_CLIP)
+            // a body that ends before the replacement clips to the color it tests against
+            val replacement = reader.int32Or(clip)
+            val level = reader.int32Or(DEFAULT_LEVEL)
+            return ColorClipRenderer(mode, AvsFrame.fromConfig(clip), AvsFrame.fromConfig(replacement), level)
         }
+
+        private const val DEFAULT_CLIP = 0x202020
+        private const val DEFAULT_LEVEL = 10
     }
 }
 
@@ -398,14 +398,16 @@ internal class UniqueToneRenderer(
 
         private fun tableFor(channel: Int) = IntArray(FULL + 1) { i -> ((i / 255.0) * channel).toInt() }
 
-        fun read(body: ByteArray): UniqueToneRenderer? {
+        fun read(body: ByteArray): UniqueToneRenderer {
             val reader = BodyReader(body)
-            val enabled = reader.int32() != 0
-            val tone = AvsFrame.fromConfig(reader.int32())
+            val enabled = reader.int32Or(1) != 0
+            val tone = AvsFrame.fromConfig(reader.int32Or(WHITE))
             val blend = reader.pairBlend() ?: AvsBlendMode.REPLACE
-            val invert = reader.int32() != 0
-            return if (reader.ok) UniqueToneRenderer(enabled, tone, invert, blend) else null
+            val invert = reader.int32Or(0) != 0
+            return UniqueToneRenderer(enabled, tone, invert, blend)
         }
+
+        private const val WHITE = 0xFFFFFF
     }
 }
 
@@ -615,24 +617,19 @@ internal class MirrorRenderer(
         private const val RANDOM_SPAN = 32768
         private const val SEED = 0x6D697272L
 
-        fun read(body: ByteArray): MirrorRenderer? {
-            val reader = BodyReader(body)
-            val enabled = reader.int32() != 0
-            val directions = reader.int32()
-            if (!reader.ok) return null
-            // the trailing fields are optional, as e_mirror.cpp's
-            // length-guarded reads: absent means off
-            val onBeatRandom = reader.int32() != 0
-            val smooth = reader.ok && reader.int32() != 0
-            val storedDuration = reader.int32()
-            val duration =
-                when {
-                    !smooth -> 0
+        private const val TOP_TO_BOTTOM = 0x01
+        private const val DEFAULT_DURATION = 4
 
-                    // smooth set but the duration field missing keeps the
-                    // pre-assigned 1
-                    else -> storedDuration.takeIf { reader.ok } ?: 1
-                }
+        fun read(body: ByteArray): MirrorRenderer {
+            val reader = BodyReader(body)
+            // every field is optional, as the original's length-guarded
+            // reads: a new Mirror is on and copies top to bottom
+            val enabled = reader.int32Or(1) != 0
+            val directions = reader.int32Or(TOP_TO_BOTTOM)
+            val onBeatRandom = reader.int32Or(0) != 0
+            val smooth = reader.int32Or(0) != 0
+            val storedDuration = reader.int32Or(DEFAULT_DURATION)
+            val duration = if (smooth) storedDuration else 0
             return MirrorRenderer(
                 enabled = enabled,
                 topToBottom = directions and 0x01 != 0,
@@ -667,13 +664,13 @@ internal class ClearScreenRenderer(
     }
 
     companion object {
-        fun read(body: ByteArray): ClearScreenRenderer? {
+        fun read(body: ByteArray): ClearScreenRenderer {
             val reader = BodyReader(body)
-            val enabled = reader.int32() != 0
-            val colour = AvsFrame.fromConfig(reader.int32())
+            val enabled = reader.int32Or(1) != 0
+            val colour = AvsFrame.fromConfig(reader.int32Or(0))
             val blend = reader.pairBlend()
-            val onlyFirst = reader.int32() != 0
-            return if (reader.ok) ClearScreenRenderer(enabled, colour, blend, onlyFirst) else null
+            val onlyFirst = reader.int32Or(0) != 0
+            return ClearScreenRenderer(enabled, colour, blend, onlyFirst)
         }
     }
 }
@@ -701,13 +698,15 @@ internal class OnBeatClearRenderer(
     }
 
     companion object {
-        fun read(body: ByteArray): OnBeatClearRenderer? {
+        fun read(body: ByteArray): OnBeatClearRenderer {
             val reader = BodyReader(body)
-            val colour = AvsFrame.fromConfig(reader.int32())
-            val blend = if (reader.int32() == 1) AvsBlendMode.FIFTY_FIFTY else AvsBlendMode.REPLACE
-            val beats = reader.int32()
-            return if (reader.ok) OnBeatClearRenderer(colour, blend, beats) else null
+            val colour = AvsFrame.fromConfig(reader.int32Or(WHITE))
+            val blend = if (reader.int32Or(0) != 0) AvsBlendMode.FIFTY_FIFTY else AvsBlendMode.REPLACE
+            val beats = reader.int32Or(1)
+            return OnBeatClearRenderer(colour, blend, beats)
         }
+
+        private const val WHITE = 0xFFFFFF
     }
 }
 
@@ -829,16 +828,19 @@ internal class MosaicRenderer(
     companion object {
         private const val CELLS_OFF = 100
 
-        fun read(body: ByteArray): MosaicRenderer? {
+        fun read(body: ByteArray): MosaicRenderer {
             val reader = BodyReader(body)
-            val enabled = reader.int32() != 0
-            val size = reader.int32()
-            val beatSize = reader.int32()
+            val enabled = reader.int32Or(1) != 0
+            val size = reader.int32Or(DEFAULT_SIZE)
+            val beatSize = reader.int32Or(DEFAULT_SIZE)
             val blend = reader.pairBlend() ?: AvsBlendMode.REPLACE
-            val growOnBeat = reader.int32() != 0
-            val beatFrames = reader.int32()
-            return if (reader.ok) MosaicRenderer(enabled, size, beatSize, growOnBeat, blend, beatFrames) else null
+            val growOnBeat = reader.int32Or(0) != 0
+            val beatFrames = reader.int32Or(DEFAULT_BEAT_FRAMES)
+            return MosaicRenderer(enabled, size, beatSize, growOnBeat, blend, beatFrames)
         }
+
+        private const val DEFAULT_SIZE = 50
+        private const val DEFAULT_BEAT_FRAMES = 15
     }
 }
 
@@ -961,22 +963,20 @@ internal class InterleaveRenderer(
         /** At duration 64 the lerp is 1.0 and the beat widths stick until the next beat. */
         private const val LERP_STICKY = 64.0
 
-        fun read(body: ByteArray): InterleaveRenderer? {
+        fun read(body: ByteArray): InterleaveRenderer {
             val reader = BodyReader(body)
-            val enabled = reader.int32() != 0
-            val everyX = reader.int32()
-            val everyY = reader.int32()
-            val colour = AvsFrame.fromConfig(reader.int32())
+            val enabled = reader.int32Or(1) != 0
+            val everyX = reader.int32Or(1)
+            val everyY = reader.int32Or(1)
+            val colour = AvsFrame.fromConfig(reader.int32Or(0))
             val blend = reader.pairBlend() ?: AvsBlendMode.REPLACE
-            val onBeat = reader.int32() != 0
-            val beatX = reader.int32()
-            val beatY = reader.int32()
-            val beatFrames = reader.int32()
-            return if (reader.ok) {
-                InterleaveRenderer(enabled, everyX, everyY, colour, blend, onBeat, beatX, beatY, beatFrames)
-            } else {
-                null
-            }
+            val onBeat = reader.int32Or(0) != 0
+            val beatX = reader.int32Or(1)
+            val beatY = reader.int32Or(1)
+            val beatFrames = reader.int32Or(DEFAULT_BEAT_FRAMES)
+            return InterleaveRenderer(enabled, everyX, everyY, colour, blend, onBeat, beatX, beatY, beatFrames)
         }
+
+        private const val DEFAULT_BEAT_FRAMES = 4
     }
 }

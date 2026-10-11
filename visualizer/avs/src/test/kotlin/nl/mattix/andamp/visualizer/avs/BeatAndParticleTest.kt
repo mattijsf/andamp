@@ -4,7 +4,6 @@ package nl.mattix.andamp.visualizer.avs
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -92,7 +91,23 @@ class BeatAndParticleTest {
 
         assertEquals("the invert flag reads as reverse", false, beatAfter(inverted, heard = true))
         assertEquals("the skip flag reads as skip", false, beatAfter(skipping, heard = true))
-        assertNull(CustomBpmRenderer.read(int32(1)))
+    }
+
+    /** A new Custom BPM beats twice a second, whatever is heard. */
+    @Test
+    fun `a custom bpm that ends after its first field is the arbitrary one AVS starts with`() {
+        var now = 0L
+        val bpm = CustomBpmRenderer.read(int32(1)) { now }
+        val state = state()
+        var beats = 0
+        repeat(40) {
+            now += 50
+            state.reset(beat = false)
+            bpm.render(AvsFrame(SIZE, SIZE), AvsAudioFrame(), state)
+            if (state.beat) beats++
+        }
+
+        assertTrue("about four beats in two seconds: $beats", beats in 3..5)
     }
 
     @Test
@@ -200,8 +215,13 @@ class BeatAndParticleTest {
     }
 
     @Test
-    fun `a particle body that runs out is null`() {
-        assertNull(MovingParticleRenderer.read(int32(1) + int32(2)))
+    fun `a particle body that runs out keeps what a new Moving Particle has for the rest`() {
+        val frame = AvsFrame(SIZE, SIZE)
+
+        // enabled and blue: the distance, the size and the additive blend are the defaults
+        MovingParticleRenderer.read(int32(1) + int32(0x0000FF)).render(frame, AvsAudioFrame(), state())
+
+        assertTrue("the particle is drawn in its color", frame.pixels.any { it == 0xFF0000FF.toInt() })
     }
 
     private var clockMs = 0L

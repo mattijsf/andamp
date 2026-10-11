@@ -60,14 +60,28 @@ object SuperScopeReader {
         if (current) cursor.skip(1)
 
         val code = List(SECTIONS) { if (current) cursor.sizedText() else cursor.fixedText(LEGACY_CODE_SIZE) }
-        val flags = cursor.int32()
+        // the settings after the code are each optional, and one the body
+        // ends before keeps what a new Super Scope has: the center channel's
+        // waveform, one white color, drawn as dots
+        val flags = if (cursor.has(INT_SIZE)) cursor.int32() else CENTER_WAVEFORM
         // a count past 16 loads no colors and consumes no color ints: the
         // next field reads from where they would begin, as in vis_avs
         // e_superscope.cpp:295-301 (the count is unsigned there, so a
         // negative here is also oversized). No colors means an inert scope.
-        val declared = cursor.int32()
-        val colours = if (declared in 0..MAX_COLOURS) List(declared) { AvsFrame.fromConfig(cursor.int32()) } else emptyList()
-        val drawMode = cursor.int32()
+        val declared = if (cursor.has(INT_SIZE)) cursor.int32() else 1
+        val colours =
+            if (declared in 0..MAX_COLOURS) {
+                List(declared) { index ->
+                    when {
+                        cursor.has(INT_SIZE) -> AvsFrame.fromConfig(cursor.int32())
+                        index == 0 -> AvsFrame.fromConfig(WHITE)
+                        else -> AvsFrame.OPAQUE
+                    }
+                }
+            } else {
+                emptyList()
+            }
+        val drawMode = if (cursor.has(INT_SIZE)) cursor.int32() else 0
 
         return if (!cursor.ok) {
             null
@@ -107,6 +121,8 @@ object SuperScopeReader {
         private var at = 0
 
         fun peek(): Int = if (at < bytes.size) bytes[at].toInt() else fail()
+
+        fun has(count: Int) = bytes.size - at >= count
 
         fun skip(count: Int) {
             at = (at + count).coerceIn(0, bytes.size)
@@ -158,4 +174,7 @@ object SuperScopeReader {
 
     /** AVS's own limit: a count past this loads nothing (e_superscope.cpp:295). */
     private const val MAX_COLOURS = 16
+    private const val INT_SIZE = 4
+    private const val CENTER_WAVEFORM = 2
+    private const val WHITE = 0xFFFFFF
 }

@@ -42,9 +42,9 @@ class AvsEngineTest {
     fun `components without a renderer are named`() {
         val engine = AvsEngine(2, 2)
 
-        engine.load(preset(builtin("Blur"), builtin("Invert"), ape("Texer II")))
+        engine.load(preset(builtin("Text"), builtin("Picture"), ape("Texer II")))
 
-        assertEquals(listOf("Blur", "Invert", "Texer II"), engine.unimplemented)
+        assertEquals(listOf("Text", "Picture", "Texer II"), engine.unimplemented)
     }
 
     @Test
@@ -139,15 +139,15 @@ class AvsEngineTest {
     fun `a component is named once however many times it appears`() {
         val engine = AvsEngine(2, 2)
 
-        engine.load(preset(builtin("Blur"), builtin("Blur"), builtin("Invert")))
+        engine.load(preset(builtin("Text"), builtin("Text"), builtin("Picture")))
 
-        assertEquals(listOf("Blur", "Invert"), engine.unimplemented)
+        assertEquals(listOf("Text", "Picture"), engine.unimplemented)
     }
 
     @Test
     fun `loading another preset replaces the list of what is missing`() {
         val engine = AvsEngine(2, 2)
-        engine.load(preset(builtin("Blur")))
+        engine.load(preset(builtin("Text")))
 
         engine.load(preset())
 
@@ -158,9 +158,9 @@ class AvsEngineTest {
     fun `components inside a list are found too`() {
         val engine = AvsEngine(2, 2)
 
-        engine.load(preset(list(config(), builtin("Blur"))))
+        engine.load(preset(list(config(), builtin("Text"))))
 
-        assertEquals(listOf("Blur"), engine.unimplemented)
+        assertEquals(listOf("Text"), engine.unimplemented)
     }
 
     @Test
@@ -342,13 +342,13 @@ class AvsEngineTest {
             preset(
                 AvsComponent.EffectList(
                     config(),
-                    listOf(builtin("Blur"), AvsComponent.EffectList(config(), listOf(builtin("Water")), ByteArray(0))),
+                    listOf(builtin("Picture"), AvsComponent.EffectList(config(), listOf(builtin("Text")), ByteArray(0))),
                     ByteArray(0),
                 ),
             ),
         )
 
-        assertEquals(listOf("Blur", "Water"), engine.unimplemented)
+        assertEquals(listOf("Picture", "Text"), engine.unimplemented)
     }
 
     private fun preset(vararg components: AvsComponent) = AvsPreset(clearEveryFrame = false, components = components.toList())

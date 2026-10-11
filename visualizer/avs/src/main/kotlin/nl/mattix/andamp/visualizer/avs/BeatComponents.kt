@@ -73,12 +73,12 @@ internal class CustomBpmRenderer(
         fun read(
             body: ByteArray,
             clock: () -> Long = System::currentTimeMillis,
-        ): CustomBpmRenderer? {
+        ): CustomBpmRenderer {
             val reader = BodyReader(body)
-            val enabled = reader.int32() != 0
-            val arbitraryFlag = reader.int32() != 0
-            val skipFlag = reader.int32() != 0
-            val invertFlag = reader.int32() != 0
+            val enabled = reader.int32Or(1) != 0
+            val arbitraryFlag = reader.int32Or(1) != 0
+            val skipFlag = reader.int32Or(0) != 0
+            val invertFlag = reader.int32Or(0) != 0
             val mode =
                 when {
                     invertFlag -> AvsBpmMode.REVERSE
@@ -88,14 +88,12 @@ internal class CustomBpmRenderer(
                 }
             // the legacy field is the time between beats in milliseconds;
             // e_custombpm.cpp converts it to a BPM with 60000/value
-            val intervalMs = reader.int32()
-            val skip = reader.int32()
-            val skipFirst = reader.int32()
-            return if (reader.ok) {
-                CustomBpmRenderer(enabled, mode, intervalMs.toLong(), skip, skipFirst, clock)
-            } else {
-                null
-            }
+            val intervalMs = reader.int32Or(DEFAULT_INTERVAL_MS)
+            val skip = reader.int32Or(1)
+            val skipFirst = reader.int32Or(0)
+            return CustomBpmRenderer(enabled, mode, intervalMs.toLong(), skip, skipFirst, clock)
         }
+
+        private const val DEFAULT_INTERVAL_MS = 500
     }
 }

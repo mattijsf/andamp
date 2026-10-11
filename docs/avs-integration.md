@@ -61,8 +61,19 @@ details:
 - Custom BPM's mode is three radio flags, one int32 per button, last nonzero wins.
 - The 2.8+ Effect List marker is 36 bytes. Its code block is skipped and not run.
 - Dynamic Shift stores its sections init/frame/beat, not in Super Scope's order.
-- Buffer numbers are one-based in the file, in Buffer Save and in the Effect List's buffer
-  fields alike; `AvsBuffers` is the zero-based bank of eight both index into.
+- Buffer numbers count from zero in the file, in Buffer Save and in the Effect List's buffer
+  fields alike, and index `AvsBuffers`, the bank of eight, directly. Bump and Dynamic Movement
+  keep zero for "the frame itself" and count the buffers from one.
+- An Effect List from before AVS 2.8 is one mode byte followed by its children. A newer one
+  sets the top bit of that byte and stores the mode as an int32 after it, whose top byte is the
+  length of the extended settings (`r_list.cpp` `load_config`).
+- A component's settings are each optional. Older builds of AVS wrote fewer of them, so a body
+  may end before any one, and that setting then has the value a new component starts with.
+  `BodyReader.int32Or` reads a setting that way, with the default from the original's
+  constructor.
+- Twelve built-ins were plug-ins first, and a preset saved then names the plug-in ("Winamp
+  Starfield v1", "Nullsoft MIRROR v1"). `AvsComponents.replacing` maps those names to the
+  built-in, as `rlib.cpp` does.
 
 ## Engine model
 
@@ -84,7 +95,9 @@ Movement and Dynamic Movement are a warp mesh (`WarpMesh`): ns-eel evaluated per
 producing where each pixel is read from, interpolated between vertices - the same shape as
 MilkDrop's "per-pixel" equations. AVS's built-in Movement effects are themselves scripts, so a
 preset picking one by number and a preset carrying its own take the same path; Dynamic
-Movement differs only in rebuilding the mesh each frame.
+Movement differs only in rebuilding the mesh each frame. Two of the built-in effects, Slight
+Fuzzify and Blocky Partial Out, move single pixels and are not scripts: each is a table of
+where every pixel is read from (`MovementTables`), built once per frame size.
 
 The beat is shared render state, because a Custom BPM component in a preset rewrites the
 beat for every component after it.
@@ -92,11 +105,10 @@ beat for every component after it.
 ## What runs
 
 `AvsEngine.supported` lists the components this build runs. It is the key set of
-`AvsEngine.READERS`, the map the engine builds renderers from. It holds 36 components: 34 of
+`AvsEngine.READERS`, the map the engine builds renderers from. It holds 44 components: 42 of
 AVS's 46 built-ins, plus two APEs (Color Reduction, Channel Shift). Effect List is handled by
 the engine itself and is not in the map. The built-ins not
-implemented are Water, Water Bump, Bump, Oscilliscope Star, Dot Plane, Dot Fountain, Rotating
-Stars, Scatter, SVP, Text, Picture and AVI.
+implemented are SVP, Text, Picture and AVI.
 
 - A component the build lacks is named in `AvsEngine.unimplemented` and skipped; the rest of
   the preset still draws.

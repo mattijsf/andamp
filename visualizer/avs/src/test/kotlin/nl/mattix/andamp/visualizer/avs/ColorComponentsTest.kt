@@ -44,19 +44,19 @@ class ColorComponentsTest {
 
     @Test
     fun `a color list is a count and then that many colors, made opaque`() {
-        val colours = BodyReader(int32(2) + int32(0xFF0000) + int32(0x0000FF)).colourList()
+        val colours = BodyReader(int32(2) + int32(0xFF0000) + int32(0x0000FF)).colourListOr()
 
         assertEquals(listOf(0xFFFF0000.toInt(), 0xFF0000FF.toInt()), colours)
     }
 
     @Test
     fun `a color list of nothing is empty`() {
-        assertTrue(BodyReader(int32(0)).colourList().isEmpty())
+        assertTrue(BodyReader(int32(0)).colourListOr().isEmpty())
     }
 
     @Test
     fun `a color count past sixteen reads as an empty list`() {
-        assertTrue(BodyReader(int32(999)).colourList().isEmpty())
+        assertTrue(BodyReader(int32(999)).colourListOr().isEmpty())
     }
 
     /** As in AVS, a lone color is dimmed by 63/64 like any other stop. */
@@ -240,10 +240,44 @@ class ColorComponentsTest {
     }
 
     @Test
-    fun `every one of them refuses a body that runs out`() {
+    fun `color reduction refuses a body that runs out`() {
         assertNull(ColorReductionRenderer.read(ByteArray(2)))
-        assertNull(ChannelShiftRenderer.read(ByteArray(2)))
-        assertNull(GrainRenderer.read(ByteArray(2)))
+    }
+
+    /** A new Channel Shift swaps green and blue, and picks another order on every beat. */
+    @Test
+    fun `channel shift with no settings is the one AVS starts with`() {
+        val frame = AvsFrame(1, 1).also { it[0, 0] = pixelOf(10, 20, 30) }
+
+        ChannelShiftRenderer.read(ByteArray(0)).render(frame, AvsAudioFrame(), AvsRenderState(AvsBuffers(1, 1)))
+
+        assertEquals(pixelOf(10, 30, 20), frame[0, 0])
+    }
+
+    @Test
+    fun `a channel shift that names only its order changes it on the beat`() {
+        // 1183 is the order that changes nothing; a beat then picks from all six
+        val shift = ChannelShiftRenderer.read(int32(1183))
+        val state = AvsRenderState(AvsBuffers(1, 1))
+        val seen = mutableSetOf<Int>()
+
+        repeat(60) {
+            val frame = AvsFrame(1, 1).also { it[0, 0] = pixelOf(10, 20, 30) }
+            state.reset(beat = true)
+            shift.render(frame, AvsAudioFrame(), state)
+            seen += frame[0, 0]
+        }
+
+        assertTrue("more than one order turned up: ${seen.size}", seen.size > 1)
+    }
+
+    @Test
+    fun `grain with no settings is switched on`() {
+        val frame = AvsFrame(8, 8).also { it.pixels.fill(0xFF808080.toInt()) }
+
+        GrainRenderer.read(ByteArray(0)).render(frame, AvsAudioFrame(), AvsRenderState(AvsBuffers(8, 8)))
+
+        assertTrue(frame.pixels.any { it != 0xFF808080.toInt() })
     }
 
     @Test

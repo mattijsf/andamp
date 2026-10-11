@@ -3,7 +3,9 @@
 package nl.mattix.andamp.visualizer.avs
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /**
@@ -57,9 +59,67 @@ class MovementParseTest {
         assertEquals(AvsCoordinates.POLAR, parsed.effect.coordinates)
     }
 
+    /**
+     * Older builds of AVS wrote fewer settings, and a setting the body does
+     * not reach keeps its default: replace, polar, no wrap.
+     */
     @Test
-    fun `a body that runs out of settings is refused`() {
-        assertNull(MovementRenderer.parse(int32(3) + int32(0)))
+    fun `a body that ends before its settings takes the defaults for the rest`() {
+        val two = MovementRenderer.parse(int32(14) + int32(1) + int32(1))!!
+        val four = MovementRenderer.parse(int32(12) + int32(0) + int32(0) + int32(0) + int32(1))!!
+        val none = MovementRenderer.parse(int32(3))!!
+
+        assertEquals("Shifted Big Swirl Out", two.effect.name)
+        assertTrue("the blend that is there is read", two.fiftyFifty)
+        assertFalse(two.wrap)
+        assertEquals("Tunneling", four.effect.name)
+        assertFalse("four settings stop before wrap", four.wrap)
+        assertEquals("Big Swirl Out", none.effect.name)
+        assertFalse(none.fiftyFifty)
+    }
+
+    /** The fixed 256-byte script of the oldest presets, followed by fewer than five settings. */
+    @Test
+    fun `an old custom script with two settings is read`() {
+        val code = "d = d * 0.9;"
+        val body = int32(MovementEffects.CUSTOM) + code.toByteArray(Charsets.ISO_8859_1).copyOf(256) + int32(1) + int32(0)
+
+        val parsed = MovementRenderer.parse(body)!!
+
+        assertEquals(code, parsed.effect.code)
+        assertEquals(AvsCoordinates.POLAR, parsed.effect.coordinates)
+        assertTrue(parsed.fiftyFifty)
+    }
+
+    @Test
+    fun `an empty body is the effect a new Movement starts with`() {
+        assertEquals("Slight Fuzzify", MovementRenderer.parse(ByteArray(0))!!.effect.name)
+    }
+
+    @Test
+    fun `an id above 15 is stored after the settings, behind a zero`() {
+        val body = int32(0) + int32(0) + int32(0) + int32(0) + int32(0) + int32(1) + int32(23)
+
+        val parsed = MovementRenderer.parse(body)!!
+
+        assertEquals("6-way Kaleida (use Wrap!)", parsed.effect.name)
+        assertTrue(parsed.wrap)
+    }
+
+    @Test
+    fun `an id the table does not have is no movement at all`() {
+        assertEquals("None", MovementRenderer.parse(int32(99) + ByteArray(20))!!.effect.name)
+    }
+
+    @Test
+    fun `the two effects that move single pixels carry a table and no script`() {
+        listOf(1 to "Slight Fuzzify", 7 to "Blocky Partial Out").forEach { (id, name) ->
+            val effect = MovementRenderer.parse(int32(id) + ByteArray(20))!!.effect
+
+            assertEquals(name, effect.name)
+            assertTrue(effect.table != null)
+            assertEquals("", effect.code)
+        }
     }
 
     /** For a length near the top of an Int, an end offset would wrap around. */
