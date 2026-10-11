@@ -49,6 +49,7 @@ fun eqWindowWidgets(vm: WindowControls): List<Widget> {
                 14,
                 63,
                 thumbH = 11,
+                shown = { s.preamp / 63f },
                 onChange = { vm.setPreamp(SliderMath.stickyPreamp((it * 63).roundToInt())) },
             ),
         )
@@ -63,6 +64,7 @@ fun eqWindowWidgets(vm: WindowControls): List<Widget> {
                 thumbH = 11,
                 // one drag draws across every band, as in Winamp
                 dragGroup = EQ_BAND_GROUP,
+                shown = { s.eqBands[i] / 63f },
                 onChange = { vm.setBand(i, (it * 63).roundToInt()) },
             )
     }

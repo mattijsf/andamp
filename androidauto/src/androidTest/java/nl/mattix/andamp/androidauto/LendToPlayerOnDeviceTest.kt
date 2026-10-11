@@ -176,6 +176,29 @@ class LendToPlayerOnDeviceTest {
         assertTrue("sharp again, there is black beside it", allBlack(sharp, 0, 0, WINDOW_LEFT, HEIGHT))
     }
 
+    /**
+     * A drag is reported by its distance alone, so it moves the slider the last tap landed
+     * on, wherever on the surface the finger is. The balance is used because its middle is
+     * where it stands on nearly every player, and a tap there leaves it so.
+     */
+    @Test
+    fun aDragMovesTheSliderThatWasTapped() {
+        player?.show(reader.surface, WIDTH, HEIGHT, DPI)
+        // the window has to be up before a tap can land on it
+        pictureAfter(SETTLE_MS, "lent-17-balance-before.png")
+        player?.tap(WINDOW_LEFT + BALANCE_X * SCALE, WINDOW_TOP + BALANCE_Y * SCALE)
+        val middle = balanceOf(pictureAfter(SETTLE_MS, "lent-17-balance-middle.png"))
+
+        player?.drag(-BALANCE_DRAG * SCALE, 0f)
+        val left = balanceOf(pictureAfter(SETTLE_MS, "lent-18-balance-left.png"))
+        // left as it was found: the same way back
+        player?.drag(BALANCE_DRAG * SCALE, 0f)
+        val back = balanceOf(pictureAfter(SETTLE_MS, "lent-19-balance-back.png"))
+
+        assertFalse("the drag moved the slider", middle.contentEquals(left))
+        assertTrue("and the drag back put it in the middle again", middle.contentEquals(back))
+    }
+
     @Test
     fun theWindowKeepsToThePartItIsGiven() {
         player?.show(reader.surface, WIDTH, HEIGHT, DPI)
@@ -224,11 +247,24 @@ class LendToPlayerOnDeviceTest {
     }
 
     /** The row of the main window's transport buttons, which stands still while nothing plays. */
-    private fun buttonsOf(picture: Bitmap): IntArray {
-        val width = BUTTONS_W * SCALE
-        val height = BUTTONS_H * SCALE
+    private fun buttonsOf(picture: Bitmap): IntArray = partOf(picture, BUTTONS_X, BUTTONS_Y, BUTTONS_W, BUTTONS_H)
+
+    /** The main window's balance slider. */
+    private fun balanceOf(picture: Bitmap): IntArray = partOf(picture, BALANCE_LEFT, BALANCE_TOP, BALANCE_W, BALANCE_H)
+
+    /** A part of the main window, given in the window's own pixels. */
+    @Suppress("LongParameterList") // a picture and a rectangle in it
+    private fun partOf(
+        picture: Bitmap,
+        x: Int,
+        y: Int,
+        w: Int,
+        h: Int,
+    ): IntArray {
+        val width = w * SCALE
+        val height = h * SCALE
         val pixels = IntArray(width * height)
-        picture.getPixels(pixels, 0, width, WINDOW_LEFT + BUTTONS_X * SCALE, WINDOW_TOP + BUTTONS_Y * SCALE, width, height)
+        picture.getPixels(pixels, 0, width, WINDOW_LEFT + x * SCALE, WINDOW_TOP + y * SCALE, width, height)
         return pixels
     }
 
@@ -275,6 +311,15 @@ class LendToPlayerOnDeviceTest {
         // the middle of a row's play button: a square as wide as the row is high, 12 in from the list's left
         const val LIST_PLAY_X = (WIDTH - 300 * SCALE) / 2f + 12f * SCALE + ROW_PX / 2f
         const val FAR = 100_000f
+
+        // the balance slider, the middle of its travel, and a drag well short of its end
+        const val BALANCE_LEFT = 177
+        const val BALANCE_TOP = 57
+        const val BALANCE_W = 38
+        const val BALANCE_H = 13
+        const val BALANCE_X = 196f
+        const val BALANCE_Y = 63f
+        const val BALANCE_DRAG = 9f
 
         // where the transport buttons are
         const val BUTTONS_X = 16

@@ -10,6 +10,7 @@ import androidx.compose.animation.rememberSplineBasedDecay
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -87,6 +88,13 @@ internal fun RemoteList(
     var pressed by remember { mutableIntStateOf(NO_ROW) }
     val rows = s.playlist.size
 
+    DisposableEffect(scroll) {
+        scroll.shown = true
+        onDispose {
+            scroll.shown = false
+            scroll.rest()
+        }
+    }
     LaunchedEffect(layout) {
         scroll.bound(layout.farthest(rows) * perPixel)
         scroll.moveTo(layout.showing(s.currentIndex, rows) * perPixel)

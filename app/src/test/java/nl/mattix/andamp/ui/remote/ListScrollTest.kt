@@ -14,8 +14,21 @@ class ListScrollTest {
         offset: Float,
         farthest: Float = 1_000f,
     ) = ListScroll().apply {
+        shown = true
         bound(farthest)
         moveTo(offset)
+    }
+
+    /** A swipe over the main window is not kept for a list that is opened later. */
+    @Test
+    fun `a list that is not on the surface takes no drag and no fling`() {
+        val scroll = scrolledTo(100f).apply { shown = false }
+
+        scroll.dragBy(-40f)
+        scroll.throwAt(-1_500f)
+
+        assertEquals(100f, scroll.offset)
+        assertNull(scroll.thrown)
     }
 
     @Test

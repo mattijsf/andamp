@@ -53,16 +53,15 @@ class RemoteWindowService : Service() {
 
             override fun hide() = trusted { window.hide() }
 
-            // a list is all that scrolls, and it scrolls up and down
             override fun drag(
                 dx: Float,
                 dy: Float,
-            ) = trusted { window.list.dragBy(dy) }
+            ) = trusted { window.drag(dx, dy) }
 
             override fun fling(
                 vx: Float,
                 vy: Float,
-            ) = trusted { window.list.throwAt(vy) }
+            ) = trusted { window.fling(vx, vy) }
         }
 
     override fun onCreate() {

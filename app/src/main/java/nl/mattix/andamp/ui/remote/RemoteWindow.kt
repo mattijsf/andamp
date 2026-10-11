@@ -42,7 +42,8 @@ import nl.mattix.andamp.ui.overlay.OverlayOwners
  *
  * The owner of the surface reports a tap by its place. It is given to the window as a press
  * and, [PRESS_MS] later, a release, so a button is seen going down. A drag is reported by
- * its distance only, which is what scrolling [list] takes.
+ * its distance only. It moves the slider the last tap landed on ([HeldSlider]), and with no
+ * slider held it scrolls [list].
  *
  * Every call is made on the main thread.
  */
@@ -60,6 +61,18 @@ internal class RemoteWindow(
 
     /** Where the playlist on the surface is scrolled to; a drag on the surface moves it. */
     val list = ListScroll()
+
+    /** Where the sliders of the window that is up are; the screen keeps it told. */
+    private val sliders = Sliders()
+
+    /** The slider the last tap landed on, which a drag moves. */
+    private val slider = HeldSlider(::touch)
+
+    /** When the finger that moves [slider] came down. */
+    private var sliderDownAt = 0L
+
+    /** Lifts that finger once the drag has gone quiet: its owner does not say when it ends. */
+    private val lift = Runnable { slider.letGo() }
 
     /** The release of the tap that is down, until it has been sent. */
     private var release: Runnable? = null
@@ -98,7 +111,7 @@ internal class RemoteWindow(
                     val own = vm.skin ?: return@setContent
                     val skin = skinHere(own) ?: return@setContent
                     val chosen = vm.androidAutoStore
-                    RemoteScreen(vm, skin, kept, list, fill = chosen.fill, onFill = { chosen.fill = !chosen.fill })
+                    RemoteScreen(vm, skin, kept, list, sliders, fill = chosen.fill, onFill = { chosen.fill = !chosen.fill })
                 }
             }
         shown.setContentView(content)
@@ -141,6 +154,9 @@ internal class RemoteWindow(
         val view = presentation?.window?.decorView ?: return
         // a tap that is still down is let go first: the window follows one finger
         finishTap()
+        // asked before the tap is passed on, which may put another window up
+        main.removeCallbacks(lift)
+        slider.tapped(sliders.at(x, y))
         val downAt = SystemClock.uptimeMillis()
         send(view, downAt, downAt, MotionEvent.ACTION_DOWN, x, y)
         val up =
@@ -152,9 +168,32 @@ internal class RemoteWindow(
         main.postDelayed(up, PRESS_MS)
     }
 
+    /** The owner's finger moved by ([dx], [dy]): the slider last tapped follows it, or else the list. */
+    fun drag(
+        dx: Float,
+        dy: Float,
+    ) {
+        finishTap()
+        if (!slider.dragBy(dx, dy, sliders.at)) return list.dragBy(dy)
+        main.removeCallbacks(lift)
+        main.postDelayed(lift, LIFT_MS)
+    }
+
+    /** The owner's finger left the surface at this speed, which ends a drag and throws the list. */
+    fun fling(
+        @Suppress("UNUSED_PARAMETER") vx: Float,
+        vy: Float,
+    ) {
+        if (!slider.down) return list.throwAt(vy)
+        main.removeCallbacks(lift)
+        slider.letGo()
+    }
+
     /** Takes the window off the surface and lets the display go. */
     fun hide() {
         finishTap()
+        main.removeCallbacks(lift)
+        slider.tapped(null)
         presentation?.let { runCatching { it.dismiss() } }
         owners?.onHidden()
         display?.release()
@@ -167,6 +206,24 @@ internal class RemoteWindow(
         val pending = release ?: return
         main.removeCallbacks(pending)
         pending.run()
+    }
+
+    /** A touch of the finger that moves [slider]. */
+    private fun touch(
+        what: HeldSlider.Touch,
+        x: Float,
+        y: Float,
+    ) {
+        val view = presentation?.window?.decorView ?: return
+        val now = SystemClock.uptimeMillis()
+        if (what == HeldSlider.Touch.DOWN) sliderDownAt = now
+        val action =
+            when (what) {
+                HeldSlider.Touch.DOWN -> MotionEvent.ACTION_DOWN
+                HeldSlider.Touch.MOVE -> MotionEvent.ACTION_MOVE
+                HeldSlider.Touch.UP -> MotionEvent.ACTION_UP
+            }
+        send(view, sliderDownAt, now, action, x, y)
     }
 
     @Suppress("LongParameterList") // one touch event: when, what and where
@@ -189,5 +246,8 @@ internal class RemoteWindow(
 
         /** How long a tap holds a button down. */
         const val PRESS_MS = 90L
+
+        /** How long after the last move of a drag the finger on a slider is lifted. */
+        const val LIFT_MS = 300L
     }
 }

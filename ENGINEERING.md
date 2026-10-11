@@ -409,6 +409,11 @@ Android Auto's own Double Size: the window then fills the screen, laid out at th
 scale up and shrunk as one picture, as on a phone. Both choices are kept in
 `AndroidAutoStore`, apart from the phone's.
 
+Android Auto reports a tap by its place and a drag by its distance alone. A tap is passed on
+as a press and a release. A drag scrolls the list while the list is up. On the main window
+and the equalizer it moves the slider the last tap landed on, as the touches of a finger
+that comes down on that slider's thumb (`HeldSlider`).
+
 There is one renderer: the draw functions and widgets of the phone's own windows.
 `:androidauto` never learns what is on the surface. With the player on two surfaces at once,
 one of them steps the clocks (`WinampState.clocksTurn`).

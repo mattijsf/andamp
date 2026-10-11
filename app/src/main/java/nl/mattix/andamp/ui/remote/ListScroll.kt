@@ -12,9 +12,13 @@ import androidx.compose.runtime.setValue
  *
  * The owner of the surface reports a drag as a distance and a fling as a speed. A drag moves
  * the list with the finger. A fling is kept as [thrown] until the list, which has the frame
- * clock, has carried it out.
+ * clock, has carried it out. Either is the list's only while the list is on the surface
+ * ([shown]).
  */
 internal class ListScroll {
+    /** Whether the list is on the surface. The list says. */
+    var shown = false
+
     /** How far the list is scrolled down from its top. */
     var offset by mutableFloatStateOf(0f)
         private set
@@ -38,12 +42,14 @@ internal class ListScroll {
 
     /** The finger moved [fingerDy] down the surface; the list follows it, and a fling stops. */
     fun dragBy(fingerDy: Float) {
+        if (!shown) return
         thrown = null
         moveTo(offset - fingerDy)
     }
 
     /** The finger left the surface moving [fingerVy] pixels a second down it. */
     fun throwAt(fingerVy: Float) {
+        if (!shown) return
         thrown = Throw(-fingerVy)
     }
 

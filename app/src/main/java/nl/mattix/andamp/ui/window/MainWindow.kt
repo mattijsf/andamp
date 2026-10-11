@@ -137,6 +137,7 @@ fun mainWindowWidgets(
             248,
             10,
             thumbW = 29,
+            shown = { s.positionFraction },
             onChange = { if (s.transport != Transport.Stopped) s.seekPreview = it },
             onCommit = { if (s.transport != Transport.Stopped) vm.seekTo(it) else s.seekPreview = null },
         ),
@@ -148,6 +149,7 @@ fun mainWindowWidgets(
             13,
             thumbW = 14,
             travelOverride = 51,
+            shown = { s.volume / 100f },
             onChange = { vm.setVolume(it) },
         ),
         hSlider(
@@ -157,6 +159,7 @@ fun mainWindowWidgets(
             38,
             13,
             thumbW = 14,
+            shown = { (s.balance + 100) / 200f },
             onChange = { vm.setBalance(SliderMath.stickyBalance((it * 200).roundToInt() - 100)) },
         ),
         button("main.eqToggle", Dest.EQ_TOGGLE.x, Dest.EQ_TOGGLE.y, 23, 12) {

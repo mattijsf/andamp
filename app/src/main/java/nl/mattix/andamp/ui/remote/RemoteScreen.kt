@@ -8,12 +8,14 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
@@ -30,6 +32,7 @@ import nl.mattix.andamp.ui.SkinCut
 import nl.mattix.andamp.ui.UiClocks
 import nl.mattix.andamp.ui.widget.Widget
 import nl.mattix.andamp.ui.widget.button
+import nl.mattix.andamp.ui.widget.hitTest
 import nl.mattix.andamp.ui.window.EQ_H
 import nl.mattix.andamp.ui.window.EQ_W
 import nl.mattix.andamp.ui.window.MAIN_H
@@ -41,6 +44,8 @@ import nl.mattix.andamp.ui.window.drawEqWindow
 import nl.mattix.andamp.ui.window.drawMainWindow
 import nl.mattix.andamp.ui.window.eqWindowWidgets
 import nl.mattix.andamp.ui.window.mainWindowWidgets
+import kotlin.math.floor
+import kotlin.math.roundToInt
 
 /**
  * What a lent surface shows: one window at a time, on black, in the middle of [within].
@@ -56,6 +61,9 @@ import nl.mattix.andamp.ui.window.mainWindowWidgets
  * The main window and the equalizer are drawn whole. The controls that need another window or
  * a menu do nothing here; see [mainAlone] and [eqAlone]. The playlist is [RemoteList], a list
  * to pick a song from, which fills the room.
+ *
+ * [sliders] is kept told where the sliders of the window that is up are, for a drag the
+ * surface's owner reports by its distance alone; see [HeldSlider].
  */
 @Composable
 internal fun RemoteScreen(
@@ -63,6 +71,7 @@ internal fun RemoteScreen(
     skin: Skin,
     within: IntRect?,
     scroll: ListScroll,
+    sliders: Sliders = Sliders(),
     fill: Boolean = false,
     onFill: () -> Unit = {},
 ) {
@@ -83,11 +92,14 @@ internal fun RemoteScreen(
         PlayerViewportBox(fit) {
             val room = IntRect(fit.inner(asked.left), fit.inner(asked.top), fit.inner(asked.right), fit.inner(asked.bottom))
             if (up == Up.PLAYLIST) {
+                SideEffect { sliders.at = Sliders.NONE }
                 RemoteList(vm, skin, room, fit, scroll, onClose = { up = Up.MAIN })
             } else {
                 // the two windows are one size, so the swap moves nothing
                 val left = room.left + (room.width - MAIN_W * fit.scale) / 2
                 val top = room.top + (room.height - MAIN_H * fit.scale) / 2
+                val controls = if (up == Up.EQUALIZER) eq else main
+                SideEffect { sliders.at = { x, y -> sliderAt(controls, IntOffset(left, top), fit, x, y) } }
                 Box(Modifier.offset { IntOffset(left, top) }) {
                     if (up == Up.EQUALIZER) EqualizerAlone(skin, s, fit.scale, eq) else MainAlone(skin, s, fit.scale, main, fill)
                 }
@@ -131,6 +143,42 @@ private fun EqualizerAlone(
 
 /** The window a lent surface is showing. */
 private enum class Up { MAIN, EQUALIZER, PLAYLIST }
+
+/**
+ * The slider among [widgets] that a touch at ([x], [y]) on the surface lands on, or null.
+ * The window's top left corner is at [origin] on [fit]'s surface, which is drawn
+ * [PlayerViewport.shrink] times its size.
+ */
+internal fun sliderAt(
+    widgets: List<Widget>,
+    origin: IntOffset,
+    fit: PlayerViewport,
+    x: Float,
+    y: Float,
+): SurfaceSlider? {
+    fun inWindow(
+        onSurface: Float,
+        from: Int,
+    ) = floor((onSurface / fit.shrink - from) / fit.scale).toInt()
+
+    fun onSurface(
+        inWindow: Float,
+        from: Int,
+    ) = (from + inWindow * fit.scale) * fit.shrink
+
+    val hit = hitTest(widgets, IntOffset(inWindow(x, origin.x), inWindow(y, origin.y))) ?: return null
+    val handle = hit.handle ?: return null
+    val at = hit.bounds
+    return SurfaceSlider(
+        hit.id,
+        IntRect(
+            onSurface(at.left.toFloat(), origin.x).roundToInt(),
+            onSurface(at.top.toFloat(), origin.y).roundToInt(),
+            onSurface(at.right.toFloat(), origin.x).roundToInt(),
+            onSurface(at.bottom.toFloat(), origin.y).roundToInt(),
+        ),
+    ) { handle().let { Offset(onSurface(it.x, origin.x), onSurface(it.y, origin.y)) } }
+}
 
 /** How many pixels a virtual pixel gets in a room of this size: whole, and at least one. */
 internal fun wholeScale(
