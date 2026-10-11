@@ -217,7 +217,7 @@ fun DrawScope.drawMainWindow(
     if (!stopped) {
         val text = skin[Sheet.TEXT]
         // unknown values draw nothing
-        s.bitrateKbps?.let { bitmapText(text, it.toString(), Dest.KBPS.x, Dest.KBPS.y) }
+        s.bitrateKbps?.let { bitmapText(text, KbpsReadout.of(it), Dest.KBPS.x, Dest.KBPS.y) }
         s.sampleRateKhz?.let { bitmapText(text, it.toString(), Dest.KHZ.x, Dest.KHZ.y) }
     }
 
