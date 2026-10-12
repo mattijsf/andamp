@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- OnlineSkinsScreen.kt -->
-    <string name="museum_title">面板博物馆</string>
+    <string name="museum_title">皮肤博物馆</string>
     <string name="museum_count_in_museum">博物馆中共 %1$s 个</string>
     <string name="museum_count_found">找到 %1$s 个</string>
     <string name="museum_from">来自 Winamp Skin Museum</string>
@@ -21,7 +21,7 @@
     <string name="museum_order">排序</string>
     <string name="museum_order_museum">博物馆顺序</string>
     <string name="museum_order_shuffle">随机</string>
-    <string name="museum_only_skins_you_have">只显示已有的面板</string>
+    <string name="museum_only_skins_you_have">只显示已有的皮肤</string>
     <!-- SkinTiles.kt, SkinViewer.kt -->
     <string name="museum_uninstall">卸载</string>
     <string name="museum_install">安装</string>
@@ -33,13 +33,13 @@
     <string name="museum_in_the_museum">在博物馆中查看</string>
     <!-- WelcomeScreen.kt -->
     <string name="welcome_pick_a_look">选择外观</string>
-    <string name="welcome_skins_in_the_menu">之后可随时通过菜单中的“面板”更换。</string>
-    <string name="welcome_own_skin">Andamp 自带面板</string>
+    <string name="welcome_skins_in_the_menu">之后可随时通过菜单中的“皮肤”更换。</string>
+    <string name="welcome_own_skin">Andamp 自带皮肤</string>
     <string name="welcome_own_skin_summary">专为本应用绘制，在 Android 12 及更高版本上会跟随壁纸取色。</string>
     <string name="welcome_keep_this">就用这个</string>
-    <string name="welcome_classic_skin">经典面板</string>
-    <string name="welcome_classic_skins_count">%1$s 个经典面板</string>
-    <string name="welcome_classic_skins_at_least">%1$s+ 个经典面板</string>
+    <string name="welcome_classic_skin">经典皮肤</string>
+    <string name="welcome_classic_skins_count">%1$s 个经典皮肤</string>
+    <string name="welcome_classic_skins_at_least">%1$s+ 个经典皮肤</string>
     <string name="welcome_browse_the_museum">浏览博物馆</string>
     <!-- AboutDialog.kt -->
     <string name="about_version">%1$s (%2$d)</string>

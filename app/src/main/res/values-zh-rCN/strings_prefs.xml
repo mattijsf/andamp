@@ -2,10 +2,10 @@
 <resources>
     <!-- AndroidAutoPrefs.kt -->
     <string name="prefs_android_auto_wears_skin">使用 %1$s</string>
-    <string name="prefs_android_auto_wears_own_skin">使用播放器自己的面板</string>
-    <string name="prefs_android_auto_skin_section">面板</string>
-    <string name="prefs_android_auto_skin_note">在 Android Auto 中，主窗口使用这个面板。“默认”沿用您为播放器选择的面板。</string>
-    <string name="prefs_android_auto_skin_heading">Android Auto 中的面板</string>
+    <string name="prefs_android_auto_wears_own_skin">使用播放器自己的皮肤</string>
+    <string name="prefs_android_auto_skin_section">皮肤</string>
+    <string name="prefs_android_auto_skin_note">在 Android Auto 中，主窗口使用这个皮肤。“默认”沿用您为播放器选择的皮肤。</string>
+    <string name="prefs_android_auto_skin_heading">Android Auto 中的皮肤</string>
 
     <!-- EffectsPage.kt -->
     <string name="prefs_effects_unavailable_summary">此播放后端不支持效果。</string>
@@ -37,13 +37,13 @@
 
     <!-- ListPrefs.kt -->
     <string name="prefs_lists_font_title">播放列表字体</string>
-    <string name="prefs_lists_font_skin_about">面板自带的像素字母，与主窗口中的歌曲标题一样。面板没有对应字符的文字（例如中文）仍使用常规字体。</string>
+    <string name="prefs_lists_font_skin_about">皮肤自带的像素字母，与主窗口中的歌曲标题一样。皮肤没有对应字符的文字（例如中文）仍使用常规字体。</string>
     <string name="prefs_lists_font_regular_about">常规字体，平滑绘制，区分大小写。</string>
-    <string name="prefs_lists_font_skin">面板</string>
+    <string name="prefs_lists_font_skin">皮肤</string>
     <string name="prefs_lists_font_regular">常规</string>
     <string name="prefs_lists_row_height_title">行高</string>
     <string name="prefs_lists_row_height_classic_about">与 Winamp 一样紧凑的行。如果不容易点中，可以选择更高的行。</string>
-    <string name="prefs_lists_row_height_taller_about">播放列表、媒体库和面板列表中的行更高，手指更容易点中。</string>
+    <string name="prefs_lists_row_height_taller_about">播放列表、媒体库和皮肤列表中的行更高，手指更容易点中。</string>
     <string name="prefs_lists_row_classic">经典</string>
     <string name="prefs_lists_row_roomy">宽松</string>
     <string name="prefs_lists_row_large">大</string>
@@ -62,15 +62,15 @@
     <string name="prefs_notice_avs_decoder_what">.avs 预设格式的帧结构与字段布局，预设读取器遵循它们。</string>
     <string name="prefs_notice_projectm_eval_what">计算 AVS 预设脚本中的表达式，内置于 AVS 库中。</string>
     <string name="prefs_notice_milkdrop_what">Ryan Geiss 的原作，projectM 渲染的正是它的 .milk 预设。</string>
-    <string name="prefs_notice_webamp_what">它的精灵图坐标是带面板窗口中每个坐标的依据。</string>
+    <string name="prefs_notice_webamp_what">它的精灵图坐标是带皮肤的窗口中每个坐标的依据。</string>
     <string name="prefs_notice_liberation_sans_what">播放列表的字体，与 PLEDIT.TXT 指定的 Arial 度量兼容。</string>
     <string name="prefs_notice_liberation_sans_obligation">未经修改地打包，使用许可证允许的名称。</string>
     <string name="prefs_notice_luaj_what">在沙箱中运行描述效果的 .lua 文件。</string>
     <string name="prefs_notice_androidx_what">界面工具包、导航、生命周期，以及用于本地播放的 Media3。</string>
     <string name="prefs_notice_kotlin_what">编程语言及其并发库。</string>
-    <string name="prefs_notice_material_what">它的色彩引擎根据已载入的面板生成现代界面的配色。</string>
-    <string name="prefs_notice_coil_what">载入并缓存面板博物馆的缩略图。</string>
-    <string name="prefs_notice_okhttp_what">唯一的 HTTP 客户端，用于面板博物馆和电台流。</string>
+    <string name="prefs_notice_material_what">它的色彩引擎根据已载入的皮肤生成现代界面的配色。</string>
+    <string name="prefs_notice_coil_what">载入并缓存皮肤博物馆的缩略图。</string>
+    <string name="prefs_notice_okhttp_what">唯一的 HTTP 客户端，用于皮肤博物馆和电台流。</string>
 
     <!-- Store.kt (storePlay) -->
     <string name="prefs_notice_play_billing_what">通过 Google Play 收取“支持 Andamp”页面上的打赏。</string>
@@ -198,8 +198,8 @@
 
     <!-- SkinPick.kt -->
     <string name="prefs_skin_default">默认</string>
-    <string name="prefs_skin_own">播放器自己的面板</string>
-    <string name="prefs_skin_instead">代替播放器自己的面板</string>
+    <string name="prefs_skin_own">播放器自己的皮肤</string>
+    <string name="prefs_skin_instead">代替播放器自己的皮肤</string>
     <string name="prefs_skin_close">关闭</string>
 
     <!-- SourcesPrefs.kt -->
@@ -224,10 +224,10 @@
     <string name="prefs_source_settings_section">设置</string>
     <string name="prefs_source_settings_title">%1$s 设置</string>
     <string name="prefs_source_settings_summary">它的账户以及它提供的其他选项，在它自己的界面中</string>
-    <string name="prefs_source_skin_section">面板</string>
+    <string name="prefs_source_skin_section">皮肤</string>
     <string name="prefs_source_updates_section">更新</string>
-    <string name="prefs_source_skin_note">播放来自 %1$s 的曲目时，播放器使用这个面板。“默认”沿用您为播放器选择的面板。</string>
-    <string name="prefs_source_skin_heading">%1$s 的面板</string>
+    <string name="prefs_source_skin_note">播放来自 %1$s 的曲目时，播放器使用这个皮肤。“默认”沿用您为播放器选择的皮肤。</string>
+    <string name="prefs_source_skin_heading">%1$s 的皮肤</string>
     <string name="prefs_updates_checking">正在查找新版本…</string>
     <string name="prefs_updates_current">版本 %1$s，已是最新。</string>
     <string name="prefs_updates_available">版本 %1$s 已发布。</string>

@@ -81,7 +81,7 @@ did not have.
 
 | English | 简体中文 | From |
 |---|---|---|
-| skin | 面板 | Winamp |
+| skin | 皮肤 | Audacious |
 | visualization | 可视化效果 | Winamp |
 | Media Library | 媒体库 | Winamp |
 | playlist | 播放列表 | Winamp |
@@ -102,3 +102,6 @@ did not have.
 
 "Unverified" means the word the Chinese Winamp menus used was not at hand. If you know
 it, a pull request that corrects the table and the strings is welcome.
+
+A skin is the one word here that does not follow Winamp. Its installer says 面板, which
+Chinese software otherwise uses for a panel; 皮肤 is what a skin is called everywhere else.
