@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="prompt_save">保存</string>
+    <string name="prompt_ok">确定</string>
+    <string name="prompt_open_settings">打开设置</string>
+    <string name="prompt_not_now">暂不</string>
+    <string name="prompt_allow">允许</string>
+    <string name="prompt_close">关闭</string>
+    <string name="prompt_cancel">取消</string>
+    <string name="prompt_delete">删除</string>
+
+    <!-- DeleteListPrompt.kt -->
+    <string name="prompt_delete_list_title">删除“%1$s”？</string>
+    <string name="prompt_delete_list_body">这会删除已保存的列表，其中的音乐不会被删除。</string>
+
+    <!-- BookmarkOps.kt -->
+    <string name="bookmark_nothing_playing">当前没有播放任何内容</string>
+    <string name="bookmark_nowhere">这首曲目没有可返回的位置</string>
+    <string name="bookmark_already">已在书签中</string>
+    <string name="bookmark_none_here">这里没有可以加入书签的内容</string>
+
+    <!-- SourcePrompts.kt -->
+    <string name="source_missing_title">%1$s 尚未设置</string>
+    <string name="source_missing_body">设置 %1$s 后才能在 Andamp 中播放它的曲目。在此之前这些曲目会被跳过。</string>
+    <string name="source_missing_confirm">设置 %1$s</string>
+    <string name="source_signed_out_title">%1$s 已退出登录</string>
+    <string name="source_signed_out_body">登录后才能在 Andamp 中播放您的 %1$s 曲目。在此之前这些曲目会被跳过。</string>
+    <string name="source_signed_out_confirm">登录</string>
+
+    <!-- MusicPermission.kt: the names Android's settings show in Chinese -->
+    <string name="permission_music_and_audio">音乐和音频</string>
+    <string name="permission_files_and_media">文件和媒体</string>
+    <string name="permission_storage">存储</string>
+
+    <!-- LibraryAccess.kt and LibraryPrompt.kt -->
+    <string name="access_granted">Andamp 已获得“%1$s”权限。您添加的曲目在重启后仍可播放。</string>
+    <string name="access_askable">没有“%1$s”权限时，Andamp 仍可播放您选取的文件，但重启后它们可能无法播放。</string>
+    <string name="access_blocked">“%1$s”权限已关闭。您选取的文件目前仍可播放，但重启后它们可能无法播放。</string>
+    <string name="access_ask_title">允许“%1$s”</string>
+    <string name="access_ask_body">Andamp 需要“%1$s”权限才能播放这部手机上的歌曲。</string>
+    <string name="access_off_title">“%1$s”权限已关闭</string>
+    <string name="access_off_body">请在 Andamp 的设置中允许“%1$s”，以播放这部手机上的歌曲。</string>
+
+    <!-- FolderAccessOps.kt -->
+    <string name="folder_allow_again_title">重新允许访问“%1$s”？</string>
+    <string name="folder_other_folder">这是另一个文件夹。歌曲只能从添加它们时所在的文件夹播放。</string>
+    <string name="folder_no_longer_readable">Andamp 无法再读取这个文件夹。重新允许后，其中的歌曲即可照常播放。</string>
+
+    <!-- OverlayOps.kt -->
+    <string name="overlay_title">总在最前</string>
+    <string name="overlay_needs_android_11">悬浮在其他应用上方需要 Android 11 或更高版本。</string>
+    <string name="overlay_needs_permission">Andamp 需要“显示在其他应用的上层”权限，才能悬浮在其他应用上方。</string>
+
+    <!-- PresetNotice.kt -->
+    <string name="preset_unreadable">无法读取此预设</string>
+    <string name="preset_not_shown">此预设中未显示：%1$s</string>
+    <string name="preset_and_more">%1$s 等另外 %2$d 个</string>
+
+    <!-- PresetPicker.kt -->
+    <string name="picker_nothing_saved_yet">还没有保存任何内容</string>
+    <string name="picker_nothing_saved">没有已保存的内容</string>
+    <string name="picker_selected">已选 %1$d 个，共 %2$d 个</string>
+    <plurals name="picker_saved">
+        <item quantity="other">已保存 %1$d 个</item>
+    </plurals>
+    <string name="picker_confirm_count">%1$s (%2$d)</string>
+
+    <!-- BackendNotices.kt -->
+    <string name="notice_source_cannot_play_title">无法播放</string>
+    <string name="notice_source_cannot_play_body">这个音乐源中的内容都无法播放。可能需要其他账户或套餐，或者与它的连接已断开。再按一次播放会重试。如果问题持续出现，请检查该音乐源自己的设置。</string>
+    <string name="notice_station_lost_title">电台已断开</string>
+    <string name="notice_station_lost_body">电台已停止且无法重新连接，因此播放器也已停止。电台可能已停播，或者网络连接仍未恢复。按播放可重试。</string>
+    <string name="notice_server_lost_title">服务器已断开</string>
+    <string name="notice_server_lost_body">与音乐服务器的连接已断开，且无法重新连接。服务器可能已关闭，或者网络连接仍未恢复。按播放可重试。</string>
+    <string name="notice_nothing_playable_title">这里没有可播放的内容</string>
+    <string name="notice_nothing_playable_body">此播放列表中的每首曲目都来自这部手机目前无法访问的音乐源：它尚未安装，或者没有人登录。每一行都会说明原因。</string>
+
+    <!-- WinampViewModel.kt -->
+    <string name="prompt_jump_to_time_title">跳转到时间</string>
+    <string name="prompt_jump_to_time_confirm">跳转</string>
+</resources>

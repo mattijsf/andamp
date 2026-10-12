@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- PlaylistOps.kt -->
+    <string name="playlist_add_url_title">添加 URL</string>
+    <string name="playlist_add_url_next">下一步</string>
+    <string name="playlist_add_url_name_title">名称</string>
+    <string name="playlist_add_url_add">添加</string>
+
+    <!-- PlaylistFileOps.kt -->
+    <string name="playlist_save_title">保存播放列表</string>
+    <string name="playlist_save_in_andamp">保存到 Andamp</string>
+    <string name="playlist_save_in_andamp_note">可在媒体库的“列表”标签页中浏览</string>
+    <string name="playlist_export">导出为文件…</string>
+    <string name="playlist_export_note">其他播放器可以读取的 .m3u 文件</string>
+    <string name="playlist_load_title">载入播放列表</string>
+    <string name="playlist_open_from_andamp">从 Andamp 打开</string>
+    <string name="playlist_open_from_andamp_note">保存在这里的列表之一</string>
+    <string name="playlist_import">从文件导入…</string>
+    <string name="playlist_import_note">这部手机上的 .m3u 文件</string>
+    <string name="playlist_save_as_title">播放列表另存为</string>
+    <string name="playlist_default_name">播放列表</string>
+    <string name="playlist_open_title">打开播放列表</string>
+    <string name="playlist_open_confirm">打开</string>
+    <string name="playlist_open_empty">这里还没有保存任何列表</string>
+
+    <!-- WinampViewModel.kt -->
+    <string name="jump_to_file_title">跳转到文件</string>
+    <string name="jump_to_file_empty">播放列表为空</string>
+
+    <!-- FileInfoSource.kt and TrackInfoOps.kt -->
+    <string name="info_file">文件</string>
+    <string name="info_size">大小</string>
+    <string name="info_format">格式</string>
+    <string name="info_length">长度</string>
+    <string name="info_bitrate">比特率</string>
+    <string name="info_sample_rate">采样率</string>
+    <string name="info_title">标题</string>
+    <string name="info_artist">艺术家</string>
+    <string name="info_album">专辑</string>
+    <string name="info_album_artist">专辑艺术家</string>
+    <string name="info_track">音轨</string>
+    <string name="info_disc">碟片</string>
+    <string name="info_year">年份</string>
+    <string name="info_genre">流派</string>
+    <string name="info_composer">作曲</string>
+    <string name="info_station">电台</string>
+    <string name="info_now_playing">正在播放</string>
+    <string name="info_url">网址</string>
+    <string name="info_website">网站</string>
+
+    <!-- OverlayOps.kt -->
+    <string name="overlay_summary_off">关闭</string>
+    <string name="overlay_summary_waiting">正在等待“显示在其他应用的上层”权限</string>
+    <string name="overlay_summary_on">播放器悬浮在其他应用上方</string>
+
+    <!-- PhoneLibrary.kt -->
+    <plurals name="phone_count_tracks">
+        <item quantity="other">%1$,d 首曲目</item>
+    </plurals>
+    <plurals name="phone_count_artists">
+        <item quantity="other">%1$,d 位艺术家</item>
+    </plurals>
+    <plurals name="phone_count_albums">
+        <item quantity="other">%1$,d 张专辑</item>
+    </plurals>
+    <string name="phone_summary">%1$s · %2$s · %3$s</string>
+    <plurals name="phone_days">
+        <item quantity="other">%1$,d 天</item>
+    </plurals>
+    <plurals name="phone_hours">
+        <item quantity="other">%1$,d 小时</item>
+    </plurals>
+    <plurals name="phone_minutes">
+        <item quantity="other">%1$,d 分钟</item>
+    </plurals>
+    <string name="phone_duration_pair">%1$s %2$s</string>
+
+    <string name="scan_looking_in">正在查找 %1$s…（第 %2$d 个，共 %3$d 个）</string>
+    <string name="scan_reading">正在读取找到的内容…</string>
+    <string name="scan_no_folders">这部手机上没有音乐文件夹</string>
+    <string name="scan_looked_in">已查找 %1$s</string>
+    <string name="scan_unreadable">%1$s。无法读取媒体库。</string>
+    <string name="scan_outcome">%1$s：%2$s。</string>
+    <plurals name="scan_new_tracks">
+        <item quantity="other">新增 %1$,d 首曲目</item>
+    </plurals>
+    <plurals name="scan_fewer_tracks">
+        <item quantity="other">减少 %1$,d 首曲目</item>
+    </plurals>
+    <string name="scan_nothing_new">没有变化</string>
+
+    <!-- MusicSource.kt -->
+    <string name="source_this_phone">本机</string>
+
+    <!-- PackSource.kt -->
+    <string name="source_played_by">由 %1$s 播放（%2$s）</string>
+    <string name="source_played_by_signed">由 %1$s 播放（%2$s，签名 %3$s…）</string>
+
+    <!-- OnlineSkinOps.kt -->
+    <string name="museum_could_not_download">无法下载 %1$s</string>
+    <string name="museum_could_not_read">无法读取 %1$s</string>
+
+    <string name="skin_picked_name">所选面板</string>
+    <string name="media_unknown_title">未知</string>
+</resources>

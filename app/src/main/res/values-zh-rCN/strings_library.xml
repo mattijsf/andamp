@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- LibraryOps.kt -->
+    <string name="library_tab_artists">艺术家</string>
+    <string name="library_tab_albums">专辑</string>
+    <string name="library_tab_lists">列表</string>
+    <string name="library_tab_radio">电台</string>
+    <string name="library_tab_find">查找</string>
+    <string name="library_search_header">搜索</string>
+
+    <string name="library_kind_albums">专辑</string>
+    <string name="library_kind_singles">单曲</string>
+    <string name="library_kind_compilations">合辑</string>
+
+    <plurals name="library_count_artists">
+        <item quantity="other">%1$d 位艺术家</item>
+    </plurals>
+    <plurals name="library_count_albums">
+        <item quantity="other">%1$d 张专辑</item>
+    </plurals>
+    <plurals name="library_count_singles">
+        <item quantity="other">%1$d 张单曲</item>
+    </plurals>
+    <plurals name="library_count_compilations">
+        <item quantity="other">%1$d 张合辑</item>
+    </plurals>
+    <plurals name="library_count_records">
+        <item quantity="other">%1$d 张唱片</item>
+    </plurals>
+    <plurals name="library_count_lists">
+        <item quantity="other">%1$d 个列表</item>
+    </plurals>
+    <plurals name="library_count_stations">
+        <item quantity="other">%1$d 个电台</item>
+    </plurals>
+    <plurals name="library_count_tracks">
+        <item quantity="other">%1$d 首曲目</item>
+    </plurals>
+    <plurals name="library_count_hits">
+        <item quantity="other">%1$d 个结果</item>
+    </plurals>
+    <string name="library_hits_capped">%1$d+ 个结果</string>
+    <string name="library_track_count_short">%1$d 首</string>
+
+    <string name="library_no_music">未找到音乐</string>
+    <string name="library_no_artists">没有艺术家</string>
+    <string name="library_no_matches">没有匹配项</string>
+    <string name="library_no_lists">没有列表</string>
+    <string name="library_no_tracks">没有曲目</string>
+    <string name="library_no_saved_lists">没有已保存的列表 · 用 LIST > SAVE 保存一个</string>
+    <string name="library_no_stations">没有电台 · 点“新建”添加一个</string>
+    <string name="library_type_to_search">输入以搜索</string>
+    <string name="library_type_an_artist">输入艺术家名称</string>
+
+    <string name="library_cant_reach">无法连接 %1$s</string>
+    <string name="library_cant_reach_library">无法连接媒体库</string>
+    <string name="library_tap_to_retry">%1$s · 点按重试</string>
+
+    <string name="library_queued">+%1$d 已加入队列</string>
+    <string name="library_queued_next">+%1$d 下一首播放</string>
+    <string name="library_cant_delete">无法删除</string>
+    <string name="library_nothing_to_play">没有可播放的内容</string>
+    <string name="library_not_http">不是 HTTP 网址</string>
+
+    <!-- LibraryWindow.kt -->
+    <string name="library_bar_new">新建</string>
+    <string name="library_bar_del_list">删除列表</string>
+    <string name="library_bar_play">播放</string>
+    <string name="library_bar_add">添加</string>
+    <string name="library_tap_to_allow">点按以允许“%1$s”</string>
+
+    <string name="library_station_url_title">电台网址</string>
+    <string name="library_station_next">下一步</string>
+    <string name="library_station_name_title">电台名称</string>
+    <string name="library_station_add">添加</string>
+</resources>
