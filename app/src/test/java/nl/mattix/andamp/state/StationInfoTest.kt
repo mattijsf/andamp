@@ -85,7 +85,7 @@ class StationInfoTest {
     ): TrackInfo? {
         var out: TrackInfo? = null
         runTest {
-            val ops = TrackInfoOps(state, NoFile, TestScope(StandardTestDispatcher(testScheduler)))
+            val ops = TrackInfoOps(state, NoFile, TestScope(StandardTestDispatcher(testScheduler)), EnglishWords)
             ops.show(track)
             advanceUntilIdle()
             out = state.trackInfo

@@ -22,8 +22,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.SkinEntry
 
 /**
@@ -45,9 +47,11 @@ internal fun SkinPickRow(
 ) {
     var choosing by remember { mutableStateOf(false) }
     val worn = chosen?.let { id -> skins.firstOrNull { it.id == id } }
+    // the name for following the skin the player wears
+    val default = stringResource(R.string.prefs_skin_default)
     NavRow(
-        title = worn?.name ?: DEFAULT_SKIN,
-        summary = if (worn == null) "The player's own skin" else "Instead of the player's own skin",
+        title = worn?.name ?: default,
+        summary = stringResource(if (worn == null) R.string.prefs_skin_own else R.string.prefs_skin_instead),
         tag = "$tag.row",
         onClick = { choosing = true },
     )
@@ -57,7 +61,7 @@ internal fun SkinPickRow(
         title = { Text(heading) },
         text = {
             Column(Modifier.verticalScroll(rememberScrollState())) {
-                SkinChoice(DEFAULT_SKIN, selected = worn == null, tag = "$tag.default") {
+                SkinChoice(default, selected = worn == null, tag = "$tag.default") {
                     onPick(null)
                     choosing = false
                 }
@@ -69,7 +73,7 @@ internal fun SkinPickRow(
                 }
             }
         },
-        confirmButton = { TextButton(onClick = { choosing = false }) { Text("Close") } },
+        confirmButton = { TextButton(onClick = { choosing = false }) { Text(stringResource(R.string.prefs_skin_close)) } },
     )
 }
 
@@ -96,6 +100,3 @@ private fun SkinChoice(
         Text(name, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.padding(start = 8.dp))
     }
 }
-
-/** The label for following the player's own skin. */
-internal const val DEFAULT_SKIN = "Default"

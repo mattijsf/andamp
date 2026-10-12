@@ -60,7 +60,7 @@ sealed interface AmpMenuItem {
 data class NamePrompt(
     val title: String,
     val initial: String = "",
-    val confirmLabel: String = "Save",
+    val confirmLabel: String,
     val onSubmit: (String) -> Unit,
 )
 
@@ -72,8 +72,8 @@ data class NamePrompt(
 data class AmpPrompt(
     val title: String,
     val body: String,
-    val confirmLabel: String = "Open settings",
+    val confirmLabel: String,
     /** The label for declining, or null for a notice, which has only its confirm button. */
-    val dismissLabel: String? = "Not now",
+    val dismissLabel: String?,
     val onConfirm: () -> Unit,
 )

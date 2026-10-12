@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.ui.menu
 
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.MenuAnchor
@@ -9,6 +10,7 @@ import nl.mattix.andamp.state.MusicSource
 import nl.mattix.andamp.state.SkinEntry
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
+import nl.mattix.andamp.state.shown
 import nl.mattix.andamp.ui.prefs.SUPPORT_PAGE
 
 /**
@@ -35,19 +37,19 @@ fun mainMenu(
     val options = optionsItems(vm, onPreferences, skins, onAlwaysOnTop, onDoubleSize)
     val playback = playbackItems(vm)
     return AmpMenu(
-        "Winamp",
+        vm.words.get(R.string.menu_winamp),
         listOf(
             AmpMenuItem.Submenu(
-                "Play",
+                vm.words.get(R.string.menu_play),
                 listOf(
                     // pickers, which belong to whoever hosts the menu rather
                     // than to the app: both hosts can register one
-                    AmpMenuItem.Action("Play file...", onClick = onOpenFile),
-                    AmpMenuItem.Action("Play directory...", onClick = onOpenFolder),
+                    AmpMenuItem.Action(vm.words.get(R.string.menu_play_file), onClick = onOpenFile),
+                    AmpMenuItem.Action(vm.words.get(R.string.menu_play_directory), onClick = onOpenFolder),
                     AmpMenuItem.Divider,
                     // Winamp lists them here to play one straight off - the
                     // bookmarks only, not the two entries that manage them
-                    AmpMenuItem.Submenu("Bookmark", bookmarkList(vm)),
+                    AmpMenuItem.Submenu(vm.words.get(R.string.menu_bookmark), bookmarkList(vm)),
                 ),
             ),
             // Winamp's Alt+3: the item playing, or the last one that did in
@@ -55,21 +57,22 @@ fun mainMenu(
             // not marked: it is a dialog, and AmpModals draws it wherever it is
             // hosted - including over a home screen, which is where the widget's
             // menu hosts it
-            AmpMenuItem.Action("View file info", enabled = vm.state.lastPlayed != null) {
+            AmpMenuItem.Action(vm.words.get(R.string.menu_view_file_info), enabled = vm.state.lastPlayed != null) {
                 vm.trackInfoOps.show(vm.state.lastPlayed)
             },
-            AmpMenuItem.Submenu("Bookmarks", bookmarks),
+            AmpMenuItem.Submenu(vm.words.get(R.string.menu_bookmarks), bookmarks),
             AmpMenuItem.Divider,
             // Winamp ticks its open windows here. There is no Main Window entry because the player
             // cannot be closed, and no Minibrowser because there is none
-            AmpMenuItem.Action("Playlist Editor", checked = vm.state.plVisible, needsTheApp = true) {
+            AmpMenuItem.Action(vm.words.get(R.string.menu_playlist_editor), checked = vm.state.plVisible, needsTheApp = true) {
                 vm.state.setWindowOpen(WindowStore.PLAYLIST, !vm.state.plVisible) { vm.state.plVisible = it }
             },
-            AmpMenuItem.Action("Equalizer", checked = vm.state.eqVisible, needsTheApp = true) {
+            AmpMenuItem.Action(vm.words.get(R.string.menu_equalizer), checked = vm.state.eqVisible, needsTheApp = true) {
                 vm.state.setWindowOpen(WindowStore.EQ, !vm.state.eqVisible) { vm.state.eqVisible = it }
             },
             // a window, ticked while it is on screen like the others here
             libraryItem(
+                label = vm.words.get(R.string.menu_media_library),
                 sources = vm.librarySources.present,
                 showing = vm.librarySources.showing.takeIf { vm.state.libraryOpen },
                 onToggle = {
@@ -79,23 +82,24 @@ fun mainMenu(
                     }
                 },
                 onSource = { source -> vm.sourceOps.libraryFrom(source, onSignIn = onPreferences) },
+                named = { it.shown(vm.words) },
             ),
             AmpMenuItem.Divider,
-            AmpMenuItem.Submenu("Options", options),
-            AmpMenuItem.Submenu("Playback", playback),
+            AmpMenuItem.Submenu(vm.words.get(R.string.menu_options), options),
+            AmpMenuItem.Submenu(vm.words.get(R.string.menu_playback), playback),
             // every entry under it moves the player's own visualizer or opens the plug-in window,
             // so the whole branch is marked as needing the app
-            AmpMenuItem.Submenu("Visualization", visualizationMenu(vm).items, needsTheApp = true),
-            AmpMenuItem.Submenu("Skins", skins),
+            AmpMenuItem.Submenu(vm.words.get(R.string.menu_visualization), visualizationMenu(vm).items, needsTheApp = true),
+            AmpMenuItem.Submenu(vm.words.get(R.string.menu_skins), skins),
             AmpMenuItem.Divider,
             // Preferences, opened on the page with the tips; every host of the menu can open
             // Preferences
-            AmpMenuItem.Action("Support Andamp...") {
+            AmpMenuItem.Action(vm.words.get(R.string.menu_support_andamp)) {
                 vm.state.arrivalPage = SUPPORT_PAGE
                 onPreferences()
             },
             AmpMenuItem.Divider,
-            AmpMenuItem.Action("Exit", onClick = onExit),
+            AmpMenuItem.Action(vm.words.get(R.string.menu_exit), onClick = onExit),
         ),
         // the options button in the titlebar, like Winamp's system-menu icon
         MenuAnchor(WindowStore.MAIN, OPTIONS_X, OPTIONS_Y, OPTIONS_W, OPTIONS_H),
@@ -109,27 +113,28 @@ fun mainMenu(
  * Winamp 5 lists its sources in the library's tree.
  *
  * [showing] is the source on screen, or null with the window closed, so the tick marks the open
- * library.
+ * library. [label] is what the entry is called.
  */
 internal fun libraryItem(
+    label: String,
     sources: List<MusicSource>,
     showing: MusicSource?,
     onToggle: () -> Unit,
     onSource: (MusicSource) -> Unit,
+    /** What a source is called in the submenu. */
+    named: (MusicSource) -> String = { it.label },
 ): AmpMenuItem {
     if (sources.size < 2) {
-        return AmpMenuItem.Action(LIBRARY, checked = showing != null, needsTheApp = true, onClick = onToggle)
+        return AmpMenuItem.Action(label, checked = showing != null, needsTheApp = true, onClick = onToggle)
     }
     return AmpMenuItem.Submenu(
-        LIBRARY,
+        label,
         sources.map { source ->
-            AmpMenuItem.Action(source.label, checked = source == showing, needsTheApp = true) { onSource(source) }
+            AmpMenuItem.Action(named(source), checked = source == showing, needsTheApp = true) { onSource(source) }
         },
         needsTheApp = true,
     )
 }
-
-private const val LIBRARY = "Media Library"
 
 /**
  * Winamp's Playback menu, on its own so the widget's menu shows the same one. Every verb acts on
@@ -137,27 +142,29 @@ private const val LIBRARY = "Media Library"
  */
 internal fun playbackItems(vm: WinampViewModel) =
     listOf(
-        AmpMenuItem.Action("Previous", onClick = vm::previous),
-        AmpMenuItem.Action("Play", onClick = vm::play),
-        AmpMenuItem.Action("Pause", onClick = vm::pause),
-        AmpMenuItem.Action("Stop", onClick = vm::stop),
-        AmpMenuItem.Action("Next", onClick = vm::next),
+        AmpMenuItem.Action(vm.words.get(R.string.menu_previous), onClick = vm::previous),
+        AmpMenuItem.Action(vm.words.get(R.string.menu_play), onClick = vm::play),
+        AmpMenuItem.Action(vm.words.get(R.string.menu_pause), onClick = vm::pause),
+        AmpMenuItem.Action(vm.words.get(R.string.menu_stop), onClick = vm::stop),
+        AmpMenuItem.Action(vm.words.get(R.string.menu_next), onClick = vm::next),
         AmpMenuItem.Divider,
         // Winamp's two other ways to stop, in its own order
-        AmpMenuItem.Action("Stop with fadeout", onClick = vm::stopWithFadeout),
-        AmpMenuItem.Action("Stop after current", checked = vm.state.stopAfterCurrent) {
+        AmpMenuItem.Action(vm.words.get(R.string.menu_stop_with_fadeout), onClick = vm::stopWithFadeout),
+        AmpMenuItem.Action(vm.words.get(R.string.menu_stop_after_current), checked = vm.state.stopAfterCurrent) {
             vm.setStopAfterCurrent(!vm.state.stopAfterCurrent)
         },
         AmpMenuItem.Divider,
-        AmpMenuItem.Action("Back 5 seconds") { vm.seekBySeconds(-STEP_S) },
-        AmpMenuItem.Action("Fwd 5 seconds") { vm.seekBySeconds(STEP_S) },
+        AmpMenuItem.Action(vm.words.get(R.string.menu_back_5_seconds)) { vm.seekBySeconds(-STEP_S) },
+        AmpMenuItem.Action(vm.words.get(R.string.menu_fwd_5_seconds)) { vm.seekBySeconds(STEP_S) },
         AmpMenuItem.Divider,
         // dialogs, both of them, so they draw wherever the menu is hosted
-        AmpMenuItem.Action("Jump to time...", onClick = vm::promptJumpToTime),
-        AmpMenuItem.Action("Jump to file...", onClick = vm::promptJumpToFile),
+        AmpMenuItem.Action(vm.words.get(R.string.menu_jump_to_time), onClick = vm::promptJumpToTime),
+        AmpMenuItem.Action(vm.words.get(R.string.menu_jump_to_file), onClick = vm::promptJumpToFile),
         AmpMenuItem.Divider,
-        AmpMenuItem.Action("Start of list") { vm.playTrack(0) },
-        AmpMenuItem.Action("Ten tracks back") { vm.playTrack((vm.state.currentIndex - TEN_BACK).coerceAtLeast(0)) },
+        AmpMenuItem.Action(vm.words.get(R.string.menu_start_of_list)) { vm.playTrack(0) },
+        AmpMenuItem.Action(
+            vm.words.get(R.string.menu_ten_tracks_back),
+        ) { vm.playTrack((vm.state.currentIndex - TEN_BACK).coerceAtLeast(0)) },
     )
 
 /**
@@ -203,7 +210,7 @@ fun optionsMenu(
     onDoubleSize: () -> Unit = {},
 ): AmpMenu =
     AmpMenu(
-        "Options",
+        vm.words.get(R.string.menu_options),
         optionsItems(vm, onPreferences, skinItems(vm, onPickSkin, onMuseum), onAlwaysOnTop, onDoubleSize),
         anchor,
     )
@@ -216,7 +223,7 @@ internal fun skinItems(
 ): List<AmpMenuItem> =
     buildList {
         add(
-            AmpMenuItem.Action("Skin Browser...", needsTheApp = true) {
+            AmpMenuItem.Action(vm.words.get(R.string.menu_skin_browser), needsTheApp = true) {
                 vm.state.skinManagerOpen = true
                 vm.state.raiseWindow(WindowStore.SKINS)
             },
@@ -225,7 +232,7 @@ internal fun skinItems(
         // through the picker, so this is what "put one in the folder" means
         // not marked either: the picker belongs to whoever hosts the menu, and
         // both hosts can open one
-        add(AmpMenuItem.Action("Load skin...", onClick = onPickSkin))
+        add(AmpMenuItem.Action(vm.words.get(R.string.menu_load_skin), onClick = onPickSkin))
         add(AmpMenuItem.Divider)
         add(
             // Winamp's <Base Skin>, under the name of the skin the app ships with and falls back to
@@ -237,7 +244,7 @@ internal fun skinItems(
         // not marked as needing the app: the museum is a screen of its own, so
         // like Preferences it is somewhere the widget's menu can send you and
         // come back from, rather than something only the player can do
-        add(AmpMenuItem.Action("<< Get more skins! >>", onClick = onMuseum))
+        add(AmpMenuItem.Action(vm.words.get(R.string.menu_get_more_skins), onClick = onMuseum))
         // the library survives restarts, so past skins stay one tap away
         vm.state.skinEntries.withIndex().filterNot { it.value.id == SkinEntry.BASE_ID }.forEach { (index, entry) ->
             add(
@@ -257,16 +264,32 @@ private fun optionsItems(
     onDoubleSize: () -> Unit,
 ): List<AmpMenuItem> =
     listOf(
-        AmpMenuItem.Action("Preferences...", onClick = onPreferences),
-        AmpMenuItem.Submenu("Skins", skins),
+        AmpMenuItem.Action(vm.words.get(R.string.menu_preferences), onClick = onPreferences),
+        AmpMenuItem.Submenu(vm.words.get(R.string.menu_skins), skins),
         AmpMenuItem.Divider,
-        AmpMenuItem.Action("Time elapsed", checked = !vm.state.timeRemaining) { vm.state.timeRemaining = false },
-        AmpMenuItem.Action("Time remaining", checked = vm.state.timeRemaining) { vm.state.timeRemaining = true },
+        AmpMenuItem.Action(vm.words.get(R.string.menu_time_elapsed), checked = !vm.state.timeRemaining) {
+            vm.state.timeRemaining =
+                false
+        },
+        AmpMenuItem.Action(vm.words.get(R.string.menu_time_remaining), checked = vm.state.timeRemaining) {
+            vm.state.timeRemaining =
+                true
+        },
         AmpMenuItem.Divider,
         // Winamp's own group, minus EasyMove: every window here already moves with a finger
-        AmpMenuItem.Action("Always On Top", checked = vm.state.alwaysOnTop, needsTheApp = true, onClick = onAlwaysOnTop),
-        AmpMenuItem.Action("Double Size", checked = vm.state.doubleSize, needsTheApp = true, onClick = onDoubleSize),
+        AmpMenuItem.Action(
+            vm.words.get(R.string.menu_always_on_top),
+            checked = vm.state.alwaysOnTop,
+            needsTheApp = true,
+            onClick = onAlwaysOnTop,
+        ),
+        AmpMenuItem.Action(
+            vm.words.get(R.string.menu_double_size),
+            checked = vm.state.doubleSize,
+            needsTheApp = true,
+            onClick = onDoubleSize,
+        ),
         AmpMenuItem.Divider,
-        AmpMenuItem.Action("Repeat", checked = vm.state.repeat) { vm.toggleRepeat() },
-        AmpMenuItem.Action("Shuffle", checked = vm.state.shuffle) { vm.toggleShuffle() },
+        AmpMenuItem.Action(vm.words.get(R.string.menu_repeat), checked = vm.state.repeat) { vm.toggleRepeat() },
+        AmpMenuItem.Action(vm.words.get(R.string.menu_shuffle), checked = vm.state.shuffle) { vm.toggleShuffle() },
     )

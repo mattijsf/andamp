@@ -164,6 +164,7 @@ class MainWindowInteractionTest {
                             .getApplicationContext(),
                     ),
                 permitted = { true },
+                words = nl.mattix.andamp.state.EnglishWords,
             ).also { it.want(false) }
 
     @Test

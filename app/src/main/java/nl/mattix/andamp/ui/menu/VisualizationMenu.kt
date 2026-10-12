@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.ui.menu
 
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.MenuAnchor
@@ -29,23 +30,23 @@ fun visualizationMenu(
 ): AmpMenu {
     val s = vm.state
     return AmpMenu(
-        "Visualization",
+        vm.words.get(R.string.menu_visualization),
         listOf(
             // the options dialog's actual content: what the in-player display shows
             AmpMenuItem.Submenu(
-                "Visualization options",
-                VisMode.entries.map { mode -> AmpMenuItem.Action(mode.menuLabel()) { s.visMode = mode } },
+                vm.words.get(R.string.menu_visualization_options),
+                VisMode.entries.map { mode -> AmpMenuItem.Action(vm.words.get(mode.menuLabelRes)) { s.visMode = mode } },
             ),
             AmpMenuItem.Divider,
-            AmpMenuItem.Action("Start/Stop plug-in") {
+            AmpMenuItem.Action(vm.words.get(R.string.menu_start_stop_plug_in)) {
                 s.setWindowOpen(nl.mattix.andamp.state.WindowStore.MILKDROP, !s.milkdropOn) {
                     vm.presetOps.setWindowOpen(it)
                 }
             },
             // the plug-in's configuration is the same list its own long press offers
-            AmpMenuItem.Submenu("Configure plug-in", visualMenuItems(vm)),
+            AmpMenuItem.Submenu(vm.words.get(R.string.menu_configure_plug_in), visualMenuItems(vm)),
             AmpMenuItem.Submenu(
-                "Select plug-in",
+                vm.words.get(R.string.menu_select_plug_in),
                 VisPlugin.entries.map { plugin ->
                     AmpMenuItem.Action(plugin.menuLabel, checked = s.visPlugin == plugin) {
                         vm.presetOps.selectPlugin(plugin)
@@ -58,17 +59,20 @@ fun visualizationMenu(
     )
 }
 
-internal fun VisMode.menuLabel(): String =
-    when (this) {
-        VisMode.Analyzer -> "Spectrum analyzer"
-        VisMode.Oscilloscope -> "Oscilloscope"
-        VisMode.Off -> "Off"
-    }
+/** What a mode is called in a menu, as a string resource. */
+internal val VisMode.menuLabelRes: Int
+    get() =
+        when (this) {
+            VisMode.Analyzer -> R.string.menu_spectrum_analyzer
+            VisMode.Oscilloscope -> R.string.menu_oscilloscope
+            VisMode.Off -> R.string.menu_off
+        }
 
-/** The same names where there is no room for the long one: "Analyzer" for "Spectrum analyzer". */
-internal fun VisMode.shortLabel(): String =
-    when (this) {
-        VisMode.Analyzer -> "Analyzer"
-        VisMode.Oscilloscope -> "Oscilloscope"
-        VisMode.Off -> "Off"
-    }
+/** The same where there is no room for the long name: "Analyzer" for "Spectrum analyzer". */
+internal val VisMode.shortLabelRes: Int
+    get() =
+        when (this) {
+            VisMode.Analyzer -> R.string.menu_analyzer
+            VisMode.Oscilloscope -> R.string.menu_oscilloscope
+            VisMode.Off -> R.string.menu_off
+        }

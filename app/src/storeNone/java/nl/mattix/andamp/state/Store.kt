@@ -3,6 +3,7 @@
 package nl.mattix.andamp.state
 
 import android.content.Context
+import android.content.res.Resources
 import nl.mattix.andamp.ui.prefs.Notice
 
 /** The store this build is handed out by: none. It is the APK installed without Google Play. */
@@ -16,5 +17,6 @@ internal object Store {
     val supportPage: String? = "https://andamp.nl/#donate"
 
     /** Nothing is carried for a store. */
-    val notices = emptyList<Notice>()
+    @Suppress("UNUSED_PARAMETER") // the same shape as the build a store hands out
+    fun notices(res: Resources): List<Notice> = emptyList()
 }

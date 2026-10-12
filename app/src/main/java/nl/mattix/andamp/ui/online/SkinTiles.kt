@@ -47,10 +47,12 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import nl.mattix.andamp.R
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.online.OnlineSkin
 import nl.mattix.andamp.state.online.SkinCatalog
@@ -248,13 +250,13 @@ private fun WideSkin(
                             contentColor = MaterialTheme.colorScheme.onErrorContainer,
                         ),
                     modifier = Modifier.testTag("$TAG.uninstall.${skin.md5}"),
-                ) { Text("Uninstall") }
+                ) { Text(stringResource(R.string.museum_uninstall)) }
             } else {
                 Button(
                     onClick = onInstall,
                     enabled = !busy,
                     modifier = Modifier.testTag("$TAG.install.${skin.md5}"),
-                ) { Text(if (busy) "Installing…" else "Install") }
+                ) { Text(stringResource(if (busy) R.string.museum_installing else R.string.museum_install)) }
             }
         }
     }
@@ -273,7 +275,7 @@ private fun InstalledMark(modifier: Modifier = Modifier) {
     ) {
         Icon(
             Icons.Filled.Check,
-            contentDescription = "Installed",
+            contentDescription = stringResource(R.string.museum_installed),
             tint = MaterialTheme.colorScheme.onPrimary,
             modifier = Modifier.size(BADGE_ICON.dp),
         )
@@ -288,7 +290,7 @@ private fun InstalledMark(modifier: Modifier = Modifier) {
 private fun CoveredTile(shape: Modifier) {
     Box(shape.testTag("$TAG.covered"), contentAlignment = Alignment.Center) {
         Text(
-            "not shown",
+            stringResource(R.string.museum_not_shown),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -311,7 +313,7 @@ private fun EmptyTile(
             Box(shape.clickable(onClick = onRetry).testTag("$TAG.retile"), contentAlignment = Alignment.Center) {
                 Icon(
                     Icons.Filled.Refresh,
-                    contentDescription = "Try this page again",
+                    contentDescription = stringResource(R.string.museum_try_this_page_again),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
             }

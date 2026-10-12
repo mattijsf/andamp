@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.ui.prefs
 
+import android.content.Context
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -15,6 +16,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.state.VisMode
 import nl.mattix.andamp.widget.WidgetRefresh
 import nl.mattix.andamp.widget.WidgetSettings
@@ -118,7 +120,8 @@ class WidgetPrefsInteractionTest {
             WidgetRows(WidgetPrefs(WidgetSettings(mode = VisMode.Off, refresh = WidgetRefresh.HIGH)))
         }
 
-        compose.onNodeWithText(WidgetRefresh.HIGH.timeOnly).assertExists()
+        val timeOnly = ApplicationProvider.getApplicationContext<Context>().getString(WidgetRefresh.HIGH.timeOnly)
+        compose.onNodeWithText(timeOnly).assertExists()
         compose.onNodeWithTag("prefs.widget.refresh.high").assertIsEnabled()
         assertEquals("High steps the clock at Medium's rate", WidgetRefresh.MEDIUM.windowMs, WidgetRefresh.HIGH.windowMs)
         assertEquals(WidgetRefresh.MEDIUM.timeOnly, WidgetRefresh.HIGH.timeOnly)

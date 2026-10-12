@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import nl.mattix.andamp.core.model.BackendNotice
 import nl.mattix.andamp.state.AmpPrompt
+import nl.mattix.andamp.state.EnglishWords
 import nl.mattix.andamp.state.WinampState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -35,7 +36,7 @@ class AmpPromptTest {
     @Test
     fun `an asked question is drawn`() {
         state.prompt =
-            AmpPrompt(title = "Always on top", body = "why", onConfirm = {})
+            AmpPrompt("Always on top", "why", "Open settings", "Not now", onConfirm = {})
         compose.setContent { AmpPromptHost(state) }
 
         compose.onNodeWithText("Always on top").assertIsDisplayed()
@@ -52,7 +53,7 @@ class AmpPromptTest {
     fun `confirming does the thing and clears the question`() {
         var confirmed = 0
         state.prompt =
-            AmpPrompt(title = "Always on top", body = "why", onConfirm = { confirmed++ })
+            AmpPrompt("Always on top", "why", "Open settings", "Not now", onConfirm = { confirmed++ })
         compose.setContent { AmpPromptHost(state) }
 
         compose.onNodeWithTag("prompt.confirm").performClick()
@@ -65,7 +66,7 @@ class AmpPromptTest {
     @Test
     fun `a question can be put off`() {
         state.prompt =
-            AmpPrompt(title = "Always on top", body = "why", onConfirm = {})
+            AmpPrompt("Always on top", "why", "Open settings", "Not now", onConfirm = {})
         compose.setContent { AmpPromptHost(state) }
 
         compose.onNodeWithText("Not now").performClick()
@@ -79,7 +80,7 @@ class AmpPromptTest {
      */
     @Test
     fun `a notice has only its OK`() {
-        state.prompt = promptFor(BackendNotice.SourceCannotPlay) { state.prompt = null }
+        state.prompt = promptFor(BackendNotice.SourceCannotPlay, EnglishWords) { state.prompt = null }
         compose.setContent { AmpPromptHost(state) }
 
         compose.onNodeWithText("OK").assertIsDisplayed()

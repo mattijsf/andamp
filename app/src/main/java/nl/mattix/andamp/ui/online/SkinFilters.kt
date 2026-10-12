@@ -19,7 +19,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.online.OnlineSkins
 import nl.mattix.andamp.state.online.SkinOrder
 
@@ -44,13 +46,13 @@ internal fun SkinFilters(online: OnlineSkins) {
                 }.testTag("$TAG.filters"),
     ) {
         Column(Modifier.padding(GAP.dp), verticalArrangement = Arrangement.spacedBy(TIGHT.dp)) {
-            Text("Order", style = MaterialTheme.typography.labelLarge)
+            Text(stringResource(R.string.museum_order), style = MaterialTheme.typography.labelLarge)
             FlowRow(horizontalArrangement = Arrangement.spacedBy(TIGHT.dp)) {
-                Sort(online, SkinOrder.MUSEUM, "Museum")
-                Sort(online, SkinOrder.SHUFFLED, "Shuffle")
+                Sort(online, SkinOrder.MUSEUM, stringResource(R.string.museum_order_museum))
+                Sort(online, SkinOrder.SHUFFLED, stringResource(R.string.museum_order_shuffle))
             }
             HorizontalDivider(Modifier.padding(vertical = TIGHT.dp))
-            Toggle("Only skins you have", online.onlyInstalled, "$TAG.f.installed") {
+            Toggle(stringResource(R.string.museum_only_skins_you_have), online.onlyInstalled, "$TAG.f.installed") {
                 online.installedOnly(it)
             }
         }

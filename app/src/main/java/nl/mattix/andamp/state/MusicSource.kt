@@ -2,6 +2,8 @@
 
 package nl.mattix.andamp.state
 
+import nl.mattix.andamp.R
+
 /**
  * Where the music comes from.
  *
@@ -47,3 +49,9 @@ class MusicSource(
 
 /** The Preferences page for [source], which is also the tag of its row there. */
 fun sourceRoute(source: MusicSource): String = "source/" + source.id.lowercase()
+
+/**
+ * What the listener reads for this source in a menu or on a page: the phone under its name in the
+ * phone's language, and an installed source under the name the source's app gives it.
+ */
+fun MusicSource.shown(words: Words): String = if (this == MusicSource.LOCAL) words.get(R.string.source_this_phone) else label

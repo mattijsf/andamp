@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -52,6 +53,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
+import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.ParamSpec
 import nl.mattix.andamp.core.model.RackSlot
 import nl.mattix.andamp.state.DspOps
@@ -131,6 +133,7 @@ internal fun Help(
 ) {
     if (param.help.isBlank()) return
     var open by remember { mutableStateOf(false) }
+    val about = stringResource(R.string.prefs_rack_about_control, param.name)
     Box {
         // lit while its popup is open, since the popup floats free of the row it belongs to. The
         // lit disc is smaller than the touch target around it, and the transparent ring between the
@@ -140,7 +143,7 @@ internal fun Help(
                 .size(TARGET)
                 .clip(CircleShape)
                 .clickable { open = !open }
-                .semantics { contentDescription = "About ${param.name}" }
+                .semantics { contentDescription = about }
                 .testTag("dsp.$pluginId.help.${param.id}"),
             contentAlignment = Alignment.Center,
         ) {

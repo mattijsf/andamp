@@ -3,48 +3,51 @@
 package nl.mattix.andamp.ui.prefs
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.PlaylistFont
 import nl.mattix.andamp.state.RowHeight
+import nl.mattix.andamp.state.Words
 
 /** Preferences > Player: the player window's own switches, grouped by what they touch. */
 @Composable
 internal fun PlayerPage(sections: PrefsSections) {
-    Section("Windows")
+    Section(stringResource(R.string.prefs_player_windows_section))
     Group {
         OverlayRow(sections.overlay)
         ShadeRow(sections.shade)
     }
-    Section("Lists")
+    Section(stringResource(R.string.prefs_player_lists_section))
     Group {
         PlaylistFontRow(sections.lists)
         RowHeightRow(sections.lists)
     }
-    Section("Touch")
+    Section(stringResource(R.string.prefs_player_touch_section))
     Group { TapAssistRow(sections.tapAssist) }
     // shown only on a phone that can take colors from its wallpaper, so the heading never stands
     // over nothing
     if (sections.palette.offered) {
-        Section("Colors")
+        Section(stringResource(R.string.prefs_player_colors_section))
         Group { PaletteRow(sections.palette) }
     }
 }
 
 /** The Player row's line: which of its switches are on, or what the page holds when none are. */
-internal fun PrefsSections.playerSummary(): String {
+internal fun PrefsSections.playerSummary(words: Words): String {
     val on =
         listOfNotNull(
-            "Always on top".takeIf { overlay.wanted },
-            "Windows stay open".takeIf { !shade.shadeEnabled },
-            "Regular font in the playlist".takeIf { lists.font == PlaylistFont.REGULAR },
+            R.string.prefs_player_summary_always_on_top.takeIf { overlay.wanted },
+            R.string.prefs_player_summary_windows_stay_open.takeIf { !shade.shadeEnabled },
+            R.string.prefs_player_summary_regular_font.takeIf { lists.font == PlaylistFont.REGULAR },
             when (lists.rowHeight) {
                 RowHeight.CLASSIC -> null
-                RowHeight.ROOMY -> "Roomy rows"
-                RowHeight.LARGE -> "Large rows"
+                RowHeight.ROOMY -> R.string.prefs_player_summary_roomy_rows
+                RowHeight.LARGE -> R.string.prefs_player_summary_large_rows
             },
-            "Tap assist".takeIf { tapAssist.enabled },
-            "Wallpaper colors".takeIf { palette.offered && palette.enabled },
+            R.string.prefs_player_summary_tap_assist.takeIf { tapAssist.enabled },
+            R.string.prefs_player_summary_wallpaper_colors.takeIf { palette.offered && palette.enabled },
         )
-    return on.joinToString(" · ").ifEmpty {
-        if (overlay.offered) "Always on top, windows, lists, touch and colors" else "Windows, lists, touch and colors"
+    return on.joinToString(" · ") { words.get(it) }.ifEmpty {
+        words.get(if (overlay.offered) R.string.prefs_player_summary_all_with_overlay else R.string.prefs_player_summary_all)
     }
 }

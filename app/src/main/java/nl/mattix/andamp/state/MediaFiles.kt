@@ -7,6 +7,7 @@ import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.os.Build
 import android.util.Log
+import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.Track
 
 /** Media file probes on Android: tag reading for ADD, liveness for REM > MISC. */
@@ -42,7 +43,7 @@ class MediaFiles(
     // MediaMetadataRetriever throws RuntimeException subclasses on unreadable files; the filename is used then
     @Suppress("TooGenericExceptionCaught")
     fun readMetadata(uri: Uri): Track {
-        val fallbackTitle = app.displayNameOf(uri) ?: "Unknown"
+        val fallbackTitle = app.displayNameOf(uri) ?: app.getString(R.string.media_unknown_title)
         val retriever = MediaMetadataRetriever()
         return try {
             retriever.setDataSource(app, Uri.parse(readable(uri.toString())))

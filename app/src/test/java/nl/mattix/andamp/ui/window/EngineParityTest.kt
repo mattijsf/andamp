@@ -4,10 +4,11 @@ package nl.mattix.andamp.ui.window
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
+import nl.mattix.andamp.state.EnglishWords
 import nl.mattix.andamp.state.VisPlugin
 import nl.mattix.andamp.state.presets.InstalledPack
 import nl.mattix.andamp.ui.menu.countFor
-import nl.mattix.andamp.ui.menu.idleLabel
+import nl.mattix.andamp.ui.menu.idleLabelRes
 import nl.mattix.andamp.visualizer.avs.AvsView
 import nl.mattix.andamp.visualizer.core.VisualizerView
 import nl.mattix.andamp.visualizer.projectm.ProjectMView
@@ -112,7 +113,7 @@ class EngineParityTest {
 
     @Test
     fun `every engine names its own idle preset, distinctly`() {
-        val labels = VisPlugin.entries.map { it.idleLabel }
+        val labels = VisPlugin.entries.map { EnglishWords.get(it.idleLabelRes) }
         assertTrue(labels.all { it.isNotBlank() })
         assertEquals("every engine has a distinct idle label", labels.size, labels.distinct().size)
     }

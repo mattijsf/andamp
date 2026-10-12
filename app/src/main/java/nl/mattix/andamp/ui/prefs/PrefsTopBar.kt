@@ -16,8 +16,10 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import nl.mattix.andamp.R
 
 /**
  * The screen's bar: the page's name, a way back when there is one, and Done. Where the window is
@@ -35,13 +37,14 @@ internal fun PrefsTopBar(
     scrollBehavior: TopAppBarScrollBehavior,
 ) {
     val name: @Composable () -> Unit = { Text(title) }
+    val backTo = stringResource(R.string.prefs_top_back)
     val back: @Composable () -> Unit = {
         if (deeper) {
             IconButton(
                 onClick = onBack,
                 modifier =
                     Modifier
-                        .semantics { contentDescription = "Back to preferences" }
+                        .semantics { contentDescription = backTo }
                         .testTag("prefs.back"),
             ) { Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = null) }
         }
@@ -50,7 +53,7 @@ internal fun PrefsTopBar(
         TextButton(
             onClick = onClose,
             modifier = Modifier.testTag("prefs.close"),
-        ) { Text("Done") }
+        ) { Text(stringResource(R.string.prefs_top_done)) }
     }
     if (tall) {
         LargeTopAppBar(title = name, navigationIcon = back, actions = done, scrollBehavior = scrollBehavior)

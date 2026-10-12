@@ -7,6 +7,7 @@ import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import nl.mattix.andamp.state.EnglishWords
 import nl.mattix.andamp.state.SkinEntry
 import nl.mattix.andamp.state.SkinLibrary
 import nl.mattix.andamp.state.SkinOps
@@ -54,7 +55,7 @@ class OnlineSkinOpsTest {
     private fun skinBytes(): ByteArray = app.assets.open("skins/AndAmp Light.wsz").use { it.readBytes() }
 
     private fun ops(download: (String) -> ByteArray) =
-        OnlineSkinOps(skinOps, library, installed, scope, io = Dispatchers.Unconfined, download = download)
+        OnlineSkinOps(skinOps, library, installed, scope, io = Dispatchers.Unconfined, download = download, words = EnglishWords)
 
     private fun idle() = shadowOf(android.os.Looper.getMainLooper()).idle()
 
@@ -175,7 +176,8 @@ class OnlineSkinOpsTest {
         ops { bytes }.install(museumSkin)
         awaitUntil("the install is recorded") { InstalledSkins(app).libraryId(museumSkin.md5) != null }
 
-        val afterRestart = OnlineSkinOps(skinOps, library, InstalledSkins(app), scope, Dispatchers.Unconfined) { bytes }
+        val afterRestart =
+            OnlineSkinOps(skinOps, library, InstalledSkins(app), scope, Dispatchers.Unconfined, words = EnglishWords) { bytes }
 
         assertTrue(afterRestart.isInstalled(museumSkin.md5))
     }

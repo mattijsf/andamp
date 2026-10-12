@@ -35,10 +35,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.PresetEntry
 import nl.mattix.andamp.state.PresetPicker
+import nl.mattix.andamp.ui.rememberWords
 
 /**
  * Winamp's preset dialogs as a Material dialog: a titled list, several rows pickable for a delete
@@ -65,6 +68,7 @@ fun PresetPickerSheet(
 ) {
     var query by remember(picker) { mutableStateOf("") }
     var selected by remember(picker) { mutableStateOf(setOf<String>()) }
+    val words = rememberWords()
     val rows = picker.matching(query)
 
     Surface(
@@ -87,7 +91,7 @@ fun PresetPickerSheet(
             )
             // an empty list says so in the message below, so it gets no count line
             Text(
-                if (picker.entries.isEmpty()) "" else picker.countLabel(selected.size),
+                if (picker.entries.isEmpty()) "" else picker.countLabel(selected.size, words),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = TIGHT.dp, bottom = GAP.dp),
@@ -98,7 +102,7 @@ fun PresetPickerSheet(
                     onValueChange = { query = it },
                     singleLine = true,
                     shape = RoundedCornerShape(FIELD_CORNER.dp),
-                    label = { Text("Search") },
+                    label = { Text(stringResource(R.string.menu_search)) },
                     modifier =
                         Modifier
                             .fillMaxWidth()
@@ -108,7 +112,11 @@ fun PresetPickerSheet(
             }
             if (rows.isEmpty()) {
                 Text(
-                    if (picker.entries.isEmpty()) picker.emptyMessage else "Nothing matches \"${query.trim()}\"",
+                    if (picker.entries.isEmpty()) {
+                        picker.emptyMessage ?: stringResource(R.string.picker_nothing_saved_yet)
+                    } else {
+                        stringResource(R.string.menu_nothing_matches, query.trim())
+                    },
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(vertical = GAP.dp),
@@ -155,7 +163,9 @@ fun PresetPickerSheet(
                     ) { Text(extra.label) }
                     Spacer(Modifier.weight(1f))
                 }
-                TextButton(onClick = onDismiss, modifier = Modifier.padding(end = ROW_GAP.dp)) { Text("Cancel") }
+                TextButton(onClick = onDismiss, modifier = Modifier.padding(end = ROW_GAP.dp)) {
+                    Text(stringResource(R.string.menu_cancel))
+                }
                 // the action is a filled button, in the error colors when it is destructive
                 Button(
                     enabled = selected.isNotEmpty(),
@@ -174,7 +184,7 @@ fun PresetPickerSheet(
                         onDismiss()
                     },
                     modifier = Modifier.testTag("$TAG.confirm"),
-                ) { Text(picker.confirmLabelFor(selected.size)) }
+                ) { Text(picker.confirmLabelFor(selected.size, words)) }
             }
         }
     }

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- WidgetSnapshot.kt -->
+    <!-- The widget read aloud: what it is doing, and the artist and song when there is one. -->
+    <string name="widget_spoken_playing">playing</string>
+    <string name="widget_spoken_paused">paused</string>
+    <string name="widget_spoken_stopped">stopped</string>
+    <string name="widget_spoken">Andamp, %1$s</string>
+    <string name="widget_spoken_track">Andamp, %1$s: %2$s</string>
+</resources>

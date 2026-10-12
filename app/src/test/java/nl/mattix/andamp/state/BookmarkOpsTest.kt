@@ -43,6 +43,7 @@ class BookmarkOpsTest {
                 startedAt = from
             },
             append = { appended = it },
+            words = EnglishWords,
         )
 
     @Test

@@ -4,6 +4,7 @@ package nl.mattix.andamp.state
 
 import android.content.Context
 import android.content.Intent
+import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.Track
 
 /**
@@ -29,6 +30,7 @@ class SourcePrompts(
     private val elsewhere: String,
     private val open: (String) -> Unit,
     private val settings: (MusicSource) -> Unit,
+    private val words: Words,
 ) {
     private val said = mutableSetOf<MusicSource>()
 
@@ -45,7 +47,7 @@ class SourcePrompts(
         val known = reach ?: return null
         val source = queue.map { SourceForRows.of(it) }.firstOrNull { it !in said && known.absence(it) != null } ?: return null
         said += source
-        return words(source, known, onDone)
+        return promptFor(source, known, onDone)
     }
 
     /**
@@ -58,14 +60,14 @@ class SourcePrompts(
         onDone: () -> Unit,
     ): AmpPrompt? {
         val known = reach ?: return null
-        return words(SourceForRows.of(track), known, onDone)
+        return promptFor(SourceForRows.of(track), known, onDone)
     }
 
     /**
      * Names what is missing, with a button that leads to where it is fixed. The text gives
      * no row counts and does not use the word "pack".
      */
-    private fun words(
+    private fun promptFor(
         source: MusicSource,
         reach: SourceReach,
         onDone: () -> Unit,
@@ -74,10 +76,10 @@ class SourcePrompts(
         return when (reach.absence(source)) {
             SourceAbsence.MISSING -> {
                 AmpPrompt(
-                    title = "$named is not set up",
-                    body = "Set up $named to play its tracks in Andamp. Until then they are skipped.",
-                    confirmLabel = "Set up $named",
-                    dismissLabel = "Close",
+                    title = words.get(R.string.source_missing_title, named),
+                    body = words.get(R.string.source_missing_body, named),
+                    confirmLabel = words.get(R.string.source_missing_confirm, named),
+                    dismissLabel = words.get(R.string.prompt_close),
                     // the page the playlist records, or the app's own list of sources when
                     // it records none
                     onConfirm = {
@@ -89,11 +91,11 @@ class SourcePrompts(
 
             SourceAbsence.SIGNED_OUT -> {
                 AmpPrompt(
-                    title = "$named is signed out",
-                    body = "Sign in to play your $named tracks in Andamp. Until then they are skipped.",
+                    title = words.get(R.string.source_signed_out_title, named),
+                    body = words.get(R.string.source_signed_out_body, named),
                     // the sign-in is on the source's own screen
-                    confirmLabel = "Sign in",
-                    dismissLabel = "Close",
+                    confirmLabel = words.get(R.string.source_signed_out_confirm),
+                    dismissLabel = words.get(R.string.prompt_close),
                     onConfirm = {
                         onDone()
                         settings(source)

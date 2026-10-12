@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CoroutineScope
 import nl.mattix.andamp.state.SkinLibrary
 import nl.mattix.andamp.state.SkinOps
+import nl.mattix.andamp.state.Words
 
 /**
  * How the list is arranged.
@@ -146,11 +147,12 @@ class OnlineSkins(
             library: SkinLibrary,
             installed: InstalledSkins,
             scope: CoroutineScope,
+            words: Words,
         ): OnlineSkins {
             val museum = SkinCatalog(WebampSkins(), scope)
             return OnlineSkins(
                 museum = museum,
-                ops = OnlineSkinOps(skinOps, library, installed, scope),
+                ops = OnlineSkinOps(skinOps, library, installed, scope, words = words),
                 previews = SkinPreviews(scope, fallback = { skinOps.baseSkin }),
                 // a smaller page than the museum's list uses: skins within a page come from
                 // one run of museum order

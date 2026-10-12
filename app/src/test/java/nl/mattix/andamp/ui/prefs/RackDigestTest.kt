@@ -7,6 +7,7 @@ import nl.mattix.andamp.core.model.ParamSpec
 import nl.mattix.andamp.core.model.ParamValues
 import nl.mattix.andamp.core.model.Preset
 import nl.mattix.andamp.core.model.RackSlot
+import nl.mattix.andamp.state.EnglishWords
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -32,28 +33,28 @@ class RackDigestTest {
 
     @Test
     fun `untouched is default settings`() {
-        assertEquals("Default settings", RackDigest.statusOf(spec, slot()))
+        assertEquals("Default settings", RackDigest.statusOf(spec, slot(), EnglishWords))
     }
 
     @Test
     fun `a matching preset is named`() {
-        assertEquals("Warm", RackDigest.statusOf(spec, slot("mix" to 0.8f, "room" to 0.6f)))
+        assertEquals("Warm", RackDigest.statusOf(spec, slot("mix" to 0.8f, "room" to 0.6f), EnglishWords))
     }
 
     @Test
     fun `a preset ignores the controls it never set`() {
         // Warm does not name Air, so moving Air leaves the status as Warm
-        assertEquals("Warm", RackDigest.statusOf(spec, slot("mix" to 0.8f, "room" to 0.6f, "air" to 0.9f)))
+        assertEquals("Warm", RackDigest.statusOf(spec, slot("mix" to 0.8f, "room" to 0.6f, "air" to 0.9f), EnglishWords))
     }
 
     @Test
     fun `moved controls are named with their values`() {
-        assertEquals("Mix 80", RackDigest.statusOf(spec, slot("mix" to 0.8f)))
+        assertEquals("Mix 80", RackDigest.statusOf(spec, slot("mix" to 0.8f), EnglishWords))
     }
 
     @Test
     fun `more than two moved controls end in an ellipsis`() {
-        val line = RackDigest.statusOf(spec, slot("mix" to 0.8f, "room" to 0.9f, "air" to 0.1f))
+        val line = RackDigest.statusOf(spec, slot("mix" to 0.8f, "room" to 0.9f, "air" to 0.1f), EnglishWords)
 
         assertTrue(line, line.endsWith("…"))
         assertTrue(line, "Mix 80" in line && "Room 90" in line)
@@ -63,6 +64,6 @@ class RackDigestTest {
     @Test
     fun `a choice does not count as a moved control`() {
         // its value is a setting, not a quantity
-        assertEquals("Default settings", RackDigest.statusOf(spec, slot("mode" to 0f)))
+        assertEquals("Default settings", RackDigest.statusOf(spec, slot("mode" to 0f), EnglishWords))
     }
 }

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- EqOps.kt: the PRESETS button's menu and its dialogs -->
+    <string name="eq_menu_title">Equalizer presets</string>
+    <string name="eq_menu_load">Load</string>
+    <string name="eq_menu_save">Save</string>
+    <string name="eq_menu_delete">Delete</string>
+    <string name="eq_menu_preset">Preset...</string>
+    <string name="eq_menu_default">Default</string>
+    <!-- Winamp's wording for a curve that belongs to one track -->
+    <string name="eq_auto_load_preset">Auto-load preset</string>
+    <string name="eq_menu_auto_load_delete">Auto-load preset...</string>
+    <string name="eq_save_preset_title">Save preset</string>
+    <string name="eq_save_auto_preset_title">Save auto-load preset</string>
+    <string name="eq_load_title">Load preset</string>
+    <string name="eq_load_confirm">Load</string>
+    <!-- Where a preset in the Load dialog is filed -->
+    <string name="eq_kind_factory">Factory</string>
+    <string name="eq_kind_saved">Saved</string>
+    <string name="eq_delete_title">Delete presets</string>
+    <string name="eq_delete_confirm">Delete</string>
+    <string name="eq_delete_empty">You have not saved a preset yet</string>
+    <string name="eq_delete_auto_title">Delete auto-load presets</string>
+    <string name="eq_delete_auto_empty">No song has a preset of its own yet</string>
+</resources>

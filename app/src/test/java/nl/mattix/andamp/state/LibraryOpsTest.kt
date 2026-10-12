@@ -75,7 +75,7 @@ class LibraryOpsTest {
     private fun player(source: BrowseSource = Shelf()): Triple<LibraryOps, WinampState, PlayerFacade> {
         val state = WinampState()
         val facade = PlayerFacade(MockBackend(FakeTracks.tracks, scope))
-        val ops = LibraryOps({ source }, facade, state, scope, lists(), stations())
+        val ops = LibraryOps({ source }, facade, state, scope, lists(), stations(), words = EnglishWords)
         return Triple(ops, state, facade)
     }
 
@@ -320,6 +320,7 @@ class LibraryOpsTest {
                 scope,
                 PlaylistLibrary(temp.newFolder("lists")),
                 StationStore(java.io.File(temp.newFolder("radio"), "stations.m3u")),
+                words = EnglishWords,
             )
         assertEquals(
             listOf(LibraryOps.Category.ALBUMS, LibraryOps.Category.LISTS, LibraryOps.Category.RADIO),
@@ -367,7 +368,7 @@ class LibraryOpsTest {
                 Track("r2", "B", "Two", 120_000, uri = "content://2"),
             ),
         )
-        val ops = LibraryOps({ Shelf() }, facade, state, scope, shelf, stations())
+        val ops = LibraryOps({ Shelf() }, facade, state, scope, shelf, stations(), words = EnglishWords)
         ops.open()
 
         ops.switchCategory(LibraryOps.Category.LISTS)
@@ -404,7 +405,7 @@ class LibraryOpsTest {
         val dial = stations()
         dial.add("Example FM", "http://radio.example.com/stream")
         dial.add("Radio Example", "https://example.com/fm")
-        val ops = LibraryOps({ Shelf() }, facade, state, scope, lists(), dial)
+        val ops = LibraryOps({ Shelf() }, facade, state, scope, lists(), dial, words = EnglishWords)
         ops.open()
 
         ops.switchCategory(LibraryOps.Category.RADIO)

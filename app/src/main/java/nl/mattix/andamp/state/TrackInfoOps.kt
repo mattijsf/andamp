@@ -4,6 +4,7 @@ package nl.mattix.andamp.state
 
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.model.TrackInfo
 import nl.mattix.andamp.core.model.displayName
@@ -20,6 +21,7 @@ class TrackInfoOps(
     private val state: WinampState,
     private val source: TrackInfoSource,
     private val scope: CoroutineScope,
+    private val words: Words,
 ) {
     /** The track a playlist menu entry acts on: the first selected row, else [row]. */
     fun trackFor(row: Int): Track? {
@@ -62,15 +64,16 @@ class TrackInfoOps(
             heading = headers?.name ?: track.defaultName?.takeIf { it.isNotEmpty() } ?: track.title,
             lines =
                 listOf(
-                    "Station" to (headers?.name ?: track.defaultName?.takeIf { it.isNotEmpty() }),
-                    "Genre" to headers?.genre,
+                    words.get(R.string.info_station) to (headers?.name ?: track.defaultName?.takeIf { it.isNotEmpty() }),
+                    words.get(R.string.info_genre) to headers?.genre,
                     // blank until the stream sends metadata
-                    "Now playing" to nowPlaying(track),
-                    "Url" to track.uri,
-                    "Website" to headers?.url,
+                    words.get(R.string.info_now_playing) to nowPlaying(track),
+                    words.get(R.string.info_url) to track.uri,
+                    words.get(R.string.info_website) to headers?.url,
                     // the track's value where there is one, else the header's
-                    "Bitrate" to (track.bitrateKbps ?: headers?.bitrateKbps)?.let { "$it kbps" },
-                    "Sample rate" to (state.liveSampleRateKhz(track) ?: track.sampleRateKhz)?.let { "$it kHz" },
+                    words.get(R.string.info_bitrate) to (track.bitrateKbps ?: headers?.bitrateKbps)?.let { "$it kbps" },
+                    words.get(R.string.info_sample_rate) to
+                        (state.liveSampleRateKhz(track) ?: track.sampleRateKhz)?.let { "$it kHz" },
                 ),
         )
     }
@@ -88,15 +91,16 @@ class TrackInfoOps(
             heading = track.title,
             lines =
                 listOf(
-                    "Title" to track.title,
-                    "Artist" to track.artist,
+                    words.get(R.string.info_title) to track.title,
+                    words.get(R.string.info_artist) to track.artist,
                     // durationSec is 0 for a station, which leaves the line blank
-                    "Length" to
+                    words.get(R.string.info_length) to
                         track.durationSec.takeIf { it > 0 }?.let { seconds ->
                             "%d:%02d".format(seconds / SECONDS_PER_MINUTE, seconds % SECONDS_PER_MINUTE)
                         },
-                    "Bitrate" to track.bitrateKbps?.let { "$it kbps" },
-                    "Sample rate" to (state.liveSampleRateKhz(track) ?: track.sampleRateKhz)?.let { "$it kHz" },
+                    words.get(R.string.info_bitrate) to track.bitrateKbps?.let { "$it kbps" },
+                    words.get(R.string.info_sample_rate) to
+                        (state.liveSampleRateKhz(track) ?: track.sampleRateKhz)?.let { "$it kHz" },
                 ),
         )
 

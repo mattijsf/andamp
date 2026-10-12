@@ -46,14 +46,14 @@ class PluginImportActivity : Activity() {
             if (PluginLinks.accepts(link)) {
                 player.pluginOps.offerFrom(link)
             } else {
-                player.pluginOps.unreadable("that link is not a plug-in on ${PluginLinks.SITE}")
+                player.pluginOps.unreadable(getString(R.string.import_not_a_plugin_link, PluginLinks.SITE))
             }
         } else {
             val stream = file?.let { runCatching { contentResolver.openInputStream(it) }.getOrNull() }
             if (stream != null) {
                 player.pluginOps.install(stream)
             } else {
-                player.pluginOps.unreadable("the file could not be opened")
+                player.pluginOps.unreadable(getString(R.string.import_file_could_not_be_opened))
             }
         }
         player.state.arrivalDestination = Screen.PREFERENCES

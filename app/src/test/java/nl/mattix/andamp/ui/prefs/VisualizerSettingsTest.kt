@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import nl.mattix.andamp.state.EnglishWords
 import nl.mattix.andamp.state.PresetImport
 import nl.mattix.andamp.state.VisPlugin
 import nl.mattix.andamp.state.presets.InstalledPack
@@ -41,7 +42,7 @@ class VisualizerSettingsTest {
     fun `the root row says which engine is running and what it has`() {
         assertEquals(
             "Milkdrop · 2 packs, 9798 presets",
-            VisualizerPrefs(plugin = VisPlugin.Milkdrop, packs = packs).summary(),
+            VisualizerPrefs(plugin = VisPlugin.Milkdrop, packs = packs).summary(EnglishWords),
         )
         // the count follows the engine's own kind
         assertEquals(
@@ -49,11 +50,11 @@ class VisualizerSettingsTest {
             VisualizerPrefs(
                 plugin = VisPlugin.Avs,
                 packs = listOf(InstalledPack("Winamp AVS", File("/tmp/avs"), 0, emptyList(), avsCount = 155)),
-            ).summary(),
+            ).summary(EnglishWords),
         )
         assertEquals(
             "AVS · no preset packs yet",
-            VisualizerPrefs().summary(),
+            VisualizerPrefs().summary(EnglishWords),
         )
     }
 

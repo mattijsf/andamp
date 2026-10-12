@@ -10,8 +10,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import nl.mattix.andamp.R
 
 /**
  * The floating player's settings, handed to the page as data so the page does not see a ViewModel.
@@ -38,7 +40,7 @@ fun OverlayRow(prefs: OverlayPrefs) {
     if (!prefs.offered) return
     SwitchRow(
         // Winamp's name for it, also used by the clutter bar's A and the permission prompt
-        title = "Always on top",
+        title = stringResource(R.string.overlay_title),
         summary = prefs.summary,
         checked = prefs.wanted,
         tag = "prefs.overlay.switch",
@@ -54,14 +56,14 @@ fun OverlayRow(prefs: OverlayPrefs) {
         Column(Modifier.prefsRow().padding(horizontal = 8.dp, vertical = 4.dp)) {
             if (grant) {
                 TextButton(onClick = prefs.onGrant, modifier = Modifier.testTag("prefs.overlay.grant")) {
-                    Text("Allow drawing over other apps")
+                    Text(stringResource(R.string.prefs_overlay_grant))
                 }
             }
             if (note) {
                 Text(
                     // Android dims a window that passes touches through to other apps, against
                     // invisible-overlay attacks
-                    "Android may show the floating window at ${(cap * PERCENT).toInt()}% opacity.",
+                    stringResource(R.string.prefs_overlay_cap_note, (cap * PERCENT).toInt()),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 8.dp).testTag("prefs.overlay.capnote"),

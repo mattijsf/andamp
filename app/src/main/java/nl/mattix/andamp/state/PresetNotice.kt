@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.state
 
+import nl.mattix.andamp.R
 import nl.mattix.andamp.visualizer.core.PresetGaps
 
 /**
@@ -16,17 +17,23 @@ object PresetNotice {
     const val SHOWN_MS = 6_000L
 
     /** The line for [gaps], or null when the preset plays whole. */
-    fun textFor(gaps: PresetGaps): String? =
+    fun textFor(
+        gaps: PresetGaps,
+        words: Words,
+    ): String? =
         when {
-            gaps.unreadable -> "This preset could not be read"
+            gaps.unreadable -> words.get(R.string.preset_unreadable)
             gaps.missing.isEmpty() -> null
-            else -> "Not shown in this preset: " + listed(gaps.missing.map(::plain).distinct())
+            else -> words.get(R.string.preset_not_shown, listed(gaps.missing.map(::plain).distinct(), words))
         }
 
-    private fun listed(names: List<String>): String {
+    private fun listed(
+        names: List<String>,
+        words: Words,
+    ): String {
         val named = names.take(NAMED).joinToString(", ")
         val rest = names.size - NAMED
-        return if (rest > 0) "$named and $rest more" else named
+        return if (rest > 0) words.get(R.string.preset_and_more, named, rest) else named
     }
 
     /**

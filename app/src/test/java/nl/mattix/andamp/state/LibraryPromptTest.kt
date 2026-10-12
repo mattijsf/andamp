@@ -103,7 +103,7 @@ class LibraryPromptTest {
     fun `the settings prompt opens settings and closes itself`() {
         var opened = false
         var closed = false
-        val prompt = LibraryPrompt.settings(onDone = { closed = true }) { opened = true }
+        val prompt = LibraryPrompt.settings(EnglishWords, onDone = { closed = true }) { opened = true }
 
         assertEquals("Music and audio permission is off", prompt.title)
         assertEquals("Open settings", prompt.confirmLabel)

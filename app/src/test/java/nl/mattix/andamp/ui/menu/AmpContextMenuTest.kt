@@ -108,7 +108,7 @@ class AmpContextMenuTest {
     @Test
     fun `name prompt shows and confirm stays disabled while the text is blank`() {
         var submitted: String? = null
-        state.namePrompt = NamePrompt(title = "Save preset") { submitted = it }
+        state.namePrompt = NamePrompt(title = "Save preset", confirmLabel = "Save") { submitted = it }
         compose.setContent {
             AmpModals(state, anchorBounds = { IntRect(IntOffset.Zero, IntSize.Zero) })
         }

@@ -177,7 +177,7 @@ internal object WidgetSender {
                     if (settings.openOnLogo) null else WidgetIntents.openApp(context),
                 )
                 // the pixels cannot be read aloud; this is the widget in words
-                views.setContentDescription(R.id.widget_player, snapshot.spoken())
+                views.setContentDescription(R.id.widget_player, snapshot.spoken(context.resources))
                 val placement = Placement(context, views, skin, layout)
                 placement.base()
                 placement.buttons(snapshot)

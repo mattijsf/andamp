@@ -3,6 +3,8 @@
 package nl.mattix.andamp.widget
 
 import android.content.Context
+import android.content.res.Resources
+import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.state.WinampState
@@ -63,15 +65,21 @@ data class WidgetSnapshot(
     }
 
     /** The widget in words, for a screen reader: transport and track. */
-    fun spoken(): String {
+    fun spoken(resources: Resources): String {
         val doing =
-            when (transport) {
-                Transport.Playing -> "playing"
-                Transport.Paused -> "paused"
-                Transport.Stopped -> "stopped"
-            }
+            resources.getString(
+                when (transport) {
+                    Transport.Playing -> R.string.widget_spoken_playing
+                    Transport.Paused -> R.string.widget_spoken_paused
+                    Transport.Stopped -> R.string.widget_spoken_stopped
+                },
+            )
         val what = listOf(artist, title).filter { it.isNotBlank() }.joinToString(" - ")
-        return if (what.isBlank()) "Andamp, $doing" else "Andamp, $doing: $what"
+        return if (what.isBlank()) {
+            resources.getString(R.string.widget_spoken, doing)
+        } else {
+            resources.getString(R.string.widget_spoken_track, doing, what)
+        }
     }
 
     /**

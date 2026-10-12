@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- OnlineSkinsScreen.kt -->
+    <string name="museum_title">Skin Museum</string>
+    <!-- Under the title; the placeholder holds the count, grouped for the phone's locale. -->
+    <string name="museum_count_in_museum">%1$s in the museum</string>
+    <!-- Under the title and in the search field while a search is on; the placeholder holds the count. -->
+    <string name="museum_count_found">%1$s found</string>
+    <string name="museum_from">from the Winamp Skin Museum</string>
+    <string name="museum_close">Close</string>
+    <string name="museum_search">Search the museum</string>
+    <string name="museum_stop_searching">Stop searching</string>
+    <string name="museum_show_tiles">Show them as tiles</string>
+    <string name="museum_show_one_at_a_time">Show them one at a time</string>
+    <string name="museum_order_and_filters">Order and filters</string>
+    <!-- The readout beside the scrollbar handle: the position in the museum, then the count. -->
+    <string name="museum_position">%1$d / %2$s</string>
+    <string name="museum_fetching">Fetching the museum…</string>
+    <string name="museum_out_of_reach">The museum is out of reach</string>
+    <string name="museum_try_again">Try again</string>
+    <!-- SkinCount.kt -->
+    <!-- The count while a search still has more to hand out; the placeholder holds what is loaded. -->
+    <string name="museum_count_growing">%1$s+</string>
+    <!-- SkinFilters.kt -->
+    <string name="museum_order">Order</string>
+    <string name="museum_order_museum">Museum</string>
+    <string name="museum_order_shuffle">Shuffle</string>
+    <string name="museum_only_skins_you_have">Only skins you have</string>
+    <!-- SkinTiles.kt, SkinViewer.kt -->
+    <string name="museum_uninstall">Uninstall</string>
+    <string name="museum_install">Install</string>
+    <string name="museum_installing">Installing…</string>
+    <string name="museum_installed">Installed</string>
+    <!-- On the tile of a skin the museum flagged. -->
+    <string name="museum_not_shown">not shown</string>
+    <string name="museum_try_this_page_again">Try this page again</string>
+    <string name="museum_back_to_the_grid">Back to the grid</string>
+    <string name="museum_in_the_museum">In the museum</string>
+    <!-- WelcomeScreen.kt -->
+    <string name="welcome_pick_a_look">Pick a look</string>
+    <string name="welcome_skins_in_the_menu">Skins in the menu changes it whenever you like.</string>
+    <string name="welcome_own_skin">Andamp\'s own</string>
+    <string name="welcome_own_skin_summary">Drawn for this app, and on Android 12 and later it takes its colors from your wallpaper.</string>
+    <string name="welcome_keep_this">Keep this</string>
+    <string name="welcome_classic_skin">A classic skin</string>
+    <!-- The placeholder holds the museum's count, grouped for the phone's locale. -->
+    <string name="welcome_classic_skins_count">%1$s classic skins</string>
+    <!-- Shown until the museum reports its count; the placeholder holds a lower bound. -->
+    <string name="welcome_classic_skins_at_least">%1$s+ classic skins</string>
+    <string name="welcome_browse_the_museum">Browse the museum</string>
+    <!-- AboutDialog.kt -->
+    <!-- The version name, then the version code. -->
+    <string name="about_version">%1$s (%2$d)</string>
+    <string name="about_blurb">A Winamp 2.8 replica, rebuilt in Kotlin. Not affiliated with Winamp, Nullsoft or Llama Group.</string>
+    <string name="about_close">Close</string>
+    <!-- PluginImportActivity.kt -->
+    <!-- The placeholder holds the site a plug-in link must be on. -->
+    <string name="import_not_a_plugin_link">that link is not a plug-in on %1$s</string>
+    <string name="import_file_could_not_be_opened">the file could not be opened</string>
+</resources>

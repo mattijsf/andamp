@@ -2,6 +2,8 @@
 
 package nl.mattix.andamp.state
 
+import nl.mattix.andamp.R
+
 /** One row in a preset picker: what it is called, and what it is filed under. */
 data class PresetEntry(
     val key: String,
@@ -22,7 +24,8 @@ data class PresetPicker(
     val multiSelect: Boolean = false,
     /** Paints the confirm button as a warning, for an action that deletes. */
     val destructive: Boolean = false,
-    val emptyMessage: String = "Nothing saved yet",
+    /** What an empty list says; null for the words the dialog has for it. */
+    val emptyMessage: String? = null,
     val extra: Extra? = null,
     val onConfirm: (keys: List<String>) -> Unit,
 ) {
@@ -50,16 +53,22 @@ data class PresetPicker(
     val searchable: Boolean get() = entries.size > SEARCH_FROM
 
     /** The line under the title: how much is here, and what is picked. */
-    fun countLabel(selected: Int): String =
+    fun countLabel(
+        selected: Int,
+        words: Words,
+    ): String =
         when {
-            entries.isEmpty() -> "Nothing saved"
-            selected > 0 -> "$selected of ${entries.size} selected"
-            entries.size == 1 -> "1 saved"
-            else -> "${entries.size} saved"
+            entries.isEmpty() -> words.get(R.string.picker_nothing_saved)
+            selected > 0 -> words.get(R.string.picker_selected, selected, entries.size)
+            else -> words.plural(R.plurals.picker_saved, entries.size)
         }
 
     /** What the confirm button says when [selected] rows are picked. */
-    fun confirmLabelFor(selected: Int): String = if (multiSelect && selected > 1) "$confirmLabel ($selected)" else confirmLabel
+    fun confirmLabelFor(
+        selected: Int,
+        words: Words,
+    ): String =
+        if (multiSelect && selected > 1) words.get(R.string.picker_confirm_count, confirmLabel, selected) else confirmLabel
 
     private companion object {
         const val SEARCH_FROM = 8

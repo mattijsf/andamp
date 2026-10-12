@@ -38,8 +38,10 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.drawable.toBitmap
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.ExtraSource
 import nl.mattix.andamp.state.LibraryAccess
 import nl.mattix.andamp.state.MusicPermission
@@ -48,7 +50,10 @@ import nl.mattix.andamp.state.PhoneStats
 import nl.mattix.andamp.state.ScanProgress
 import nl.mattix.andamp.state.SkinEntry
 import nl.mattix.andamp.state.SourceUpdates
+import nl.mattix.andamp.state.Words
+import nl.mattix.andamp.state.shown
 import nl.mattix.andamp.state.sourceRoute
+import nl.mattix.andamp.ui.rememberWords
 import java.util.Locale
 
 /**
@@ -107,11 +112,12 @@ internal fun SourcesSection(
     onSource: (MusicSource) -> Unit,
 ) {
     val links = LocalUriHandler.current
-    Section("Music sources")
+    val words = rememberWords()
+    Section(stringResource(R.string.prefs_sources_section))
     Group {
         NavRow(
-            title = MusicSource.LOCAL.label,
-            summary = phoneSummary(access, sources.phone.stats),
+            title = MusicSource.LOCAL.shown(words),
+            summary = phoneSummary(access, sources.phone.stats, words),
             tag = "prefs.source.phone",
             onClick = onPhone,
             leading = Icons.Outlined.PhoneAndroid,
@@ -130,8 +136,8 @@ internal fun SourcesSection(
         }
         // always last, and a link: the available sources are listed on the site, not in this build
         NavRow(
-            title = "More sources",
-            summary = "Other places Andamp can play music from, and how to add them",
+            title = stringResource(R.string.prefs_sources_more_title),
+            summary = stringResource(R.string.prefs_sources_more_summary),
             tag = "prefs.source.more",
             icon = Icons.AutoMirrored.Filled.OpenInNew,
             leading = Icons.Outlined.AddCircleOutline,
@@ -184,13 +190,14 @@ private const val ADAPTIVE_SAFE = 144
 internal fun phoneSummary(
     access: LibraryAccess,
     stats: PhoneStats?,
+    words: Words,
 ): String =
     when {
-        access == LibraryAccess.BLOCKED -> "${MusicPermission.current} permission is off"
-        access != LibraryAccess.GRANTED -> "Allow ${MusicPermission.current} to show the music on this phone"
-        stats == null -> "Counting…"
-        stats.tracks == 0 -> "No music found on this phone yet"
-        else -> stats.summary
+        access == LibraryAccess.BLOCKED -> words.get(R.string.prefs_phone_permission_off, MusicPermission.current(words))
+        access != LibraryAccess.GRANTED -> words.get(R.string.prefs_phone_allow, MusicPermission.current(words))
+        stats == null -> words.get(R.string.prefs_phone_counting)
+        stats.tracks == 0 -> words.get(R.string.prefs_phone_no_music)
+        else -> stats.summary(words)
     }
 
 /**
@@ -204,10 +211,11 @@ internal fun PhonePage(
     phone: PhonePrefs,
 ) {
     val context = LocalContext.current
+    val words = rememberWords()
 
-    Section("Access")
-    Note(access.summary(MusicPermission.current))
-    access.action?.let { action ->
+    Section(stringResource(R.string.prefs_phone_access_section))
+    Note(access.summary(MusicPermission.current(words), words))
+    access.action(words)?.let { action ->
         Button(
             // when access is blocked the button opens the app's system settings directly
             onClick = { if (access == LibraryAccess.BLOCKED) context.openAppSettings() else onRequestAccess() },
@@ -217,32 +225,29 @@ internal fun PhonePage(
     // counting and scanning read the index the permission guards, so they are not shown without it
     if (access != LibraryAccess.GRANTED) return
 
-    Section("Library")
+    Section(stringResource(R.string.prefs_phone_library_section))
     val stats = phone.stats
     if (stats == null) {
-        Note("Counting…")
+        Note(stringResource(R.string.prefs_phone_counting))
     } else {
         Group {
-            StatRow("Tracks", String.format(Locale.US, "%,d", stats.tracks))
-            StatRow("Artists", String.format(Locale.US, "%,d", stats.artists))
-            StatRow("Albums", String.format(Locale.US, "%,d", stats.albums))
-            StatRow("Playing time", stats.listening)
-            StatRow("On storage", stats.size)
+            StatRow(stringResource(R.string.prefs_phone_tracks), String.format(Locale.US, "%,d", stats.tracks))
+            StatRow(stringResource(R.string.prefs_phone_artists), String.format(Locale.US, "%,d", stats.artists))
+            StatRow(stringResource(R.string.prefs_phone_albums), String.format(Locale.US, "%,d", stats.albums))
+            StatRow(stringResource(R.string.prefs_phone_playing_time), stats.listening(words))
+            StatRow(stringResource(R.string.prefs_phone_on_storage), stats.size)
         }
     }
 
-    Section("Scan")
-    Note(
-        "Android keeps track of the music on this phone by itself, but not always straight away. " +
-            "A scan asks it to look through the music folders now, so music you have just copied over shows up.",
-    )
+    Section(stringResource(R.string.prefs_phone_scan_section))
+    Note(stringResource(R.string.prefs_phone_scan_note))
     val scanning = phone.scanning
     Column(Modifier.padding(horizontal = 16.dp, vertical = 4.dp)) {
         Button(
             onClick = phone.onScan,
             enabled = scanning == null,
             modifier = Modifier.testTag("prefs.phone.scan"),
-        ) { Text(if (scanning == null) "Scan now" else "Scanning…") }
+        ) { Text(stringResource(if (scanning == null) R.string.prefs_phone_scan_now else R.string.prefs_phone_scanning)) }
         if (scanning != null) {
             Spacer(Modifier.height(12.dp))
             LinearProgressIndicator(
@@ -250,7 +255,7 @@ internal fun PhonePage(
                 modifier = Modifier.fillMaxWidth().testTag("prefs.phone.progress"),
             )
             Spacer(Modifier.height(4.dp))
-            Text(scanning.words, style = MaterialTheme.typography.bodySmall)
+            Text(scanning.words(words), style = MaterialTheme.typography.bodySmall)
         } else {
             phone.lastScan?.let { said ->
                 Spacer(Modifier.height(8.dp))
@@ -281,11 +286,11 @@ internal fun ExtraSourcePage(
     if (settings == null) {
         extra.Page(onSignedIn = { sources.onSignedIn(extra.source) }, onSignedOut = { sources.onSignedOut(extra.source) })
     } else {
-        Section("Settings")
+        Section(stringResource(R.string.prefs_source_settings_section))
         Group {
             NavRow(
-                title = "${extra.source.label} settings",
-                summary = "Its account and whatever else it offers, on its own screen",
+                title = stringResource(R.string.prefs_source_settings_title, extra.source.label),
+                summary = stringResource(R.string.prefs_source_settings_summary),
                 tag = "prefs.source.settings",
                 icon = Icons.AutoMirrored.Filled.OpenInNew,
                 onClick = { sources.openSettings(settings) },
@@ -303,11 +308,11 @@ internal fun ExtraSourcePage(
         }
     }
     if (extra.skinnable) {
-        Section("Skin")
+        Section(stringResource(R.string.prefs_source_skin_section))
         SourceSkinRow(extra.source, sources)
     }
     val updates = extra.updates ?: return
-    Section("Updates")
+    Section(stringResource(R.string.prefs_source_updates_section))
     UpdatesSection(updates, extra.version, sources.checkUpdate)
 }
 
@@ -321,14 +326,13 @@ internal fun SourceSkinRow(
     sources: SourcesPrefs,
 ) {
     Text(
-        "While a track from ${source.label} is playing, the player wears this skin. " +
-            "Default keeps the one you picked for the player.",
+        stringResource(R.string.prefs_source_skin_note, source.label),
         style = MaterialTheme.typography.bodyMedium,
     )
     SkinPickRow(
         skins = sources.skins,
         chosen = sources.skinOf(source),
-        heading = "Skin for ${source.label}",
+        heading = stringResource(R.string.prefs_source_skin_heading, source.label),
         tag = "prefs.skin",
         onPick = { sources.onSkin(source, it) },
     )
@@ -352,12 +356,12 @@ internal fun UpdatesSection(
     }
     when (val now = answer) {
         SourceUpdates.Check.Checking -> {
-            Text("Looking for a newer version…", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.prefs_updates_checking), style = MaterialTheme.typography.bodyMedium)
         }
 
         is SourceUpdates.Check.UpToDate -> {
             Text(
-                "Version ${now.version}, the newest there is.",
+                stringResource(R.string.prefs_updates_current, now.version),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.testTag("prefs.updates.current"),
             )
@@ -365,30 +369,34 @@ internal fun UpdatesSection(
 
         is SourceUpdates.Check.Available -> {
             Text(
-                "Version ${now.latest.version} is out" + (installed?.let { " (this is $it)" } ?: "") + ".",
+                if (installed == null) {
+                    stringResource(R.string.prefs_updates_available, now.latest.version)
+                } else {
+                    stringResource(R.string.prefs_updates_available_over, now.latest.version, installed)
+                },
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.testTag("prefs.updates.available"),
             )
             Spacer(Modifier.height(4.dp))
             Text(
-                "Its download page opens in your browser; install it the way you installed this one.",
+                stringResource(R.string.prefs_updates_how),
                 style = MaterialTheme.typography.bodySmall,
             )
             Spacer(Modifier.height(12.dp))
             Button(
                 onClick = { links.openUri(now.latest.page) },
                 modifier = Modifier.testTag("prefs.updates.download"),
-            ) { Text("Open download page") }
+            ) { Text(stringResource(R.string.prefs_updates_open)) }
         }
 
         SourceUpdates.Check.Failed -> {
             Text(
-                "Could not check for a newer version.",
+                stringResource(R.string.prefs_updates_failed),
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.testTag("prefs.updates.failed"),
             )
             Spacer(Modifier.height(8.dp))
-            OutlinedButton(onClick = { attempt++ }) { Text("Try again") }
+            OutlinedButton(onClick = { attempt++ }) { Text(stringResource(R.string.prefs_updates_retry)) }
         }
     }
 }

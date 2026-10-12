@@ -33,7 +33,7 @@ class TrackInfoTest {
     private fun opsFor(
         state: WinampState,
         source: TrackInfoSource,
-    ) = TrackInfoOps(state, source, scope)
+    ) = TrackInfoOps(state, source, scope, EnglishWords)
 
     @Test
     fun `a source's lines are shown in the order it gave them`() {

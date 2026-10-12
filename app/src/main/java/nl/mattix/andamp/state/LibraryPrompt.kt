@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.state
 
+import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.Track
 
 /**
@@ -30,15 +31,16 @@ class LibraryPrompt(
 
         /** Refused before: what the permission is for, with the button that asks again. */
         fun explain(
+            words: Words,
             onDone: () -> Unit,
             ask: () -> Unit,
         ): AmpPrompt {
-            val permission = MusicPermission.current
+            val permission = MusicPermission.current(words)
             return AmpPrompt(
-                title = "Allow $permission",
-                body = "Andamp needs $permission to play the songs on this phone.",
-                confirmLabel = "Allow",
-                dismissLabel = "Not now",
+                title = words.get(R.string.access_ask_title, permission),
+                body = words.get(R.string.access_ask_body, permission),
+                confirmLabel = words.get(R.string.prompt_allow),
+                dismissLabel = words.get(R.string.prompt_not_now),
                 onConfirm = {
                     onDone()
                     ask()
@@ -48,15 +50,16 @@ class LibraryPrompt(
 
         /** Android will not ask again: leads to the settings screen, where the permission can still be allowed. */
         fun settings(
+            words: Words,
             onDone: () -> Unit,
             open: () -> Unit,
         ): AmpPrompt {
-            val permission = MusicPermission.current
+            val permission = MusicPermission.current(words)
             return AmpPrompt(
-                title = "$permission permission is off",
-                body = "Allow $permission in Andamp's settings to play the songs on this phone.",
-                confirmLabel = "Open settings",
-                dismissLabel = "Close",
+                title = words.get(R.string.access_off_title, permission),
+                body = words.get(R.string.access_off_body, permission),
+                confirmLabel = words.get(R.string.prompt_open_settings),
+                dismissLabel = words.get(R.string.prompt_close),
                 onConfirm = {
                     onDone()
                     open()

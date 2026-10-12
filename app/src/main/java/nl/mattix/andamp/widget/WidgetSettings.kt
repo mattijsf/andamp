@@ -3,67 +3,69 @@
 package nl.mattix.andamp.widget
 
 import android.content.Context
+import androidx.annotation.StringRes
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.VisMode
 
 /**
  * How big the player is allowed to be in the cell it was given. A cell is almost never a whole
  * number of players wide, so either the art stops short of the edge or it leaves the whole-pixel
- * grid; the listener chooses.
+ * grid; the listener chooses. The label and the summary are string resources.
  */
 enum class WidgetSize(
-    val label: String,
-    val summary: String,
+    @StringRes val label: Int,
+    @StringRes val summary: Int,
 ) {
     /**
      * The exact scale in place of the whole one below it, so the art reaches the edge of the cell.
      * Still uniform, but off the whole-pixel grid of ENGINEERING.md's Pixel rule 2.
      */
     FILL(
-        label = "Fill",
-        summary = "Grows to the edge of the space. The art is scaled to an in-between size, so it looks slightly softer.",
+        label = R.string.prefs_widget_size_fill,
+        summary = R.string.prefs_widget_size_fill_summary,
     ),
 
     /** The largest whole-number scale that fits. */
     LARGEST(
-        label = "Largest",
-        summary = "The largest size that keeps the art perfectly sharp. Leaves a little space around it.",
+        label = R.string.prefs_widget_size_largest,
+        summary = R.string.prefs_widget_size_largest_summary,
     ),
 }
 
 /**
  * How hard the home screen widget works. A widget is not told whether anyone is looking at it, so
  * the listener chooses the rate. Each summary says what the rate costs and what it shows, in terms
- * a listener can see.
+ * a listener can see. The label and the summaries are string resources.
  */
 enum class WidgetRefresh(
     /** The step of the clock the widget shows. */
     val windowMs: Long,
     /** How long a loop of the analyzer plays before the audio is followed again. */
     val burstMs: Long,
-    val label: String,
-    val summary: String,
+    @StringRes val label: Int,
+    @StringRes val summary: Int,
     /**
      * The summary shown when the visualizer is off and the clock is all that moves. Medium and High
      * step the clock the same, so their text is the same.
      */
-    val timeOnly: String,
+    @StringRes val timeOnly: Int,
 ) {
     /** The clock steps every five seconds and the analyzer keeps one loop for half a minute. */
     LOW(
         windowMs = 5_000,
         burstMs = 30_000,
-        label = "Low",
-        summary = "Kindest to the battery. The time moves in jumps, and the visualizer catches up with the song now and then.",
-        timeOnly = "Kindest to the battery. The time moves in jumps rather than ticking.",
+        label = R.string.prefs_widget_refresh_low,
+        summary = R.string.prefs_widget_refresh_low_summary,
+        timeOnly = R.string.prefs_widget_refresh_low_time_only,
     ),
 
     /** A ticking clock and a loop replaced every five seconds. */
     MEDIUM(
         windowMs = 1_000,
         burstMs = 5_000,
-        label = "Medium",
-        summary = "A fair balance. The time ticks along, and the visualizer catches up with the song every few seconds.",
-        timeOnly = "The time ticks along, second by second.",
+        label = R.string.prefs_widget_refresh_medium,
+        summary = R.string.prefs_widget_refresh_medium_summary,
+        timeOnly = R.string.prefs_widget_refresh_ticking_time_only,
     ),
 
     /**
@@ -73,9 +75,9 @@ enum class WidgetRefresh(
     HIGH(
         windowMs = 1_000,
         burstMs = 2_000,
-        label = "High",
-        summary = "Uses the most battery. The time ticks, and the visualizer catches up with the song as often as a widget can.",
-        timeOnly = "The time ticks along, second by second.",
+        label = R.string.prefs_widget_refresh_high,
+        summary = R.string.prefs_widget_refresh_high_summary,
+        timeOnly = R.string.prefs_widget_refresh_ticking_time_only,
     ),
 }
 

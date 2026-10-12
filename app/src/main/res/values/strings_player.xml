@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- PlaylistOps.kt: ADD > URL, two prompts -->
+    <string name="playlist_add_url_title">Add URL</string>
+    <string name="playlist_add_url_next">Next</string>
+    <string name="playlist_add_url_name_title">Name</string>
+    <string name="playlist_add_url_add">Add</string>
+
+    <!-- PlaylistFileOps.kt: LIST > SAVE LIST and LIST > LOAD LIST. LISTS is the media library's tab. -->
+    <string name="playlist_save_title">Save playlist</string>
+    <string name="playlist_save_in_andamp">Save in Andamp</string>
+    <string name="playlist_save_in_andamp_note">Browsable in the media library\'s LISTS tab</string>
+    <string name="playlist_export">Export as file…</string>
+    <string name="playlist_export_note">An .m3u file other players can read</string>
+    <string name="playlist_load_title">Load playlist</string>
+    <string name="playlist_open_from_andamp">Open from Andamp</string>
+    <string name="playlist_open_from_andamp_note">One of the lists saved here</string>
+    <string name="playlist_import">Import from file…</string>
+    <string name="playlist_import_note">An .m3u file from this phone</string>
+    <string name="playlist_save_as_title">Save playlist as</string>
+    <!-- The name a list is saved under when none was typed -->
+    <string name="playlist_default_name">Playlist</string>
+    <string name="playlist_open_title">Open playlist</string>
+    <string name="playlist_open_confirm">Open</string>
+    <string name="playlist_open_empty">No lists saved here yet</string>
+
+    <!-- WinampViewModel.kt: Winamp's J -->
+    <string name="jump_to_file_title">Jump to file</string>
+    <string name="jump_to_file_empty">The playlist is empty</string>
+
+    <!-- FileInfoSource.kt and TrackInfoOps.kt: the labels in the file info box -->
+    <string name="info_file">File</string>
+    <string name="info_size">Size</string>
+    <string name="info_format">Format</string>
+    <string name="info_length">Length</string>
+    <string name="info_bitrate">Bitrate</string>
+    <string name="info_sample_rate">Sample rate</string>
+    <string name="info_title">Title</string>
+    <string name="info_artist">Artist</string>
+    <string name="info_album">Album</string>
+    <string name="info_album_artist">Album artist</string>
+    <string name="info_track">Track</string>
+    <string name="info_disc">Disc</string>
+    <string name="info_year">Year</string>
+    <string name="info_genre">Genre</string>
+    <string name="info_composer">Composer</string>
+    <string name="info_station">Station</string>
+    <string name="info_now_playing">Now playing</string>
+    <string name="info_url">Url</string>
+    <string name="info_website">Website</string>
+
+    <!-- OverlayOps.kt: the line under Always on top in Preferences -->
+    <string name="overlay_summary_off">Off</string>
+    <string name="overlay_summary_waiting">Waiting for permission to draw over other apps</string>
+    <string name="overlay_summary_on">The player floats on top of other apps</string>
+
+    <!-- PhoneLibrary.kt: what is on this phone -->
+    <plurals name="phone_count_tracks">
+        <item quantity="one">%1$,d track</item>
+        <item quantity="other">%1$,d tracks</item>
+    </plurals>
+    <plurals name="phone_count_artists">
+        <item quantity="one">%1$,d artist</item>
+        <item quantity="other">%1$,d artists</item>
+    </plurals>
+    <plurals name="phone_count_albums">
+        <item quantity="one">%1$,d album</item>
+        <item quantity="other">%1$,d albums</item>
+    </plurals>
+    <!-- Tracks, artists and albums, each one of the counts above -->
+    <string name="phone_summary">%1$s · %2$s · %3$s</string>
+    <plurals name="phone_days">
+        <item quantity="one">%1$,d day</item>
+        <item quantity="other">%1$,d days</item>
+    </plurals>
+    <plurals name="phone_hours">
+        <item quantity="one">%1$,d hour</item>
+        <item quantity="other">%1$,d hours</item>
+    </plurals>
+    <plurals name="phone_minutes">
+        <item quantity="one">%1$,d minute</item>
+        <item quantity="other">%1$,d minutes</item>
+    </plurals>
+    <!-- Two of the three above: "3 days 4 hours" -->
+    <string name="phone_duration_pair">%1$s %2$s</string>
+
+    <!-- PhoneLibrary.kt: a scan of the music folders. %1$s is a folder, then how many are done of how many. -->
+    <string name="scan_looking_in">Looking in %1$s… (%2$d of %3$d)</string>
+    <string name="scan_reading">Reading what was found…</string>
+    <string name="scan_no_folders">No music folders on this phone</string>
+    <!-- %1$s lists the folders -->
+    <string name="scan_looked_in">Looked in %1$s</string>
+    <!-- %1$s is one of the two lines above -->
+    <string name="scan_unreadable">%1$s. The library could not be read.</string>
+    <!-- %1$s is where it looked, %2$s what it found: one of the three below -->
+    <string name="scan_outcome">%1$s: %2$s.</string>
+    <plurals name="scan_new_tracks">
+        <item quantity="one">%1$,d new track</item>
+        <item quantity="other">%1$,d new tracks</item>
+    </plurals>
+    <plurals name="scan_fewer_tracks">
+        <item quantity="one">%1$,d track fewer</item>
+        <item quantity="other">%1$,d tracks fewer</item>
+    </plurals>
+    <string name="scan_nothing_new">nothing new</string>
+
+    <!-- MusicSource.kt: the music on the phone itself, as a source beside the ones that are installed -->
+    <string name="source_this_phone">This Phone</string>
+
+    <!-- PackSource.kt: whose app plays a source. Its name, its package, and the start of its signing fingerprint. -->
+    <string name="source_played_by">Played by %1$s (%2$s)</string>
+    <string name="source_played_by_signed">Played by %1$s (%2$s, signed %3$s…)</string>
+
+    <!-- OnlineSkinOps.kt: %1$s is the skin's file name -->
+    <string name="museum_could_not_download">Could not download %1$s</string>
+    <string name="museum_could_not_read">Could not read %1$s</string>
+
+    <!-- WinampScreen.kt and WidgetMenuActivity.kt: the name a skin gets when its file has none -->
+    <string name="skin_picked_name">picked skin</string>
+
+    <!-- MediaFiles.kt: the title of a file that has no name -->
+    <string name="media_unknown_title">Unknown</string>
+</resources>

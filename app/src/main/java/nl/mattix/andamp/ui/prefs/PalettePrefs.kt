@@ -3,6 +3,8 @@
 package nl.mattix.andamp.ui.prefs
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import nl.mattix.andamp.R
 
 /**
  * Whether AndAmp Dark and Light take their colors from the wallpaper. The row is shown only where
@@ -20,13 +22,8 @@ data class PalettePrefs(
 fun PaletteRow(prefs: PalettePrefs) {
     if (!prefs.offered) return
     SwitchRow(
-        title = "Match wallpaper colors",
-        summary =
-            if (prefs.enabled) {
-                "AndAmp Dark and AndAmp Light take their colors from your wallpaper, like the rest of the phone."
-            } else {
-                "AndAmp Dark and AndAmp Light keep their own colors."
-            },
+        title = stringResource(R.string.prefs_palette_title),
+        summary = stringResource(if (prefs.enabled) R.string.prefs_palette_on else R.string.prefs_palette_off),
         checked = prefs.enabled,
         tag = "prefs.palette.switch",
         onChange = prefs.onEnabled,

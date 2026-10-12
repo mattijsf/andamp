@@ -11,8 +11,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import nl.mattix.andamp.R
 import nl.mattix.andamp.backend.pack.PackReach
+import nl.mattix.andamp.state.Words
+import nl.mattix.andamp.ui.rememberWords
 
 /**
  * A source's row in a line: which of its states this phone is in.
@@ -27,31 +31,39 @@ import nl.mattix.andamp.backend.pack.PackReach
 fun packSummary(
     reach: PackReach,
     signedIn: Boolean,
+    words: Words,
 ): String =
     when (reach) {
         PackReach.Absent -> {
-            if (signedIn) "Uninstalled, and its tracks are skipped" else "Not installed - see More sources below"
+            words.get(if (signedIn) R.string.prefs_pack_uninstalled else R.string.prefs_pack_not_installed)
         }
 
         PackReach.Outdated -> {
-            "Installed, but too old for this version of Andamp"
+            words.get(R.string.prefs_pack_too_old)
         }
 
         PackReach.Ahead -> {
-            "Installed, but made for a newer version of Andamp"
+            words.get(R.string.prefs_pack_too_new)
         }
 
         is PackReach.SignedOut -> {
-            "Not signed in"
+            words.get(R.string.prefs_pack_not_signed_in)
         }
 
         is PackReach.Ready -> {
             reach.account.name
                 .takeIf { it.isNotBlank() }
-                ?.let { "Signed in as $it" }
-                ?: "Signed in on this phone"
+                ?.let { words.get(R.string.prefs_pack_signed_in_as, it) }
+                ?: words.get(R.string.prefs_pack_signed_in_here)
         }
     }
+
+/** The same line in the phone's language, for a composable that has no [Words] at hand. */
+@Composable
+fun packSummary(
+    reach: PackReach,
+    signedIn: Boolean,
+): String = packSummary(reach, signedIn, rememberWords())
 
 /**
  * What [PackPage] says about a source built for another contract version, or null for a source
@@ -60,16 +72,15 @@ fun packSummary(
 fun packNotice(
     named: String,
     reach: PackReach,
+    words: Words,
 ): String? =
     when (reach) {
         PackReach.Outdated -> {
-            "$named is set up for an older Andamp and is not asked to play anything. " +
-                "A newer one puts its tracks back."
+            words.get(R.string.prefs_pack_notice_outdated, named)
         }
 
         PackReach.Ahead -> {
-            "$named is set up for a newer Andamp and is not asked to play anything. " +
-                "Updating Andamp puts its tracks back."
+            words.get(R.string.prefs_pack_notice_ahead, named)
         }
 
         else -> {
@@ -89,7 +100,7 @@ fun PackPage(
     reach: PackReach,
 ) {
     val links = LocalUriHandler.current
-    val notice = packNotice(named, reach) ?: return
+    val notice = packNotice(named, reach, rememberWords()) ?: return
     Section(named)
     Text(
         notice,
@@ -101,5 +112,5 @@ fun PackPage(
     Button(
         onClick = { links.openUri(MORE_SOURCES_URL) },
         modifier = Modifier.testTag("prefs.pack.more"),
-    ) { Text("Update $named") }
+    ) { Text(stringResource(R.string.prefs_pack_update, named)) }
 }

@@ -42,6 +42,7 @@ import nl.mattix.andamp.core.playback.BrowseSource
 import nl.mattix.andamp.core.playback.PlaybackBackend
 import nl.mattix.andamp.core.player.PlayerFacade
 import nl.mattix.andamp.state.DspOps
+import nl.mattix.andamp.state.EnglishWords
 import nl.mattix.andamp.state.ExtraSource
 import nl.mattix.andamp.state.FakeTracks
 import nl.mattix.andamp.state.LibraryAccess
@@ -180,7 +181,7 @@ class SourcesPrefsTest {
         compose.onNodeWithText("Music and audio permission is off").assertIsDisplayed()
         tag("prefs.source.phone").performClick()
 
-        compose.onNodeWithText(LibraryAccess.BLOCKED.summary("Music and audio")).assertIsDisplayed()
+        compose.onNodeWithText(LibraryAccess.BLOCKED.summary("Music and audio", EnglishWords)).assertIsDisplayed()
         tag("prefs.library.action").assertIsDisplayed()
         // counting and scanning read what the permission guards
         compose.onAllNodesWithTag("prefs.phone.scan", useUnmergedTree = true).assertCountEquals(0)
@@ -269,7 +270,7 @@ class SourcesPrefsTest {
         show(extras = listOf(other))
         tag("prefs.source.example").performClick()
 
-        compose.onNodeWithText(DEFAULT_SKIN).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Default").performScrollTo().assertIsDisplayed()
         tag("prefs.skin.row").performClick()
         tag("prefs.skin.andamp-spot").performClick()
 
@@ -297,7 +298,7 @@ class SourcesPrefsTest {
         show(extras = listOf(other), chosenSkin = "uninstalled")
         tag("prefs.source.example").performClick()
 
-        compose.onNodeWithText(DEFAULT_SKIN).performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Default").performScrollTo().assertIsDisplayed()
     }
 
     @Test

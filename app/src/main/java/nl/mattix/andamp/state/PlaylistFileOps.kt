@@ -9,6 +9,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.core.player.PlayerFacade
@@ -31,7 +32,7 @@ class PlaylistFileOps(
     private val library: MediaStoreAudio = MediaStoreAudio(app),
     private val mediaFiles: MediaFiles = MediaFiles(app, library),
     private val listsLibrary: PlaylistLibrary = PlaylistLibrary(java.io.File(app.filesDir, "playlists")),
-    private val queue: PlaylistOps = PlaylistOps(state, facade),
+    private val queue: PlaylistOps = PlaylistOps(state, facade, Words.of(app)),
     /** Where the file and library work happens. */
     private val io: kotlin.coroutines.CoroutineContext = Dispatchers.IO,
     /** Told the name of a saved list once it is deleted, so the library window can drop its row. */
@@ -170,16 +171,16 @@ class PlaylistFileOps(
     fun saveList(exportTo: (String) -> Unit) {
         state.choiceSheet =
             ChoiceSheet(
-                title = "Save playlist",
+                title = app.getString(R.string.playlist_save_title),
                 options =
                     listOf(
                         ChoiceSheet.Choice(
-                            "Save in Andamp",
-                            "Browsable in the media library's LISTS tab",
+                            app.getString(R.string.playlist_save_in_andamp),
+                            app.getString(R.string.playlist_save_in_andamp_note),
                         ) { saveToLibrary() },
                         ChoiceSheet.Choice(
-                            "Export as file…",
-                            "An .m3u file other players can read",
+                            app.getString(R.string.playlist_export),
+                            app.getString(R.string.playlist_export_note),
                         ) { promptForName(exportTo) },
                     ),
             )
@@ -189,16 +190,16 @@ class PlaylistFileOps(
     fun loadList(importFrom: () -> Unit) {
         state.choiceSheet =
             ChoiceSheet(
-                title = "Load playlist",
+                title = app.getString(R.string.playlist_load_title),
                 options =
                     listOf(
                         ChoiceSheet.Choice(
-                            "Open from Andamp",
-                            "One of the lists saved here",
+                            app.getString(R.string.playlist_open_from_andamp),
+                            app.getString(R.string.playlist_open_from_andamp_note),
                         ) { loadFromLibrary() },
                         ChoiceSheet.Choice(
-                            "Import from file…",
-                            "An .m3u file from this phone",
+                            app.getString(R.string.playlist_import),
+                            app.getString(R.string.playlist_import_note),
                         ) { importFrom() },
                     ),
             )
@@ -208,8 +209,9 @@ class PlaylistFileOps(
     fun promptForName(onNamed: (String) -> Unit) {
         state.namePrompt =
             NamePrompt(
-                title = "Save playlist as",
+                title = app.getString(R.string.playlist_save_as_title),
                 initial = PlaylistNaming.fileName(state.playlist, LocalDate.now()).removeSuffix(PlaylistNaming.EXTENSION),
+                confirmLabel = app.getString(R.string.prompt_save),
             ) { typed ->
                 state.namePrompt = null
                 onNamed(PlaylistNaming.withExtension(typed))
@@ -220,7 +222,12 @@ class PlaylistFileOps(
     fun saveToLibrary() {
         promptForName { named ->
             val tracks = state.playlist
-            val name = named.removeSuffix(PlaylistNaming.EXTENSION).trim().ifEmpty { "Playlist" }
+            val name =
+                named
+                    .removeSuffix(
+                        PlaylistNaming.EXTENSION,
+                    ).trim()
+                    .ifEmpty { app.getString(R.string.playlist_default_name) }
             scope.launch {
                 withContext(io) { listsLibrary.save(name, tracks) }
             }
@@ -249,12 +256,19 @@ class PlaylistFileOps(
             val saved = withContext(io) { listsLibrary.list() }
             state.presetPicker =
                 PresetPicker(
-                    title = "Open playlist",
-                    entries = saved.map { PresetEntry(it.name, it.name, "${it.trackCount} TRK") },
-                    confirmLabel = "Open",
-                    emptyMessage = "No lists saved here yet",
+                    title = app.getString(R.string.playlist_open_title),
+                    entries =
+                        saved.map {
+                            PresetEntry(
+                                it.name,
+                                it.name,
+                                app.getString(R.string.library_track_count_short, it.trackCount),
+                            )
+                        },
+                    confirmLabel = app.getString(R.string.playlist_open_confirm),
+                    emptyMessage = app.getString(R.string.playlist_open_empty),
                     extra =
-                        PresetPicker.Extra("Delete", destructive = true) { keys ->
+                        PresetPicker.Extra(app.getString(R.string.prompt_delete), destructive = true) { keys ->
                             keys.firstOrNull()?.let(::promptDelete)
                         },
                 ) { keys ->
@@ -273,7 +287,7 @@ class PlaylistFileOps(
     /** Asks over the picker, which stays open and lists what is left once the list is gone. */
     private fun promptDelete(name: String) {
         state.prompt =
-            deleteListPrompt(name, onDone = { state.prompt = null }) {
+            deleteListPrompt(name, Words.of(app), onDone = { state.prompt = null }) {
                 scope.launch {
                     if (withContext(io) { listsLibrary.delete(name) }) onListDeleted(name)
                     if (state.presetPicker != null) loadFromLibrary()

@@ -283,7 +283,8 @@ class PreferencesInteractionTest {
         tag("prefs.open.about").performScrollTo().performClick()
         tag("prefs.open.licences").performScrollTo().performClick()
 
-        Notices.ALL.forEach { tag("licence.${it.name}").performScrollTo().assertIsDisplayed() }
+        val res = ApplicationProvider.getApplicationContext<Application>().resources
+        Notices.all(res).forEach { tag("licence.${it.name}").performScrollTo().assertIsDisplayed() }
     }
 
     @Test

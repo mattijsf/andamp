@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.ui.menu
 
+import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.displayName
 import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.BookmarkSheet
@@ -19,7 +20,7 @@ internal fun bookmarksMenu(vm: WinampViewModel): List<AmpMenuItem> {
     return buildList {
         add(
             // a sheet, so it also draws over a home screen
-            AmpMenuItem.Action("Edit bookmarks...", enabled = ops.bookmarks.isNotEmpty()) {
+            AmpMenuItem.Action(vm.words.get(R.string.menu_edit_bookmarks), enabled = ops.bookmarks.isNotEmpty()) {
                 vm.state.bookmarkSheet =
                     BookmarkSheet(
                         entries = { ops.bookmarks.map { PresetEntry(it.uri.orEmpty(), it.displayName) } },
@@ -32,7 +33,7 @@ internal fun bookmarksMenu(vm: WinampViewModel): List<AmpMenuItem> {
         )
         // Winamp's Alt+I: no dialog and no name to type
         add(
-            AmpMenuItem.Action("Add current as bookmark", enabled = playing?.uri != null) {
+            AmpMenuItem.Action(vm.words.get(R.string.menu_add_current_as_bookmark), enabled = playing?.uri != null) {
                 ops.addCurrent()
             },
         )

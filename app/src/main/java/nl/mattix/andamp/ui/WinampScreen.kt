@@ -51,6 +51,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.withLock
+import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.VisMode
@@ -166,7 +167,7 @@ fun WinampScreen(
         rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
             if (uri != null) {
                 context.contentResolver.openInputStream(uri)?.let { stream ->
-                    vm.skinOps.load(stream, context.displayNameOf(uri) ?: "picked skin")
+                    vm.skinOps.load(stream, context.displayNameOf(uri) ?: context.getString(R.string.skin_picked_name))
                 }
             }
         }

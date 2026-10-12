@@ -20,10 +20,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.Tip
 import nl.mattix.andamp.state.TipNote
 import nl.mattix.andamp.state.TipShelf
+import nl.mattix.andamp.state.Words
 
 /** Preferences > Support Andamp, as the page needs it: what [nl.mattix.andamp.state.TipJar] holds. */
 data class SupportPrefs(
@@ -42,12 +45,14 @@ data class SupportPrefs(
     val onOutside: (String) -> Unit = {},
 ) {
     /** The line under the page's row in the list. */
-    fun summary() =
-        when {
-            outside != null -> "On andamp.nl"
-            given -> "Thank you for your tip"
-            else -> "Leave a tip"
-        }
+    fun summary(words: Words) =
+        words.get(
+            when {
+                outside != null -> R.string.prefs_support_on_site
+                given -> R.string.prefs_support_thanked
+                else -> R.string.prefs_support_leave_a_tip
+            },
+        )
 }
 
 /** The route of the page, which the main menu's entry opens Preferences on. */
@@ -62,10 +67,7 @@ internal fun SupportPage(prefs: SupportPrefs) {
     }
     LaunchedEffect(Unit) { prefs.onShown() }
     Spacer(Modifier.height(8.dp))
-    Note(
-        "Andamp is free and has no ads. If you enjoy it, you can leave a tip. " +
-            "A tip unlocks nothing: everything in Andamp stays free, with or without one.",
-    )
+    Note(stringResource(R.string.prefs_support_intro))
     Spacer(Modifier.height(8.dp))
     when (val shelf = prefs.shelf) {
         TipShelf.Loading -> {
@@ -76,15 +78,17 @@ internal fun SupportPage(prefs: SupportPrefs) {
         }
 
         TipShelf.Closed -> {
-            Note("Tips are not available on this phone right now.", Modifier.testTag("prefs.support.closed"))
+            Note(stringResource(R.string.prefs_support_closed), Modifier.testTag("prefs.support.closed"))
         }
 
         is TipShelf.Open -> {
             shelf.tips.forEach { tip -> TipButton(tip) { prefs.onGive(tip) } }
-            Note("Google Play takes the payment. A tip can be given more than once.")
+            Note(stringResource(R.string.prefs_support_play_note))
         }
     }
-    val said = prefs.note?.let(::wordsFor) ?: "You have supported Andamp. Thank you.".takeIf { prefs.given }
+    val said =
+        prefs.note?.let { stringResource(wordsFor(it)) }
+            ?: if (prefs.given) stringResource(R.string.prefs_support_given) else null
     if (said != null) {
         Spacer(Modifier.height(20.dp))
         Row(
@@ -106,16 +110,13 @@ private fun OutsideSupport(
     onOpen: () -> Unit,
 ) {
     Spacer(Modifier.height(8.dp))
-    Note(
-        "Andamp is free and has no ads. If you enjoy it, you can support it on its website. " +
-            "That unlocks nothing: everything in Andamp stays free, with or without it.",
-    )
+    Note(stringResource(R.string.prefs_support_outside_intro))
     Spacer(Modifier.height(8.dp))
     FilledTonalButton(
         onClick = onOpen,
         modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp).testTag("prefs.support.outside"),
     ) {
-        Text("Open ${page.substringAfter("://").substringBefore('/')}")
+        Text(stringResource(R.string.prefs_support_open_site, page.substringAfter("://").substringBefore('/')))
     }
 }
 
@@ -133,9 +134,10 @@ private fun TipButton(
     }
 }
 
-private fun wordsFor(note: TipNote) =
+/** The string resource that says what became of a tip. */
+private fun wordsFor(note: TipNote): Int =
     when (note) {
-        TipNote.THANKS -> "Thank you! Your tip arrived."
-        TipNote.WAITING -> "Thank you! Your tip arrives when the payment has finished."
-        TipNote.FAILED -> "The tip did not go through. Please try again later."
+        TipNote.THANKS -> R.string.prefs_support_note_thanks
+        TipNote.WAITING -> R.string.prefs_support_note_waiting
+        TipNote.FAILED -> R.string.prefs_support_note_failed
     }

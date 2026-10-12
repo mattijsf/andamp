@@ -63,7 +63,7 @@ class LibraryRowMenuTest {
     private fun player(): Triple<LibraryOps, WinampState, PlayerFacade> {
         val state = WinampState()
         val facade = PlayerFacade(MockBackend(emptyList(), scope))
-        return Triple(LibraryOps({ Shelf() }, facade, state, scope, lists(), stations()), state, facade)
+        return Triple(LibraryOps({ Shelf() }, facade, state, scope, lists(), stations(), words = EnglishWords), state, facade)
     }
 
     private fun lists() = PlaylistLibrary(temp.newFolder("playlists"))
@@ -82,7 +82,7 @@ class LibraryRowMenuTest {
         val shelf = lists()
         shelf.save("Road trip", listOf(Shelf.track("r1", "One"), Shelf.track("r2", "Two")))
         shelf.save("Gym", listOf(Shelf.track("g1", "Three")))
-        val ops = LibraryOps({ Shelf() }, facade, state, scope, shelf, stations())
+        val ops = LibraryOps({ Shelf() }, facade, state, scope, shelf, stations(), words = EnglishWords)
         ops.open()
         ops.switchCategory(LibraryOps.Category.LISTS)
         return Saved(ops, state, shelf, facade)
@@ -91,7 +91,7 @@ class LibraryRowMenuTest {
     private fun labels(
         ops: LibraryOps,
         row: Int,
-    ) = libraryRowMenu(ops, row, ops.rows[row].label, MenuAnchor("library", 0, 0, 0, 0))
+    ) = libraryRowMenu(ops, row, ops.rows[row].label, MenuAnchor("library", 0, 0, 0, 0), EnglishWords)
         .items
         .filterIsInstance<AmpMenuItem.Action>()
         .map { it.label }
@@ -291,6 +291,7 @@ class LibraryRowMenuTest {
                 shelf,
                 stations(),
                 onListRead = { rows -> read += rows.map { it.id } },
+                words = EnglishWords,
             )
         ops.open()
         ops.switchCategory(LibraryOps.Category.LISTS)

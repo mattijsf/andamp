@@ -22,9 +22,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
+import nl.mattix.andamp.R
 import nl.mattix.andamp.core.playback.PeakReading
+import nl.mattix.andamp.state.Words
+import nl.mattix.andamp.ui.rememberWords
 import java.util.Locale
 
 /**
@@ -52,7 +56,7 @@ internal fun LimiterCard(
             delay(READ_EVERY_MS)
         }
     }
-    val status = limiterStatus(on, reading, now)
+    val status = limiterStatus(on, reading, now, rememberWords())
     Spacer(Modifier.height(8.dp))
     Card(
         colors =
@@ -67,7 +71,7 @@ internal fun LimiterCard(
             modifier = Modifier.padding(start = 16.dp, end = 8.dp, top = 12.dp, bottom = 12.dp),
         ) {
             Column(Modifier.weight(1f)) {
-                Text("Peak limiter", style = MaterialTheme.typography.titleMedium)
+                Text(stringResource(R.string.prefs_limiter_title), style = MaterialTheme.typography.titleMedium)
                 Text(
                     status.line,
                     style = MaterialTheme.typography.bodySmall,
@@ -100,12 +104,13 @@ internal fun limiterStatus(
     on: Boolean,
     reading: PeakReading,
     nowNanos: Long,
+    words: Words,
 ): LimiterStatus {
     val clippedRecently = reading.clippedAtNanos != 0L && nowNanos - reading.clippedAtNanos < RECENT_NS
     return when {
         clippedRecently -> {
             LimiterStatus(
-                if (on) "Peaks cut off just now" else "Peaks cut off just now · turn on to prevent",
+                words.get(if (on) R.string.prefs_limiter_clipped else R.string.prefs_limiter_clipped_off),
                 LimiterTone.CLIPPING,
             )
         }
@@ -113,15 +118,15 @@ internal fun limiterStatus(
         on && reading.holdingDb < -HOLDING_SHOWN_DB -> {
             // a typographic minus, as a readout should show one
             val db = String.format(Locale.ROOT, "%.1f", reading.holdingDb).replace('-', '−')
-            LimiterStatus("Holding peaks · $db dB", LimiterTone.HOLDING)
+            LimiterStatus(words.get(R.string.prefs_limiter_holding, db), LimiterTone.HOLDING)
         }
 
         on -> {
-            LimiterStatus("Keeps loud peaks under −1 dB", LimiterTone.QUIET)
+            LimiterStatus(words.get(R.string.prefs_limiter_quiet), LimiterTone.QUIET)
         }
 
         else -> {
-            LimiterStatus("Off · loud peaks are cut off", LimiterTone.QUIET)
+            LimiterStatus(words.get(R.string.prefs_limiter_off), LimiterTone.QUIET)
         }
     }
 }

@@ -10,6 +10,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.AlbumKind
 import nl.mattix.andamp.core.model.LibraryAlbum
 import nl.mattix.andamp.core.model.LibraryArtist
@@ -61,6 +62,7 @@ class LibraryOps(
      * see [FolderAccessOps.listRead].
      */
     private val onListRead: suspend (List<Track>) -> Unit = {},
+    private val words: Words,
 ) {
     /**
      * The library as it is now; see [sourceOf]. It is read once per page and handed to
@@ -68,21 +70,24 @@ class LibraryOps(
      */
     private val source: BrowseSource get() = sourceOf()
 
-    /** The tabs. */
+    /** The tabs, each with the string resource of its label; see [label]. */
     enum class Category(
-        val label: String,
+        val label: Int,
     ) {
-        ARTISTS("ARTISTS"),
-        ALBUMS("ALBUMS"),
-        LISTS("LISTS"),
-        RADIO("RADIO"),
+        ARTISTS(R.string.library_tab_artists),
+        ALBUMS(R.string.library_tab_albums),
+        LISTS(R.string.library_tab_lists),
+        RADIO(R.string.library_tab_radio),
 
         /**
          * A search of the source's catalog, beyond the listener's own shelves. Shown only
          * for a source that has a catalog.
          */
-        FIND("FIND"),
+        FIND(R.string.library_tab_find),
     }
+
+    /** What a tab is called, which is also the header of its root page. */
+    fun label(category: Category): String = words.get(category.label)
 
     /** One row on screen: text only. */
     data class Row(
@@ -114,7 +119,7 @@ class LibraryOps(
         /** The playable tracks, when this page is a leaf. */
         val tracks: List<Track>? = null,
         /** The text an empty page shows. */
-        val empty: String = NO_MUSIC,
+        val empty: String? = null,
         /**
          * Asks again, on a page for a fetch the source could not answer; null on every
          * other page. When it is set, a tap anywhere on the page, or on its own tab,
@@ -137,7 +142,7 @@ class LibraryOps(
         val finding: Boolean = false,
     )
 
-    private var page: Page by mutableStateOf(Page(Category.ARTISTS.label, "", emptyList()))
+    private var page: Page by mutableStateOf(Page(label(Category.ARTISTS), "", emptyList()))
     private val crumbs = ArrayDeque<Crumb>()
 
     val rows: List<Row> get() = page.rows
@@ -149,7 +154,7 @@ class LibraryOps(
     val status: String get() = page.status
 
     /** The text an empty list shows, per page. */
-    val emptyNote: String get() = page.empty
+    val emptyNote: String get() = page.empty ?: words.get(R.string.library_no_music)
 
     /** Whether this page stands for a fetch the source could not answer; a tap retries it. */
     val unreachable: Boolean get() = page.retry != null
@@ -208,7 +213,7 @@ class LibraryOps(
         crumbs.clear()
         depth = 0
         // the FIND tab has no shelf: it opens on its search prompt
-        if (target == Category.FIND) enterFind() else load(target.label) { rootFor(target) }
+        if (target == Category.FIND) enterFind() else load(label(target)) { rootFor(target) }
     }
 
     /**
@@ -290,13 +295,18 @@ class LibraryOps(
                 val page =
                     try {
                         if (finding) {
-                            artistsPage(src, Category.FIND.label, src.findArtists(text), empty = "NO ARTISTS")
+                            artistsPage(
+                                src,
+                                label(Category.FIND),
+                                src.findArtists(text),
+                                empty = words.get(R.string.library_no_artists),
+                            )
                         } else {
                             resultsPage(src.search(text))
                         }
                     } catch (_: SourceUnreachable) {
                         // the retry sets the same query again, so a newer query still wins
-                        unreachablePage(if (finding) Category.FIND.label else SEARCH_HEADER) { setQuery(text, caret) }
+                        unreachablePage(if (finding) label(Category.FIND) else searchHeader) { setQuery(text, caret) }
                     }
                 // a slow answer to an old query must not replace a newer one
                 if (searching && query == text) commitInPlace(page)
@@ -344,23 +354,30 @@ class LibraryOps(
     /** Whether the open search is the FIND tab's; see [Category.FIND]. */
     private var finding = false
 
-    private fun promptPage() = Page(SEARCH_HEADER, "", emptyList(), empty = "TYPE TO SEARCH")
+    private val searchHeader: String get() = words.get(R.string.library_search_header)
 
-    private fun findPromptPage() = Page(Category.FIND.label, "", emptyList(), empty = "TYPE AN ARTIST")
+    private fun promptPage() = Page(searchHeader, "", emptyList(), empty = words.get(R.string.library_type_to_search))
+
+    private fun findPromptPage() = Page(label(Category.FIND), "", emptyList(), empty = words.get(R.string.library_type_an_artist))
 
     /** The prompt page for an empty or too-short query, for whichever search is open. */
     private fun searchPrompt() = if (finding) findPromptPage() else promptPage()
 
     private fun resultsPage(hits: List<Track>): Page {
         val capped = hits.size >= BrowseSource.SEARCH_LIMIT
-        val count = if (capped) "${BrowseSource.SEARCH_LIMIT}+ HITS" else count(hits.size, "HIT")
+        val count =
+            if (capped) {
+                words.get(R.string.library_hits_capped, BrowseSource.SEARCH_LIMIT)
+            } else {
+                count(hits.size, R.plurals.library_count_hits)
+            }
         val time = if (hits.isEmpty() || capped) "" else " · ${clock(hits.sumOf { it.durationSec })}"
         return Page(
-            header = SEARCH_HEADER,
+            header = searchHeader,
             status = count + time,
             rows = hits.map { Row(it.title, detail = it.artist) },
             tracks = hits,
-            empty = "NO MATCHES",
+            empty = words.get(R.string.library_no_matches),
         )
     }
 
@@ -380,7 +397,7 @@ class LibraryOps(
         // the tab it was left on may be one the new source does not have (the phone has no
         // FIND tab)
         if (category !in visibleCategories) category = visibleCategories.first()
-        if (category == Category.FIND) enterFind() else load(category.label) { rootFor(category) }
+        if (category == Category.FIND) enterFind() else load(label(category)) { rootFor(category) }
     }
 
     /**
@@ -426,7 +443,7 @@ class LibraryOps(
     fun enqueueRow(index: Int) =
         onRow(index) { chosen ->
             facade.enqueue(chosen)
-            showFlash("+${chosen.size} QUEUED")
+            showFlash(words.get(R.string.library_queued, chosen.size))
         }
 
     /**
@@ -441,7 +458,7 @@ class LibraryOps(
             val playing = facade.state.value
             val after = (playing.currentIndex + 1).coerceIn(0, playing.queue.size)
             facade.setQueue(playing.queue.take(after) + chosen + playing.queue.drop(after), playing.currentIndex)
-            showFlash("+${chosen.size} NEXT")
+            showFlash(words.get(R.string.library_queued_next, chosen.size))
         }
 
     // --- deleting a saved list ---
@@ -468,8 +485,10 @@ class LibraryOps(
 
     private fun promptDelete(name: String) {
         state.prompt =
-            deleteListPrompt(name, onDone = { state.prompt = null }) {
-                scope.launch { if (lists.delete(name)) savedListDeleted(name) else showFlash("CAN'T DELETE") }
+            deleteListPrompt(name, words, onDone = { state.prompt = null }) {
+                scope.launch {
+                    if (lists.delete(name)) savedListDeleted(name) else showFlash(words.get(R.string.library_cant_delete))
+                }
             }
     }
 
@@ -514,7 +533,7 @@ class LibraryOps(
                     showFlash(cantReach())
                     return@launch
                 }
-            if (chosen.isEmpty()) showFlash("NOTHING TO PLAY") else act(chosen)
+            if (chosen.isEmpty()) showFlash(words.get(R.string.library_nothing_to_play)) else act(chosen)
         }
     }
 
@@ -531,7 +550,7 @@ class LibraryOps(
         val chosen = state.librarySelected.takeIf { it in tracks.indices }?.let { listOf(tracks[it]) } ?: tracks
         if (chosen.isEmpty()) return
         facade.enqueue(chosen)
-        showFlash("+${chosen.size} QUEUED")
+        showFlash(words.get(R.string.library_queued, chosen.size))
     }
 
     fun up() {
@@ -557,22 +576,25 @@ class LibraryOps(
     /** RADIO's NEW cell: asks for a url, then for a name suggested from its host. */
     fun promptNewStation() {
         state.namePrompt =
-            NamePrompt(title = "Station URL", confirmLabel = "Next") { typedUrl ->
+            NamePrompt(
+                title = words.get(R.string.library_station_url_title),
+                confirmLabel = words.get(R.string.library_station_next),
+            ) { typedUrl ->
                 state.namePrompt = null
                 val url = typedUrl.trim()
                 if (!StationStore.isStreamUrl(url)) {
-                    showFlash("NOT AN HTTP URL")
+                    showFlash(words.get(R.string.library_not_http))
                 } else {
                     state.namePrompt =
                         NamePrompt(
-                            title = "Station name",
+                            title = words.get(R.string.library_station_name_title),
                             initial = StationStore.hostOf(url).orEmpty(),
-                            confirmLabel = "Add",
+                            confirmLabel = words.get(R.string.library_station_add),
                         ) { name ->
                             state.namePrompt = null
                             scope.launch {
                                 stations.add(name, url)
-                                if (category == Category.RADIO && depth == 0) load(Category.RADIO.label) { radioRootPage() }
+                                if (category == Category.RADIO && depth == 0) load(label(Category.RADIO)) { radioRootPage() }
                             }
                         }
                 }
@@ -608,7 +630,7 @@ class LibraryOps(
     private suspend fun artistsRootPage(src: BrowseSource): Page {
         if (!src.available) {
             needsAccess = true
-            return Page(Category.ARTISTS.label, count(0, "ARTIST"), emptyList())
+            return Page(label(Category.ARTISTS), count(0, R.plurals.library_count_artists), emptyList())
         }
         needsAccess = false
         val artists = src.artists()
@@ -616,10 +638,10 @@ class LibraryOps(
         // then means no permission
         if (!src.available) {
             needsAccess = true
-            return Page(Category.ARTISTS.label, count(0, "ARTIST"), emptyList())
+            return Page(label(Category.ARTISTS), count(0, R.plurals.library_count_artists), emptyList())
         }
-        return artistsPage(src, Category.ARTISTS.label, artists) { artist ->
-            artist.albumCount?.let { count(it, "ALBUM") } ?: ""
+        return artistsPage(src, label(Category.ARTISTS), artists) { artist ->
+            artist.albumCount?.let { count(it, R.plurals.library_count_albums) } ?: ""
         }
     }
 
@@ -632,11 +654,11 @@ class LibraryOps(
         src: BrowseSource,
         header: String,
         artists: List<LibraryArtist>,
-        empty: String = NO_MUSIC,
+        empty: String? = null,
         detail: (LibraryArtist) -> String = { "" },
     ) = Page(
         header = header,
-        status = count(artists.size, "ARTIST"),
+        status = count(artists.size, R.plurals.library_count_artists),
         rows = artists.map { Row(it.name, detail = detail(it)) },
         open = artists.map { artist -> { drill(artist.name) { albumsPage(src, artist) } } },
         tracksOf = artists.map { artist -> { src.albums(artist.id).flatMap { src.tracks(it.id) } } },
@@ -646,18 +668,18 @@ class LibraryOps(
     private suspend fun albumsRootPage(src: BrowseSource): Page {
         if (!src.available) {
             needsAccess = true
-            return Page(Category.ALBUMS.label, count(0, "ALBUM"), emptyList())
+            return Page(label(Category.ALBUMS), count(0, R.plurals.library_count_albums), emptyList())
         }
         needsAccess = false
         val albums = src.albums(null)
         // checked again, as for the artists' root
         if (!src.available) {
             needsAccess = true
-            return Page(Category.ALBUMS.label, count(0, "ALBUM"), emptyList())
+            return Page(label(Category.ALBUMS), count(0, R.plurals.library_count_albums), emptyList())
         }
         return Page(
-            header = Category.ALBUMS.label,
-            status = count(albums.size, "ALBUM"),
+            header = label(Category.ALBUMS),
+            status = count(albums.size, R.plurals.library_count_albums),
             // the artist as the detail, since two albums may share a title
             rows = albums.map { Row(it.title, detail = it.artist) },
             open = albums.map { album -> { drill(album.title) { tracksPage(src, album) } } },
@@ -676,36 +698,43 @@ class LibraryOps(
     private suspend fun sourceListsPage(src: BrowseSource): Page {
         val their = src.playlists()
         return Page(
-            header = Category.LISTS.label,
-            status = count(their.size, "LIST"),
-            rows = their.map { Row(it.name, detail = it.trackCount?.let { n -> "$n TRK" } ?: "") },
+            header = label(Category.LISTS),
+            status = count(their.size, R.plurals.library_count_lists),
+            rows =
+                their.map {
+                    Row(
+                        it.name,
+                        detail =
+                            it.trackCount?.let { n -> words.get(R.string.library_track_count_short, n) } ?: "",
+                    )
+                },
             open = their.map { list -> { drill(list.name) { sourceListPage(src, list) } } },
             tracksOf = their.map { list -> { src.playlistTracks(list.id) } },
-            empty = "NO LISTS",
+            empty = words.get(R.string.library_no_lists),
         )
     }
 
     private suspend fun sourceListPage(
         src: BrowseSource,
         list: nl.mattix.andamp.core.model.LibraryPlaylist,
-    ): Page = trackListPage(list.name, src.playlistTracks(list.id), empty = "NO TRACKS")
+    ): Page = trackListPage(list.name, src.playlistTracks(list.id), empty = words.get(R.string.library_no_tracks))
 
     private fun savedListsPage(): Page {
         val saved = lists.list()
         return Page(
-            header = Category.LISTS.label,
-            status = count(saved.size, "LIST"),
-            rows = saved.map { Row(it.name, detail = "${it.trackCount} TRK") },
+            header = label(Category.LISTS),
+            status = count(saved.size, R.plurals.library_count_lists),
+            rows = saved.map { Row(it.name, detail = words.get(R.string.library_track_count_short, it.trackCount)) },
             open = saved.map { entry -> { drill(entry.name) { listTracksPage(entry.name) } } },
             tracksOf = saved.map { entry -> { lists.load(entry.name).orEmpty().also { onListRead(it) } } },
             saved = saved.map { it.name },
-            empty = "NO SAVED LISTS · LIST > SAVE KEEPS ONE",
+            empty = words.get(R.string.library_no_saved_lists),
         )
     }
 
     private suspend fun listTracksPage(name: String): Page {
         val tracks = lists.load(name).orEmpty().also { onListRead(it) }
-        return trackListPage(name, tracks, empty = "NO TRACKS", savedName = name)
+        return trackListPage(name, tracks, empty = words.get(R.string.library_no_tracks), savedName = name)
     }
 
     private fun radioRootPage(): Page {
@@ -713,11 +742,11 @@ class LibraryOps(
         // previous step through the stations
         val all = stations.list()
         return Page(
-            header = Category.RADIO.label,
-            status = count(all.size, "STATION"),
+            header = label(Category.RADIO),
+            status = count(all.size, R.plurals.library_count_stations),
             rows = all.map { Row(it.title) },
             tracks = all,
-            empty = "NO STATIONS · NEW ADDS ONE",
+            empty = words.get(R.string.library_no_stations),
         )
     }
 
@@ -740,19 +769,22 @@ class LibraryOps(
         }
         return Page(
             header = artist.name,
-            status = count(albums.size, "RECORD"),
-            rows = kinds.map { of -> Row(of.first().kind.label, detail = count(of.size, "RECORD")) },
+            status = count(albums.size, R.plurals.library_count_records),
+            rows =
+                kinds.map { of ->
+                    Row(words.get(of.first().kind.rowLabel), detail = count(of.size, R.plurals.library_count_records))
+                },
             open = kinds.map { of -> { drill(artist.name) { recordsPage(src, artist.name, of, of.first().kind.noun) } } },
             tracksOf = kinds.map { of -> { of.flatMap { src.tracks(it.id) } } },
         )
     }
 
-    /** Records, counted under [noun], so a page of singles says "5 SINGLES". */
+    /** Records, counted under the plural [noun], so a page of singles says "5 SINGLES". */
     private fun recordsPage(
         src: BrowseSource,
         header: String,
         albums: List<LibraryAlbum>,
-        noun: String,
+        noun: Int,
     ) = Page(
         header = header,
         status = count(albums.size, noun),
@@ -764,7 +796,7 @@ class LibraryOps(
     private suspend fun tracksPage(
         src: BrowseSource,
         album: LibraryAlbum,
-    ): Page = trackListPage(album.title, src.tracks(album.id), empty = "NO TRACKS")
+    ): Page = trackListPage(album.title, src.tracks(album.id), empty = words.get(R.string.library_no_tracks))
 
     private fun trackListPage(
         header: String,
@@ -775,7 +807,7 @@ class LibraryOps(
         val time = if (tracks.isEmpty()) "" else " · ${clock(tracks.sumOf { it.durationSec })}"
         return Page(
             header = header,
-            status = count(tracks.size, "TRACK") + time,
+            status = count(tracks.size, R.plurals.library_count_tracks) + time,
             rows = tracks.mapIndexed { at, track -> Row("${at + 1}. ${track.title}", detail = clock(track.durationSec)) },
             tracks = tracks,
             empty = empty,
@@ -888,12 +920,18 @@ class LibraryOps(
     private fun unreachablePage(
         header: String,
         retry: () -> Unit,
-    ) = Page(header, "", emptyList(), empty = "${cantReach()} · TAP TO RETRY", retry = retry)
+    ) = Page(header, "", emptyList(), empty = words.get(R.string.library_tap_to_retry, cantReach()), retry = retry)
 
     /** "CAN'T REACH" and the name of the library; see [nameOf]. */
     private fun cantReach(): String {
         val name = nameOf().trim().uppercase()
-        return if (name.isEmpty()) "CAN'T REACH THE LIBRARY" else "CAN'T REACH $name"
+        return if (name.isEmpty()) {
+            words.get(
+                R.string.library_cant_reach_library,
+            )
+        } else {
+            words.get(R.string.library_cant_reach, name)
+        }
     }
 
     private fun showFlash(text: String) {
@@ -905,27 +943,35 @@ class LibraryOps(
         }
     }
 
+    /** [n] under the plural [noun], as "1 ARTIST" or "5 ARTISTS". */
     private fun count(
         n: Int,
-        noun: String,
-    ) = "$n $noun${if (n == 1) "" else "S"}"
+        noun: Int,
+    ) = words.plural(noun, n)
 
     private fun clock(seconds: Int) = "%d:%02d".format(seconds / 60, seconds % 60)
 
     private companion object {
-        const val SEARCH_HEADER = "SEARCH"
-        const val NO_MUSIC = "NO MUSIC FOUND"
         const val FLASH_MS = 1500L
         const val SEARCH_DEBOUNCE_MS = 250L
         const val MIN_QUERY = 2
 
-        /** The singular of a kind, for [count], which makes "1 SINGLE" and "5 SINGLES" of it. */
-        val AlbumKind.noun: String
+        /** The plural of a kind, for [count], which makes "1 SINGLE" and "5 SINGLES" of it. */
+        val AlbumKind.noun: Int
             get() =
                 when (this) {
-                    AlbumKind.ALBUM -> "ALBUM"
-                    AlbumKind.SINGLE -> "SINGLE"
-                    AlbumKind.COMPILATION -> "COMPILATION"
+                    AlbumKind.ALBUM -> R.plurals.library_count_albums
+                    AlbumKind.SINGLE -> R.plurals.library_count_singles
+                    AlbumKind.COMPILATION -> R.plurals.library_count_compilations
+                }
+
+        /** A kind as a row, under an artist whose records are of more than one kind. */
+        val AlbumKind.rowLabel: Int
+            get() =
+                when (this) {
+                    AlbumKind.ALBUM -> R.string.library_kind_albums
+                    AlbumKind.SINGLE -> R.string.library_kind_singles
+                    AlbumKind.COMPILATION -> R.string.library_kind_compilations
                 }
     }
 }

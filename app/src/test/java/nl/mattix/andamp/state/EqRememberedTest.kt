@@ -50,7 +50,7 @@ class EqRememberedTest {
         val state = WinampState()
         val backend = Hears(MockBackend(FakeTracks.tracks, scope))
         private val facade = PlayerFacade(backend)
-        val eq = EqOps(state, facade, InMemoryEqPresetStore())
+        val eq = EqOps(state, facade, InMemoryEqPresetStore(), EnglishWords)
         val persistence =
             PersistenceOps(
                 state,

@@ -9,6 +9,7 @@ import android.os.Build
 import android.provider.Settings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.annotation.StringRes
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -57,6 +58,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.NavHost
@@ -65,6 +68,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.flow.first
 import nl.mattix.andamp.BuildConfig
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.AndroidAutoStore
 import nl.mattix.andamp.state.DspOps
 import nl.mattix.andamp.state.LibraryAccess
@@ -73,6 +77,7 @@ import nl.mattix.andamp.state.PluginOps
 import nl.mattix.andamp.state.Store
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.sourceRoute
+import nl.mattix.andamp.ui.rememberWords
 import nl.mattix.andamp.widget.WidgetSettings
 
 /**
@@ -289,21 +294,22 @@ data class PrefsArrival(
  * the root names the areas, and an area fills the screen when it is opened.
  */
 private enum class PrefsPage(
-    val title: String,
+    /** The page's name, on its row in the list and in the bar. */
+    @StringRes val title: Int,
     val route: String,
     /** The row's icon in the list, for the pages the list names directly. */
     val icon: ImageVector? = null,
 ) {
-    PHONE("This Phone", PHONE_PAGE),
-    DSP("Effects", "effects", Icons.Outlined.GraphicEq),
-    INSTALLED("Plug-ins", PLUGINS_PAGE),
-    VISUALIZER("Visualizer", "visualizer", Icons.Outlined.AutoAwesome),
-    PLAYER("Player", "player", Icons.Outlined.PlayCircleOutline),
-    WIDGET("Home screen widget", WIDGET_PAGE, Icons.Outlined.Widgets),
-    ANDROID_AUTO("Android Auto", "android-auto", Icons.Outlined.DirectionsCar),
-    SUPPORT("Support Andamp", SUPPORT_PAGE, Icons.Outlined.Favorite),
-    ABOUT("About Andamp", "about", Icons.Outlined.Info),
-    LICENCES("Open-source licenses", "licences"),
+    PHONE(R.string.source_this_phone, PHONE_PAGE),
+    DSP(R.string.prefs_page_effects, "effects", Icons.Outlined.GraphicEq),
+    INSTALLED(R.string.prefs_page_plugins, PLUGINS_PAGE),
+    VISUALIZER(R.string.prefs_page_visualizer, "visualizer", Icons.Outlined.AutoAwesome),
+    PLAYER(R.string.prefs_page_player, "player", Icons.Outlined.PlayCircleOutline),
+    WIDGET(R.string.prefs_page_widget, WIDGET_PAGE, Icons.Outlined.Widgets),
+    ANDROID_AUTO(R.string.prefs_page_android_auto, "android-auto", Icons.Outlined.DirectionsCar),
+    SUPPORT(R.string.prefs_page_support, SUPPORT_PAGE, Icons.Outlined.Favorite),
+    ABOUT(R.string.prefs_page_about, "about", Icons.Outlined.Info),
+    LICENCES(R.string.prefs_page_licences, "licences"),
     ;
 
     companion object {
@@ -390,12 +396,12 @@ fun PreferencesPage(
                     // has somewhere to go back to
                     PrefsTopBar(
                         title =
-                            PrefsPage.of(here)?.title
+                            PrefsPage.of(here)?.let { stringResource(it.title) }
                                 ?: sections.sources.extras
                                     .firstOrNull { sourceRoute(it.source) == here }
                                     ?.source
                                     ?.label
-                                ?: "Preferences",
+                                ?: stringResource(R.string.prefs_title),
                         deeper = if (beside) pages.previousBackStackEntry != null else here != PrefsPage.ROOT,
                         tall = tall,
                         onBack = { pages.popBackStack() },
@@ -517,6 +523,7 @@ private fun Root(
     sections: PrefsSections,
     onOpen: (String) -> Unit,
 ) {
+    val words = rememberWords()
     // the sources come first; the permission is on the phone's page, and its row says when it is
     // wanted
     SourcesSection(
@@ -527,38 +534,38 @@ private fun Root(
     )
     // three groups under the sources: Sound, Look & feel, and the app itself. An area with several
     // settings is a page one tap away; a single switch stays here
-    Section("Sound")
+    Section(stringResource(R.string.prefs_sound_section))
     Group {
         // one entry: managing installed plug-ins is a button on the Effects page
         PageRow(
             page = PrefsPage.DSP,
-            summary = dsp.summary(),
+            summary = dsp.summary(words),
             onOpen = { onOpen(it.route) },
         )
         VolumeRow(sections.volume)
     }
 
-    Section("Look & feel")
+    Section(stringResource(R.string.prefs_look_section))
     Group {
         PageRow(
             page = PrefsPage.PLAYER,
-            summary = sections.playerSummary(),
+            summary = sections.playerSummary(words),
             onOpen = { onOpen(it.route) },
         )
         PageRow(
             page = PrefsPage.VISUALIZER,
-            summary = sections.visualizer.summary(),
+            summary = sections.visualizer.summary(words),
             onOpen = { onOpen(it.route) },
         )
         PageRow(
             page = PrefsPage.WIDGET,
-            summary = sections.widget.summary(),
+            summary = sections.widget.summary(words),
             onOpen = { onOpen(it.route) },
         )
         if (sections.androidAuto.offered) {
             PageRow(
                 page = PrefsPage.ANDROID_AUTO,
-                summary = sections.androidAuto.summary(),
+                summary = sections.androidAuto.summary(words),
                 onOpen = { onOpen(it.route) },
             )
         }
@@ -568,12 +575,12 @@ private fun Root(
     Group {
         PageRow(
             page = PrefsPage.SUPPORT,
-            summary = sections.support.summary(),
+            summary = sections.support.summary(words),
             onOpen = { onOpen(it.route) },
         )
         PageRow(
             page = PrefsPage.ABOUT,
-            summary = "Version ${BuildConfig.VERSION_NAME} · open-source licenses",
+            summary = stringResource(R.string.prefs_about_summary, BuildConfig.VERSION_NAME),
             onOpen = { onOpen(it.route) },
         )
     }
@@ -583,12 +590,12 @@ private fun Root(
 @Composable
 private fun AboutPage(onOpen: (String) -> Unit) {
     Spacer(Modifier.height(8.dp))
-    Note("Andamp ${BuildConfig.VERSION_NAME} — a Winamp 2.8 replica, not affiliated with Winamp or its owners.")
+    Note(stringResource(R.string.prefs_about_note, BuildConfig.VERSION_NAME))
     Spacer(Modifier.height(8.dp))
     Group {
         PageRow(
             page = PrefsPage.LICENCES,
-            summary = "${Notices.ALL.size} projects Andamp is built on",
+            summary = stringResource(R.string.prefs_about_licences_summary, Notices.all(LocalResources.current).size),
             onOpen = { onOpen(it.route) },
         )
     }
@@ -601,7 +608,7 @@ private fun PageRow(
     summary: String,
     onOpen: (PrefsPage) -> Unit,
 ) = NavRow(
-    page.title,
+    stringResource(page.title),
     summary,
     tag = "prefs.open.${page.name.lowercase()}",
     onClick = { onOpen(page) },

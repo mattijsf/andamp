@@ -19,6 +19,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.TrackKey
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.core.model.displayName
@@ -61,6 +62,12 @@ class WinampViewModel
         bookmarkStore: BookmarkStore = BookmarkStore(java.io.File(app.filesDir, "bookmarks.m3u")),
     ) : AndroidViewModel(app),
         nl.mattix.andamp.ui.window.WindowControls {
+        /**
+         * The app's strings, in the phone's language, for the menus, prompts and notices that are
+         * worded outside a composable. A composable uses `stringResource` instead.
+         */
+        val words: Words = Words.of(app)
+
         override val state = WinampState()
 
         private val backend = createBackend(viewModelScope)
@@ -72,7 +79,7 @@ class WinampViewModel
         private val library = MediaStoreAudio(app)
         private val readable = ReadableUri(app, library)
         private val mediaFiles = MediaFiles(app, library, readable::of)
-        val playlistOps = PlaylistOps(state, facade)
+        val playlistOps = PlaylistOps(state, facade, words)
         val volumeModes = VolumeModeStore(app)
 
         /** Whether windows may be collapsed to their title bar; see [ShadeStore]. */
@@ -101,7 +108,7 @@ class WinampViewModel
                 mirror = { state.doubleSize = it },
                 onSwitchedOn = { if (overlayOps.gate.wanted) overlayOps.want(false) },
             )
-        val eqOps = EqOps(state, facade, presetStore)
+        val eqOps = EqOps(state, facade, presetStore, words)
 
         /** Preferences > Effects. */
         val dspOps = DspOps(app, facade)
@@ -131,6 +138,7 @@ class WinampViewModel
                 mirror = { state.alwaysOnTop = it },
                 onSwitchedOn = { doubleSize.on = false },
                 supported = OverlaySupport.here,
+                words = words,
             )
 
         /** The museum browser: its catalog, and what has been installed from it. */
@@ -142,6 +150,7 @@ class WinampViewModel
                     nl.mattix.andamp.state.online
                         .InstalledSkins(app),
                     viewModelScope,
+                    words,
                 )
 
         init {
@@ -171,6 +180,7 @@ class WinampViewModel
                     facade.enqueue(tracks)
                     viewModelScope.launch { folderAccess.listRead(tracks) }
                 },
+                words = words,
             )
 
         /** Preferences > Plug-ins: installing and removing .lua files. */
@@ -198,6 +208,7 @@ class WinampViewModel
                 viewModelScope,
                 playlistStore,
                 readable,
+                words = words,
             )
 
         /** The media library window: artists, albums, lists and radio. */
@@ -209,8 +220,9 @@ class WinampViewModel
                 viewModelScope,
                 playlistLibrary,
                 stationStore,
-                nameOf = { librarySources.showing.label },
+                nameOf = { librarySources.showing.shown(words) },
                 onListRead = folderAccess::listRead,
+                words = words,
             )
 
         /** Picking a library, and what a sign-in or a sign-out changes; see [SourceOps]. */
@@ -231,6 +243,7 @@ class WinampViewModel
                         ?.settings(app)
                         ?.let(app::openOutside)
                 },
+                words = words,
             )
 
         /** A song on the phone pressed while music access is off; see [LibraryPrompt]. */
@@ -282,6 +295,7 @@ class WinampViewModel
                 state,
                 FileInfoSource(app, liveSampleRateKhz = state::liveSampleRateKhz, readable = readable::of),
                 viewModelScope,
+                words,
             )
 
         /** LIST > SAVE/LOAD LIST, which need a document picker and the file system. */
@@ -383,7 +397,7 @@ class WinampViewModel
                         val onDone = { state.prompt = null }
                         state.prompt =
                             sourcePrompts.of(state.playlist, state.reach, onDone)
-                                ?: promptFor(notice, onDone)
+                                ?: promptFor(notice, words, onDone)
                     }
                 }
             }
@@ -488,7 +502,11 @@ class WinampViewModel
             val length = state.playlist.getOrNull(state.currentIndex)?.durationSec ?: return
             if (length <= 0) return
             state.namePrompt =
-                NamePrompt(title = "Jump to time", initial = "", confirmLabel = "Jump") { typed ->
+                NamePrompt(
+                    title = words.get(R.string.prompt_jump_to_time_title),
+                    initial = "",
+                    confirmLabel = words.get(R.string.prompt_jump_to_time_confirm),
+                ) { typed ->
                     state.namePrompt = null
                     JumpToTime.seconds(typed)?.let { seconds ->
                         seekTo(seconds.coerceIn(0, length).toFloat() / length)
@@ -501,13 +519,13 @@ class WinampViewModel
             if (state.playlist.isEmpty()) return
             state.presetPicker =
                 PresetPicker(
-                    title = "Jump to file",
+                    title = words.get(R.string.jump_to_file_title),
                     entries =
                         state.playlist.mapIndexed { index, track ->
                             PresetEntry("$index", track.displayName, "${index + 1}")
                         },
-                    confirmLabel = "Jump",
-                    emptyMessage = "The playlist is empty",
+                    confirmLabel = words.get(R.string.prompt_jump_to_time_confirm),
+                    emptyMessage = words.get(R.string.jump_to_file_empty),
                 ) { keys ->
                     keys.firstOrNull()?.toIntOrNull()?.let(::playTrack)
                 }

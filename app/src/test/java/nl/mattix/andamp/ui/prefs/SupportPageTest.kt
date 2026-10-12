@@ -8,6 +8,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import nl.mattix.andamp.state.EnglishWords
 import nl.mattix.andamp.state.Tip
 import nl.mattix.andamp.state.TipNote
 import nl.mattix.andamp.state.TipShelf
@@ -77,9 +78,9 @@ class SupportPageTest {
 
     @Test
     fun `the row in the list says where support goes`() {
-        assertEquals("Leave a tip", SupportPrefs().summary())
-        assertEquals("Thank you for your tip", SupportPrefs(given = true).summary())
-        assertEquals("On andamp.nl", SupportPrefs(given = true, outside = "https://andamp.nl/#donate").summary())
+        assertEquals("Leave a tip", SupportPrefs().summary(EnglishWords))
+        assertEquals("Thank you for your tip", SupportPrefs(given = true).summary(EnglishWords))
+        assertEquals("On andamp.nl", SupportPrefs(given = true, outside = "https://andamp.nl/#donate").summary(EnglishWords))
     }
 
     @Test
@@ -116,7 +117,7 @@ class SupportPageTest {
         show(SupportPrefs(shelf = TipShelf.Open(listOf(small)), given = true))
 
         compose.onNodeWithText("You have supported Andamp. Thank you.").assertIsDisplayed()
-        assertEquals("Thank you for your tip", SupportPrefs(given = true).summary())
-        assertEquals("Leave a tip", SupportPrefs().summary())
+        assertEquals("Thank you for your tip", SupportPrefs(given = true).summary(EnglishWords))
+        assertEquals("Leave a tip", SupportPrefs().summary(EnglishWords))
     }
 }

@@ -13,7 +13,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.ListStyleStore
 import nl.mattix.andamp.state.PlaylistFont
 import nl.mattix.andamp.state.RowHeight
@@ -41,50 +43,51 @@ internal fun listPrefsOf(vm: WinampViewModel) =
 @Composable
 fun PlaylistFontRow(prefs: ListPrefs) {
     ChoiceRow(
-        title = "Playlist font",
+        title = stringResource(R.string.prefs_lists_font_title),
         about =
-            when (prefs.font) {
-                PlaylistFont.SKIN -> {
-                    "The skin's own pixel letters, like the song title in the main window. A title in " +
-                        "a script the skin has no letters for keeps the regular font."
-                }
-
-                PlaylistFont.REGULAR -> {
-                    "A regular font, drawn smooth, with small and capital letters."
-                }
-            },
+            stringResource(
+                when (prefs.font) {
+                    PlaylistFont.SKIN -> R.string.prefs_lists_font_skin_about
+                    PlaylistFont.REGULAR -> R.string.prefs_lists_font_regular_about
+                },
+            ),
         choices = PlaylistFont.entries,
         chosen = prefs.font,
         onChoose = prefs.onFont,
         tag = "prefs.lists.font",
-        label = { if (it == PlaylistFont.SKIN) "Skin" else "Regular" },
+        label = { if (it == PlaylistFont.SKIN) R.string.prefs_lists_font_skin else R.string.prefs_lists_font_regular },
     )
 }
 
 @Composable
 fun RowHeightRow(prefs: ListPrefs) {
     ChoiceRow(
-        title = "Row height",
+        title = stringResource(R.string.prefs_lists_row_height_title),
         about =
-            when (prefs.rowHeight) {
-                RowHeight.CLASSIC -> "Rows as tight as Winamp's. Pick a taller one if they are hard to tap."
-                else -> "Taller rows in the playlist, the library and the skin list, with more room for a finger."
-            },
+            stringResource(
+                when (prefs.rowHeight) {
+                    RowHeight.CLASSIC -> R.string.prefs_lists_row_height_classic_about
+                    else -> R.string.prefs_lists_row_height_taller_about
+                },
+            ),
         choices = RowHeight.entries,
         chosen = prefs.rowHeight,
         onChoose = prefs.onRowHeight,
         tag = "prefs.lists.rows",
         label = {
             when (it) {
-                RowHeight.CLASSIC -> "Classic"
-                RowHeight.ROOMY -> "Roomy"
-                RowHeight.LARGE -> "Large"
+                RowHeight.CLASSIC -> R.string.prefs_lists_row_classic
+                RowHeight.ROOMY -> R.string.prefs_lists_row_roomy
+                RowHeight.LARGE -> R.string.prefs_lists_row_large
             }
         },
     )
 }
 
-/** A setting with a few named values: its title, the values side by side, and what the chosen one does. */
+/**
+ * A setting with a few named values: its title, the values side by side, and what the chosen one does.
+ * [label] gives the string resource that names a value.
+ */
 @Suppress("LongParameterList") // a row's words, its values and where a pick goes
 @Composable
 private fun <T : Enum<T>> ChoiceRow(
@@ -94,7 +97,7 @@ private fun <T : Enum<T>> ChoiceRow(
     chosen: T,
     onChoose: (T) -> Unit,
     tag: String,
-    label: (T) -> String,
+    label: (T) -> Int,
 ) {
     Column(Modifier.prefsRow().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Text(title, style = MaterialTheme.typography.bodyLarge)
@@ -105,7 +108,7 @@ private fun <T : Enum<T>> ChoiceRow(
                     onClick = { onChoose(choice) },
                     shape = SegmentedButtonDefaults.itemShape(index = at, count = choices.size),
                     modifier = Modifier.testTag("$tag.${choice.name.lowercase()}"),
-                ) { Text(label(choice)) }
+                ) { Text(stringResource(label(choice))) }
             }
         }
         Text(about, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)

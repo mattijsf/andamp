@@ -25,10 +25,13 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.VisMode
-import nl.mattix.andamp.ui.menu.shortLabel
+import nl.mattix.andamp.state.Words
+import nl.mattix.andamp.ui.menu.shortLabelRes
 import nl.mattix.andamp.widget.WidgetRefresh
 import nl.mattix.andamp.widget.WidgetSettings
 import nl.mattix.andamp.widget.WidgetSize
@@ -46,25 +49,25 @@ data class WidgetPrefs(
 )
 
 /** The summary on the row that opens the page. */
-fun WidgetPrefs.summary(): String {
-    val picture = settings.mode.shortLabel().lowercase()
+fun WidgetPrefs.summary(words: Words): String {
+    val refresh = words.get(settings.refresh.label).lowercase()
     return if (settings.mode == VisMode.Off) {
-        "No visualizer, ${settings.refresh.label.lowercase()} refresh rate"
+        words.get(R.string.prefs_widget_summary_no_vis, refresh)
     } else {
-        "$picture, ${settings.refresh.label.lowercase()} refresh rate"
+        words.get(R.string.prefs_widget_summary, words.get(settings.mode.shortLabelRes).lowercase(), refresh)
     }
 }
 
 /**
- * What each visualizer mode is, in a sentence. The names come from [shortLabel], which the player's
- * Visualization menu uses too.
+ * What each visualizer mode is, in a sentence, as a string resource. The names come from
+ * [shortLabelRes], which the player's Visualization menu uses too.
  */
-private val VisMode.summary: String
+private val VisMode.summary: Int
     get() =
         when (this) {
-            VisMode.Analyzer -> "Bars that move with the music, on a short loop"
-            VisMode.Oscilloscope -> "A wavy line that moves with the music, on a short loop"
-            VisMode.Off -> "Nothing moves, and nothing is spent on it"
+            VisMode.Analyzer -> R.string.prefs_widget_vis_analyzer
+            VisMode.Oscilloscope -> R.string.prefs_widget_vis_oscilloscope
+            VisMode.Off -> R.string.prefs_widget_vis_off
         }
 
 /**
@@ -79,10 +82,10 @@ fun WidgetRows(prefs: WidgetPrefs) {
             // Off is one of the modes, as in VisMode and the player's own visualizer menu, so there is
             // no separate switch
             Choice(
-                title = "Visualizer",
-                summary = prefs.settings.mode.summary,
+                title = stringResource(R.string.prefs_widget_visualizer_title),
+                summary = stringResource(prefs.settings.mode.summary),
                 // in VisMode's own order
-                options = VisMode.entries.map { it to it.shortLabel() },
+                options = VisMode.entries.map { it to it.shortLabelRes },
                 selected = prefs.settings.mode,
                 tag = "prefs.widget.vis",
                 onPick = { prefs.onSettings(prefs.settings.copy(mode = it)) },
@@ -91,13 +94,15 @@ fun WidgetRows(prefs: WidgetPrefs) {
             // the refresh rate drives the clock as well as the visualizer, so it stays offered with the
             // visualizer off, with a summary about the time only
             Choice(
-                title = "Refresh rate",
+                title = stringResource(R.string.prefs_widget_refresh_title),
                 summary =
-                    if (prefs.settings.mode == VisMode.Off) {
-                        prefs.settings.refresh.timeOnly
-                    } else {
-                        prefs.settings.refresh.summary
-                    },
+                    stringResource(
+                        if (prefs.settings.mode == VisMode.Off) {
+                            prefs.settings.refresh.timeOnly
+                        } else {
+                            prefs.settings.refresh.summary
+                        },
+                    ),
                 options = WidgetRefresh.entries.map { it to it.label },
                 selected = prefs.settings.refresh,
                 tag = "prefs.widget.refresh",
@@ -108,8 +113,8 @@ fun WidgetRows(prefs: WidgetPrefs) {
             // stops short of the edge or it leaves the whole-pixel grid. The trimmed corners are not
             // part of this choice; Android trims them either way
             Choice(
-                title = "Size",
-                summary = prefs.settings.size.summary,
+                title = stringResource(R.string.prefs_widget_size_title),
+                summary = stringResource(prefs.settings.size.summary),
                 options = WidgetSize.entries.map { it to it.label },
                 selected = prefs.settings.size,
                 tag = "prefs.widget.size",
@@ -117,16 +122,16 @@ fun WidgetRows(prefs: WidgetPrefs) {
             )
 
             Toggle(
-                title = "Only the logo opens Andamp",
-                summary = "Tapping the player does nothing, so a near miss on a button stays on the home screen.",
+                title = stringResource(R.string.prefs_widget_logo_title),
+                summary = stringResource(R.string.prefs_widget_logo_summary),
                 checked = prefs.settings.openOnLogo,
                 tag = "prefs.widget.logo",
                 onChange = { prefs.onSettings(prefs.settings.copy(openOnLogo = it)) },
             )
 
             Toggle(
-                title = "Volume control",
-                summary = "Lets the volume slider be tapped. It sits close to the seek bar and is easy to hit by mistake.",
+                title = stringResource(R.string.prefs_widget_volume_title),
+                summary = stringResource(R.string.prefs_widget_volume_summary),
                 checked = prefs.settings.volumeControl,
                 tag = "prefs.widget.volume",
                 onChange = { prefs.onSettings(prefs.settings.copy(volumeControl = it)) },
@@ -155,7 +160,7 @@ private fun Limits() {
                 )
                 Spacer(Modifier.width(8.dp))
                 Text(
-                    "Good to know",
+                    stringResource(R.string.prefs_widget_limits_title),
                     style = MaterialTheme.typography.titleSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -170,13 +175,13 @@ private fun Limits() {
                     Spacer(Modifier.height(12.dp))
                 }
                 Text(
-                    title,
+                    stringResource(title),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    body,
+                    stringResource(body),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -185,26 +190,13 @@ private fun Limits() {
     }
 }
 
-/** The widget's limits, each a title and an explanation. */
+/** The widget's limits, each a title and an explanation, as string resources. */
 private val LIMITS =
     listOf(
-        "The corners are trimmed" to
-            "Android rounds off the corners of every widget, from every app, and there is no way to turn " +
-            "that off. A smaller player would leave room to spare, but it would also make the buttons harder " +
-            "to hit, so it keeps its size.",
-        "It can be replaced by an icon" to
-            "To save battery, Android sometimes stops apps it thinks you are done with. When that happens " +
-            "the home screen shows an Andamp icon in place of the player - one tap brings it back. It should " +
-            "not happen often.",
-        "The bars are on a loop" to
-            "About half a second of the music is turned into pictures, and the home screen plays those " +
-            "round and round until a fresh half second replaces them. So the bars move with the music " +
-            "without ever being quite in step with it. Keeping up beat for beat would mean sending new " +
-            "pictures many times a second, which is what flattens a battery.",
-        "The bars need the player running" to
-            "Tapping the position or volume bar tells the player to move, so if Android has cleared Andamp " +
-            "from memory there is nothing to tell it and the tap does nothing. The buttons still work: " +
-            "pressing one starts the player again, and the bars follow.",
+        R.string.prefs_widget_limit_corners_title to R.string.prefs_widget_limit_corners_body,
+        R.string.prefs_widget_limit_icon_title to R.string.prefs_widget_limit_icon_body,
+        R.string.prefs_widget_limit_loop_title to R.string.prefs_widget_limit_loop_body,
+        R.string.prefs_widget_limit_running_title to R.string.prefs_widget_limit_running_body,
     )
 
 /** One switch row. */
@@ -217,12 +209,15 @@ private fun Toggle(
     onChange: (Boolean) -> Unit,
 ) = SwitchRow(title = title, summary = summary, checked = checked, tag = tag, onChange = onChange)
 
-/** One exclusive choice, as a row of segmented buttons. */
+/**
+ * One exclusive choice, as a row of segmented buttons. Each of [options] is a value and the string
+ * resource that names it; a button is tagged [tag] and its value's name in lower case.
+ */
 @Composable
-private fun <T> Choice(
+private fun <T : Enum<T>> Choice(
     title: String,
     summary: String,
-    options: List<Pair<T, String>>,
+    options: List<Pair<T, Int>>,
     selected: T,
     tag: String,
     onPick: (T) -> Unit,
@@ -241,11 +236,11 @@ private fun <T> Choice(
                     selected = selected == value,
                     onClick = { onPick(value) },
                     shape = SegmentedButtonDefaults.itemShape(index = at, count = options.size),
-                    modifier = Modifier.testTag("$tag.${label.lowercase().substringBefore(' ')}"),
+                    modifier = Modifier.testTag("$tag.${value.name.lowercase()}"),
                 ) {
                     // the names are chosen to fit; the ellipsis covers a bigger font scale or a
                     // longer translation
-                    Text(label, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(stringResource(label), maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
         }

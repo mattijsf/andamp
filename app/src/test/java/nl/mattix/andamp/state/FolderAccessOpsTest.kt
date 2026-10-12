@@ -53,7 +53,7 @@ class FolderAccessOpsTest {
     }
 
     private fun ops(library: Library = Library(app)) =
-        FolderAccessOps(state, facade, scope, store, ReadableUri(app, library), io = Dispatchers.Unconfined)
+        FolderAccessOps(state, facade, scope, store, ReadableUri(app, library), io = Dispatchers.Unconfined, words = EnglishWords)
 
     @Test
     fun `a list whose folder can be read neither way asks for it, once`() =

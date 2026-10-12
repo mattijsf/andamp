@@ -172,7 +172,7 @@ class PlaylistHomesTest {
 
         val picker = requireNotNull(state.presetPicker)
         assertTrue(picker.entries.isEmpty())
-        assertTrue(picker.emptyMessage.isNotEmpty())
+        assertTrue(!picker.emptyMessage.isNullOrEmpty())
     }
 
     @Test

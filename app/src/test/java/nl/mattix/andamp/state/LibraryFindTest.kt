@@ -182,6 +182,7 @@ class LibraryFindTest {
             this,
             PlaylistLibrary(temp.newFolder()),
             StationStore(File(temp.newFolder(), "stations.m3u")),
+            words = EnglishWords,
         )
     }
 

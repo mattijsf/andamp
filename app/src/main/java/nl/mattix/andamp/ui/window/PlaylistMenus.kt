@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.ui.window
 
+import nl.mattix.andamp.R
 import nl.mattix.andamp.skin.Sprite
 import nl.mattix.andamp.skin.SpriteMap
 import nl.mattix.andamp.state.WinampViewModel
@@ -44,14 +45,14 @@ class PlaylistMenuActions(
 /** MISC > Sort list, a submenu of three. */
 private fun sortMenu(vm: WinampViewModel) =
     nl.mattix.andamp.state.AmpMenu(
-        "Sort list",
+        vm.words.get(R.string.menu_sort_list),
         listOf(
             nl.mattix.andamp.state.AmpMenuItem
-                .Action("Sort list by title") { vm.playlistOps.sortByTitle() },
+                .Action(vm.words.get(R.string.menu_sort_list_by_title)) { vm.playlistOps.sortByTitle() },
             nl.mattix.andamp.state.AmpMenuItem
-                .Action("Reverse list") { vm.playlistOps.reverse() },
+                .Action(vm.words.get(R.string.menu_reverse_list)) { vm.playlistOps.reverse() },
             nl.mattix.andamp.state.AmpMenuItem
-                .Action("Randomize list") { vm.playlistOps.randomize() },
+                .Action(vm.words.get(R.string.menu_randomize_list)) { vm.playlistOps.randomize() },
         ),
         nl.mattix.andamp.state
             .MenuAnchor(nl.mattix.andamp.state.WindowStore.PLAYLIST, MISC_X, MISC_MENU_Y, 8, 8),

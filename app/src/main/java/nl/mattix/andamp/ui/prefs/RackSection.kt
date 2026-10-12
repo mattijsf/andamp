@@ -52,6 +52,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
@@ -59,9 +60,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
+import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.EffectSpec
 import nl.mattix.andamp.core.model.RackSlot
 import nl.mattix.andamp.state.DspOps
+import nl.mattix.andamp.ui.rememberWords
 
 /**
  * The effect rack: one card per plug-in, in signal order.
@@ -95,7 +98,7 @@ fun RackSection(
             EffectCard(
                 spec = spec,
                 slot = slot,
-                position = if (input) "In" else "${index + 1}",
+                position = if (input) stringResource(R.string.prefs_rack_input_badge) else "${index + 1}",
                 first = index == 0,
                 last = index == shown.lastIndex,
                 open = opened[slot.pluginId] == true,
@@ -134,6 +137,7 @@ private fun EffectCard(
         },
         label = "cardTone",
     )
+    val headerDoes = stringResource(if (open) R.string.prefs_rack_hide_controls else R.string.prefs_rack_show_controls)
     Column(
         Modifier
             // measured with the gap above the card, so a drag counts whole slots
@@ -159,7 +163,7 @@ private fun EffectCard(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier =
                     Modifier
-                        .clickable(onClickLabel = if (open) "Hide controls" else "Show controls") { onOpen(!open) }
+                        .clickable(onClickLabel = headerDoes) { onOpen(!open) }
                         .testTag("dsp.${spec.id}.expand")
                         .padding(start = 16.dp, end = 8.dp, top = 8.dp, bottom = 8.dp),
             ) {
@@ -253,7 +257,7 @@ private fun StatusLine(
 ) {
     val line =
         if (slot.enabled) {
-            RackDigest.statusOf(spec, slot)
+            RackDigest.statusOf(spec, slot, rememberWords())
         } else {
             spec.description.substringBefore(". ").ifBlank { spec.description }
         }
@@ -280,12 +284,13 @@ private fun DragHandle(
     drag: RackDrag,
 ) {
     val haptics = LocalHapticFeedback.current
+    val dragToMove = stringResource(R.string.prefs_rack_drag_to_move, spec.name)
     Box(
         contentAlignment = Alignment.Center,
         modifier =
             Modifier
                 .size(TARGET)
-                .semantics { contentDescription = "Drag to move ${spec.name}" }
+                .semantics { contentDescription = dragToMove }
                 .testTag("dsp.${spec.id}.drag")
                 .pointerInput(spec.id) {
                     detectDragGesturesAfterLongPress(
@@ -332,6 +337,11 @@ private fun CardMenu(
     scope: CoroutineScope,
 ) {
     var open by remember { mutableStateOf(false) }
+    val undo = stringResource(R.string.prefs_rack_undo)
+    val moreFor = stringResource(R.string.prefs_rack_more_for, spec.name)
+    val saved = stringResource(R.string.prefs_rack_settings_saved, spec.name)
+    val restored = stringResource(R.string.prefs_rack_settings_restored, spec.name)
+    val resetDone = stringResource(R.string.prefs_rack_reset_done, spec.name)
 
     /** Runs [act], which replaces the card's values, and offers an undo. */
     fun replacing(
@@ -342,7 +352,7 @@ private fun CardMenu(
         act()
         open = false
         scope.launch {
-            val answer = snackbars.showSnackbar(said, actionLabel = "Undo")
+            val answer = snackbars.showSnackbar(said, actionLabel = undo)
             if (answer == SnackbarResult.ActionPerformed) dsp.apply(spec.id, before)
         }
     }
@@ -351,12 +361,12 @@ private fun CardMenu(
             onClick = { open = true },
             modifier =
                 Modifier
-                    .semantics { contentDescription = "More for ${spec.name}" }
+                    .semantics { contentDescription = moreFor }
                     .testTag("dsp.${spec.id}.menu"),
         ) { Icon(Icons.Filled.MoreVert, contentDescription = null) }
         DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
             DropdownMenuItem(
-                text = { Text("Move up") },
+                text = { Text(stringResource(R.string.prefs_rack_move_up)) },
                 enabled = !first,
                 onClick = {
                     dsp.moveUp(spec.id)
@@ -365,7 +375,7 @@ private fun CardMenu(
                 modifier = Modifier.testTag("dsp.${spec.id}.up"),
             )
             DropdownMenuItem(
-                text = { Text("Move down") },
+                text = { Text(stringResource(R.string.prefs_rack_move_down)) },
                 enabled = !last,
                 onClick = {
                     dsp.moveDown(spec.id)
@@ -375,23 +385,23 @@ private fun CardMenu(
             )
             HorizontalDivider()
             DropdownMenuItem(
-                text = { Text("Save settings") },
+                text = { Text(stringResource(R.string.prefs_rack_save_settings)) },
                 onClick = {
                     dsp.remember(spec.id)
                     open = false
-                    scope.launch { snackbars.showSnackbar("${spec.name} settings saved") }
+                    scope.launch { snackbars.showSnackbar(saved) }
                 },
                 modifier = Modifier.testTag("dsp.${spec.id}.menu.keep"),
             )
             DropdownMenuItem(
-                text = { Text("Restore saved settings") },
+                text = { Text(stringResource(R.string.prefs_rack_restore_settings)) },
                 enabled = dsp.hasRemembered(spec.id),
-                onClick = { replacing("${spec.name} settings restored") { dsp.restore(spec.id) } },
+                onClick = { replacing(restored) { dsp.restore(spec.id) } },
                 modifier = Modifier.testTag("dsp.${spec.id}.menu.restore"),
             )
             DropdownMenuItem(
-                text = { Text("Reset to defaults") },
-                onClick = { replacing("${spec.name} reset to defaults") { dsp.reset(spec.id) } },
+                text = { Text(stringResource(R.string.prefs_rack_reset)) },
+                onClick = { replacing(resetDone) { dsp.reset(spec.id) } },
                 modifier = Modifier.testTag("dsp.${spec.id}.menu.reset"),
             )
         }
