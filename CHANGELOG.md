@@ -4,6 +4,15 @@ What changed for somebody who uses Andamp, newest first. It is written from the 
 messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `docs:` and
 `chore:` commits do not appear here.
 
+## [0.14.0](https://github.com/mattijsf/andamp/compare/v0.13.0...v0.14.0) (2026-10-12)
+
+
+### New
+
+* Andamp shows up in Android Auto, with the playlist to pick a song from ([#50](https://github.com/mattijsf/andamp/issues/50)) ([b40d325](https://github.com/mattijsf/andamp/commit/b40d325d19346ca7bfd4b6100b393a9e18ae0924))
+* Preferences look like the phone's Settings app, and a music source shows its app's icon ([#49](https://github.com/mattijsf/andamp/issues/49)) ([3e716c7](https://github.com/mattijsf/andamp/commit/3e716c7e453965bfb5b6485ebc5463378fde9869))
+* the playlist is written in the skin's own letters, and list rows can be made taller for easier tapping ([#47](https://github.com/mattijsf/andamp/issues/47)) ([189e275](https://github.com/mattijsf/andamp/commit/189e275dd5603737abb26b9021ce2fbb9ad9c646))
+
 ## [0.13.0](https://github.com/mattijsf/andamp/compare/v0.12.1...v0.13.0) (2026-10-11)
 
 
