@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- MainMenu.kt -->
+    <string name="menu_play">Lire</string>
+    <string name="menu_play_file">Lire un fichier...</string>
+    <string name="menu_play_directory">Lire un dossier...</string>
+    <string name="menu_bookmark">Signet</string>
+    <string name="menu_view_file_info">Afficher les informations sur le fichier</string>
+    <string name="menu_bookmarks">Signets</string>
+    <string name="menu_playlist_editor">Éditeur de liste de lecture</string>
+    <string name="menu_equalizer">Égaliseur</string>
+    <string name="menu_media_library">Médiathèque</string>
+    <string name="menu_options">Options</string>
+    <string name="menu_playback">Lecture</string>
+    <string name="menu_visualization">Visualisation</string>
+    <string name="menu_skins">Skins</string>
+    <string name="menu_support_andamp">Soutenir Andamp...</string>
+    <string name="menu_exit">Quitter</string>
+    <string name="menu_previous">Précédent</string>
+    <string name="menu_pause">Pause</string>
+    <string name="menu_stop">Arrêter</string>
+    <string name="menu_next">Suivant</string>
+    <string name="menu_stop_with_fadeout">Arrêter en fondu</string>
+    <string name="menu_stop_after_current">Arrêter après le morceau en cours</string>
+    <string name="menu_back_5_seconds">Reculer de 5 secondes</string>
+    <string name="menu_fwd_5_seconds">Avancer de 5 secondes</string>
+    <string name="menu_jump_to_time">Sauter à la position...</string>
+    <string name="menu_jump_to_file">Sauter au fichier...</string>
+    <string name="menu_start_of_list">Début de la liste</string>
+    <string name="menu_ten_tracks_back">Dix morceaux en arrière</string>
+    <string name="menu_skin_browser">Explorateur de skins...</string>
+    <string name="menu_load_skin">Charger un skin...</string>
+    <string name="menu_get_more_skins">&lt;&lt; Obtenir plus de skins ! &gt;&gt;</string>
+    <string name="menu_preferences">Préférences...</string>
+    <string name="menu_time_elapsed">Temps écoulé</string>
+    <string name="menu_time_remaining">Temps restant</string>
+    <string name="menu_always_on_top">Toujours au premier plan</string>
+    <string name="menu_double_size">Taille double</string>
+    <string name="menu_repeat">Répéter</string>
+    <string name="menu_shuffle">Lecture aléatoire</string>
+
+    <!-- BookmarksMenu.kt -->
+    <string name="menu_edit_bookmarks">Modifier les signets...</string>
+    <string name="menu_add_current_as_bookmark">Ajouter le morceau en cours aux signets</string>
+
+    <!-- PlaylistRowMenu.kt -->
+    <string name="menu_n_items">%1$d éléments</string>
+    <string name="menu_play_items">Lire le(s) élément(s)</string>
+    <string name="menu_remove_items">Retirer le(s) élément(s)</string>
+    <string name="menu_crop_files">Ne garder que la sélection</string>
+    <string name="menu_file_info">Informations sur le fichier</string>
+    <string name="menu_bookmark_items">Ajouter le(s) élément(s) aux signets</string>
+
+    <!-- VisualMenu.kt -->
+    <string name="menu_presets">Définitions</string>
+    <string name="menu_preset_pack">Pack de définitions</string>
+    <string name="menu_next_preset">Définition suivante</string>
+    <string name="menu_previous_preset">Définition précédente</string>
+    <string name="menu_show_preset_missing">Afficher ce qui manque à une définition</string>
+    <string name="menu_manage_presets">Gérer les définitions...</string>
+    <string name="menu_load_preset_pack">Charger un pack de définitions...</string>
+    <string name="menu_fullscreen">Plein écran</string>
+    <string name="menu_close">Fermer</string>
+    <string name="menu_pack_with_count">%1$s (%2$d)</string>
+    <string name="menu_avs_idle_preset">Définition de veille AVS</string>
+    <string name="menu_projectm_idle_preset">Définition de veille projectM</string>
+    <string name="menu_no_presets_loaded">Aucune définition chargée</string>
+    <string name="menu_all_presets">Les %1$d définitions...</string>
+
+    <!-- VisualizationMenu.kt -->
+    <string name="menu_visualization_options">Options de visualisation</string>
+    <string name="menu_start_stop_plug_in">Démarrer/Arrêter le plugin</string>
+    <string name="menu_configure_plug_in">Configurer le plugin</string>
+    <string name="menu_select_plug_in">Sélectionner un plugin</string>
+    <string name="menu_spectrum_analyzer">Analyseur de spectre</string>
+    <string name="menu_oscilloscope">Oscilloscope</string>
+    <string name="menu_off">Désactivé</string>
+    <string name="menu_analyzer">Analyseur</string>
+
+    <!-- WidgetMenu.kt -->
+    <string name="menu_widget_settings">Paramètres du widget...</string>
+    <string name="menu_open_andamp">Ouvrir Andamp</string>
+
+    <!-- BookmarkSheetDialog.kt -->
+    <string name="menu_rename_bookmark">Renommer le signet</string>
+    <string name="menu_name">Nom</string>
+    <string name="menu_no_bookmarks_yet">Vous n’avez encore aucun signet</string>
+    <string name="menu_cancel">Annuler</string>
+    <string name="menu_save">Enregistrer</string>
+    <string name="menu_edit">Modifier</string>
+    <string name="menu_enqueue">Ajouter</string>
+    <string name="menu_open">Ouvrir</string>
+    <string name="menu_remove">Retirer</string>
+
+    <!-- PresetPickerDialog.kt -->
+    <string name="menu_search">Rechercher</string>
+    <string name="menu_nothing_matches">Aucun résultat pour « %1$s »</string>
+
+    <!-- PlaylistMenus.kt -->
+    <string name="menu_sort_list">Trier la liste</string>
+    <string name="menu_sort_list_by_title">Trier la liste par titre</string>
+    <string name="menu_reverse_list">Inverser la liste</string>
+    <string name="menu_randomize_list">Mélanger la liste</string>
+
+    <!-- LibraryRowMenu.kt -->
+    <string name="menu_enqueue_next">Lire ensuite</string>
+    <string name="menu_delete_list">Supprimer la liste</string>
+</resources>

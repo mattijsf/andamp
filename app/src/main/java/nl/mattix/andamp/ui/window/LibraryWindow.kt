@@ -440,12 +440,13 @@ internal class LibraryRasterizer(
             }
             paint.color = (if (active) scene.style.current else scene.style.normal).toArgb()
             val label = scene.tabs[at]
-            val textW = paint.measureText(label)
+            val textW = fit(paint, label, (cell.end - cell.start) - 2 * CELL_PAD)
             val x = cell.start + ((cell.end - cell.start) - textW) / 2f
             canvas.save()
             canvas.clipRect(cell.start.toFloat(), 0f, cell.end.toFloat(), LibraryLayout.BAR_H.toFloat())
             canvas.drawText(label, x, baseline, paint)
             canvas.restore()
+            paint.textScaleX = 1f
         }
     }
 
@@ -597,7 +598,9 @@ internal class LibraryRasterizer(
             }
         paint.color = colour.toArgb()
         val baseline = ListText.baseline(paint, LibraryLayout.ROWS_TOP.toFloat(), scene.rowH)
+        fit(paint, text, scene.width - LibraryLayout.SCROLLBAR_W - ListText.LEFT_INSET - ListText.RIGHT_INSET)
         canvas.drawText(text, ListText.LEFT_INSET, baseline, paint)
+        paint.textScaleX = 1f
     }
 
     private fun drawBar(
@@ -627,7 +630,9 @@ internal class LibraryRasterizer(
             } - DETAIL_GAP
         canvas.save()
         canvas.clipRect(0f, top, statusRight, top + LibraryLayout.BAR_H)
+        fit(paint, statusText, statusRight - ListText.LEFT_INSET)
         canvas.drawText(statusText, ListText.LEFT_INSET, baseline, paint)
+        paint.textScaleX = 1f
         canvas.restore()
 
         if (!ops.atTracks) return
@@ -698,11 +703,30 @@ internal class LibraryRasterizer(
             canvas.drawRect(cellLeft, top, cellRight, top + LibraryLayout.BAR_H, paint)
         }
         paint.color = scene.style.normal.toArgb()
-        canvas.drawText(label, cellRight - ListText.RIGHT_INSET - paint.measureText(label), baseline, paint)
+        val textW = fit(paint, label, cellRight - cellLeft - ListText.RIGHT_INSET - CELL_PAD)
+        canvas.drawText(label, cellRight - ListText.RIGHT_INSET - textW, baseline, paint)
+        paint.textScaleX = 1f
+    }
+
+    /**
+     * Sets [paint] to draw [text] within [room] pixels and answers the width it then takes; see
+     * [ListText.squeeze]. The caller draws, then sets `textScaleX` back to 1.
+     */
+    private fun fit(
+        paint: android.graphics.Paint,
+        text: String,
+        room: Float,
+    ): Float {
+        val natural = paint.measureText(text)
+        paint.textScaleX = ListText.squeeze(natural, room)
+        return natural * paint.textScaleX
     }
 
     private companion object {
         const val DETAIL_GAP = 6f
+
+        /** The least room left between a label and the edge of its cell. */
+        const val CELL_PAD = 1f
         const val CARET_W = 1f
     }
 }

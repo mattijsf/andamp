@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="prompt_save">Speichern</string>
+    <string name="prompt_ok">OK</string>
+    <string name="prompt_open_settings">Einstellungen öffnen</string>
+    <string name="prompt_not_now">Nicht jetzt</string>
+    <string name="prompt_allow">Zulassen</string>
+    <string name="prompt_close">Schließen</string>
+    <string name="prompt_cancel">Abbrechen</string>
+    <string name="prompt_delete">Löschen</string>
+
+    <!-- DeleteListPrompt.kt -->
+    <string name="prompt_delete_list_title">%1$s löschen?</string>
+    <string name="prompt_delete_list_body">Damit wird die gespeicherte Liste gelöscht. Die Musik darin wird nicht gelöscht.</string>
+
+    <!-- BookmarkOps.kt -->
+    <string name="bookmark_nothing_playing">Es wird nichts abgespielt</string>
+    <string name="bookmark_nowhere">Zu diesem Titel gibt es keinen Weg zurück</string>
+    <string name="bookmark_already">Bereits als Lesezeichen gespeichert</string>
+    <string name="bookmark_none_here">Hier lässt sich nichts als Lesezeichen speichern</string>
+
+    <!-- SourcePrompts.kt -->
+    <string name="source_missing_title">%1$s ist nicht eingerichtet</string>
+    <string name="source_missing_body">Richte %1$s ein, um die Titel dieser Quelle in Andamp abzuspielen. Bis dahin werden sie übersprungen.</string>
+    <string name="source_missing_confirm">%1$s einrichten</string>
+    <string name="source_signed_out_title">%1$s ist abgemeldet</string>
+    <string name="source_signed_out_body">Melde dich an, um deine Titel von %1$s in Andamp abzuspielen. Bis dahin werden sie übersprungen.</string>
+    <string name="source_signed_out_confirm">Anmelden</string>
+
+    <!-- MusicPermission.kt: the names Android's settings show in German -->
+    <string name="permission_music_and_audio">Musik und Audio</string>
+    <string name="permission_files_and_media">Dateien und Medien</string>
+    <string name="permission_storage">Speicher</string>
+
+    <!-- LibraryAccess.kt and LibraryPrompt.kt -->
+    <string name="access_granted">Andamp hat die Berechtigung „%1$s“. Titel, die du hinzufügst, lassen sich auch nach einem Neustart abspielen.</string>
+    <string name="access_askable">Ohne die Berechtigung „%1$s“ kann Andamp weiterhin Dateien abspielen, die du auswählst, aber nach einem Neustart funktionieren sie vielleicht nicht mehr.</string>
+    <string name="access_blocked">Die Berechtigung „%1$s“ ist aus. Dateien, die du auswählst, lassen sich vorerst noch abspielen, aber nach einem Neustart funktionieren sie vielleicht nicht mehr.</string>
+    <string name="access_ask_title">„%1$s“ zulassen</string>
+    <string name="access_ask_body">Andamp braucht „%1$s“, um die Musik auf diesem Smartphone abzuspielen.</string>
+    <string name="access_off_title">Berechtigung „%1$s“ ist aus</string>
+    <string name="access_off_body">Lass „%1$s“ in den Einstellungen von Andamp zu, um die Musik auf diesem Smartphone abzuspielen.</string>
+
+    <!-- FolderAccessOps.kt -->
+    <string name="folder_allow_again_title">%1$s wieder zulassen?</string>
+    <string name="folder_other_folder">Das war ein anderer Ordner. Die Titel lassen sich nur aus dem Ordner abspielen, aus dem sie hinzugefügt wurden.</string>
+    <string name="folder_no_longer_readable">Andamp kann diesen Ordner nicht mehr lesen. Lass ihn wieder zu, dann lassen sich seine Titel wie zuvor abspielen.</string>
+
+    <!-- OverlayOps.kt -->
+    <string name="overlay_title">Immer im Vordergrund</string>
+    <string name="overlay_needs_android_11">Das Schweben über anderen Apps erfordert Android 11 oder neuer.</string>
+    <string name="overlay_needs_permission">Andamp braucht die Berechtigung „Über anderen Apps einblenden“, bevor es über ihnen schweben kann.</string>
+
+    <!-- PresetNotice.kt -->
+    <string name="preset_unreadable">Diese Voreinstellung konnte nicht gelesen werden</string>
+    <string name="preset_not_shown">In dieser Voreinstellung nicht gezeigt: %1$s</string>
+    <string name="preset_and_more">%1$s und %2$d weitere</string>
+
+    <!-- PresetPicker.kt -->
+    <string name="picker_nothing_saved_yet">Noch nichts gespeichert</string>
+    <string name="picker_nothing_saved">Nichts gespeichert</string>
+    <string name="picker_selected">%1$d von %2$d ausgewählt</string>
+    <plurals name="picker_saved">
+        <item quantity="one">%1$d gespeichert</item>
+        <item quantity="other">%1$d gespeichert</item>
+    </plurals>
+    <string name="picker_confirm_count">%1$s (%2$d)</string>
+
+    <!-- BackendNotices.kt -->
+    <string name="notice_source_cannot_play_title">Nichts lässt sich abspielen</string>
+    <string name="notice_source_cannot_play_body">Von dieser Quelle ließ sich nichts abspielen. Vielleicht braucht sie ein anderes Konto oder ein anderes Abo, oder die Verbindung zu ihr ist weg. Ein erneuter Druck auf die Wiedergabetaste versucht es noch einmal. Passiert das immer wieder, sieh in den Einstellungen der Quelle nach.</string>
+    <string name="notice_station_lost_title">Verbindung zur Station verloren</string>
+    <string name="notice_station_lost_body">Die Station ist verstummt und war nicht wieder zu erreichen, deshalb hat auch der Player gestoppt. Vielleicht sendet die Station nicht mehr, oder die Verbindung ist noch unterbrochen. Ein Druck auf die Wiedergabetaste versucht es erneut.</string>
+    <string name="notice_server_lost_title">Verbindung zum Server verloren</string>
+    <string name="notice_server_lost_body">Die Verbindung zum Musikserver ist abgebrochen, und der Server war nicht wieder zu erreichen. Vielleicht ist der Server ausgefallen, oder die Verbindung ist noch weg. Ein Druck auf die Wiedergabetaste versucht es erneut.</string>
+    <string name="notice_nothing_playable_title">Hier lässt sich nichts abspielen</string>
+    <string name="notice_nothing_playable_body">Jeder Titel in dieser Playlist stammt von einer Quelle, die dieses Smartphone gerade nicht erreicht: Sie ist nicht installiert, oder niemand ist bei ihr angemeldet. In jeder Zeile steht, was zutrifft.</string>
+
+    <!-- WinampViewModel.kt -->
+    <string name="prompt_jump_to_time_title">Springe zu Zeit</string>
+    <string name="prompt_jump_to_time_confirm">Springen</string>
+</resources>

@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- OnlineSkinsScreen.kt -->
+    <string name="museum_title">Skin-Museum</string>
+    <string name="museum_count_in_museum">%1$s im Museum</string>
+    <string name="museum_count_found">%1$s gefunden</string>
+    <string name="museum_from">aus dem Winamp Skin Museum</string>
+    <string name="museum_close">Schließen</string>
+    <string name="museum_search">Museum durchsuchen</string>
+    <string name="museum_stop_searching">Suche beenden</string>
+    <string name="museum_show_tiles">Als Kacheln anzeigen</string>
+    <string name="museum_show_one_at_a_time">Einzeln anzeigen</string>
+    <string name="museum_order_and_filters">Reihenfolge und Filter</string>
+    <string name="museum_position">%1$d / %2$s</string>
+    <string name="museum_fetching">Museum wird geladen…</string>
+    <string name="museum_out_of_reach">Das Museum ist nicht erreichbar</string>
+    <string name="museum_try_again">Erneut versuchen</string>
+    <!-- SkinCount.kt -->
+    <string name="museum_count_growing">%1$s+</string>
+    <!-- SkinFilters.kt -->
+    <string name="museum_order">Reihenfolge</string>
+    <string name="museum_order_museum">Museum</string>
+    <string name="museum_order_shuffle">Zufällig</string>
+    <string name="museum_only_skins_you_have">Nur Skins, die du hast</string>
+    <!-- SkinTiles.kt, SkinViewer.kt -->
+    <string name="museum_uninstall">Deinstallieren</string>
+    <string name="museum_install">Installieren</string>
+    <string name="museum_installing">Wird installiert…</string>
+    <string name="museum_installed">Installiert</string>
+    <string name="museum_not_shown">nicht gezeigt</string>
+    <string name="museum_try_this_page_again">Diese Seite erneut laden</string>
+    <string name="museum_back_to_the_grid">Zurück zum Raster</string>
+    <string name="museum_in_the_museum">Im Museum</string>
+    <!-- WelcomeScreen.kt -->
+    <string name="welcome_pick_a_look">Wähle ein Aussehen</string>
+    <string name="welcome_skins_in_the_menu">Über „Skins“ im Menü änderst du es, wann immer du willst.</string>
+    <string name="welcome_own_skin">Andamps eigener Skin</string>
+    <string name="welcome_own_skin_summary">Für diese App gezeichnet; ab Android 12 übernimmt er seine Farben von deinem Hintergrundbild.</string>
+    <string name="welcome_keep_this">Diesen behalten</string>
+    <string name="welcome_classic_skin">Ein klassischer Skin</string>
+    <string name="welcome_classic_skins_count">%1$s klassische Skins</string>
+    <string name="welcome_classic_skins_at_least">%1$s+ klassische Skins</string>
+    <string name="welcome_browse_the_museum">Im Museum stöbern</string>
+    <!-- AboutDialog.kt -->
+    <string name="about_version">%1$s (%2$d)</string>
+    <string name="about_blurb">Ein Nachbau von Winamp 2.8, in Kotlin neu gebaut. Steht in keiner Verbindung zu Winamp, Nullsoft oder Llama Group.</string>
+    <string name="about_close">Schließen</string>
+    <!-- PluginImportActivity.kt -->
+    <string name="import_not_a_plugin_link">Dieser Link führt zu keinem Plug-in auf %1$s</string>
+    <string name="import_file_could_not_be_opened">Die Datei konnte nicht geöffnet werden</string>
+</resources>

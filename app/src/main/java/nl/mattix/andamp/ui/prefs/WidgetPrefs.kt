@@ -50,13 +50,38 @@ data class WidgetPrefs(
 
 /** The summary on the row that opens the page. */
 fun WidgetPrefs.summary(words: Words): String {
-    val refresh = words.get(settings.refresh.label).lowercase()
-    return if (settings.mode == VisMode.Off) {
-        words.get(R.string.prefs_widget_summary_no_vis, refresh)
-    } else {
-        words.get(R.string.prefs_widget_summary, words.get(settings.mode.shortLabelRes).lowercase(), refresh)
+    val refresh = words.get(settings.refresh.inSummary)
+    return when (settings.mode) {
+        VisMode.Off -> {
+            words.get(R.string.prefs_widget_summary_no_vis, refresh)
+        }
+
+        VisMode.Analyzer -> {
+            words.get(R.string.prefs_widget_summary, words.get(R.string.prefs_widget_summary_analyzer), refresh)
+        }
+
+        VisMode.Oscilloscope -> {
+            words.get(
+                R.string.prefs_widget_summary,
+                words.get(R.string.prefs_widget_summary_oscilloscope),
+                refresh,
+            )
+        }
     }
 }
+
+/**
+ * A refresh rate as the summary line words it. A resource apart from the choice's label, because
+ * how a word is written inside a sentence differs by language: lower case in English, a capital
+ * for a noun in German.
+ */
+private val WidgetRefresh.inSummary: Int
+    get() =
+        when (this) {
+            WidgetRefresh.LOW -> R.string.prefs_widget_summary_refresh_low
+            WidgetRefresh.MEDIUM -> R.string.prefs_widget_summary_refresh_medium
+            WidgetRefresh.HIGH -> R.string.prefs_widget_summary_refresh_high
+        }
 
 /**
  * What each visualizer mode is, in a sentence, as a string resource. The names come from

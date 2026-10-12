@@ -97,9 +97,9 @@ The UI never touches a backend directly. A new playback backend implements
 
 ## Translating
 
-Andamp's text is in string resources: English, and Simplified Chinese as the first
-translation. Adding a language or correcting one needs no Kotlin, only a copy of the
-XML files. [docs/translating.md](docs/translating.md) says how.
+Andamp's text is in string resources: English, with translations into Dutch, French,
+German and Simplified Chinese. Adding a language or correcting one needs no Kotlin, only
+a copy of the XML files. [docs/translating.md](docs/translating.md) says how.
 
 ## Contributing
 

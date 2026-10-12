@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- LibraryOps.kt -->
+    <string name="library_tab_artists">ARTISTES</string>
+    <string name="library_tab_albums">ALBUMS</string>
+    <string name="library_tab_lists">LISTES</string>
+    <string name="library_tab_radio">RADIO</string>
+    <string name="library_tab_find">TROUVER</string>
+    <string name="library_search_header">RECHERCHE</string>
+
+    <string name="library_kind_albums">ALBUMS</string>
+    <string name="library_kind_singles">SINGLES</string>
+    <string name="library_kind_compilations">COMPILATIONS</string>
+
+    <plurals name="library_count_artists">
+        <item quantity="one">%1$d ARTISTE</item>
+        <item quantity="other">%1$d ARTISTES</item>
+    </plurals>
+    <plurals name="library_count_albums">
+        <item quantity="one">%1$d ALBUM</item>
+        <item quantity="other">%1$d ALBUMS</item>
+    </plurals>
+    <plurals name="library_count_singles">
+        <item quantity="one">%1$d SINGLE</item>
+        <item quantity="other">%1$d SINGLES</item>
+    </plurals>
+    <plurals name="library_count_compilations">
+        <item quantity="one">%1$d COMPILATION</item>
+        <item quantity="other">%1$d COMPILATIONS</item>
+    </plurals>
+    <plurals name="library_count_records">
+        <item quantity="one">%1$d DISQUE</item>
+        <item quantity="other">%1$d DISQUES</item>
+    </plurals>
+    <plurals name="library_count_lists">
+        <item quantity="one">%1$d LISTE</item>
+        <item quantity="other">%1$d LISTES</item>
+    </plurals>
+    <plurals name="library_count_stations">
+        <item quantity="one">%1$d STATION</item>
+        <item quantity="other">%1$d STATIONS</item>
+    </plurals>
+    <plurals name="library_count_tracks">
+        <item quantity="one">%1$d MORCEAU</item>
+        <item quantity="other">%1$d MORCEAUX</item>
+    </plurals>
+    <plurals name="library_count_hits">
+        <item quantity="one">%1$d RÉSULTAT</item>
+        <item quantity="other">%1$d RÉSULTATS</item>
+    </plurals>
+    <string name="library_hits_capped">%1$d+ RÉSULTATS</string>
+    <string name="library_track_count_short">%1$d MORC.</string>
+
+    <string name="library_no_music">AUCUNE MUSIQUE TROUVÉE</string>
+    <string name="library_no_artists">AUCUN ARTISTE</string>
+    <string name="library_no_matches">AUCUN RÉSULTAT</string>
+    <string name="library_no_lists">AUCUNE LISTE</string>
+    <string name="library_no_tracks">AUCUN MORCEAU</string>
+    <string name="library_no_saved_lists">AUCUNE LISTE · LIST > SAVE EN GARDE UNE</string>
+    <string name="library_no_stations">AUCUNE STATION · NOUV. EN AJOUTE UNE</string>
+    <string name="library_type_to_search">TAPEZ POUR CHERCHER</string>
+    <string name="library_type_an_artist">TAPEZ UN ARTISTE</string>
+
+    <string name="library_cant_reach">%1$s INJOIGNABLE</string>
+    <string name="library_cant_reach_library">MÉDIATHÈQUE INJOIGNABLE</string>
+    <string name="library_tap_to_retry">%1$s · RÉESSAYER</string>
+
+    <string name="library_queued">+%1$d À LA LISTE</string>
+    <string name="library_queued_next">+%1$d À SUIVRE</string>
+    <string name="library_cant_delete">NON SUPPRIMÉE</string>
+    <string name="library_nothing_to_play">RIEN À LIRE</string>
+    <string name="library_not_http">PAS UNE URL HTTP</string>
+
+    <!-- LibraryWindow.kt -->
+    <string name="library_bar_new">NOUV.</string>
+    <string name="library_bar_del_list">SUP LISTE</string>
+    <string name="library_bar_play">LIRE</string>
+    <string name="library_bar_add">AJOUT</string>
+    <string name="library_tap_to_allow">AUTORISER %1$s</string>
+
+    <string name="library_station_url_title">URL de la station</string>
+    <string name="library_station_next">Suivant</string>
+    <string name="library_station_name_title">Nom de la station</string>
+    <string name="library_station_add">Ajouter</string>
+</resources>

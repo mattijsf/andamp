@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="prompt_save">Enregistrer</string>
+    <string name="prompt_ok">OK</string>
+    <string name="prompt_open_settings">Ouvrir les paramètres</string>
+    <string name="prompt_not_now">Pas maintenant</string>
+    <string name="prompt_allow">Autoriser</string>
+    <string name="prompt_close">Fermer</string>
+    <string name="prompt_cancel">Annuler</string>
+    <string name="prompt_delete">Supprimer</string>
+
+    <!-- DeleteListPrompt.kt -->
+    <string name="prompt_delete_list_title">Supprimer %1$s ?</string>
+    <string name="prompt_delete_list_body">La liste enregistrée sera supprimée. La musique qu’elle contient n’est pas supprimée.</string>
+
+    <!-- BookmarkOps.kt -->
+    <string name="bookmark_nothing_playing">Aucune lecture en cours</string>
+    <string name="bookmark_nowhere">Ce morceau n’a nulle part où revenir</string>
+    <string name="bookmark_already">Déjà dans les signets</string>
+    <string name="bookmark_none_here">Rien ici ne peut être ajouté aux signets</string>
+
+    <!-- SourcePrompts.kt -->
+    <string name="source_missing_title">La source %1$s n’est pas configurée</string>
+    <string name="source_missing_body">Configurez %1$s pour lire ses morceaux dans Andamp. D’ici là, ils sont ignorés.</string>
+    <string name="source_missing_confirm">Configurer %1$s</string>
+    <string name="source_signed_out_title">La source %1$s est déconnectée</string>
+    <string name="source_signed_out_body">Connectez-vous pour lire vos morceaux %1$s dans Andamp. D’ici là, ils sont ignorés.</string>
+    <string name="source_signed_out_confirm">Se connecter</string>
+
+    <!-- MusicPermission.kt -->
+    <string name="permission_music_and_audio">Musique et audio</string>
+    <string name="permission_files_and_media">Fichiers et contenus multimédias</string>
+    <string name="permission_storage">Stockage</string>
+
+    <!-- LibraryAccess.kt and LibraryPrompt.kt -->
+    <string name="access_granted">Andamp dispose de l’autorisation « %1$s ». Les morceaux que vous ajoutez restent lisibles après un redémarrage.</string>
+    <string name="access_askable">Sans l’autorisation « %1$s », Andamp peut quand même lire les fichiers que vous choisissez, mais ils risquent de ne plus fonctionner après un redémarrage.</string>
+    <string name="access_blocked">L’autorisation « %1$s » est désactivée. Les fichiers que vous choisissez sont encore lus pour l’instant, mais ils risquent de ne plus fonctionner après un redémarrage.</string>
+    <string name="access_ask_title">Autoriser « %1$s »</string>
+    <string name="access_ask_body">Andamp a besoin de l’autorisation « %1$s » pour lire les morceaux de ce téléphone.</string>
+    <string name="access_off_title">L’autorisation « %1$s » est désactivée</string>
+    <string name="access_off_body">Autorisez « %1$s » dans les paramètres d’Andamp pour lire les morceaux de ce téléphone.</string>
+
+    <!-- FolderAccessOps.kt -->
+    <string name="folder_allow_again_title">Autoriser à nouveau le dossier %1$s ?</string>
+    <string name="folder_other_folder">C’était un autre dossier. Les morceaux ne sont lus que depuis le dossier d’où ils ont été ajoutés.</string>
+    <string name="folder_no_longer_readable">Andamp ne peut plus lire ce dossier. Autorisez-le à nouveau et ses morceaux seront lus comme avant.</string>
+
+    <!-- OverlayOps.kt -->
+    <string name="overlay_title">Toujours au premier plan</string>
+    <string name="overlay_needs_android_11">Flotter au-dessus des autres applis nécessite Android 11 ou une version ultérieure.</string>
+    <string name="overlay_needs_permission">Andamp a besoin de l’autorisation de superposition aux autres applis avant de pouvoir flotter au-dessus d’elles.</string>
+
+    <!-- PresetNotice.kt -->
+    <string name="preset_unreadable">Cette définition n’a pas pu être lue</string>
+    <string name="preset_not_shown">Cette définition s’affiche sans : %1$s</string>
+    <string name="preset_and_more">%1$s et %2$d de plus</string>
+
+    <!-- PresetPicker.kt -->
+    <string name="picker_nothing_saved_yet">Rien d’enregistré pour l’instant</string>
+    <string name="picker_nothing_saved">Rien d’enregistré</string>
+    <string name="picker_selected">Sélection : %1$d sur %2$d</string>
+    <plurals name="picker_saved">
+        <item quantity="one">%1$d enregistré</item>
+        <item quantity="other">%1$d enregistrés</item>
+    </plurals>
+    <string name="picker_confirm_count">%1$s (%2$d)</string>
+
+    <!-- BackendNotices.kt -->
+    <string name="notice_source_cannot_play_title">Aucune lecture possible</string>
+    <string name="notice_source_cannot_play_body">Rien de cette source n’a pu être lu. Elle demande peut-être un autre compte ou un autre abonnement, ou la connexion avec elle est perdue. Appuyer de nouveau sur lecture relance un essai. Si cela continue, vérifiez les paramètres de la source.</string>
+    <string name="notice_station_lost_title">Station perdue</string>
+    <string name="notice_station_lost_body">La station s’est arrêtée et n’a pas pu être jointe de nouveau, le lecteur s’est donc arrêté aussi. La station n’émet peut-être plus, ou la connexion est peut-être encore coupée. Appuyer sur lecture relance un essai.</string>
+    <string name="notice_server_lost_title">Serveur perdu</string>
+    <string name="notice_server_lost_body">La connexion au serveur de musique a été perdue, et le serveur n’a pas pu être joint de nouveau. Le serveur est peut-être en panne, ou la connexion est peut-être encore coupée. Appuyer sur lecture relance un essai.</string>
+    <string name="notice_nothing_playable_title">Rien ici ne peut être lu</string>
+    <string name="notice_nothing_playable_body">Tous les morceaux de cette liste de lecture viennent d’une source que ce téléphone ne peut pas joindre pour le moment : elle n’est pas installée, ou personne n’y est connecté. Chaque ligne indique laquelle.</string>
+
+    <!-- WinampViewModel.kt -->
+    <string name="prompt_jump_to_time_title">Sauter à la position</string>
+    <string name="prompt_jump_to_time_confirm">Sauter</string>
+</resources>

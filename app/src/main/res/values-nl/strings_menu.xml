@@ -1,0 +1,108 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- MainMenu.kt -->
+    <string name="menu_play">Afspelen</string>
+    <string name="menu_play_file">Bestand afspelen...</string>
+    <string name="menu_play_directory">Map afspelen...</string>
+    <string name="menu_bookmark">Favoriet</string>
+    <string name="menu_view_file_info">Bestandsinfo bekijken</string>
+    <string name="menu_bookmarks">Favorieten</string>
+    <string name="menu_playlist_editor">Speellijsteditor</string>
+    <string name="menu_equalizer">Equalizer</string>
+    <string name="menu_media_library">Mediabibliotheek</string>
+    <string name="menu_options">Opties</string>
+    <string name="menu_playback">Bediening</string>
+    <string name="menu_visualization">Visualisatie</string>
+    <string name="menu_skins">Skins</string>
+    <string name="menu_support_andamp">Andamp steunen...</string>
+    <string name="menu_exit">Afsluiten</string>
+    <string name="menu_previous">Vorige</string>
+    <string name="menu_pause">Pauzeren</string>
+    <string name="menu_stop">Stoppen</string>
+    <string name="menu_next">Volgende</string>
+    <string name="menu_stop_with_fadeout">Stoppen met uitfaden</string>
+    <string name="menu_stop_after_current">Stoppen na dit nummer</string>
+    <string name="menu_back_5_seconds">5 seconden terug</string>
+    <string name="menu_fwd_5_seconds">5 seconden vooruit</string>
+    <string name="menu_jump_to_time">Ga naar tijd...</string>
+    <string name="menu_jump_to_file">Ga naar bestand...</string>
+    <string name="menu_start_of_list">Begin van de lijst</string>
+    <string name="menu_ten_tracks_back">Tien nummers terug</string>
+    <string name="menu_skin_browser">Skinbrowser...</string>
+    <string name="menu_load_skin">Skin laden...</string>
+    <string name="menu_get_more_skins">&lt;&lt; Meer skins ophalen! &gt;&gt;</string>
+    <string name="menu_preferences">Voorkeuren...</string>
+    <string name="menu_time_elapsed">Verstreken tijd</string>
+    <string name="menu_time_remaining">Resterende tijd</string>
+    <string name="menu_always_on_top">Altijd bovenaan</string>
+    <string name="menu_double_size">Dubbele grootte</string>
+    <string name="menu_repeat">Herhalen</string>
+    <string name="menu_shuffle">Willekeurig</string>
+
+    <!-- BookmarksMenu.kt -->
+    <string name="menu_edit_bookmarks">Favorieten bewerken...</string>
+    <string name="menu_add_current_as_bookmark">Huidig nummer als favoriet toevoegen</string>
+
+    <!-- PlaylistRowMenu.kt -->
+    <string name="menu_n_items">%1$d items</string>
+    <string name="menu_play_items">Item(s) afspelen</string>
+    <string name="menu_remove_items">Item(s) verwijderen</string>
+    <string name="menu_crop_files">Alleen selectie houden</string>
+    <string name="menu_file_info">Bestandsinfo</string>
+    <string name="menu_bookmark_items">Item(s) als favoriet toevoegen</string>
+
+    <!-- VisualMenu.kt -->
+    <string name="menu_presets">Voorinstellingen</string>
+    <string name="menu_preset_pack">Pakket met voorinstellingen</string>
+    <string name="menu_next_preset">Volgende voorinstelling</string>
+    <string name="menu_previous_preset">Vorige voorinstelling</string>
+    <string name="menu_show_preset_missing">Tonen wat een voorinstelling mist</string>
+    <string name="menu_manage_presets">Voorinstellingen beheren...</string>
+    <string name="menu_load_preset_pack">Pakket met voorinstellingen laden...</string>
+    <string name="menu_fullscreen">Volledig scherm</string>
+    <string name="menu_close">Sluiten</string>
+    <string name="menu_pack_with_count">%1$s (%2$d)</string>
+    <string name="menu_avs_idle_preset">Ingebouwde AVS-voorinstelling</string>
+    <string name="menu_projectm_idle_preset">Ingebouwde projectM-voorinstelling</string>
+    <string name="menu_no_presets_loaded">Geen voorinstellingen geladen</string>
+    <string name="menu_all_presets">Alle %1$d voorinstellingen...</string>
+
+    <!-- VisualizationMenu.kt -->
+    <string name="menu_visualization_options">Visualisatieopties</string>
+    <string name="menu_start_stop_plug_in">Plug-in starten/stoppen</string>
+    <string name="menu_configure_plug_in">Plug-in instellen</string>
+    <string name="menu_select_plug_in">Plug-in kiezen</string>
+    <string name="menu_spectrum_analyzer">Spectrumanalyse</string>
+    <string name="menu_oscilloscope">Oscilloscoop</string>
+    <string name="menu_off">Uit</string>
+    <string name="menu_analyzer">Analyse</string>
+
+    <!-- WidgetMenu.kt -->
+    <string name="menu_widget_settings">Widgetinstellingen...</string>
+    <string name="menu_open_andamp">Andamp openen</string>
+
+    <!-- BookmarkSheetDialog.kt -->
+    <string name="menu_rename_bookmark">Favoriet hernoemen</string>
+    <string name="menu_name">Naam</string>
+    <string name="menu_no_bookmarks_yet">Je hebt nog geen favorieten</string>
+    <string name="menu_cancel">Annuleren</string>
+    <string name="menu_save">Opslaan</string>
+    <string name="menu_edit">Bewerken</string>
+    <string name="menu_enqueue">In wachtrij</string>
+    <string name="menu_open">Openen</string>
+    <string name="menu_remove">Verwijderen</string>
+
+    <!-- PresetPickerDialog.kt -->
+    <string name="menu_search">Zoeken</string>
+    <string name="menu_nothing_matches">Niets komt overeen met “%1$s”</string>
+
+    <!-- PlaylistMenus.kt -->
+    <string name="menu_sort_list">Lijst sorteren</string>
+    <string name="menu_sort_list_by_title">Lijst sorteren op titel</string>
+    <string name="menu_reverse_list">Lijst omkeren</string>
+    <string name="menu_randomize_list">Lijst in willekeurige volgorde</string>
+
+    <!-- LibraryRowMenu.kt -->
+    <string name="menu_enqueue_next">Hierna afspelen</string>
+    <string name="menu_delete_list">Lijst verwijderen</string>
+</resources>

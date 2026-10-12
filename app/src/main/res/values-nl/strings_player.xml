@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- PlaylistOps.kt -->
+    <string name="playlist_add_url_title">URL toevoegen</string>
+    <string name="playlist_add_url_next">Volgende</string>
+    <string name="playlist_add_url_name_title">Naam</string>
+    <string name="playlist_add_url_add">Toevoegen</string>
+
+    <!-- PlaylistFileOps.kt -->
+    <string name="playlist_save_title">Speellijst opslaan</string>
+    <string name="playlist_save_in_andamp">Opslaan in Andamp</string>
+    <string name="playlist_save_in_andamp_note">Te bekijken in het tabblad LIJSTEN van de mediabibliotheek</string>
+    <string name="playlist_export">Exporteren als bestand…</string>
+    <string name="playlist_export_note">Een .m3u-bestand dat andere spelers kunnen lezen</string>
+    <string name="playlist_load_title">Speellijst laden</string>
+    <string name="playlist_open_from_andamp">Openen uit Andamp</string>
+    <string name="playlist_open_from_andamp_note">Een van de lijsten die hier zijn opgeslagen</string>
+    <string name="playlist_import">Importeren uit bestand…</string>
+    <string name="playlist_import_note">Een .m3u-bestand van deze telefoon</string>
+    <string name="playlist_save_as_title">Speellijst opslaan als</string>
+    <string name="playlist_default_name">Speellijst</string>
+    <string name="playlist_open_title">Speellijst openen</string>
+    <string name="playlist_open_confirm">Openen</string>
+    <string name="playlist_open_empty">Hier zijn nog geen lijsten opgeslagen</string>
+
+    <!-- WinampViewModel.kt -->
+    <string name="jump_to_file_title">Ga naar bestand</string>
+    <string name="jump_to_file_empty">De speellijst is leeg</string>
+
+    <!-- FileInfoSource.kt and TrackInfoOps.kt -->
+    <string name="info_file">Bestand</string>
+    <string name="info_size">Grootte</string>
+    <string name="info_format">Formaat</string>
+    <string name="info_length">Duur</string>
+    <string name="info_bitrate">Bitsnelheid</string>
+    <string name="info_sample_rate">Samplefrequentie</string>
+    <string name="info_title">Titel</string>
+    <string name="info_artist">Artiest</string>
+    <string name="info_album">Album</string>
+    <string name="info_album_artist">Albumartiest</string>
+    <string name="info_track">Nummer</string>
+    <string name="info_disc">Schijf</string>
+    <string name="info_year">Jaar</string>
+    <string name="info_genre">Genre</string>
+    <string name="info_composer">Componist</string>
+    <string name="info_station">Zender</string>
+    <string name="info_now_playing">Nu speelt</string>
+    <string name="info_url">URL</string>
+    <string name="info_website">Website</string>
+
+    <!-- OverlayOps.kt -->
+    <string name="overlay_summary_off">Uit</string>
+    <string name="overlay_summary_waiting">Wacht op toestemming om vóór andere apps weer te geven</string>
+    <string name="overlay_summary_on">De speler zweeft boven andere apps</string>
+
+    <!-- PhoneLibrary.kt -->
+    <plurals name="phone_count_tracks">
+        <item quantity="one">%1$,d nummer</item>
+        <item quantity="other">%1$,d nummers</item>
+    </plurals>
+    <plurals name="phone_count_artists">
+        <item quantity="one">%1$,d artiest</item>
+        <item quantity="other">%1$,d artiesten</item>
+    </plurals>
+    <plurals name="phone_count_albums">
+        <item quantity="one">%1$,d album</item>
+        <item quantity="other">%1$,d albums</item>
+    </plurals>
+    <string name="phone_summary">%1$s · %2$s · %3$s</string>
+    <plurals name="phone_days">
+        <item quantity="one">%1$,d dag</item>
+        <item quantity="other">%1$,d dagen</item>
+    </plurals>
+    <plurals name="phone_hours">
+        <item quantity="one">%1$,d uur</item>
+        <item quantity="other">%1$,d uur</item>
+    </plurals>
+    <plurals name="phone_minutes">
+        <item quantity="one">%1$,d minuut</item>
+        <item quantity="other">%1$,d minuten</item>
+    </plurals>
+    <string name="phone_duration_pair">%1$s %2$s</string>
+
+    <string name="scan_looking_in">Zoekt in %1$s… (%2$d van %3$d)</string>
+    <string name="scan_reading">Leest wat er is gevonden…</string>
+    <string name="scan_no_folders">Geen muziekmappen op deze telefoon</string>
+    <string name="scan_looked_in">Gezocht in %1$s</string>
+    <string name="scan_unreadable">%1$s. De bibliotheek kon niet worden gelezen.</string>
+    <string name="scan_outcome">%1$s: %2$s.</string>
+    <plurals name="scan_new_tracks">
+        <item quantity="one">%1$,d nieuw nummer</item>
+        <item quantity="other">%1$,d nieuwe nummers</item>
+    </plurals>
+    <plurals name="scan_fewer_tracks">
+        <item quantity="one">%1$,d nummer minder</item>
+        <item quantity="other">%1$,d nummers minder</item>
+    </plurals>
+    <string name="scan_nothing_new">niets nieuws</string>
+
+    <!-- MusicSource.kt -->
+    <string name="source_this_phone">Deze telefoon</string>
+
+    <!-- PackSource.kt -->
+    <string name="source_played_by">Afgespeeld door %1$s (%2$s)</string>
+    <string name="source_played_by_signed">Afgespeeld door %1$s (%2$s, ondertekend %3$s…)</string>
+
+    <!-- OnlineSkinOps.kt -->
+    <string name="museum_could_not_download">%1$s kon niet worden gedownload</string>
+    <string name="museum_could_not_read">%1$s kon niet worden gelezen</string>
+
+    <string name="skin_picked_name">gekozen skin</string>
+    <string name="media_unknown_title">Onbekend</string>
+</resources>

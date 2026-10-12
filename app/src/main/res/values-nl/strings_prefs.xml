@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- AndroidAutoPrefs.kt -->
+    <string name="prefs_android_auto_wears_skin">Draagt %1$s</string>
+    <string name="prefs_android_auto_wears_own_skin">Draagt de skin van de speler</string>
+    <string name="prefs_android_auto_skin_section">Skin</string>
+    <string name="prefs_android_auto_skin_note">In Android Auto draagt het hoofdvenster deze skin. Standaard houdt de skin aan die je voor de speler hebt gekozen.</string>
+    <string name="prefs_android_auto_skin_heading">Skin in Android Auto</string>
+
+    <!-- EffectsPage.kt -->
+    <string name="prefs_effects_unavailable_summary">Deze afspeelbackend voert geen effecten uit.</string>
+    <plurals name="prefs_effects_summary_none_on">
+        <item quantity="one">%1$d effect · geen aan</item>
+        <item quantity="other">%1$d effecten · geen aan</item>
+    </plurals>
+    <plurals name="prefs_effects_summary_on">
+        <item quantity="one">%1$d effect · %2$d aan</item>
+        <item quantity="other">%1$d effecten · %2$d aan</item>
+    </plurals>
+    <string name="prefs_effects_unavailable">Deze afspeelbackend voert geen effecten uit.</string>
+    <string name="prefs_effects_input_label">Ingang · vóór alle effecten</string>
+    <string name="prefs_effects_label">Effecten</string>
+    <string name="prefs_effects_order_note">Het geluid loopt van boven naar beneden: de volgorde verandert de klank.</string>
+    <string name="prefs_effects_output_label">Uitgang · na alle effecten</string>
+    <string name="prefs_effects_manage_plugins">Plug-ins beheren</string>
+    <string name="prefs_effects_none_added">Nog geen toegevoegd</string>
+    <string name="prefs_effects_added_count">%1$d toegevoegd</string>
+
+    <!-- LicencesPage.kt -->
+    <string name="prefs_licences_note">Andamp is gebouwd op het werk van anderen. Elk onderdeel linkt naar de bron, waar de volledige licentietekst staat.</string>
+
+    <!-- LimiterCard.kt -->
+    <string name="prefs_limiter_title">Pieklimiter</string>
+    <string name="prefs_limiter_clipped">Zojuist zijn pieken afgekapt</string>
+    <string name="prefs_limiter_clipped_off">Zojuist zijn pieken afgekapt · zet aan om dat te voorkomen</string>
+    <string name="prefs_limiter_holding">Houdt pieken tegen · %1$s dB</string>
+    <string name="prefs_limiter_quiet">Houdt luide pieken onder −1 dB</string>
+    <string name="prefs_limiter_off">Uit · luide pieken worden afgekapt</string>
+
+    <!-- ListPrefs.kt -->
+    <string name="prefs_lists_font_title">Lettertype van de speellijst</string>
+    <string name="prefs_lists_font_skin_about">De pixelletters van de skin, zoals de titel van het nummer in het hoofdvenster. Een titel in een schrift waarvoor de skin geen letters heeft, houdt het gewone lettertype.</string>
+    <string name="prefs_lists_font_regular_about">Een gewoon lettertype, glad getekend, met kleine letters en hoofdletters.</string>
+    <string name="prefs_lists_font_skin">Skin</string>
+    <string name="prefs_lists_font_regular">Gewoon</string>
+    <string name="prefs_lists_row_height_title">Rijhoogte</string>
+    <string name="prefs_lists_row_height_classic_about">Rijen zo krap als die van Winamp. Kies een hogere als ze lastig te raken zijn.</string>
+    <string name="prefs_lists_row_height_taller_about">Hogere rijen in de speellijst, de bibliotheek en de skinlijst, met meer ruimte voor een vinger.</string>
+    <string name="prefs_lists_row_classic">Klassiek</string>
+    <string name="prefs_lists_row_roomy">Ruim</string>
+    <string name="prefs_lists_row_large">Groot</string>
+
+    <!-- MilkdropScreen.kt -->
+    <string name="prefs_milkdrop_done">Klaar</string>
+    <string name="prefs_milkdrop_presets_section">Voorinstellingen</string>
+    <string name="prefs_milkdrop_nothing_loaded">Er is niets geladen behalve: %1$s. Importeer hierboven een pakket.</string>
+    <string name="prefs_milkdrop_pack_loading">Het pakket wordt geladen, of het venster van de plug-in is gesloten.</string>
+    <string name="prefs_milkdrop_presets_in_pack">%1$d in %2$s, in de volgorde waarin de engine ze afspeelt.</string>
+
+    <!-- Notices.kt -->
+    <string name="prefs_notice_projectm_what">De engine voor de Milkdrop-visualisatie, die .milk-voorinstellingen weergeeft.</string>
+    <string name="prefs_notice_projectm_obligation">Andamp koppelt projectM %1$s dynamisch, als een aparte bibliotheek in de app, zodat die kan worden vervangen. De broncode van precies die revisie is tag v%1$s op het adres hierboven, en de code die Andamp eromheen bouwt staat in de repository van Andamp. Aan projectM is niets gewijzigd.</string>
+    <string name="prefs_notice_avs_what">De visualisatie van Winamp, opnieuw geschreven in Kotlin aan de hand van de broncode die Nullsoft heeft vrijgegeven.</string>
+    <string name="prefs_notice_avs_decoder_what">De opbouw en veldindelingen van het .avs-formaat, zoals de lezer van voorinstellingen ze volgt.</string>
+    <string name="prefs_notice_projectm_eval_what">Rekent de expressies uit waarin AVS-voorinstellingen zijn geschreven, ingebouwd in de AVS-bibliotheek.</string>
+    <string name="prefs_notice_milkdrop_what">Het origineel van Ryan Geiss, waarvan projectM de .milk-voorinstellingen weergeeft.</string>
+    <string name="prefs_notice_webamp_what">De sprite-kaarten ervan zijn de maatstaf voor elke coördinaat in de vensters met een skin.</string>
+    <string name="prefs_notice_liberation_sans_what">Het lettertype van de speellijst, met dezelfde maten als de Arial die PLEDIT.TXT noemt.</string>
+    <string name="prefs_notice_liberation_sans_obligation">Ongewijzigd meegeleverd, onder een naam die de licentie toestaat.</string>
+    <string name="prefs_notice_luaj_what">Voert de .lua-bestanden uit die effecten beschrijven, in een sandbox.</string>
+    <string name="prefs_notice_androidx_what">De UI-toolkit, navigatie, levenscyclus, en Media3 voor lokaal afspelen.</string>
+    <string name="prefs_notice_kotlin_what">De programmeertaal en de bijbehorende bibliotheek voor gelijktijdigheid.</string>
+    <string name="prefs_notice_material_what">De kleurengine ervan leidt het palet van de moderne schermen af van de geladen skin.</string>
+    <string name="prefs_notice_coil_what">Laadt en bewaart de miniaturen van het skinmuseum.</string>
+    <string name="prefs_notice_okhttp_what">De enige HTTP-client, voor het skinmuseum en voor radiostreams.</string>
+
+    <!-- Store.kt (storePlay) -->
+    <string name="prefs_notice_play_billing_what">Neemt de fooien op de pagina Andamp steunen aan, via Google Play.</string>
+    <string name="prefs_notice_play_billing_obligation">Deze bibliotheek is niet open source. De licentie van Andamp bevat een aanvullende toestemming om Andamp ermee te combineren en het resultaat te verspreiden.</string>
+
+    <!-- OverlayPrefs.kt -->
+    <string name="prefs_overlay_grant">Weergeven vóór andere apps toestaan</string>
+    <string name="prefs_overlay_cap_note">Android kan het zwevende venster met %1$d%% dekking tonen.</string>
+
+    <!-- PackPrefs.kt -->
+    <string name="prefs_pack_uninstalled">Verwijderd, en de nummers ervan worden overgeslagen</string>
+    <string name="prefs_pack_not_installed">Niet geïnstalleerd - zie Meer bronnen hieronder</string>
+    <string name="prefs_pack_too_old">Geïnstalleerd, maar te oud voor deze versie van Andamp</string>
+    <string name="prefs_pack_too_new">Geïnstalleerd, maar gemaakt voor een nieuwere versie van Andamp</string>
+    <string name="prefs_pack_not_signed_in">Niet ingelogd</string>
+    <string name="prefs_pack_signed_in_as">Ingelogd als %1$s</string>
+    <string name="prefs_pack_signed_in_here">Ingelogd op deze telefoon</string>
+    <string name="prefs_pack_notice_outdated">%1$s is ingesteld voor een oudere Andamp en krijgt niets af te spelen. Met een nieuwere versie ervan komen de nummers terug.</string>
+    <string name="prefs_pack_notice_ahead">%1$s is ingesteld voor een nieuwere Andamp en krijgt niets af te spelen. Als je Andamp bijwerkt, komen de nummers terug.</string>
+    <string name="prefs_pack_update">%1$s bijwerken</string>
+
+    <!-- PalettePrefs.kt -->
+    <string name="prefs_palette_title">Kleuren van de achtergrond volgen</string>
+    <string name="prefs_palette_on">AndAmp Dark en AndAmp Light nemen de kleuren van je achtergrond over, net als de rest van de telefoon.</string>
+    <string name="prefs_palette_off">AndAmp Dark en AndAmp Light houden hun vaste kleuren.</string>
+
+    <!-- PlayerPage.kt -->
+    <string name="prefs_player_windows_section">Vensters</string>
+    <string name="prefs_player_lists_section">Lijsten</string>
+    <string name="prefs_player_touch_section">Aanraking</string>
+    <string name="prefs_player_colors_section">Kleuren</string>
+    <string name="prefs_player_summary_always_on_top">Altijd bovenaan</string>
+    <string name="prefs_player_summary_windows_stay_open">Vensters blijven open</string>
+    <string name="prefs_player_summary_regular_font">Gewoon lettertype in de speellijst</string>
+    <string name="prefs_player_summary_roomy_rows">Ruime rijen</string>
+    <string name="prefs_player_summary_large_rows">Grote rijen</string>
+    <string name="prefs_player_summary_tap_assist">Tikhulp</string>
+    <string name="prefs_player_summary_wallpaper_colors">Achtergrondkleuren</string>
+    <string name="prefs_player_summary_all_with_overlay">Altijd bovenaan, vensters, lijsten, aanraking en kleuren</string>
+    <string name="prefs_player_summary_all">Vensters, lijsten, aanraking en kleuren</string>
+
+    <!-- PluginsSection.kt -->
+    <string name="prefs_plugins_intro">Lua-plug-ins voor geluid. Andamp bewaart een kopie, dus het oorspronkelijke bestand mag worden verplaatst of verwijderd.</string>
+    <string name="prefs_plugins_adding">Toevoegen…</string>
+    <string name="prefs_plugins_add">Plug-in toevoegen</string>
+    <string name="prefs_plugins_builtin_always">De effecten die bij Andamp horen, staan altijd in het rack.</string>
+    <string name="prefs_plugins_none">Geen plug-ins toegevoegd</string>
+    <string name="prefs_plugins_none_hint">De effecten die bij Andamp horen, staan al in het rack. Voeg een .lua-bestand toe voor meer.</string>
+    <string name="prefs_plugins_remove_named">%1$s verwijderen</string>
+    <string name="prefs_plugins_cannot_run">Werkt niet met het audioformaat van dit nummer.</string>
+    <string name="prefs_plugins_remove_question">%1$s verwijderen?</string>
+    <string name="prefs_plugins_remove_body">De opgeslagen instellingen ervan worden ook verwijderd.</string>
+    <string name="prefs_plugins_removed">%1$s verwijderd</string>
+    <string name="prefs_plugins_remove">Verwijderen</string>
+    <string name="prefs_plugins_cancel">Annuleren</string>
+    <string name="prefs_plugins_refused_title">Die plug-in kan niet worden toegevoegd</string>
+    <string name="prefs_plugins_ok">OK</string>
+    <string name="prefs_plugins_added_title">Plug-in toegevoegd</string>
+    <string name="prefs_plugins_added_body">Hij staat achteraan in het rack bij Effecten, uitgeschakeld.</string>
+    <string name="prefs_plugins_updated_title">Plug-in bijgewerkt</string>
+    <string name="prefs_plugins_updated_body">Hij houdt zijn plek in het rack en zijn instellingen.</string>
+    <string name="prefs_plugins_updated_body_replacing">Vervangt versie %1$s. Hij houdt zijn plek in het rack en zijn instellingen.</string>
+    <string name="prefs_plugins_unchanged_title">Al toegevoegd</string>
+    <string name="prefs_plugins_unchanged_body">Precies dit bestand is al geïnstalleerd. Er is niets veranderd.</string>
+    <string name="prefs_plugins_offer_title">Deze plug-in toevoegen?</string>
+    <string name="prefs_plugins_offer_from">Van %1$s</string>
+    <string name="prefs_plugins_offer_add">Toevoegen</string>
+    <string name="prefs_plugins_replace_question">%1$s vervangen?</string>
+    <string name="prefs_plugins_replace_body">%1$s %2$s is geïnstalleerd. Dit bestand is %3$s %4$s: het neemt dezelfde plek in het rack over, met de instellingen erbij.</string>
+    <string name="prefs_plugins_replace">Vervangen</string>
+    <string name="prefs_plugins_credit_version">versie %1$s</string>
+    <string name="prefs_plugins_credit_by">door %1$s</string>
+    <string name="prefs_plugins_credit_none">geen versie opgegeven</string>
+    <string name="prefs_plugins_more_title">Meer effecten</string>
+    <string name="prefs_plugins_more_summary">Effectplug-ins om te installeren vanaf de site van Andamp</string>
+
+    <!-- PreferencesScreen.kt -->
+    <string name="prefs_page_effects">Effecten</string>
+    <string name="prefs_page_plugins">Plug-ins</string>
+    <string name="prefs_page_visualizer">Visualisatie</string>
+    <string name="prefs_page_player">Speler</string>
+    <string name="prefs_page_widget">Widget op het startscherm</string>
+    <string name="prefs_page_android_auto">Android Auto</string>
+    <string name="prefs_page_support">Andamp steunen</string>
+    <string name="prefs_page_about">Over Andamp</string>
+    <string name="prefs_page_licences">Opensourcelicenties</string>
+    <string name="prefs_title">Voorkeuren</string>
+    <string name="prefs_sound_section">Geluid</string>
+    <string name="prefs_look_section">Uiterlijk en bediening</string>
+    <string name="prefs_about_summary">Versie %1$s · opensourcelicenties</string>
+    <string name="prefs_about_note">Andamp %1$s: een replica van Winamp 2.8, niet verbonden aan Winamp of de eigenaren ervan.</string>
+    <string name="prefs_about_licences_summary">%1$d projecten waarop Andamp is gebouwd</string>
+
+    <!-- PrefsTopBar.kt -->
+    <string name="prefs_top_back">Terug naar voorkeuren</string>
+    <string name="prefs_top_done">Klaar</string>
+
+    <!-- RackControls.kt -->
+    <string name="prefs_rack_about_control">Over %1$s</string>
+
+    <!-- RackDigest.kt -->
+    <string name="prefs_rack_default_settings">Standaardinstellingen</string>
+    <string name="prefs_rack_digest_more">%1$s …</string>
+
+    <!-- RackSection.kt -->
+    <string name="prefs_rack_input_badge">In</string>
+    <string name="prefs_rack_hide_controls">Regelaars verbergen</string>
+    <string name="prefs_rack_show_controls">Regelaars tonen</string>
+    <string name="prefs_rack_drag_to_move">Sleep om %1$s te verplaatsen</string>
+    <string name="prefs_rack_undo">Ongedaan maken</string>
+    <string name="prefs_rack_more_for">Meer voor %1$s</string>
+    <string name="prefs_rack_move_up">Omhoog</string>
+    <string name="prefs_rack_move_down">Omlaag</string>
+    <string name="prefs_rack_save_settings">Instellingen opslaan</string>
+    <string name="prefs_rack_settings_saved">Instellingen van %1$s opgeslagen</string>
+    <string name="prefs_rack_restore_settings">Opgeslagen instellingen terugzetten</string>
+    <string name="prefs_rack_settings_restored">Instellingen van %1$s teruggezet</string>
+    <string name="prefs_rack_reset">Standaardinstellingen herstellen</string>
+    <string name="prefs_rack_reset_done">Standaardinstellingen van %1$s hersteld</string>
+
+    <!-- ShadePrefs.kt -->
+    <string name="prefs_shade_title">Vensters open houden</string>
+    <string name="prefs_shade_on">Vensters houden hun volle grootte. Het knopje naast de sluitknop en twee keer tikken op een titelbalk klappen ze niet meer in.</string>
+    <string name="prefs_shade_off">Een venster kan inklappen tot een smalle balk. Zet dit aan als dat steeds gebeurt zonder dat je het wilt.</string>
+
+    <!-- SkinPick.kt -->
+    <string name="prefs_skin_default">Standaard</string>
+    <string name="prefs_skin_own">De skin van de speler</string>
+    <string name="prefs_skin_instead">In plaats van de skin van de speler</string>
+    <string name="prefs_skin_close">Sluiten</string>
+
+    <!-- SourcesPrefs.kt -->
+    <string name="prefs_sources_section">Muziekbronnen</string>
+    <string name="prefs_sources_more_title">Meer bronnen</string>
+    <string name="prefs_sources_more_summary">Andere plekken waarvan Andamp muziek kan afspelen, en hoe je ze toevoegt</string>
+    <string name="prefs_phone_permission_off">Toestemming %1$s staat uit</string>
+    <string name="prefs_phone_allow">Sta %1$s toe om de muziek op deze telefoon te tonen</string>
+    <string name="prefs_phone_counting">Tellen…</string>
+    <string name="prefs_phone_no_music">Nog geen muziek gevonden op deze telefoon</string>
+    <string name="prefs_phone_access_section">Toegang</string>
+    <string name="prefs_phone_library_section">Bibliotheek</string>
+    <string name="prefs_phone_tracks">Nummers</string>
+    <string name="prefs_phone_artists">Artiesten</string>
+    <string name="prefs_phone_albums">Albums</string>
+    <string name="prefs_phone_playing_time">Speelduur</string>
+    <string name="prefs_phone_on_storage">Op de opslag</string>
+    <string name="prefs_phone_scan_section">Scannen</string>
+    <string name="prefs_phone_scan_note">Android houdt zelf bij welke muziek op deze telefoon staat, maar niet altijd meteen. Een scan vraagt Android om nu door de muziekmappen te gaan, zodat muziek die je net hebt gekopieerd tevoorschijn komt.</string>
+    <string name="prefs_phone_scan_now">Nu scannen</string>
+    <string name="prefs_phone_scanning">Scannen…</string>
+    <string name="prefs_source_settings_section">Instellingen</string>
+    <string name="prefs_source_settings_title">Instellingen van %1$s</string>
+    <string name="prefs_source_settings_summary">Het account en wat de bron verder biedt, op het scherm van de bron zelf</string>
+    <string name="prefs_source_skin_section">Skin</string>
+    <string name="prefs_source_updates_section">Updates</string>
+    <string name="prefs_source_skin_note">Terwijl een nummer van %1$s speelt, draagt de speler deze skin. Standaard houdt de skin aan die je voor de speler hebt gekozen.</string>
+    <string name="prefs_source_skin_heading">Skin voor %1$s</string>
+    <string name="prefs_updates_checking">Zoekt naar een nieuwere versie…</string>
+    <string name="prefs_updates_current">Versie %1$s, de nieuwste die er is.</string>
+    <string name="prefs_updates_available">Versie %1$s is uit.</string>
+    <string name="prefs_updates_available_over">Versie %1$s is uit (dit is %2$s).</string>
+    <string name="prefs_updates_how">De downloadpagina opent in je browser; installeer de nieuwe versie zoals je deze hebt geïnstalleerd.</string>
+    <string name="prefs_updates_open">Downloadpagina openen</string>
+    <string name="prefs_updates_failed">Zoeken naar een nieuwere versie is niet gelukt.</string>
+    <string name="prefs_updates_retry">Opnieuw proberen</string>
+
+    <!-- SupportPrefs.kt -->
+    <string name="prefs_support_on_site">Op andamp.nl</string>
+    <string name="prefs_support_thanked">Bedankt voor je fooi</string>
+    <string name="prefs_support_leave_a_tip">Geef een fooi</string>
+    <string name="prefs_support_intro">Andamp is gratis en heeft geen advertenties. Als je er plezier van hebt, kun je een fooi geven. Een fooi ontgrendelt niets: alles in Andamp blijft gratis, met of zonder.</string>
+    <string name="prefs_support_closed">Fooien zijn op deze telefoon nu niet beschikbaar.</string>
+    <string name="prefs_support_play_note">Google Play handelt de betaling af. Je kunt vaker dan één keer een fooi geven.</string>
+    <string name="prefs_support_given">Je hebt Andamp gesteund. Dank je wel.</string>
+    <string name="prefs_support_outside_intro">Andamp is gratis en heeft geen advertenties. Als je er plezier van hebt, kun je Andamp steunen via de website. Dat ontgrendelt niets: alles in Andamp blijft gratis, met of zonder.</string>
+    <string name="prefs_support_open_site">%1$s openen</string>
+    <string name="prefs_support_note_thanks">Dank je wel! Je fooi is aangekomen.</string>
+    <string name="prefs_support_note_waiting">Dank je wel! Je fooi komt aan zodra de betaling is afgerond.</string>
+    <string name="prefs_support_note_failed">De fooi is niet gelukt. Probeer het later opnieuw.</string>
+
+    <!-- TapAssistPrefs.kt -->
+    <string name="prefs_tap_assist_title">Tikhulp</string>
+    <string name="prefs_tap_assist_on">Houd een klein knopje vast en boven je vinger opent een vergroting. Schuif naar de knop die je bedoelde en laat los.</string>
+    <string name="prefs_tap_assist_off">Knoppen reageren alleen op een gewone tik. Zet dit aan als de kleine lastig te raken zijn.</string>
+
+    <!-- VisualizerPrefs.kt -->
+    <string name="prefs_visualizer_summary_no_packs">%1$s · nog geen pakketten met voorinstellingen</string>
+    <plurals name="prefs_visualizer_summary_packs">
+        <item quantity="one">%2$s · %1$d pakket, %3$d voorinstellingen</item>
+        <item quantity="other">%2$s · %1$d pakketten, %3$d voorinstellingen</item>
+    </plurals>
+    <string name="prefs_visualizer_plugin_section">Plug-in</string>
+    <string name="prefs_visualizer_avs_blurb">De visualisatie van Winamp zelf, opnieuw gebouwd. Speelt echte .avs-voorinstellingen af die je importeert.</string>
+    <string name="prefs_visualizer_milkdrop_blurb">libprojectM. Speelt echte .milk-voorinstellingen af die je importeert.</string>
+    <string name="prefs_visualizer_packs_section">Pakketten met voorinstellingen</string>
+    <string name="prefs_visualizer_import_empty">“%1$s” bevatte geen voorinstellingen.</string>
+    <string name="prefs_visualizer_importing">%1$s importeren... %2$d bestanden</string>
+    <string name="prefs_visualizer_packs_note_avs">Pakketten zijn .zip-bestanden met .avs-voorinstellingen. Ze worden naar de app gekopieerd, omdat AVS voorinstellingen via een pad opent.</string>
+    <string name="prefs_visualizer_packs_note_milkdrop">Pakketten zijn .zip-bestanden met .milk-voorinstellingen. Ze worden naar de app gekopieerd, omdat projectM voorinstellingen via een pad opent.</string>
+    <string name="prefs_visualizer_import">Pakket importeren...</string>
+    <string name="prefs_visualizer_idle_avs">Van deze app zelf. Importeren is niet nodig.</string>
+    <string name="prefs_visualizer_idle_milkdrop">Ingebouwd in libprojectM. Importeren is niet nodig.</string>
+    <string name="prefs_visualizer_pack_presets">%1$d voorinstellingen</string>
+    <string name="prefs_visualizer_remove">Verwijderen</string>
+    <string name="prefs_visualizer_browse">Door voorinstellingen bladeren</string>
+    <string name="prefs_visualizer_browse_count">Door %1$d voorinstellingen bladeren</string>
+    <string name="prefs_visualizer_shuffle_title">Voorinstellingen in willekeurige volgorde</string>
+    <string name="prefs_visualizer_shuffle_summary">Anders lopen ze in de volgorde waarin ze op de opslag staan.</string>
+
+    <!-- VolumePrefs.kt -->
+    <string name="prefs_volume_title">Onafhankelijk volume</string>
+    <string name="prefs_volume_own">De schuif is alleen van Andamp en het volume van de telefoon blijft staan</string>
+    <string name="prefs_volume_device">De schuif regelt het mediavolume van de telefoon, net als de volumeknoppen</string>
+
+    <!-- WidgetPrefs.kt -->
+    <string name="prefs_widget_summary_no_vis">Geen visualisatie, verversing: %1$s</string>
+    <string name="prefs_widget_summary">%1$s, verversing: %2$s</string>
+    <string name="prefs_widget_summary_analyzer">Analyse</string>
+    <string name="prefs_widget_summary_oscilloscope">Oscilloscoop</string>
+    <string name="prefs_widget_summary_refresh_low">laag</string>
+    <string name="prefs_widget_summary_refresh_medium">gemiddeld</string>
+    <string name="prefs_widget_summary_refresh_high">hoog</string>
+    <string name="prefs_widget_vis_analyzer">Balken die meebewegen met de muziek, in een korte lus</string>
+    <string name="prefs_widget_vis_oscilloscope">Een golvende lijn die meebeweegt met de muziek, in een korte lus</string>
+    <string name="prefs_widget_vis_off">Er beweegt niets, en het kost ook niets</string>
+    <string name="prefs_widget_visualizer_title">Visualisatie</string>
+    <string name="prefs_widget_refresh_title">Verversingssnelheid</string>
+    <string name="prefs_widget_size_title">Grootte</string>
+    <string name="prefs_widget_logo_title">Alleen het logo opent Andamp</string>
+    <string name="prefs_widget_logo_summary">Tikken op de speler doet niets, dus als je net naast een knop tikt, blijf je op het startscherm.</string>
+    <string name="prefs_widget_volume_title">Volumeregeling</string>
+    <string name="prefs_widget_volume_summary">Maakt de volumeschuif aantikbaar. Die zit dicht bij de zoekbalk en is makkelijk per ongeluk te raken.</string>
+    <string name="prefs_widget_limits_title">Goed om te weten</string>
+    <string name="prefs_widget_limit_corners_title">De hoeken worden afgesneden</string>
+    <string name="prefs_widget_limit_corners_body">Android rondt de hoeken af van elke widget, van elke app, en dat is niet uit te zetten. Een kleinere speler zou ruimte overhouden, maar dan zijn de knoppen ook lastiger te raken, dus hij houdt zijn grootte.</string>
+    <string name="prefs_widget_limit_icon_title">Er kan een pictogram voor in de plaats komen</string>
+    <string name="prefs_widget_limit_icon_body">Om de batterij te sparen stopt Android soms apps waarvan het denkt dat je er klaar mee bent. Dan toont het startscherm een pictogram van Andamp in plaats van de speler - één tik brengt hem terug. Het zou niet vaak moeten gebeuren.</string>
+    <string name="prefs_widget_limit_loop_title">De balken draaien in een lus</string>
+    <string name="prefs_widget_limit_loop_body">Ongeveer een halve seconde muziek wordt omgezet in beelden, en het startscherm speelt die steeds opnieuw af tot een nieuwe halve seconde ze vervangt. De balken bewegen dus mee met de muziek zonder er ooit helemaal gelijk mee te lopen. Elke tel bijhouden zou betekenen dat er vele keren per seconde nieuwe beelden worden gestuurd, en juist dat trekt een batterij leeg.</string>
+    <string name="prefs_widget_limit_running_title">De balken werken alleen als de speler draait</string>
+    <string name="prefs_widget_limit_running_body">Een tik op de positie- of volumebalk vertelt de speler dat hij moet verspringen. Als Android Andamp uit het geheugen heeft gehaald, is er niets om dat aan te vertellen en doet de tik niets. De knoppen werken nog wel: een druk op een knop start de speler opnieuw, en daarna doen de balken het weer.</string>
+
+    <!-- WidgetSettings.kt -->
+    <string name="prefs_widget_size_fill">Vullen</string>
+    <string name="prefs_widget_size_fill_summary">Groeit tot de rand van de ruimte. De afbeelding wordt naar een tussenmaat geschaald en oogt daardoor iets zachter.</string>
+    <string name="prefs_widget_size_largest">Grootst</string>
+    <string name="prefs_widget_size_largest_summary">De grootste maat waarbij de afbeelding haarscherp blijft. Laat er een beetje ruimte omheen.</string>
+    <string name="prefs_widget_refresh_low">Laag</string>
+    <string name="prefs_widget_refresh_low_summary">Het zuinigst voor de batterij. De tijd verspringt, en de visualisatie haalt het nummer af en toe in.</string>
+    <string name="prefs_widget_refresh_low_time_only">Het zuinigst voor de batterij. De tijd verspringt in plaats van door te tikken.</string>
+    <string name="prefs_widget_refresh_medium">Gemiddeld</string>
+    <string name="prefs_widget_refresh_medium_summary">Een redelijk evenwicht. De tijd tikt door, en de visualisatie haalt het nummer om de paar seconden in.</string>
+    <string name="prefs_widget_refresh_high">Hoog</string>
+    <string name="prefs_widget_refresh_high_summary">Verbruikt de meeste batterij. De tijd tikt door, en de visualisatie haalt het nummer zo vaak in als een widget kan.</string>
+    <string name="prefs_widget_refresh_ticking_time_only">De tijd tikt door, seconde na seconde.</string>
+</resources>

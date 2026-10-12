@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- PlaylistOps.kt -->
+    <string name="playlist_add_url_title">URL hinzufügen</string>
+    <string name="playlist_add_url_next">Weiter</string>
+    <string name="playlist_add_url_name_title">Name</string>
+    <string name="playlist_add_url_add">Hinzufügen</string>
+
+    <!-- PlaylistFileOps.kt -->
+    <string name="playlist_save_title">Playlist speichern</string>
+    <string name="playlist_save_in_andamp">In Andamp speichern</string>
+    <string name="playlist_save_in_andamp_note">Zu finden im Tab „LISTEN“ der Medienbibliothek</string>
+    <string name="playlist_export">Als Datei exportieren…</string>
+    <string name="playlist_export_note">Eine .m3u-Datei, die andere Player lesen können</string>
+    <string name="playlist_load_title">Playlist laden</string>
+    <string name="playlist_open_from_andamp">Aus Andamp öffnen</string>
+    <string name="playlist_open_from_andamp_note">Eine der hier gespeicherten Listen</string>
+    <string name="playlist_import">Aus Datei importieren…</string>
+    <string name="playlist_import_note">Eine .m3u-Datei von diesem Smartphone</string>
+    <string name="playlist_save_as_title">Playlist speichern unter</string>
+    <string name="playlist_default_name">Playlist</string>
+    <string name="playlist_open_title">Playlist öffnen</string>
+    <string name="playlist_open_confirm">Öffnen</string>
+    <string name="playlist_open_empty">Hier sind noch keine Listen gespeichert</string>
+
+    <!-- WinampViewModel.kt -->
+    <string name="jump_to_file_title">Springe zu Titel</string>
+    <string name="jump_to_file_empty">Die Playlist ist leer</string>
+
+    <!-- FileInfoSource.kt and TrackInfoOps.kt -->
+    <string name="info_file">Datei</string>
+    <string name="info_size">Größe</string>
+    <string name="info_format">Format</string>
+    <string name="info_length">Länge</string>
+    <string name="info_bitrate">Bitrate</string>
+    <string name="info_sample_rate">Abtastrate</string>
+    <string name="info_title">Titel</string>
+    <string name="info_artist">Künstler</string>
+    <string name="info_album">Album</string>
+    <string name="info_album_artist">Album-Künstler</string>
+    <string name="info_track">Titelnummer</string>
+    <string name="info_disc">Disc</string>
+    <string name="info_year">Jahr</string>
+    <string name="info_genre">Genre</string>
+    <string name="info_composer">Komponist</string>
+    <string name="info_station">Station</string>
+    <string name="info_now_playing">Wird gerade gespielt</string>
+    <string name="info_url">URL</string>
+    <string name="info_website">Website</string>
+
+    <!-- OverlayOps.kt -->
+    <string name="overlay_summary_off">Aus</string>
+    <string name="overlay_summary_waiting">Wartet auf die Berechtigung „Über anderen Apps einblenden“</string>
+    <string name="overlay_summary_on">Der Player schwebt über anderen Apps</string>
+
+    <!-- PhoneLibrary.kt -->
+    <plurals name="phone_count_tracks">
+        <item quantity="one">%1$,d Titel</item>
+        <item quantity="other">%1$,d Titel</item>
+    </plurals>
+    <plurals name="phone_count_artists">
+        <item quantity="one">%1$,d Künstler</item>
+        <item quantity="other">%1$,d Künstler</item>
+    </plurals>
+    <plurals name="phone_count_albums">
+        <item quantity="one">%1$,d Album</item>
+        <item quantity="other">%1$,d Alben</item>
+    </plurals>
+    <string name="phone_summary">%1$s · %2$s · %3$s</string>
+    <plurals name="phone_days">
+        <item quantity="one">%1$,d Tag</item>
+        <item quantity="other">%1$,d Tage</item>
+    </plurals>
+    <plurals name="phone_hours">
+        <item quantity="one">%1$,d Stunde</item>
+        <item quantity="other">%1$,d Stunden</item>
+    </plurals>
+    <plurals name="phone_minutes">
+        <item quantity="one">%1$,d Minute</item>
+        <item quantity="other">%1$,d Minuten</item>
+    </plurals>
+    <string name="phone_duration_pair">%1$s %2$s</string>
+
+    <!-- PhoneLibrary.kt -->
+    <string name="scan_looking_in">Suche in %1$s… (%2$d von %3$d)</string>
+    <string name="scan_reading">Gefundenes wird gelesen…</string>
+    <string name="scan_no_folders">Keine Musikordner auf diesem Smartphone</string>
+    <string name="scan_looked_in">In %1$s gesucht</string>
+    <string name="scan_unreadable">%1$s. Die Bibliothek konnte nicht gelesen werden.</string>
+    <string name="scan_outcome">%1$s: %2$s.</string>
+    <plurals name="scan_new_tracks">
+        <item quantity="one">%1$,d neuer Titel</item>
+        <item quantity="other">%1$,d neue Titel</item>
+    </plurals>
+    <plurals name="scan_fewer_tracks">
+        <item quantity="one">%1$,d Titel weniger</item>
+        <item quantity="other">%1$,d Titel weniger</item>
+    </plurals>
+    <string name="scan_nothing_new">nichts Neues</string>
+
+    <!-- MusicSource.kt -->
+    <string name="source_this_phone">Dieses Smartphone</string>
+
+    <!-- PackSource.kt -->
+    <string name="source_played_by">Abgespielt von %1$s (%2$s)</string>
+    <string name="source_played_by_signed">Abgespielt von %1$s (%2$s, signiert %3$s…)</string>
+
+    <!-- OnlineSkinOps.kt -->
+    <string name="museum_could_not_download">%1$s konnte nicht heruntergeladen werden</string>
+    <string name="museum_could_not_read">%1$s konnte nicht gelesen werden</string>
+
+    <!-- WinampScreen.kt and WidgetMenuActivity.kt -->
+    <string name="skin_picked_name">ausgewählter Skin</string>
+
+    <!-- MediaFiles.kt -->
+    <string name="media_unknown_title">Unbekannt</string>
+</resources>
