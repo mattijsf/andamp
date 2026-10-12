@@ -647,6 +647,45 @@ change to the skin engine, also test a skin other than the base one.
 - Comments are for constraints the code cannot show, such as sprite-sheet quirks and
   Winamp behavior. Cite the webamp file when the reason is "that is what Winamp does".
 
+## Text and translations
+
+Every word the listener reads is a string resource under `app/src/main/res/values/`, one
+file per area, and a translation is the same file under `values-<language>/`. Android picks
+the phone's language.
+
+| File | Holds |
+|---|---|
+| `strings_menu.xml` | the main menu, the playlist's menus, the visualizer's menu |
+| `strings_prefs.xml` | Preferences, every page |
+| `strings_library.xml` | the media library window |
+| `strings_player.xml` | playlist prompts, the file info box, This Phone and its scan, odd ones out |
+| `strings_equalizer.xml` | the equalizer's PRESETS menu and its dialogs |
+| `strings_prompts.xml` | questions, notices and the buttons they share |
+| `strings_screens.xml` | the skin museum, the welcome screen, About, plug-in import |
+| `strings_widget.xml` | what the home-screen widget says to a screen reader |
+
+- **Composables** read a string with `stringResource(R.string.key)`, or
+  `stringResource(R.string.key, arg)` for one with a placeholder.
+- **Everything else** reads through `Words` (`state/Words.kt`), an interface over the
+  resources: `words.get(R.string.key, arg)` and `words.plural(R.plurals.key, count)`. The
+  view model holds the app's (`vm.words`, which the menu builders read), an ops class that
+  words a prompt or a header takes it as a constructor parameter, and a composable hands it
+  on with `rememberWords()`.
+- **Keys** are `area_meaning` in snake case (`menu_support_andamp`, `prefs_support_leave_a_tip`),
+  the area being the file's. The English text is the key's documentation; a comment on the
+  resource says where it shows and what a placeholder holds when the key alone does not.
+- **Placeholders** are positional, `%1$s`, `%1$d`; a count that changes the wording is a
+  `<plurals>`, whose first placeholder is the count. A sentence is one resource: two
+  resources glued together fix the word order of English.
+- **What stays in code:** text the skin's bitmap font draws, since a skin has letters only
+  for what Winamp wrote with them (the song in the scroller, the clock, the kbps readout, a
+  window's title bar, a playlist row's `[Missing source: …]`); the names of skins, presets, plug-ins and
+  effects; widget ids, routes and file names; units such as kbps and kHz; and the reason a
+  plug-in or a museum page gives when it fails, which is a diagnostic.
+- **Tests** keep asserting the English words. A Robolectric test reads the real resources,
+  whose default is English. A plain JVM test passes `EnglishWords`, which reads the same
+  XML from disk.
+
 ## Assets
 
 The three bundled skins (AndAmp Dark, Light and Spot) are built by `skin/` from one Python

@@ -104,7 +104,7 @@ class ModalParityTest {
     fun `a permission being asked for`() {
         val state = WinampState()
         state.prompt =
-            AmpPrompt("Draw over other apps", "The floating player needs it.", "Open settings") {}
+            AmpPrompt("Draw over other apps", "The floating player needs it.", "Open settings", "Not now") {}
 
         floating { AmpPromptHost(state) }
 
@@ -133,8 +133,10 @@ class ModalParityTest {
             listOf(
                 "the about box" to { s -> s.aboutOpen = true },
                 "a menu" to { s -> s.activeMenu = AmpMenu("Options", emptyList()) },
-                "a name prompt" to { s -> s.namePrompt = NamePrompt("Name it", onSubmit = {}) },
-                "a permission prompt" to { s -> s.prompt = AmpPrompt("Grant", "why", onConfirm = {}) },
+                "a name prompt" to { s -> s.namePrompt = NamePrompt("Name it", confirmLabel = "Save", onSubmit = {}) },
+                "a permission prompt" to { s ->
+                    s.prompt = AmpPrompt("Grant", "why", "Open settings", "Not now", onConfirm = {})
+                },
                 "track info" to { s -> s.trackInfo = TrackInfo("A track", emptyList()) },
                 "a choice sheet" to { s -> s.choiceSheet = ChoiceSheet("Where", emptyList()) },
                 "the bookmark sheet" to { s ->

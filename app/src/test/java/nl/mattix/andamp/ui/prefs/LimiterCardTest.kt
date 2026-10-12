@@ -12,6 +12,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import nl.mattix.andamp.core.playback.PeakReading
+import nl.mattix.andamp.state.EnglishWords
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -35,34 +36,36 @@ class LimiterCardTest {
 
     @Test
     fun `off and nothing cut off says what off means`() {
-        val status = limiterStatus(on = false, reading = PeakReading.NONE, nowNanos = 10 * second)
+        val status = limiterStatus(on = false, reading = PeakReading.NONE, nowNanos = 10 * second, words = EnglishWords)
         assertEquals("Off · loud peaks are cut off", status.line)
         assertEquals(LimiterTone.QUIET, status.tone)
     }
 
     @Test
     fun `off and a peak cut off just now says so, and offers the way out`() {
-        val status = limiterStatus(on = false, reading = PeakReading(0f, 9 * second), nowNanos = 10 * second)
+        val status =
+            limiterStatus(on = false, reading = PeakReading(0f, 9 * second), nowNanos = 10 * second, words = EnglishWords)
         assertEquals("Peaks cut off just now · turn on to prevent", status.line)
         assertEquals(LimiterTone.CLIPPING, status.tone)
     }
 
     @Test
     fun `a clip from a while ago reads as quiet`() {
-        val status = limiterStatus(on = false, reading = PeakReading(0f, 1 * second), nowNanos = 10 * second)
+        val status =
+            limiterStatus(on = false, reading = PeakReading(0f, 1 * second), nowNanos = 10 * second, words = EnglishWords)
         assertEquals(LimiterTone.QUIET, status.tone)
     }
 
     @Test
     fun `on and holding says how far down`() {
-        val status = limiterStatus(on = true, reading = PeakReading(-2.14f, 0L), nowNanos = 10 * second)
+        val status = limiterStatus(on = true, reading = PeakReading(-2.14f, 0L), nowNanos = 10 * second, words = EnglishWords)
         assertEquals("Holding peaks · −2.1 dB", status.line)
         assertEquals(LimiterTone.HOLDING, status.tone)
     }
 
     @Test
     fun `on and not needed says what it does`() {
-        val status = limiterStatus(on = true, reading = PeakReading(-0.02f, 0L), nowNanos = 10 * second)
+        val status = limiterStatus(on = true, reading = PeakReading(-0.02f, 0L), nowNanos = 10 * second, words = EnglishWords)
         assertEquals("Keeps loud peaks under −1 dB", status.line)
     }
 

@@ -2,6 +2,8 @@
 
 package nl.mattix.andamp.state
 
+import nl.mattix.andamp.R
+
 /**
  * What the preferences screen tells the listener about the audio library permission, and
  * what it offers. "Not asked yet" can be asked again; "refused for good" only leads to
@@ -19,31 +21,26 @@ enum class LibraryAccess {
     ;
 
     /** What this means, naming the permission as Android does ([MusicPermission]). */
-    fun summary(permission: String): String =
-        when (this) {
-            GRANTED -> {
-                "Andamp has the $permission permission. Tracks you add keep playing after a restart."
-            }
-
-            ASKABLE -> {
-                "Without the $permission permission, Andamp can still play files you pick, " +
-                    "but they may stop working after a restart."
-            }
-
-            BLOCKED -> {
-                "The $permission permission is off. Files you pick still play for now, " +
-                    "but they may stop working after a restart."
-            }
-        }
+    fun summary(
+        permission: String,
+        words: Words,
+    ): String =
+        words.get(
+            when (this) {
+                GRANTED -> R.string.access_granted
+                ASKABLE -> R.string.access_askable
+                BLOCKED -> R.string.access_blocked
+            },
+            permission,
+        )
 
     /** The button to show, or null when nothing is left to offer. */
-    val action: String?
-        get() =
-            when (this) {
-                GRANTED -> null
-                ASKABLE -> "Allow"
-                BLOCKED -> "Open settings"
-            }
+    fun action(words: Words): String? =
+        when (this) {
+            GRANTED -> null
+            ASKABLE -> words.get(R.string.prompt_allow)
+            BLOCKED -> words.get(R.string.prompt_open_settings)
+        }
 
     companion object {
         /**

@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import nl.mattix.andamp.state.PresetNotice
 import nl.mattix.andamp.state.WinampState
+import nl.mattix.andamp.ui.rememberWords
 
 /**
  * One small line over the bottom of the visual, for a few seconds after a preset starts that
@@ -34,7 +35,8 @@ internal fun PresetNoticeLine(
     s: WinampState,
     modifier: Modifier = Modifier,
 ) {
-    val text = PresetNotice.textFor(s.presetGaps).takeIf { s.presetNotices }
+    val words = rememberWords()
+    val text = PresetNotice.textFor(s.presetGaps, words).takeIf { s.presetNotices }
     var showing by remember { mutableStateOf(false) }
     // keyed on the preset too: the same notice for the next preset is shown again
     LaunchedEffect(text, s.presetName) {

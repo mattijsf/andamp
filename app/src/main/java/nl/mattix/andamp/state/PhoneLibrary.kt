@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
+import nl.mattix.andamp.R
 import java.io.File
 import java.util.Locale
 import kotlin.coroutines.resume
@@ -34,6 +35,7 @@ class PhoneLibrary(
     private val count: suspend () -> PhoneStats?,
     /** Called when the index may have changed, so a cached library is read again. */
     private val onChanged: () -> Unit = {},
+    private val words: Words,
 ) {
     constructor(context: Context, scope: CoroutineScope) : this(
         scope = scope,
@@ -41,6 +43,7 @@ class PhoneLibrary(
         scanner = { folder -> askSystemToScan(context.applicationContext, folder) },
         count = { countPhone(context.applicationContext) },
         onChanged = { Libraries.forget(MusicSource.LOCAL) },
+        words = Words.of(context.applicationContext),
     )
 
     /** A folder that is scanned, and the label shown for it. */
@@ -84,7 +87,7 @@ class PhoneLibrary(
             val after = count()
             stats = after
             onChanged()
-            lastScan = ScanProgress.outcome(before, after, todo.map { it.label })
+            lastScan = ScanProgress.outcome(before, after, todo.map { it.label }, words)
             scanning = null
         }
     }
@@ -180,20 +183,41 @@ data class PhoneStats(
     val bytes: Long,
 ) {
     /** The row's subtitle on the main Preferences page. */
-    val summary: String get() = "${count(tracks, "track")} · ${count(artists, "artist")} · ${count(albums, "album")}"
+    fun summary(words: Words): String =
+        words.get(
+            R.string.phone_summary,
+            words.plural(R.plurals.phone_count_tracks, tracks),
+            words.plural(R.plurals.phone_count_artists, artists),
+            words.plural(R.plurals.phone_count_albums, albums),
+        )
 
     /** The total playing time, as "3 days 4 hours" or "52 minutes". */
-    val listening: String
-        get() {
-            val minutes = durationMs / MS_PER_MINUTE
-            val hours = minutes / MINUTES_PER_HOUR
-            val days = hours / HOURS_PER_DAY
-            return when {
-                days > 0 -> "${count(days.toInt(), "day")} ${count((hours % HOURS_PER_DAY).toInt(), "hour")}"
-                hours > 0 -> "${count(hours.toInt(), "hour")} ${count((minutes % MINUTES_PER_HOUR).toInt(), "minute")}"
-                else -> count(minutes.toInt(), "minute")
+    fun listening(words: Words): String {
+        val minutes = durationMs / MS_PER_MINUTE
+        val hours = minutes / MINUTES_PER_HOUR
+        val days = hours / HOURS_PER_DAY
+        return when {
+            days > 0 -> {
+                words.get(
+                    R.string.phone_duration_pair,
+                    words.plural(R.plurals.phone_days, days.toInt()),
+                    words.plural(R.plurals.phone_hours, (hours % HOURS_PER_DAY).toInt()),
+                )
+            }
+
+            hours > 0 -> {
+                words.get(
+                    R.string.phone_duration_pair,
+                    words.plural(R.plurals.phone_hours, hours.toInt()),
+                    words.plural(R.plurals.phone_minutes, (minutes % MINUTES_PER_HOUR).toInt()),
+                )
+            }
+
+            else -> {
+                words.plural(R.plurals.phone_minutes, minutes.toInt())
             }
         }
+    }
 
     /** The total size, as "4.2 GB" or "310 MB". */
     val size: String
@@ -214,11 +238,6 @@ data class PhoneStats(
         const val HOURS_PER_DAY = 24L
         const val BYTES_PER_MB = 1_048_576L
         const val MB_PER_GB = 1024.0
-
-        fun count(
-            n: Int,
-            noun: String,
-        ) = String.format(Locale.US, "%,d %s", n, if (n == 1) noun else "${noun}s")
     }
 }
 
@@ -232,7 +251,8 @@ data class ScanProgress(
     val fraction: Float get() = if (of == 0) 1f else done.toFloat() / of
 
     /** The text the page shows during the scan. */
-    val words: String get() = folder?.let { "Looking in $it… ($done of $of)" } ?: "Reading what was found…"
+    fun words(words: Words): String =
+        folder?.let { words.get(R.string.scan_looking_in, it, done, of) } ?: words.get(R.string.scan_reading)
 
     companion object {
         /** The text for a finished scan: which folders, and what changed. */
@@ -240,17 +260,23 @@ data class ScanProgress(
             before: PhoneStats?,
             after: PhoneStats?,
             looked: List<String>,
+            words: Words,
         ): String {
-            val where = if (looked.isEmpty()) "No music folders on this phone" else "Looked in ${looked.joinToString(", ")}"
-            if (after == null) return "$where. The library could not be read."
+            val where =
+                if (looked.isEmpty()) {
+                    words.get(R.string.scan_no_folders)
+                } else {
+                    words.get(R.string.scan_looked_in, looked.joinToString(", "))
+                }
+            if (after == null) return words.get(R.string.scan_unreadable, where)
             val added = after.tracks - (before?.tracks ?: after.tracks)
             val found =
                 when {
-                    added > 0 -> if (added == 1) "1 new track" else String.format(Locale.US, "%,d new tracks", added)
-                    added < 0 -> if (added == -1) "1 track fewer" else String.format(Locale.US, "%,d tracks fewer", -added)
-                    else -> "nothing new"
+                    added > 0 -> words.plural(R.plurals.scan_new_tracks, added)
+                    added < 0 -> words.plural(R.plurals.scan_fewer_tracks, -added)
+                    else -> words.get(R.string.scan_nothing_new)
                 }
-            return "$where: $found."
+            return words.get(R.string.scan_outcome, where, found)
         }
     }
 }

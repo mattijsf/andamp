@@ -7,6 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.player.PlayerFacade
 
@@ -30,6 +31,7 @@ class FolderAccessOps(
     private val readable: ReadableUri,
     /** Where the library is asked whether it lists a file. */
     private val io: kotlin.coroutines.CoroutineContext = Dispatchers.IO,
+    private val words: Words,
 ) {
     /** The folders asked for since the app started, so that reading a list does not ask twice. */
     private val asked = mutableSetOf<String>()
@@ -89,7 +91,7 @@ class FolderAccessOps(
                 state.prompt =
                     prompt(
                         ask.folder,
-                        "That was another folder. The songs play only from the folder they were added from.",
+                        words.get(R.string.folder_other_folder),
                         ask.then,
                     )
             }
@@ -107,7 +109,7 @@ class FolderAccessOps(
     ) {
         if (state.prompt != null) return
         asked += folder
-        state.prompt = prompt(folder, "Andamp can no longer read this folder. Allow it again and its songs play as before.", then)
+        state.prompt = prompt(folder, words.get(R.string.folder_no_longer_readable), then)
     }
 
     private fun prompt(
@@ -115,10 +117,10 @@ class FolderAccessOps(
         body: String,
         then: () -> Unit,
     ) = AmpPrompt(
-        title = "Allow ${GrantScope.folderName(folder)} again?",
+        title = words.get(R.string.folder_allow_again_title, GrantScope.folderName(folder)),
         body = body,
-        confirmLabel = "Allow",
-        dismissLabel = "Not now",
+        confirmLabel = words.get(R.string.prompt_allow),
+        dismissLabel = words.get(R.string.prompt_not_now),
         onConfirm = {
             state.prompt = null
             state.folderAsk = FolderAsk(folder, then)

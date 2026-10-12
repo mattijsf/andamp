@@ -16,7 +16,7 @@ import org.junit.Test
 class EqAutoPresetsTest {
     private val state = WinampState()
     private val store = InMemoryEqPresetStore()
-    private val ops = EqOps(state, playerFacadeFor(RecordingEqBackend()), store)
+    private val ops = EqOps(state, playerFacadeFor(RecordingEqBackend()), store, EnglishWords)
 
     private val track = Track("row-1", "Muse", "Hexagons", 60_000, uri = "content://media/audio/9")
 

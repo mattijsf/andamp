@@ -96,6 +96,7 @@ class SourceOpsArrivalTest {
                 loose,
                 PlaylistLibrary(temp.newFolder("lists")),
                 StationStore(java.io.File(temp.newFolder("radio"), "stations.m3u")),
+                words = EnglishWords,
             ),
             extras = { installed },
             io = Dispatchers.Unconfined,

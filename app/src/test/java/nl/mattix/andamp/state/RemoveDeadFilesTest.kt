@@ -71,6 +71,7 @@ class RemoveDeadFilesTest {
                 state,
                 nl.mattix.andamp.core.player
                     .PlayerFacade(QueueRecordingBackend(recording)),
+                EnglishWords,
             )
         ops.removeDead(setOf("already-gone")) // scanned before the row was removed
         assertTrue(recording.isEmpty())
@@ -88,6 +89,7 @@ class RemoveDeadFilesTest {
                 state,
                 nl.mattix.andamp.core.player
                     .PlayerFacade(QueueRecordingBackend(recording)),
+                EnglishWords,
             )
         ops.removeDead(emptySet())
         assertTrue(recording.isEmpty())
@@ -104,6 +106,7 @@ class RemoveDeadFilesTest {
                 state,
                 nl.mattix.andamp.core.player
                     .PlayerFacade(QueueRecordingBackend(recording)),
+                EnglishWords,
             )
         ops.removeDead(setOf("b"))
         assertEquals(listOf("a", "c"), recording.single().map { it.id })

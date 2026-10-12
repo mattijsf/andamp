@@ -11,6 +11,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import nl.mattix.andamp.state.EnglishWords
 import nl.mattix.andamp.state.SkinEntry
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -40,7 +41,7 @@ class AndroidAutoPrefsTest {
     fun `with nothing chosen the row says Default`() {
         show()
 
-        compose.onNodeWithText(DEFAULT_SKIN).assertExists()
+        compose.onNodeWithText("Default").assertExists()
     }
 
     @Test
@@ -75,12 +76,12 @@ class AndroidAutoPrefsTest {
 
     @Test
     fun `the row that opens the page names the skin`() {
-        assertEquals("Wears Walnut", AndroidAutoPrefs(skins = skins, skin = "wood").summary())
-        assertEquals("Wears the player's own skin", AndroidAutoPrefs(skins = skins).summary())
+        assertEquals("Wears Walnut", AndroidAutoPrefs(skins = skins, skin = "wood").summary(EnglishWords))
+        assertEquals("Wears the player's own skin", AndroidAutoPrefs(skins = skins).summary(EnglishWords))
     }
 
     @Test
     fun `a chosen skin that has gone reads as the player's own`() {
-        assertEquals("Wears the player's own skin", AndroidAutoPrefs(skins = skins, skin = "gone").summary())
+        assertEquals("Wears the player's own skin", AndroidAutoPrefs(skins = skins, skin = "gone").summary(EnglishWords))
     }
 }

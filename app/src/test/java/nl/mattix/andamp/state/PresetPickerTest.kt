@@ -46,23 +46,23 @@ class PresetPickerTest {
     fun `the button counts what will be thrown away`() {
         val delete = picker(9)
 
-        assertEquals("Delete", delete.confirmLabelFor(0))
-        assertEquals("Delete", delete.confirmLabelFor(1))
-        assertEquals("Delete (4)", delete.confirmLabelFor(4))
+        assertEquals("Delete", delete.confirmLabelFor(0, EnglishWords))
+        assertEquals("Delete", delete.confirmLabelFor(1, EnglishWords))
+        assertEquals("Delete (4)", delete.confirmLabelFor(4, EnglishWords))
     }
 
     @Test
     fun `a single-pick dialog never counts`() {
-        assertEquals("Load", picker(9, multi = false).copy(confirmLabel = "Load").confirmLabelFor(1))
+        assertEquals("Load", picker(9, multi = false).copy(confirmLabel = "Load").confirmLabelFor(1, EnglishWords))
     }
 
     @Test
     fun `the line under the title counts what is there and what is picked`() {
         val nine = picker(9)
 
-        assertEquals("9 saved", nine.countLabel(0))
-        assertEquals("3 of 9 selected", nine.countLabel(3))
-        assertEquals("1 saved", picker(1).countLabel(0))
-        assertEquals("Nothing saved", picker(0).countLabel(0))
+        assertEquals("9 saved", nine.countLabel(0, EnglishWords))
+        assertEquals("3 of 9 selected", nine.countLabel(3, EnglishWords))
+        assertEquals("1 saved", picker(1).countLabel(0, EnglishWords))
+        assertEquals("Nothing saved", picker(0).countLabel(0, EnglishWords))
     }
 }

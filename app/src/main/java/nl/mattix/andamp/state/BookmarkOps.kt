@@ -9,6 +9,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.Track
 import kotlin.coroutines.CoroutineContext
 
@@ -27,6 +28,7 @@ class BookmarkOps(
     /** Replaces the queue with these tracks, starting at the given index. */
     private val queue: (List<Track>, Int) -> Unit,
     private val append: (List<Track>) -> Unit,
+    private val words: Words,
 ) {
     /** Every bookmark, as the menus and the preferences page show them. */
     var bookmarks by mutableStateOf(emptyList<Track>())
@@ -45,9 +47,9 @@ class BookmarkOps(
         edit(
             failed =
                 when {
-                    playing == null -> "Nothing is playing"
-                    playing.uri == null -> "This track has nowhere to come back to"
-                    else -> "Already bookmarked"
+                    playing == null -> words.get(R.string.bookmark_nothing_playing)
+                    playing.uri == null -> words.get(R.string.bookmark_nowhere)
+                    else -> words.get(R.string.bookmark_already)
                 },
         ) { store.add(playing) }
     }
@@ -57,7 +59,7 @@ class BookmarkOps(
      * be bookmarked is skipped, and the others are still added.
      */
     fun addAll(tracks: List<Track>) {
-        edit(failed = "Nothing here can be bookmarked") {
+        edit(failed = words.get(R.string.bookmark_none_here)) {
             tracks.count { store.add(it) } > 0
         }
     }

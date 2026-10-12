@@ -3,6 +3,7 @@
 package nl.mattix.andamp.state
 
 import android.os.Build
+import nl.mattix.andamp.R
 
 /**
  * The audio permission by the name Android's settings give it, so the listener can find it
@@ -11,13 +12,18 @@ import android.os.Build
  */
 object MusicPermission {
     /** The name on a phone running [sdk]. */
-    fun name(sdk: Int): String =
-        when {
-            sdk >= Build.VERSION_CODES.TIRAMISU -> "Music and audio"
-            sdk >= Build.VERSION_CODES.R -> "Files and media"
-            else -> "Storage"
-        }
+    fun name(
+        sdk: Int,
+        words: Words,
+    ): String =
+        words.get(
+            when {
+                sdk >= Build.VERSION_CODES.TIRAMISU -> R.string.permission_music_and_audio
+                sdk >= Build.VERSION_CODES.R -> R.string.permission_files_and_media
+                else -> R.string.permission_storage
+            },
+        )
 
     /** The name on this phone. */
-    val current: String get() = name(Build.VERSION.SDK_INT)
+    fun current(words: Words): String = name(Build.VERSION.SDK_INT, words)
 }

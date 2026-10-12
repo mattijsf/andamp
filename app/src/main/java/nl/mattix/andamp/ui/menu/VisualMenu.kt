@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.ui.menu
 
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.MenuAnchor
@@ -22,34 +23,34 @@ fun visualMenu(
 fun visualMenuItems(vm: WinampViewModel): List<AmpMenuItem> {
     val s = vm.state
     return buildList {
-        add(AmpMenuItem.Submenu("Presets", presetItems(vm)))
-        add(AmpMenuItem.Submenu("Preset pack", packItems(vm)))
-        add(AmpMenuItem.Action("Next preset") { s.visualCommands?.nextPreset() })
-        add(AmpMenuItem.Action("Previous preset") { s.visualCommands?.previousPreset() })
+        add(AmpMenuItem.Submenu(vm.words.get(R.string.menu_presets), presetItems(vm)))
+        add(AmpMenuItem.Submenu(vm.words.get(R.string.menu_preset_pack), packItems(vm)))
+        add(AmpMenuItem.Action(vm.words.get(R.string.menu_next_preset)) { s.visualCommands?.nextPreset() })
+        add(AmpMenuItem.Action(vm.words.get(R.string.menu_previous_preset)) { s.visualCommands?.previousPreset() })
         add(AmpMenuItem.Divider)
         add(
-            AmpMenuItem.Action("Shuffle", checked = s.presetShuffle) {
+            AmpMenuItem.Action(vm.words.get(R.string.menu_shuffle), checked = s.presetShuffle) {
                 vm.presetOps.setShuffle(!s.presetShuffle)
             },
         )
         // only AVS reports what it left out of a preset
         if (s.visPlugin == VisPlugin.Avs) {
             add(
-                AmpMenuItem.Action("Show what a preset is missing", checked = s.presetNotices) {
+                AmpMenuItem.Action(vm.words.get(R.string.menu_show_preset_missing), checked = s.presetNotices) {
                     vm.presetOps.setNotices(!s.presetNotices)
                 },
             )
         }
         add(AmpMenuItem.Divider)
-        add(AmpMenuItem.Action("Manage presets...") { s.presetManagerRequested = true })
-        add(AmpMenuItem.Action("Load preset pack...") { s.presetPickRequested = true })
+        add(AmpMenuItem.Action(vm.words.get(R.string.menu_manage_presets)) { s.presetManagerRequested = true })
+        add(AmpMenuItem.Action(vm.words.get(R.string.menu_load_preset_pack)) { s.presetPickRequested = true })
         add(AmpMenuItem.Divider)
         add(
-            AmpMenuItem.Action("Fullscreen", checked = s.milkdropFullscreen) {
+            AmpMenuItem.Action(vm.words.get(R.string.menu_fullscreen), checked = s.milkdropFullscreen) {
                 s.milkdropFullscreen = !s.milkdropFullscreen
             },
         )
-        add(AmpMenuItem.Action("Close") { vm.presetOps.setWindowOpen(false) })
+        add(AmpMenuItem.Action(vm.words.get(R.string.menu_close)) { vm.presetOps.setWindowOpen(false) })
     }
 }
 
@@ -61,14 +62,17 @@ private fun packItems(vm: WinampViewModel): List<AmpMenuItem> {
     val s = vm.state
     return buildList {
         add(
-            AmpMenuItem.Action(s.visPlugin.idleLabel, checked = s.presetPack == null) {
+            AmpMenuItem.Action(vm.words.get(s.visPlugin.idleLabelRes), checked = s.presetPack == null) {
                 vm.presetOps.select(null)
                 vm.presetOps.setWindowOpen(true)
             },
         )
         vm.presetOps.packsFor(s.visPlugin).forEach { pack ->
             add(
-                AmpMenuItem.Action("${pack.name} (${pack.countFor(s.visPlugin)})", checked = s.presetPack == pack.name) {
+                AmpMenuItem.Action(
+                    vm.words.get(R.string.menu_pack_with_count, pack.name, pack.countFor(s.visPlugin)),
+                    checked = s.presetPack == pack.name,
+                ) {
                     vm.presetOps.select(pack.name)
                     vm.presetOps.setWindowOpen(true)
                 },
@@ -77,12 +81,12 @@ private fun packItems(vm: WinampViewModel): List<AmpMenuItem> {
     }
 }
 
-/** What the no-import option is called: each engine has its own built-in. */
-val VisPlugin.idleLabel: String
+/** What the no-import option is called, as a string resource: each engine has a built-in one. */
+val VisPlugin.idleLabelRes: Int
     get() =
         when (this) {
-            VisPlugin.Avs -> "AVS idle preset"
-            VisPlugin.Milkdrop -> "projectM idle preset"
+            VisPlugin.Avs -> R.string.menu_avs_idle_preset
+            VisPlugin.Milkdrop -> R.string.menu_projectm_idle_preset
         }
 
 /** How many presets of [plugin]'s kind a pack holds. */
@@ -99,7 +103,7 @@ fun InstalledPack.countFor(plugin: VisPlugin): Int =
 private fun presetItems(vm: WinampViewModel): List<AmpMenuItem> {
     val s = vm.state
     if (s.presetNames.isEmpty()) {
-        return listOf(AmpMenuItem.Action("No presets loaded") { s.presetManagerRequested = true })
+        return listOf(AmpMenuItem.Action(vm.words.get(R.string.menu_no_presets_loaded)) { s.presetManagerRequested = true })
     }
     return buildList {
         s.presetNames.take(PRESET_MENU_MAX).forEachIndexed { index, name ->
@@ -108,7 +112,7 @@ private fun presetItems(vm: WinampViewModel): List<AmpMenuItem> {
         if (s.presetNames.size > PRESET_MENU_MAX) {
             add(AmpMenuItem.Divider)
             add(
-                AmpMenuItem.Action("All ${s.presetNames.size} presets...") {
+                AmpMenuItem.Action(vm.words.get(R.string.menu_all_presets, s.presetNames.size)) {
                     s.presetManagerRequested = true
                 },
             )

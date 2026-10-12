@@ -220,8 +220,11 @@ class MainMenuTest {
         assertTrue("the library is listed after Equalizer", listed == windows + 1)
 
         val phone = listOf(MusicSource.LOCAL)
-        assertEquals(false, (libraryItem(phone, showing = null, onToggle = {}, onSource = {}) as AmpMenuItem.Action).checked)
-        val open = libraryItem(phone, showing = MusicSource.LOCAL, onToggle = {}, onSource = {})
+        assertEquals(
+            false,
+            (libraryItem(LIBRARY, phone, showing = null, onToggle = {}, onSource = {}) as AmpMenuItem.Action).checked,
+        )
+        val open = libraryItem(LIBRARY, phone, showing = MusicSource.LOCAL, onToggle = {}, onSource = {})
         assertEquals(true, (open as AmpMenuItem.Action).checked)
     }
 
@@ -229,7 +232,8 @@ class MainMenuTest {
     fun `the library entry calls its toggle`() {
         var toggled = 0
 
-        val entry = libraryItem(listOf(MusicSource.LOCAL), showing = MusicSource.LOCAL, onToggle = { toggled++ }, onSource = {})
+        val entry =
+            libraryItem(LIBRARY, listOf(MusicSource.LOCAL), showing = MusicSource.LOCAL, onToggle = { toggled++ }, onSource = {})
 
         (entry as AmpMenuItem.Action).onClick()
         assertEquals(1, toggled)
@@ -249,8 +253,8 @@ class MainMenuTest {
         val example = MusicSource("EXAMPLE", "Example")
         val both = listOf(MusicSource.LOCAL, example)
 
-        val closed = libraryItem(both, showing = null, onToggle = {}, onSource = { picked += it })
-        val open = libraryItem(both, showing = example, onToggle = {}, onSource = { picked += it })
+        val closed = libraryItem(LIBRARY, both, showing = null, onToggle = {}, onSource = { picked += it })
+        val open = libraryItem(LIBRARY, both, showing = example, onToggle = {}, onSource = { picked += it })
 
         assertTrue("with two sources the library is a submenu", closed is AmpMenuItem.Submenu)
         val entries = actions((open as AmpMenuItem.Submenu).items)
@@ -270,7 +274,7 @@ class MainMenuTest {
     fun `with one source the library is one entry`() {
         var toggled = 0
 
-        val item = libraryItem(listOf(MusicSource.LOCAL), showing = null, onToggle = { toggled++ }, onSource = {})
+        val item = libraryItem(LIBRARY, listOf(MusicSource.LOCAL), showing = null, onToggle = { toggled++ }, onSource = {})
 
         assertEquals("Media Library", (item as AmpMenuItem.Action).label)
         item.onClick()
@@ -366,3 +370,6 @@ class MainMenuTest {
         assertTrue(toMuseum)
     }
 }
+
+/** What the library's entry is called; the menu reads it from its strings. */
+private const val LIBRARY = "Media Library"

@@ -2,10 +2,12 @@
 
 package nl.mattix.andamp.ui.menu
 
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.LibraryOps
 import nl.mattix.andamp.state.MenuAnchor
+import nl.mattix.andamp.state.Words
 
 /**
  * The long press on a library row, standing in for Winamp's right click.
@@ -19,18 +21,22 @@ fun libraryRowMenu(
     row: Int,
     label: String,
     anchor: MenuAnchor,
+    words: Words,
 ): AmpMenu =
     AmpMenu(
         title = label,
         anchor = anchor,
         items =
             listOf(
-                AmpMenuItem.Action("Play") { ops.playRow(row) },
-                AmpMenuItem.Action("Enqueue") { ops.enqueueRow(row) },
-                AmpMenuItem.Action("Enqueue next") { ops.enqueueNextRow(row) },
+                AmpMenuItem.Action(words.get(R.string.menu_play)) { ops.playRow(row) },
+                AmpMenuItem.Action(words.get(R.string.menu_enqueue)) { ops.enqueueRow(row) },
+                AmpMenuItem.Action(words.get(R.string.menu_enqueue_next)) { ops.enqueueNextRow(row) },
             ) +
                 if (ops.canDeleteRow(row)) {
-                    listOf(AmpMenuItem.Divider, AmpMenuItem.Action("Delete list") { ops.promptDeleteRow(row) })
+                    listOf(
+                        AmpMenuItem.Divider,
+                        AmpMenuItem.Action(words.get(R.string.menu_delete_list)) { ops.promptDeleteRow(row) },
+                    )
                 } else {
                     emptyList()
                 },

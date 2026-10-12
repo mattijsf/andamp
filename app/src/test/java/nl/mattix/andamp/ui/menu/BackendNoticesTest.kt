@@ -3,6 +3,7 @@
 package nl.mattix.andamp.ui.menu
 
 import nl.mattix.andamp.core.model.BackendNotice
+import nl.mattix.andamp.state.EnglishWords
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -24,7 +25,7 @@ class BackendNoticesTest {
 
     @Test
     fun `the notice says what happened and what to do about it`() {
-        val body = promptFor(BackendNotice.SourceCannotPlay) {}.body
+        val body = promptFor(BackendNotice.SourceCannotPlay, EnglishWords) {}.body
 
         assertTrue("the notice names a cause", body.contains("account") && body.contains("connection"))
         assertTrue("the notice offers a remedy", body.contains("play again"))
@@ -32,7 +33,7 @@ class BackendNoticesTest {
 
     @Test
     fun `it names the source`() {
-        val body = promptFor(BackendNotice.SourceCannotPlay) {}.body
+        val body = promptFor(BackendNotice.SourceCannotPlay, EnglishWords) {}.body
 
         assertTrue(body.contains("source"))
     }
@@ -40,7 +41,7 @@ class BackendNoticesTest {
     /** It can come after a run of tracks, after one on a short queue, or at once. */
     @Test
     fun `it names no count of tracks`() {
-        val body = promptFor(BackendNotice.SourceCannotPlay) {}.body
+        val body = promptFor(BackendNotice.SourceCannotPlay, EnglishWords) {}.body
 
         assertFalse("the notice names no count: $body", COUNT.containsMatchIn(body))
     }
@@ -48,14 +49,14 @@ class BackendNoticesTest {
     /** The player outlives its windows, so closing and reopening the app is no remedy. */
     @Test
     fun `it does not suggest leaving the app`() {
-        val body = promptFor(BackendNotice.SourceCannotPlay) {}.body
+        val body = promptFor(BackendNotice.SourceCannotPlay, EnglishWords) {}.body
 
         assertFalse("the notice does not suggest leaving the app: $body", LEAVING.containsMatchIn(body))
     }
 
     @Test
     fun `nothing here to play says where the reason is`() {
-        val body = promptFor(BackendNotice.NothingPlayableHere) {}.body
+        val body = promptFor(BackendNotice.NothingPlayableHere, EnglishWords) {}.body
 
         assertTrue("the notice names a reason", body.contains("installed") && body.contains("signed in"))
         assertTrue("the notice points at the rows that say which", body.contains("row"))
@@ -63,7 +64,7 @@ class BackendNoticesTest {
 
     @Test
     fun `a lost station says it was the station, and that play tries again`() {
-        val body = promptFor(BackendNotice.StationLost) {}.body
+        val body = promptFor(BackendNotice.StationLost, EnglishWords) {}.body
 
         assertTrue("the notice names the station: $body", body.contains("station"))
         assertTrue("the notice offers a remedy: $body", body.contains("play"))
@@ -73,7 +74,7 @@ class BackendNoticesTest {
     /** It names the server, not a station or an account, and gives no count. */
     @Test
     fun `a lost server says it was the server, and that play tries again`() {
-        val body = promptFor(BackendNotice.ServerLost) {}.body
+        val body = promptFor(BackendNotice.ServerLost, EnglishWords) {}.body
 
         assertTrue("the notice names the server: $body", body.contains("server"))
         assertFalse("the notice does not name a station: $body", body.contains("station"))
@@ -87,7 +88,7 @@ class BackendNoticesTest {
     fun `a notice has one button, and it closes it`() {
         everyNotice.forEach { notice ->
             var closed = false
-            val prompt = promptFor(notice) { closed = true }
+            val prompt = promptFor(notice, EnglishWords) { closed = true }
 
             assertEquals("OK", prompt.confirmLabel)
             assertNull("$notice offers nothing to decline", prompt.dismissLabel)

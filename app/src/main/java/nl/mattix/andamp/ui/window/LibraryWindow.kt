@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.ui.window
 
+import android.content.res.Resources
 import android.graphics.Bitmap
 import android.graphics.Canvas
 import android.graphics.Typeface
@@ -21,6 +22,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
+import nl.mattix.andamp.R
 import nl.mattix.andamp.skin.PleditStyle
 import nl.mattix.andamp.skin.Sheet
 import nl.mattix.andamp.skin.Skin
@@ -32,6 +34,7 @@ import nl.mattix.andamp.state.MusicPermission
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
+import nl.mattix.andamp.state.Words
 import nl.mattix.andamp.ui.LibraryAccessHandle
 import nl.mattix.andamp.ui.menu.libraryRowMenu
 import nl.mattix.andamp.ui.sprite
@@ -60,7 +63,7 @@ fun LibraryWindow(
     val context = LocalContext.current
     val rasterizer =
         remember {
-            LibraryRasterizer(Typeface.createFromAsset(context.assets, PlaylistTextRasterizer.ASSET_PATH))
+            LibraryRasterizer(Typeface.createFromAsset(context.assets, PlaylistTextRasterizer.ASSET_PATH), context.resources)
         }
     val frame = frameFor(skin)
     // a permission granted while the window shows its tap-to-allow row reloads the list
@@ -231,6 +234,7 @@ private fun libraryWidgets(
                                 row,
                                 ops.rows[row].label,
                                 MenuAnchor(WindowStore.LIBRARY, left, top, layout.rowsWidth(frame), layout.rowH),
+                                vm.words,
                             )
                     }
                 },
@@ -292,7 +296,7 @@ internal fun DrawScope.drawLibraryContent(
             scroll = s.libraryScroll,
             selection = s.librarySelected,
             pressedRow = s.libraryPressedRow,
-            tabs = ops.visibleCategories.map { it.label },
+            tabs = ops.visibleCategories.map(ops::label),
             activeTab = ops.visibleCategories.indexOf(ops.category),
             pressedTab =
                 ops.visibleCategories.indexOfFirst {
@@ -347,6 +351,8 @@ internal fun DrawScope.drawLibraryContent(
  */
 internal class LibraryRasterizer(
     private val arialLike: Typeface,
+    /** Where the bar's words come from, in the phone's language. */
+    private val resources: Resources,
 ) {
     /** Everything the layer depends on, as values; the cache key. */
     @Suppress("LongParameterList") // the scene is the list of everything that gets drawn
@@ -477,7 +483,7 @@ internal class LibraryRasterizer(
 
             scene.canSearch -> {
                 paint.color = scene.style.normal.toArgb()
-                canvas.drawText("SEARCH", ListText.LEFT_INSET, baseline, paint)
+                canvas.drawText(resources.getString(R.string.library_search_header), ListText.LEFT_INSET, baseline, paint)
             }
 
             else -> {
@@ -572,12 +578,22 @@ internal class LibraryRasterizer(
         if (ops.loading) return
         val (text, colour) =
             when {
-                ops.needsAccess -> "TAP TO ALLOW ${MusicPermission.current.uppercase()}" to scene.style.current
+                ops.needsAccess -> {
+                    resources.getString(
+                        R.string.library_tap_to_allow,
+                        MusicPermission.current(Words.of(resources)).uppercase(),
+                    ) to
+                        scene.style.current
+                }
 
                 // a tap retries, so it is drawn in the same color as the prompt above
-                ops.unreachable -> ops.emptyNote to scene.style.current
+                ops.unreachable -> {
+                    ops.emptyNote to scene.style.current
+                }
 
-                else -> ops.emptyNote to scene.style.normal
+                else -> {
+                    ops.emptyNote to scene.style.normal
+                }
             }
         paint.color = colour.toArgb()
         val baseline = ListText.baseline(paint, LibraryLayout.ROWS_TOP.toFloat(), scene.rowH)
@@ -616,13 +632,53 @@ internal class LibraryRasterizer(
 
         if (!ops.atTracks) return
         if (scene.newCell) {
-            drawBarButton(canvas, paint, scene, top, baseline, newLeft, playLeft, "NEW", scene.newPressed)
+            drawBarButton(
+                canvas,
+                paint,
+                scene,
+                top,
+                baseline,
+                newLeft,
+                playLeft,
+                resources.getString(R.string.library_bar_new),
+                scene.newPressed,
+            )
         }
         if (scene.deleteCell) {
-            drawBarButton(canvas, paint, scene, top, baseline, deleteLeft, playLeft, "DEL LIST", scene.deletePressed)
+            drawBarButton(
+                canvas,
+                paint,
+                scene,
+                top,
+                baseline,
+                deleteLeft,
+                playLeft,
+                resources.getString(R.string.library_bar_del_list),
+                scene.deletePressed,
+            )
         }
-        drawBarButton(canvas, paint, scene, top, baseline, playLeft, addLeft, "PLAY", scene.playPressed)
-        drawBarButton(canvas, paint, scene, top, baseline, addLeft, w, "ADD", scene.addPressed)
+        drawBarButton(
+            canvas,
+            paint,
+            scene,
+            top,
+            baseline,
+            playLeft,
+            addLeft,
+            resources.getString(R.string.library_bar_play),
+            scene.playPressed,
+        )
+        drawBarButton(
+            canvas,
+            paint,
+            scene,
+            top,
+            baseline,
+            addLeft,
+            w,
+            resources.getString(R.string.library_bar_add),
+            scene.addPressed,
+        )
     }
 
     @Suppress("LongParameterList") // one button cell: geometry, label, pressed

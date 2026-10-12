@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- The buttons prompts share -->
+    <string name="prompt_save">Save</string>
+    <string name="prompt_ok">OK</string>
+    <string name="prompt_open_settings">Open settings</string>
+    <string name="prompt_not_now">Not now</string>
+    <string name="prompt_allow">Allow</string>
+    <string name="prompt_close">Close</string>
+    <string name="prompt_cancel">Cancel</string>
+    <string name="prompt_delete">Delete</string>
+
+    <!-- DeleteListPrompt.kt: %1$s is the saved list's name -->
+    <string name="prompt_delete_list_title">Delete %1$s?</string>
+    <string name="prompt_delete_list_body">This deletes the saved list. The music in it is not deleted.</string>
+
+    <!-- BookmarkOps.kt: why a bookmark was not made -->
+    <string name="bookmark_nothing_playing">Nothing is playing</string>
+    <string name="bookmark_nowhere">This track has nowhere to come back to</string>
+    <string name="bookmark_already">Already bookmarked</string>
+    <string name="bookmark_none_here">Nothing here can be bookmarked</string>
+
+    <!-- SourcePrompts.kt: %1$s is the music source's name -->
+    <string name="source_missing_title">%1$s is not set up</string>
+    <string name="source_missing_body">Set up %1$s to play its tracks in Andamp. Until then they are skipped.</string>
+    <string name="source_missing_confirm">Set up %1$s</string>
+    <string name="source_signed_out_title">%1$s is signed out</string>
+    <string name="source_signed_out_body">Sign in to play your %1$s tracks in Andamp. Until then they are skipped.</string>
+    <string name="source_signed_out_confirm">Sign in</string>
+
+    <!-- MusicPermission.kt: the audio permission as Android's settings name it -->
+    <string name="permission_music_and_audio">Music and audio</string>
+    <string name="permission_files_and_media">Files and media</string>
+    <string name="permission_storage">Storage</string>
+
+    <!-- LibraryAccess.kt and LibraryPrompt.kt: %1$s is the permission's name -->
+    <string name="access_granted">Andamp has the %1$s permission. Tracks you add keep playing after a restart.</string>
+    <string name="access_askable">Without the %1$s permission, Andamp can still play files you pick, but they may stop working after a restart.</string>
+    <string name="access_blocked">The %1$s permission is off. Files you pick still play for now, but they may stop working after a restart.</string>
+    <string name="access_ask_title">Allow %1$s</string>
+    <string name="access_ask_body">Andamp needs %1$s to play the songs on this phone.</string>
+    <string name="access_off_title">%1$s permission is off</string>
+    <string name="access_off_body">Allow %1$s in Andamp\'s settings to play the songs on this phone.</string>
+
+    <!-- FolderAccessOps.kt: %1$s is the folder's name -->
+    <string name="folder_allow_again_title">Allow %1$s again?</string>
+    <string name="folder_other_folder">That was another folder. The songs play only from the folder they were added from.</string>
+    <string name="folder_no_longer_readable">Andamp can no longer read this folder. Allow it again and its songs play as before.</string>
+
+    <!-- OverlayOps.kt: Always On Top -->
+    <string name="overlay_title">Always on top</string>
+    <string name="overlay_needs_android_11">Floating on top of other apps needs Android 11 or later.</string>
+    <string name="overlay_needs_permission">Andamp needs permission to draw over other apps before it can float on top of them.</string>
+
+    <!-- PresetNotice.kt: the visualizer's line about a preset -->
+    <string name="preset_unreadable">This preset could not be read</string>
+    <!-- %1$s lists the effects left out -->
+    <string name="preset_not_shown">Not shown in this preset: %1$s</string>
+    <!-- %1$s is the named effects, %2$d how many more -->
+    <string name="preset_and_more">%1$s and %2$d more</string>
+
+    <!-- PresetPicker.kt: the line under a picker's title, and its confirm button -->
+    <string name="picker_nothing_saved_yet">Nothing saved yet</string>
+    <string name="picker_nothing_saved">Nothing saved</string>
+    <string name="picker_selected">%1$d of %2$d selected</string>
+    <plurals name="picker_saved">
+        <item quantity="one">%1$d saved</item>
+        <item quantity="other">%1$d saved</item>
+    </plurals>
+    <!-- %1$s is the button's label, %2$d how many rows are picked -->
+    <string name="picker_confirm_count">%1$s (%2$d)</string>
+
+    <!-- BackendNotices.kt: why playback stopped by itself -->
+    <string name="notice_source_cannot_play_title">Nothing will play</string>
+    <string name="notice_source_cannot_play_body">Nothing from this source would play. It may need a different account or plan, or the connection to it has gone. Pressing play again tries once more. If it keeps happening, check the source\'s own settings.</string>
+    <string name="notice_station_lost_title">Station lost</string>
+    <string name="notice_station_lost_body">The station stopped and could not be reached again, so the player has stopped too. The station may be off the air, or the connection may still be down. Pressing play tries again.</string>
+    <string name="notice_server_lost_title">Server lost</string>
+    <string name="notice_server_lost_body">The connection to the music server went, and the server could not be reached again. The server may be down, or the connection may still be gone. Pressing play tries again.</string>
+    <string name="notice_nothing_playable_title">Nothing here can play</string>
+    <string name="notice_nothing_playable_body">Every track in this playlist comes from a source this phone cannot reach right now: it is not installed, or nobody is signed in to it. Each row says which.</string>
+
+    <!-- WinampViewModel.kt: Ctrl+J -->
+    <string name="prompt_jump_to_time_title">Jump to time</string>
+    <string name="prompt_jump_to_time_confirm">Jump</string>
+</resources>

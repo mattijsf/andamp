@@ -21,6 +21,7 @@ import nl.mattix.andamp.skin.LiveSkins
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SkinDist
 import nl.mattix.andamp.skin.SkinLoader
+import nl.mattix.andamp.state.EnglishWords
 import nl.mattix.andamp.state.PlaylistFont
 import nl.mattix.andamp.state.RowHeight
 import nl.mattix.andamp.state.SkinEntry
@@ -443,14 +444,14 @@ class WindowGoldenTest {
         seed(lists, stations)
         val ops =
             nl.mattix.andamp.state
-                .LibraryOps({ GoldenShelf(available) }, facade, state, scope, lists, stations)
+                .LibraryOps({ GoldenShelf(available) }, facade, state, scope, lists, stations, words = EnglishWords)
         ops.open()
         return ops to state
     }
 
     private fun libraryRasterizer(): LibraryRasterizer {
         val context = ApplicationProvider.getApplicationContext<Context>()
-        return LibraryRasterizer(Typeface.createFromAsset(context.assets, PlaylistTextRasterizer.ASSET_PATH))
+        return LibraryRasterizer(Typeface.createFromAsset(context.assets, PlaylistTextRasterizer.ASSET_PATH), context.resources)
     }
 
     private fun renderLibrary(

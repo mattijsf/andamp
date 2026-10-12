@@ -9,6 +9,7 @@ import android.provider.OpenableColumns
 import android.util.Log
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.model.TrackInfo
 import nl.mattix.andamp.core.player.TrackInfoSource
@@ -61,23 +62,24 @@ class FileInfoSource(
             lines =
                 listOf(
                     // the container first
-                    "File" to name,
-                    "Size" to sizeOf(uri),
-                    "Format" to tags[MediaMetadataRetriever.METADATA_KEY_MIMETYPE],
-                    "Length" to lengthOf(tags, track),
-                    "Bitrate" to
+                    app.getString(R.string.info_file) to name,
+                    app.getString(R.string.info_size) to sizeOf(uri),
+                    app.getString(R.string.info_format) to tags[MediaMetadataRetriever.METADATA_KEY_MIMETYPE],
+                    app.getString(R.string.info_length) to lengthOf(tags, track),
+                    app.getString(R.string.info_bitrate) to
                         tags[MediaMetadataRetriever.METADATA_KEY_BITRATE]?.toLongOrNull()?.let { "${it / BITS_PER_KBIT} kbps" },
-                    "Sample rate" to sampleRateOf(tags, track),
+                    app.getString(R.string.info_sample_rate) to sampleRateOf(tags, track),
                     // then the tags
-                    "Title" to tags[MediaMetadataRetriever.METADATA_KEY_TITLE],
-                    "Artist" to tags[MediaMetadataRetriever.METADATA_KEY_ARTIST],
-                    "Album" to tags[MediaMetadataRetriever.METADATA_KEY_ALBUM],
-                    "Album artist" to tags[MediaMetadataRetriever.METADATA_KEY_ALBUMARTIST],
-                    "Track" to tags[MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER],
-                    "Disc" to tags[MediaMetadataRetriever.METADATA_KEY_DISC_NUMBER],
-                    "Year" to (tags[MediaMetadataRetriever.METADATA_KEY_YEAR] ?: tags[MediaMetadataRetriever.METADATA_KEY_DATE]),
-                    "Genre" to tags[MediaMetadataRetriever.METADATA_KEY_GENRE],
-                    "Composer" to tags[MediaMetadataRetriever.METADATA_KEY_COMPOSER],
+                    app.getString(R.string.info_title) to tags[MediaMetadataRetriever.METADATA_KEY_TITLE],
+                    app.getString(R.string.info_artist) to tags[MediaMetadataRetriever.METADATA_KEY_ARTIST],
+                    app.getString(R.string.info_album) to tags[MediaMetadataRetriever.METADATA_KEY_ALBUM],
+                    app.getString(R.string.info_album_artist) to tags[MediaMetadataRetriever.METADATA_KEY_ALBUMARTIST],
+                    app.getString(R.string.info_track) to tags[MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER],
+                    app.getString(R.string.info_disc) to tags[MediaMetadataRetriever.METADATA_KEY_DISC_NUMBER],
+                    app.getString(R.string.info_year) to
+                        (tags[MediaMetadataRetriever.METADATA_KEY_YEAR] ?: tags[MediaMetadataRetriever.METADATA_KEY_DATE]),
+                    app.getString(R.string.info_genre) to tags[MediaMetadataRetriever.METADATA_KEY_GENRE],
+                    app.getString(R.string.info_composer) to tags[MediaMetadataRetriever.METADATA_KEY_COMPOSER],
                 ),
         )
     }

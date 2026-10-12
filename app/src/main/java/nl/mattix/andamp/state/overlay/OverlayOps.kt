@@ -5,7 +5,9 @@ package nl.mattix.andamp.state.overlay
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.AmpPrompt
+import nl.mattix.andamp.state.Words
 
 /**
  * The floating player's state for the rest of the app: [OverlayGate] held as Compose state.
@@ -26,6 +28,7 @@ class OverlayOps(
     private val onSwitchedOn: () -> Unit = {},
     /** Whether this phone can show a floating player at all; see [OverlaySupport]. */
     val supported: Boolean = true,
+    private val words: Words,
 ) {
     var gate by mutableStateOf(
         OverlayGate(wanted = supported && store.wanted, permitted = permitted()),
@@ -62,9 +65,9 @@ class OverlayOps(
         if (on && !supported) {
             prompt(
                 AmpPrompt(
-                    title = "Always on top",
-                    body = "Floating on top of other apps needs Android 11 or later.",
-                    confirmLabel = "OK",
+                    title = words.get(R.string.overlay_title),
+                    body = words.get(R.string.overlay_needs_android_11),
+                    confirmLabel = words.get(R.string.prompt_ok),
                     dismissLabel = null,
                     onConfirm = {},
                 ),
@@ -75,10 +78,10 @@ class OverlayOps(
         if (on && !gate.permitted) {
             prompt(
                 AmpPrompt(
-                    title = "Always on top",
-                    body =
-                        "Andamp needs permission to draw over other apps before it can " +
-                            "float on top of them.",
+                    title = words.get(R.string.overlay_title),
+                    body = words.get(R.string.overlay_needs_permission),
+                    confirmLabel = words.get(R.string.prompt_open_settings),
+                    dismissLabel = words.get(R.string.prompt_not_now),
                     onConfirm = openSettings,
                 ),
             )
@@ -124,9 +127,11 @@ class OverlayOps(
 
     /** What the settings row says under its title. */
     fun summary(): String =
-        when {
-            !gate.wanted -> "Off"
-            !gate.permitted -> "Waiting for permission to draw over other apps"
-            else -> "The player floats on top of other apps"
-        }
+        words.get(
+            when {
+                !gate.wanted -> R.string.overlay_summary_off
+                !gate.permitted -> R.string.overlay_summary_waiting
+                else -> R.string.overlay_summary_on
+            },
+        )
 }

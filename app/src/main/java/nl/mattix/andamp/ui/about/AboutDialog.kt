@@ -49,6 +49,7 @@ import androidx.compose.ui.graphics.toPixelMap
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -92,17 +93,20 @@ fun AboutBody(onClose: () -> Unit) {
         ) {
             LogoPanel()
             Spacer(Modifier.height(20.dp))
-            Text("Andamp", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             Text(
-                "${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                stringResource(R.string.app_name),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+            )
+            Text(
+                stringResource(R.string.about_version, BuildConfig.VERSION_NAME, BuildConfig.VERSION_CODE),
                 style = MaterialTheme.typography.labelLarge,
                 fontFamily = FontFamily.Monospace,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             Spacer(Modifier.height(12.dp))
             Text(
-                "A Winamp 2.8 replica, rebuilt in Kotlin. Not affiliated with " +
-                    "Winamp, Nullsoft or Llama Group.",
+                stringResource(R.string.about_blurb),
                 style = MaterialTheme.typography.bodySmall,
                 textAlign = TextAlign.Center,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -112,7 +116,9 @@ fun AboutBody(onClose: () -> Unit) {
             Spacer(Modifier.height(SHADOW + 8.dp))
             Stamp("mattix.nl", "https://mattix.nl", "about.maker")
             Spacer(Modifier.height(4.dp))
-            TextButton(onClick = onClose, modifier = Modifier.testTag("about.close")) { Text("Close") }
+            TextButton(onClick = onClose, modifier = Modifier.testTag("about.close")) {
+                Text(stringResource(R.string.about_close))
+            }
         }
     }
 }

@@ -17,6 +17,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.unit.IntRect
 import androidx.lifecycle.ViewModelProvider
 import nl.mattix.andamp.MainActivity
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.AppViewModels
 import nl.mattix.andamp.state.CurrentSkin
 import nl.mattix.andamp.state.WinampViewModel
@@ -57,7 +58,7 @@ class WidgetMenuActivity : ComponentActivity() {
                 picking = false
                 uri?.let {
                     contentResolver.openInputStream(it)?.let { stream ->
-                        player.skinOps.load(stream, displayNameOf(it) ?: "picked skin")
+                        player.skinOps.load(stream, displayNameOf(it) ?: getString(R.string.skin_picked_name))
                     }
                 }
                 finish()

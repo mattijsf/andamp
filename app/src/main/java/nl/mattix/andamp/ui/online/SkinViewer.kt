@@ -56,10 +56,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import nl.mattix.andamp.R
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.online.OnlineSkin
 import nl.mattix.andamp.ui.BackPull
@@ -127,7 +129,11 @@ internal fun SkinViewer(
                         .then(leaving)
                         .testTag("$TAG.close"),
             ) {
-                Icon(Icons.Filled.Close, contentDescription = "Back to the grid", tint = Color.White)
+                Icon(
+                    Icons.Filled.Close,
+                    contentDescription = stringResource(R.string.museum_back_to_the_grid),
+                    tint = Color.White,
+                )
             }
             val stage: @Composable () -> Unit = {
                 SkinStage(
@@ -260,13 +266,13 @@ private fun SkinFacts(
                             contentColor = MaterialTheme.colorScheme.onErrorContainer,
                         ),
                     modifier = Modifier.testTag("$TAG.uninstall.${skin.md5}"),
-                ) { Text("Uninstall") }
+                ) { Text(stringResource(R.string.museum_uninstall)) }
             } else {
                 Button(
                     onClick = onInstall,
                     enabled = !busy,
                     modifier = Modifier.testTag("$TAG.install.${skin.md5}"),
-                ) { Text(if (busy) "Installing\u2026" else "Install") }
+                ) { Text(stringResource(if (busy) R.string.museum_installing else R.string.museum_install)) }
             }
             skin.museumUrl?.let { url ->
                 TextButton(
@@ -278,7 +284,7 @@ private fun SkinFacts(
                         }.onFailure { if (it !is ActivityNotFoundException) throw it }
                     },
                     modifier = Modifier.testTag("$TAG.museum"),
-                ) { Text("In the museum") }
+                ) { Text(stringResource(R.string.museum_in_the_museum)) }
             }
         }
     }

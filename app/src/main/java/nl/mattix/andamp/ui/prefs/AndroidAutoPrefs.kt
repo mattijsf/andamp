@@ -3,8 +3,11 @@
 package nl.mattix.andamp.ui.prefs
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.SkinEntry
 import nl.mattix.andamp.state.WinampViewModel
+import nl.mattix.andamp.state.Words
 
 /**
  * Preferences > Android Auto: what the main window looks like in Android Auto.
@@ -33,18 +36,19 @@ fun androidAutoPrefsOf(
 )
 
 /** The summary on the row that opens the page. */
-fun AndroidAutoPrefs.summary(): String =
-    skins.firstOrNull { it.id == skin }?.let { "Wears ${it.name}" } ?: "Wears the player's own skin"
+fun AndroidAutoPrefs.summary(words: Words): String =
+    skins.firstOrNull { it.id == skin }?.let { words.get(R.string.prefs_android_auto_wears_skin, it.name) }
+        ?: words.get(R.string.prefs_android_auto_wears_own_skin)
 
 @Composable
 internal fun AndroidAutoPage(prefs: AndroidAutoPrefs) {
-    Section("Skin")
-    Note("In Android Auto the main window wears this skin. Default keeps the one you picked for the player.")
+    Section(stringResource(R.string.prefs_android_auto_skin_section))
+    Note(stringResource(R.string.prefs_android_auto_skin_note))
     Group {
         SkinPickRow(
             skins = prefs.skins,
             chosen = prefs.skin,
-            heading = "Skin in Android Auto",
+            heading = stringResource(R.string.prefs_android_auto_skin_heading),
             tag = "prefs.androidauto.skin",
             onPick = prefs.onSkin,
         )

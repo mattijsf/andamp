@@ -29,8 +29,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.BookmarkSheet
 
 /**
@@ -65,7 +67,7 @@ fun BookmarkSheetBody(
     ) {
         Column(Modifier.padding(PADDING.dp)) {
             Text(
-                if (renaming == null) "Bookmarks" else "Rename bookmark",
+                stringResource(if (renaming == null) R.string.menu_bookmarks else R.string.menu_rename_bookmark),
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier.padding(bottom = GAP.dp),
@@ -77,14 +79,14 @@ fun BookmarkSheetBody(
                         onValueChange = { typed = it },
                         singleLine = true,
                         shape = RoundedCornerShape(FIELD_CORNER.dp),
-                        label = { Text("Name") },
+                        label = { Text(stringResource(R.string.menu_name)) },
                         modifier = Modifier.fillMaxWidth().testTag("$TAG.name"),
                     )
                 }
 
                 rows.isEmpty() -> {
                     Text(
-                        "You have not bookmarked anything yet",
+                        stringResource(R.string.menu_no_bookmarks_yet),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -112,7 +114,7 @@ fun BookmarkSheetBody(
             ) {
                 if (renaming != null) {
                     TextButton(onClick = { renaming = null }, modifier = Modifier.testTag("$TAG.rename.cancel")) {
-                        Text("Cancel")
+                        Text(stringResource(R.string.menu_cancel))
                     }
                     Button(
                         enabled = typed.isNotBlank(),
@@ -122,18 +124,20 @@ fun BookmarkSheetBody(
                             renaming = null
                         },
                         modifier = Modifier.testTag("$TAG.rename.save"),
-                    ) { Text("Save") }
+                    ) { Text(stringResource(R.string.menu_save)) }
                 } else {
-                    TextButton(onClick = onDismiss, modifier = Modifier.testTag("$TAG.close")) { Text("Close") }
-                    Action("Edit", picked, "$TAG.edit") { key ->
+                    TextButton(onClick = onDismiss, modifier = Modifier.testTag("$TAG.close")) {
+                        Text(stringResource(R.string.menu_close))
+                    }
+                    Action(stringResource(R.string.menu_edit), picked, "$TAG.edit") { key ->
                         typed = sheet.nameOf(key)
                         renaming = key
                     }
-                    Action("Enqueue", picked, "$TAG.enqueue") {
+                    Action(stringResource(R.string.menu_enqueue), picked, "$TAG.enqueue") {
                         sheet.onEnqueue(it)
                         onDismiss()
                     }
-                    Action("Open", picked, "$TAG.open") {
+                    Action(stringResource(R.string.menu_open), picked, "$TAG.open") {
                         sheet.onOpen(it)
                         onDismiss()
                     }
@@ -150,7 +154,7 @@ fun BookmarkSheetBody(
                             picked = null
                         },
                         modifier = Modifier.testTag("$TAG.remove"),
-                    ) { Text("Remove") }
+                    ) { Text(stringResource(R.string.menu_remove)) }
                 }
             }
         }

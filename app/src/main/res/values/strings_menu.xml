@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- MainMenu.kt -->
+    <!-- The title of the player's main menu: the name Winamp gives it. -->
+    <string name="menu_winamp">Winamp</string>
+    <string name="menu_play">Play</string>
+    <string name="menu_play_file">Play file...</string>
+    <string name="menu_play_directory">Play directory...</string>
+    <string name="menu_bookmark">Bookmark</string>
+    <string name="menu_view_file_info">View file info</string>
+    <string name="menu_bookmarks">Bookmarks</string>
+    <string name="menu_playlist_editor">Playlist Editor</string>
+    <string name="menu_equalizer">Equalizer</string>
+    <string name="menu_media_library">Media Library</string>
+    <string name="menu_options">Options</string>
+    <string name="menu_playback">Playback</string>
+    <string name="menu_visualization">Visualization</string>
+    <string name="menu_skins">Skins</string>
+    <string name="menu_support_andamp">Support Andamp...</string>
+    <string name="menu_exit">Exit</string>
+    <string name="menu_previous">Previous</string>
+    <string name="menu_pause">Pause</string>
+    <string name="menu_stop">Stop</string>
+    <string name="menu_next">Next</string>
+    <string name="menu_stop_with_fadeout">Stop with fadeout</string>
+    <string name="menu_stop_after_current">Stop after current</string>
+    <string name="menu_back_5_seconds">Back 5 seconds</string>
+    <string name="menu_fwd_5_seconds">Fwd 5 seconds</string>
+    <string name="menu_jump_to_time">Jump to time...</string>
+    <string name="menu_jump_to_file">Jump to file...</string>
+    <string name="menu_start_of_list">Start of list</string>
+    <string name="menu_ten_tracks_back">Ten tracks back</string>
+    <string name="menu_skin_browser">Skin Browser...</string>
+    <string name="menu_load_skin">Load skin...</string>
+    <!-- Winamp's entry, angle brackets and all; opens the skin museum. -->
+    <string name="menu_get_more_skins">&lt;&lt; Get more skins! &gt;&gt;</string>
+    <string name="menu_preferences">Preferences...</string>
+    <string name="menu_time_elapsed">Time elapsed</string>
+    <string name="menu_time_remaining">Time remaining</string>
+    <string name="menu_always_on_top">Always On Top</string>
+    <string name="menu_double_size">Double Size</string>
+    <string name="menu_repeat">Repeat</string>
+    <string name="menu_shuffle">Shuffle</string>
+
+    <!-- BookmarksMenu.kt -->
+    <string name="menu_edit_bookmarks">Edit bookmarks...</string>
+    <string name="menu_add_current_as_bookmark">Add current as bookmark</string>
+
+    <!-- PlaylistRowMenu.kt -->
+    <!-- The row menu's title when more than one row is selected; the count of rows. -->
+    <string name="menu_n_items">%1$d items</string>
+    <string name="menu_play_items">Play item(s)</string>
+    <string name="menu_remove_items">Remove item(s)</string>
+    <string name="menu_crop_files">Crop files</string>
+    <string name="menu_file_info">File info</string>
+    <string name="menu_bookmark_items">Bookmark item(s)</string>
+
+    <!-- VisualMenu.kt -->
+    <string name="menu_presets">Presets</string>
+    <string name="menu_preset_pack">Preset pack</string>
+    <string name="menu_next_preset">Next preset</string>
+    <string name="menu_previous_preset">Previous preset</string>
+    <string name="menu_show_preset_missing">Show what a preset is missing</string>
+    <string name="menu_manage_presets">Manage presets...</string>
+    <string name="menu_load_preset_pack">Load preset pack...</string>
+    <string name="menu_fullscreen">Fullscreen</string>
+    <string name="menu_close">Close</string>
+    <!-- A preset pack entry: the pack's name and how many presets of the running plug-in's kind it holds. -->
+    <string name="menu_pack_with_count">%1$s (%2$d)</string>
+    <string name="menu_avs_idle_preset">AVS idle preset</string>
+    <string name="menu_projectm_idle_preset">projectM idle preset</string>
+    <string name="menu_no_presets_loaded">No presets loaded</string>
+    <!-- The last entry of a long preset list; the count of presets. Opens the preset manager. -->
+    <string name="menu_all_presets">All %1$d presets...</string>
+
+    <!-- VisualizationMenu.kt -->
+    <string name="menu_visualization_options">Visualization options</string>
+    <string name="menu_start_stop_plug_in">Start/Stop plug-in</string>
+    <string name="menu_configure_plug_in">Configure plug-in</string>
+    <string name="menu_select_plug_in">Select plug-in</string>
+    <string name="menu_spectrum_analyzer">Spectrum analyzer</string>
+    <string name="menu_oscilloscope">Oscilloscope</string>
+    <string name="menu_off">Off</string>
+    <!-- Spectrum analyzer, where there is no room for the long name. -->
+    <string name="menu_analyzer">Analyzer</string>
+
+    <!-- WidgetMenu.kt -->
+    <string name="menu_widget_settings">Widget settings...</string>
+    <string name="menu_open_andamp">Open Andamp</string>
+
+    <!-- BookmarkSheetDialog.kt -->
+    <string name="menu_rename_bookmark">Rename bookmark</string>
+    <string name="menu_name">Name</string>
+    <string name="menu_no_bookmarks_yet">You have not bookmarked anything yet</string>
+    <string name="menu_cancel">Cancel</string>
+    <string name="menu_save">Save</string>
+    <string name="menu_edit">Edit</string>
+    <string name="menu_enqueue">Enqueue</string>
+    <string name="menu_open">Open</string>
+    <string name="menu_remove">Remove</string>
+
+    <!-- PresetPickerDialog.kt -->
+    <string name="menu_search">Search</string>
+    <!-- Shown when a search finds nothing; what was typed. -->
+    <string name="menu_nothing_matches">Nothing matches \"%1$s\"</string>
+
+    <!-- PlaylistMenus.kt -->
+    <string name="menu_sort_list">Sort list</string>
+    <string name="menu_sort_list_by_title">Sort list by title</string>
+    <string name="menu_reverse_list">Reverse list</string>
+    <string name="menu_randomize_list">Randomize list</string>
+
+    <!-- LibraryRowMenu.kt: a row of the media library -->
+    <string name="menu_enqueue_next">Enqueue next</string>
+    <string name="menu_delete_list">Delete list</string>
+</resources>

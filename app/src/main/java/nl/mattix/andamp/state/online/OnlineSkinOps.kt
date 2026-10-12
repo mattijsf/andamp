@@ -12,8 +12,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.SkinLibrary
 import nl.mattix.andamp.state.SkinOps
+import nl.mattix.andamp.state.Words
 import nl.mattix.andamp.state.readAtMost
 import okhttp3.Call
 import okhttp3.Callback
@@ -61,6 +63,7 @@ class OnlineSkinOps(
     private val installed: InstalledSkins,
     private val scope: CoroutineScope,
     private val io: CoroutineContext = Dispatchers.IO,
+    private val words: Words,
     private val download: suspend (url: String) -> ByteArray = ::museumDownload,
 ) : SkinInstalls {
     /** md5s of skins being fetched, so their rows can show it. */
@@ -103,7 +106,7 @@ class OnlineSkinOps(
                 }
             if (bytes == null || bytes.isEmpty()) {
                 busy.remove(skin.md5)
-                message = "Could not download ${skin.filename}"
+                message = words.get(R.string.museum_could_not_download, skin.filename)
                 return@launch
             }
             // the install is recorded only when load reports an id: a file that does not
@@ -112,7 +115,7 @@ class OnlineSkinOps(
             skinOps.load(bytes.inputStream(), skin.filename) { id ->
                 busy.remove(skin.md5)
                 if (id == null) {
-                    message = "Could not read ${skin.filename}"
+                    message = words.get(R.string.museum_could_not_read, skin.filename)
                 } else {
                     installed.remember(skin.md5, id)
                     known[skin.md5] = id

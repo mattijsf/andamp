@@ -1,0 +1,103 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      The media library window. Its text is drawn in capitals, in narrow cells and on one line:
+      keep a translation as short as the English.
+    -->
+
+    <!-- LibraryOps.kt: the tabs -->
+    <string name="library_tab_artists">ARTISTS</string>
+    <string name="library_tab_albums">ALBUMS</string>
+    <string name="library_tab_lists">LISTS</string>
+    <string name="library_tab_radio">RADIO</string>
+    <string name="library_tab_find">FIND</string>
+    <!-- The header of the search page -->
+    <string name="library_search_header">SEARCH</string>
+
+    <!-- An artist's records by kind, as rows -->
+    <string name="library_kind_albums">ALBUMS</string>
+    <string name="library_kind_singles">SINGLES</string>
+    <string name="library_kind_compilations">COMPILATIONS</string>
+
+    <!-- The count in the header's corner -->
+    <plurals name="library_count_artists">
+        <item quantity="one">%1$d ARTIST</item>
+        <item quantity="other">%1$d ARTISTS</item>
+    </plurals>
+    <plurals name="library_count_albums">
+        <item quantity="one">%1$d ALBUM</item>
+        <item quantity="other">%1$d ALBUMS</item>
+    </plurals>
+    <plurals name="library_count_singles">
+        <item quantity="one">%1$d SINGLE</item>
+        <item quantity="other">%1$d SINGLES</item>
+    </plurals>
+    <plurals name="library_count_compilations">
+        <item quantity="one">%1$d COMPILATION</item>
+        <item quantity="other">%1$d COMPILATIONS</item>
+    </plurals>
+    <plurals name="library_count_records">
+        <item quantity="one">%1$d RECORD</item>
+        <item quantity="other">%1$d RECORDS</item>
+    </plurals>
+    <plurals name="library_count_lists">
+        <item quantity="one">%1$d LIST</item>
+        <item quantity="other">%1$d LISTS</item>
+    </plurals>
+    <plurals name="library_count_stations">
+        <item quantity="one">%1$d STATION</item>
+        <item quantity="other">%1$d STATIONS</item>
+    </plurals>
+    <plurals name="library_count_tracks">
+        <item quantity="one">%1$d TRACK</item>
+        <item quantity="other">%1$d TRACKS</item>
+    </plurals>
+    <plurals name="library_count_hits">
+        <item quantity="one">%1$d HIT</item>
+        <item quantity="other">%1$d HITS</item>
+    </plurals>
+    <!-- A search that found as many as it may list -->
+    <string name="library_hits_capped">%1$d+ HITS</string>
+    <!-- How many tracks a list holds, beside its name -->
+    <string name="library_track_count_short">%1$d TRK</string>
+
+    <!-- What an empty page says -->
+    <string name="library_no_music">NO MUSIC FOUND</string>
+    <string name="library_no_artists">NO ARTISTS</string>
+    <string name="library_no_matches">NO MATCHES</string>
+    <string name="library_no_lists">NO LISTS</string>
+    <string name="library_no_tracks">NO TRACKS</string>
+    <!-- LIST and SAVE are the playlist window's buttons -->
+    <string name="library_no_saved_lists">NO SAVED LISTS · LIST > SAVE KEEPS ONE</string>
+    <!-- NEW is the cell in the library's bar -->
+    <string name="library_no_stations">NO STATIONS · NEW ADDS ONE</string>
+    <string name="library_type_to_search">TYPE TO SEARCH</string>
+    <string name="library_type_an_artist">TYPE AN ARTIST</string>
+
+    <!-- A source that did not answer: %1$s is the source's name, in capitals -->
+    <string name="library_cant_reach">CAN\'T REACH %1$s</string>
+    <string name="library_cant_reach_library">CAN\'T REACH THE LIBRARY</string>
+    <!-- %1$s is one of the two lines above -->
+    <string name="library_tap_to_retry">%1$s · TAP TO RETRY</string>
+
+    <!-- What the bar says for a moment after an action -->
+    <string name="library_queued">+%1$d QUEUED</string>
+    <string name="library_queued_next">+%1$d NEXT</string>
+    <string name="library_cant_delete">CAN\'T DELETE</string>
+    <string name="library_nothing_to_play">NOTHING TO PLAY</string>
+    <string name="library_not_http">NOT AN HTTP URL</string>
+
+    <!-- LibraryWindow.kt: the cells of the bar under the rows. Each is about four letters wide. -->
+    <string name="library_bar_new">NEW</string>
+    <string name="library_bar_del_list">DEL LIST</string>
+    <string name="library_bar_play">PLAY</string>
+    <string name="library_bar_add">ADD</string>
+    <!-- The first row while the phone has not allowed its music to be read; %1$s is the permission's name, in capitals -->
+    <string name="library_tap_to_allow">TAP TO ALLOW %1$s</string>
+
+    <!-- RADIO's NEW: the two prompts -->
+    <string name="library_station_url_title">Station URL</string>
+    <string name="library_station_next">Next</string>
+    <string name="library_station_name_title">Station name</string>
+    <string name="library_station_add">Add</string>
+</resources>

@@ -69,12 +69,15 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.online.MuseumHttp
 import nl.mattix.andamp.state.online.OnlineSkin
 import nl.mattix.andamp.state.online.OnlineSkins
@@ -223,6 +226,7 @@ private fun Browser(
     onClose: () -> Unit,
 ) {
     val ops = online.ops
+    val resources = LocalContext.current.resources
     Box(modifier) {
         Scaffold(
             snackbarHost = { SnackbarHost(snackbars) },
@@ -230,7 +234,7 @@ private fun Browser(
                 BrowserBar(
                     online = online,
                     total = catalog.total,
-                    count = catalog.countText(),
+                    count = catalog.countText(resources),
                     filtering = filtering,
                     onFiltering = onFiltering,
                     onClose = onClose,
@@ -313,7 +317,7 @@ private fun Browser(
                             onScrollTo = scrollTo,
                         )
                     }
-                    steering?.let { at -> Steering(at, catalog.countText(), Modifier.align(Alignment.CenterEnd)) }
+                    steering?.let { at -> Steering(at, catalog.countText(resources), Modifier.align(Alignment.CenterEnd)) }
                 }
             }
         }
@@ -394,12 +398,12 @@ private fun BrowserBar(
                 SearchField(online, total, count)
             } else {
                 Column {
-                    Text("Skin Museum")
+                    Text(stringResource(R.string.museum_title))
                     Text(
-                        if (total > 0) {
-                            "$count ${if (online.query.isBlank()) "in the museum" else "found"}"
-                        } else {
-                            "from the Winamp Skin Museum"
+                        when {
+                            total <= 0 -> stringResource(R.string.museum_from)
+                            online.query.isBlank() -> stringResource(R.string.museum_count_in_museum, count)
+                            else -> stringResource(R.string.museum_count_found, count)
                         },
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -409,7 +413,7 @@ private fun BrowserBar(
         },
         navigationIcon = {
             IconButton(onClick = onClose, modifier = Modifier.testTag("$TAG.back")) {
-                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Close")
+                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = stringResource(R.string.museum_close))
             }
         },
         actions = {
@@ -422,19 +426,21 @@ private fun BrowserBar(
             ) {
                 Icon(
                     if (online.searchOpen) Icons.Filled.Close else Icons.Filled.Search,
-                    contentDescription = if (online.searchOpen) "Stop searching" else "Search the museum",
+                    contentDescription =
+                        stringResource(if (online.searchOpen) R.string.museum_stop_searching else R.string.museum_search),
                 )
             }
             IconButton(onClick = { online.wide = !online.wide }, modifier = Modifier.testTag("$TAG.layout")) {
                 Icon(
                     if (online.wide) Icons.Filled.GridView else Icons.Filled.ViewAgenda,
-                    contentDescription = if (online.wide) "Show them as tiles" else "Show them one at a time",
+                    contentDescription =
+                        stringResource(if (online.wide) R.string.museum_show_tiles else R.string.museum_show_one_at_a_time),
                 )
             }
             IconButton(onClick = { onFiltering(!filtering) }, modifier = Modifier.testTag("$TAG.tune")) {
                 Icon(
                     Icons.Filled.Tune,
-                    contentDescription = "Order and filters",
+                    contentDescription = stringResource(R.string.museum_order_and_filters),
                     tint =
                         if (filtering) {
                             MaterialTheme.colorScheme.primary
@@ -469,9 +475,9 @@ private fun SearchField(
         value = typed,
         onValueChange = { typed = it },
         singleLine = true,
-        placeholder = { Text("Search the museum") },
+        placeholder = { Text(stringResource(R.string.museum_search)) },
         // the count sits in the field, since the field has taken the title's place
-        suffix = { if (online.query.isNotBlank() && total >= 0) Text("$count found") },
+        suffix = { if (online.query.isNotBlank() && total >= 0) Text(stringResource(R.string.museum_count_found, count)) },
         colors =
             TextFieldDefaults.colors(
                 focusedContainerColor = Color.Transparent,
@@ -492,7 +498,7 @@ private fun Steering(
     modifier: Modifier = Modifier,
 ) {
     Text(
-        "${at + 1} / $total",
+        stringResource(R.string.museum_position, at + 1, total),
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.onPrimaryContainer,
         modifier =
@@ -507,7 +513,7 @@ private fun Steering(
 @Composable
 private fun Loading() {
     Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        Text("Fetching the museum…", style = MaterialTheme.typography.bodyLarge)
+        Text(stringResource(R.string.museum_fetching), style = MaterialTheme.typography.bodyLarge)
     }
 }
 
@@ -521,9 +527,11 @@ private fun Unreachable(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Text("The museum is out of reach", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.museum_out_of_reach), style = MaterialTheme.typography.titleMedium)
         Text(why, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-        TextButton(onClick = onRetry, modifier = Modifier.testTag("$TAG.retry")) { Text("Try again") }
+        TextButton(onClick = onRetry, modifier = Modifier.testTag("$TAG.retry")) {
+            Text(stringResource(R.string.museum_try_again))
+        }
     }
 }
 

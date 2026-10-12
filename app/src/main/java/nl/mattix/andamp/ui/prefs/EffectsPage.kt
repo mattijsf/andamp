@@ -23,20 +23,22 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.DspOps
 import nl.mattix.andamp.state.PluginOps
+import nl.mattix.andamp.state.Words
 
 /** A one-line summary of the rack, for the page that links to it. */
-internal fun DspOps.summary(): String {
-    if (!available) return "This playback backend does not run effects."
+internal fun DspOps.summary(words: Words): String {
+    if (!available) return words.get(R.string.prefs_effects_unavailable_summary)
     val on = rack.slots.count { it.enabled }
-    val effects = if (rack.slots.size == 1) "effect" else "effects"
     return if (on == 0) {
-        "${rack.slots.size} $effects · none on"
+        words.plural(R.plurals.prefs_effects_summary_none_on, rack.slots.size)
     } else {
-        "${rack.slots.size} $effects · $on on"
+        words.plural(R.plurals.prefs_effects_summary_on, rack.slots.size, on)
     }
 }
 
@@ -73,7 +75,7 @@ internal fun DspRack(
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                "This playback backend doesn't run effects.",
+                stringResource(R.string.prefs_effects_unavailable),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -83,26 +85,32 @@ internal fun DspRack(
     // the page reads in the order the audio does: the fixed input stage, the
     // effects in the order the listener set, and the fixed output stage
     if (dsp.rack.slots.any { dsp.pinned(it.pluginId) }) {
-        RackLabel("Input · before all effects", top = 8.dp)
+        RackLabel(stringResource(R.string.prefs_effects_input_label), top = 8.dp)
         RackSection(dsp, snackbars, scope, input = true)
     }
-    RackLabel("Effects", top = 20.dp)
+    RackLabel(stringResource(R.string.prefs_effects_label), top = 20.dp)
     Text(
-        "Audio flows top to bottom — the order changes the sound.",
+        stringResource(R.string.prefs_effects_order_note),
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
     )
     RackSection(dsp, snackbars, scope)
-    RackLabel("Output · after all effects", top = 20.dp)
+    RackLabel(stringResource(R.string.prefs_effects_output_label), top = 20.dp)
     LimiterCard(on = dsp.rack.limiter, onChange = dsp::setLimiter, peaks = peaks)
     // the link to the plug-ins sits at the end, where a new one will appear
     Spacer(Modifier.height(12.dp))
     Card(onClick = onManage, modifier = Modifier.fillMaxWidth().testTag("prefs.plugins.manage")) {
         ListItem(
             leadingContent = { Icon(Icons.Outlined.Extension, contentDescription = null) },
-            headlineContent = { Text("Manage plug-ins") },
+            headlineContent = { Text(stringResource(R.string.prefs_effects_manage_plugins)) },
             supportingContent = {
-                Text(if (plugins.entries.isEmpty()) "None added yet" else "${plugins.entries.size} added")
+                Text(
+                    if (plugins.entries.isEmpty()) {
+                        stringResource(R.string.prefs_effects_none_added)
+                    } else {
+                        stringResource(R.string.prefs_effects_added_count, plugins.entries.size)
+                    },
+                )
             },
             trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
         )

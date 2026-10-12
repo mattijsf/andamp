@@ -45,10 +45,10 @@ fun rememberLibraryAccess(vm: WinampViewModel): LibraryAccessHandle =
         canRead = vm.playlistFiles::canReadLibrary,
         onGrant = vm.playlistFiles::healRestoredEntries,
         explain = { ask ->
-            vm.state.prompt = LibraryPrompt.explain(onDone = { vm.state.prompt = null }, ask = ask)
+            vm.state.prompt = LibraryPrompt.explain(vm.words, onDone = { vm.state.prompt = null }, ask = ask)
         },
         cannotAsk = { openSettings ->
-            vm.state.prompt = LibraryPrompt.settings(onDone = { vm.state.prompt = null }, open = openSettings)
+            vm.state.prompt = LibraryPrompt.settings(vm.words, onDone = { vm.state.prompt = null }, open = openSettings)
         },
     )
 

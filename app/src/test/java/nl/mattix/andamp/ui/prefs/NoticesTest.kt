@@ -2,9 +2,14 @@
 
 package nl.mattix.andamp.ui.prefs
 
+import android.content.Context
+import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.state.Store
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.io.File
 
 /**
@@ -15,7 +20,11 @@ import java.io.File
  * group. Test-only and debug-only configurations are left out: they do not
  * ship.
  */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class NoticesTest {
+    private val res = ApplicationProvider.getApplicationContext<Context>().resources
+
     @Test
     fun `every shipped dependency is named in the notices`() {
         val catalogue = versionCatalogue()
@@ -25,7 +34,7 @@ class NoticesTest {
         val missing =
             aliases
                 .map { alias -> alias to (catalogue[alias] ?: error("no entry for $alias in libs.versions.toml")) }
-                .filterNot { (_, group) -> group == OWN_GROUP || Notices.covers(group) }
+                .filterNot { (_, group) -> group == OWN_GROUP || Notices.covers(group, res) }
                 // the build file names the store's library for the build a store hands out only
                 .filterNot { (_, group) -> Store.supportPage != null && group == STORE_ONLY_GROUP }
         assertTrue("every dependency has a notice; missing: $missing", missing.isEmpty())
@@ -33,7 +42,7 @@ class NoticesTest {
 
     @Test
     fun `every notice says what it is, under what, and where`() {
-        Notices.ALL.forEach { notice ->
+        Notices.all(res).forEach { notice ->
             assertTrue("${notice.name} names a license", notice.licence.isNotBlank())
             assertTrue("${notice.name} says what it is", notice.what.isNotBlank())
             assertTrue("${notice.name} has an https source address", notice.url.startsWith("https://"))
@@ -42,7 +51,7 @@ class NoticesTest {
 
     @Test
     fun `the LGPL entry offers the pinned projectM revision`() {
-        val projectM = Notices.ALL.single { it.name == "projectM" }
+        val projectM = Notices.all(res).single { it.name == "projectM" }
         val offer = projectM.obligation ?: error("projectM carries no LGPL offer")
         assertTrue("the offer names the pinned revision", offer.contains(Notices.PROJECTM_PIN))
         assertTrue(

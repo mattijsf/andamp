@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.runBlocking
+import nl.mattix.andamp.R
 import nl.mattix.andamp.backend.media3.PcmAudioOut
 import nl.mattix.andamp.backend.pack.PackCard
 import nl.mattix.andamp.backend.pack.PackClient
@@ -125,12 +126,12 @@ class PackSource(
      */
     override fun provenance(context: Context): String? {
         val who = client.identity() ?: return null
-        val signed =
-            who.signer
-                .takeIf { it.isNotBlank() }
-                ?.let { ", signed $it…" }
-                .orEmpty()
-        return "Played by ${who.label} (${who.packageName}$signed)"
+        val signer = who.signer.takeIf { it.isNotBlank() }
+        return if (signer == null) {
+            context.getString(R.string.source_played_by, who.label, who.packageName)
+        } else {
+            context.getString(R.string.source_played_by_signed, who.label, who.packageName, signer)
+        }
     }
 
     /**

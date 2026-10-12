@@ -3,6 +3,8 @@
 package nl.mattix.andamp.state
 
 import android.content.Context
+import android.content.res.Resources
+import nl.mattix.andamp.R
 import nl.mattix.andamp.ui.prefs.Notice
 
 /** The store this build is handed out by: Google Play, which takes the tips. */
@@ -13,18 +15,16 @@ internal object Store {
     /** No page outside the app: the support page sells the store's tips. */
     val supportPage: String? = null
 
-    /** What this build carries for the store, for the licenses page. */
-    val notices =
+    /** What this build carries for the store, for the licenses page, worded from [res]. */
+    fun notices(res: Resources): List<Notice> =
         listOf(
             Notice(
                 name = "Google Play Billing Library",
                 licence = "Android SDK License",
-                what = "Takes the tips on the Support Andamp page, through Google Play.",
+                what = res.getString(R.string.prefs_notice_play_billing_what),
                 url = "https://developer.android.com/google/play/billing",
                 groups = listOf("com.android.billingclient"),
-                obligation =
-                    "This library is not open source. Andamp's license carries an additional permission " +
-                        "to combine Andamp with it and to distribute the result.",
+                obligation = res.getString(R.string.prefs_notice_play_billing_obligation),
             ),
         )
 }

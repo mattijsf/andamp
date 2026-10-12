@@ -5,6 +5,7 @@ package nl.mattix.andamp.ui.prefs
 import nl.mattix.andamp.backend.pack.PackReach
 import nl.mattix.andamp.core.packapi.PackAccount
 import nl.mattix.andamp.core.packapi.PackDescriptor
+import nl.mattix.andamp.state.EnglishWords
 import org.junit.Assert.assertEquals
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,7 +24,7 @@ class PackSummaryTest {
     fun `with no pack the row says where packs come from`() {
         assertEquals(
             "Not installed - see More sources below",
-            packSummary(PackReach.Absent, signedIn = false),
+            packSummary(PackReach.Absent, signedIn = false, words = EnglishWords),
         )
     }
 
@@ -32,7 +33,7 @@ class PackSummaryTest {
     fun `a pack that has gone says what became of the tracks it played`() {
         assertEquals(
             "Uninstalled, and its tracks are skipped",
-            packSummary(PackReach.Absent, signedIn = true),
+            packSummary(PackReach.Absent, signedIn = true, words = EnglishWords),
         )
     }
 
@@ -40,7 +41,7 @@ class PackSummaryTest {
     fun `a pack too old to talk to says so`() {
         assertEquals(
             "Installed, but too old for this version of Andamp",
-            packSummary(PackReach.Outdated, signedIn = false),
+            packSummary(PackReach.Outdated, signedIn = false, words = EnglishWords),
         )
     }
 
@@ -48,7 +49,7 @@ class PackSummaryTest {
     fun `a pack made for a newer player says so`() {
         assertEquals(
             "Installed, but made for a newer version of Andamp",
-            packSummary(PackReach.Ahead, signedIn = false),
+            packSummary(PackReach.Ahead, signedIn = false, words = EnglishWords),
         )
     }
 
@@ -57,14 +58,14 @@ class PackSummaryTest {
         assertEquals(
             "Moose Music is set up for an older Andamp and is not asked to play anything. " +
                 "A newer one puts its tracks back.",
-            packNotice("Moose Music", PackReach.Outdated),
+            packNotice("Moose Music", PackReach.Outdated, EnglishWords),
         )
         assertEquals(
             "Moose Music is set up for a newer Andamp and is not asked to play anything. " +
                 "Updating Andamp puts its tracks back.",
-            packNotice("Moose Music", PackReach.Ahead),
+            packNotice("Moose Music", PackReach.Ahead, EnglishWords),
         )
-        assertEquals(null, packNotice("Moose Music", PackReach.Absent))
+        assertEquals(null, packNotice("Moose Music", PackReach.Absent, EnglishWords))
     }
 
     @Test
@@ -74,19 +75,20 @@ class PackSummaryTest {
             packSummary(
                 PackReach.SignedOut(PackDescriptor(scheme = "moose", label = "Moose Music", version = "0.4.0")),
                 signedIn = false,
+                words = EnglishWords,
             ),
         )
     }
 
     @Test
     fun `a ready pack says who it is signed in as`() {
-        assertEquals("Signed in as listener", packSummary(ready("listener"), signedIn = true))
+        assertEquals("Signed in as listener", packSummary(ready("listener"), signedIn = true, words = EnglishWords))
     }
 
     /** A pack may leave the account name empty. */
     @Test
     fun `a ready pack with no account name says it is signed in on this phone`() {
-        assertEquals("Signed in on this phone", packSummary(ready(""), signedIn = true))
+        assertEquals("Signed in on this phone", packSummary(ready(""), signedIn = true, words = EnglishWords))
     }
 
     private fun ready(name: String) =

@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.ui.menu
 
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.MenuAnchor
@@ -41,11 +42,11 @@ fun widgetMenu(
             onAlwaysOnTop = {},
         )
     return AmpMenu(
-        "Andamp",
+        vm.words.get(R.string.app_name),
         listOf(
             // the widget's own entries, at the top
-            AmpMenuItem.Action("Widget settings...", onClick = onWidgetSettings),
-            AmpMenuItem.Action("Open Andamp") { onOpen(null) },
+            AmpMenuItem.Action(vm.words.get(R.string.menu_widget_settings), onClick = onWidgetSettings),
+            AmpMenuItem.Action(vm.words.get(R.string.menu_open_andamp)) { onOpen(null) },
             AmpMenuItem.Divider,
         ) + app.items.map { it.forTheWidget() },
         // there is no button to anchor to: a widget does not learn where the finger landed

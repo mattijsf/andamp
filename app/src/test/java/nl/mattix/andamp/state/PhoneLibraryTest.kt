@@ -35,6 +35,7 @@ class PhoneLibraryTest {
                     scanner = { gates.getValue(it).await() },
                     count = { counted },
                     onChanged = { changed++ },
+                    words = EnglishWords,
                 )
             phone.refresh()
             runCurrent()
@@ -71,6 +72,7 @@ class PhoneLibraryTest {
                         gate.await()
                     },
                     count = { stats(1) },
+                    words = EnglishWords,
                 )
 
             phone.scan()
@@ -83,17 +85,23 @@ class PhoneLibraryTest {
 
     @Test
     fun `the words a scan and a library are described in`() {
-        assertEquals("Looked in Music: nothing new.", ScanProgress.outcome(stats(5), stats(5), listOf("Music")))
-        assertEquals("Looked in Music: 1 new track.", ScanProgress.outcome(stats(5), stats(6), listOf("Music")))
-        assertEquals("Looked in Music: 2 tracks fewer.", ScanProgress.outcome(stats(5), stats(3), listOf("Music")))
-        assertEquals("No music folders on this phone: nothing new.", ScanProgress.outcome(stats(5), stats(5), emptyList()))
-        assertEquals("Looked in Music. The library could not be read.", ScanProgress.outcome(stats(5), null, listOf("Music")))
+        assertEquals("Looked in Music: nothing new.", ScanProgress.outcome(stats(5), stats(5), listOf("Music"), EnglishWords))
+        assertEquals("Looked in Music: 1 new track.", ScanProgress.outcome(stats(5), stats(6), listOf("Music"), EnglishWords))
+        assertEquals("Looked in Music: 2 tracks fewer.", ScanProgress.outcome(stats(5), stats(3), listOf("Music"), EnglishWords))
+        assertEquals(
+            "No music folders on this phone: nothing new.",
+            ScanProgress.outcome(stats(5), stats(5), emptyList(), EnglishWords),
+        )
+        assertEquals(
+            "Looked in Music. The library could not be read.",
+            ScanProgress.outcome(stats(5), null, listOf("Music"), EnglishWords),
+        )
 
         val library =
             PhoneStats(tracks = 1, artists = 2, albums = 1, durationMs = 3 * 86_400_000L + 4 * 3_600_000L, bytes = 4_509_715_660L)
-        assertEquals("1 track · 2 artists · 1 album", library.summary)
-        assertEquals("3 days 4 hours", library.listening)
+        assertEquals("1 track · 2 artists · 1 album", library.summary(EnglishWords))
+        assertEquals("3 days 4 hours", library.listening(EnglishWords))
         assertEquals("4.2 GB", library.size)
-        assertEquals("52 minutes", PhoneStats(1, 1, 1, 52 * 60_000L, 0).listening)
+        assertEquals("52 minutes", PhoneStats(1, 1, 1, 52 * 60_000L, 0).listening(EnglishWords))
     }
 }

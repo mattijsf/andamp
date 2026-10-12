@@ -11,6 +11,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
+import nl.mattix.andamp.state.EnglishWords
 import nl.mattix.andamp.state.ListStyleStore
 import nl.mattix.andamp.state.PlaylistFont
 import nl.mattix.andamp.state.RowHeight
@@ -97,11 +98,12 @@ class ListPrefsTest {
 
     @Test
     fun `the player row names a choice only while it is not the one the app starts with`() {
-        val plain = PrefsSections().playerSummary()
+        val plain = PrefsSections().playerSummary(EnglishWords)
         assertFalse("font" in plain)
         assertFalse("rows" in plain)
 
-        val picked = PrefsSections(lists = ListPrefs(font = PlaylistFont.REGULAR, rowHeight = RowHeight.ROOMY)).playerSummary()
+        val picked =
+            PrefsSections(lists = ListPrefs(font = PlaylistFont.REGULAR, rowHeight = RowHeight.ROOMY)).playerSummary(EnglishWords)
         assertTrue("Regular font in the playlist" in picked)
         assertTrue("Roomy rows" in picked)
     }

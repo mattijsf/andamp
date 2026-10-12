@@ -59,7 +59,7 @@ class EqOpsPresetsTest {
     private val state = WinampState()
     private val backend = RecordingEqBackend()
     private val store = InMemoryEqPresetStore()
-    private val ops = EqOps(state, PlayerFacade(backend), store)
+    private val ops = EqOps(state, PlayerFacade(backend), store, EnglishWords)
 
     private fun submenu(label: String) =
         ops
@@ -92,7 +92,7 @@ class EqOpsPresetsTest {
 
     @Test
     fun `load offers Winamp's three entries, and its dialog holds the 17 presets`() {
-        assertEquals(listOf("Preset...", EqOps.AUTO_LABEL, "Default"), actions(submenu("Load")).map { it.label })
+        assertEquals(listOf("Preset...", "Auto-load preset", "Default"), actions(submenu("Load")).map { it.label })
 
         val dialog = picker("Load", "Preset...")
 

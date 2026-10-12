@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.state
 
+import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.player.PlayerFacade
 import java.util.UUID
@@ -15,6 +16,7 @@ import java.util.UUID
 class PlaylistOps(
     private val state: WinampState,
     private val facade: PlayerFacade,
+    private val words: Words,
 ) {
     fun selectTrack(index: Int) {
         if (index in state.playlist.indices) state.selectedRows = setOf(index)
@@ -85,7 +87,11 @@ class PlaylistOps(
      */
     fun promptAddUrl(initialUrl: String = "") {
         state.namePrompt =
-            NamePrompt(title = "Add URL", initial = initialUrl, confirmLabel = "Next") { typedUrl ->
+            NamePrompt(
+                title = words.get(R.string.playlist_add_url_title),
+                initial = initialUrl,
+                confirmLabel = words.get(R.string.playlist_add_url_next),
+            ) { typedUrl ->
                 state.namePrompt = null
                 val url = typedUrl.trim()
                 if (!StationStore.isStreamUrl(url)) {
@@ -93,9 +99,9 @@ class PlaylistOps(
                 } else {
                     state.namePrompt =
                         NamePrompt(
-                            title = "Name",
+                            title = words.get(R.string.playlist_add_url_name_title),
                             initial = StationStore.hostOf(url).orEmpty(),
-                            confirmLabel = "Add",
+                            confirmLabel = words.get(R.string.playlist_add_url_add),
                         ) { name ->
                             state.namePrompt = null
                             val called = name.trim().ifEmpty { url }

@@ -11,14 +11,14 @@ import org.junit.Test
 class PresetNoticeTest {
     @Test
     fun `a preset that plays whole says nothing`() {
-        assertNull(PresetNotice.textFor(PresetGaps.NONE))
+        assertNull(PresetNotice.textFor(PresetGaps.NONE, EnglishWords))
     }
 
     @Test
     fun `the effects left out are named`() {
         assertEquals(
             "Not shown in this preset: Text, Picture",
-            PresetNotice.textFor(PresetGaps(missing = listOf("Text", "Picture"))),
+            PresetNotice.textFor(PresetGaps(missing = listOf("Text", "Picture")), EnglishWords),
         )
     }
 
@@ -26,7 +26,7 @@ class PresetNoticeTest {
     fun `past three, the rest are counted`() {
         val gaps = PresetGaps(missing = listOf("Text", "Picture", "AVI", "SVP", "Picture II"))
 
-        assertEquals("Not shown in this preset: Text, Picture, AVI and 2 more", PresetNotice.textFor(gaps))
+        assertEquals("Not shown in this preset: Text, Picture, AVI and 2 more", PresetNotice.textFor(gaps, EnglishWords))
     }
 
     @Test
@@ -35,7 +35,7 @@ class PresetNoticeTest {
 
         assertEquals(
             "Not shown in this preset: Texer II, MULTIFILTER, FunkyFX FyrewurX v1",
-            PresetNotice.textFor(gaps),
+            PresetNotice.textFor(gaps, EnglishWords),
         )
     }
 
@@ -43,15 +43,15 @@ class PresetNoticeTest {
     fun `two plug-ins that come down to one name are named once`() {
         val gaps = PresetGaps(missing = listOf("Acko.net: Texer II", "Texer II"))
 
-        assertEquals("Not shown in this preset: Texer II", PresetNotice.textFor(gaps))
+        assertEquals("Not shown in this preset: Texer II", PresetNotice.textFor(gaps, EnglishWords))
     }
 
     @Test
     fun `a preset that could not be read says so, whatever else is listed`() {
-        assertEquals("This preset could not be read", PresetNotice.textFor(PresetGaps(unreadable = true)))
+        assertEquals("This preset could not be read", PresetNotice.textFor(PresetGaps(unreadable = true), EnglishWords))
         assertEquals(
             "This preset could not be read",
-            PresetNotice.textFor(PresetGaps(unreadable = true, missing = listOf("Text"))),
+            PresetNotice.textFor(PresetGaps(unreadable = true, missing = listOf("Text")), EnglishWords),
         )
     }
 }

@@ -12,12 +12,15 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.PresetImport
 import nl.mattix.andamp.state.VisPlugin
+import nl.mattix.andamp.state.Words
 import nl.mattix.andamp.state.presets.InstalledPack
 import nl.mattix.andamp.ui.menu.countFor
-import nl.mattix.andamp.ui.menu.idleLabel
+import nl.mattix.andamp.ui.menu.idleLabelRes
 
 /**
  * The plug-in window's settings, handed to the page as data so the page does not see a ViewModel:
@@ -46,27 +49,27 @@ data class VisualizerPrefs(
 )
 
 /** One line for the root list. */
-fun VisualizerPrefs.summary(): String =
-    when {
-        packs.isEmpty() -> {
-            "${plugin.menuLabel} · no preset packs yet"
-        }
-
-        else -> {
-            // the packs list is already the current engine's; count its kind
-            "${plugin.menuLabel} · ${packs.size} ${if (packs.size == 1) "pack" else "packs"}, " +
-                "${packs.sumOf { it.countFor(plugin) }} presets"
-        }
+fun VisualizerPrefs.summary(words: Words): String =
+    if (packs.isEmpty()) {
+        words.get(R.string.prefs_visualizer_summary_no_packs, plugin.menuLabel)
+    } else {
+        // the packs list is already the current engine's; count its kind
+        words.plural(
+            R.plurals.prefs_visualizer_summary_packs,
+            packs.size,
+            plugin.menuLabel,
+            packs.sumOf { it.countFor(plugin) },
+        )
     }
 
 @Composable
 fun VisualizerSettings(prefs: VisualizerPrefs) {
-    Section("Plug-in")
+    Section(stringResource(R.string.prefs_visualizer_plugin_section))
     Group(Modifier.selectableGroup()) {
         VisPlugin.entries.forEach { plugin ->
             RadioRow(
                 title = plugin.menuLabel,
-                summary = plugin.blurb(),
+                summary = stringResource(plugin.blurb()),
                 selected = prefs.plugin == plugin,
                 tag = "prefs.vis.plugin.${plugin.name.lowercase()}",
                 onSelect = { prefs.onPlugin(plugin) },
@@ -76,54 +79,53 @@ fun VisualizerSettings(prefs: VisualizerPrefs) {
     PresetPacks(prefs)
 }
 
-private fun VisPlugin.blurb() =
+/** The string resource that says what an engine is. */
+private fun VisPlugin.blurb(): Int =
     when (this) {
-        VisPlugin.Avs -> "Winamp's own visualizer, rebuilt. Runs real .avs presets you import."
-        VisPlugin.Milkdrop -> "libprojectM. Runs real .milk presets you import."
+        VisPlugin.Avs -> R.string.prefs_visualizer_avs_blurb
+        VisPlugin.Milkdrop -> R.string.prefs_visualizer_milkdrop_blurb
     }
 
 @Composable
 private fun PresetPacks(prefs: VisualizerPrefs) {
-    Section("Preset packs")
+    Section(stringResource(R.string.prefs_visualizer_packs_section))
     val importing = prefs.importing
     Note(
         when {
             importing?.failed == true -> {
-                "\"${importing.name}\" held no presets."
+                stringResource(R.string.prefs_visualizer_import_empty, importing.name)
             }
 
             importing != null -> {
-                "Importing ${importing.name}... ${importing.filesWritten} files"
+                stringResource(R.string.prefs_visualizer_importing, importing.name, importing.filesWritten)
             }
 
             else -> {
-                when (prefs.plugin) {
-                    VisPlugin.Avs -> {
-                        "Packs are .zip files of .avs presets. They are copied into the app, because AVS opens presets by path."
-                    }
-
-                    VisPlugin.Milkdrop -> {
-                        "Packs are .zip files of .milk presets. " +
-                            "They are copied into the app, because projectM opens presets by path."
-                    }
-                }
+                stringResource(
+                    when (prefs.plugin) {
+                        VisPlugin.Avs -> R.string.prefs_visualizer_packs_note_avs
+                        VisPlugin.Milkdrop -> R.string.prefs_visualizer_packs_note_milkdrop
+                    },
+                )
             }
         },
     )
     Button(
         onClick = prefs.onImportPack,
         modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp).testTag("prefs.vis.import"),
-    ) { Text("Import pack...") }
+    ) { Text(stringResource(R.string.prefs_visualizer_import)) }
 
     Spacer(Modifier.height(12.dp))
     Group(Modifier.selectableGroup()) {
         RadioRow(
-            title = prefs.plugin.idleLabel,
+            title = stringResource(prefs.plugin.idleLabelRes),
             summary =
-                when (prefs.plugin) {
-                    VisPlugin.Avs -> "This app's own. No import needed."
-                    VisPlugin.Milkdrop -> "The one built into libprojectM. No import needed."
-                },
+                stringResource(
+                    when (prefs.plugin) {
+                        VisPlugin.Avs -> R.string.prefs_visualizer_idle_avs
+                        VisPlugin.Milkdrop -> R.string.prefs_visualizer_idle_milkdrop
+                    },
+                ),
             selected = prefs.activePack == null,
             tag = "prefs.vis.pack.idle",
             onSelect = { prefs.onSelectPack(null) },
@@ -131,7 +133,7 @@ private fun PresetPacks(prefs: VisualizerPrefs) {
         prefs.packs.forEach { pack ->
             RadioRow(
                 title = pack.name,
-                summary = "${pack.countFor(prefs.plugin)} presets",
+                summary = stringResource(R.string.prefs_visualizer_pack_presets, pack.countFor(prefs.plugin)),
                 selected = prefs.activePack == pack.name,
                 tag = "prefs.vis.pack.${pack.name}",
                 onSelect = { prefs.onSelectPack(pack.name) },
@@ -139,7 +141,7 @@ private fun PresetPacks(prefs: VisualizerPrefs) {
                     TextButton(
                         onClick = { prefs.onDeletePack(pack) },
                         modifier = Modifier.testTag("prefs.vis.pack.${pack.name}.delete"),
-                    ) { Text("Remove") }
+                    ) { Text(stringResource(R.string.prefs_visualizer_remove)) }
                 },
             )
         }
@@ -147,15 +149,21 @@ private fun PresetPacks(prefs: VisualizerPrefs) {
 
     prefs.onManagePresets?.let { manage ->
         TextButton(onClick = manage, modifier = Modifier.padding(horizontal = 8.dp).testTag("prefs.vis.manage")) {
-            Text(if (prefs.presets.isEmpty()) "Browse presets" else "Browse ${prefs.presets.size} presets")
+            Text(
+                if (prefs.presets.isEmpty()) {
+                    stringResource(R.string.prefs_visualizer_browse)
+                } else {
+                    stringResource(R.string.prefs_visualizer_browse_count, prefs.presets.size)
+                },
+            )
         }
     }
 
     Spacer(Modifier.height(12.dp))
     Group {
         SwitchRow(
-            title = "Shuffle presets",
-            summary = "Otherwise they run in the order they are on disk.",
+            title = stringResource(R.string.prefs_visualizer_shuffle_title),
+            summary = stringResource(R.string.prefs_visualizer_shuffle_summary),
             checked = prefs.shuffle,
             tag = "prefs.vis.shuffle",
             onChange = prefs.onShuffle,

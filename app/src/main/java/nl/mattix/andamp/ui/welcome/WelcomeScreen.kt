@@ -27,7 +27,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.online.OnlineSkin
 import nl.mattix.andamp.ui.menu.AmpDialog
 import nl.mattix.andamp.ui.online.MuseumTiles
@@ -63,10 +65,10 @@ fun WelcomeScreen(choice: WelcomeChoice) {
             .verticalScroll(rememberScrollState())
             .padding(20.dp),
     ) {
-        Text("Pick a look", style = MaterialTheme.typography.headlineSmall)
+        Text(stringResource(R.string.welcome_pick_a_look), style = MaterialTheme.typography.headlineSmall)
         Spacer(Modifier.height(4.dp))
         Text(
-            "Skins in the menu changes it whenever you like.",
+            stringResource(R.string.welcome_skins_in_the_menu),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -82,10 +84,10 @@ fun WelcomeScreen(choice: WelcomeChoice) {
 @Composable
 private fun OwnSkinCard(choice: WelcomeChoice) {
     Column(Modifier.fillMaxWidth().testTag("welcome.andamp")) {
-        Text("Andamp's own", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.welcome_own_skin), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(4.dp))
         Text(
-            "Drawn for this app, and on Android 12 and later it takes its colors from your wallpaper.",
+            stringResource(R.string.welcome_own_skin_summary),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
@@ -108,7 +110,7 @@ private fun OwnSkinCard(choice: WelcomeChoice) {
             onClick = choice.onKeep,
             modifier = Modifier.fillMaxWidth().testTag("welcome.keep"),
         ) {
-            Text("Keep this")
+            Text(stringResource(R.string.welcome_keep_this))
         }
     }
 }
@@ -124,15 +126,15 @@ private fun MuseumCard(choice: WelcomeChoice) {
             .clickable(onClick = choice.onBrowse)
             .testTag("welcome.museum"),
     ) {
-        Text("A classic skin", style = MaterialTheme.typography.titleMedium)
+        Text(stringResource(R.string.welcome_classic_skin), style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(4.dp))
         Text(
             // a floor until the museum answers with the real count, formatted the same way so the
             // line keeps its shape
             if (choice.museumCount > 0) {
-                "${"%,d".format(choice.museumCount)} classic skins"
+                stringResource(R.string.welcome_classic_skins_count, "%,d".format(choice.museumCount))
             } else {
-                "${"%,d".format(MUSEUM_FLOOR)}+ classic skins"
+                stringResource(R.string.welcome_classic_skins_at_least, "%,d".format(MUSEUM_FLOOR))
             },
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -144,7 +146,7 @@ private fun MuseumCard(choice: WelcomeChoice) {
             onClick = choice.onBrowse,
             modifier = Modifier.fillMaxWidth().testTag("welcome.browse"),
         ) {
-            Text("Browse the museum")
+            Text(stringResource(R.string.welcome_browse_the_museum))
         }
     }
 }

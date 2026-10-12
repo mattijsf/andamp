@@ -74,6 +74,7 @@ class LibraryUnreachableTest {
         PlaylistLibrary(temp.newFolder()),
         StationStore(File(temp.newFolder(), "stations.m3u")),
         nameOf = { name },
+        words = EnglishWords,
     )
 
     @Test

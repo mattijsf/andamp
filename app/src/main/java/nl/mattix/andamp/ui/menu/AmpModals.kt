@@ -28,10 +28,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.AmpPrompt
@@ -201,7 +203,7 @@ private fun NamePromptDialog(
         onDismiss = onDismiss,
         confirmLabel = prompt.confirmLabel,
         onConfirm = { prompt.onSubmit(text.trim()) },
-        dismissLabel = "Cancel",
+        dismissLabel = stringResource(R.string.menu_cancel),
         confirmEnabled = text.isNotBlank(),
     ) {
         // the keyboard's own key submits too: on a phone held sideways the keyboard can

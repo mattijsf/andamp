@@ -5,6 +5,7 @@ package nl.mattix.andamp.state.overlay
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.state.AmpPrompt
+import nl.mattix.andamp.state.EnglishWords
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -20,7 +21,7 @@ class OverlayOpsTest {
     private val app = ApplicationProvider.getApplicationContext<Application>()
     private var granted = true
 
-    private fun ops() = OverlayOps(OverlayStore(app), permitted = { granted })
+    private fun ops() = OverlayOps(OverlayStore(app), permitted = { granted }, words = EnglishWords)
 
     @Test
     fun `asking for it is remembered for the next session`() {
@@ -133,7 +134,7 @@ class OverlayOpsTest {
     @Test
     fun `the drawn player is told whether always on top is on`() {
         var lit: Boolean? = null
-        val ops = OverlayOps(OverlayStore(app), permitted = { granted }, mirror = { lit = it })
+        val ops = OverlayOps(OverlayStore(app), permitted = { granted }, mirror = { lit = it }, words = EnglishWords)
 
         assertEquals("the player is told the state at once", false, lit)
 
@@ -199,7 +200,7 @@ class OverlayOpsTest {
     private fun opsOnAnOlderPhone(
         mirror: (Boolean) -> Unit = {},
         onSwitchedOn: () -> Unit = {},
-    ) = OverlayOps(OverlayStore(app), permitted = { true }, mirror, onSwitchedOn, supported = false)
+    ) = OverlayOps(OverlayStore(app), permitted = { true }, mirror, onSwitchedOn, supported = false, words = EnglishWords)
 
     @Test
     fun `a phone that cannot float the player never shows it, whatever was stored`() {

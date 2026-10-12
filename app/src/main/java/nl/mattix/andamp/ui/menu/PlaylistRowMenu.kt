@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.ui.menu
 
+import nl.mattix.andamp.R
 import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.MenuAnchor
@@ -24,25 +25,25 @@ fun playlistRowMenu(
     val tracks = chosen.mapNotNull { s.playlist.getOrNull(it) }
     return AmpMenu(
         // named for what it acts on, the way the window's other menus are
-        title = if (tracks.size > 1) "${tracks.size} items" else tracks.firstOrNull()?.title.orEmpty(),
+        title = if (tracks.size > 1) vm.words.get(R.string.menu_n_items, tracks.size) else tracks.firstOrNull()?.title.orEmpty(),
         anchor = anchor,
         items =
             listOf(
                 // Winamp's Enter: the first of what is selected starts playing
-                AmpMenuItem.Action("Play item(s)", enabled = tracks.isNotEmpty()) {
+                AmpMenuItem.Action(vm.words.get(R.string.menu_play_items), enabled = tracks.isNotEmpty()) {
                     chosen.firstOrNull()?.let { vm.playTrack(it) }
                 },
-                AmpMenuItem.Action("Remove item(s)", enabled = tracks.isNotEmpty()) {
+                AmpMenuItem.Action(vm.words.get(R.string.menu_remove_items), enabled = tracks.isNotEmpty()) {
                     vm.playlistOps.removeSelected()
                 },
-                AmpMenuItem.Action("Crop files", enabled = tracks.isNotEmpty()) {
+                AmpMenuItem.Action(vm.words.get(R.string.menu_crop_files), enabled = tracks.isNotEmpty()) {
                     vm.playlistOps.crop()
                 },
                 AmpMenuItem.Divider,
-                AmpMenuItem.Action("File info", enabled = tracks.isNotEmpty()) {
+                AmpMenuItem.Action(vm.words.get(R.string.menu_file_info), enabled = tracks.isNotEmpty()) {
                     vm.trackInfoOps.show(tracks.firstOrNull())
                 },
-                AmpMenuItem.Action("Bookmark item(s)", enabled = tracks.any { it.uri != null }) {
+                AmpMenuItem.Action(vm.words.get(R.string.menu_bookmark_items), enabled = tracks.any { it.uri != null }) {
                     vm.bookmarkOps.addAll(tracks)
                 },
             ),

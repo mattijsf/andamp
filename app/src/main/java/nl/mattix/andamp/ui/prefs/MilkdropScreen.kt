@@ -25,10 +25,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import nl.mattix.andamp.ui.menu.idleLabel
+import nl.mattix.andamp.R
+import nl.mattix.andamp.ui.menu.idleLabelRes
 
 /**
  * The plug-in's own screen: which pack is loaded, and every preset in it.
@@ -60,7 +62,9 @@ fun MilkdropScreen(
                 TopAppBar(
                     title = { Text(prefs.plugin.menuLabel) },
                     actions = {
-                        TextButton(onClick = onClose, modifier = Modifier.testTag("milkdrop.close")) { Text("Done") }
+                        TextButton(onClick = onClose, modifier = Modifier.testTag("milkdrop.close")) {
+                            Text(stringResource(R.string.prefs_milkdrop_done))
+                        }
                     },
                 )
             },
@@ -95,20 +99,21 @@ fun MilkdropScreen(
 
 @Composable
 private fun PresetsHeader(prefs: VisualizerPrefs) {
+    val pack = prefs.activePack
     Column(Modifier.padding(horizontal = 16.dp)) {
-        Section("Presets")
+        Section(stringResource(R.string.prefs_milkdrop_presets_section))
         Text(
             when {
-                prefs.activePack == null -> {
-                    "Nothing is loaded but the ${prefs.plugin.idleLabel}. Import a pack above."
+                pack == null -> {
+                    stringResource(R.string.prefs_milkdrop_nothing_loaded, stringResource(prefs.plugin.idleLabelRes))
                 }
 
                 prefs.presets.isEmpty() -> {
-                    "The pack is loading, or the plug-in window is closed."
+                    stringResource(R.string.prefs_milkdrop_pack_loading)
                 }
 
                 else -> {
-                    "${prefs.presets.size} in ${prefs.activePack}, in the order the engine plays them."
+                    stringResource(R.string.prefs_milkdrop_presets_in_pack, prefs.presets.size, pack)
                 }
             },
             style = MaterialTheme.typography.bodyMedium,

@@ -2,10 +2,12 @@
 
 package nl.mattix.andamp.ui.prefs
 
+import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.EffectSpec
 import nl.mattix.andamp.core.model.ParamValues
 import nl.mattix.andamp.core.model.Preset
 import nl.mattix.andamp.core.model.RackSlot
+import nl.mattix.andamp.state.Words
 import kotlin.math.abs
 
 /**
@@ -17,18 +19,19 @@ internal object RackDigest {
     fun statusOf(
         spec: EffectSpec,
         slot: RackSlot,
+        words: Words,
     ): String {
         spec.presets.firstOrNull { matches(spec, slot.params, it) }?.let { return it.name }
         val moved =
             spec.params
                 .filterNot { it.isChoice }
                 .filter { abs(slot.params[it.id, it.default] - it.default) > EPSILON }
-        if (moved.isEmpty()) return "Default settings"
+        if (moved.isEmpty()) return words.get(R.string.prefs_rack_default_settings)
         val shown =
             moved.take(SHOWN).joinToString(" · ") { param ->
                 "${param.name} ${display(param, slot.params[param.id, param.default])}"
             }
-        return if (moved.size > SHOWN) "$shown …" else shown
+        return if (moved.size > SHOWN) words.get(R.string.prefs_rack_digest_more, shown) else shown
     }
 
     /**

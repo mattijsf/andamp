@@ -3,6 +3,8 @@
 package nl.mattix.andamp.ui.prefs
 
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
+import nl.mattix.andamp.R
 
 /** Whether holding a small control opens a magnified view of it. */
 data class TapAssistPrefs(
@@ -14,14 +16,8 @@ data class TapAssistPrefs(
 @Composable
 fun TapAssistRow(prefs: TapAssistPrefs) {
     SwitchRow(
-        title = "Tap assist",
-        summary =
-            if (prefs.enabled) {
-                "Hold a small button and a magnified view opens above your finger. " +
-                    "Slide to the one you meant and let go."
-            } else {
-                "Buttons answer a plain tap only. Switch this on if the small ones are hard to hit."
-            },
+        title = stringResource(R.string.prefs_tap_assist_title),
+        summary = stringResource(if (prefs.enabled) R.string.prefs_tap_assist_on else R.string.prefs_tap_assist_off),
         checked = prefs.enabled,
         tag = "prefs.tapassist.switch",
         onChange = prefs.onEnabled,

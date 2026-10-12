@@ -21,8 +21,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import nl.mattix.andamp.R
 
 /**
  * The third-party notices, as a page. Each entry shows the name and license, what it does here, and
@@ -30,12 +33,9 @@ import androidx.compose.ui.unit.dp
  * [Notice.obligation].
  */
 @Composable
-internal fun ColumnScope.LicencesPage(notices: List<Notice> = Notices.ALL) {
+internal fun ColumnScope.LicencesPage(notices: List<Notice> = Notices.all(LocalResources.current)) {
     Spacer(Modifier.height(8.dp))
-    Note(
-        "Andamp is built on other people's work. Each entry links to its source, " +
-            "where the full license text lives.",
-    )
+    Note(stringResource(R.string.prefs_licences_note))
     Spacer(Modifier.height(8.dp))
     Group { notices.forEach { notice -> NoticeRow(notice) } }
 }

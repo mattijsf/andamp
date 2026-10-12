@@ -19,7 +19,7 @@ class LibraryAccessTest {
         val access = LibraryAccess.of(granted = true, canAsk = false)
 
         assertEquals(LibraryAccess.GRANTED, access)
-        assertNull("a granted permission offers no action", access.action)
+        assertNull("a granted permission offers no action", access.action(EnglishWords))
     }
 
     @Test
@@ -27,7 +27,7 @@ class LibraryAccessTest {
         val access = LibraryAccess.of(granted = false, canAsk = true)
 
         assertEquals(LibraryAccess.ASKABLE, access)
-        assertEquals("Allow", access.action)
+        assertEquals("Allow", access.action(EnglishWords))
     }
 
     @Test
@@ -35,29 +35,29 @@ class LibraryAccessTest {
         val access = LibraryAccess.of(granted = false, canAsk = false)
 
         assertEquals(LibraryAccess.BLOCKED, access)
-        assertEquals("Open settings", access.action)
+        assertEquals("Open settings", access.action(EnglishWords))
     }
 
     @Test
     fun `every state's summary mentions a restart`() {
         LibraryAccess.entries.forEach { access ->
-            assertNotNull(access.summary(NAME))
-            assertTrue("${access.name}'s summary mentions a restart", access.summary(NAME).contains("restart"))
+            assertNotNull(access.summary(NAME, EnglishWords))
+            assertTrue("${access.name}'s summary mentions a restart", access.summary(NAME, EnglishWords).contains("restart"))
         }
     }
 
     @Test
     fun `a refused state's summary does not open as the granted one does`() {
         listOf(LibraryAccess.ASKABLE, LibraryAccess.BLOCKED).forEach {
-            assertTrue("${it.name}: ${it.summary(NAME)}", !it.summary(NAME).startsWith("Andamp has"))
+            assertTrue("${it.name}: ${it.summary(NAME, EnglishWords)}", !it.summary(NAME, EnglishWords).startsWith("Andamp has"))
         }
     }
 
     @Test
     fun `the permission's name follows the Android version`() {
-        assertEquals("Music and audio", MusicPermission.name(33))
-        assertEquals("Files and media", MusicPermission.name(30))
-        assertEquals("Storage", MusicPermission.name(26))
+        assertEquals("Music and audio", MusicPermission.name(33, EnglishWords))
+        assertEquals("Files and media", MusicPermission.name(30, EnglishWords))
+        assertEquals("Storage", MusicPermission.name(26, EnglishWords))
     }
 
     private companion object {

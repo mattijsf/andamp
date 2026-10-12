@@ -23,7 +23,7 @@ class PlaylistAddUrlTest {
     private fun player(): Triple<PlaylistOps, WinampState, PlayerFacade> {
         val state = WinampState()
         val facade = PlayerFacade(MockBackend(FakeTracks.tracks, scope))
-        return Triple(PlaylistOps(state, facade), state, facade)
+        return Triple(PlaylistOps(state, facade, EnglishWords), state, facade)
     }
 
     @Test
