@@ -31,6 +31,15 @@ object ListText {
             this.typeface = typeface
         }
 
+    /**
+     * How far text that is [natural] pixels wide is squeezed sideways to fit [room]: 1 where it
+     * fits. A label in another language can be longer than the English its cell was sized for.
+     */
+    fun squeeze(
+        natural: Float,
+        room: Float,
+    ): Float = if (natural <= room || natural <= 0f || room <= 0f) 1f else room / natural
+
     /** The baseline that centers this paint's text in a [rowHeight] row at [rowTop]. */
     fun baseline(
         paint: Paint,

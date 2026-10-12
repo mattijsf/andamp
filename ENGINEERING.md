@@ -683,10 +683,16 @@ the phone's language.
   effects; widget ids, routes and file names; units such as kbps and kHz; and the reason a
   plug-in or a museum page gives when it fails, which is a diagnostic.
 - **A translation** is checked by `TranslationsTest`: only keys the English has, the same
-  placeholders, a plural form for every count. `SimplifiedChineseTest` runs the strings on
-  a phone set to Chinese. The build lists the languages for Android from the `values-*`
-  directories (`generateLocaleConfig`), so a new one needs no other change.
-  `docs/translating.md` is the page for translators.
+  placeholders, a plural form for every count. `SimplifiedChineseTest` and
+  `TranslatedLanguagesTest` run the strings on a phone set to each language. The build
+  lists the languages for Android from the `values-*` directories
+  (`generateLocaleConfig`), so a new one needs no other change. `docs/translating.md` is
+  the page for translators.
+- **Code does not change the case of a word it shows.** Lower case inside a sentence is
+  English: a German noun keeps its capital. A word that reads differently inside a line
+  gets a resource for that place, as the widget's summary line has.
+- **The library window squeezes a label that is wider than its cell** (`ListText.squeeze`),
+  since its cells were sized for the English.
 - **Tests** keep asserting the English words. A Robolectric test reads the real resources,
   whose default is English. A plain JVM test passes `EnglishWords`, which reads the same
   XML from disk.

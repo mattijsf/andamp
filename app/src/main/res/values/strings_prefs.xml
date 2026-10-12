@@ -312,10 +312,16 @@
     <string name="prefs_volume_device">The slider moves the phone\'s media volume, like the rocker</string>
 
     <!-- WidgetPrefs.kt -->
-    <!-- The refresh rate's name, in lower case. -->
+    <!-- The line under the widget's row in Preferences. %1$s is one of the three refresh rates below. -->
     <string name="prefs_widget_summary_no_vis">No visualizer, %1$s refresh rate</string>
-    <!-- The visualizer's name in lower case, then the refresh rate's. -->
+    <!-- %1$s is one of the two visualizers below, %2$s one of the three refresh rates. -->
     <string name="prefs_widget_summary">%1$s, %2$s refresh rate</string>
+    <!-- The words those two lines are filled with, written as they read inside the line. -->
+    <string name="prefs_widget_summary_analyzer">analyzer</string>
+    <string name="prefs_widget_summary_oscilloscope">oscilloscope</string>
+    <string name="prefs_widget_summary_refresh_low">low</string>
+    <string name="prefs_widget_summary_refresh_medium">medium</string>
+    <string name="prefs_widget_summary_refresh_high">high</string>
     <string name="prefs_widget_vis_analyzer">Bars that move with the music, on a short loop</string>
     <string name="prefs_widget_vis_oscilloscope">A wavy line that moves with the music, on a short loop</string>
     <string name="prefs_widget_vis_off">Nothing moves, and nothing is spent on it</string>

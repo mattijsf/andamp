@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- LibraryOps.kt -->
+    <string name="library_tab_artists">ARTIESTEN</string>
+    <string name="library_tab_albums">ALBUMS</string>
+    <string name="library_tab_lists">LIJSTEN</string>
+    <string name="library_tab_radio">RADIO</string>
+    <string name="library_tab_find">VINDEN</string>
+    <string name="library_search_header">ZOEKEN</string>
+
+    <string name="library_kind_albums">ALBUMS</string>
+    <string name="library_kind_singles">SINGLES</string>
+    <string name="library_kind_compilations">COMPILATIES</string>
+
+    <plurals name="library_count_artists">
+        <item quantity="one">%1$d ARTIEST</item>
+        <item quantity="other">%1$d ARTIESTEN</item>
+    </plurals>
+    <plurals name="library_count_albums">
+        <item quantity="one">%1$d ALBUM</item>
+        <item quantity="other">%1$d ALBUMS</item>
+    </plurals>
+    <plurals name="library_count_singles">
+        <item quantity="one">%1$d SINGLE</item>
+        <item quantity="other">%1$d SINGLES</item>
+    </plurals>
+    <plurals name="library_count_compilations">
+        <item quantity="one">%1$d COMPILATIE</item>
+        <item quantity="other">%1$d COMPILATIES</item>
+    </plurals>
+    <plurals name="library_count_records">
+        <item quantity="one">%1$d UITGAVE</item>
+        <item quantity="other">%1$d UITGAVEN</item>
+    </plurals>
+    <plurals name="library_count_lists">
+        <item quantity="one">%1$d LIJST</item>
+        <item quantity="other">%1$d LIJSTEN</item>
+    </plurals>
+    <plurals name="library_count_stations">
+        <item quantity="one">%1$d ZENDER</item>
+        <item quantity="other">%1$d ZENDERS</item>
+    </plurals>
+    <plurals name="library_count_tracks">
+        <item quantity="one">%1$d NUMMER</item>
+        <item quantity="other">%1$d NUMMERS</item>
+    </plurals>
+    <plurals name="library_count_hits">
+        <item quantity="one">%1$d TREFFER</item>
+        <item quantity="other">%1$d TREFFERS</item>
+    </plurals>
+    <string name="library_hits_capped">%1$d+ TREFFERS</string>
+    <string name="library_track_count_short">%1$d NRS</string>
+
+    <string name="library_no_music">GEEN MUZIEK GEVONDEN</string>
+    <string name="library_no_artists">GEEN ARTIESTEN</string>
+    <string name="library_no_matches">GEEN TREFFERS</string>
+    <string name="library_no_lists">GEEN LIJSTEN</string>
+    <string name="library_no_tracks">GEEN NUMMERS</string>
+    <string name="library_no_saved_lists">GEEN LIJSTEN · LIST > SAVE BEWAART ER EEN</string>
+    <string name="library_no_stations">GEEN ZENDERS · NIEUW VOEGT ER EEN TOE</string>
+    <string name="library_type_to_search">TYP OM TE ZOEKEN</string>
+    <string name="library_type_an_artist">TYP EEN ARTIEST</string>
+
+    <string name="library_cant_reach">%1$s NIET BEREIKBAAR</string>
+    <string name="library_cant_reach_library">BIBLIOTHEEK NIET BEREIKBAAR</string>
+    <string name="library_tap_to_retry">%1$s · TIK OPNIEUW</string>
+
+    <string name="library_queued">+%1$d IN WACHTRIJ</string>
+    <string name="library_queued_next">+%1$d HIERNA</string>
+    <string name="library_cant_delete">VERWIJDEREN LUKT NIET</string>
+    <string name="library_nothing_to_play">NIETS OM AF TE SPELEN</string>
+    <string name="library_not_http">GEEN HTTP-URL</string>
+
+    <!-- LibraryWindow.kt -->
+    <string name="library_bar_new">NIEUW</string>
+    <string name="library_bar_del_list">WIS LIJST</string>
+    <string name="library_bar_play">SPEEL</string>
+    <string name="library_bar_add">ERBIJ</string>
+    <string name="library_tap_to_allow">TIK OM %1$s TOE TE STAAN</string>
+
+    <string name="library_station_url_title">Zender-URL</string>
+    <string name="library_station_next">Volgende</string>
+    <string name="library_station_name_title">Zendernaam</string>
+    <string name="library_station_add">Toevoegen</string>
+</resources>

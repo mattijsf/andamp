@@ -60,8 +60,9 @@ class SimplifiedChineseTest {
         assertEquals("Options", words.get(R.string.menu_options))
     }
 
+    // Esperanto: pick another language here if somebody translates Andamp into it
     @Test
-    @Config(qualifiers = "nl-rNL")
+    @Config(qualifiers = "eo")
     fun `a language with no translation gets the English`() {
         assertEquals("Options", words.get(R.string.menu_options))
     }

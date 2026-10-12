@@ -1,8 +1,9 @@
 # Translating Andamp
 
 Andamp's text is in string resources, so a language is a set of XML files and needs no
-Kotlin. English is the original. Simplified Chinese is the first translation, and it is a
-first pass: corrections from native speakers are welcome, as is any other language.
+Kotlin. English is the original. There are translations into Dutch, French, German and
+Simplified Chinese. Each is a first pass: corrections from native speakers are welcome, as
+is any other language.
 
 ## Where the text is
 
@@ -56,11 +57,12 @@ To improve a translation that exists, edit its file and open a pull request.
 ## What reads best
 
 - **The media library window is narrow.** Its text sits in small cells on one line, in
-  capitals in English. Keep those translations about as short as the English.
+  capitals in English. Keep those translations about as short as the English. A label
+  that is wider than its cell is squeezed to fit, which reads worse than a shorter word.
 - **Winamp's words.** Where Winamp had a word for something, such as the menu entries and
   the window names, use the word that the Winamp translation into your language used, so
-  the app reads the way people remember it. The table below has the Simplified Chinese
-  ones.
+  the app reads the way people remember it. Use another word only where Winamp's would
+  not be understood today. The tables below have the words used so far.
 - **Names stay.** Andamp, Winamp, Milkdrop, AVS, projectM, the names of skins, equalizer
   presets, plug-ins and effects are not translated.
 
@@ -72,16 +74,106 @@ window's scroller, the clock, the kbps and kHz readouts, and the title bars of t
 windows. A playlist row in a script the skin has no letters for is drawn in a regular
 font instead.
 
-## Simplified Chinese: the words used
+## The words used
 
-The last column says where a term comes from. "Winamp" is the Simplified Chinese text
-Nullsoft wrote for the Winamp installer. "Audacious" is a free player with a Winamp-style
-interface, used where the installer has no word. "Andamp" is a word for something Winamp
-did not have.
+Each table lists the words a translation uses for the things Winamp named, and where each
+comes from, so that the next person keeps to them.
+
+- **Winamp** is the text Nullsoft wrote for the Winamp installer in that language. It is in
+  the Winamp source that was published, under `Src/installer/winamp/languages/`.
+- **Audacious** is a free player with a Winamp-style interface, used where the installer
+  has no word.
+- **Common usage** is the word most media players use today, where Winamp's word would
+  not be understood or has gone out of use. The word Winamp used is given beside it. It
+  was found by comparing the translations of six open-source players (VLC, Clementine,
+  Rhythmbox, Audacious, DeaDBeeF and Quod Libet) and the Spotify and Apple pages in that
+  language.
+- **Andamp** is a word for something Winamp did not have.
+- **Unverified** means the word the Winamp menus used in that language was not at hand.
+  If you know it, a pull request that corrects the table and the strings is welcome.
+
+### Dutch
+
+| English | Nederlands | From |
+|---|---|---|
+| skin | skin | Winamp |
+| visualization | visualisatie | Winamp |
+| Media Library | mediabibliotheek | Winamp |
+| playlist | afspeellijst | common usage (Winamp: speellijst) |
+| bookmark | bladwijzer | common usage (Winamp: favoriet) |
+| preset | voorinstelling | Winamp |
+| plug-in | plug-in | Winamp |
+| Preferences | Voorkeuren | Winamp |
+| Now playing | Nu speelt | Winamp |
+| Always On Top | Altijd bovenaan | Audacious |
+| Double Size | Dubbele grootte | Audacious |
+| Shuffle, Repeat | Willekeurig, Herhalen | Audacious |
+| Sort list, Reverse list, Randomize list | Lijst sorteren, Lijst omkeren, Lijst in willekeurige volgorde | Audacious |
+| Playlist Editor | Afspeellijsteditor | unverified |
+| Jump to file, Jump to time | Ga naar bestand, Ga naar tijd | unverified |
+| music source | muziekbron | Andamp |
+| effect, rack | effect, rack | Andamp |
+| tip | fooi | Andamp |
+
+### French
+
+| English | Français | From |
+|---|---|---|
+| skin | skin | Winamp |
+| visualization | visualisation | Winamp |
+| Media Library | médiathèque | Winamp |
+| playlist | liste de lecture | Winamp |
+| bookmark | signet | Winamp |
+| preset | préréglage | common usage (Winamp: définition) |
+| plug-in | plugin | Winamp |
+| Preferences | Préférences | Winamp |
+| Now playing | Lecture en cours | Winamp |
+| track | morceau | Winamp |
+| Play, Playback | Lire, Lecture | Audacious |
+| Equalizer | Égaliseur | Audacious |
+| Playlist Editor | Éditeur de liste de lecture | Audacious |
+| Always On Top, Double Size | Toujours au premier plan, Taille double | Audacious |
+| Shuffle, Repeat | Lecture aléatoire, Répéter | Audacious |
+| Sort list, Reverse list, Randomize list | Trier la liste, Inverser la liste, Mélanger la liste | Audacious |
+| Jump to file, Jump to time | Sauter au fichier, Sauter à la position | Audacious |
+| Enqueue | Ajouter | unverified |
+| music source | source de musique | Andamp |
+| effect, rack | effet, rack | Andamp |
+| tip | pourboire | Andamp |
+
+
+### German
+
+| English | Deutsch | From |
+|---|---|---|
+| skin | Skin | Winamp |
+| visualization | Visualisierung | Winamp |
+| Media Library | Medienbibliothek | Winamp |
+| playlist | Playlist | Winamp |
+| bookmark | Lesezeichen | Winamp |
+| preset | Voreinstellung | Winamp |
+| plug-in | Plug-in | Winamp |
+| Preferences | Einstellungen | Winamp |
+| Jump to file | Springe zu Titel | Winamp |
+| Now playing | Wird gerade gespielt | Winamp |
+| Enqueue | Einreihen | Winamp |
+| station | Sender | common usage (Winamp: Station) |
+| track | Titel | Winamp |
+| Equalizer, Options | Equalizer, Optionen | Audacious |
+| Always On Top, Double Size | Immer im Vordergrund, Doppelte Größe | Audacious |
+| Shuffle, Repeat | Zufällige Wiedergabe, Wiederholen | Audacious |
+| Sort list, Reverse list, Randomize list | Liste sortieren, Liste umkehren, Liste zufällig anordnen | Audacious |
+| Playlist Editor | Playlist-Editor | unverified |
+| Jump to time | Springe zu Zeit | unverified |
+| music source | Musikquelle | Andamp |
+| effect, rack | Effekt, Rack | Andamp |
+| tip | Trinkgeld | Andamp |
+
+### Simplified Chinese
 
 | English | 简体中文 | From |
 |---|---|---|
-| skin | 皮肤 | Audacious |
+| skin | 皮肤 | common usage (Winamp: 面板) |
 | visualization | 可视化效果 | Winamp |
 | Media Library | 媒体库 | Winamp |
 | playlist | 播放列表 | Winamp |
@@ -99,9 +191,3 @@ did not have.
 | music source | 音乐源 | Andamp |
 | effect, rack | 效果, 机架 | Andamp |
 | tip | 打赏 | Andamp |
-
-"Unverified" means the word the Chinese Winamp menus used was not at hand. If you know
-it, a pull request that corrects the table and the strings is welcome.
-
-A skin is the one word here that does not follow Winamp. Its installer says 面板, which
-Chinese software otherwise uses for a panel; 皮肤 is what a skin is called everywhere else.

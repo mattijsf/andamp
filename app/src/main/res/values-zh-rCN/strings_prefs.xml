@@ -287,6 +287,11 @@
     <!-- WidgetPrefs.kt -->
     <string name="prefs_widget_summary_no_vis">无可视化效果，刷新率：%1$s</string>
     <string name="prefs_widget_summary">%1$s，刷新率：%2$s</string>
+    <string name="prefs_widget_summary_analyzer">分析器</string>
+    <string name="prefs_widget_summary_oscilloscope">示波器</string>
+    <string name="prefs_widget_summary_refresh_low">低</string>
+    <string name="prefs_widget_summary_refresh_medium">中</string>
+    <string name="prefs_widget_summary_refresh_high">高</string>
     <string name="prefs_widget_vis_analyzer">随音乐跳动的柱状条，短循环播放</string>
     <string name="prefs_widget_vis_oscilloscope">随音乐起伏的波形线，短循环播放</string>
     <string name="prefs_widget_vis_off">没有任何动画，也不消耗任何资源</string>

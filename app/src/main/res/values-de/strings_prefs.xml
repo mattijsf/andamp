@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- AndroidAutoPrefs.kt -->
+    <string name="prefs_android_auto_wears_skin">Trägt %1$s</string>
+    <string name="prefs_android_auto_wears_own_skin">Trägt den eigenen Skin des Players</string>
+    <string name="prefs_android_auto_skin_section">Skin</string>
+    <string name="prefs_android_auto_skin_note">In Android Auto trägt das Hauptfenster diesen Skin. „Standard“ behält den, den du für den Player gewählt hast.</string>
+    <string name="prefs_android_auto_skin_heading">Skin in Android Auto</string>
+
+    <!-- EffectsPage.kt -->
+    <string name="prefs_effects_unavailable_summary">Dieses Wiedergabe-Backend unterstützt keine Effekte.</string>
+    <plurals name="prefs_effects_summary_none_on">
+        <item quantity="one">%1$d Effekt · keiner aktiv</item>
+        <item quantity="other">%1$d Effekte · keiner aktiv</item>
+    </plurals>
+    <plurals name="prefs_effects_summary_on">
+        <item quantity="one">%1$d Effekt · %2$d aktiv</item>
+        <item quantity="other">%1$d Effekte · %2$d aktiv</item>
+    </plurals>
+    <string name="prefs_effects_unavailable">Dieses Wiedergabe-Backend unterstützt keine Effekte.</string>
+    <string name="prefs_effects_input_label">Eingang · vor allen Effekten</string>
+    <string name="prefs_effects_label">Effekte</string>
+    <string name="prefs_effects_order_note">Der Ton läuft von oben nach unten – die Reihenfolge verändert den Klang.</string>
+    <string name="prefs_effects_output_label">Ausgang · nach allen Effekten</string>
+    <string name="prefs_effects_manage_plugins">Plug-ins verwalten</string>
+    <string name="prefs_effects_none_added">Noch keine hinzugefügt</string>
+    <string name="prefs_effects_added_count">%1$d hinzugefügt</string>
+
+    <!-- LicencesPage.kt -->
+    <string name="prefs_licences_note">Andamp baut auf der Arbeit anderer auf. Jeder Eintrag verweist auf seine Quelle, wo der vollständige Lizenztext steht.</string>
+
+    <!-- LimiterCard.kt -->
+    <string name="prefs_limiter_title">Peak-Limiter</string>
+    <string name="prefs_limiter_clipped">Pegelspitzen wurden gerade abgeschnitten</string>
+    <string name="prefs_limiter_clipped_off">Pegelspitzen wurden gerade abgeschnitten · zum Vermeiden einschalten</string>
+    <string name="prefs_limiter_holding">Hält Pegelspitzen zurück · %1$s dB</string>
+    <string name="prefs_limiter_quiet">Hält laute Pegelspitzen unter −1 dB</string>
+    <string name="prefs_limiter_off">Aus · laute Pegelspitzen werden abgeschnitten</string>
+
+    <!-- ListPrefs.kt -->
+    <string name="prefs_lists_font_title">Schriftart der Playlist</string>
+    <string name="prefs_lists_font_skin_about">Die Pixelbuchstaben des Skins, wie beim Liedtitel im Hauptfenster. Ein Titel in einem Schriftsystem, für das der Skin keine Buchstaben hat, behält die normale Schriftart.</string>
+    <string name="prefs_lists_font_regular_about">Eine normale Schriftart, geglättet gezeichnet, mit Groß- und Kleinbuchstaben.</string>
+    <string name="prefs_lists_font_skin">Skin</string>
+    <string name="prefs_lists_font_regular">Normal</string>
+    <string name="prefs_lists_row_height_title">Zeilenhöhe</string>
+    <string name="prefs_lists_row_height_classic_about">Zeilen so eng wie bei Winamp. Wähle eine höhere, wenn sie schwer zu treffen sind.</string>
+    <string name="prefs_lists_row_height_taller_about">Höhere Zeilen in der Playlist, der Bibliothek und der Skin-Liste, mit mehr Platz für den Finger.</string>
+    <string name="prefs_lists_row_classic">Klassisch</string>
+    <string name="prefs_lists_row_roomy">Luftig</string>
+    <string name="prefs_lists_row_large">Groß</string>
+
+    <!-- MilkdropScreen.kt -->
+    <string name="prefs_milkdrop_done">Fertig</string>
+    <string name="prefs_milkdrop_presets_section">Voreinstellungen</string>
+    <string name="prefs_milkdrop_nothing_loaded">Außer der %1$s ist nichts geladen. Importiere oben ein Paket.</string>
+    <string name="prefs_milkdrop_pack_loading">Das Paket wird geladen, oder das Plug-in-Fenster ist geschlossen.</string>
+    <string name="prefs_milkdrop_presets_in_pack">%1$d in %2$s, in der Reihenfolge, in der die Engine sie abspielt.</string>
+
+    <!-- Notices.kt -->
+    <string name="prefs_notice_projectm_what">Die Engine der Milkdrop-Visualisierung; sie rendert .milk-Voreinstellungen.</string>
+    <string name="prefs_notice_projectm_obligation">Andamp bindet projectM %1$s dynamisch ein, als eigene Bibliothek in der App, damit sie ersetzt werden kann. Der Quelltext genau dieser Revision ist das Tag v%1$s unter der Adresse oben, und der Verbindungscode, den Andamp darum baut, liegt in Andamps eigenem Repository. An projectM wurde nichts geändert.</string>
+    <string name="prefs_notice_avs_what">Winamps Visualisierung, in Kotlin neu implementiert nach dem Quelltext, den Nullsoft veröffentlicht hat.</string>
+    <string name="prefs_notice_avs_decoder_what">Der Dateiaufbau und die Feldanordnung des .avs-Formats für Voreinstellungen, so wie der Leser der Voreinstellungen sie befolgt.</string>
+    <string name="prefs_notice_projectm_eval_what">Wertet die Ausdrücke aus, in denen AVS-Voreinstellungen geskriptet sind; in die AVS-Bibliothek eingebaut.</string>
+    <string name="prefs_notice_milkdrop_what">Das Original von Ryan Geiss, dessen .milk-Voreinstellungen projectM rendert.</string>
+    <string name="prefs_notice_webamp_what">Seine Sprite-Tabellen sind die Referenz für jede Koordinate in den Fenstern mit Skin.</string>
+    <string name="prefs_notice_liberation_sans_what">Die Schriftart der Playlist, metrisch kompatibel mit der Arial, die PLEDIT.TXT nennt.</string>
+    <string name="prefs_notice_liberation_sans_obligation">Unverändert beigelegt, unter einem Namen, den die Lizenz erlaubt.</string>
+    <string name="prefs_notice_luaj_what">Führt die .lua-Dateien, die Effekte beschreiben, in einer Sandbox aus.</string>
+    <string name="prefs_notice_androidx_what">Das UI-Toolkit, Navigation, Lifecycle und Media3 für die lokale Wiedergabe.</string>
+    <string name="prefs_notice_kotlin_what">Die Sprache und ihre Bibliothek für Nebenläufigkeit.</string>
+    <string name="prefs_notice_material_what">Seine Farb-Engine leitet die Palette der modernen Bildschirme aus dem geladenen Skin ab.</string>
+    <string name="prefs_notice_coil_what">Lädt die Vorschaubilder des Skin-Museums und hält sie im Cache.</string>
+    <string name="prefs_notice_okhttp_what">Der einzige HTTP-Client, für das Skin-Museum und für Radiostreams.</string>
+
+    <!-- Store.kt (storePlay) -->
+    <string name="prefs_notice_play_billing_what">Nimmt die Trinkgelder auf der Seite „Andamp unterstützen“ über Google Play entgegen.</string>
+    <string name="prefs_notice_play_billing_obligation">Diese Bibliothek ist nicht quelloffen. Andamps Lizenz enthält eine zusätzliche Erlaubnis, Andamp mit ihr zu kombinieren und das Ergebnis zu verbreiten.</string>
+
+    <!-- OverlayPrefs.kt -->
+    <string name="prefs_overlay_grant">Einblendung über anderen Apps zulassen</string>
+    <string name="prefs_overlay_cap_note">Android zeigt das schwebende Fenster möglicherweise mit %1$d %% Deckkraft.</string>
+
+    <!-- PackPrefs.kt -->
+    <string name="prefs_pack_uninstalled">Deinstalliert, die Titel werden übersprungen</string>
+    <string name="prefs_pack_not_installed">Nicht installiert – siehe „Weitere Quellen“ unten</string>
+    <string name="prefs_pack_too_old">Installiert, aber zu alt für diese Version von Andamp</string>
+    <string name="prefs_pack_too_new">Installiert, aber für eine neuere Version von Andamp gemacht</string>
+    <string name="prefs_pack_not_signed_in">Nicht angemeldet</string>
+    <string name="prefs_pack_signed_in_as">Angemeldet als %1$s</string>
+    <string name="prefs_pack_signed_in_here">Auf diesem Smartphone angemeldet</string>
+    <string name="prefs_pack_notice_outdated">%1$s ist für ein älteres Andamp eingerichtet und wird nicht zum Abspielen herangezogen. Eine neuere Version bringt die Titel zurück.</string>
+    <string name="prefs_pack_notice_ahead">%1$s ist für ein neueres Andamp eingerichtet und wird nicht zum Abspielen herangezogen. Ein Update von Andamp bringt die Titel zurück.</string>
+    <string name="prefs_pack_update">%1$s aktualisieren</string>
+
+    <!-- PalettePrefs.kt -->
+    <string name="prefs_palette_title">Farben des Hintergrundbilds übernehmen</string>
+    <string name="prefs_palette_on">AndAmp Dark und AndAmp Light übernehmen ihre Farben von deinem Hintergrundbild, wie der Rest des Smartphones.</string>
+    <string name="prefs_palette_off">AndAmp Dark und AndAmp Light behalten ihre eigenen Farben.</string>
+
+    <!-- PlayerPage.kt -->
+    <string name="prefs_player_windows_section">Fenster</string>
+    <string name="prefs_player_lists_section">Listen</string>
+    <string name="prefs_player_touch_section">Berührung</string>
+    <string name="prefs_player_colors_section">Farben</string>
+    <string name="prefs_player_summary_always_on_top">Immer im Vordergrund</string>
+    <string name="prefs_player_summary_windows_stay_open">Fenster bleiben offen</string>
+    <string name="prefs_player_summary_regular_font">Normale Schriftart in der Playlist</string>
+    <string name="prefs_player_summary_roomy_rows">Luftige Zeilen</string>
+    <string name="prefs_player_summary_large_rows">Große Zeilen</string>
+    <string name="prefs_player_summary_tap_assist">Tipphilfe</string>
+    <string name="prefs_player_summary_wallpaper_colors">Farben des Hintergrundbilds</string>
+    <string name="prefs_player_summary_all_with_overlay">Immer im Vordergrund, Fenster, Listen, Berührung und Farben</string>
+    <string name="prefs_player_summary_all">Fenster, Listen, Berührung und Farben</string>
+
+    <!-- PluginsSection.kt -->
+    <string name="prefs_plugins_intro">Audio-Plug-ins in Lua. Andamp behält eine eigene Kopie, die Originaldatei kann also verschoben oder gelöscht werden.</string>
+    <string name="prefs_plugins_adding">Wird hinzugefügt…</string>
+    <string name="prefs_plugins_add">Plug-in hinzufügen</string>
+    <string name="prefs_plugins_builtin_always">Die Effekte, die Andamp mitbringt, sind immer im Rack.</string>
+    <string name="prefs_plugins_none">Keine Plug-ins hinzugefügt</string>
+    <string name="prefs_plugins_none_hint">Die Effekte, die Andamp mitbringt, sind schon im Rack. Füge für weitere eine .lua-Datei hinzu.</string>
+    <string name="prefs_plugins_remove_named">%1$s entfernen</string>
+    <string name="prefs_plugins_cannot_run">Läuft nicht mit dem Audioformat dieses Titels.</string>
+    <string name="prefs_plugins_remove_question">%1$s entfernen?</string>
+    <string name="prefs_plugins_remove_body">Die gespeicherten Einstellungen werden ebenfalls gelöscht.</string>
+    <string name="prefs_plugins_removed">%1$s entfernt</string>
+    <string name="prefs_plugins_remove">Entfernen</string>
+    <string name="prefs_plugins_cancel">Abbrechen</string>
+    <string name="prefs_plugins_refused_title">Dieses Plug-in lässt sich nicht hinzufügen</string>
+    <string name="prefs_plugins_ok">OK</string>
+    <string name="prefs_plugins_added_title">Plug-in hinzugefügt</string>
+    <string name="prefs_plugins_added_body">Es steht am Ende des Racks unter „Effekte“, ausgeschaltet.</string>
+    <string name="prefs_plugins_updated_title">Plug-in aktualisiert</string>
+    <string name="prefs_plugins_updated_body">Es behält seinen Platz im Rack und seine Einstellungen.</string>
+    <string name="prefs_plugins_updated_body_replacing">Ersetzt Version %1$s. Es behält seinen Platz im Rack und seine Einstellungen.</string>
+    <string name="prefs_plugins_unchanged_title">Bereits hinzugefügt</string>
+    <string name="prefs_plugins_unchanged_body">Genau diese Datei ist bereits installiert. Es wurde nichts geändert.</string>
+    <string name="prefs_plugins_offer_title">Dieses Plug-in hinzufügen?</string>
+    <string name="prefs_plugins_offer_from">Von %1$s</string>
+    <string name="prefs_plugins_offer_add">Hinzufügen</string>
+    <string name="prefs_plugins_replace_question">%1$s ersetzen?</string>
+    <string name="prefs_plugins_replace_body">%1$s %2$s ist installiert. Diese Datei ist %3$s %4$s – sie übernimmt denselben Platz im Rack, samt Einstellungen.</string>
+    <string name="prefs_plugins_replace">Ersetzen</string>
+    <string name="prefs_plugins_credit_version">Version %1$s</string>
+    <string name="prefs_plugins_credit_by">von %1$s</string>
+    <string name="prefs_plugins_credit_none">keine Version angegeben</string>
+    <string name="prefs_plugins_more_title">Weitere Effekte</string>
+    <string name="prefs_plugins_more_summary">Effekt-Plug-ins zum Installieren von Andamps Website</string>
+
+    <!-- PreferencesScreen.kt -->
+    <string name="prefs_page_effects">Effekte</string>
+    <string name="prefs_page_plugins">Plug-ins</string>
+    <string name="prefs_page_visualizer">Visualisierung</string>
+    <string name="prefs_page_player">Player</string>
+    <string name="prefs_page_widget">Startbildschirm-Widget</string>
+    <string name="prefs_page_android_auto">Android Auto</string>
+    <string name="prefs_page_support">Andamp unterstützen</string>
+    <string name="prefs_page_about">Über Andamp</string>
+    <string name="prefs_page_licences">Open-Source-Lizenzen</string>
+    <string name="prefs_title">Einstellungen</string>
+    <string name="prefs_sound_section">Klang</string>
+    <string name="prefs_look_section">Aussehen &amp; Bedienung</string>
+    <string name="prefs_about_summary">Version %1$s · Open-Source-Lizenzen</string>
+    <string name="prefs_about_note">Andamp %1$s – ein Nachbau von Winamp 2.8, der in keiner Verbindung zu Winamp oder dessen Eigentümern steht.</string>
+    <string name="prefs_about_licences_summary">%1$d Projekte, auf denen Andamp aufbaut</string>
+
+    <!-- PrefsTopBar.kt -->
+    <string name="prefs_top_back">Zurück zu den Einstellungen</string>
+    <string name="prefs_top_done">Fertig</string>
+
+    <!-- RackControls.kt -->
+    <string name="prefs_rack_about_control">Info zu %1$s</string>
+
+    <!-- RackDigest.kt -->
+    <string name="prefs_rack_default_settings">Standardwerte</string>
+    <string name="prefs_rack_digest_more">%1$s …</string>
+
+    <!-- RackSection.kt -->
+    <string name="prefs_rack_input_badge">In</string>
+    <string name="prefs_rack_hide_controls">Bedienelemente ausblenden</string>
+    <string name="prefs_rack_show_controls">Bedienelemente anzeigen</string>
+    <string name="prefs_rack_drag_to_move">Ziehen, um %1$s zu verschieben</string>
+    <string name="prefs_rack_undo">Rückgängig</string>
+    <string name="prefs_rack_more_for">Mehr für %1$s</string>
+    <string name="prefs_rack_move_up">Nach oben</string>
+    <string name="prefs_rack_move_down">Nach unten</string>
+    <string name="prefs_rack_save_settings">Einstellungen speichern</string>
+    <string name="prefs_rack_settings_saved">Einstellungen von %1$s gespeichert</string>
+    <string name="prefs_rack_restore_settings">Gespeicherte Einstellungen wiederherstellen</string>
+    <string name="prefs_rack_settings_restored">Einstellungen von %1$s wiederhergestellt</string>
+    <string name="prefs_rack_reset">Auf Standardwerte zurücksetzen</string>
+    <string name="prefs_rack_reset_done">%1$s auf Standardwerte zurückgesetzt</string>
+
+    <!-- ShadePrefs.kt -->
+    <string name="prefs_shade_title">Fenster offen halten</string>
+    <string name="prefs_shade_on">Fenster behalten ihre volle Größe. Die kleine Schaltfläche neben der Schließen-Schaltfläche und doppeltes Tippen auf eine Titelleiste rollen sie nicht mehr auf.</string>
+    <string name="prefs_shade_off">Ein Fenster lässt sich zu einer schmalen Leiste aufrollen. Schalte dies ein, wenn das immer wieder ungewollt passiert.</string>
+
+    <!-- SkinPick.kt -->
+    <string name="prefs_skin_default">Standard</string>
+    <string name="prefs_skin_own">Der eigene Skin des Players</string>
+    <string name="prefs_skin_instead">Anstelle des eigenen Skins des Players</string>
+    <string name="prefs_skin_close">Schließen</string>
+
+    <!-- SourcesPrefs.kt -->
+    <string name="prefs_sources_section">Musikquellen</string>
+    <string name="prefs_sources_more_title">Weitere Quellen</string>
+    <string name="prefs_sources_more_summary">Andere Orte, von denen Andamp Musik abspielen kann, und wie du sie hinzufügst</string>
+    <string name="prefs_phone_permission_off">Berechtigung „%1$s“ ist aus</string>
+    <string name="prefs_phone_allow">„%1$s“ zulassen, um die Musik auf diesem Smartphone anzuzeigen</string>
+    <string name="prefs_phone_counting">Wird gezählt…</string>
+    <string name="prefs_phone_no_music">Noch keine Musik auf diesem Smartphone gefunden</string>
+    <string name="prefs_phone_access_section">Zugriff</string>
+    <string name="prefs_phone_library_section">Bibliothek</string>
+    <string name="prefs_phone_tracks">Titel</string>
+    <string name="prefs_phone_artists">Künstler</string>
+    <string name="prefs_phone_albums">Alben</string>
+    <string name="prefs_phone_playing_time">Spieldauer</string>
+    <string name="prefs_phone_on_storage">Belegter Speicher</string>
+    <string name="prefs_phone_scan_section">Scan</string>
+    <string name="prefs_phone_scan_note">Android behält die Musik auf diesem Smartphone selbst im Blick, aber nicht immer sofort. Ein Scan bittet Android, die Musikordner jetzt durchzusehen, damit gerade kopierte Musik auftaucht.</string>
+    <string name="prefs_phone_scan_now">Jetzt scannen</string>
+    <string name="prefs_phone_scanning">Wird gescannt…</string>
+    <string name="prefs_source_settings_section">Einstellungen</string>
+    <string name="prefs_source_settings_title">Einstellungen von %1$s</string>
+    <string name="prefs_source_settings_summary">Das Konto und was die Quelle sonst noch bietet, auf ihrem eigenen Bildschirm</string>
+    <string name="prefs_source_skin_section">Skin</string>
+    <string name="prefs_source_updates_section">Updates</string>
+    <string name="prefs_source_skin_note">Während ein Titel von %1$s läuft, trägt der Player diesen Skin. „Standard“ behält den, den du für den Player gewählt hast.</string>
+    <string name="prefs_source_skin_heading">Skin für %1$s</string>
+    <string name="prefs_updates_checking">Suche nach einer neueren Version…</string>
+    <string name="prefs_updates_current">Version %1$s, die neueste, die es gibt.</string>
+    <string name="prefs_updates_available">Version %1$s ist erschienen.</string>
+    <string name="prefs_updates_available_over">Version %1$s ist erschienen (dies ist %2$s).</string>
+    <string name="prefs_updates_how">Die Download-Seite öffnet sich in deinem Browser; installiere die neue Version so, wie du diese installiert hast.</string>
+    <string name="prefs_updates_open">Download-Seite öffnen</string>
+    <string name="prefs_updates_failed">Die Suche nach einer neueren Version ist fehlgeschlagen.</string>
+    <string name="prefs_updates_retry">Erneut versuchen</string>
+
+    <!-- SupportPrefs.kt -->
+    <string name="prefs_support_on_site">Auf andamp.nl</string>
+    <string name="prefs_support_thanked">Danke für dein Trinkgeld</string>
+    <string name="prefs_support_leave_a_tip">Trinkgeld geben</string>
+    <string name="prefs_support_intro">Andamp ist kostenlos und ohne Werbung. Wenn es dir gefällt, kannst du ein Trinkgeld geben. Ein Trinkgeld schaltet nichts frei: Alles in Andamp bleibt kostenlos, mit oder ohne.</string>
+    <string name="prefs_support_closed">Trinkgelder sind auf diesem Smartphone gerade nicht verfügbar.</string>
+    <string name="prefs_support_play_note">Google Play wickelt die Zahlung ab. Ein Trinkgeld kann mehr als einmal gegeben werden.</string>
+    <string name="prefs_support_given">Du hast Andamp unterstützt. Danke.</string>
+    <string name="prefs_support_outside_intro">Andamp ist kostenlos und ohne Werbung. Wenn es dir gefällt, kannst du es auf seiner Website unterstützen. Das schaltet nichts frei: Alles in Andamp bleibt kostenlos, mit oder ohne.</string>
+    <string name="prefs_support_open_site">%1$s öffnen</string>
+    <string name="prefs_support_note_thanks">Danke! Dein Trinkgeld ist angekommen.</string>
+    <string name="prefs_support_note_waiting">Danke! Dein Trinkgeld kommt an, sobald die Zahlung abgeschlossen ist.</string>
+    <string name="prefs_support_note_failed">Das Trinkgeld ist nicht durchgegangen. Bitte versuche es später noch einmal.</string>
+
+    <!-- TapAssistPrefs.kt -->
+    <string name="prefs_tap_assist_title">Tipphilfe</string>
+    <string name="prefs_tap_assist_on">Halte eine kleine Schaltfläche gedrückt, und über deinem Finger öffnet sich eine vergrößerte Ansicht. Schiebe zu der, die du gemeint hast, und lass los.</string>
+    <string name="prefs_tap_assist_off">Schaltflächen reagieren nur auf einfaches Tippen. Schalte dies ein, wenn die kleinen schwer zu treffen sind.</string>
+
+    <!-- VisualizerPrefs.kt -->
+    <string name="prefs_visualizer_summary_no_packs">%1$s · noch keine Voreinstellungspakete</string>
+    <plurals name="prefs_visualizer_summary_packs">
+        <item quantity="one">%2$s · %1$d Paket, %3$d Voreinstellungen</item>
+        <item quantity="other">%2$s · %1$d Pakete, %3$d Voreinstellungen</item>
+    </plurals>
+    <string name="prefs_visualizer_plugin_section">Plug-in</string>
+    <string name="prefs_visualizer_avs_blurb">Winamps eigene Visualisierung, nachgebaut. Spielt echte .avs-Voreinstellungen ab, die du importierst.</string>
+    <string name="prefs_visualizer_milkdrop_blurb">libprojectM. Spielt echte .milk-Voreinstellungen ab, die du importierst.</string>
+    <string name="prefs_visualizer_packs_section">Voreinstellungspakete</string>
+    <string name="prefs_visualizer_import_empty">„%1$s“ enthielt keine Voreinstellungen.</string>
+    <string name="prefs_visualizer_importing">%1$s wird importiert... %2$d Dateien</string>
+    <string name="prefs_visualizer_packs_note_avs">Pakete sind .zip-Dateien mit .avs-Voreinstellungen. Sie werden in die App kopiert, weil AVS Voreinstellungen über ihren Pfad öffnet.</string>
+    <string name="prefs_visualizer_packs_note_milkdrop">Pakete sind .zip-Dateien mit .milk-Voreinstellungen. Sie werden in die App kopiert, weil projectM Voreinstellungen über ihren Pfad öffnet.</string>
+    <string name="prefs_visualizer_import">Paket importieren...</string>
+    <string name="prefs_visualizer_idle_avs">Die eigene dieser App. Kein Import nötig.</string>
+    <string name="prefs_visualizer_idle_milkdrop">Die in libprojectM eingebaute. Kein Import nötig.</string>
+    <string name="prefs_visualizer_pack_presets">%1$d Voreinstellungen</string>
+    <string name="prefs_visualizer_remove">Entfernen</string>
+    <string name="prefs_visualizer_browse">Voreinstellungen ansehen</string>
+    <string name="prefs_visualizer_browse_count">%1$d Voreinstellungen ansehen</string>
+    <string name="prefs_visualizer_shuffle_title">Voreinstellungen mischen</string>
+    <string name="prefs_visualizer_shuffle_summary">Sonst laufen sie in der Reihenfolge, in der sie gespeichert sind.</string>
+
+    <!-- VolumePrefs.kt -->
+    <string name="prefs_volume_title">Unabhängige Lautstärke</string>
+    <string name="prefs_volume_own">Der Regler gehört allein Andamp, und die Lautstärke des Smartphones bleibt, wie sie ist</string>
+    <string name="prefs_volume_device">Der Regler stellt die Medienlautstärke des Smartphones ein, wie die Lautstärketasten</string>
+
+    <!-- WidgetPrefs.kt -->
+    <string name="prefs_widget_summary_no_vis">Keine Visualisierung, Aktualisierungsrate: %1$s</string>
+    <string name="prefs_widget_summary">%1$s, Aktualisierungsrate: %2$s</string>
+    <string name="prefs_widget_summary_analyzer">Analysator</string>
+    <string name="prefs_widget_summary_oscilloscope">Oszilloskop</string>
+    <string name="prefs_widget_summary_refresh_low">niedrig</string>
+    <string name="prefs_widget_summary_refresh_medium">mittel</string>
+    <string name="prefs_widget_summary_refresh_high">hoch</string>
+    <string name="prefs_widget_vis_analyzer">Balken, die sich zur Musik bewegen, in einer kurzen Schleife</string>
+    <string name="prefs_widget_vis_oscilloscope">Eine Wellenlinie, die sich zur Musik bewegt, in einer kurzen Schleife</string>
+    <string name="prefs_widget_vis_off">Nichts bewegt sich, und nichts wird dafür verbraucht</string>
+    <string name="prefs_widget_visualizer_title">Visualisierung</string>
+    <string name="prefs_widget_refresh_title">Aktualisierungsrate</string>
+    <string name="prefs_widget_size_title">Größe</string>
+    <string name="prefs_widget_logo_title">Nur das Logo öffnet Andamp</string>
+    <string name="prefs_widget_logo_summary">Tippen auf den Player bewirkt nichts; wer eine Schaltfläche knapp verfehlt, bleibt auf dem Startbildschirm.</string>
+    <string name="prefs_widget_volume_title">Lautstärkeregelung</string>
+    <string name="prefs_widget_volume_summary">Macht den Lautstärkeregler antippbar. Er sitzt dicht an der Positionsleiste und wird leicht versehentlich getroffen.</string>
+    <string name="prefs_widget_limits_title">Gut zu wissen</string>
+    <string name="prefs_widget_limit_corners_title">Die Ecken sind beschnitten</string>
+    <string name="prefs_widget_limit_corners_body">Android rundet die Ecken jedes Widgets ab, bei jeder App, und das lässt sich nicht abschalten. Ein kleinerer Player hätte Platz übrig, aber seine Schaltflächen wären auch schwerer zu treffen, also behält er seine Größe.</string>
+    <string name="prefs_widget_limit_icon_title">Es kann durch ein Symbol ersetzt werden</string>
+    <string name="prefs_widget_limit_icon_body">Um Akku zu sparen, beendet Android manchmal Apps, von denen es annimmt, dass du mit ihnen fertig bist. Dann zeigt der Startbildschirm ein Andamp-Symbol anstelle des Players – einmal tippen holt ihn zurück. Das sollte nicht oft passieren.</string>
+    <string name="prefs_widget_limit_loop_title">Die Balken laufen in einer Schleife</string>
+    <string name="prefs_widget_limit_loop_body">Etwa eine halbe Sekunde der Musik wird in Bilder umgesetzt, und der Startbildschirm spielt sie immer wieder ab, bis eine frische halbe Sekunde sie ersetzt. So bewegen sich die Balken zur Musik, ohne je ganz im Takt zu sein. Schlag für Schlag mitzuhalten hieße, viele Male pro Sekunde neue Bilder zu schicken, und genau das leert einen Akku.</string>
+    <string name="prefs_widget_limit_running_title">Die Leisten brauchen den laufenden Player</string>
+    <string name="prefs_widget_limit_running_body">Tippen auf die Positions- oder Lautstärkeleiste weist den Player an, dorthin zu springen. Hat Android Andamp aus dem Speicher entfernt, ist nichts da, was die Anweisung annimmt, und das Tippen bewirkt nichts. Die Schaltflächen funktionieren weiter: Drückst du eine, startet der Player wieder, und die Leisten folgen.</string>
+
+    <!-- WidgetSettings.kt -->
+    <string name="prefs_widget_size_fill">Füllen</string>
+    <string name="prefs_widget_size_fill_summary">Wächst bis an den Rand des Platzes. Die Grafik wird auf eine Zwischengröße skaliert und wirkt dadurch etwas weicher.</string>
+    <string name="prefs_widget_size_largest">Maximal</string>
+    <string name="prefs_widget_size_largest_summary">Das größte Format, bei dem die Grafik gestochen scharf bleibt. Lässt ringsum etwas Platz.</string>
+    <string name="prefs_widget_refresh_low">Niedrig</string>
+    <string name="prefs_widget_refresh_low_summary">Schont den Akku am meisten. Die Zeit springt, und die Visualisierung holt die Musik ab und zu ein.</string>
+    <string name="prefs_widget_refresh_low_time_only">Schont den Akku am meisten. Die Zeit springt, statt zu ticken.</string>
+    <string name="prefs_widget_refresh_medium">Mittel</string>
+    <string name="prefs_widget_refresh_medium_summary">Ein guter Mittelweg. Die Zeit tickt mit, und die Visualisierung holt die Musik alle paar Sekunden ein.</string>
+    <string name="prefs_widget_refresh_high">Hoch</string>
+    <string name="prefs_widget_refresh_high_summary">Verbraucht am meisten Akku. Die Zeit tickt, und die Visualisierung holt die Musik so oft ein, wie ein Widget es kann.</string>
+    <string name="prefs_widget_refresh_ticking_time_only">Die Zeit tickt mit, Sekunde für Sekunde.</string>
+</resources>

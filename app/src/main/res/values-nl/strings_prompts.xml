@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="prompt_save">Opslaan</string>
+    <string name="prompt_ok">OK</string>
+    <string name="prompt_open_settings">Instellingen openen</string>
+    <string name="prompt_not_now">Niet nu</string>
+    <string name="prompt_allow">Toestaan</string>
+    <string name="prompt_close">Sluiten</string>
+    <string name="prompt_cancel">Annuleren</string>
+    <string name="prompt_delete">Verwijderen</string>
+
+    <!-- DeleteListPrompt.kt -->
+    <string name="prompt_delete_list_title">%1$s verwijderen?</string>
+    <string name="prompt_delete_list_body">Hiermee verwijder je de opgeslagen lijst. De muziek erin blijft staan.</string>
+
+    <!-- BookmarkOps.kt -->
+    <string name="bookmark_nothing_playing">Er speelt niets</string>
+    <string name="bookmark_nowhere">Naar dit nummer kan niet worden teruggekeerd</string>
+    <string name="bookmark_already">Staat al bij de bladwijzers</string>
+    <string name="bookmark_none_here">Hier kan niets als bladwijzer worden toegevoegd</string>
+
+    <!-- SourcePrompts.kt -->
+    <string name="source_missing_title">%1$s is niet ingesteld</string>
+    <string name="source_missing_body">Stel %1$s in om de nummers ervan in Andamp af te spelen. Tot die tijd worden ze overgeslagen.</string>
+    <string name="source_missing_confirm">%1$s instellen</string>
+    <string name="source_signed_out_title">%1$s is uitgelogd</string>
+    <string name="source_signed_out_body">Log in om je nummers van %1$s in Andamp af te spelen. Tot die tijd worden ze overgeslagen.</string>
+    <string name="source_signed_out_confirm">Inloggen</string>
+
+    <!-- MusicPermission.kt: the names Android's settings show in Dutch -->
+    <string name="permission_music_and_audio">Muziek en audio</string>
+    <string name="permission_files_and_media">Bestanden en media</string>
+    <string name="permission_storage">Opslag</string>
+
+    <!-- LibraryAccess.kt and LibraryPrompt.kt -->
+    <string name="access_granted">Andamp heeft de toestemming %1$s. Nummers die je toevoegt, spelen ook na opnieuw opstarten nog af.</string>
+    <string name="access_askable">Zonder de toestemming %1$s kan Andamp nog steeds bestanden afspelen die je kiest, maar na opnieuw opstarten werken ze mogelijk niet meer.</string>
+    <string name="access_blocked">De toestemming %1$s staat uit. Bestanden die je kiest, spelen voorlopig nog af, maar na opnieuw opstarten werken ze mogelijk niet meer.</string>
+    <string name="access_ask_title">%1$s toestaan</string>
+    <string name="access_ask_body">Andamp heeft %1$s nodig om de nummers op deze telefoon af te spelen.</string>
+    <string name="access_off_title">Toestemming %1$s staat uit</string>
+    <string name="access_off_body">Sta %1$s toe in de instellingen van Andamp om de nummers op deze telefoon af te spelen.</string>
+
+    <!-- FolderAccessOps.kt -->
+    <string name="folder_allow_again_title">%1$s opnieuw toestaan?</string>
+    <string name="folder_other_folder">Dat was een andere map. De nummers spelen alleen af vanuit de map waaruit ze zijn toegevoegd.</string>
+    <string name="folder_no_longer_readable">Andamp kan deze map niet meer lezen. Sta de map opnieuw toe en de nummers spelen weer af.</string>
+
+    <!-- OverlayOps.kt -->
+    <string name="overlay_title">Altijd bovenaan</string>
+    <string name="overlay_needs_android_11">Zweven boven andere apps vereist Android 11 of hoger.</string>
+    <string name="overlay_needs_permission">Andamp heeft toestemming nodig om vóór andere apps weer te geven, anders kan de speler er niet boven zweven.</string>
+
+    <!-- PresetNotice.kt -->
+    <string name="preset_unreadable">Deze voorinstelling kon niet worden gelezen</string>
+    <string name="preset_not_shown">Niet getoond in deze voorinstelling: %1$s</string>
+    <string name="preset_and_more">%1$s en nog %2$d</string>
+
+    <!-- PresetPicker.kt -->
+    <string name="picker_nothing_saved_yet">Nog niets opgeslagen</string>
+    <string name="picker_nothing_saved">Niets opgeslagen</string>
+    <string name="picker_selected">%1$d van %2$d geselecteerd</string>
+    <plurals name="picker_saved">
+        <item quantity="one">%1$d opgeslagen</item>
+        <item quantity="other">%1$d opgeslagen</item>
+    </plurals>
+    <string name="picker_confirm_count">%1$s (%2$d)</string>
+
+    <!-- BackendNotices.kt -->
+    <string name="notice_source_cannot_play_title">Er wordt niets afgespeeld</string>
+    <string name="notice_source_cannot_play_body">Niets van deze bron kon worden afgespeeld. Misschien is een ander account of abonnement nodig, of is de verbinding ermee weggevallen. Druk nog eens op afspelen om het opnieuw te proberen. Blijft het gebeuren, controleer dan de instellingen van de bron zelf.</string>
+    <string name="notice_station_lost_title">Zender weggevallen</string>
+    <string name="notice_station_lost_body">De zender is gestopt en kon niet opnieuw worden bereikt, dus de speler is ook gestopt. Misschien is de zender uit de lucht of is de verbinding nog weg. Druk op afspelen om het opnieuw te proberen.</string>
+    <string name="notice_server_lost_title">Server weggevallen</string>
+    <string name="notice_server_lost_body">De verbinding met de muziekserver is weggevallen en de server kon niet opnieuw worden bereikt. Misschien ligt de server plat of is de verbinding nog weg. Druk op afspelen om het opnieuw te proberen.</string>
+    <string name="notice_nothing_playable_title">Hier kan niets worden afgespeeld</string>
+    <string name="notice_nothing_playable_body">Elk nummer in deze afspeellijst komt van een bron die deze telefoon nu niet kan bereiken: de bron is niet geïnstalleerd of er is niemand ingelogd. Bij elke rij staat welke van de twee.</string>
+
+    <!-- WinampViewModel.kt -->
+    <string name="prompt_jump_to_time_title">Ga naar tijd</string>
+    <string name="prompt_jump_to_time_confirm">Ga</string>
+</resources>
