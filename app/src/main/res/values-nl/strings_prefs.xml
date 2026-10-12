@@ -38,14 +38,14 @@
     <string name="prefs_limiter_off">Uit · luide pieken worden afgekapt</string>
 
     <!-- ListPrefs.kt -->
-    <string name="prefs_lists_font_title">Lettertype van de speellijst</string>
+    <string name="prefs_lists_font_title">Lettertype van de afspeellijst</string>
     <string name="prefs_lists_font_skin_about">De pixelletters van de skin, zoals de titel van het nummer in het hoofdvenster. Een titel in een schrift waarvoor de skin geen letters heeft, houdt het gewone lettertype.</string>
     <string name="prefs_lists_font_regular_about">Een gewoon lettertype, glad getekend, met kleine letters en hoofdletters.</string>
     <string name="prefs_lists_font_skin">Skin</string>
     <string name="prefs_lists_font_regular">Gewoon</string>
     <string name="prefs_lists_row_height_title">Rijhoogte</string>
     <string name="prefs_lists_row_height_classic_about">Rijen zo krap als die van Winamp. Kies een hogere als ze lastig te raken zijn.</string>
-    <string name="prefs_lists_row_height_taller_about">Hogere rijen in de speellijst, de bibliotheek en de skinlijst, met meer ruimte voor een vinger.</string>
+    <string name="prefs_lists_row_height_taller_about">Hogere rijen in de afspeellijst, de bibliotheek en de skinlijst, met meer ruimte voor een vinger.</string>
     <string name="prefs_lists_row_classic">Klassiek</string>
     <string name="prefs_lists_row_roomy">Ruim</string>
     <string name="prefs_lists_row_large">Groot</string>
@@ -65,7 +65,7 @@
     <string name="prefs_notice_projectm_eval_what">Rekent de expressies uit waarin AVS-voorinstellingen zijn geschreven, ingebouwd in de AVS-bibliotheek.</string>
     <string name="prefs_notice_milkdrop_what">Het origineel van Ryan Geiss, waarvan projectM de .milk-voorinstellingen weergeeft.</string>
     <string name="prefs_notice_webamp_what">De sprite-kaarten ervan zijn de maatstaf voor elke coördinaat in de vensters met een skin.</string>
-    <string name="prefs_notice_liberation_sans_what">Het lettertype van de speellijst, met dezelfde maten als de Arial die PLEDIT.TXT noemt.</string>
+    <string name="prefs_notice_liberation_sans_what">Het lettertype van de afspeellijst, met dezelfde maten als de Arial die PLEDIT.TXT noemt.</string>
     <string name="prefs_notice_liberation_sans_obligation">Ongewijzigd meegeleverd, onder een naam die de licentie toestaat.</string>
     <string name="prefs_notice_luaj_what">Voert de .lua-bestanden uit die effecten beschrijven, in een sandbox.</string>
     <string name="prefs_notice_androidx_what">De UI-toolkit, navigatie, levenscyclus, en Media3 voor lokaal afspelen.</string>
@@ -106,7 +106,7 @@
     <string name="prefs_player_colors_section">Kleuren</string>
     <string name="prefs_player_summary_always_on_top">Altijd bovenaan</string>
     <string name="prefs_player_summary_windows_stay_open">Vensters blijven open</string>
-    <string name="prefs_player_summary_regular_font">Gewoon lettertype in de speellijst</string>
+    <string name="prefs_player_summary_regular_font">Gewoon lettertype in de afspeellijst</string>
     <string name="prefs_player_summary_roomy_rows">Ruime rijen</string>
     <string name="prefs_player_summary_large_rows">Grote rijen</string>
     <string name="prefs_player_summary_tap_assist">Tikhulp</string>

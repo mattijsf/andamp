@@ -4,10 +4,10 @@
     <string name="menu_play">Afspelen</string>
     <string name="menu_play_file">Bestand afspelen...</string>
     <string name="menu_play_directory">Map afspelen...</string>
-    <string name="menu_bookmark">Favoriet</string>
+    <string name="menu_bookmark">Bladwijzer</string>
     <string name="menu_view_file_info">Bestandsinfo bekijken</string>
-    <string name="menu_bookmarks">Favorieten</string>
-    <string name="menu_playlist_editor">Speellijsteditor</string>
+    <string name="menu_bookmarks">Bladwijzers</string>
+    <string name="menu_playlist_editor">Afspeellijsteditor</string>
     <string name="menu_equalizer">Equalizer</string>
     <string name="menu_media_library">Mediabibliotheek</string>
     <string name="menu_options">Opties</string>
@@ -40,8 +40,8 @@
     <string name="menu_shuffle">Willekeurig</string>
 
     <!-- BookmarksMenu.kt -->
-    <string name="menu_edit_bookmarks">Favorieten bewerken...</string>
-    <string name="menu_add_current_as_bookmark">Huidig nummer als favoriet toevoegen</string>
+    <string name="menu_edit_bookmarks">Bladwijzers bewerken...</string>
+    <string name="menu_add_current_as_bookmark">Huidig nummer als bladwijzer toevoegen</string>
 
     <!-- PlaylistRowMenu.kt -->
     <string name="menu_n_items">%1$d items</string>
@@ -49,7 +49,7 @@
     <string name="menu_remove_items">Item(s) verwijderen</string>
     <string name="menu_crop_files">Alleen selectie houden</string>
     <string name="menu_file_info">Bestandsinfo</string>
-    <string name="menu_bookmark_items">Item(s) als favoriet toevoegen</string>
+    <string name="menu_bookmark_items">Item(s) als bladwijzer toevoegen</string>
 
     <!-- VisualMenu.kt -->
     <string name="menu_presets">Voorinstellingen</string>
@@ -82,9 +82,9 @@
     <string name="menu_open_andamp">Andamp openen</string>
 
     <!-- BookmarkSheetDialog.kt -->
-    <string name="menu_rename_bookmark">Favoriet hernoemen</string>
+    <string name="menu_rename_bookmark">Bladwijzer hernoemen</string>
     <string name="menu_name">Naam</string>
-    <string name="menu_no_bookmarks_yet">Je hebt nog geen favorieten</string>
+    <string name="menu_no_bookmarks_yet">Je hebt nog geen bladwijzers</string>
     <string name="menu_cancel">Annuleren</string>
     <string name="menu_save">Opslaan</string>
     <string name="menu_edit">Bewerken</string>

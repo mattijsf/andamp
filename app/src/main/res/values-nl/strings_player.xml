@@ -7,25 +7,25 @@
     <string name="playlist_add_url_add">Toevoegen</string>
 
     <!-- PlaylistFileOps.kt -->
-    <string name="playlist_save_title">Speellijst opslaan</string>
+    <string name="playlist_save_title">Afspeellijst opslaan</string>
     <string name="playlist_save_in_andamp">Opslaan in Andamp</string>
     <string name="playlist_save_in_andamp_note">Te bekijken in het tabblad LIJSTEN van de mediabibliotheek</string>
     <string name="playlist_export">Exporteren als bestand…</string>
     <string name="playlist_export_note">Een .m3u-bestand dat andere spelers kunnen lezen</string>
-    <string name="playlist_load_title">Speellijst laden</string>
+    <string name="playlist_load_title">Afspeellijst laden</string>
     <string name="playlist_open_from_andamp">Openen uit Andamp</string>
     <string name="playlist_open_from_andamp_note">Een van de lijsten die hier zijn opgeslagen</string>
     <string name="playlist_import">Importeren uit bestand…</string>
     <string name="playlist_import_note">Een .m3u-bestand van deze telefoon</string>
-    <string name="playlist_save_as_title">Speellijst opslaan als</string>
-    <string name="playlist_default_name">Speellijst</string>
-    <string name="playlist_open_title">Speellijst openen</string>
+    <string name="playlist_save_as_title">Afspeellijst opslaan als</string>
+    <string name="playlist_default_name">Afspeellijst</string>
+    <string name="playlist_open_title">Afspeellijst openen</string>
     <string name="playlist_open_confirm">Openen</string>
     <string name="playlist_open_empty">Hier zijn nog geen lijsten opgeslagen</string>
 
     <!-- WinampViewModel.kt -->
     <string name="jump_to_file_title">Ga naar bestand</string>
-    <string name="jump_to_file_empty">De speellijst is leeg</string>
+    <string name="jump_to_file_empty">De afspeellijst is leeg</string>
 
     <!-- FileInfoSource.kt and TrackInfoOps.kt -->
     <string name="info_file">Bestand</string>

@@ -69,8 +69,8 @@
     <!-- BackendNotices.kt -->
     <string name="notice_source_cannot_play_title">Nichts lässt sich abspielen</string>
     <string name="notice_source_cannot_play_body">Von dieser Quelle ließ sich nichts abspielen. Vielleicht braucht sie ein anderes Konto oder ein anderes Abo, oder die Verbindung zu ihr ist weg. Ein erneuter Druck auf die Wiedergabetaste versucht es noch einmal. Passiert das immer wieder, sieh in den Einstellungen der Quelle nach.</string>
-    <string name="notice_station_lost_title">Verbindung zur Station verloren</string>
-    <string name="notice_station_lost_body">Die Station ist verstummt und war nicht wieder zu erreichen, deshalb hat auch der Player gestoppt. Vielleicht sendet die Station nicht mehr, oder die Verbindung ist noch unterbrochen. Ein Druck auf die Wiedergabetaste versucht es erneut.</string>
+    <string name="notice_station_lost_title">Verbindung zum Sender verloren</string>
+    <string name="notice_station_lost_body">Der Sender ist verstummt und war nicht wieder zu erreichen, deshalb hat auch der Player gestoppt. Vielleicht ist der Sender nicht mehr auf Sendung, oder die Verbindung ist noch unterbrochen. Ein Druck auf die Wiedergabetaste versucht es erneut.</string>
     <string name="notice_server_lost_title">Verbindung zum Server verloren</string>
     <string name="notice_server_lost_body">Die Verbindung zum Musikserver ist abgebrochen, und der Server war nicht wieder zu erreichen. Vielleicht ist der Server ausgefallen, oder die Verbindung ist noch weg. Ein Druck auf die Wiedergabetaste versucht es erneut.</string>
     <string name="notice_nothing_playable_title">Hier lässt sich nichts abspielen</string>

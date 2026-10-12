@@ -52,18 +52,18 @@
 
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_done">Terminé</string>
-    <string name="prefs_milkdrop_presets_section">Définitions</string>
+    <string name="prefs_milkdrop_presets_section">Préréglages</string>
     <string name="prefs_milkdrop_nothing_loaded">Rien n’est chargé à part « %1$s ». Importez un pack ci-dessus.</string>
     <string name="prefs_milkdrop_pack_loading">Le pack est en cours de chargement, ou la fenêtre du plugin est fermée.</string>
     <string name="prefs_milkdrop_presets_in_pack">%1$d dans %2$s, dans l’ordre où le moteur les joue.</string>
 
     <!-- Notices.kt -->
-    <string name="prefs_notice_projectm_what">Le moteur de visualisation Milkdrop, qui affiche les définitions .milk.</string>
+    <string name="prefs_notice_projectm_what">Le moteur de visualisation Milkdrop, qui affiche les préréglages .milk.</string>
     <string name="prefs_notice_projectm_obligation">Andamp lie projectM %1$s dynamiquement, sous forme de bibliothèque distincte dans l’appli, afin qu’il puisse être remplacé. Le code source de cette révision exacte est le tag v%1$s à l’adresse ci-dessus, et le code de liaison qu’Andamp construit autour se trouve dans son propre dépôt. Aucune modification n’a été apportée à projectM.</string>
     <string name="prefs_notice_avs_what">Le plugin de visualisation de Winamp, réimplémenté en Kotlin à partir du code source publié par Nullsoft.</string>
-    <string name="prefs_notice_avs_decoder_what">La structure et la disposition des champs du format de définition .avs, telles que les suit le chargeur de définitions.</string>
-    <string name="prefs_notice_projectm_eval_what">Évalue les expressions qui servent de scripts aux définitions AVS ; intégré à la bibliothèque AVS.</string>
-    <string name="prefs_notice_milkdrop_what">L’original de Ryan Geiss, dont projectM affiche les définitions .milk.</string>
+    <string name="prefs_notice_avs_decoder_what">La structure et la disposition des champs du format de préréglage .avs, telles que les suit le chargeur de préréglages.</string>
+    <string name="prefs_notice_projectm_eval_what">Évalue les expressions qui servent de scripts aux préréglages AVS ; intégré à la bibliothèque AVS.</string>
+    <string name="prefs_notice_milkdrop_what">L’original de Ryan Geiss, dont projectM affiche les préréglages .milk.</string>
     <string name="prefs_notice_webamp_what">Ses tables de sprites servent de référence pour chaque coordonnée des fenêtres à skin.</string>
     <string name="prefs_notice_liberation_sans_what">La police de la liste de lecture, aux métriques compatibles avec l’Arial que nomme PLEDIT.TXT.</string>
     <string name="prefs_notice_liberation_sans_obligation">Fournie sans modification, sous un nom que la licence autorise.</string>
@@ -259,28 +259,28 @@
     <string name="prefs_tap_assist_off">Les boutons ne réagissent qu’à un simple appui. Activez cette option si les petits sont difficiles à toucher.</string>
 
     <!-- VisualizerPrefs.kt -->
-    <string name="prefs_visualizer_summary_no_packs">%1$s · aucun pack de définitions pour l’instant</string>
+    <string name="prefs_visualizer_summary_no_packs">%1$s · aucun pack de préréglages pour l’instant</string>
     <plurals name="prefs_visualizer_summary_packs">
-        <item quantity="one">%2$s · %1$d pack, %3$d définitions</item>
-        <item quantity="other">%2$s · %1$d packs, %3$d définitions</item>
+        <item quantity="one">%2$s · %1$d pack, %3$d préréglages</item>
+        <item quantity="other">%2$s · %1$d packs, %3$d préréglages</item>
     </plurals>
     <string name="prefs_visualizer_plugin_section">Plugin</string>
-    <string name="prefs_visualizer_avs_blurb">Le plugin de visualisation de Winamp, reconstruit. Joue les vraies définitions .avs que vous importez.</string>
-    <string name="prefs_visualizer_milkdrop_blurb">libprojectM. Joue les vraies définitions .milk que vous importez.</string>
-    <string name="prefs_visualizer_packs_section">Packs de définitions</string>
-    <string name="prefs_visualizer_import_empty">« %1$s » ne contenait aucune définition.</string>
+    <string name="prefs_visualizer_avs_blurb">Le plugin de visualisation de Winamp, reconstruit. Joue les vrais préréglages .avs que vous importez.</string>
+    <string name="prefs_visualizer_milkdrop_blurb">libprojectM. Joue les vrais préréglages .milk que vous importez.</string>
+    <string name="prefs_visualizer_packs_section">Packs de préréglages</string>
+    <string name="prefs_visualizer_import_empty">« %1$s » ne contenait aucun préréglage.</string>
     <string name="prefs_visualizer_importing">Importation : %1$s... %2$d fichiers</string>
-    <string name="prefs_visualizer_packs_note_avs">Les packs sont des fichiers .zip de définitions .avs. Ils sont copiés dans l’appli, car AVS ouvre les définitions par leur chemin.</string>
-    <string name="prefs_visualizer_packs_note_milkdrop">Les packs sont des fichiers .zip de définitions .milk. Ils sont copiés dans l’appli, car projectM ouvre les définitions par leur chemin.</string>
+    <string name="prefs_visualizer_packs_note_avs">Les packs sont des fichiers .zip de préréglages .avs. Ils sont copiés dans l’appli, car AVS ouvre les préréglages par leur chemin.</string>
+    <string name="prefs_visualizer_packs_note_milkdrop">Les packs sont des fichiers .zip de préréglages .milk. Ils sont copiés dans l’appli, car projectM ouvre les préréglages par leur chemin.</string>
     <string name="prefs_visualizer_import">Importer un pack...</string>
-    <string name="prefs_visualizer_idle_avs">Celle de cette appli. Aucune importation nécessaire.</string>
-    <string name="prefs_visualizer_idle_milkdrop">Celle intégrée à libprojectM. Aucune importation nécessaire.</string>
-    <string name="prefs_visualizer_pack_presets">%1$d définitions</string>
+    <string name="prefs_visualizer_idle_avs">Celui de cette appli. Aucune importation nécessaire.</string>
+    <string name="prefs_visualizer_idle_milkdrop">Celui intégré à libprojectM. Aucune importation nécessaire.</string>
+    <string name="prefs_visualizer_pack_presets">%1$d préréglages</string>
     <string name="prefs_visualizer_remove">Retirer</string>
-    <string name="prefs_visualizer_browse">Parcourir les définitions</string>
-    <string name="prefs_visualizer_browse_count">Parcourir les %1$d définitions</string>
-    <string name="prefs_visualizer_shuffle_title">Définitions en ordre aléatoire</string>
-    <string name="prefs_visualizer_shuffle_summary">Sinon, elles défilent dans l’ordre où elles sont sur le disque.</string>
+    <string name="prefs_visualizer_browse">Parcourir les préréglages</string>
+    <string name="prefs_visualizer_browse_count">Parcourir les %1$d préréglages</string>
+    <string name="prefs_visualizer_shuffle_title">Préréglages en ordre aléatoire</string>
+    <string name="prefs_visualizer_shuffle_summary">Sinon, ils défilent dans l’ordre où ils sont sur le disque.</string>
 
     <!-- VolumePrefs.kt -->
     <string name="prefs_volume_title">Volume indépendant</string>

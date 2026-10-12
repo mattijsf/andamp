@@ -16,8 +16,8 @@
     <!-- BookmarkOps.kt -->
     <string name="bookmark_nothing_playing">Er speelt niets</string>
     <string name="bookmark_nowhere">Naar dit nummer kan niet worden teruggekeerd</string>
-    <string name="bookmark_already">Staat al bij de favorieten</string>
-    <string name="bookmark_none_here">Hier kan niets als favoriet worden toegevoegd</string>
+    <string name="bookmark_already">Staat al bij de bladwijzers</string>
+    <string name="bookmark_none_here">Hier kan niets als bladwijzer worden toegevoegd</string>
 
     <!-- SourcePrompts.kt -->
     <string name="source_missing_title">%1$s is niet ingesteld</string>
@@ -74,7 +74,7 @@
     <string name="notice_server_lost_title">Server weggevallen</string>
     <string name="notice_server_lost_body">De verbinding met de muziekserver is weggevallen en de server kon niet opnieuw worden bereikt. Misschien ligt de server plat of is de verbinding nog weg. Druk op afspelen om het opnieuw te proberen.</string>
     <string name="notice_nothing_playable_title">Hier kan niets worden afgespeeld</string>
-    <string name="notice_nothing_playable_body">Elk nummer in deze speellijst komt van een bron die deze telefoon nu niet kan bereiken: de bron is niet geïnstalleerd of er is niemand ingelogd. Bij elke rij staat welke van de twee.</string>
+    <string name="notice_nothing_playable_body">Elk nummer in deze afspeellijst komt van een bron die deze telefoon nu niet kan bereiken: de bron is niet geïnstalleerd of er is niemand ingelogd. Bij elke rij staat welke van de twee.</string>
 
     <!-- WinampViewModel.kt -->
     <string name="prompt_jump_to_time_title">Ga naar tijd</string>

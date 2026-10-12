@@ -52,20 +52,20 @@
     <string name="menu_bookmark_items">Ajouter le(s) élément(s) aux signets</string>
 
     <!-- VisualMenu.kt -->
-    <string name="menu_presets">Définitions</string>
-    <string name="menu_preset_pack">Pack de définitions</string>
-    <string name="menu_next_preset">Définition suivante</string>
-    <string name="menu_previous_preset">Définition précédente</string>
-    <string name="menu_show_preset_missing">Afficher ce qui manque à une définition</string>
-    <string name="menu_manage_presets">Gérer les définitions...</string>
-    <string name="menu_load_preset_pack">Charger un pack de définitions...</string>
+    <string name="menu_presets">Préréglages</string>
+    <string name="menu_preset_pack">Pack de préréglages</string>
+    <string name="menu_next_preset">Préréglage suivant</string>
+    <string name="menu_previous_preset">Préréglage précédent</string>
+    <string name="menu_show_preset_missing">Afficher ce qui manque à un préréglage</string>
+    <string name="menu_manage_presets">Gérer les préréglages...</string>
+    <string name="menu_load_preset_pack">Charger un pack de préréglages...</string>
     <string name="menu_fullscreen">Plein écran</string>
     <string name="menu_close">Fermer</string>
     <string name="menu_pack_with_count">%1$s (%2$d)</string>
-    <string name="menu_avs_idle_preset">Définition de veille AVS</string>
-    <string name="menu_projectm_idle_preset">Définition de veille projectM</string>
-    <string name="menu_no_presets_loaded">Aucune définition chargée</string>
-    <string name="menu_all_presets">Les %1$d définitions...</string>
+    <string name="menu_avs_idle_preset">Préréglage de veille AVS</string>
+    <string name="menu_projectm_idle_preset">Préréglage de veille projectM</string>
+    <string name="menu_no_presets_loaded">Aucun préréglage chargé</string>
+    <string name="menu_all_presets">Les %1$d préréglages...</string>
 
     <!-- VisualizationMenu.kt -->
     <string name="menu_visualization_options">Options de visualisation</string>

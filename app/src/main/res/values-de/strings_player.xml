@@ -43,7 +43,7 @@
     <string name="info_year">Jahr</string>
     <string name="info_genre">Genre</string>
     <string name="info_composer">Komponist</string>
-    <string name="info_station">Station</string>
+    <string name="info_station">Sender</string>
     <string name="info_now_playing">Wird gerade gespielt</string>
     <string name="info_url">URL</string>
     <string name="info_website">Website</string>

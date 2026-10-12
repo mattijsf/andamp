@@ -61,7 +61,8 @@ To improve a translation that exists, edit its file and open a pull request.
   that is wider than its cell is squeezed to fit, which reads worse than a shorter word.
 - **Winamp's words.** Where Winamp had a word for something, such as the menu entries and
   the window names, use the word that the Winamp translation into your language used, so
-  the app reads the way people remember it. The tables below have the words used so far.
+  the app reads the way people remember it. Use another word only where Winamp's would
+  not be understood today. The tables below have the words used so far.
 - **Names stay.** Andamp, Winamp, Milkdrop, AVS, projectM, the names of skins, equalizer
   presets, plug-ins and effects are not translated.
 
@@ -82,6 +83,11 @@ comes from, so that the next person keeps to them.
   the Winamp source that was published, under `Src/installer/winamp/languages/`.
 - **Audacious** is a free player with a Winamp-style interface, used where the installer
   has no word.
+- **Common usage** is the word most media players use today, where Winamp's word would
+  not be understood or has gone out of use. The word Winamp used is given beside it. It
+  was found by comparing the translations of six open-source players (VLC, Clementine,
+  Rhythmbox, Audacious, DeaDBeeF and Quod Libet) and the Spotify and Apple pages in that
+  language.
 - **Andamp** is a word for something Winamp did not have.
 - **Unverified** means the word the Winamp menus used in that language was not at hand.
   If you know it, a pull request that corrects the table and the strings is welcome.
@@ -93,8 +99,8 @@ comes from, so that the next person keeps to them.
 | skin | skin | Winamp |
 | visualization | visualisatie | Winamp |
 | Media Library | mediabibliotheek | Winamp |
-| playlist | speellijst | Winamp |
-| bookmark | favoriet | Winamp |
+| playlist | afspeellijst | common usage (Winamp: speellijst) |
+| bookmark | bladwijzer | common usage (Winamp: favoriet) |
 | preset | voorinstelling | Winamp |
 | plug-in | plug-in | Winamp |
 | Preferences | Voorkeuren | Winamp |
@@ -103,7 +109,7 @@ comes from, so that the next person keeps to them.
 | Double Size | Dubbele grootte | Audacious |
 | Shuffle, Repeat | Willekeurig, Herhalen | Audacious |
 | Sort list, Reverse list, Randomize list | Lijst sorteren, Lijst omkeren, Lijst in willekeurige volgorde | Audacious |
-| Playlist Editor | Speellijsteditor | unverified |
+| Playlist Editor | Afspeellijsteditor | unverified |
 | Jump to file, Jump to time | Ga naar bestand, Ga naar tijd | unverified |
 | music source | muziekbron | Andamp |
 | effect, rack | effect, rack | Andamp |
@@ -118,7 +124,7 @@ comes from, so that the next person keeps to them.
 | Media Library | médiathèque | Winamp |
 | playlist | liste de lecture | Winamp |
 | bookmark | signet | Winamp |
-| preset | définition | Winamp |
+| preset | préréglage | common usage (Winamp: définition) |
 | plug-in | plugin | Winamp |
 | Preferences | Préférences | Winamp |
 | Now playing | Lecture en cours | Winamp |
@@ -135,7 +141,6 @@ comes from, so that the next person keeps to them.
 | effect, rack | effet, rack | Andamp |
 | tip | pourboire | Andamp |
 
-"Définition" for a preset is the installer's word. Audacious says "préréglage".
 
 ### German
 
@@ -152,7 +157,7 @@ comes from, so that the next person keeps to them.
 | Jump to file | Springe zu Titel | Winamp |
 | Now playing | Wird gerade gespielt | Winamp |
 | Enqueue | Einreihen | Winamp |
-| station | Station | Winamp |
+| station | Sender | common usage (Winamp: Station) |
 | track | Titel | Winamp |
 | Equalizer, Options | Equalizer, Optionen | Audacious |
 | Always On Top, Double Size | Immer im Vordergrund, Doppelte Größe | Audacious |

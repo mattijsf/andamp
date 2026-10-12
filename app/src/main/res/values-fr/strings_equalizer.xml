@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- EqOps.kt -->
-    <string name="eq_menu_title">Définitions de l’égaliseur</string>
+    <string name="eq_menu_title">Préréglages de l’égaliseur</string>
     <string name="eq_menu_load">Charger</string>
     <string name="eq_menu_save">Enregistrer</string>
     <string name="eq_menu_delete">Supprimer</string>
-    <string name="eq_menu_preset">Définition...</string>
+    <string name="eq_menu_preset">Préréglage...</string>
     <string name="eq_menu_default">Par défaut</string>
-    <string name="eq_auto_load_preset">Définition à chargement automatique</string>
-    <string name="eq_menu_auto_load_delete">Définition à chargement automatique...</string>
-    <string name="eq_save_preset_title">Enregistrer la définition</string>
-    <string name="eq_save_auto_preset_title">Enregistrer la définition à chargement automatique</string>
-    <string name="eq_load_title">Charger une définition</string>
+    <string name="eq_auto_load_preset">Préréglage à chargement automatique</string>
+    <string name="eq_menu_auto_load_delete">Préréglage à chargement automatique...</string>
+    <string name="eq_save_preset_title">Enregistrer le préréglage</string>
+    <string name="eq_save_auto_preset_title">Enregistrer le préréglage à chargement automatique</string>
+    <string name="eq_load_title">Charger un préréglage</string>
     <string name="eq_load_confirm">Charger</string>
     <string name="eq_kind_factory">D’origine</string>
-    <string name="eq_kind_saved">Enregistrée</string>
-    <string name="eq_delete_title">Supprimer des définitions</string>
+    <string name="eq_kind_saved">Enregistré</string>
+    <string name="eq_delete_title">Supprimer des préréglages</string>
     <string name="eq_delete_confirm">Supprimer</string>
-    <string name="eq_delete_empty">Vous n’avez encore enregistré aucune définition</string>
-    <string name="eq_delete_auto_title">Supprimer des définitions à chargement automatique</string>
-    <string name="eq_delete_auto_empty">Aucun morceau n’a encore sa propre définition</string>
+    <string name="eq_delete_empty">Vous n’avez encore enregistré aucun préréglage</string>
+    <string name="eq_delete_auto_title">Supprimer des préréglages à chargement automatique</string>
+    <string name="eq_delete_auto_empty">Aucun morceau n’a encore son propre préréglage</string>
 </resources>

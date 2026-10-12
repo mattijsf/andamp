@@ -37,8 +37,8 @@
         <item quantity="other">%1$d LISTEN</item>
     </plurals>
     <plurals name="library_count_stations">
-        <item quantity="one">%1$d STATION</item>
-        <item quantity="other">%1$d STATIONEN</item>
+        <item quantity="one">%1$d SENDER</item>
+        <item quantity="other">%1$d SENDER</item>
     </plurals>
     <plurals name="library_count_tracks">
         <item quantity="one">%1$d TITEL</item>
@@ -57,7 +57,7 @@
     <string name="library_no_lists">KEINE LISTEN</string>
     <string name="library_no_tracks">KEINE TITEL</string>
     <string name="library_no_saved_lists">KEINE LISTEN · LIST > SAVE SPEICHERT EINE</string>
-    <string name="library_no_stations">KEINE STATIONEN · NEU FÜGT EINE HINZU</string>
+    <string name="library_no_stations">KEINE SENDER · NEU FÜGT EINEN HINZU</string>
     <string name="library_type_to_search">SUCHBEGRIFF EINGEBEN</string>
     <string name="library_type_an_artist">KÜNSTLER EINGEBEN</string>
 
@@ -78,8 +78,8 @@
     <string name="library_bar_add">DAZU</string>
     <string name="library_tap_to_allow">TIPPEN: %1$s ZULASSEN</string>
 
-    <string name="library_station_url_title">Stations-URL</string>
+    <string name="library_station_url_title">Sender-URL</string>
     <string name="library_station_next">Weiter</string>
-    <string name="library_station_name_title">Stationsname</string>
+    <string name="library_station_name_title">Sendername</string>
     <string name="library_station_add">Hinzufügen</string>
 </resources>
