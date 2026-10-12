@@ -29,6 +29,12 @@ data class BackendState(
      */
     val streamSampleRateKhz: Int? = null,
     /**
+     * How many channels the decoder is producing, when the backend can say: 1 lights the
+     * window's mono lamp, 2 or more its stereo lamp. Null leaves the stereo lamp lit while
+     * a track plays.
+     */
+    val streamChannels: Int? = null,
+    /**
      * True from reaching for the source until its first audio, as when connecting to a
      * station. False during a mid-stream rebuffer.
      */

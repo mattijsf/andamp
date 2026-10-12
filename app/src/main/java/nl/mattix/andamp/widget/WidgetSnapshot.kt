@@ -29,6 +29,8 @@ data class WidgetSnapshot(
     val balance: Int = 0,
     val bitrateKbps: Int? = null,
     val sampleRateKhz: Int? = null,
+    /** How many channels are playing, for the mono and stereo lamps; null when the player does not know. */
+    val channels: Int? = null,
     val shuffle: Boolean = false,
     val repeat: Boolean = false,
     val volume: Int = DEFAULT_VOLUME,
@@ -105,6 +107,7 @@ data class WidgetSnapshot(
                 }
             s.currentIndex = queueNumber.coerceAtLeast(1) - 1
             s.transport = transport
+            s.streamChannels = channels
             s.timeRemaining = timeRemaining
             s.balance = balance
             s.currentTimeSec = positionSec
@@ -146,6 +149,7 @@ data class WidgetSnapshot(
                 balance = p.getInt("balance", 0),
                 bitrateKbps = p.getInt("bitrateKbps", 0).takeIf { it > 0 },
                 sampleRateKhz = p.getInt("sampleRateKhz", 0).takeIf { it > 0 },
+                channels = p.getInt("channels", 0).takeIf { it > 0 },
                 shuffle = p.getBoolean("shuffle", false),
                 repeat = p.getBoolean("repeat", false),
                 volume = p.getInt("volume", DEFAULT_VOLUME),
@@ -172,6 +176,7 @@ data class WidgetSnapshot(
                 .putInt("balance", snapshot.balance)
                 .putInt("bitrateKbps", snapshot.bitrateKbps ?: 0)
                 .putInt("sampleRateKhz", snapshot.sampleRateKhz ?: 0)
+                .putInt("channels", snapshot.channels ?: 0)
                 .putBoolean("shuffle", snapshot.shuffle)
                 .putBoolean("repeat", snapshot.repeat)
                 .putInt("volume", snapshot.volume)

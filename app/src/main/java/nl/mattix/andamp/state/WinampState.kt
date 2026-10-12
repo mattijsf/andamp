@@ -670,6 +670,9 @@ class WinampState {
     /** The rate of what the decoder is producing, when the backend reports it; see [BackendState.streamSampleRateKhz]. */
     var streamSampleRateKhz by mutableStateOf<Int?>(null)
 
+    /** How many channels are playing, when the backend reports it; see [BackendState.streamChannels]. */
+    var streamChannels by mutableStateOf<Int?>(null)
+
     /** A source is being connected to and is not yet playing; see [BackendState.connecting]. */
     var connecting by mutableStateOf(false)
 

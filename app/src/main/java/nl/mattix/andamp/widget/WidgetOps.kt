@@ -103,6 +103,7 @@ class WidgetOps(
                             balance = window.balance,
                             bitrateKbps = s.streamBitrateKbps ?: track?.bitrateKbps,
                             sampleRateKhz = s.streamSampleRateKhz ?: track?.sampleRateKhz,
+                            channels = s.streamChannels,
                             shuffle = s.shuffle,
                             repeat = s.repeat,
                             volume = (s.volumeFraction * VOLUME_RANGE).toInt(),

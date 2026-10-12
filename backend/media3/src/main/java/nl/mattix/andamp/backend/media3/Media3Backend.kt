@@ -12,6 +12,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.Tracks
 import androidx.media3.exoplayer.DefaultRenderersFactory
 import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.exoplayer.analytics.AnalyticsListener
 import androidx.media3.exoplayer.audio.AudioSink
 import androidx.media3.exoplayer.audio.DefaultAudioSink
 import kotlinx.coroutines.CoroutineScope
@@ -413,8 +414,29 @@ class Media3Backend(
         refreshConnecting()
     }
 
+    /**
+     * The mono and stereo lamps, from the audio output and not from the
+     * file's header: a parametric stereo stream is one channel in its header
+     * and two out of the decoder.
+     *
+     * An output is opened for the first samples of a track, and again when
+     * the next track's channels or rate differ. The count is kept when an
+     * output closes, so a seek or a pause does not blank the lamps.
+     */
+    private val output =
+        object : AnalyticsListener {
+            override fun onAudioTrackInitialized(
+                eventTime: AnalyticsListener.EventTime,
+                audioTrackConfig: AudioSink.AudioTrackConfig,
+            ) {
+                val channels = Integer.bitCount(audioTrackConfig.channelConfig).takeIf { it > 0 }
+                if (channels != _state.value.streamChannels) _state.value = _state.value.copy(streamChannels = channels)
+            }
+        }
+
     init {
         player.addListener(listener)
+        (player as? ExoPlayer)?.addAnalyticsListener(output)
         player.setMediaItems(tracks.map(::mediaItem), initialIndex, 0)
         player.prepare()
     }

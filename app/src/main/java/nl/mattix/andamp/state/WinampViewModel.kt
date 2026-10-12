@@ -379,6 +379,7 @@ class WinampViewModel
                     state.playlist = b.queue
                     state.streamBitrateKbps = b.streamBitrateKbps
                     state.streamSampleRateKhz = b.streamSampleRateKhz
+                    state.streamChannels = b.streamChannels
                     state.station = b.station
                     state.connecting = b.connecting
                     state.volume = (b.volumeFraction * 100).roundToInt()

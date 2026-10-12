@@ -236,10 +236,11 @@ fun DrawScope.drawMainWindow(
         s.sampleRateKhz?.let { bitmapText(text, it.toString(), Dest.KHZ.x, Dest.KHZ.y) }
     }
 
-    // mono / stereo lamps: stereo is lit whenever playback is not stopped
+    // mono / stereo lamps
     val monoster = skin[Sheet.MONOSTER]
-    sprite(monoster, SpriteMap.MAIN_MONO, Dest.MONO)
-    sprite(monoster, if (stopped) SpriteMap.MAIN_STEREO else SpriteMap.MAIN_STEREO_SELECTED, Dest.STEREO)
+    val lamp = ChannelLamp.of(s.streamChannels, stopped)
+    sprite(monoster, if (lamp == ChannelLamp.MONO) SpriteMap.MAIN_MONO_SELECTED else SpriteMap.MAIN_MONO, Dest.MONO)
+    sprite(monoster, if (lamp == ChannelLamp.STEREO) SpriteMap.MAIN_STEREO_SELECTED else SpriteMap.MAIN_STEREO, Dest.STEREO)
 
     drawVisualizer(skin)
     drawVolume(skin, s)
