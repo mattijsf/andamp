@@ -682,6 +682,11 @@ the phone's language.
   window's title bar, a playlist row's `[Missing source: …]`); the names of skins, presets, plug-ins and
   effects; widget ids, routes and file names; units such as kbps and kHz; and the reason a
   plug-in or a museum page gives when it fails, which is a diagnostic.
+- **A translation** is checked by `TranslationsTest`: only keys the English has, the same
+  placeholders, a plural form for every count. `SimplifiedChineseTest` runs the strings on
+  a phone set to Chinese. The build lists the languages for Android from the `values-*`
+  directories (`generateLocaleConfig`), so a new one needs no other change.
+  `docs/translating.md` is the page for translators.
 - **Tests** keep asserting the English words. A Robolectric test reads the real resources,
   whose default is English. A plain JVM test passes `EnglishWords`, which reads the same
   XML from disk.

@@ -2,7 +2,7 @@
 <resources>
     <!-- MainMenu.kt -->
     <!-- The title of the player's main menu: the name Winamp gives it. -->
-    <string name="menu_winamp">Winamp</string>
+    <string name="menu_winamp" translatable="false">Winamp</string>
     <string name="menu_play">Play</string>
     <string name="menu_play_file">Play file...</string>
     <string name="menu_play_directory">Play directory...</string>

@@ -299,6 +299,10 @@ android {
 
     androidResources {
         noCompress += "wsz"
+        // The languages the app has, listed for Android from the values-<language> directories, so
+        // a new translation shows up under the phone's Settings > Apps > Andamp > Language without
+        // being named anywhere else. res/resources.properties says which language values/ is in.
+        generateLocaleConfig = true
     }
 
     testOptions {

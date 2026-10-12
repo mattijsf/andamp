@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- EqOps.kt -->
+    <string name="eq_menu_title">均衡器预设</string>
+    <string name="eq_menu_load">载入</string>
+    <string name="eq_menu_save">保存</string>
+    <string name="eq_menu_delete">删除</string>
+    <string name="eq_menu_preset">预设...</string>
+    <string name="eq_menu_default">默认</string>
+    <string name="eq_auto_load_preset">自动载入预设</string>
+    <string name="eq_menu_auto_load_delete">自动载入预设...</string>
+    <string name="eq_save_preset_title">保存预设</string>
+    <string name="eq_save_auto_preset_title">保存自动载入预设</string>
+    <string name="eq_load_title">载入预设</string>
+    <string name="eq_load_confirm">载入</string>
+    <string name="eq_kind_factory">内置</string>
+    <string name="eq_kind_saved">已保存</string>
+    <string name="eq_delete_title">删除预设</string>
+    <string name="eq_delete_confirm">删除</string>
+    <string name="eq_delete_empty">您还没有保存任何预设</string>
+    <string name="eq_delete_auto_title">删除自动载入预设</string>
+    <string name="eq_delete_auto_empty">还没有任何歌曲拥有自己的预设</string>
+</resources>
