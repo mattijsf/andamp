@@ -7,8 +7,12 @@
 #
 # Merging its PR bumps the version, writes the changelog and tags. Uploading
 # that tag to Play is tools/release.py, run by hand, because the upload key
-# lives in a keychain on one machine. The APK for installing without Play is
-# built here, by apk.yml, as soon as the release exists.
+# lives in a keychain on one machine.
+#
+# The release it makes is a draft, with its tag made at once
+# (release-please-config.json). This repository's releases are immutable: once
+# published, nothing can be attached. So apk.yml, called below, builds the APK
+# for installing without Play, attaches it and then publishes the release.
 name: release-please
 
 on:
