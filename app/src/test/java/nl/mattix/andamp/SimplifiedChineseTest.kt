@@ -39,7 +39,7 @@ class SimplifiedChineseTest {
                 }
             }
 
-        assertTrue("$labels", labels.containsAll(listOf("均衡器", "选项", "可视化效果", "面板", "退出")))
+        assertTrue("$labels", labels.containsAll(listOf("均衡器", "选项", "可视化效果", "皮肤", "退出")))
     }
 
     @Test

@@ -13,7 +13,7 @@
     <string name="menu_options">选项</string>
     <string name="menu_playback">播放控制</string>
     <string name="menu_visualization">可视化效果</string>
-    <string name="menu_skins">面板</string>
+    <string name="menu_skins">皮肤</string>
     <string name="menu_support_andamp">支持 Andamp...</string>
     <string name="menu_exit">退出</string>
     <string name="menu_previous">上一曲</string>
@@ -28,9 +28,9 @@
     <string name="menu_jump_to_file">跳转到文件...</string>
     <string name="menu_start_of_list">列表开头</string>
     <string name="menu_ten_tracks_back">后退十首</string>
-    <string name="menu_skin_browser">面板浏览器...</string>
-    <string name="menu_load_skin">载入面板...</string>
-    <string name="menu_get_more_skins">&lt;&lt; 获取更多面板！ &gt;&gt;</string>
+    <string name="menu_skin_browser">皮肤浏览器...</string>
+    <string name="menu_load_skin">载入皮肤...</string>
+    <string name="menu_get_more_skins">&lt;&lt; 获取更多皮肤！ &gt;&gt;</string>
     <string name="menu_preferences">首选项...</string>
     <string name="menu_time_elapsed">已播放时间</string>
     <string name="menu_time_remaining">剩余时间</string>
