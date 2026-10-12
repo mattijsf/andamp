@@ -114,9 +114,9 @@ jobs:
             fi
           }
           named app/build/outputs/apk/release/app-release.apk "andamp-$version.apk"
-          named androidauto/build/outputs/apk/release/androidauto-release.apk "andamp-android-auto-$version.apk"
+          named androidauto/build/outputs/apk/release/androidauto-release.apk "andamp-android-auto-companion-$version.apk"
           echo "file=andamp-$version.apk" >> "$GITHUB_OUTPUT"
-          echo "auto=andamp-android-auto-$version.apk" >> "$GITHUB_OUTPUT"
+          echo "auto=andamp-android-auto-companion-$version.apk" >> "$GITHUB_OUTPUT"
 
       - name: Attach them to the release, then publish the release
         if: env.TAG != ''
