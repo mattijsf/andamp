@@ -50,6 +50,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.sync.withLock
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.VisMode
@@ -113,10 +114,11 @@ private const val VIS_FRAME_MS = 16L
  *
  * Driven by `delay`, not `withFrameNanos`: a state write from a timer invalidates the canvas,
  * and a frame-clock waiter does not reliably schedule frames here. It runs only while the
- * activity is resumed and a track is playing.
+ * surface is resumed and a track is playing, and on one surface at a time; see
+ * [nl.mattix.andamp.state.WinampState.visualizerTurn].
  */
 @Composable
-private fun InPlayerVisualizerDriver(vm: WinampViewModel) {
+internal fun InPlayerVisualizerDriver(vm: WinampViewModel) {
     val s = vm.state
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     // switched off, nothing is drawn from a frame, so the loop does not run
@@ -124,23 +126,25 @@ private fun InPlayerVisualizerDriver(vm: WinampViewModel) {
     LaunchedEffect(s.transport, off) {
         if (s.transport != Transport.Playing || off) return@LaunchedEffect
         lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            // asked per frame rather than taken once: a backend can hand its
-            // audio over after playback has started. See [VisualizerFeed].
-            val feed = VisualizerFeed(VIS_FRAME_MS) { vm.audioTap }
-            var t = 0.0
-            var next = SystemClock.uptimeMillis()
-            while (true) {
-                when (s.visMode) {
-                    VisMode.Analyzer -> feed.stepAnalyzer(s, t)
-                    VisMode.Oscilloscope -> feed.stepOscilloscope(s, t)
-                    VisMode.Off -> Unit
+            s.visualizerTurn.withLock {
+                // asked per frame rather than taken once: a backend can hand its
+                // audio over after playback has started. See [VisualizerFeed].
+                val feed = VisualizerFeed(VIS_FRAME_MS) { vm.audioTap }
+                var t = 0.0
+                var next = SystemClock.uptimeMillis()
+                while (true) {
+                    when (s.visMode) {
+                        VisMode.Analyzer -> feed.stepAnalyzer(s, t)
+                        VisMode.Oscilloscope -> feed.stepOscilloscope(s, t)
+                        VisMode.Off -> Unit
+                    }
+                    s.visFrame++
+                    t += VIS_FRAME_MS / 1000.0
+                    // deadline pacing: delay() overshoots a little every tick
+                    next += VIS_FRAME_MS
+                    val wait = next - SystemClock.uptimeMillis()
+                    if (wait > 0) delay(wait) else next = SystemClock.uptimeMillis()
                 }
-                s.visFrame++
-                t += VIS_FRAME_MS / 1000.0
-                // deadline pacing: delay() overshoots a little every tick
-                next += VIS_FRAME_MS
-                val wait = next - SystemClock.uptimeMillis()
-                if (wait > 0) delay(wait) else next = SystemClock.uptimeMillis()
             }
         }
     }

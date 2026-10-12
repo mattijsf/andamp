@@ -50,6 +50,12 @@ class Widget(
      * [nl.mattix.andamp.ui.window.Loupe.fiddly]).
      */
     val magnify: Boolean = false,
+    /**
+     * Where a finger rests to hold this widget as it is: the middle of its thumb. Only a slider
+     * says. A surface that is told how far a finger moved, and not where it is, puts a finger
+     * of its own there to move the slider; see [nl.mattix.andamp.ui.remote.HeldSlider].
+     */
+    val handle: (() -> Offset)? = null,
 ) {
     /** The continuous half of a gesture: press, move, release. */
     data class Pointer(
@@ -123,7 +129,11 @@ fun button(
     onTap: () -> Unit,
 ) = Widget(id, IntRect(x, y, x + w, y + h), inert = inert, taps = Widget.Taps(onTap, onLongPress), magnify = magnify)
 
-/** A horizontal slider mapping pointer x to 0..1 over [travel] px starting at [x0] (thumb-centered). */
+/**
+ * A horizontal slider mapping pointer x to 0..1 over [travel] px starting at [x0] (thumb-centered).
+ * [shown] is the fraction its thumb shows now, for [Widget.handle].
+ */
+@Suppress("LongParameterList") // a rectangle, a thumb, and what it reads and reports
 fun hSlider(
     id: String,
     x: Int,
@@ -133,6 +143,7 @@ fun hSlider(
     thumbW: Int,
     travelOverride: Int? = null, // e.g. volume: 68px art but 65px effective track
     value: (Offset) -> Float = { it.x },
+    shown: (() -> Float)? = null,
     onChange: (Float) -> Unit,
     onCommit: (Float) -> Unit = onChange,
 ): Widget {
@@ -142,6 +153,7 @@ fun hSlider(
     return Widget(
         id,
         IntRect(x, y, x + w, y + h),
+        handle = shown?.let { now -> { Offset(x + thumbW / 2f + now().coerceIn(0f, 1f) * travel, y + h / 2f) } },
         pointer =
             Widget.Pointer(
                 onDown = { onChange(frac(it)) },
@@ -151,7 +163,10 @@ fun hSlider(
     )
 }
 
-/** A vertical slider mapping pointer y to 1..0 (top = 1) over [travel] px. */
+/**
+ * A vertical slider mapping pointer y to 1..0 (top = 1) over [travel] px. [shown] is the
+ * fraction its thumb shows now, for [Widget.handle].
+ */
 fun vSlider(
     id: String,
     x: Int,
@@ -160,6 +175,7 @@ fun vSlider(
     h: Int,
     thumbH: Int,
     dragGroup: String? = null,
+    shown: (() -> Float)? = null,
     onChange: (Float) -> Unit,
     onCommit: (Float) -> Unit = onChange,
 ): Widget {
@@ -170,6 +186,7 @@ fun vSlider(
         id,
         IntRect(x, y, x + w, y + h),
         dragGroup = dragGroup,
+        handle = shown?.let { now -> { Offset(x + w / 2f, y + thumbH / 2f + (1f - now().coerceIn(0f, 1f)) * travel) } },
         pointer =
             Widget.Pointer(
                 onDown = { onChange(frac(it)) },

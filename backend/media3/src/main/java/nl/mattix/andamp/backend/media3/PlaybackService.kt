@@ -2,15 +2,19 @@
 
 package nl.mattix.andamp.backend.media3
 
+import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
-import androidx.media3.session.MediaSessionService
 
 /**
  * Keeps playback alive in the background: Media3 turns the session into a
  * foreground service with a media-style notification. Started by
- * [Media3PlaybackHost].
+ * [Media3PlaybackHost] when playback begins.
+ *
+ * It is also where a browser finds the playlist. A car binds to it to list
+ * the rows and to drive the player, and may be the first thing in the process
+ * to ask for the session; see [Media3PlaybackHost.wake].
  */
-class PlaybackService : MediaSessionService() {
+class PlaybackService : MediaLibraryService() {
     override fun onCreate() {
         super.onCreate()
         // the app's icon in the notification, where Media3 would otherwise put
@@ -29,7 +33,8 @@ class PlaybackService : MediaSessionService() {
         Media3PlaybackHost.session(this)?.let(::addSession)
     }
 
-    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaSession? = Media3PlaybackHost.session(this)
+    override fun onGetSession(controllerInfo: MediaSession.ControllerInfo): MediaLibrarySession? =
+        Media3PlaybackHost.session(this)
 
     override fun onDestroy() {
         Media3PlaybackHost.releaseFromService()

@@ -38,6 +38,8 @@
         <intent>
             <action android:name="nl.mattix.andamp.source.SETTINGS" />
         </intent>
+        <!-- the app Android Auto talks to; Preferences offers the Android Auto page when it is here -->
+        <package android:name="${applicationId}.androidauto" />
     </queries>
 
     <!--
@@ -152,6 +154,19 @@
             android:excludeFromRecents="true"
             android:launchMode="singleTop"
             android:exported="false" />
+        <!--
+          The main window on a surface another app lends: a car's screen, through the app
+          Android Auto talks to (:androidauto). The service checks who is calling; see
+          RemoteWindowTrust.
+        -->
+        <service
+            android:name=".ui.remote.RemoteWindowService"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="nl.mattix.andamp.window.BIND" />
+            </intent-filter>
+        </service>
+
     </application>
 
 </manifest>

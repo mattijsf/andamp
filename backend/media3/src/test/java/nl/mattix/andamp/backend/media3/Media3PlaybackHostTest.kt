@@ -14,6 +14,7 @@ import nl.mattix.andamp.core.model.Track
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -95,6 +96,23 @@ class Media3PlaybackHostTest {
 
         assertTrue("the session is over the hosted backend", session?.player is BackendPlayer)
         assertNotSame(phone.playerForSession, session?.player)
+    }
+
+    /** A car can be the first to ask: it starts the process with the service and no window. */
+    @Test
+    fun `a session asked for before there is a player has the app build one`() {
+        val before = Media3PlaybackHost.wake
+        Media3PlaybackHost.wake = { context -> Media3PlaybackHost.host(context, MockBackend(tracks, scope)) }
+
+        val session = Media3PlaybackHost.session(app)
+        Media3PlaybackHost.wake = before
+
+        assertEquals(1, session?.player?.mediaItemCount)
+    }
+
+    @Test
+    fun `with nobody to build a player there is no session`() {
+        assertNull(Media3PlaybackHost.session(app))
     }
 
     /** The foreground service keeps a backend that renders its own audio alive with the screen off. */

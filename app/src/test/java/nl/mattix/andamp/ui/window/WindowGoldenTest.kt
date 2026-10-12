@@ -26,6 +26,7 @@ import nl.mattix.andamp.state.RowHeight
 import nl.mattix.andamp.state.SkinEntry
 import nl.mattix.andamp.state.WinampState
 import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertFalse
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -121,6 +122,26 @@ class WindowGoldenTest {
 
     private fun pixels(bitmap: Bitmap): IntArray =
         IntArray(bitmap.width * bitmap.height).also { bitmap.getPixels(it, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height) }
+
+    /** A surface that shows one window at a time has neither open beside the main window. */
+    @Test
+    fun `the EQ and PL buttons are drawn unlit where they are told to be, whatever the phone has open`() {
+        val open =
+            playingState().apply {
+                eqVisible = true
+                plVisible = true
+            }
+        val closed =
+            playingState().apply {
+                eqVisible = false
+                plVisible = false
+            }
+
+        val unlit = render(MAIN_W, MAIN_H) { drawMainWindow(skin, open, equalizerOpen = false, playlistOpen = false) }
+
+        assertArrayEquals(pixels(render(MAIN_W, MAIN_H) { drawMainWindow(skin, closed) }), pixels(unlit))
+        assertFalse(pixels(render(MAIN_W, MAIN_H) { drawMainWindow(skin, open) }).contentEquals(pixels(unlit)))
+    }
 
     @Test
     fun `main window with always on top lit`() {

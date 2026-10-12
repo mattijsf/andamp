@@ -137,6 +137,7 @@ fun mainWindowWidgets(
             248,
             10,
             thumbW = 29,
+            shown = { s.positionFraction },
             onChange = { if (s.transport != Transport.Stopped) s.seekPreview = it },
             onCommit = { if (s.transport != Transport.Stopped) vm.seekTo(it) else s.seekPreview = null },
         ),
@@ -148,6 +149,7 @@ fun mainWindowWidgets(
             13,
             thumbW = 14,
             travelOverride = 51,
+            shown = { s.volume / 100f },
             onChange = { vm.setVolume(it) },
         ),
         hSlider(
@@ -157,6 +159,7 @@ fun mainWindowWidgets(
             38,
             13,
             thumbW = 14,
+            shown = { (s.balance + 100) / 200f },
             onChange = { vm.setBalance(SliderMath.stickyBalance((it * 200).roundToInt() - 100)) },
         ),
         button("main.eqToggle", Dest.EQ_TOGGLE.x, Dest.EQ_TOGGLE.y, 23, 12) {
@@ -181,6 +184,18 @@ fun mainWindowWidgets(
 fun DrawScope.drawMainWindow(
     skin: Skin,
     s: WinampState,
+    /**
+     * Whether the clutter bar's A and D are lit. They show the phone's own floating window and
+     * Double Size, unless the surface this is drawn on keeps those two for itself.
+     */
+    alwaysOnTop: Boolean = s.alwaysOnTop,
+    doubleSize: Boolean = s.doubleSize,
+    /**
+     * Whether the EQ and PL buttons are lit. They show that the phone's equalizer and playlist
+     * windows are open, unless the surface this is drawn on shows one window at a time.
+     */
+    equalizerOpen: Boolean = s.eqVisible,
+    playlistOpen: Boolean = s.plVisible,
 ) {
     val pressed = s.pressedWidget
     val stopped = s.transport == Transport.Stopped
@@ -190,7 +205,7 @@ fun DrawScope.drawMainWindow(
     sprite(titlebar, SpriteMap.MAIN_TITLE_BAR_SELECTED, Dest.TITLE_BAR)
     sprite(titlebar, SpriteMap.MAIN_CLUTTER_BAR_BACKGROUND, Dest.CLUTTER_BAR)
     // the bar's art has the unlit letters, so only the lit ones are drawn over it
-    clutterLit(pressed, s.alwaysOnTop, s.doubleSize).forEach { (art, at) -> sprite(titlebar, art, at.left, at.top) }
+    clutterLit(pressed, alwaysOnTop, doubleSize).forEach { (art, at) -> sprite(titlebar, art, at.left, at.top) }
 
     // titlebar buttons: normal art is part of the titlebar strip; draw pressed art only
     when (pressed) {
@@ -235,7 +250,7 @@ fun DrawScope.drawMainWindow(
     sprite(
         shufrep,
         fourState(
-            s.eqVisible,
+            equalizerOpen,
             pressed == "main.eqToggle",
             SpriteMap.MAIN_EQ_BUTTON,
             SpriteMap.MAIN_EQ_BUTTON_DEPRESSED,
@@ -247,7 +262,7 @@ fun DrawScope.drawMainWindow(
     sprite(
         shufrep,
         fourState(
-            s.plVisible,
+            playlistOpen,
             pressed == "main.plToggle",
             SpriteMap.MAIN_PLAYLIST_BUTTON,
             SpriteMap.MAIN_PLAYLIST_BUTTON_DEPRESSED,

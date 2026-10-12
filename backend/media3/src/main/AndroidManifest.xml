@@ -16,12 +16,26 @@
     -->
 
     <application>
+        <!--
+          Android Auto lists an app that says it plays media and has a service
+          a browser can connect to. The car draws its own player and list from
+          the session and the playlist that service gives it.
+        -->
+        <meta-data
+            android:name="com.google.android.gms.car.application"
+            android:resource="@xml/automotive_app_desc" />
+
         <service
             android:name="nl.mattix.andamp.backend.media3.PlaybackService"
             android:exported="true"
             android:foregroundServiceType="mediaPlayback">
+            <!--
+              The second action is the platform's browser interface, which is
+              the one a car connects through.
+            -->
             <intent-filter>
-                <action android:name="androidx.media3.session.MediaSessionService" />
+                <action android:name="androidx.media3.session.MediaLibraryService" />
+                <action android:name="android.media.browse.MediaBrowserService" />
             </intent-filter>
             <!--
               Media buttons addressed to the package reach playback here. The

@@ -24,6 +24,27 @@ import nl.mattix.andamp.core.playback.PlaybackBackend
 internal const val SESSION_QUEUE_SETTLE_MS = 1_000L
 
 /**
+ * An id for every row of a playlist, given the ids of its tracks: the first row
+ * of a track keeps the track's id, and each repeat of it is numbered after it
+ * (`id#2`, `id#3`).
+ *
+ * A playlist can hold one track twice, and both the session's timeline and a
+ * browser's list have to tell the two rows apart.
+ */
+internal fun rowIds(trackIds: List<String>): List<String> {
+    val taken = HashSet<String>()
+    return trackIds.map { id ->
+        var row = id
+        var repeat = 1
+        while (!taken.add(row)) {
+            repeat++
+            row = "$id#$repeat"
+        }
+        row
+    }
+}
+
+/**
  * Any backend, as a Media3 `Player`.
  *
  * The notification, the lock screen, headset buttons, the car and the watch
@@ -33,7 +54,8 @@ internal const val SESSION_QUEUE_SETTLE_MS = 1_000L
  * its own audio.
  *
  * It is not a queue editor. Media3's commands for editing the playlist are
- * left unavailable: the playlist belongs to the app.
+ * left unavailable: the playlist belongs to the app. The one item a controller
+ * may set names a row of it; see [handleSetMediaItems].
  *
  * It runs on the main looper, where the state is collected and where Media3
  * expects to hear about a change.
@@ -247,37 +269,39 @@ internal class BackendPlayer(
     }
 
     /**
-     * The queue as Media3 items, cached per queue because `getState` is called
-     * often.
+     * A row picked from the list a browser was shown, such as a car's.
      *
-     * Every row gets a uid of its own, because Media3 throws on a playlist with
-     * two of one and a queue can hold the same track twice. The first row of
-     * an id keeps the id as its uid; the repeats are numbered after it.
+     * The item carries the id the row was listed under ([rowIds]), and the
+     * player goes to that row and plays it. The row that is already on is left
+     * as it is, and an item that is no row of the playlist changes nothing.
+     */
+    override fun handleSetMediaItems(
+        mediaItems: List<MediaItem>,
+        startIndex: Int,
+        startPositionMs: Long,
+    ): ListenableFuture<*> {
+        val now = backend.state.value
+        val asked = mediaItems.firstOrNull()?.mediaId
+        val row = itemsOf(now.queue).indexOfFirst { it.uid == asked }
+        if (row >= 0 && row != now.currentIndex) backend.playAt(row)
+        return Futures.immediateVoidFuture()
+    }
+
+    /**
+     * The queue as Media3 items, cached per queue because `getState` is called
+     * often. Every row gets a uid of its own ([rowIds]), because Media3 throws
+     * on a playlist with two of one and a queue can hold the same track twice.
      */
     private fun itemsOf(queue: List<Track>): List<MediaItemData> {
         val same = made
         if (same != null && same.first == queue) return same.second
-        val taken = HashSet<String>()
-        val items = queue.map { track -> itemOf(track, uid = uniqueUid(track.id, taken)) }
+        val uids = rowIds(queue.map { it.id })
+        val items = queue.mapIndexed { row, track -> itemOf(track, uids[row]) }
         made = queue to items
         return items
     }
 
     private var made: Pair<List<Track>, List<MediaItemData>>? = null
-
-    /** [id], or [id] numbered until it is not in [taken]; the result is added to [taken]. */
-    private fun uniqueUid(
-        id: String,
-        taken: MutableSet<String>,
-    ): String {
-        var uid = id
-        var repeat = 1
-        while (!taken.add(uid)) {
-            repeat++
-            uid = "$id#$repeat"
-        }
-        return uid
-    }
 
     /** The row as Media3 item data, which the notification and the lock screen read. */
     private fun itemOf(
@@ -307,8 +331,9 @@ internal class BackendPlayer(
         const val C_TIME_UNSET = androidx.media3.common.C.TIME_UNSET
 
         /**
-         * What a controller may ask for: the transport, shuffle, repeat and
-         * volume. No command edits the playlist, which belongs to the app.
+         * What a controller may ask for: the transport, shuffle, repeat,
+         * volume, and a row to play. No command edits the playlist, which
+         * belongs to the app.
          */
         val COMMANDS: Player.Commands =
             Player.Commands
@@ -323,6 +348,7 @@ internal class BackendPlayer(
                     COMMAND_SEEK_TO_PREVIOUS_MEDIA_ITEM,
                     COMMAND_SEEK_IN_CURRENT_MEDIA_ITEM,
                     COMMAND_SEEK_TO_MEDIA_ITEM,
+                    COMMAND_SET_MEDIA_ITEM,
                     COMMAND_GET_CURRENT_MEDIA_ITEM,
                     COMMAND_GET_TIMELINE,
                     COMMAND_GET_METADATA,
