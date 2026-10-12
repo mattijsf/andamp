@@ -75,14 +75,16 @@ fun LibraryWindow(
         val screen = windowScreen(scale, s)
         // the smaller of what fits and what the listener asked for; the ask itself is
         // not overwritten
-        val fits = LibraryLayout.rowsThatFit(screen.safeBottom, frame)
-        val rows = WindowSizing.effectiveSteps(s.libraryRows, fits, LibraryLayout.MIN_ROWS)
+        val rowH = s.rowHeight.px
+        val minRows = LibraryLayout.minRows(rowH)
+        val fits = LibraryLayout.rowsThatFit(screen.safeBottom, frame, rowH)
+        val rows = WindowSizing.effectiveSteps(s.libraryRows, fits, minRows)
         // the width is limited to the screen's
         val cols = LibraryLayout.WIDTH_STEPS.clamp(s.libraryCols, screen.width)
         val layout =
-            remember(rows, cols, pinned, frame) {
-                pinned?.let { LibraryLayout.filling(it.height, it.width, frame) }
-                    ?: LibraryLayout(rows, LibraryLayout.widthOfCols(cols))
+            remember(rows, cols, pinned, frame, rowH) {
+                pinned?.let { LibraryLayout.filling(it.height, it.width, frame, rowH) }
+                    ?: LibraryLayout(rows, LibraryLayout.widthOfCols(cols), rowH = rowH)
             }
         val widgets = remember(vm, frame, layout) { libraryWidgets(vm, frame, layout) { requestNow() } }
         GenSkinWindow(
@@ -107,12 +109,12 @@ fun LibraryWindow(
                                 heightAxis =
                                     SizeAxis(
                                         furniture = frame.chromeH + LibraryLayout.FURNITURE_H,
-                                        step = LibraryLayout.ROW_H,
-                                        min = LibraryLayout.MIN_ROWS,
+                                        step = rowH,
+                                        min = minRows,
                                         max = fits,
                                         current = rows,
                                     ),
-                                heightOf = { asked -> LibraryLayout(asked, layout.width).height(frame) },
+                                heightOf = { asked -> LibraryLayout(asked, layout.width, rowH = rowH).height(frame) },
                                 widthAxis = LibraryLayout.WIDTH_STEPS.axis(cols, screen.width),
                                 widthOf = LibraryLayout::widthOfCols,
                             )
@@ -199,7 +201,7 @@ private fun libraryWidgets(
                 "library.list",
                 IntRect(left, rowsTop, left + layout.rowsWidth(frame), rowsBottom),
                 s,
-                LibraryLayout.ROW_H,
+                layout.rowH,
                 rowAt = { y -> layout.rowAt(y, frame) },
                 rows = { ops.rows.size },
                 visibleRows = { layout.visibleRows },
@@ -222,13 +224,13 @@ private fun libraryWidgets(
                     s.libraryPressedRow = -1
                     val sameList = !ops.loading && ops.rows === downRows
                     if (sameList && row in ops.rows.indices && !ops.needsAccess) {
-                        val top = rowsTop + (row - s.libraryScroll) * LibraryLayout.ROW_H
+                        val top = rowsTop + (row - s.libraryScroll) * layout.rowH
                         s.activeMenu =
                             libraryRowMenu(
                                 ops,
                                 row,
                                 ops.rows[row].label,
-                                MenuAnchor(WindowStore.LIBRARY, left, top, layout.rowsWidth(frame), LibraryLayout.ROW_H),
+                                MenuAnchor(WindowStore.LIBRARY, left, top, layout.rowsWidth(frame), layout.rowH),
                             )
                     }
                 },
@@ -316,6 +318,7 @@ internal fun DrawScope.drawLibraryContent(
             slack = layout.slack,
             scale = scale,
             style = skin.pledit,
+            rowH = layout.rowH,
         )
     drawImage(
         rasterizer.layer(ops, scene),
@@ -374,6 +377,7 @@ internal class LibraryRasterizer(
         val slack: Int,
         val scale: Int,
         val style: PleditStyle,
+        val rowH: Int = LibraryLayout.ROW_H,
     )
 
     private var sceneKey: Scene? = null
@@ -385,7 +389,7 @@ internal class LibraryRasterizer(
     ): ImageBitmap {
         image?.let { if (scene == sceneKey) return it }
 
-        val layout = LibraryLayout(scene.visibleRows, slack = scene.slack)
+        val layout = LibraryLayout(scene.visibleRows, slack = scene.slack, rowH = scene.rowH)
         val w = scene.width * scene.scale
         val h = layout.contentH * scene.scale
         // a new bitmap per scene: the hardware renderer caches a bitmap it has drawn,
@@ -536,12 +540,12 @@ internal class LibraryRasterizer(
         }
         rows.drop(scene.scroll).take(scene.visibleRows).forEachIndexed { at, row ->
             val index = scene.scroll + at
-            val top = (LibraryLayout.ROWS_TOP + at * LibraryLayout.ROW_H).toFloat()
-            val baseline = ListText.baseline(paint, top, LibraryLayout.ROW_H)
+            val top = (LibraryLayout.ROWS_TOP + at * scene.rowH).toFloat()
+            val baseline = ListText.baseline(paint, top, scene.rowH)
             val banded = index == scene.selection || index == scene.pressedRow
             if (banded) {
                 paint.color = scene.style.selectedBg.toArgb()
-                canvas.drawRect(0f, top, rowsW, top + LibraryLayout.ROW_H, paint)
+                canvas.drawRect(0f, top, rowsW, top + scene.rowH, paint)
             }
             paint.color = (if (index == scene.playingRow) scene.style.current else scene.style.normal).toArgb()
 
@@ -552,7 +556,7 @@ internal class LibraryRasterizer(
                 labelRight -= detail + DETAIL_GAP
             }
             canvas.save()
-            canvas.clipRect(0f, top, labelRight, top + LibraryLayout.ROW_H)
+            canvas.clipRect(0f, top, labelRight, top + scene.rowH)
             canvas.drawText(row.label, ListText.LEFT_INSET, baseline, paint)
             canvas.restore()
         }
@@ -576,7 +580,7 @@ internal class LibraryRasterizer(
                 else -> ops.emptyNote to scene.style.normal
             }
         paint.color = colour.toArgb()
-        val baseline = ListText.baseline(paint, LibraryLayout.ROWS_TOP.toFloat(), LibraryLayout.ROW_H)
+        val baseline = ListText.baseline(paint, LibraryLayout.ROWS_TOP.toFloat(), scene.rowH)
         canvas.drawText(text, ListText.LEFT_INSET, baseline, paint)
     }
 
@@ -660,6 +664,8 @@ class LibraryLayout(
      * whole number of rows leaves this much empty under the last one.
      */
     val slack: Int = 0,
+    /** How tall a row of the list is: Winamp's 13 px, or what the listener picked. */
+    val rowH: Int = ROW_H,
 ) {
     /** How many steps wider than its narrowest this window is drawn. */
     val cols = (width - WIDTH) / WIDTH_STEP
@@ -675,7 +681,7 @@ class LibraryLayout(
         val end: Int,
     )
 
-    val rowsH = visibleRows * ROW_H + slack
+    val rowsH = visibleRows * rowH + slack
     val contentH = FURNITURE_H + rowsH
     val rowsBottom = ROWS_TOP + rowsH
     val barTop = rowsBottom + RULE_H
@@ -686,7 +692,7 @@ class LibraryLayout(
     fun rowAt(
         y: Float,
         frame: WindowFrame,
-    ) = ((y - frame.titleH - ROWS_TOP) / ROW_H).toInt().coerceAtLeast(0)
+    ) = ((y - frame.titleH - ROWS_TOP) / rowH).toInt().coerceAtLeast(0)
 
     companion object {
         const val WIDTH = 275
@@ -706,25 +712,35 @@ class LibraryLayout(
         const val MIN_ROWS = 8
         const val TITLE = "Library"
 
-        /** As many rows as the screen holds, never fewer than [MIN_ROWS]. */
+        /**
+         * The fewest rows of [rowH] the window is drawn with: as many as fit the height
+         * [MIN_ROWS] of Winamp's rows take, so taller rows do not make the smallest window
+         * any taller.
+         */
+        fun minRows(rowH: Int) = WindowSizing.minRows(MIN_ROWS, ROW_H, rowH)
+
+        /** As many rows as the screen holds, never fewer than [minRows]. */
         fun forAvailableHeight(
             availVirtual: Int,
             frame: WindowFrame,
-        ): LibraryLayout = LibraryLayout(rowsThatFit(availVirtual, frame))
+            rowH: Int = ROW_H,
+        ): LibraryLayout = LibraryLayout(rowsThatFit(availVirtual, frame, rowH), rowH = rowH)
 
         fun rowsThatFit(
             availVirtual: Int,
             frame: WindowFrame,
-        ): Int = ((availVirtual - frame.chromeH - FURNITURE_H) / ROW_H).coerceAtLeast(MIN_ROWS)
+            rowH: Int = ROW_H,
+        ): Int = ((availVirtual - frame.chromeH - FURNITURE_H) / rowH).coerceAtLeast(minRows(rowH))
 
         /** The layout of a window exactly [height] tall and [width] wide; see [WindowSizing.rowsAndSlack]. */
         fun filling(
             height: Int,
             width: Int,
             frame: WindowFrame,
+            rowH: Int = ROW_H,
         ): LibraryLayout {
-            val (rows, slack) = WindowSizing.rowsAndSlack(height, frame.chromeH + FURNITURE_H, ROW_H, MIN_ROWS)
-            return LibraryLayout(rows, width, slack)
+            val (rows, slack) = WindowSizing.rowsAndSlack(height, frame.chromeH + FURNITURE_H, rowH, minRows(rowH))
+            return LibraryLayout(rows, width, slack, rowH)
         }
 
         /** webamp's WINDOW_RESIZE_SEGMENT_WIDTH. */

@@ -62,8 +62,8 @@ fun PlaylistFloatWindow(
         // the width is limited to the screen's
         val cols = PlaylistLayout.WIDTH_STEPS.clamp(s.plCols, screen.width)
         val layout =
-            pinned?.let { PlaylistLayout(it.height, it.width) }
-                ?: PlaylistLayout.ofSegments(segments, PlaylistLayout.widthOfCols(cols))
+            pinned?.let { PlaylistLayout(it.height, it.width, s.rowHeight.px) }
+                ?: PlaylistLayout.ofSegments(segments, PlaylistLayout.widthOfCols(cols), s.rowHeight.px)
         val height = layout.height
         // the list follows the song: one that starts out of view is brought to the middle
         val shown by rememberUpdatedState(layout)
@@ -91,8 +91,8 @@ fun PlaylistFloatWindow(
                             vm,
                             row,
                             nl.mattix.andamp.ui.menu.playlistRowAnchor(
-                                rowTop = layout.textTop + (row - s.playlistScroll) * Dest.PL_ROW_H,
-                                rowH = Dest.PL_ROW_H,
+                                rowTop = layout.textTop + (row - s.playlistScroll) * layout.rowH,
+                                rowH = layout.rowH,
                                 left = layout.textLeft,
                                 width = layout.textRight - layout.textLeft,
                             ),

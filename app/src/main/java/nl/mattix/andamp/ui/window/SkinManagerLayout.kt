@@ -15,6 +15,8 @@ class SkinManagerLayout(
      * number of rows leaves this much empty under the last one.
      */
     val slack: Int = 0,
+    /** How tall a row of the list is: Winamp's 13 px, or what the listener picked. */
+    val rowH: Int = ROW_H,
 ) {
     fun listWidth(frame: WindowFrame) = width - frame.chromeW
 
@@ -22,10 +24,19 @@ class SkinManagerLayout(
      * The height of the list area: every visible row plus the top pad the rows are drawn
      * with.
      */
-    fun listHeight() = ListText.TOP_PAD.toInt() + visibleRows * ROW_H + slack
+    fun listHeight() = ListText.TOP_PAD.toInt() + visibleRows * rowH + slack
 
     /** The window's height in [frame]: the list plus the frame's chrome. */
     fun height(frame: WindowFrame) = frame.chromeH + listHeight()
+
+    /** Top of a visible row, pad included. */
+    fun rowY(row: Int) = rowY(row, rowH)
+
+    /** Which visible row a window-relative y lands on; the pad belongs to row 0. */
+    fun rowAt(
+        y: Float,
+        listTop: Int,
+    ): Int = rowAt(y, listTop, rowH)
 
     companion object {
         const val WIDTH = 275
@@ -35,20 +46,25 @@ class SkinManagerLayout(
         const val REMOVE_W = 30
         const val TITLE = "Skins"
 
-        /** How many rows fit in [availVirtual] px of window, chrome and pad included. */
+        /** The fewest rows of [rowH] the window is drawn with; see [WindowSizing.minRows]. */
+        fun minRows(rowH: Int) = WindowSizing.minRows(MIN_ROWS, ROW_H, rowH)
+
+        /** How many rows of [rowH] fit in [availVirtual] px of window, chrome and pad included. */
         fun rowsThatFit(
             availVirtual: Int,
             frame: WindowFrame,
-        ): Int = ((availVirtual - furnitureH(frame)) / ROW_H).coerceAtLeast(MIN_ROWS)
+            rowH: Int = ROW_H,
+        ): Int = ((availVirtual - furnitureH(frame)) / rowH).coerceAtLeast(minRows(rowH))
 
         /** The layout of a window exactly [height] tall and [width] wide; see [WindowSizing.rowsAndSlack]. */
         fun filling(
             height: Int,
             width: Int,
             frame: WindowFrame,
+            rowH: Int = ROW_H,
         ): SkinManagerLayout {
-            val (rows, slack) = WindowSizing.rowsAndSlack(height, furnitureH(frame), ROW_H, MIN_ROWS)
-            return SkinManagerLayout(rows, width, slack)
+            val (rows, slack) = WindowSizing.rowsAndSlack(height, furnitureH(frame), rowH, minRows(rowH))
+            return SkinManagerLayout(rows, width, slack, rowH)
         }
 
         /** The height that is not rows: the frame's chrome and the top pad. */
@@ -64,13 +80,17 @@ class SkinManagerLayout(
 
         fun listWidth(frame: WindowFrame) = WIDTH - frame.chromeW
 
-        /** Top of a visible row, pad included. */
-        fun rowY(row: Int) = ListText.TOP_PAD.toInt() + row * ROW_H
+        /** Top of a visible row of [rowH], pad included. */
+        fun rowY(
+            row: Int,
+            rowH: Int = ROW_H,
+        ) = ListText.TOP_PAD.toInt() + row * rowH
 
-        /** Which visible row a window-relative y lands on; the pad belongs to row 0. */
+        /** Which visible row of [rowH] a window-relative y lands on; the pad belongs to row 0. */
         fun rowAt(
             y: Float,
             listTop: Int,
-        ): Int = ((y - listTop - ListText.TOP_PAD) / ROW_H).toInt().coerceAtLeast(0)
+            rowH: Int = ROW_H,
+        ): Int = ((y - listTop - ListText.TOP_PAD) / rowH).toInt().coerceAtLeast(0)
     }
 }

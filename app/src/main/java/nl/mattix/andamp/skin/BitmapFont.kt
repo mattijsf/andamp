@@ -58,38 +58,31 @@ object BitmapFont {
         return Sprite(col * CHAR_W, row * CHAR_H, CHAR_W, CHAR_H)
     }
 
+    /** The source rect of every glyph the font has, the space among them. */
+    val glyphs: List<Sprite> = lookup.values.distinct().map { (row, col) -> Sprite(col * CHAR_W, row * CHAR_H, CHAR_W, CHAR_H) }
+
     /**
      * Winamp folds text before rendering: lowercase, accents stripped
      * (except the Å/Ö/Ä glyphs which exist in the sheet).
      */
     fun normalize(text: String): String =
         buildString(text.length) {
-            for (c in text.lowercase()) {
-                when (c) {
-                    'å', 'Å' -> {
-                        append('Å')
-                    }
+            for (c in text.lowercase()) append(fold(c) ?: ' ')
+        }
 
-                    'ö', 'Ö' -> {
-                        append('Ö')
-                    }
+    /**
+     * Whether the font can spell [text]: every letter and digit in it folds to a glyph. Other
+     * signs the font lacks are drawn as a space, and do not count.
+     */
+    fun covers(text: String): Boolean = text.lowercase().none { it.isLetterOrDigit() && fold(it) == null }
 
-                    'ä', 'Ä' -> {
-                        append('Ä')
-                    }
-
-                    else -> {
-                        if (c in lookup) {
-                            append(c)
-                        } else {
-                            val folded =
-                                Normalizer
-                                    .normalize(c.toString(), Normalizer.Form.NFD)
-                                    .firstOrNull { it in lookup }
-                            append(folded ?: ' ')
-                        }
-                    }
-                }
-            }
+    /** The glyph a lowercase character is drawn with, or null when the font has none for it. */
+    private fun fold(c: Char): Char? =
+        when (c) {
+            'å', 'Å' -> 'Å'
+            'ö', 'Ö' -> 'Ö'
+            'ä', 'Ä' -> 'Ä'
+            in lookup -> c
+            else -> Normalizer.normalize(c.toString(), Normalizer.Form.NFD).firstOrNull { it in lookup }
         }
 }
