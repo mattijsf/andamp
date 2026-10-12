@@ -4,6 +4,14 @@ What changed for somebody who uses Andamp, newest first. It is written from the 
 messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `docs:` and
 `chore:` commits do not appear here.
 
+## [0.15.0](https://github.com/mattijsf/andamp/compare/v0.14.0...v0.15.0) (2026-10-12)
+
+
+### New
+
+* Andamp can be read in Dutch, German and French ([#55](https://github.com/mattijsf/andamp/issues/55)) ([3c15c17](https://github.com/mattijsf/andamp/commit/3c15c1780e830b43bb0546f5fd7d9fdb2423620c))
+* Andamp can be read in Simplified Chinese ([#53](https://github.com/mattijsf/andamp/issues/53)) ([7dfe2d7](https://github.com/mattijsf/andamp/commit/7dfe2d7825a18254320b42c21ba180f679f07704))
+
 ## [0.14.0](https://github.com/mattijsf/andamp/compare/v0.13.0...v0.14.0) (2026-10-12)
 
 

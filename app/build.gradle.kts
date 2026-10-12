@@ -255,7 +255,7 @@ android {
         applicationId = "nl.mattix.andamp"
         targetSdk = 36
         // release-please owns this line
-        versionName = "0.14.0" // x-release-please-version
+        versionName = "0.15.0" // x-release-please-version
 
         // The code is derived from the name, not assigned by Play, so the repository records which
         // commit has which version code.
