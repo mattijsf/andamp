@@ -5,10 +5,13 @@
 # down, and its support page opens the website. Direct downloads, Obtainium and app catalogs that
 # read GitHub releases all take this one file.
 #
-# release-please.yml calls this when it has made a release. It can also be run by hand, from the
-# Actions tab or with `gh workflow run apk.yml -f tag=v1.2.3`, to build a tag again; without a
-# tag it builds the branch it was started on and keeps the APK as a workflow artifact, which is
-# how a change to this file is tried out.
+# release-please.yml calls this when it has made a release, which is a draft at that point: a
+# published release in this repository is immutable and takes no more files. This attaches the
+# APK and then publishes. A run that fails leaves the draft, and running it again for the tag,
+# from the Actions tab or with `gh workflow run apk.yml -f tag=v1.2.3`, finishes the job.
+#
+# Without a tag it builds the branch it was started on and keeps the APK as a workflow artifact,
+# which is how a change to this file is tried out.
 #
 # The APK is signed with a key of its own, kept in this repository's secrets:
 #
@@ -29,7 +32,7 @@ on:
   workflow_call:
     inputs:
       tag:
-        description: The release tag to build and attach the APK to
+        description: The tag of the draft release to build, attach the APK to and publish
         type: string
         required: true
     secrets:
@@ -42,7 +45,7 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: A release tag to build and attach the APK to; empty builds this branch and attaches nothing
+        description: The tag of a draft release to build, attach the APK to and publish; empty builds this branch and attaches nothing
         type: string
         required: false
 
@@ -108,11 +111,13 @@ jobs:
           fi
           echo "file=$named" >> "$GITHUB_OUTPUT"
 
-      - name: Attach it to the release
+      - name: Attach it to the release, then publish the release
         if: env.TAG != ''
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release upload "$TAG" "${{ steps.apk.outputs.file }}" --clobber
+        run: |
+          gh release upload "$TAG" "${{ steps.apk.outputs.file }}" --clobber
+          gh release edit "$TAG" --draft=false --latest
 
       - name: Keep it as a workflow artifact
         if: env.TAG == ''
