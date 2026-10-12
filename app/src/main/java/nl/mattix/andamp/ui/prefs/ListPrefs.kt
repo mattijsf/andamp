@@ -96,7 +96,7 @@ private fun <T : Enum<T>> ChoiceRow(
     tag: String,
     label: (T) -> String,
 ) {
-    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+    Column(Modifier.prefsRow().padding(horizontal = 16.dp, vertical = 12.dp)) {
         Text(title, style = MaterialTheme.typography.bodyLarge)
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
             choices.forEachIndexed { at, choice ->
@@ -108,6 +108,6 @@ private fun <T : Enum<T>> ChoiceRow(
                 ) { Text(label(choice)) }
             }
         }
-        Text(about, style = MaterialTheme.typography.bodySmall)
+        Text(about, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

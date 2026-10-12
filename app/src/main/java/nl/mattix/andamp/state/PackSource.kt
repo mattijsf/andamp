@@ -4,6 +4,7 @@ package nl.mattix.andamp.state
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.Drawable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -112,6 +113,10 @@ class PackSource(
         val now by client.reach.collectAsState()
         return packSummary(now, signedIn)
     }
+
+    // the pack can be uninstalled between the list being built and drawn
+    override fun icon(context: Context): Drawable? =
+        runCatching { context.packageManager.getApplicationIcon(packageName) }.getOrNull()
 
     /**
      * Whose app is playing this source, in one line: what the app calls itself, its

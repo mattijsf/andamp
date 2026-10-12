@@ -10,18 +10,22 @@ import nl.mattix.andamp.state.RowHeight
 @Composable
 internal fun PlayerPage(sections: PrefsSections) {
     Section("Windows")
-    OverlayRow(sections.overlay)
-    ShadeRow(sections.shade)
+    Group {
+        OverlayRow(sections.overlay)
+        ShadeRow(sections.shade)
+    }
     Section("Lists")
-    PlaylistFontRow(sections.lists)
-    RowHeightRow(sections.lists)
+    Group {
+        PlaylistFontRow(sections.lists)
+        RowHeightRow(sections.lists)
+    }
     Section("Touch")
-    TapAssistRow(sections.tapAssist)
+    Group { TapAssistRow(sections.tapAssist) }
     // shown only on a phone that can take colors from its wallpaper, so the heading never stands
     // over nothing
     if (sections.palette.offered) {
         Section("Colors")
-        PaletteRow(sections.palette)
+        Group { PaletteRow(sections.palette) }
     }
 }
 

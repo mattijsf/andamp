@@ -2,26 +2,16 @@
 
 package nl.mattix.andamp.ui.prefs
 
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.material3.Button
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import nl.mattix.andamp.state.PresetImport
 import nl.mattix.andamp.state.VisPlugin
@@ -72,31 +62,17 @@ fun VisualizerPrefs.summary(): String =
 @Composable
 fun VisualizerSettings(prefs: VisualizerPrefs) {
     Section("Plug-in")
-    Column(Modifier.selectableGroup()) {
+    Group(Modifier.selectableGroup()) {
         VisPlugin.entries.forEach { plugin ->
-            Row(
-                Modifier
-                    .fillMaxWidth()
-                    // the whole row is the target
-                    .selectable(
-                        selected = prefs.plugin == plugin,
-                        role = Role.RadioButton,
-                        onClick = { prefs.onPlugin(plugin) },
-                    ).testTag("prefs.vis.plugin.${plugin.name.lowercase()}")
-                    .padding(vertical = 4.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                RadioButton(selected = prefs.plugin == plugin, onClick = null)
-                Column(Modifier.padding(start = 8.dp)) {
-                    Text(plugin.menuLabel, style = MaterialTheme.typography.bodyLarge)
-                    Text(plugin.blurb(), style = MaterialTheme.typography.bodySmall)
-                }
-            }
+            RadioRow(
+                title = plugin.menuLabel,
+                summary = plugin.blurb(),
+                selected = prefs.plugin == plugin,
+                tag = "prefs.vis.plugin.${plugin.name.lowercase()}",
+                onSelect = { prefs.onPlugin(plugin) },
+            )
         }
     }
-
-    Spacer(Modifier.height(16.dp))
-    HorizontalDivider()
     PresetPacks(prefs)
 }
 
@@ -110,7 +86,7 @@ private fun VisPlugin.blurb() =
 private fun PresetPacks(prefs: VisualizerPrefs) {
     Section("Preset packs")
     val importing = prefs.importing
-    Text(
+    Note(
         when {
             importing?.failed == true -> {
                 "\"${importing.name}\" held no presets."
@@ -133,79 +109,56 @@ private fun PresetPacks(prefs: VisualizerPrefs) {
                 }
             }
         },
-        style = MaterialTheme.typography.bodyMedium,
     )
-    Spacer(Modifier.height(12.dp))
-    Button(onClick = prefs.onImportPack, modifier = Modifier.testTag("prefs.vis.import")) { Text("Import pack...") }
+    Button(
+        onClick = prefs.onImportPack,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp).testTag("prefs.vis.import"),
+    ) { Text("Import pack...") }
 
-    Spacer(Modifier.height(8.dp))
-    PackRow(
-        label = prefs.plugin.idleLabel,
-        detail =
-            when (prefs.plugin) {
-                VisPlugin.Avs -> "This app's own. No import needed."
-                VisPlugin.Milkdrop -> "The one built into libprojectM. No import needed."
-            },
-        selected = prefs.activePack == null,
-        onSelect = { prefs.onSelectPack(null) },
-        tag = "prefs.vis.pack.idle",
-    )
-    prefs.packs.forEach { pack ->
-        PackRow(
-            label = pack.name,
-            detail = "${pack.countFor(prefs.plugin)} presets",
-            selected = prefs.activePack == pack.name,
-            onSelect = { prefs.onSelectPack(pack.name) },
-            tag = "prefs.vis.pack.${pack.name}",
-            onDelete = { prefs.onDeletePack(pack) },
+    Spacer(Modifier.height(12.dp))
+    Group(Modifier.selectableGroup()) {
+        RadioRow(
+            title = prefs.plugin.idleLabel,
+            summary =
+                when (prefs.plugin) {
+                    VisPlugin.Avs -> "This app's own. No import needed."
+                    VisPlugin.Milkdrop -> "The one built into libprojectM. No import needed."
+                },
+            selected = prefs.activePack == null,
+            tag = "prefs.vis.pack.idle",
+            onSelect = { prefs.onSelectPack(null) },
         )
+        prefs.packs.forEach { pack ->
+            RadioRow(
+                title = pack.name,
+                summary = "${pack.countFor(prefs.plugin)} presets",
+                selected = prefs.activePack == pack.name,
+                tag = "prefs.vis.pack.${pack.name}",
+                onSelect = { prefs.onSelectPack(pack.name) },
+                trailing = {
+                    TextButton(
+                        onClick = { prefs.onDeletePack(pack) },
+                        modifier = Modifier.testTag("prefs.vis.pack.${pack.name}.delete"),
+                    ) { Text("Remove") }
+                },
+            )
+        }
     }
 
     prefs.onManagePresets?.let { manage ->
-        Spacer(Modifier.height(8.dp))
-        TextButton(onClick = manage, modifier = Modifier.testTag("prefs.vis.manage")) {
+        TextButton(onClick = manage, modifier = Modifier.padding(horizontal = 8.dp).testTag("prefs.vis.manage")) {
             Text(if (prefs.presets.isEmpty()) "Browse presets" else "Browse ${prefs.presets.size} presets")
         }
     }
 
-    Spacer(Modifier.height(8.dp))
-    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-        Column(Modifier.weight(1f)) {
-            Text("Shuffle presets", style = MaterialTheme.typography.bodyLarge)
-            Text("Otherwise they run in the order they are on disk.", style = MaterialTheme.typography.bodySmall)
-        }
-        Switch(
+    Spacer(Modifier.height(12.dp))
+    Group {
+        SwitchRow(
+            title = "Shuffle presets",
+            summary = "Otherwise they run in the order they are on disk.",
             checked = prefs.shuffle,
-            onCheckedChange = prefs.onShuffle,
-            modifier = Modifier.testTag("prefs.vis.shuffle"),
+            tag = "prefs.vis.shuffle",
+            onChange = prefs.onShuffle,
         )
-    }
-}
-
-@Composable
-private fun PackRow(
-    label: String,
-    detail: String,
-    selected: Boolean,
-    onSelect: () -> Unit,
-    tag: String,
-    onDelete: (() -> Unit)? = null,
-) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .selectable(selected = selected, role = Role.RadioButton, onClick = onSelect)
-            .testTag(tag)
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RadioButton(selected = selected, onClick = null)
-        Column(Modifier.padding(start = 8.dp).weight(1f)) {
-            Text(label, style = MaterialTheme.typography.bodyLarge)
-            Text(detail, style = MaterialTheme.typography.bodySmall)
-        }
-        if (onDelete != null) {
-            TextButton(onClick = onDelete, modifier = Modifier.testTag("$tag.delete")) { Text("Remove") }
-        }
     }
 }
