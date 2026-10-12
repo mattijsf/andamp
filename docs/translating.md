@@ -173,7 +173,7 @@ comes from, so that the next person keeps to them.
 
 | English | 简体中文 | From |
 |---|---|---|
-| skin | 皮肤 | Audacious |
+| skin | 皮肤 | common usage (Winamp: 面板) |
 | visualization | 可视化效果 | Winamp |
 | Media Library | 媒体库 | Winamp |
 | playlist | 播放列表 | Winamp |
