@@ -17,10 +17,14 @@ import androidx.test.core.app.ApplicationProvider
 import com.github.takahirom.roborazzi.captureRoboImage
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.skin.BundledSkins
+import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.skin.LiveSkins
+import nl.mattix.andamp.skin.Sheet
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SkinDist
 import nl.mattix.andamp.skin.SkinLoader
+import nl.mattix.andamp.skin.Sprite
+import nl.mattix.andamp.skin.SpriteMap
 import nl.mattix.andamp.state.EnglishWords
 import nl.mattix.andamp.state.PlaylistFont
 import nl.mattix.andamp.state.RowHeight
@@ -142,6 +146,65 @@ class WindowGoldenTest {
 
         assertArrayEquals(pixels(render(MAIN_W, MAIN_H) { drawMainWindow(skin, closed) }), pixels(unlit))
         assertFalse(pixels(render(MAIN_W, MAIN_H) { drawMainWindow(skin, open) }).contentEquals(pixels(unlit)))
+    }
+
+    /** The pixels of [from] in a patch as large as [art], with its corner at [x], [y]. */
+    private fun patch(
+        from: Bitmap,
+        x: Int,
+        y: Int,
+        art: Sprite,
+    ) = IntArray(art.w * art.h).also { from.getPixels(it, 0, art.w, x, y, art.w, art.h) }
+
+    /** [art] as MONOSTER.BMP holds it. */
+    private fun lamp(art: Sprite) = patch(skin[Sheet.MONOSTER].asAndroidBitmap(), art.x, art.y, art)
+
+    /** The mono and the stereo lamp as the main window shows them for [state]. */
+    private fun lamps(state: WinampState): Pair<IntArray, IntArray> {
+        val window = render(MAIN_W, MAIN_H) { drawMainWindow(skin, state) }
+        return patch(window, Dest.MONO.x, Dest.MONO.y, SpriteMap.MAIN_MONO) to
+            patch(window, Dest.STEREO.x, Dest.STEREO.y, SpriteMap.MAIN_STEREO)
+    }
+
+    @Test
+    fun `one channel lights the mono lamp alone`() {
+        val (mono, stereo) = lamps(playingState().apply { streamChannels = 1 })
+
+        assertArrayEquals(lamp(SpriteMap.MAIN_MONO_SELECTED), mono)
+        assertArrayEquals(lamp(SpriteMap.MAIN_STEREO), stereo)
+    }
+
+    @Test
+    fun `two channels or more light the stereo lamp alone`() {
+        for (channels in listOf(2, 6)) {
+            val (mono, stereo) = lamps(playingState().apply { streamChannels = channels })
+
+            assertArrayEquals("$channels channels", lamp(SpriteMap.MAIN_MONO), mono)
+            assertArrayEquals("$channels channels", lamp(SpriteMap.MAIN_STEREO_SELECTED), stereo)
+        }
+    }
+
+    @Test
+    fun `an unknown channel count lights the stereo lamp while playing`() {
+        val (mono, stereo) = lamps(playingState())
+
+        assertArrayEquals(lamp(SpriteMap.MAIN_MONO), mono)
+        assertArrayEquals(lamp(SpriteMap.MAIN_STEREO_SELECTED), stereo)
+    }
+
+    @Test
+    fun `a paused track keeps its lamp and a stopped one has neither`() {
+        val paused =
+            playingState().apply {
+                transport = Transport.Paused
+                streamChannels = 1
+            }
+        val (pausedMono, _) = lamps(paused)
+        val (stoppedMono, stoppedStereo) = lamps(stoppedState().apply { streamChannels = 1 })
+
+        assertArrayEquals(lamp(SpriteMap.MAIN_MONO_SELECTED), pausedMono)
+        assertArrayEquals(lamp(SpriteMap.MAIN_MONO), stoppedMono)
+        assertArrayEquals(lamp(SpriteMap.MAIN_STEREO), stoppedStereo)
     }
 
     @Test

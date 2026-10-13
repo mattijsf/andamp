@@ -55,6 +55,17 @@ class WidgetDiffTest {
         assertEquals(a, b)
     }
 
+    @Test
+    fun `a change of channels is a chrome change`() {
+        // the mono and stereo lamps are part of the window's picture, not a layer
+        val base = playing(at = 10, stampedAt = 1_000)
+
+        val mono = WidgetSender.chromeOf(base.copy(channels = 1), layout, null, settings, skin)
+        val stereo = WidgetSender.chromeOf(base.copy(channels = 2), layout, null, settings, skin)
+
+        assertNotEquals(mono, stereo)
+    }
+
     /**
      * The widget keys its picture by the skin's cache key, not its id: a live
      * skin keeps its id when the wallpaper changes its colors.
