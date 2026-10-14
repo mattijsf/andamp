@@ -261,6 +261,9 @@ internal val LocalShowingPage = compositionLocalOf<String?> { null }
  */
 internal const val WIDGET_PAGE = "widget"
 
+/** The route of the Android Auto page, which [nl.mattix.andamp.SettingsEntryActivity] opens. */
+internal const val ANDROID_AUTO_PAGE = "android-auto"
+
 /** Preferences > Plug-ins, which a .lua handed over by another app opens on. */
 internal const val PLUGINS_PAGE = "plugins"
 
@@ -306,7 +309,7 @@ private enum class PrefsPage(
     VISUALIZER(R.string.prefs_page_visualizer, "visualizer", Icons.Outlined.AutoAwesome),
     PLAYER(R.string.prefs_page_player, "player", Icons.Outlined.PlayCircleOutline),
     WIDGET(R.string.prefs_page_widget, WIDGET_PAGE, Icons.Outlined.Widgets),
-    ANDROID_AUTO(R.string.prefs_page_android_auto, "android-auto", Icons.Outlined.DirectionsCar),
+    ANDROID_AUTO(R.string.prefs_page_android_auto, ANDROID_AUTO_PAGE, Icons.Outlined.DirectionsCar),
     SUPPORT(R.string.prefs_page_support, SUPPORT_PAGE, Icons.Outlined.Favorite),
     ABOUT(R.string.prefs_page_about, "about", Icons.Outlined.Info),
     LICENCES(R.string.prefs_page_licences, "licences"),

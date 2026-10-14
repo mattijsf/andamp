@@ -35,6 +35,22 @@
             android:name="androidx.car.app.minCarApiLevel"
             android:value="5" />
 
+        <!--
+          The "Additional settings in the app" button on this app's App info page, which opens
+          the player's Android Auto settings. See SettingsEntryActivity.
+        -->
+        <activity
+            android:name=".SettingsEntryActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
         <service
             android:name=".AndroidAutoService"
             android:exported="true">
