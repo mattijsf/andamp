@@ -6,6 +6,7 @@
     <string name="prefs_android_auto_skin_section">Skin</string>
     <string name="prefs_android_auto_skin_note">Dans Android Auto, la fenêtre principale porte ce skin. « Par défaut » garde celui que vous avez choisi pour le lecteur.</string>
     <string name="prefs_android_auto_skin_heading">Skin dans Android Auto</string>
+    <string name="prefs_android_auto_list_section">Liste de lecture</string>
 
     <!-- EffectsPage.kt -->
     <string name="prefs_effects_unavailable_summary">Ce moteur de lecture ne prend pas en charge les effets.</string>

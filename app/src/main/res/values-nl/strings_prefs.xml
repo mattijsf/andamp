@@ -6,6 +6,7 @@
     <string name="prefs_android_auto_skin_section">Skin</string>
     <string name="prefs_android_auto_skin_note">In Android Auto draagt het hoofdvenster deze skin. Standaard houdt de skin aan die je voor de speler hebt gekozen.</string>
     <string name="prefs_android_auto_skin_heading">Skin in Android Auto</string>
+    <string name="prefs_android_auto_list_section">Afspeellijst</string>
 
     <!-- EffectsPage.kt -->
     <string name="prefs_effects_unavailable_summary">Deze afspeelbackend voert geen effecten uit.</string>

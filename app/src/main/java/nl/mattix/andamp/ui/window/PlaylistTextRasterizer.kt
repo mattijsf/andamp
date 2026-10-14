@@ -127,9 +127,7 @@ class PlaylistTextRasterizer(
     /** The mask of [sheet], made once for as long as the skin is worn. */
     private fun maskOf(sheet: ImageBitmap): GlyphMask? {
         if (sheet !== maskSheet) {
-            val pixels = IntArray(sheet.width * sheet.height)
-            sheet.asAndroidBitmap().getPixels(pixels, 0, sheet.width, 0, 0, sheet.width, sheet.height)
-            mask = GlyphMask.of(pixels, sheet.width, sheet.height)
+            mask = glyphMaskOf(sheet)
             maskSheet = sheet
         }
         return mask
@@ -145,17 +143,10 @@ class PlaylistTextRasterizer(
         val height = layout.middleH
         // the bitmap made below copies the block, so the next layer can write over it
         if (block.size == width * height) block.fill(0) else block = IntArray(width * height)
-        val left = ListText.LEFT_INSET.toInt()
         for (row in rows) {
             // a glyph is five pixels of letter over one of nothing: the letter is centered
             val y = row.top + (layout.rowH - BitmapFont.CHAR_H + 1) / 2
-            val durX = width - ListText.RIGHT_INSET.toInt() - row.duration.length * BitmapFont.CHAR_W
-            glyphs.write(row.duration, durX, y, row.argb, block, width)
-            // a title too long for the row ends on a whole letter and the font's ellipsis
-            val room = ((durX - DURATION_GAP - left) / BitmapFont.CHAR_W).coerceAtLeast(1)
-            val title = BitmapFont.normalize(row.title)
-            val shown = if (title.length > room) title.take(room - 1) + ELLIPSIS else title
-            glyphs.write(shown, left, y, row.argb, block, width)
+            writeRow(glyphs, row.title, row.duration, row.argb, y, block, width)
         }
         return Bitmap.createBitmap(block, width, height, Bitmap.Config.ARGB_8888)
     }
@@ -192,6 +183,37 @@ class PlaylistTextRasterizer(
 
     companion object {
         const val ASSET_PATH = "fonts/LiberationSans-Regular.ttf"
+
+        /** The ink of the skin's font on [sheet], its TEXT.BMP; null as [GlyphMask.of] says. */
+        fun glyphMaskOf(sheet: ImageBitmap): GlyphMask? {
+            val pixels = IntArray(sheet.width * sheet.height)
+            sheet.asAndroidBitmap().getPixels(pixels, 0, sheet.width, 0, 0, sheet.width, sheet.height)
+            return GlyphMask.of(pixels, sheet.width, sheet.height)
+        }
+
+        /**
+         * Writes one row in the skin's font into [block], [width] pixels wide: [title] from
+         * the left and [duration] against the right, in [argb], the letters' tops at [y]. A
+         * title too long for the row ends on a whole letter and the font's ellipsis.
+         */
+        @Suppress("LongParameterList") // a row's words and color, and where they go
+        fun writeRow(
+            glyphs: GlyphMask,
+            title: String,
+            duration: String,
+            argb: Int,
+            y: Int,
+            block: IntArray,
+            width: Int,
+        ) {
+            val left = ListText.LEFT_INSET.toInt()
+            val durX = width - ListText.RIGHT_INSET.toInt() - duration.length * BitmapFont.CHAR_W
+            glyphs.write(duration, durX, y, argb, block, width)
+            val room = ((durX - DURATION_GAP - left) / BitmapFont.CHAR_W).coerceAtLeast(1)
+            val normal = BitmapFont.normalize(title)
+            val shown = if (normal.length > room) normal.take(room - 1) + ELLIPSIS else normal
+            glyphs.write(shown, left, y, argb, block, width)
+        }
 
         /** The title stops this far short of the duration. */
         private const val DURATION_GAP = 4

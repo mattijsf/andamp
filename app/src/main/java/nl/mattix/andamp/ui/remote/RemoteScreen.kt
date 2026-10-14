@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.IntRect
 import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.skin.RegionTxt
 import nl.mattix.andamp.skin.Skin
+import nl.mattix.andamp.state.PlaylistFont
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.ui.InPlayerVisualizerDriver
@@ -67,7 +68,8 @@ import kotlin.math.roundToInt
  * to pick a song from, which fills the room.
  *
  * [sliders] is kept told where the sliders of the window that is up are, for a drag the
- * surface's owner reports by its distance alone; see [HeldSlider].
+ * surface's owner reports by its distance alone; see [HeldSlider]. The playlist's rows are
+ * written in [listFont].
  */
 @Composable
 internal fun RemoteScreen(
@@ -79,6 +81,7 @@ internal fun RemoteScreen(
     showing: Showing = remember { Showing() },
     fill: Boolean = false,
     onFill: () -> Unit = {},
+    listFont: PlaylistFont = PlaylistFont.REGULAR,
 ) {
     val s = vm.state
     var up by showing::up
@@ -98,7 +101,7 @@ internal fun RemoteScreen(
         PlayerViewportBox(fit) {
             val room = IntRect(fit.inner(asked.left), fit.inner(asked.top), fit.inner(asked.right), fit.inner(asked.bottom))
             if (up == Up.PLAYLIST) {
-                RemoteList(vm, skin, room, fit, scroll, sliders, onClose = { up = Up.MAIN })
+                RemoteList(vm, skin, room, fit, scroll, sliders, listFont, onClose = { up = Up.MAIN })
             } else {
                 // the two windows are one size, so the swap moves nothing
                 val left = room.left + (room.width - MAIN_W * fit.scale) / 2

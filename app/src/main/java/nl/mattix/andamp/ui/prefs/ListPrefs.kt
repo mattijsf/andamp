@@ -41,20 +41,28 @@ internal fun listPrefsOf(vm: WinampViewModel) =
     )
 
 @Composable
-fun PlaylistFontRow(prefs: ListPrefs) {
+fun PlaylistFontRow(prefs: ListPrefs) = PlaylistFontChoice(prefs.font, prefs.onFont, tag = "prefs.lists.font")
+
+/** A choice of the font a playlist is written in, [font] now; the phone's, or the one in Android Auto. */
+@Composable
+internal fun PlaylistFontChoice(
+    font: PlaylistFont,
+    onFont: (PlaylistFont) -> Unit,
+    tag: String,
+) {
     ChoiceRow(
         title = stringResource(R.string.prefs_lists_font_title),
         about =
             stringResource(
-                when (prefs.font) {
+                when (font) {
                     PlaylistFont.SKIN -> R.string.prefs_lists_font_skin_about
                     PlaylistFont.REGULAR -> R.string.prefs_lists_font_regular_about
                 },
             ),
         choices = PlaylistFont.entries,
-        chosen = prefs.font,
-        onChoose = prefs.onFont,
-        tag = "prefs.lists.font",
+        chosen = font,
+        onChoose = onFont,
+        tag = tag,
         label = { if (it == PlaylistFont.SKIN) R.string.prefs_lists_font_skin else R.string.prefs_lists_font_regular },
     )
 }

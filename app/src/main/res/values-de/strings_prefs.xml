@@ -6,6 +6,7 @@
     <string name="prefs_android_auto_skin_section">Skin</string>
     <string name="prefs_android_auto_skin_note">In Android Auto trägt das Hauptfenster diesen Skin. „Standard“ behält den, den du für den Player gewählt hast.</string>
     <string name="prefs_android_auto_skin_heading">Skin in Android Auto</string>
+    <string name="prefs_android_auto_list_section">Playlist</string>
 
     <!-- EffectsPage.kt -->
     <string name="prefs_effects_unavailable_summary">Dieses Wiedergabe-Backend unterstützt keine Effekte.</string>
