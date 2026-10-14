@@ -398,10 +398,11 @@ its "Unknown sources" switch covers media apps, not these. The Desktop Head Unit
 however it was installed.
 
 `:androidauto` has one screen. `LentSurface` hands Android Auto's surface to the player over
-`IRemoteWindow` and passes on taps and drags. In the player, `RemoteWindowService` takes the
-calls of an app signed with the player's key, or of the app whose id is the player's with
-`.androidauto` after it, whatever key signed that one (`RemoteWindowTrust`), and
-`RemoteWindow` puts a virtual display over the surface with a presentation that composes
+`IRemoteWindow` and passes on taps and drags; its manifest says which version of that
+interface it speaks (`RemoteWindowLink.PROTOCOL`). In the player, `RemoteWindowService`
+takes the calls of an app signed with the player's key, or of the app whose id is the
+player's with `.androidauto` after it, whatever key signed that one (`RemoteWindowTrust`),
+and `RemoteWindow` puts a virtual display over the surface with a presentation that composes
 `RemoteScreen`: the main window at the largest whole scale that fits, on black. Its EQ
 button swaps the screen to the equalizer, and its PL button to `RemoteList`, a list with
 rows a finger can hit, each with a play button that plays it. The skin there and the font of

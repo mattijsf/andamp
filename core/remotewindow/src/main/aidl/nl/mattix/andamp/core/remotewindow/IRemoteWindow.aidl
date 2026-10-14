@@ -11,6 +11,9 @@ import nl.mattix.andamp.core.remotewindow.IRemoteWindowWatcher;
  * The player implements this and draws; the caller owns the surface and reports
  * what happens on it. Every call returns at once, and calls arrive in the order
  * they were made.
+ *
+ * A change to this interface raises RemoteWindowLink.PROTOCOL, and a new call goes
+ * at the end: a player that lacks it drops it.
  */
 oneway interface IRemoteWindow {
     /**
