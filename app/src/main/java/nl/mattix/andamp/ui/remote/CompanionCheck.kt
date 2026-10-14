@@ -80,11 +80,7 @@ data class CompanionCheck(
                 fromPlay = fromPlay(installing, initiating),
                 version = info.versionName.orEmpty(),
                 playerVersion = player.orEmpty(),
-                protocol =
-                    info.applicationInfo
-                        ?.metaData
-                        ?.getInt(RemoteWindowLink.PROTOCOL_KEY, RemoteWindowLink.FIRST_PROTOCOL)
-                        ?: RemoteWindowLink.FIRST_PROTOCOL,
+                protocol = RemoteWindowLink.protocolOf(info.applicationInfo),
             )
         }
     }

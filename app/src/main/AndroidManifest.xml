@@ -57,6 +57,14 @@
         android:usesCleartextTraffic="true">
 
         <!--
+          The version of the window's interface this app speaks, RemoteWindowLink.PROTOCOL,
+          which Autoamp reads to tell whether the two match. A test keeps the two equal.
+        -->
+        <meta-data
+            android:name="nl.mattix.andamp.window.PROTOCOL"
+            android:value="2" />
+
+        <!--
           screenOrientation="user": the player turns with the phone when auto-rotate is on,
           and stays put when it is off. Asked for explicitly because the activity is
           translucent (see values-v28/themes.xml): a translucent activity that asks for

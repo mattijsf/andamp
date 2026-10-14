@@ -4,14 +4,19 @@ package nl.mattix.andamp.androidauto
 
 import android.content.ComponentName
 import android.content.IntentFilter
+import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
+import android.os.Bundle
 import android.os.Looper
 import androidx.car.app.OnDoneCallback
 import androidx.car.app.model.Action
 import androidx.car.app.model.CarIcon
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.navigation.model.NavigationTemplate
+import androidx.car.app.testing.ScreenController
+import androidx.car.app.testing.TestAppManager
 import androidx.car.app.testing.TestCarContext
+import androidx.lifecycle.Lifecycle
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.core.remotewindow.RemoteWindowLink
 import org.junit.Assert.assertEquals
@@ -31,13 +36,29 @@ class WindowScreenTest {
     /** The id of the player this app belongs to. */
     private val player = RemoteWindowLink.playerOf(car.packageName)
 
-    /** A player that lends its window. */
-    private fun installThePlayer() {
+    /** A player that lends its window, speaking [protocol], or saying nothing about it when null. */
+    private fun installThePlayer(protocol: Int? = RemoteWindowLink.PROTOCOL) {
         val service = ComponentName(player, "RemoteWindowService")
         shadowOf(car.packageManager).apply {
+            installPackage(
+                PackageInfo().apply {
+                    packageName = player
+                    applicationInfo =
+                        ApplicationInfo().apply {
+                            packageName = player
+                            metaData = protocol?.let { Bundle().apply { putInt(RemoteWindowLink.PROTOCOL_KEY, it) } }
+                        }
+                },
+            )
             addServiceIfNotPresent(service)
             addIntentFilterForService(service, IntentFilter(RemoteWindowLink.ACTION))
         }
+    }
+
+    /** The toasts the car was shown once [screen] has started. */
+    private fun toastsOnStart(screen: WindowScreen): List<String> {
+        ScreenController(screen).moveToState(Lifecycle.State.STARTED)
+        return car.getCarService(TestAppManager::class.java).toastsShown.map { it.toString() }
     }
 
     @Test
@@ -96,6 +117,34 @@ class WindowScreenTest {
         val icon = checkNotNull(button.icon)
         assertEquals(CarIcon.TYPE_CUSTOM, icon.type)
         return checkNotNull(icon.icon).resId
+    }
+
+    /** An Andamp from before the button lends its window all the same; the car is told to update it. */
+    @Test
+    fun `with an older player the car is told to update Andamp`() {
+        installThePlayer(protocol = null)
+
+        assertEquals(
+            listOf("Update Andamp on your phone: some things here need a newer Andamp."),
+            toastsOnStart(WindowScreen(car)),
+        )
+    }
+
+    @Test
+    fun `with a newer player the car is told to update Autoamp`() {
+        installThePlayer(protocol = RemoteWindowLink.PROTOCOL + 1)
+
+        assertEquals(
+            listOf("Update Autoamp on your phone: some things here need a newer Autoamp."),
+            toastsOnStart(WindowScreen(car)),
+        )
+    }
+
+    @Test
+    fun `with a player that speaks the same protocol nothing is said`() {
+        installThePlayer()
+
+        assertEquals(emptyList<String>(), toastsOnStart(WindowScreen(car)))
     }
 
     @Test
