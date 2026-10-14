@@ -22,6 +22,14 @@
             android:name="com.google.android.gms.car.application"
             android:resource="@xml/automotive_app_desc" />
 
+        <!--
+          The version of the player's interface this app speaks, RemoteWindowLink.PROTOCOL,
+          which the player reads to tell whether the two match. A test keeps the two equal.
+        -->
+        <meta-data
+            android:name="nl.mattix.andamp.window.PROTOCOL"
+            android:value="2" />
+
         <!-- 5 is the first level that reports a tap on the surface with its place -->
         <meta-data
             android:name="androidx.car.app.minCarApiLevel"

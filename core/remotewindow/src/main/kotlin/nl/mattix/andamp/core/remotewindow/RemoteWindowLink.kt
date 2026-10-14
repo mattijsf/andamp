@@ -15,4 +15,23 @@ object RemoteWindowLink {
 
     /** The id of the player that the app installed as [lender] lends its surface to. */
     fun playerOf(lender: String): String = lender.removeSuffix(LENDER)
+
+    /**
+     * Which [IRemoteWindow] this build speaks. It goes up by one with every change to that
+     * interface, so a player and a lender of different releases can tell whether each does
+     * all the other asks:
+     *
+     * 1. `show`, `keepTo`, `tap`, `hide`, `drag` and `fling`.
+     * 2. `listOrBack` and `watch`, for the lender's button and its icon.
+     */
+    const val PROTOCOL = 2
+
+    /**
+     * The name of the lender's meta-data entry, on its application, that says which [PROTOCOL]
+     * it speaks. A lender without the entry speaks the first.
+     */
+    const val PROTOCOL_KEY = "nl.mattix.andamp.window.PROTOCOL"
+
+    /** The protocol of a lender that does not say. */
+    const val FIRST_PROTOCOL = 1
 }
