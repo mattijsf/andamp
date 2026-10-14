@@ -93,6 +93,9 @@ internal class LentSurface(
 
     override fun onSurfaceDestroyed(surfaceContainer: SurfaceContainer) = takeBack()
 
+    /** The list of songs comes up on the surface, or goes when it is up. */
+    fun togglePlaylist() = tell { togglePlaylist() }
+
     /** Ends the loan: the player takes its window down, and is let go. */
     fun takeBack() {
         held = null

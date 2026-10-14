@@ -62,6 +62,8 @@ class RemoteWindowService : Service() {
                 vx: Float,
                 vy: Float,
             ) = trusted { window.fling(vx, vy) }
+
+            override fun togglePlaylist() = trusted { window.togglePlaylist() }
         }
 
     override fun onCreate() {

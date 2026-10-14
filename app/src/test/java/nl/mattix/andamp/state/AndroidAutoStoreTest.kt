@@ -81,16 +81,16 @@ class AndroidAutoStoreTest {
     }
 
     @Test
-    fun `the window is sharp until it is told to fill the screen`() {
-        assertEquals(false, AndroidAutoStore(prefs()).fill)
+    fun `the window fills the screen until it is told not to`() {
+        assertEquals(true, AndroidAutoStore(prefs()).fill)
     }
 
     @Test
     fun `filling the screen is kept`() {
         val kept = prefs()
-        AndroidAutoStore(kept).fill = true
+        AndroidAutoStore(kept).fill = false
 
-        assertEquals(true, AndroidAutoStore(kept).fill)
+        assertEquals(false, AndroidAutoStore(kept).fill)
     }
 
     @Test

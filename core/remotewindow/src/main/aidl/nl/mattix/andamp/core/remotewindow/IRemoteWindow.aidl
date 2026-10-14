@@ -41,4 +41,10 @@ oneway interface IRemoteWindow {
      * pixels a second. Right and down are positive.
      */
     void fling(float vx, float vy);
+
+    /**
+     * The caller's own button for the list of songs: the list comes up, or, when it
+     * is up, the main window comes back.
+     */
+    void togglePlaylist();
 }

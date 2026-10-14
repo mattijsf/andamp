@@ -22,6 +22,6 @@ internal class WindowSession : Session() {
                 override fun onDestroy(owner: LifecycleOwner) = lent.takeBack()
             },
         )
-        return WindowScreen(carContext)
+        return WindowScreen(carContext, onPlaylist = lent::togglePlaylist)
     }
 }

@@ -63,6 +63,9 @@ internal class RemoteWindow(
     /** Where the playlist on the surface is scrolled to; a drag on the surface moves it. */
     val list = ListScroll()
 
+    /** Which window is up on the surface. */
+    private val upNow = Showing()
+
     /** Where the sliders of the window that is up are; the screen keeps it told. */
     private val sliders = Sliders()
 
@@ -91,6 +94,8 @@ internal class RemoteWindow(
         densityDpi: Int,
     ) {
         hide()
+        // a new surface starts on the main window
+        upNow.up = Up.MAIN
         val displays = context.getSystemService(DisplayManager::class.java) ?: return
         // a surface its owner has already let go of gives no display
         val made =
@@ -115,7 +120,16 @@ internal class RemoteWindow(
                     val own = vm.skin ?: return@setContent
                     val skin = skinHere(own) ?: return@setContent
                     val chosen = vm.androidAutoStore
-                    RemoteScreen(vm, skin, kept, list, sliders, fill = chosen.fill, onFill = { chosen.fill = !chosen.fill })
+                    RemoteScreen(
+                        vm,
+                        skin,
+                        kept,
+                        list,
+                        sliders,
+                        upNow,
+                        fill = chosen.fill,
+                        onFill = { chosen.fill = !chosen.fill },
+                    )
                 }
             }
         shown.setContentView(content)
@@ -203,6 +217,15 @@ internal class RemoteWindow(
         if (!slider.down) return list.throwAt(vy)
         main.removeCallbacks(lift)
         slider.letGo()
+    }
+
+    /** The owner's button for the list of songs: the list comes up, or the main window comes back. */
+    fun togglePlaylist() {
+        finishTap()
+        main.removeCallbacks(lift)
+        main.removeCallbacks(forget)
+        slider.tapped(null)
+        upNow.togglePlaylist()
     }
 
     /** Takes the window off the surface and lets the display go. */

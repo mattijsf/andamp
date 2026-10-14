@@ -5,11 +5,10 @@ package nl.mattix.andamp.androidauto
 import android.content.ComponentName
 import android.content.IntentFilter
 import android.content.pm.PackageInfo
-import android.graphics.Color
-import android.graphics.drawable.AdaptiveIconDrawable
-import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.Icon
+import android.os.Looper
+import androidx.car.app.OnDoneCallback
 import androidx.car.app.model.Action
+import androidx.car.app.model.CarIcon
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.navigation.model.NavigationTemplate
 import androidx.car.app.testing.TestCarContext
@@ -60,34 +59,18 @@ class WindowScreenTest {
         assertEquals(listOf(Action.PAN), template.mapActionStrip?.actions)
     }
 
-    /** Android Auto colors the whole app icon into a disc; the single-color layer keeps its shape. */
     @Test
-    fun `the button on the surface shows the single-color layer of the app's icon`() {
+    fun `the button on the surface brings up the list of songs`() {
         installThePlayer()
-        val layers = AdaptiveIconDrawable(ColorDrawable(Color.BLACK), ColorDrawable(Color.RED), ColorDrawable(Color.WHITE))
-        shadowOf(car.packageManager).setApplicationIcon(car.packageName, layers)
-
-        val template = WindowScreen(car).onGetTemplate() as NavigationTemplate
+        var asked = 0
+        val template = WindowScreen(car, onPlaylist = { asked++ }).onGetTemplate() as NavigationTemplate
         val button = template.actionStrip?.actions?.single() as Action
 
-        assertEquals(Icon.TYPE_BITMAP, button.icon?.icon?.type)
-        assertEquals(
-            "the layer fills the picture",
-            Color.WHITE,
-            button.icon
-                ?.icon
-                ?.bitmap
-                ?.getPixel(64, 64),
-        )
-    }
+        button.onClickDelegate?.sendClick(object : OnDoneCallback {})
+        shadowOf(Looper.getMainLooper()).idle()
 
-    @Test
-    fun `an app whose icon has no layers gets the standard app icon on the button`() {
-        installThePlayer()
-
-        val template = WindowScreen(car).onGetTemplate() as NavigationTemplate
-
-        assertEquals(listOf(Action.APP_ICON), template.actionStrip?.actions)
+        assertEquals(1, asked)
+        assertEquals(CarIcon.TYPE_CUSTOM, button.icon?.type)
     }
 
     @Test

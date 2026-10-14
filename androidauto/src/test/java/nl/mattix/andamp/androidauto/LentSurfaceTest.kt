@@ -78,6 +78,10 @@ class LentSurfaceTest {
             ) {
                 told += "fling $vx,$vy"
             }
+
+            override fun togglePlaylist() {
+                told += "playlist"
+            }
         }
 
     private val service = ComponentName(RemoteWindowLink.playerOf(app.packageName), "RemoteWindowService")
@@ -231,5 +235,14 @@ class LentSurfaceTest {
         shadowOf(Looper.getMainLooper()).idleFor(5, TimeUnit.SECONDS)
 
         assertEquals(emptyList<String>(), told)
+    }
+
+    @Test
+    fun `the button for the list of songs is passed on`() {
+        val lent = handedOver()
+
+        lent.togglePlaylist()
+
+        assertEquals("playlist", told.last())
     }
 }
