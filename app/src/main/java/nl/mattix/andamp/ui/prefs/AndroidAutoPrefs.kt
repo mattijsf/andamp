@@ -91,6 +91,7 @@ internal fun AndroidAutoPage(prefs: AndroidAutoPrefs) {
 @Composable
 private fun CompanionStatus(check: CompanionCheck) {
     Section(stringResource(R.string.prefs_android_auto_status_section))
+    Note(stringResource(R.string.prefs_android_auto_installed, check.version))
     Group {
         val play = check.fromPlay
         CheckRow(
@@ -112,19 +113,13 @@ private fun CompanionStatus(check: CompanionCheck) {
                     CompanionCheck.Match.AHEAD -> R.string.prefs_android_auto_newer
                 },
             about =
-                when (match) {
-                    CompanionCheck.Match.SAME -> {
-                        stringResource(R.string.prefs_android_auto_version, check.version)
-                    }
-
-                    CompanionCheck.Match.BEHIND -> {
-                        stringResource(R.string.prefs_android_auto_older_about, check.version, check.playerVersion)
-                    }
-
-                    CompanionCheck.Match.AHEAD -> {
-                        stringResource(R.string.prefs_android_auto_newer_about, check.version, check.playerVersion)
-                    }
-                },
+                stringResource(
+                    when (match) {
+                        CompanionCheck.Match.SAME -> R.string.prefs_android_auto_matches_about
+                        CompanionCheck.Match.BEHIND -> R.string.prefs_android_auto_older_about
+                        CompanionCheck.Match.AHEAD -> R.string.prefs_android_auto_newer_about
+                    },
+                ),
             what = "version",
         )
     }

@@ -17,10 +17,8 @@ import nl.mattix.andamp.core.remotewindow.RemoteWindowLink
 data class CompanionCheck(
     /** Whether Google Play installed it. Android Auto shows an app like it in a car only then. */
     val fromPlay: Boolean,
-    /** Its version name. */
+    /** Its version name, which says which release is installed; whether it fits is [match]. */
     val version: String,
-    /** This Andamp's version name. */
-    val playerVersion: String,
     /** The [RemoteWindowLink.PROTOCOL] it speaks. */
     val protocol: Int,
     /** The one this Andamp speaks. */
@@ -75,11 +73,9 @@ data class CompanionCheck(
                     @Suppress("DEPRECATION")
                     runCatching { packages.getInstallerPackageName(companion) }.getOrNull() to null
                 }
-            val player = runCatching { packages.getPackageInfo(context.packageName, 0).versionName }.getOrNull()
             return CompanionCheck(
                 fromPlay = fromPlay(installing, initiating),
                 version = info.versionName.orEmpty(),
-                playerVersion = player.orEmpty(),
                 protocol =
                     info.applicationInfo
                         ?.metaData

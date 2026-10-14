@@ -8,16 +8,17 @@
     <string name="prefs_android_auto_skin_heading">Android Auto 中的皮肤</string>
     <string name="prefs_android_auto_list_section">播放列表</string>
     <string name="prefs_android_auto_status_section">状态</string>
+    <string name="prefs_android_auto_installed">此手机上安装了 Andamp for Android Auto %1$s。</string>
     <string name="prefs_android_auto_from_play">Android Auto 会在汽车中显示它</string>
     <string name="prefs_android_auto_from_play_about">Google Play 被记录为安装来源。</string>
     <string name="prefs_android_auto_not_from_play">Android Auto 不会在汽车中显示它</string>
     <string name="prefs_android_auto_not_from_play_about">只有通过 Google Play 安装时，Android Auto 才会在汽车中显示 Andamp for Android Auto。</string>
-    <string name="prefs_android_auto_matches">与此 Andamp 匹配</string>
-    <string name="prefs_android_auto_version">版本 %1$s</string>
-    <string name="prefs_android_auto_older">比 Andamp 旧</string>
-    <string name="prefs_android_auto_older_about">Andamp for Android Auto %1$s 缺少 Andamp %2$s 在 Android Auto 中提供的部分功能。请更新它。</string>
-    <string name="prefs_android_auto_newer">比 Andamp 新</string>
-    <string name="prefs_android_auto_newer_about">Andamp for Android Auto %1$s 提供的功能超出了 Andamp %2$s 在 Android Auto 中所能显示的范围。请更新 Andamp。</string>
+    <string name="prefs_android_auto_matches">与此 Andamp 兼容</string>
+    <string name="prefs_android_auto_matches_about">它支持此 Andamp 在 Android Auto 中提供的全部功能。</string>
+    <string name="prefs_android_auto_older">请更新 Andamp for Android Auto</string>
+    <string name="prefs_android_auto_older_about">它缺少此 Andamp 在 Android Auto 中提供的部分功能。</string>
+    <string name="prefs_android_auto_newer">请更新 Andamp</string>
+    <string name="prefs_android_auto_newer_about">它提供的功能超出了此 Andamp 在 Android Auto 中所能显示的范围。</string>
 
     <!-- EffectsPage.kt -->
     <string name="prefs_effects_unavailable_summary">此播放后端不支持效果。</string>

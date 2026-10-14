@@ -101,34 +101,35 @@ class AndroidAutoPrefsTest {
     @Test
     fun `with everything right each check has a tick`() {
         showChecked(
-            CompanionCheck(fromPlay = true, version = "0.15.0", playerVersion = "0.16.0", protocol = 2, playerProtocol = 2),
+            CompanionCheck(fromPlay = true, version = "0.15.0", protocol = 2, playerProtocol = 2),
         )
 
         compose.onNodeWithTag("prefs.androidauto.check.play.ok").assertExists()
         compose.onNodeWithTag("prefs.androidauto.check.version.ok").assertExists()
-        compose.onNodeWithText("Version 0.15.0").assertExists()
+        compose.onNodeWithText("Andamp for Android Auto 0.15.0 is on this phone.").assertExists()
+        compose.onNodeWithText("Compatible with this Andamp").assertExists()
     }
 
     @Test
     fun `each thing that is wrong is a warning that says what it means`() {
         showChecked(
-            CompanionCheck(fromPlay = false, version = "0.14.0", playerVersion = "0.15.0", protocol = 1, playerProtocol = 2),
+            CompanionCheck(fromPlay = false, version = "0.14.0", protocol = 1, playerProtocol = 2),
         )
 
         compose.onNodeWithTag("prefs.androidauto.check.play.warning").assertExists()
         compose.onNodeWithText("Android Auto won't show it in a car").assertExists()
         compose.onNodeWithTag("prefs.androidauto.check.version.warning").assertExists()
-        compose.onNodeWithText("Andamp for Android Auto 0.14.0 lacks some of what Andamp 0.15.0", substring = true).assertExists()
+        compose.onNodeWithText("Update Andamp for Android Auto").assertExists()
     }
 
     @Test
     fun `an app ahead of this Andamp asks for Andamp to be updated`() {
         showChecked(
-            CompanionCheck(fromPlay = true, version = "0.17.0", playerVersion = "0.16.0", protocol = 3, playerProtocol = 2),
+            CompanionCheck(fromPlay = true, version = "0.17.0", protocol = 3, playerProtocol = 2),
         )
 
         compose.onNodeWithTag("prefs.androidauto.check.version.warning").assertExists()
-        compose.onNodeWithText("Newer than Andamp").assertExists()
+        compose.onNodeWithText("Update Andamp").assertExists()
     }
 
     @Test
