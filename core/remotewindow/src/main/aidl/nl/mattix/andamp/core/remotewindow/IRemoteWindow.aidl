@@ -12,8 +12,12 @@ import nl.mattix.andamp.core.remotewindow.IRemoteWindowWatcher;
  * what happens on it. Every call returns at once, and calls arrive in the order
  * they were made.
  *
- * A change to this interface raises RemoteWindowLink.PROTOCOL, and a new call goes
- * at the end: a player that lacks it drops it.
+ * The player and the caller are separate apps that update apart, so either may meet
+ * any release of the other. Every change to this interface therefore only adds: a
+ * new call goes at the end, one way like the rest, and raises
+ * RemoteWindowLink.PROTOCOL. An app that lacks the call drops it, and the rest goes
+ * on working. A call that is here keeps its name, its place, its arguments and what
+ * it does for good. Something that has to work differently comes as a new call.
  */
 oneway interface IRemoteWindow {
     /**

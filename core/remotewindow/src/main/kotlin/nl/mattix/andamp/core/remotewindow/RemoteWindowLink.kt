@@ -20,8 +20,8 @@ object RemoteWindowLink {
 
     /**
      * Which [IRemoteWindow] this build speaks. It goes up by one with every change to that
-     * interface, so a player and a lender of different releases can tell whether each does
-     * all the other asks:
+     * interface, which only ever adds calls, so a player and a lender of different releases
+     * work together and can tell whether each does all the other asks:
      *
      * 1. `show`, `keepTo`, `tap`, `hide`, `drag` and `fling`.
      * 2. `listOrBack` and `watch`, for the lender's button and its icon.
