@@ -3,6 +3,7 @@
 package nl.mattix.andamp.state
 
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -68,6 +69,7 @@ class LibrarySearchTest {
             this,
             PlaylistLibrary(temp.newFolder()),
             StationStore(File(temp.newFolder(), "stations.m3u")),
+            io = StandardTestDispatcher(testScheduler),
             words = EnglishWords,
         )
     }

@@ -507,7 +507,9 @@ class WindowGoldenTest {
         seed(lists, stations)
         val ops =
             nl.mattix.andamp.state
-                .LibraryOps({ GoldenShelf(available) }, facade, state, scope, lists, stations, words = EnglishWords)
+                .LibraryOps({
+                    GoldenShelf(available)
+                }, facade, state, scope, lists, stations, io = kotlinx.coroutines.Dispatchers.Unconfined, words = EnglishWords)
         ops.open()
         return ops to state
     }

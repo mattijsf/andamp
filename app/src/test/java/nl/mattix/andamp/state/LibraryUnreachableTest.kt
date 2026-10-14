@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.state
 
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
@@ -74,6 +75,7 @@ class LibraryUnreachableTest {
         PlaylistLibrary(temp.newFolder()),
         StationStore(File(temp.newFolder(), "stations.m3u")),
         nameOf = { name },
+        io = StandardTestDispatcher(testScheduler),
         words = EnglishWords,
     )
 

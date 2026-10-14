@@ -124,6 +124,7 @@ class SourceOpsTest {
                 scope,
                 PlaylistLibrary(temp.newFolder("playlists")),
                 StationStore(File(temp.newFolder("radio"), "stations.m3u")),
+                io = Dispatchers.Unconfined,
                 words = EnglishWords,
             )
         return SourceOps(
