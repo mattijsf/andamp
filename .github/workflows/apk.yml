@@ -6,8 +6,7 @@
 # read GitHub releases all take this one file.
 #
 # A second, small APK goes with it: the app Android Auto talks to (:androidauto), which lends the
-# car's screen to Andamp. Both are signed with the same key, which is how an Andamp from Play,
-# signed by Google, knows the second; see RemoteWindowTrust.
+# car's screen to Andamp. Both are signed with the same key.
 #
 # release-please.yml calls this when it has made a release, which is a draft at that point: a
 # published release in this repository is immutable and takes no more files. This attaches the
