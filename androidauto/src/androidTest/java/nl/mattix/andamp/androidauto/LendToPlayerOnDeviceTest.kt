@@ -16,8 +16,10 @@ import android.os.IBinder
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import nl.mattix.andamp.core.remotewindow.IRemoteWindow
+import nl.mattix.andamp.core.remotewindow.IRemoteWindowWatcher
 import nl.mattix.andamp.core.remotewindow.RemoteWindowLink
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -26,6 +28,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
@@ -34,9 +37,10 @@ import java.util.concurrent.atomic.AtomicReference
  * device, and what the player draws on it is read back.
  *
  * The pictures are also written to this app's files directory, to be looked at. The test is
- * skipped on a device without the player, and expects a player whose window on a car's screen
- * is not filling it. The list is only tried on a player that holds more songs than fit the
- * screen: with fewer there is nothing to scroll to and no other row to pick.
+ * skipped on a device without the player. Each test starts with the window drawn sharp, not
+ * filling the screen, and switches D off first when it is on. The list is only tried on a
+ * player that holds more songs than fit the screen: with fewer there is nothing to scroll to
+ * and no other row to pick.
  *
  * Method names are plain identifiers: a name with spaces is illegal in DEX below version 040.
  */
@@ -88,7 +92,7 @@ class LendToPlayerOnDeviceTest {
 
     @Test
     fun thePlayerDrawsItsMainWindowOnTheLentSurface() {
-        player?.show(reader.surface, WIDTH, HEIGHT, DPI)
+        showSharp()
 
         val shown = pictureAfter(SETTLE_MS, "lent-1-shown.png")
 
@@ -98,7 +102,7 @@ class LendToPlayerOnDeviceTest {
 
     @Test
     fun aTapOnPlayStartsTheSong() {
-        player?.show(reader.surface, WIDTH, HEIGHT, DPI)
+        showSharp()
         val stopped = pictureAfter(SETTLE_MS, "lent-2-before-play.png")
 
         player?.tap(WINDOW_LEFT + PLAY_X * SCALE, WINDOW_TOP + PLAY_Y * SCALE)
@@ -112,7 +116,7 @@ class LendToPlayerOnDeviceTest {
 
     @Test
     fun theEqButtonSwapsToTheEqualizerAndItsCloseSwapsBack() {
-        player?.show(reader.surface, WIDTH, HEIGHT, DPI)
+        showSharp()
         val main = buttonsOf(pictureAfter(SETTLE_MS, "lent-6-main.png"))
 
         player?.tap(WINDOW_LEFT + EQ_X * SCALE, WINDOW_TOP + EQ_Y * SCALE)
@@ -127,7 +131,7 @@ class LendToPlayerOnDeviceTest {
 
     @Test
     fun thePlButtonOpensAListToPickASongFrom() {
-        player?.show(reader.surface, WIDTH, HEIGHT, DPI)
+        showSharp()
         val main = buttonsOf(pictureAfter(SETTLE_MS, "lent-9-main.png"))
 
         player?.tap(WINDOW_LEFT + PL_X * SCALE, WINDOW_TOP + EQ_Y * SCALE)
@@ -162,7 +166,7 @@ class LendToPlayerOnDeviceTest {
 
     @Test
     fun theDInTheWindowMakesItFillTheScreenAndBack() {
-        player?.show(reader.surface, WIDTH, HEIGHT, DPI)
+        showSharp()
         pictureAfter(SETTLE_MS, "lent-14-sharp.png")
 
         player?.tap(WINDOW_LEFT + D_X * SCALE, WINDOW_TOP + D_Y * SCALE)
@@ -183,7 +187,7 @@ class LendToPlayerOnDeviceTest {
      */
     @Test
     fun aDragMovesTheSliderThatWasTapped() {
-        player?.show(reader.surface, WIDTH, HEIGHT, DPI)
+        showSharp()
         // the window has to be up before a tap can land on it
         pictureAfter(SETTLE_MS, "lent-17-balance-before.png")
         player?.tap(WINDOW_LEFT + BALANCE_X * SCALE, WINDOW_TOP + BALANCE_Y * SCALE)
@@ -200,14 +204,92 @@ class LendToPlayerOnDeviceTest {
     }
 
     @Test
+    fun theButtonBringsUpTheListAndTakesItAway() {
+        showSharp()
+        val main = buttonsOf(pictureAfter(SETTLE_MS, "lent-20-main.png"))
+
+        player?.listOrBack()
+        val list = buttonsOf(pictureAfter(SETTLE_MS, "lent-21-list.png"))
+        player?.listOrBack()
+        val back = buttonsOf(pictureAfter(SETTLE_MS, "lent-22-main-again.png"))
+
+        assertFalse("the list has taken the main window's place", main.contentEquals(list))
+        assertTrue("the main window is back", main.contentEquals(back))
+    }
+
+    @Test
+    fun theButtonTakesTheEqualizerAwayToo() {
+        showSharp()
+        val main = buttonsOf(pictureAfter(SETTLE_MS, "lent-26-main.png"))
+
+        player?.tap(WINDOW_LEFT + EQ_X * SCALE, WINDOW_TOP + EQ_Y * SCALE)
+        pictureAfter(SETTLE_MS, "lent-27-equalizer.png")
+        player?.listOrBack()
+        val back = buttonsOf(pictureAfter(SETTLE_MS, "lent-28-main-again.png"))
+
+        assertTrue("the main window is back", main.contentEquals(back))
+    }
+
+    @Test
+    fun theOwnerIsToldWhetherTheMainWindowIsUp() {
+        val heard = LinkedBlockingQueue<Boolean>()
+        val watcher =
+            object : IRemoteWindowWatcher.Stub() {
+                override fun mainUp(up: Boolean) {
+                    heard += up
+                }
+            }
+        showSharp()
+
+        player?.watch(watcher)
+        val first = heard.poll(WAIT_S, TimeUnit.SECONDS)
+        player?.tap(WINDOW_LEFT + EQ_X * SCALE, WINDOW_TOP + EQ_Y * SCALE)
+        val equalizer = heard.poll(WAIT_S, TimeUnit.SECONDS)
+        player?.listOrBack()
+        val back = heard.poll(WAIT_S, TimeUnit.SECONDS)
+
+        assertEquals(listOf(true, false, true), listOf(first, equalizer, back))
+    }
+
+    /** The owner keeps room free for buttons it shows now and then; filling, the window takes it too. */
+    @Test
+    fun filledTheWindowTakesTheWholeSurfaceWhateverIsKept() {
+        showSharp()
+        player?.keepTo(WIDTH / 2, 0, WIDTH, HEIGHT)
+        val kept = pictureAfter(SETTLE_MS, "lent-23-kept-right.png")
+        // in the right half the window is drawn two to one, in the middle of that half
+        val left = WIDTH / 2 + (WIDTH / 2 - 275 * 2) / 2
+        val top = (HEIGHT - 116 * 2) / 2
+        player?.tap(left + D_X * 2, top + D_Y * 2)
+        val filled = pictureAfter(SETTLE_MS, "lent-24-filled-whole.png")
+        // left as it was found
+        val per = WIDTH / 275f
+        player?.tap(D_X * per, (HEIGHT - 116 * per) / 2f + D_Y * per)
+        pictureAfter(SETTLE_MS, "lent-25-sharp-again.png")
+
+        assertTrue("kept to the right half, the left half is black", allBlack(kept, 0, 0, WIDTH / 2, HEIGHT))
+        assertFalse("filling, the window reaches the left edge all the same", allBlack(filled, 0, 0, WINDOW_LEFT, HEIGHT))
+    }
+
+    @Test
     fun theWindowKeepsToThePartItIsGiven() {
-        player?.show(reader.surface, WIDTH, HEIGHT, DPI)
+        showSharp()
         player?.keepTo(WIDTH / 2, 0, WIDTH, HEIGHT)
 
         val kept = pictureAfter(SETTLE_MS, "lent-5-kept-right.png")
 
         assertTrue("the left half is left alone", allBlack(kept, 0, 0, WIDTH / 2, HEIGHT))
         assertFalse("the window is in the right half", allBlack(kept, WIDTH / 2, 0, WIDTH / 2, HEIGHT))
+    }
+
+    /** Lends the surface, and switches D off when the window fills it, so the test starts sharp. */
+    private fun showSharp() {
+        player?.show(reader.surface, WIDTH, HEIGHT, DPI)
+        val first = pictureAfter(SETTLE_MS, "lent-0-shown.png")
+        if (allBlack(first, 0, 0, WINDOW_LEFT, HEIGHT)) return
+        val per = WIDTH / 275f
+        player?.tap(D_X * per, (HEIGHT - 116 * per) / 2f + D_Y * per)
+        Thread.sleep(SETTLE_MS)
     }
 
     /** The surface as it looks [ms] from now, also written to [name]. */

@@ -6,30 +6,51 @@ import androidx.car.app.CarContext
 import androidx.car.app.Screen
 import androidx.car.app.model.Action
 import androidx.car.app.model.ActionStrip
+import androidx.car.app.model.CarColor
+import androidx.car.app.model.CarIcon
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.model.Template
 import androidx.car.app.navigation.model.NavigationTemplate
+import androidx.core.graphics.drawable.IconCompat
 
 /**
  * The one screen: the car's surface with nothing of the car's over it but the strip of
- * buttons the template requires. Without a player on the phone that lends its window, it
- * says what to do.
+ * buttons the template requires. Its one button calls [onButton]. While the player's main
+ * window is up ([mainUp]) it shows the list of songs, which it brings up; while the equalizer
+ * or the list is up it is an X, which brings the main window back. Without a player on the
+ * phone that lends its window, it says what to do.
  */
 internal class WindowScreen(
     carContext: CarContext,
+    private val onButton: () -> Unit = {},
 ) : Screen(carContext) {
+    /** Whether the player's main window is up, as the player last said. */
+    var mainUp = true
+        set(value) {
+            if (field == value) return
+            field = value
+            invalidate()
+        }
+
     override fun onGetTemplate(): Template = if (Player.reach(carContext) != null) surface() else noPlayer()
 
     private fun surface(): Template =
         NavigationTemplate
             .Builder()
-            .setActionStrip(ActionStrip.Builder().addAction(markButton()).build())
+            .setActionStrip(ActionStrip.Builder().addAction(button()).build())
             // the car reports what happens on the surface only to a template with this button
             .setMapActionStrip(ActionStrip.Builder().addAction(Action.PAN).build())
             .build()
 
-    /** The one button the template requires: the app's mark, which does nothing when pressed. */
-    private fun markButton(): Action = Mark.of(carContext)?.let { Action.Builder().setIcon(it).build() } ?: Action.APP_ICON
+    /** The one button the template requires: the list of songs, or an X back to the main window. */
+    private fun button(): Action {
+        val icon = IconCompat.createWithResource(carContext, if (mainUp) R.drawable.ic_playlist else R.drawable.ic_close)
+        return Action
+            .Builder()
+            .setIcon(CarIcon.Builder(icon).setTint(CarColor.DEFAULT).build())
+            .setOnClickListener { onButton() }
+            .build()
+    }
 
     private fun noPlayer(): Template =
         MessageTemplate

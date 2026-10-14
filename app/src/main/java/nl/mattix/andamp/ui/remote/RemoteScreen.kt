@@ -51,7 +51,9 @@ import kotlin.math.roundToInt
 /**
  * What a lent surface shows: one window at a time, on black, in the middle of [within].
  * [within] is in the surface's pixels; null is all of it. The window is drawn at the largest
- * whole scale that fits there, or with [fill] as large as fits at all; see [remoteViewport].
+ * whole scale that fits there. With [fill] it is as large as the whole surface takes, [within]
+ * or not: the owner keeps room free for buttons it shows only now and then, and a window kept
+ * out of that room is small on some cars' screens. See [remoteViewport].
  * The D in the main window's clutter bar is lit by [fill] and calls [onFill]: this surface's
  * own Double Size. The A is never lit here, and does nothing. Nor are the EQ and PL buttons
  * lit: neither window is open beside this one.
@@ -74,11 +76,12 @@ internal fun RemoteScreen(
     within: IntRect?,
     scroll: ListScroll,
     sliders: Sliders = Sliders(),
+    showing: Showing = remember { Showing() },
     fill: Boolean = false,
     onFill: () -> Unit = {},
 ) {
     val s = vm.state
-    var up by remember { mutableStateOf(Up.MAIN) }
+    var up by showing::up
     val onFillNow by rememberUpdatedState(onFill)
     val main =
         remember(vm) {
@@ -88,7 +91,8 @@ internal fun RemoteScreen(
     InPlayerVisualizerDriver(vm)
     UiClocks(s)
     BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black)) {
-        val asked = within ?: IntRect(0, 0, constraints.maxWidth, constraints.maxHeight)
+        val whole = IntRect(0, 0, constraints.maxWidth, constraints.maxHeight)
+        val asked = if (fill) whole else within ?: whole
         val fit = remoteViewport(asked.width, asked.height, fill)
         // the windows are laid out on the viewport's surface, so the room is in its pixels
         PlayerViewportBox(fit) {
@@ -143,7 +147,30 @@ private fun EqualizerAlone(
 }
 
 /** The window a lent surface is showing. */
-private enum class Up { MAIN, EQUALIZER, PLAYLIST }
+internal enum class Up { MAIN, EQUALIZER, PLAYLIST }
+
+/**
+ * Which window a lent surface shows. The buttons in the windows change it, and so does the
+ * surface's owner, through [listOrBack]. Each change is reported to [changed].
+ */
+internal class Showing(
+    private val changed: () -> Unit = {},
+) {
+    private var now by mutableStateOf(Up.MAIN)
+
+    var up: Up
+        get() = now
+        set(value) {
+            if (value == now) return
+            now = value
+            changed()
+        }
+
+    /** The list of songs from the main window; from the equalizer or the list, the main window. */
+    fun listOrBack() {
+        up = if (up == Up.MAIN) Up.PLAYLIST else Up.MAIN
+    }
+}
 
 /**
  * The slider among [widgets] that a touch at ([x], [y]) on the surface lands on, or null.

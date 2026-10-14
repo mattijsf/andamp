@@ -12,6 +12,7 @@ import android.view.Surface
 import androidx.compose.ui.unit.IntRect
 import androidx.lifecycle.ViewModelProvider
 import nl.mattix.andamp.core.remotewindow.IRemoteWindow
+import nl.mattix.andamp.core.remotewindow.IRemoteWindowWatcher
 import nl.mattix.andamp.core.remotewindow.RemoteWindowLink
 import nl.mattix.andamp.state.AppViewModels
 import nl.mattix.andamp.state.WinampViewModel
@@ -62,6 +63,10 @@ class RemoteWindowService : Service() {
                 vx: Float,
                 vy: Float,
             ) = trusted { window.fling(vx, vy) }
+
+            override fun listOrBack() = trusted { window.listOrBack() }
+
+            override fun watch(watcher: IRemoteWindowWatcher?) = trusted { window.watch(watcher) }
         }
 
     override fun onCreate() {

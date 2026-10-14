@@ -5,11 +5,10 @@ package nl.mattix.andamp.androidauto
 import android.content.ComponentName
 import android.content.IntentFilter
 import android.content.pm.PackageInfo
-import android.graphics.Color
-import android.graphics.drawable.AdaptiveIconDrawable
-import android.graphics.drawable.ColorDrawable
-import android.graphics.drawable.Icon
+import android.os.Looper
+import androidx.car.app.OnDoneCallback
 import androidx.car.app.model.Action
+import androidx.car.app.model.CarIcon
 import androidx.car.app.model.MessageTemplate
 import androidx.car.app.navigation.model.NavigationTemplate
 import androidx.car.app.testing.TestCarContext
@@ -60,34 +59,43 @@ class WindowScreenTest {
         assertEquals(listOf(Action.PAN), template.mapActionStrip?.actions)
     }
 
-    /** Android Auto colors the whole app icon into a disc; the single-color layer keeps its shape. */
     @Test
-    fun `the button on the surface shows the single-color layer of the app's icon`() {
+    fun `the button on the surface is passed on`() {
         installThePlayer()
-        val layers = AdaptiveIconDrawable(ColorDrawable(Color.BLACK), ColorDrawable(Color.RED), ColorDrawable(Color.WHITE))
-        shadowOf(car.packageManager).setApplicationIcon(car.packageName, layers)
+        var asked = 0
+        val button = buttonOf(WindowScreen(car, onButton = { asked++ }))
 
-        val template = WindowScreen(car).onGetTemplate() as NavigationTemplate
-        val button = template.actionStrip?.actions?.single() as Action
+        button.onClickDelegate?.sendClick(object : OnDoneCallback {})
+        shadowOf(Looper.getMainLooper()).idle()
 
-        assertEquals(Icon.TYPE_BITMAP, button.icon?.icon?.type)
-        assertEquals(
-            "the layer fills the picture",
-            Color.WHITE,
-            button.icon
-                ?.icon
-                ?.bitmap
-                ?.getPixel(64, 64),
-        )
+        assertEquals(1, asked)
     }
 
     @Test
-    fun `an app whose icon has no layers gets the standard app icon on the button`() {
+    fun `on the main window the button shows the list of songs`() {
         installThePlayer()
 
-        val template = WindowScreen(car).onGetTemplate() as NavigationTemplate
+        assertEquals(R.drawable.ic_playlist, iconOf(buttonOf(WindowScreen(car))))
+    }
 
-        assertEquals(listOf(Action.APP_ICON), template.actionStrip?.actions)
+    /** It lies over the X of the equalizer and the list, which is hard to hit beside it. */
+    @Test
+    fun `on another window the button is an X`() {
+        installThePlayer()
+        val screen = WindowScreen(car)
+
+        screen.mainUp = false
+
+        assertEquals(R.drawable.ic_close, iconOf(buttonOf(screen)))
+    }
+
+    private fun buttonOf(screen: WindowScreen): Action =
+        (screen.onGetTemplate() as NavigationTemplate).actionStrip?.actions?.single() as Action
+
+    private fun iconOf(button: Action): Int {
+        val icon = checkNotNull(button.icon)
+        assertEquals(CarIcon.TYPE_CUSTOM, icon.type)
+        return checkNotNull(icon.icon).resId
     }
 
     @Test

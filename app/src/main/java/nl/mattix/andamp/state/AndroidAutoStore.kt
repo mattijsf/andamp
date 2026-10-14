@@ -41,13 +41,14 @@ class AndroidAutoStore(
             prefs.edit().apply { if (value == null) remove(SKIN) else putString(SKIN, value) }.apply()
         }
 
-    private var filling: Boolean by mutableStateOf(prefs.getBoolean(FILL, false))
+    private var filling: Boolean by mutableStateOf(prefs.getBoolean(FILL, true))
 
     /**
-     * Android Auto's own Double Size: whether the window is made as large as the screen takes. It
-     * is then drawn at a size that is no whole number of pixels to one of its own, which
-     * softens their edges. Off, it is drawn at the largest whole number that fits, with black
-     * around it. The phone's Double Size is another switch and is not touched from there.
+     * Android Auto's own Double Size: whether the window is made as large as the screen takes,
+     * which it is until the listener switches it off. It is then drawn at a size that is no
+     * whole number of pixels to one of its own, which softens their edges. Off, it is drawn at
+     * the largest whole number that fits, with black around it. The phone's Double Size is
+     * another switch and is not touched from there.
      */
     var fill: Boolean
         get() = filling
