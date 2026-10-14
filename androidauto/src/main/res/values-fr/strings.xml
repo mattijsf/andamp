@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="no_player">Installez ou mettez à jour Andamp sur ce téléphone pour le voir ici.</string>
+    <string name="update_player">Mettez à jour Andamp sur votre téléphone : certaines choses ici demandent un Andamp plus récent.</string>
+    <string name="update_this_app">Mettez à jour Autoamp sur votre téléphone : certaines choses ici demandent un Autoamp plus récent.</string>
 </resources>

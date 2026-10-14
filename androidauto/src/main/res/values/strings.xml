@@ -2,4 +2,6 @@
 <resources>
     <string name="app_name">Autoamp</string>
     <string name="no_player">Install or update Andamp on this phone to see it here.</string>
+    <string name="update_player">Update Andamp on your phone: some things here need a newer Andamp.</string>
+    <string name="update_this_app">Update Autoamp on your phone: some things here need a newer Autoamp.</string>
 </resources>

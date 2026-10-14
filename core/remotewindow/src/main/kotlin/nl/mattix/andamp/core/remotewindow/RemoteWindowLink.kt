@@ -2,6 +2,8 @@
 
 package nl.mattix.andamp.core.remotewindow
 
+import android.content.pm.ApplicationInfo
+
 /** How the player and the app that lends it a surface find each other. */
 object RemoteWindowLink {
     /** The action of the player's service, which hands out an [IRemoteWindow]. */
@@ -27,11 +29,14 @@ object RemoteWindowLink {
     const val PROTOCOL = 2
 
     /**
-     * The name of the lender's meta-data entry, on its application, that says which [PROTOCOL]
-     * it speaks. A lender without the entry speaks the first.
+     * The name of the meta-data entry, on the application of the player and of the lender, that
+     * says which [PROTOCOL] it speaks. An app without the entry speaks the first.
      */
     const val PROTOCOL_KEY = "nl.mattix.andamp.window.PROTOCOL"
 
-    /** The protocol of a lender that does not say. */
+    /** The protocol of an app that does not say. */
     const val FIRST_PROTOCOL = 1
+
+    /** The protocol the app [app] describes speaks, read with its meta-data; the first when it does not say. */
+    fun protocolOf(app: ApplicationInfo?): Int = app?.metaData?.getInt(PROTOCOL_KEY, FIRST_PROTOCOL) ?: FIRST_PROTOCOL
 }

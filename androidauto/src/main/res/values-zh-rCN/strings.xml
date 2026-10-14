@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="no_player">请在这部手机上安装或更新 Andamp，才能在这里看到它。</string>
+    <string name="update_player">请更新手机上的 Andamp：此处的部分功能需要更新版本的 Andamp。</string>
+    <string name="update_this_app">请更新手机上的 Autoamp：此处的部分功能需要更新版本的 Autoamp。</string>
 </resources>
