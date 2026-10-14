@@ -7,6 +7,17 @@
     <string name="prefs_android_auto_skin_note">In Android Auto trägt das Hauptfenster diesen Skin. „Standard“ behält den, den du für den Player gewählt hast.</string>
     <string name="prefs_android_auto_skin_heading">Skin in Android Auto</string>
     <string name="prefs_android_auto_list_section">Playlist</string>
+    <string name="prefs_android_auto_status_section">Status</string>
+    <string name="prefs_android_auto_versions_section">Versionen</string>
+    <string name="prefs_android_auto_protocol">Protokoll %1$d</string>
+    <string name="prefs_android_auto_from_play">Android Auto zeigt die App im Auto</string>
+    <string name="prefs_android_auto_not_from_play">Android Auto zeigt die App nicht im Auto</string>
+    <string name="prefs_android_auto_not_from_play_about">Android Auto zeigt Andamp for Android Auto in einem Auto nur, wenn Google Play die App installiert hat.</string>
+    <string name="prefs_android_auto_matches">Kompatibel mit diesem Andamp</string>
+    <string name="prefs_android_auto_older">Aktualisiere Andamp for Android Auto</string>
+    <string name="prefs_android_auto_older_about">Die App ist älter als dieses Andamp, daher funktioniert im Auto vielleicht nicht alles.</string>
+    <string name="prefs_android_auto_newer">Aktualisiere Andamp</string>
+    <string name="prefs_android_auto_newer_about">Die App ist neuer als dieses Andamp, daher funktioniert im Auto vielleicht nicht alles.</string>
 
     <!-- EffectsPage.kt -->
     <string name="prefs_effects_unavailable_summary">Dieses Wiedergabe-Backend unterstützt keine Effekte.</string>

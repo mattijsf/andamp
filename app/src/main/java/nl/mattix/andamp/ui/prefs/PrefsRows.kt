@@ -93,7 +93,7 @@ internal fun Modifier.prefsRow(selected: Boolean = false): Modifier =
 
 /** The list item's own background is off; the row's comes from [prefsRow]. */
 @Composable
-private fun rowColors() = ListItemDefaults.colors(containerColor = Color.Transparent)
+internal fun rowColors() = ListItemDefaults.colors(containerColor = Color.Transparent)
 
 /**
  * A row that goes somewhere: a page of this screen, or out of the app. The whole row is the target.
