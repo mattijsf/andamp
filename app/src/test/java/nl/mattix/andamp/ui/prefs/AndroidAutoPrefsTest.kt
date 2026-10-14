@@ -122,7 +122,7 @@ class AndroidAutoPrefsTest {
         compose.onNodeWithTag("prefs.androidauto.check.play.warning").assertExists()
         compose.onNodeWithText("Android Auto won't show it in a car").assertExists()
         compose.onNodeWithTag("prefs.androidauto.check.version.warning").assertExists()
-        compose.onNodeWithText("Update Andamp for Android Auto").assertExists()
+        compose.onNodeWithText("Update Autoamp").assertExists()
     }
 
     @Test

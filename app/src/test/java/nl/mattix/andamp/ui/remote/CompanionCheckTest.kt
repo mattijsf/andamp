@@ -18,7 +18,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 
-/** What Preferences > Android Auto checks about Andamp for Android Auto. */
+/** What Preferences > Android Auto checks about Autoamp. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class CompanionCheckTest {

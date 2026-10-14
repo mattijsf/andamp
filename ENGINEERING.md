@@ -391,8 +391,8 @@ edits the playlist. A car can be the first thing in the process to ask for the s
 
 **With its own window, through `:androidauto`.** Android Auto gives a drawing surface to
 navigation apps only, and Play's review of a car app turns down a music player that says it
-is one. So the player stays a media app in every build, and the screen is an app of its
-own, installed beside it, whose id is the player's with `.androidauto` after it. Android
+is one. So the player stays a media app in every build, and the screen is a separate app,
+Autoamp, installed beside it, whose id is the player's with `.androidauto` after it. Android
 Auto shows such an app in a car only when the phone records Google Play as its installer;
 its "Unknown sources" switch covers media apps, not these. The Desktop Head Unit shows it
 however it was installed.

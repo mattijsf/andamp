@@ -5,8 +5,8 @@
 # down, and its support page opens the website. Direct downloads, Obtainium and app catalogs that
 # read GitHub releases all take this one file.
 #
-# A second, small APK goes with it: the app Android Auto talks to (:androidauto), which lends the
-# car's screen to Andamp. Both are signed with the same key.
+# A second, small APK goes with it: Autoamp, the app Android Auto talks to (:androidauto), which
+# lends the car's screen to Andamp. Both are signed with the same key.
 #
 # release-please.yml calls this when it has made a release, which is a draft at that point: a
 # published release in this repository is immutable and takes no more files. This attaches the
@@ -113,9 +113,9 @@ jobs:
             fi
           }
           named app/build/outputs/apk/release/app-release.apk "andamp-$version.apk"
-          named androidauto/build/outputs/apk/release/androidauto-release.apk "andamp-android-auto-companion-$version.apk"
+          named androidauto/build/outputs/apk/release/androidauto-release.apk "andamp-autoamp-$version.apk"
           echo "file=andamp-$version.apk" >> "$GITHUB_OUTPUT"
-          echo "auto=andamp-android-auto-companion-$version.apk" >> "$GITHUB_OUTPUT"
+          echo "auto=andamp-autoamp-$version.apk" >> "$GITHUB_OUTPUT"
 
       - name: Attach them to the release, then publish the release
         if: env.TAG != ''

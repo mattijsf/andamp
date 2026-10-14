@@ -17,9 +17,8 @@ release changed.
 
 Each [release](https://github.com/mattijsf/andamp/releases) also carries an APK for installing
 without Google Play. It is signed with a different key than a Play install, so the two do not
-update each other. A second, small APK beside it, `andamp-android-auto-companion`, is the app
-that brings the Android Auto screen described below. It works beside an Andamp from either
-place.
+update each other. A second, small APK beside it, `andamp-autoamp`, is Autoamp: the app that
+brings the Android Auto screen described below. It works beside an Andamp from either place.
 
 What works:
 
@@ -33,9 +32,8 @@ What works:
 - DSP effects in Preferences, extendable with `.lua` plug-ins.
 - A visualizer window running AVS and Milkdrop presets.
 - A floating player that stays on top of other apps (Android 11+), and a home-screen widget.
-- Android Auto: its own player with the playlist to pick from. With the
-  `andamp-android-auto-companion` app beside it, Andamp also puts its skinned main window on
-  the car's screen. Android Auto shows an app with a screen of its own in a car only when the
+- Android Auto: its own player with the playlist to pick from. With Autoamp beside it,
+  Andamp also puts its skinned main window on the car's screen. Android Auto shows an app with a screen of its own in a car only when the
   phone records Google Play as its installer.
 - A browser for the Winamp Skin Museum.
 - Jellyfin, Plex and Subsonic servers, through music sources that install as separate apps
