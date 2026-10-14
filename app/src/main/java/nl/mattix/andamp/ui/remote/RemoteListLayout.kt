@@ -12,9 +12,10 @@ import nl.mattix.andamp.ui.window.PleditFrame
  * Where the playlist on a lent surface puts its parts, in the window's own pixels.
  *
  * It is the skin's playlist frame with a thin border in place of the bottom bar and its
- * buttons: the top bar, the two sides, and between them rows made for a finger. A row is at
- * least twice the height of the playlist window's, and at least [touchPx] surface pixels, the
- * smallest thing a car's screen asks a driver to hit. Each row begins with a square button as high as the row, which plays it.
+ * buttons: the top bar, the two sides, and between them rows made for a finger. A row is
+ * [touchPx] surface pixels high, the smallest thing a car's screen asks a driver to hit, and
+ * no lower than the playlist window's. Each row begins with a square button as high as the
+ * row, which plays it.
  * The window is as wide as whole steps of the frame allow in a room [roomW] by [roomH]
  * surface pixels at [scale], and as tall as the room.
  */
@@ -25,7 +26,7 @@ internal class RemoteListLayout(
     touchPx: Int = 0,
 ) {
     /** The height of a row. */
-    val rowH = maxOf(Dest.PL_ROW_H * 2, (touchPx + scale - 1) / scale)
+    val rowH = maxOf(Dest.PL_ROW_H, (touchPx + scale - 1) / scale)
 
     /** The size of the rows' text, which keeps the share of a row it has in the playlist window. */
     val fontSize = rowH * ListText.FONT_SIZE / Dest.PL_ROW_H * TEXT_SHARE

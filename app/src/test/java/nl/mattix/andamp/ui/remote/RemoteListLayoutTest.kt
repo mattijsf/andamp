@@ -24,8 +24,13 @@ class RemoteListLayoutTest {
     }
 
     @Test
-    fun `a row is twice the playlist window's`() {
-        assertEquals(26, car.rowH)
+    fun `a row is as high as a finger needs`() {
+        assertEquals("76 surface pixels at four to one", 19, car.rowH)
+    }
+
+    @Test
+    fun `a row is never lower than the playlist window's`() {
+        assertEquals(13, RemoteListLayout(1280, 720, scale = 4, touchPx = 20).rowH)
     }
 
     @Test
@@ -52,12 +57,12 @@ class RemoteListLayoutTest {
     @Test
     fun `the rows start under the top bar`() {
         assertEquals(0, car.rowAt(20f, offset = 0f))
-        assertEquals(1, car.rowAt(46f, offset = 0f))
+        assertEquals(1, car.rowAt(39f, offset = 0f))
     }
 
     @Test
     fun `scrolling moves other rows under the finger`() {
-        assertEquals(2, car.rowAt(20f, offset = 52f))
+        assertEquals(2, car.rowAt(20f, offset = 38f))
     }
 
     @Test
@@ -67,14 +72,15 @@ class RemoteListLayoutTest {
 
     @Test
     fun `a long list scrolls until its last row is at the bottom`() {
-        assertEquals(100 * 26 - 146, car.farthest(rows = 100))
+        assertEquals(100 * 19 - 146, car.farthest(rows = 100))
     }
 
     @Test
     fun `the row that is on opens in the middle`() {
         val offset = car.showing(row = 50, rows = 100)
 
-        assertEquals("the row's middle is the list's middle", 20 + 146 / 2, 20 + 50 * 26 + 13 - offset)
+        // within a pixel: a row of odd height has its middle between two
+        assertEquals("the row's middle is the list's middle", 20 + 146 / 2f, 20 + 50 * 19 + 19 / 2f - offset, 1f)
     }
 
     @Test
@@ -86,13 +92,13 @@ class RemoteListLayoutTest {
     @Test
     fun `a row begins with a play button as wide as the row is high`() {
         assertTrue("just inside the frame", car.onPlay(12f))
-        assertTrue("at the button's far side", car.onPlay(37f))
-        assertEquals(12 + 26, car.playRight)
+        assertTrue("at the button's far side", car.onPlay(30f))
+        assertEquals(12 + 19, car.playRight)
     }
 
     @Test
     fun `the row's text and its length are not the play button`() {
-        assertTrue(!car.onPlay(38f))
+        assertTrue(!car.onPlay(31f))
         assertTrue(!car.onPlay(250f))
     }
 
