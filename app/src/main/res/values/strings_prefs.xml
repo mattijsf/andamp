@@ -8,17 +8,16 @@
     <string name="prefs_android_auto_skin_heading">Skin in Android Auto</string>
     <string name="prefs_android_auto_list_section">Playlist</string>
     <string name="prefs_android_auto_status_section">Status</string>
-    <string name="prefs_android_auto_installed">Andamp for Android Auto %1$s is on this phone.</string>
+    <string name="prefs_android_auto_versions_section">Versions</string>
+    <string name="prefs_android_auto_companion_name" translatable="false">Andamp for Android Auto</string>
     <string name="prefs_android_auto_from_play">Android Auto will show it in the car</string>
-    <string name="prefs_android_auto_from_play_about">Google Play is recorded as the app that installed it.</string>
     <string name="prefs_android_auto_not_from_play">Android Auto won\'t show it in a car</string>
     <string name="prefs_android_auto_not_from_play_about">Android Auto shows Andamp for Android Auto in a car only when Google Play installed it.</string>
     <string name="prefs_android_auto_matches">Compatible with this Andamp</string>
-    <string name="prefs_android_auto_matches_about">It supports everything this Andamp offers in Android Auto.</string>
     <string name="prefs_android_auto_older">Update Andamp for Android Auto</string>
-    <string name="prefs_android_auto_older_about">It lacks some of what this Andamp offers in Android Auto.</string>
+    <string name="prefs_android_auto_older_about">It is older than this Andamp, so some things may not work in the car.</string>
     <string name="prefs_android_auto_newer">Update Andamp</string>
-    <string name="prefs_android_auto_newer_about">It offers more than this Andamp can show in Android Auto.</string>
+    <string name="prefs_android_auto_newer_about">It is newer than this Andamp, so some things may not work in the car.</string>
 
     <!-- EffectsPage.kt -->
     <string name="prefs_effects_unavailable_summary">This playback backend does not run effects.</string>

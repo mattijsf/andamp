@@ -51,7 +51,7 @@ class CompanionCheckTest {
     }
 
     private fun check(protocol: Int) =
-        CompanionCheck(fromPlay = true, version = "0.16.0", protocol = protocol, playerProtocol = 2)
+        CompanionCheck(fromPlay = true, version = "0.16.0", playerVersion = "0.16.0", protocol = protocol, playerProtocol = 2)
 
     /** A release that changes nothing between the two apps leaves them matched, whatever its version. */
     @Test

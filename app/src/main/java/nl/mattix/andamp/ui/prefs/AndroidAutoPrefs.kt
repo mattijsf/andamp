@@ -85,54 +85,55 @@ internal fun AndroidAutoPage(prefs: AndroidAutoPrefs) {
     }
     Section(stringResource(R.string.prefs_android_auto_list_section))
     Group { PlaylistFontChoice(prefs.listFont, prefs.onListFont, tag = "prefs.androidauto.font") }
+    checked?.let { Versions(it) }
+}
+
+/** Which releases are on the phone: this Andamp's and the app Android Auto talks to. */
+@Composable
+private fun Versions(check: CompanionCheck) {
+    Section(stringResource(R.string.prefs_android_auto_versions_section))
+    Group {
+        StatRow(stringResource(R.string.app_name), check.playerVersion)
+        StatRow(stringResource(R.string.prefs_android_auto_companion_name), check.version)
+    }
 }
 
 /** Whether the window can be expected to show in the car: one row for each thing that has to be right. */
 @Composable
 private fun CompanionStatus(check: CompanionCheck) {
     Section(stringResource(R.string.prefs_android_auto_status_section))
-    Note(stringResource(R.string.prefs_android_auto_installed, check.version))
     Group {
-        val play = check.fromPlay
         CheckRow(
-            ok = play,
-            title = if (play) R.string.prefs_android_auto_from_play else R.string.prefs_android_auto_not_from_play,
-            about =
-                stringResource(
-                    if (play) R.string.prefs_android_auto_from_play_about else R.string.prefs_android_auto_not_from_play_about,
-                ),
+            title = if (check.fromPlay) R.string.prefs_android_auto_from_play else R.string.prefs_android_auto_not_from_play,
+            warning = R.string.prefs_android_auto_not_from_play_about.takeUnless { check.fromPlay },
             what = "play",
         )
-        val match = check.match
         CheckRow(
-            ok = match == CompanionCheck.Match.SAME,
             title =
-                when (match) {
+                when (check.match) {
                     CompanionCheck.Match.SAME -> R.string.prefs_android_auto_matches
                     CompanionCheck.Match.BEHIND -> R.string.prefs_android_auto_older
                     CompanionCheck.Match.AHEAD -> R.string.prefs_android_auto_newer
                 },
-            about =
-                stringResource(
-                    when (match) {
-                        CompanionCheck.Match.SAME -> R.string.prefs_android_auto_matches_about
-                        CompanionCheck.Match.BEHIND -> R.string.prefs_android_auto_older_about
-                        CompanionCheck.Match.AHEAD -> R.string.prefs_android_auto_newer_about
-                    },
-                ),
+            warning =
+                when (check.match) {
+                    CompanionCheck.Match.SAME -> null
+                    CompanionCheck.Match.BEHIND -> R.string.prefs_android_auto_older_about
+                    CompanionCheck.Match.AHEAD -> R.string.prefs_android_auto_newer_about
+                },
             what = "version",
         )
     }
 }
 
-/** One thing checked: a tick when it is right, a warning when it is not, and what that means. */
+/** One thing checked: a tick when it is right, or a warning that says what it means, [warning], when it is not. */
 @Composable
 private fun CheckRow(
-    ok: Boolean,
     title: Int,
-    about: String,
+    warning: Int?,
     what: String,
 ) {
+    val ok = warning == null
     ListItem(
         leadingContent = {
             Icon(
@@ -142,7 +143,7 @@ private fun CheckRow(
             )
         },
         headlineContent = { Text(stringResource(title)) },
-        supportingContent = { Text(about) },
+        supportingContent = warning?.let { { Text(stringResource(it)) } },
         colors = rowColors(),
         modifier = Modifier.prefsRow().testTag("prefs.androidauto.check.$what.${if (ok) "ok" else "warning"}"),
     )
