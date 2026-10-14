@@ -8,7 +8,7 @@ import android.os.Build
 import nl.mattix.andamp.core.remotewindow.RemoteWindowLink
 
 /**
- * What the phone can tell about Andamp for Android Auto, the app Android Auto talks to: whether
+ * What the phone can tell about Autoamp, the app Android Auto talks to: whether
  * a car will show it, and whether it speaks the same [protocol] as this Andamp. Preferences >
  * Android Auto shows it, so a listener can see whether the window can be expected to show in
  * the car. This Andamp lends that app the window whatever key signed it; see
@@ -61,7 +61,7 @@ data class CompanionCheck(
             initiating: String?,
         ): Boolean = installing == PLAY && initiating != SHELL
 
-        /** The check of the Andamp for Android Auto this Andamp belongs with, or null when it is not on the phone. */
+        /** The check of the Autoamp this Andamp belongs with, or null when it is not on the phone. */
         fun of(context: Context): CompanionCheck? {
             val packages = context.packageManager
             val companion = RemoteWindowLink.lenderOf(context.packageName)

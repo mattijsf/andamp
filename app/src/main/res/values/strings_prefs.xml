@@ -10,12 +10,12 @@
     <string name="prefs_android_auto_status_section">Status</string>
     <string name="prefs_android_auto_versions_section">Versions</string>
     <string name="prefs_android_auto_protocol">Protocol %1$d</string>
-    <string name="prefs_android_auto_companion_name" translatable="false">Andamp for Android Auto</string>
+    <string name="prefs_android_auto_companion_name" translatable="false">Autoamp</string>
     <string name="prefs_android_auto_from_play">Android Auto will show it in the car</string>
     <string name="prefs_android_auto_not_from_play">Android Auto won\'t show it in a car</string>
-    <string name="prefs_android_auto_not_from_play_about">Android Auto shows Andamp for Android Auto in a car only when Google Play installed it.</string>
+    <string name="prefs_android_auto_not_from_play_about">Android Auto shows Autoamp in a car only when Google Play installed it.</string>
     <string name="prefs_android_auto_matches">Compatible with this Andamp</string>
-    <string name="prefs_android_auto_older">Update Andamp for Android Auto</string>
+    <string name="prefs_android_auto_older">Update Autoamp</string>
     <string name="prefs_android_auto_older_about">It is older than this Andamp, so some things may not work in the car.</string>
     <string name="prefs_android_auto_newer">Update Andamp</string>
     <string name="prefs_android_auto_newer_about">It is newer than this Andamp, so some things may not work in the car.</string>
