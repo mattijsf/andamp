@@ -133,6 +133,7 @@ internal class RemoteWindow(
                         upNow,
                         fill = chosen.fill,
                         onFill = { chosen.fill = !chosen.fill },
+                        listFont = chosen.listFont,
                     )
                 }
             }

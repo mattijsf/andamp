@@ -12,6 +12,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import nl.mattix.andamp.state.EnglishWords
+import nl.mattix.andamp.state.PlaylistFont
 import nl.mattix.andamp.state.SkinEntry
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -20,7 +21,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** Preferences > Android Auto: the skin the main window wears on a car's screen. */
+/** Preferences > Android Auto: the skin the main window wears on a car's screen, and the font of the list. */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h891dp-mdpi")
 class AndroidAutoPrefsTest {
@@ -72,6 +73,24 @@ class AndroidAutoPrefsTest {
         compose.onNodeWithTag("prefs.androidauto.skin.default").performClick()
 
         assertEquals(null, chosen())
+    }
+
+    @Test
+    fun `the list's font is chosen apart from the skin`() {
+        var font by mutableStateOf(PlaylistFont.REGULAR)
+        compose.setContent {
+            Column {
+                AndroidAutoPage(
+                    AndroidAutoPrefs(offered = true, skins = skins, listFont = font, onListFont = { font = it }),
+                )
+            }
+        }
+
+        compose.onNodeWithTag("prefs.androidauto.font.regular").assertIsSelected()
+        compose.onNodeWithTag("prefs.androidauto.font.skin").performClick()
+
+        assertEquals(PlaylistFont.SKIN, font)
+        compose.onNodeWithTag("prefs.androidauto.font.skin").assertIsSelected()
     }
 
     @Test

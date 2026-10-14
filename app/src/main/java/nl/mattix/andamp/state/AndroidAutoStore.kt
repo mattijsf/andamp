@@ -14,8 +14,8 @@ import nl.mattix.andamp.core.remotewindow.RemoteWindowLink
  *
  * A car's screen shows the main window through an app of its own, which Android Auto talks to
  * and which lends the screen to the player; see
- * [nl.mattix.andamp.ui.remote.RemoteWindowService]. Two choices are kept: the skin worn there,
- * chosen on Preferences > Android Auto, where none means the player's own, and whether the
+ * [nl.mattix.andamp.ui.remote.RemoteWindowService]. Three choices are kept: the skin worn
+ * there and the font of the list, both chosen on Preferences > Android Auto, and whether the
  * window fills the screen, which the D in the window there switches.
  *
  * Held as snapshot state too, so the window in Android Auto and the page both follow a
@@ -57,6 +57,21 @@ class AndroidAutoStore(
             prefs.edit().putBoolean(FILL, value).apply()
         }
 
+    private var font: PlaylistFont by mutableStateOf(
+        PlaylistFont.entries.firstOrNull { it.name == prefs.getString(LIST_FONT, null) } ?: PlaylistFont.REGULAR,
+    )
+
+    /**
+     * The font of the list in Android Auto, the regular one until the listener picks the
+     * skin's. The phone's playlist font is another choice and is not touched from here.
+     */
+    var listFont: PlaylistFont
+        get() = font
+        set(value) {
+            font = value
+            prefs.edit().putString(LIST_FONT, value.name).apply()
+        }
+
     /** The skin worn in Android Auto over the player's own, or null when that one is worn. */
     val worn: String? get() = chosen?.takeIf(installed)
 
@@ -69,6 +84,7 @@ class AndroidAutoStore(
         private const val PREFS = "android_auto"
         private const val SKIN = "skin"
         private const val FILL = "fill"
+        private const val LIST_FONT = "list_font"
 
         /**
          * Whether the app Android Auto talks to is on this phone, which is when these settings

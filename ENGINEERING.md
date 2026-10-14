@@ -404,10 +404,10 @@ calls of an app signed with the player's own key or with the key of the releases
 presentation that composes `RemoteScreen`: the main window at the largest whole scale that
 fits, on black. Its EQ button swaps the screen to the equalizer, and its PL button to
 `RemoteList`, a list with rows a finger can hit, each with a play button that plays it. The
-skin there is the one chosen on Preferences > Android Auto. The D in that main window is
-Android Auto's own Double Size: the window then fills the screen, laid out at the next whole
-scale up and shrunk as one picture, as on a phone. Both choices are kept in
-`AndroidAutoStore`, apart from the phone's.
+skin there and the font of the list are the ones chosen on Preferences > Android Auto. The D
+in that main window is Android Auto's own Double Size: the window then fills the screen,
+laid out at the next whole scale up and shrunk as one picture, as on a phone. The three
+choices are kept in `AndroidAutoStore`, apart from the phone's.
 
 Android Auto reports a tap by its place and a drag by its distance alone. A tap is passed on
 as a press and a release. A drag scrolls the list while the list is up. On the main window

@@ -5,12 +5,13 @@ package nl.mattix.andamp.ui.prefs
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import nl.mattix.andamp.R
+import nl.mattix.andamp.state.PlaylistFont
 import nl.mattix.andamp.state.SkinEntry
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.Words
 
 /**
- * Preferences > Android Auto: what the main window looks like in Android Auto.
+ * Preferences > Android Auto: what the main window and the list look like in Android Auto.
  *
  * The page is offered on a phone that has the app Android Auto talks to; see
  * [nl.mattix.andamp.state.AndroidAutoStore.companionInstalled].
@@ -22,6 +23,9 @@ data class AndroidAutoPrefs(
     /** The skin chosen for Android Auto, or null for the player's own. */
     val skin: String? = null,
     val onSkin: (String?) -> Unit = {},
+    /** The font of the list in Android Auto; see [nl.mattix.andamp.state.AndroidAutoStore.listFont]. */
+    val listFont: PlaylistFont = PlaylistFont.REGULAR,
+    val onListFont: (PlaylistFont) -> Unit = {},
 )
 
 /** The Android Auto settings, read off the view model. [offered] is whether this phone has the app Android Auto talks to. */
@@ -33,6 +37,8 @@ fun androidAutoPrefsOf(
     skins = vm.state.skinEntries,
     skin = vm.androidAutoStore.skin,
     onSkin = { vm.androidAutoStore.skin = it },
+    listFont = vm.androidAutoStore.listFont,
+    onListFont = { vm.androidAutoStore.listFont = it },
 )
 
 /** The summary on the row that opens the page. */
@@ -53,4 +59,6 @@ internal fun AndroidAutoPage(prefs: AndroidAutoPrefs) {
             onPick = prefs.onSkin,
         )
     }
+    Section(stringResource(R.string.prefs_android_auto_list_section))
+    Group { PlaylistFontChoice(prefs.listFont, prefs.onListFont, tag = "prefs.androidauto.font") }
 }

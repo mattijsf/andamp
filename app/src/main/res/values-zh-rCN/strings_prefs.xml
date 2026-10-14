@@ -6,6 +6,7 @@
     <string name="prefs_android_auto_skin_section">皮肤</string>
     <string name="prefs_android_auto_skin_note">在 Android Auto 中，主窗口使用这个皮肤。“默认”沿用您为播放器选择的皮肤。</string>
     <string name="prefs_android_auto_skin_heading">Android Auto 中的皮肤</string>
+    <string name="prefs_android_auto_list_section">播放列表</string>
 
     <!-- EffectsPage.kt -->
     <string name="prefs_effects_unavailable_summary">此播放后端不支持效果。</string>

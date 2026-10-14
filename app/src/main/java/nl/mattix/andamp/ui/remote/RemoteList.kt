@@ -37,6 +37,7 @@ import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.skin.Sheet
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SpriteMap
+import nl.mattix.andamp.state.PlaylistFont
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.rowLabel
@@ -66,7 +67,8 @@ import kotlin.math.roundToInt
  * [HeldSlider].
  *
  * It fills [room], which is in the pixels of [fit]'s surface, and opens with the row that is
- * on in the middle.
+ * on in the middle. The rows are written in [font]: the regular one, or the skin's; see
+ * [SkinRows].
  */
 @Composable
 @Suppress("LongParameterList") // a window: its player, its skin, its room and what it reports
@@ -77,6 +79,7 @@ internal fun RemoteList(
     fit: PlayerViewport,
     scroll: ListScroll,
     sliders: Sliders,
+    font: PlaylistFont = PlaylistFont.REGULAR,
     onClose: () -> Unit,
 ) {
     val s = vm.state
@@ -91,6 +94,11 @@ internal fun RemoteList(
     val paint =
         remember(skin.pledit.fontName, layout.fontSize) {
             ListText.paint(ListText.typefaceFor(skin.pledit.fontName, arialLike)).apply { textSize = layout.fontSize }
+        }
+    val skinRows =
+        remember(skin, font, layout, scale) {
+            if (font != PlaylistFont.SKIN) return@remember null
+            PlaylistTextRasterizer.glyphMaskOf(skin[Sheet.TEXT])?.let { SkinRows(it, layout, scale) }
         }
     var pressed by remember { mutableIntStateOf(NO_ROW) }
     val rows = s.playlist.size
@@ -131,7 +139,7 @@ internal fun RemoteList(
     Box(Modifier.offset { corner }) {
         // cut with the skin's corner, as the playlist window is at whatever size it has
         ScaledWindowCanvas(layout.width, layout.height, scale, s, widgets, cut = SkinCut(skin)) {
-            drawRemoteList(skin, s, layout, scroll.offset / perPixel, pressed, paint)
+            drawRemoteList(skin, s, layout, scroll.offset / perPixel, pressed, paint, skinRows)
         }
     }
 }
@@ -213,6 +221,8 @@ private fun DrawScope.drawRemoteList(
     offset: Float,
     pressed: Int,
     paint: Paint,
+    /** The rows in the skin's font, or null for the regular one. */
+    skinRows: SkinRows?,
 ) {
     val style = skin.pledit
     val listW = (layout.listRight - layout.listLeft).toFloat()
@@ -232,8 +242,15 @@ private fun DrawScope.drawRemoteList(
                 drawRect(style.selectedBg, Offset(layout.listLeft.toFloat(), top), Size(side, side))
             }
             drawPlayButton(layout, top, color)
+            val track = s.playlist[row]
+            val title = "${row + 1}. ${s.rowLabel(track, row)}"
+            val length = formatTime(track.durationSec)
             paint.color = color.toArgb()
-            drawRow(s, layout, row, top, paint)
+            if (skinRows != null && skinRows.spell(title)) {
+                drawIntoCanvas { skinRows.draw(it.nativeCanvas, title, length, paint.color, top) }
+            } else {
+                drawRow(layout, title, length, top, paint)
+            }
         }
     }
 
@@ -268,24 +285,22 @@ private fun DrawScope.drawPlayButton(
     drawPath(arrow, color)
 }
 
-/** One row's text: its number and name after the play button, cut off before its length on the right. */
+/** One row's text in the regular font: [title] after the play button, cut off before its [length] on the right. */
 private fun DrawScope.drawRow(
-    s: WinampState,
     layout: RemoteListLayout,
-    row: Int,
+    title: String,
+    length: String,
     top: Float,
     paint: Paint,
 ) {
-    val track = s.playlist[row]
     val baseline = ListText.baseline(paint, top, layout.rowH)
-    val length = formatTime(track.durationSec)
     val lengthX = layout.listRight - ROW_INSET - paint.measureText(length)
     drawIntoCanvas { canvas ->
         val native = canvas.nativeCanvas
         native.drawText(length, lengthX, baseline, paint)
         native.save()
         native.clipRect(layout.playRight.toFloat(), top, lengthX - 2 * ROW_INSET, top + layout.rowH)
-        native.drawText("${row + 1}. ${s.rowLabel(track, row)}", layout.playRight.toFloat(), baseline, paint)
+        native.drawText(title, layout.playRight.toFloat(), baseline, paint)
         native.restore()
     }
 }
