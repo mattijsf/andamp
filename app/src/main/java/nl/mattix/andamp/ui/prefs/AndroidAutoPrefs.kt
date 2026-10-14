@@ -2,7 +2,9 @@
 
 package nl.mattix.andamp.ui.prefs
 
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.Icon
@@ -15,6 +17,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
@@ -117,6 +120,9 @@ private fun VersionRow(
     )
 }
 
+/** The page on andamp.nl about Android Auto, with a section for each warning below. */
+internal const val ANDROID_AUTO_HELP = "https://andamp.nl/android-auto"
+
 /** Whether the window can be expected to show in the car: one row for each thing that has to be right. */
 @Composable
 private fun CompanionStatus(check: CompanionCheck) {
@@ -125,6 +131,7 @@ private fun CompanionStatus(check: CompanionCheck) {
         CheckRow(
             title = if (check.fromPlay) R.string.prefs_android_auto_from_play else R.string.prefs_android_auto_not_from_play,
             warning = R.string.prefs_android_auto_not_from_play_about.takeUnless { check.fromPlay },
+            help = "$ANDROID_AUTO_HELP#not-in-car",
             what = "play",
         )
         CheckRow(
@@ -140,19 +147,32 @@ private fun CompanionStatus(check: CompanionCheck) {
                     CompanionCheck.Match.BEHIND -> R.string.prefs_android_auto_older_about
                     CompanionCheck.Match.AHEAD -> R.string.prefs_android_auto_newer_about
                 },
+            help =
+                if (check.match ==
+                    CompanionCheck.Match.AHEAD
+                ) {
+                    "$ANDROID_AUTO_HELP#update-andamp"
+                } else {
+                    "$ANDROID_AUTO_HELP#update-autoamp"
+                },
             what = "version",
         )
     }
 }
 
-/** One thing checked: a tick when it is right, or a warning that says what it means, [warning], when it is not. */
+/**
+ * One thing checked: a tick when it is right, or a warning that says what it means, [warning],
+ * when it is not. A warning opens [help], the part of andamp.nl that says what to do about it.
+ */
 @Composable
 private fun CheckRow(
     title: Int,
     warning: Int?,
+    help: String,
     what: String,
 ) {
     val ok = warning == null
+    val links = LocalUriHandler.current
     ListItem(
         leadingContent = {
             Icon(
@@ -163,7 +183,12 @@ private fun CheckRow(
         },
         headlineContent = { Text(stringResource(title)) },
         supportingContent = warning?.let { { Text(stringResource(it)) } },
+        trailingContent = if (ok) null else ({ Icon(Icons.AutoMirrored.Filled.OpenInNew, contentDescription = null) }),
         colors = rowColors(),
-        modifier = Modifier.prefsRow().testTag("prefs.androidauto.check.$what.${if (ok) "ok" else "warning"}"),
+        modifier =
+            Modifier
+                .prefsRow()
+                .then(if (ok) Modifier else Modifier.clickable { links.openUri(help) })
+                .testTag("prefs.androidauto.check.$what.${if (ok) "ok" else "warning"}"),
     )
 }

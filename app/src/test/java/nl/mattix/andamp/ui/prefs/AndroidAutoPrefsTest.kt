@@ -3,9 +3,12 @@
 package nl.mattix.andamp.ui.prefs
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -145,6 +148,64 @@ class AndroidAutoPrefsTest {
         compose.onNodeWithText("0.16.0").assertExists()
         compose.onNodeWithText("0.15.0").assertExists()
         compose.onAllNodesWithText("Protocol 2").assertCountEquals(2)
+    }
+
+    /** Shows [check] with links opened into [opened] instead of a browser. */
+    private fun showCheckedOpening(
+        check: CompanionCheck,
+        opened: MutableList<String>,
+    ) {
+        val links =
+            object : UriHandler {
+                override fun openUri(uri: String) {
+                    opened += uri
+                }
+            }
+        compose.setContent {
+            CompositionLocalProvider(LocalUriHandler provides links) {
+                Column { AndroidAutoPage(AndroidAutoPrefs(offered = true, skins = skins, check = { check })) }
+            }
+        }
+    }
+
+    @Test
+    fun `a warning opens the part of the Android Auto page that says what to do`() {
+        val opened = mutableListOf<String>()
+        showCheckedOpening(
+            CompanionCheck(fromPlay = false, version = "0.14.0", playerVersion = "0.15.0", protocol = 1, playerProtocol = 2),
+            opened,
+        )
+
+        compose.onNodeWithTag("prefs.androidauto.check.play.warning").performClick()
+        compose.onNodeWithTag("prefs.androidauto.check.version.warning").performClick()
+
+        assertEquals(listOf("https://andamp.nl/android-auto#not-in-car", "https://andamp.nl/android-auto#update-autoamp"), opened)
+    }
+
+    @Test
+    fun `a newer Autoamp sends the listener to update Andamp`() {
+        val opened = mutableListOf<String>()
+        showCheckedOpening(
+            CompanionCheck(fromPlay = true, version = "0.17.0", playerVersion = "0.16.0", protocol = 3, playerProtocol = 2),
+            opened,
+        )
+
+        compose.onNodeWithTag("prefs.androidauto.check.version.warning").performClick()
+
+        assertEquals(listOf("https://andamp.nl/android-auto#update-andamp"), opened)
+    }
+
+    @Test
+    fun `a tick opens nothing`() {
+        val opened = mutableListOf<String>()
+        showCheckedOpening(
+            CompanionCheck(fromPlay = true, version = "0.16.0", playerVersion = "0.16.0", protocol = 2, playerProtocol = 2),
+            opened,
+        )
+
+        compose.onNodeWithTag("prefs.androidauto.check.play.ok").performClick()
+
+        assertEquals(emptyList<String>(), opened)
     }
 
     @Test
