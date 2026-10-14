@@ -107,6 +107,23 @@ are set once in the root build for every Android module.
   rule off everywhere.
 - **Native libraries are compiled with `-ffile-prefix-map`.** Without it, every assert's
   `__FILE__` puts the absolute checkout path into the APK.
+- **The baseline profile is committed.** `app/src/main/generated/baselineProfiles` lists the
+  classes and methods a start and the first screens run. A release build packages it as
+  `assets/dexopt/baseline.prof`. An install from Play compiles that code ahead of time. On
+  an install from elsewhere, profileinstaller hands the profile to ART on the first start,
+  and ART compiles it when the phone is next idle. The startup profile beside it orders the
+  dex (`dexLayoutOptimization`). `:baselineprofile` writes both on a device on API 33 or
+  later:
+
+  ```bash
+  ANDROID_SERIAL=emulator-5554 ./gradlew :app:generateBaselineProfile
+  ANDROID_SERIAL=emulator-5554 ./gradlew :baselineprofile:connectedBenchmarkReleaseAndroidTest
+  ```
+
+  The first regenerates the profile; run it after a change to what the app starts with. The
+  second measures a cold start without the profile, with it and fully compiled. Both install
+  on every device adb sees unless `ANDROID_SERIAL` names one. Neither is part of `gate`, and
+  the build types they use are signed with the debug key.
 
 ### The source SDK
 

@@ -28,6 +28,8 @@ import javax.inject.Inject
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.android.library) apply false
+    alias(libs.plugins.android.test) apply false
+    alias(libs.plugins.baselineprofile) apply false
     alias(libs.plugins.kotlin.jvm) apply false
     alias(libs.plugins.kotlin.compose) apply false
     alias(libs.plugins.detekt) apply false
@@ -316,7 +318,7 @@ tasks.register<DocsSite>("docsSite") {
 // says what is its own - a namespace, an application id, what it depends on.
 subprojects {
     val module = this
-    listOf("com.android.application", "com.android.library").forEach { android ->
+    listOf("com.android.application", "com.android.library", "com.android.test").forEach { android ->
         plugins.withId(android) {
             module.extensions.configure<CommonExtension>("android") {
                 compileSdk = 36

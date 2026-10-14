@@ -12,6 +12,7 @@ plugins {
     alias(libs.plugins.roborazzi)
     alias(libs.plugins.detekt)
     alias(libs.plugins.play.publisher)
+    alias(libs.plugins.baselineprofile)
 }
 
 /**
@@ -312,7 +313,29 @@ android {
     }
 }
 
+// The classes and methods a cold start and the first screens run, which Play compiles ahead of time
+// when it installs the app, so they are not interpreted and JIT-compiled on first use. On an install
+// from elsewhere, profileinstaller hands the profile to ART on the first start.
+//
+// `:baselineprofile` writes the profile on a device into `src/main/generated/baselineProfiles`,
+// where it is committed, so a release build packages it without one. A build never generates it;
+// `./gradlew :app:generateBaselineProfile` does, after a change to what the app starts with.
+baselineProfile {
+    automaticGenerationDuringBuild = false
+    mergeIntoMain = true
+    // R8 puts the classes of the startup profile first in the dex, so a start reads fewer pages
+    dexLayoutOptimization = true
+}
+
 androidComponents {
+    // The baseline profile plugin's build types, which copy release's, signed with the debug key: they
+    // are installed on a test device and never handed out, so they need neither the upload key nor
+    // its passwords.
+    finalizeDsl { android ->
+        android.buildTypes
+            .filter { it.name.startsWith("benchmark") || it.name.startsWith("nonMinified") }
+            .forEach { it.signingConfig = android.signingConfigs.getByName("debug") }
+    }
     onVariants { variant ->
         // AGP 9 does not take a provider through the source-set API; a generated directory is added
         // through the variant API.
@@ -395,6 +418,8 @@ dependencies {
     implementation(libs.activity.compose)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)
+    implementation(libs.androidx.profileinstaller)
+    baselineProfile(project(":baselineprofile"))
     if (store == "play") {
         implementation(libs.billing.ktx) // the tip jar: tips are bought through Google Play
     }
@@ -414,10 +439,11 @@ dependencies {
  * Something signed with the upload key comes out of it: a release packaged,
  * installed or sent. Matched on the whole name and on the packaging verbs
  * only, because a bare "Release" also matches `testReleaseUnitTest`, and unit
- * tests need no passwords.
+ * tests need no passwords; `assembleBenchmarkRelease` and the other build types
+ * of the baseline profile are signed with the debug key.
  */
 fun Task.signsARelease(): Boolean {
-    val packages = name.endsWith("Release") && listOf("assemble", "bundle", "install").any { name.startsWith(it) }
+    val packages = listOf("assemble", "bundle", "install").any { name == "${it}Release" }
     val sends = "Release" in name && (name.startsWith("publish") || name.startsWith("upload"))
     return packages || sends
 }

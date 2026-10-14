@@ -5,6 +5,7 @@ package nl.mattix.andamp.ui
 import android.app.Activity
 import android.os.SystemClock
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.ReportDrawn
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Spring
@@ -245,6 +246,8 @@ fun WinampScreen(
         }
         composable(Screen.PLAYER) {
             if (skin == null) return@composable // black screen until the base skin is decoded
+            // a start counts as done once the player is drawn in its skin (time to full display)
+            ReportDrawn()
             // One surface lays the player out at a time. This composition keeps recomposing
             // after ON_STOP, and with the floating player up, two layout passes would write
             // the same window rectangles, each measured against its own screen.
