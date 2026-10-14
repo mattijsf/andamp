@@ -9,7 +9,7 @@
     <string name="prefs_android_auto_list_section">播放列表</string>
     <string name="prefs_android_auto_status_section">状态</string>
     <string name="prefs_android_auto_versions_section">版本</string>
-    <string name="prefs_android_auto_version_protocol">%1$s · 协议 %2$d</string>
+    <string name="prefs_android_auto_protocol">协议 %1$d</string>
     <string name="prefs_android_auto_from_play">Android Auto 会在汽车中显示它</string>
     <string name="prefs_android_auto_not_from_play">Android Auto 不会在汽车中显示它</string>
     <string name="prefs_android_auto_not_from_play_about">只有通过 Google Play 安装时，Android Auto 才会在汽车中显示 Andamp for Android Auto。</string>

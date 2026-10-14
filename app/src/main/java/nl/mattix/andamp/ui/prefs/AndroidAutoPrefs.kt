@@ -96,15 +96,25 @@ internal fun AndroidAutoPage(prefs: AndroidAutoPrefs) {
 private fun Versions(check: CompanionCheck) {
     Section(stringResource(R.string.prefs_android_auto_versions_section))
     Group {
-        StatRow(
-            stringResource(R.string.app_name),
-            stringResource(R.string.prefs_android_auto_version_protocol, check.playerVersion, check.playerProtocol),
-        )
-        StatRow(
-            stringResource(R.string.prefs_android_auto_companion_name),
-            stringResource(R.string.prefs_android_auto_version_protocol, check.version, check.protocol),
-        )
+        VersionRow(stringResource(R.string.app_name), check.playerVersion, check.playerProtocol)
+        VersionRow(stringResource(R.string.prefs_android_auto_companion_name), check.version, check.protocol)
     }
+}
+
+/** One app's release on the right, and under its name the protocol it speaks. */
+@Composable
+private fun VersionRow(
+    app: String,
+    version: String,
+    protocol: Int,
+) {
+    ListItem(
+        headlineContent = { Text(app) },
+        supportingContent = { Text(stringResource(R.string.prefs_android_auto_protocol, protocol)) },
+        trailingContent = { Text(version, style = MaterialTheme.typography.bodyLarge) },
+        colors = rowColors(),
+        modifier = Modifier.prefsRow(),
+    )
 }
 
 /** Whether the window can be expected to show in the car: one row for each thing that has to be right. */
