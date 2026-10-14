@@ -143,6 +143,26 @@
                 <data android:pathPattern="/andamp/extensions/plugins/.*\\.lua" />
             </intent-filter>
         </activity>
+        <!--
+          The way into Preferences from outside: the "Additional settings in the app" button on
+          the phone's App info page, and the Android Auto page that the app Android Auto talks
+          to opens. See SettingsEntryActivity.
+        -->
+        <activity
+            android:name=".SettingsEntryActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter>
+                <action android:name="android.intent.action.APPLICATION_PREFERENCES" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="nl.mattix.andamp.window.SETTINGS" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
 
         <receiver
             android:name="nl.mattix.andamp.widget.MainWindowWidget"

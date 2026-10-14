@@ -3,4 +3,5 @@
     <string name="no_player">Installeer Andamp op deze telefoon, of werk de app bij, om de speler hier te zien.</string>
     <string name="update_player">Werk Andamp op je telefoon bij: voor sommige dingen hier is een nieuwere Andamp nodig.</string>
     <string name="update_this_app">Werk Autoamp op je telefoon bij: voor sommige dingen hier is een nieuwere Autoamp nodig.</string>
+    <string name="settings_need_player">Deze instellingen staan in Andamp. Installeer eerst Andamp op deze telefoon.</string>
 </resources>

@@ -9,6 +9,12 @@ object RemoteWindowLink {
     /** The action of the player's service, which hands out an [IRemoteWindow]. */
     const val ACTION = "nl.mattix.andamp.window.BIND"
 
+    /**
+     * The action of the player's activity that opens its Android Auto settings, where the
+     * settings of the app that lends a surface live too. A player from before it has none.
+     */
+    const val SETTINGS = "nl.mattix.andamp.window.SETTINGS"
+
     /** What the id of the app that lends a surface has after the id of its player. */
     private const val LENDER = ".androidauto"
 

@@ -3,4 +3,5 @@
     <string name="no_player">Installiere oder aktualisiere Andamp auf diesem Smartphone, um es hier zu sehen.</string>
     <string name="update_player">Aktualisiere Andamp auf deinem Smartphone: Manches hier braucht ein neueres Andamp.</string>
     <string name="update_this_app">Aktualisiere Autoamp auf deinem Smartphone: Manches hier braucht ein neueres Autoamp.</string>
+    <string name="settings_need_player">Diese Einstellungen sind in Andamp. Installiere zuerst Andamp auf diesem Smartphone.</string>
 </resources>

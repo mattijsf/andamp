@@ -4,4 +4,5 @@
     <string name="no_player">Install or update Andamp on this phone to see it here.</string>
     <string name="update_player">Update Andamp on your phone: some things here need a newer Andamp.</string>
     <string name="update_this_app">Update Autoamp on your phone: some things here need a newer Autoamp.</string>
+    <string name="settings_need_player">These settings are in Andamp. Install Andamp on this phone first.</string>
 </resources>
