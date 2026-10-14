@@ -3,6 +3,7 @@
 package nl.mattix.andamp.core.remotewindow;
 
 import android.view.Surface;
+import nl.mattix.andamp.core.remotewindow.IRemoteWindowWatcher;
 
 /**
  * The player's main window, shown on a surface another app lends it.
@@ -43,8 +44,14 @@ oneway interface IRemoteWindow {
     void fling(float vx, float vy);
 
     /**
-     * The caller's own button for the list of songs: the list comes up, or, when it
-     * is up, the main window comes back.
+     * The caller's own button: on the main window it brings up the list of songs, and
+     * on the equalizer or the list it brings the main window back.
      */
-    void togglePlaylist();
+    void listOrBack();
+
+    /**
+     * Tells [watcher] whether the main window is up, at once and each time that
+     * changes, until the window is taken off the surface.
+     */
+    void watch(IRemoteWindowWatcher watcher);
 }

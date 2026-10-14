@@ -16,8 +16,10 @@ import android.os.IBinder
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
 import nl.mattix.andamp.core.remotewindow.IRemoteWindow
+import nl.mattix.andamp.core.remotewindow.IRemoteWindowWatcher
 import nl.mattix.andamp.core.remotewindow.RemoteWindowLink
 import org.junit.After
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -26,6 +28,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import java.io.File
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
@@ -201,17 +204,51 @@ class LendToPlayerOnDeviceTest {
     }
 
     @Test
-    fun theButtonForTheListBringsItUpAndTakesItAway() {
+    fun theButtonBringsUpTheListAndTakesItAway() {
         showSharp()
         val main = buttonsOf(pictureAfter(SETTLE_MS, "lent-20-main.png"))
 
-        player?.togglePlaylist()
+        player?.listOrBack()
         val list = buttonsOf(pictureAfter(SETTLE_MS, "lent-21-list.png"))
-        player?.togglePlaylist()
+        player?.listOrBack()
         val back = buttonsOf(pictureAfter(SETTLE_MS, "lent-22-main-again.png"))
 
         assertFalse("the list has taken the main window's place", main.contentEquals(list))
         assertTrue("the main window is back", main.contentEquals(back))
+    }
+
+    @Test
+    fun theButtonTakesTheEqualizerAwayToo() {
+        showSharp()
+        val main = buttonsOf(pictureAfter(SETTLE_MS, "lent-26-main.png"))
+
+        player?.tap(WINDOW_LEFT + EQ_X * SCALE, WINDOW_TOP + EQ_Y * SCALE)
+        pictureAfter(SETTLE_MS, "lent-27-equalizer.png")
+        player?.listOrBack()
+        val back = buttonsOf(pictureAfter(SETTLE_MS, "lent-28-main-again.png"))
+
+        assertTrue("the main window is back", main.contentEquals(back))
+    }
+
+    @Test
+    fun theOwnerIsToldWhetherTheMainWindowIsUp() {
+        val heard = LinkedBlockingQueue<Boolean>()
+        val watcher =
+            object : IRemoteWindowWatcher.Stub() {
+                override fun mainUp(up: Boolean) {
+                    heard += up
+                }
+            }
+        showSharp()
+
+        player?.watch(watcher)
+        val first = heard.poll(WAIT_S, TimeUnit.SECONDS)
+        player?.tap(WINDOW_LEFT + EQ_X * SCALE, WINDOW_TOP + EQ_Y * SCALE)
+        val equalizer = heard.poll(WAIT_S, TimeUnit.SECONDS)
+        player?.listOrBack()
+        val back = heard.poll(WAIT_S, TimeUnit.SECONDS)
+
+        assertEquals(listOf(true, false, true), listOf(first, equalizer, back))
     }
 
     /** The owner keeps room free for buttons it shows now and then; filling, the window takes it too. */

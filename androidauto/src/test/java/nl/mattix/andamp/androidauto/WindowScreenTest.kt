@@ -60,17 +60,42 @@ class WindowScreenTest {
     }
 
     @Test
-    fun `the button on the surface brings up the list of songs`() {
+    fun `the button on the surface is passed on`() {
         installThePlayer()
         var asked = 0
-        val template = WindowScreen(car, onPlaylist = { asked++ }).onGetTemplate() as NavigationTemplate
-        val button = template.actionStrip?.actions?.single() as Action
+        val button = buttonOf(WindowScreen(car, onButton = { asked++ }))
 
         button.onClickDelegate?.sendClick(object : OnDoneCallback {})
         shadowOf(Looper.getMainLooper()).idle()
 
         assertEquals(1, asked)
-        assertEquals(CarIcon.TYPE_CUSTOM, button.icon?.type)
+    }
+
+    @Test
+    fun `on the main window the button shows the list of songs`() {
+        installThePlayer()
+
+        assertEquals(R.drawable.ic_playlist, iconOf(buttonOf(WindowScreen(car))))
+    }
+
+    /** It lies over the X of the equalizer and the list, which is hard to hit beside it. */
+    @Test
+    fun `on another window the button is an X`() {
+        installThePlayer()
+        val screen = WindowScreen(car)
+
+        screen.mainUp = false
+
+        assertEquals(R.drawable.ic_close, iconOf(buttonOf(screen)))
+    }
+
+    private fun buttonOf(screen: WindowScreen): Action =
+        (screen.onGetTemplate() as NavigationTemplate).actionStrip?.actions?.single() as Action
+
+    private fun iconOf(button: Action): Int {
+        val icon = checkNotNull(button.icon)
+        assertEquals(CarIcon.TYPE_CUSTOM, icon.type)
+        return checkNotNull(icon.icon).resId
     }
 
     @Test

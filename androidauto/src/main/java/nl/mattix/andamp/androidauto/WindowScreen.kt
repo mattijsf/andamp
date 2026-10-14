@@ -15,31 +15,40 @@ import androidx.core.graphics.drawable.IconCompat
 
 /**
  * The one screen: the car's surface with nothing of the car's over it but the strip of
- * buttons the template requires. Its one button calls [onPlaylist], which brings the list of
- * songs up and takes it away again. Without a player on the phone that lends its window, it
- * says what to do.
+ * buttons the template requires. Its one button calls [onButton]. While the player's main
+ * window is up ([mainUp]) it shows the list of songs, which it brings up; while the equalizer
+ * or the list is up it is an X, which brings the main window back. Without a player on the
+ * phone that lends its window, it says what to do.
  */
 internal class WindowScreen(
     carContext: CarContext,
-    private val onPlaylist: () -> Unit = {},
+    private val onButton: () -> Unit = {},
 ) : Screen(carContext) {
+    /** Whether the player's main window is up, as the player last said. */
+    var mainUp = true
+        set(value) {
+            if (field == value) return
+            field = value
+            invalidate()
+        }
+
     override fun onGetTemplate(): Template = if (Player.reach(carContext) != null) surface() else noPlayer()
 
     private fun surface(): Template =
         NavigationTemplate
             .Builder()
-            .setActionStrip(ActionStrip.Builder().addAction(playlistButton()).build())
+            .setActionStrip(ActionStrip.Builder().addAction(button()).build())
             // the car reports what happens on the surface only to a template with this button
             .setMapActionStrip(ActionStrip.Builder().addAction(Action.PAN).build())
             .build()
 
-    /** The one button the template requires: the list of songs, up or away. */
-    private fun playlistButton(): Action {
-        val rows = IconCompat.createWithResource(carContext, R.drawable.ic_playlist)
+    /** The one button the template requires: the list of songs, or an X back to the main window. */
+    private fun button(): Action {
+        val icon = IconCompat.createWithResource(carContext, if (mainUp) R.drawable.ic_playlist else R.drawable.ic_close)
         return Action
             .Builder()
-            .setIcon(CarIcon.Builder(rows).setTint(CarColor.DEFAULT).build())
-            .setOnClickListener { onPlaylist() }
+            .setIcon(CarIcon.Builder(icon).setTint(CarColor.DEFAULT).build())
+            .setOnClickListener { onButton() }
             .build()
     }
 

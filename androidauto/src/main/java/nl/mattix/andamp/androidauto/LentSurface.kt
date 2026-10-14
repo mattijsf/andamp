@@ -12,6 +12,7 @@ import android.os.Looper
 import androidx.car.app.SurfaceCallback
 import androidx.car.app.SurfaceContainer
 import nl.mattix.andamp.core.remotewindow.IRemoteWindow
+import nl.mattix.andamp.core.remotewindow.IRemoteWindowWatcher
 
 /**
  * The car's surface, lent to the player.
@@ -24,15 +25,27 @@ import nl.mattix.andamp.core.remotewindow.IRemoteWindow
  * The player can come and go while the surface stays: each time it is reached, it is handed
  * the surface as it is then. A player that was replaced, by an update, is reached for again:
  * the binding to the one before it brings no player back.
+ *
+ * The player says whether its main window is up, which is passed to [onMainUp] on the main
+ * thread.
  */
 internal class LentSurface(
     private val context: Context,
+    private val onMainUp: (Boolean) -> Unit = {},
 ) : SurfaceCallback {
     private var held: SurfaceContainer? = null
     private var uncovered: Rect? = null
     private var player: IRemoteWindow? = null
     private var bound = false
     private val main = Handler(Looper.getMainLooper())
+
+    /** Hears from the player, on a binder thread, whether its main window is up. */
+    private val watcher =
+        object : IRemoteWindowWatcher.Stub() {
+            override fun mainUp(up: Boolean) {
+                main.post { onMainUp(up) }
+            }
+        }
 
     /** How many more times the player is reached for after a try that found none. */
     private var tries = 0
@@ -93,8 +106,8 @@ internal class LentSurface(
 
     override fun onSurfaceDestroyed(surfaceContainer: SurfaceContainer) = takeBack()
 
-    /** The list of songs comes up on the surface, or goes when it is up. */
-    fun togglePlaylist() = tell { togglePlaylist() }
+    /** The list of songs comes up from the main window; from any other, the main window comes back. */
+    fun listOrBack() = tell { listOrBack() }
 
     /** Ends the loan: the player takes its window down, and is let go. */
     fun takeBack() {
@@ -132,6 +145,7 @@ internal class LentSurface(
         val surface = container.surface ?: return
         tell { show(surface, container.width, container.height, container.dpi) }
         uncovered?.let { area -> tell { keepTo(area.left, area.top, area.right, area.bottom) } }
+        tell { watch(watcher) }
     }
 
     /** A call to the player, dropped when the player is not there or has just gone. */

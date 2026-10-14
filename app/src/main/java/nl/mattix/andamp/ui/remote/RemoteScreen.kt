@@ -151,14 +151,24 @@ internal enum class Up { MAIN, EQUALIZER, PLAYLIST }
 
 /**
  * Which window a lent surface shows. The buttons in the windows change it, and so does the
- * surface's owner, through [togglePlaylist].
+ * surface's owner, through [listOrBack]. Each change is reported to [changed].
  */
-internal class Showing {
-    var up by mutableStateOf(Up.MAIN)
+internal class Showing(
+    private val changed: () -> Unit = {},
+) {
+    private var now by mutableStateOf(Up.MAIN)
 
-    /** The list of songs if it is not up, the main window if it is. */
-    fun togglePlaylist() {
-        up = if (up == Up.PLAYLIST) Up.MAIN else Up.PLAYLIST
+    var up: Up
+        get() = now
+        set(value) {
+            if (value == now) return
+            now = value
+            changed()
+        }
+
+    /** The list of songs from the main window; from the equalizer or the list, the main window. */
+    fun listOrBack() {
+        up = if (up == Up.MAIN) Up.PLAYLIST else Up.MAIN
     }
 }
 

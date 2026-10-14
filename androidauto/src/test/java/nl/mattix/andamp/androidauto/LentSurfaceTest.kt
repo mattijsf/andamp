@@ -13,6 +13,7 @@ import android.view.Surface
 import androidx.car.app.SurfaceContainer
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.core.remotewindow.IRemoteWindow
+import nl.mattix.andamp.core.remotewindow.IRemoteWindowWatcher
 import nl.mattix.andamp.core.remotewindow.RemoteWindowLink
 import org.junit.Assert.assertEquals
 import org.junit.Before
@@ -79,10 +80,17 @@ class LentSurfaceTest {
                 told += "fling $vx,$vy"
             }
 
-            override fun togglePlaylist() {
-                told += "playlist"
+            override fun listOrBack() {
+                told += "listOrBack"
+            }
+
+            override fun watch(watcher: IRemoteWindowWatcher) {
+                watchers += watcher
             }
         }
+
+    /** The watchers the player was handed, which it tells whether its main window is up. */
+    private val watchers = mutableListOf<IRemoteWindowWatcher>()
 
     private val service = ComponentName(RemoteWindowLink.playerOf(app.packageName), "RemoteWindowService")
 
@@ -238,11 +246,34 @@ class LentSurfaceTest {
     }
 
     @Test
-    fun `the button for the list of songs is passed on`() {
+    fun `the button on the surface is passed on`() {
         val lent = handedOver()
 
-        lent.togglePlaylist()
+        lent.listOrBack()
 
-        assertEquals("playlist", told.last())
+        assertEquals("listOrBack", told.last())
+    }
+
+    @Test
+    fun `what the player says about its main window is passed on`() {
+        val heard = mutableListOf<Boolean>()
+        LentSurface(app, onMainUp = { heard += it }).onSurfaceAvailable(container())
+        shadowOf(Looper.getMainLooper()).idle()
+
+        watchers.single().mainUp(false)
+        watchers.single().mainUp(true)
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertEquals(listOf(false, true), heard)
+    }
+
+    @Test
+    fun `a player reached again is watched again`() {
+        handedOver()
+
+        shadowOf(app).boundServiceConnections.single().onBindingDied(service)
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertEquals(2, watchers.size)
     }
 }

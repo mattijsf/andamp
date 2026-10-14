@@ -27,6 +27,7 @@ import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import nl.mattix.andamp.core.remotewindow.IRemoteWindowWatcher
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.CurrentSkin
 import nl.mattix.andamp.state.WinampViewModel
@@ -63,8 +64,11 @@ internal class RemoteWindow(
     /** Where the playlist on the surface is scrolled to; a drag on the surface moves it. */
     val list = ListScroll()
 
-    /** Which window is up on the surface. */
-    private val upNow = Showing()
+    /** Which window is up on the surface; [watcher] is told of each change. */
+    private val upNow = Showing { tellWatcher() }
+
+    /** The owner of the surface, told whether the main window is up, until [hide]. */
+    private var watcher: IRemoteWindowWatcher? = null
 
     /** Where the sliders of the window that is up are; the screen keeps it told. */
     private val sliders = Sliders()
@@ -93,7 +97,7 @@ internal class RemoteWindow(
         height: Int,
         densityDpi: Int,
     ) {
-        hide()
+        takeDown()
         // a new surface starts on the main window
         upNow.up = Up.MAIN
         val displays = context.getSystemService(DisplayManager::class.java) ?: return
@@ -219,17 +223,35 @@ internal class RemoteWindow(
         slider.letGo()
     }
 
-    /** The owner's button for the list of songs: the list comes up, or the main window comes back. */
-    fun togglePlaylist() {
+    /** The owner's button: the list comes up from the main window, or the main window comes back. */
+    fun listOrBack() {
         finishTap()
         main.removeCallbacks(lift)
         main.removeCallbacks(forget)
         slider.tapped(null)
-        upNow.togglePlaylist()
+        upNow.listOrBack()
+    }
+
+    /** Tells [watcher] whether the main window is up, now and at each change, until [hide]. */
+    fun watch(watcher: IRemoteWindowWatcher?) {
+        this.watcher = watcher
+        tellWatcher()
+    }
+
+    /** A watcher that has gone is not told; the call returns at once. */
+    private fun tellWatcher() {
+        val told = watcher ?: return
+        runCatching { told.mainUp(upNow.up == Up.MAIN) }
+    }
+
+    /** Takes the window off the surface, lets the display go and stops telling the watcher. */
+    fun hide() {
+        takeDown()
+        watcher = null
     }
 
     /** Takes the window off the surface and lets the display go. */
-    fun hide() {
+    private fun takeDown() {
         finishTap()
         main.removeCallbacks(lift)
         main.removeCallbacks(forget)

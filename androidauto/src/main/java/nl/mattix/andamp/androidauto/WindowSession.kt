@@ -15,13 +15,15 @@ import androidx.lifecycle.LifecycleOwner
  */
 internal class WindowSession : Session() {
     override fun onCreateScreen(intent: Intent): Screen {
-        val lent = LentSurface(carContext)
+        lateinit var screen: WindowScreen
+        val lent = LentSurface(carContext, onMainUp = { up -> screen.mainUp = up })
         carContext.getCarService(AppManager::class.java).setSurfaceCallback(lent)
         lifecycle.addObserver(
             object : DefaultLifecycleObserver {
                 override fun onDestroy(owner: LifecycleOwner) = lent.takeBack()
             },
         )
-        return WindowScreen(carContext, onPlaylist = lent::togglePlaylist)
+        screen = WindowScreen(carContext, onButton = lent::listOrBack)
+        return screen
     }
 }
