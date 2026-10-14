@@ -2,16 +2,33 @@
 
 package nl.mattix.andamp.ui.prefs
 
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material.icons.outlined.WarningAmber
+import androidx.compose.material3.Icon
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import nl.mattix.andamp.R
 import nl.mattix.andamp.state.PlaylistFont
 import nl.mattix.andamp.state.SkinEntry
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.Words
+import nl.mattix.andamp.ui.remote.CompanionCheck
 
 /**
- * Preferences > Android Auto: what the main window and the list look like in Android Auto.
+ * Preferences > Android Auto: whether the window can be expected to show in the car, and what
+ * the main window and the list look like there.
  *
  * The page is offered on a phone that has the app Android Auto talks to; see
  * [nl.mattix.andamp.state.AndroidAutoStore.companionInstalled].
@@ -26,6 +43,8 @@ data class AndroidAutoPrefs(
     /** The font of the list in Android Auto; see [nl.mattix.andamp.state.AndroidAutoStore.listFont]. */
     val listFont: PlaylistFont = PlaylistFont.REGULAR,
     val onListFont: (PlaylistFont) -> Unit = {},
+    /** Checks that app, each time the page is shown; null when it is not on the phone. */
+    val check: () -> CompanionCheck? = { null },
 )
 
 /** The Android Auto settings, read off the view model. [offered] is whether this phone has the app Android Auto talks to. */
@@ -39,6 +58,7 @@ fun androidAutoPrefsOf(
     onSkin = { vm.androidAutoStore.skin = it },
     listFont = vm.androidAutoStore.listFont,
     onListFont = { vm.androidAutoStore.listFont = it },
+    check = { CompanionCheck.of(vm.getApplication()) },
 )
 
 /** The summary on the row that opens the page. */
@@ -48,6 +68,10 @@ fun AndroidAutoPrefs.summary(words: Words): String =
 
 @Composable
 internal fun AndroidAutoPage(prefs: AndroidAutoPrefs) {
+    // checked again on coming back to the page, after an install or an update elsewhere
+    var checked by remember { mutableStateOf(prefs.check()) }
+    LifecycleEventEffect(Lifecycle.Event.ON_RESUME) { checked = prefs.check() }
+    checked?.let { CompanionStatus(it) }
     Section(stringResource(R.string.prefs_android_auto_skin_section))
     Note(stringResource(R.string.prefs_android_auto_skin_note))
     Group {
@@ -61,4 +85,85 @@ internal fun AndroidAutoPage(prefs: AndroidAutoPrefs) {
     }
     Section(stringResource(R.string.prefs_android_auto_list_section))
     Group { PlaylistFontChoice(prefs.listFont, prefs.onListFont, tag = "prefs.androidauto.font") }
+    checked?.let { Versions(it) }
+}
+
+/**
+ * Which releases are on the phone, this Andamp's and the app Android Auto talks to, each with
+ * the version of the interface between them it speaks.
+ */
+@Composable
+private fun Versions(check: CompanionCheck) {
+    Section(stringResource(R.string.prefs_android_auto_versions_section))
+    Group {
+        VersionRow(stringResource(R.string.app_name), check.playerVersion, check.playerProtocol)
+        VersionRow(stringResource(R.string.prefs_android_auto_companion_name), check.version, check.protocol)
+    }
+}
+
+/** One app's release on the right, and under its name the protocol it speaks. */
+@Composable
+private fun VersionRow(
+    app: String,
+    version: String,
+    protocol: Int,
+) {
+    ListItem(
+        headlineContent = { Text(app) },
+        supportingContent = { Text(stringResource(R.string.prefs_android_auto_protocol, protocol)) },
+        trailingContent = { Text(version, style = MaterialTheme.typography.bodyLarge) },
+        colors = rowColors(),
+        modifier = Modifier.prefsRow(),
+    )
+}
+
+/** Whether the window can be expected to show in the car: one row for each thing that has to be right. */
+@Composable
+private fun CompanionStatus(check: CompanionCheck) {
+    Section(stringResource(R.string.prefs_android_auto_status_section))
+    Group {
+        CheckRow(
+            title = if (check.fromPlay) R.string.prefs_android_auto_from_play else R.string.prefs_android_auto_not_from_play,
+            warning = R.string.prefs_android_auto_not_from_play_about.takeUnless { check.fromPlay },
+            what = "play",
+        )
+        CheckRow(
+            title =
+                when (check.match) {
+                    CompanionCheck.Match.SAME -> R.string.prefs_android_auto_matches
+                    CompanionCheck.Match.BEHIND -> R.string.prefs_android_auto_older
+                    CompanionCheck.Match.AHEAD -> R.string.prefs_android_auto_newer
+                },
+            warning =
+                when (check.match) {
+                    CompanionCheck.Match.SAME -> null
+                    CompanionCheck.Match.BEHIND -> R.string.prefs_android_auto_older_about
+                    CompanionCheck.Match.AHEAD -> R.string.prefs_android_auto_newer_about
+                },
+            what = "version",
+        )
+    }
+}
+
+/** One thing checked: a tick when it is right, or a warning that says what it means, [warning], when it is not. */
+@Composable
+private fun CheckRow(
+    title: Int,
+    warning: Int?,
+    what: String,
+) {
+    val ok = warning == null
+    ListItem(
+        leadingContent = {
+            Icon(
+                if (ok) Icons.Outlined.CheckCircle else Icons.Outlined.WarningAmber,
+                contentDescription = null,
+                tint = if (ok) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+            )
+        },
+        headlineContent = { Text(stringResource(title)) },
+        supportingContent = warning?.let { { Text(stringResource(it)) } },
+        colors = rowColors(),
+        modifier = Modifier.prefsRow().testTag("prefs.androidauto.check.$what.${if (ok) "ok" else "warning"}"),
+    )
 }

@@ -6,14 +6,17 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import nl.mattix.andamp.state.EnglishWords
 import nl.mattix.andamp.state.PlaylistFont
 import nl.mattix.andamp.state.SkinEntry
+import nl.mattix.andamp.ui.remote.CompanionCheck
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -91,6 +94,64 @@ class AndroidAutoPrefsTest {
 
         assertEquals(PlaylistFont.SKIN, font)
         compose.onNodeWithTag("prefs.androidauto.font.skin").assertIsSelected()
+    }
+
+    private fun showChecked(check: CompanionCheck) {
+        compose.setContent { Column { AndroidAutoPage(AndroidAutoPrefs(offered = true, skins = skins, check = { check })) } }
+    }
+
+    @Test
+    fun `with everything right each check has a tick and nothing more`() {
+        showChecked(
+            CompanionCheck(fromPlay = true, version = "0.15.0", playerVersion = "0.16.0", protocol = 2, playerProtocol = 2),
+        )
+
+        compose.onNodeWithTag("prefs.androidauto.check.play.ok").assertExists()
+        compose.onNodeWithTag("prefs.androidauto.check.version.ok").assertExists()
+        compose.onNodeWithText("Compatible with this Andamp").assertExists()
+        // a tick needs no explaining: only a warning says what it means
+        compose.onNodeWithText("Google Play", substring = true, useUnmergedTree = true).assertDoesNotExist()
+    }
+
+    @Test
+    fun `each thing that is wrong is a warning that says what it means`() {
+        showChecked(
+            CompanionCheck(fromPlay = false, version = "0.14.0", playerVersion = "0.15.0", protocol = 1, playerProtocol = 2),
+        )
+
+        compose.onNodeWithTag("prefs.androidauto.check.play.warning").assertExists()
+        compose.onNodeWithText("Android Auto won't show it in a car").assertExists()
+        compose.onNodeWithTag("prefs.androidauto.check.version.warning").assertExists()
+        compose.onNodeWithText("Update Andamp for Android Auto").assertExists()
+    }
+
+    @Test
+    fun `an app ahead of this Andamp asks for Andamp to be updated`() {
+        showChecked(
+            CompanionCheck(fromPlay = true, version = "0.17.0", playerVersion = "0.16.0", protocol = 3, playerProtocol = 2),
+        )
+
+        compose.onNodeWithTag("prefs.androidauto.check.version.warning").assertExists()
+        compose.onNodeWithText("Update Andamp").assertExists()
+    }
+
+    @Test
+    fun `the versions of both apps and their protocols are at the bottom of the page`() {
+        showChecked(
+            CompanionCheck(fromPlay = true, version = "0.15.0", playerVersion = "0.16.0", protocol = 2, playerProtocol = 2),
+        )
+
+        compose.onNodeWithText("Versions").assertExists()
+        compose.onNodeWithText("0.16.0").assertExists()
+        compose.onNodeWithText("0.15.0").assertExists()
+        compose.onAllNodesWithText("Protocol 2").assertCountEquals(2)
+    }
+
+    @Test
+    fun `without the app to check the page shows no status`() {
+        show()
+
+        compose.onNodeWithText("Status").assertDoesNotExist()
     }
 
     @Test
