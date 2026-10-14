@@ -6,6 +6,7 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import nl.mattix.andamp.core.model.BackendNotice
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.playback.PlaybackBackend
 import nl.mattix.andamp.core.playback.PlaybackBackendContractTest
@@ -16,6 +17,11 @@ import kotlin.random.Random
 class MockBackendTest : PlaybackBackendContractTest() {
     override fun TestScope.createBackend(tracks: List<Track>): PlaybackBackend =
         MockBackend(tracks, backgroundScope, random = Random(seed = 42))
+
+    override fun raise(
+        backend: PlaybackBackend,
+        notice: BackendNotice,
+    ) = (backend as MockBackend).raise(notice)
 
     @Test
     fun `an enqueue while playing leaves the clock where it was`() =

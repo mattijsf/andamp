@@ -3,6 +3,7 @@
 package nl.mattix.andamp.pack.common.stream
 
 import kotlinx.coroutines.test.TestScope
+import nl.mattix.andamp.core.model.BackendNotice
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.playback.PlaybackBackend
 import nl.mattix.andamp.core.playback.PlaybackBackendContractTest
@@ -34,6 +35,11 @@ class StreamBackendTest : PlaybackBackendContractTest() {
             out = FakeAudioOut(backgroundScope),
         )
     }
+
+    override fun raise(
+        backend: PlaybackBackend,
+        notice: BackendNotice,
+    ) = (backend as StreamBackend).raise(notice)
 
     private companion object {
         const val PLAYS = "stream:track:"

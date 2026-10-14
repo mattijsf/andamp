@@ -387,6 +387,33 @@ class StationRedialTest {
         assertNotEquals(Transport.Stopped, subject.state.value.transport)
     }
 
+    /**
+     * The media notification and headset buttons drive the player directly. A start from
+     * there is a new attempt, as the app's own play is, and the notice goes.
+     */
+    @Test
+    fun `a play from outside clears the notice of a lost station`() {
+        val subject = backendOf(station, file)
+        sources.failWith = networkError()
+        subject.play()
+        untilError()
+        repeat(TRIES_TO_OUTLAST) {
+            waitFor(Duration.ofSeconds(40))
+            if (player.playbackState != Player.STATE_IDLE) {
+                TestPlayerRunHelper.run(player).untilPlayerError()
+            }
+            idle()
+        }
+        assertEquals(BackendNotice.StationLost, subject.state.value.notice)
+        sources.failWith = null
+
+        player.play()
+        idle()
+
+        assertEquals(Transport.Playing, subject.state.value.transport)
+        assertNull(subject.state.value.notice)
+    }
+
     private companion object {
         /** More waits of forty seconds than the budget allows tries. */
         const val TRIES_TO_OUTLAST = 14

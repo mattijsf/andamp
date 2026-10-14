@@ -326,7 +326,8 @@ class Media3Backend(
                 refreshConnecting()
                 val s = _state.value
                 if (playWhenReady && s.transport != Transport.Playing) {
-                    _state.value = s.copy(transport = Transport.Playing)
+                    // a start is a new attempt, so the notice about the last one is cleared
+                    _state.value = s.copy(transport = Transport.Playing, notice = null)
                     startPoll()
                 } else if (!playWhenReady && s.transport == Transport.Playing) {
                     stopPoll()
@@ -516,7 +517,7 @@ class Media3Backend(
                 // the player is idle when the pause came during a reconnect
                 wake()
                 player.play()
-                _state.value = _state.value.copy(transport = Transport.Playing)
+                _state.value = _state.value.copy(transport = Transport.Playing, notice = null)
                 startPoll()
             }
 
@@ -642,14 +643,17 @@ class Media3Backend(
         if (s.transport == Transport.Paused) player.play()
     }
 
+    /** A row outside the queue lands on its nearest end, as [nl.mattix.andamp.core.playback.TransportRules.playAt] does. */
     override fun playAt(index: Int) {
-        if (index !in _state.value.queue.indices) return
+        val queue = _state.value.queue
+        if (queue.isEmpty()) return
+        val at = index.coerceIn(queue.indices)
         abandonFade()
         redial.cancel()
         wake()
-        player.seekTo(index, 0)
+        player.seekTo(at, 0)
         player.play()
-        _state.value = _state.value.copy(transport = Transport.Playing, currentIndex = index, positionMs = 0, notice = null)
+        _state.value = _state.value.copy(transport = Transport.Playing, currentIndex = at, positionMs = 0, notice = null)
         startPoll()
     }
 

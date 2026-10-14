@@ -6,10 +6,12 @@ import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
+import nl.mattix.andamp.core.model.BackendNotice
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.core.model.VolumeMode
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -21,6 +23,15 @@ import org.junit.Test
  */
 abstract class PlaybackBackendContractTest {
     protected abstract fun TestScope.createBackend(tracks: List<Track>): PlaybackBackend
+
+    /**
+     * Puts [notice] on [backend] and leaves its transport as it is, standing in for a source
+     * that has given up. No verb raises a notice, so the cases about clearing one need this.
+     */
+    protected abstract fun raise(
+        backend: PlaybackBackend,
+        notice: BackendNotice,
+    )
 
     protected fun tracks(vararg durationsSec: Int): List<Track> =
         durationsSec.mapIndexed { i, sec -> Track("t$i", "Artist $i", "Title $i", sec * 1000L) }
@@ -126,6 +137,32 @@ abstract class PlaybackBackendContractTest {
                 backend.state.value.queue
                     .isEmpty(),
             )
+        }
+
+    @Test
+    fun `playAt past the end of the queue plays its last row`() =
+        runTest {
+            val backend = createBackend(tracks(10, 20, 30))
+
+            backend.playAt(7)
+            runCurrent()
+
+            assertEquals(2, backend.state.value.currentIndex)
+            assertEquals(Transport.Playing, backend.state.value.transport)
+        }
+
+    @Test
+    fun `playAt before the head of the queue plays its first row`() =
+        runTest {
+            val backend = createBackend(tracks(10, 20, 30))
+            backend.next()
+            runCurrent()
+
+            backend.playAt(-1)
+            runCurrent()
+
+            assertEquals(0, backend.state.value.currentIndex)
+            assertEquals(Transport.Playing, backend.state.value.transport)
         }
 
     @Test
@@ -368,6 +405,45 @@ abstract class PlaybackBackendContractTest {
                 Transport.Playing,
                 backend.state.value.transport,
             )
+        }
+
+    @Test
+    fun `a resume from pause clears the notice that stood`() =
+        runTest {
+            val backend = createBackend(tracks(10, 20))
+            backend.play()
+            runCurrent()
+            backend.pause()
+            runCurrent()
+            raise(backend, BackendNotice.SourceCannotPlay)
+            runCurrent()
+            assertEquals(BackendNotice.SourceCannotPlay, backend.state.value.notice)
+
+            backend.pause()
+            runCurrent()
+
+            assertEquals(Transport.Playing, backend.state.value.transport)
+            assertNull(backend.state.value.notice)
+        }
+
+    @Test
+    fun `a skip from pause clears the notice that stood`() =
+        runTest {
+            val backend = createBackend(tracks(10, 20))
+            backend.play()
+            runCurrent()
+            backend.pause()
+            runCurrent()
+            raise(backend, BackendNotice.SourceCannotPlay)
+            runCurrent()
+            assertEquals(BackendNotice.SourceCannotPlay, backend.state.value.notice)
+
+            backend.next()
+            runCurrent()
+
+            assertEquals(1, backend.state.value.currentIndex)
+            assertEquals(Transport.Playing, backend.state.value.transport)
+            assertNull(backend.state.value.notice)
         }
 
     @Test
