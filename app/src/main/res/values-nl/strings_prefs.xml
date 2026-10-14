@@ -7,6 +7,17 @@
     <string name="prefs_android_auto_skin_note">In Android Auto draagt het hoofdvenster deze skin. Standaard houdt de skin aan die je voor de speler hebt gekozen.</string>
     <string name="prefs_android_auto_skin_heading">Skin in Android Auto</string>
     <string name="prefs_android_auto_list_section">Afspeellijst</string>
+    <string name="prefs_android_auto_status_section">Status</string>
+    <string name="prefs_android_auto_from_play">Android Auto toont de app in de auto</string>
+    <string name="prefs_android_auto_from_play_about">Google Play staat geregistreerd als installatiebron.</string>
+    <string name="prefs_android_auto_not_from_play">Android Auto toont de app niet in een auto</string>
+    <string name="prefs_android_auto_not_from_play_about">Android Auto toont Andamp for Android Auto in een auto alleen als Google Play de app heeft geïnstalleerd.</string>
+    <string name="prefs_android_auto_matches">Past bij deze Andamp</string>
+    <string name="prefs_android_auto_version">Versie %1$s</string>
+    <string name="prefs_android_auto_older">Ouder dan Andamp</string>
+    <string name="prefs_android_auto_older_about">Andamp for Android Auto %1$s mist een deel van wat Andamp %2$s in Android Auto biedt. Werk de app bij.</string>
+    <string name="prefs_android_auto_newer">Nieuwer dan Andamp</string>
+    <string name="prefs_android_auto_newer_about">Andamp for Android Auto %1$s biedt meer dan Andamp %2$s in Android Auto kan tonen. Werk Andamp bij.</string>
 
     <!-- EffectsPage.kt -->
     <string name="prefs_effects_unavailable_summary">Deze afspeelbackend voert geen effecten uit.</string>

@@ -14,6 +14,7 @@ import androidx.compose.ui.test.performClick
 import nl.mattix.andamp.state.EnglishWords
 import nl.mattix.andamp.state.PlaylistFont
 import nl.mattix.andamp.state.SkinEntry
+import nl.mattix.andamp.ui.remote.CompanionCheck
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
@@ -91,6 +92,50 @@ class AndroidAutoPrefsTest {
 
         assertEquals(PlaylistFont.SKIN, font)
         compose.onNodeWithTag("prefs.androidauto.font.skin").assertIsSelected()
+    }
+
+    private fun showChecked(check: CompanionCheck) {
+        compose.setContent { Column { AndroidAutoPage(AndroidAutoPrefs(offered = true, skins = skins, check = { check })) } }
+    }
+
+    @Test
+    fun `with everything right each check has a tick`() {
+        showChecked(
+            CompanionCheck(fromPlay = true, version = "0.15.0", playerVersion = "0.16.0", protocol = 2, playerProtocol = 2),
+        )
+
+        compose.onNodeWithTag("prefs.androidauto.check.play.ok").assertExists()
+        compose.onNodeWithTag("prefs.androidauto.check.version.ok").assertExists()
+        compose.onNodeWithText("Version 0.15.0").assertExists()
+    }
+
+    @Test
+    fun `each thing that is wrong is a warning that says what it means`() {
+        showChecked(
+            CompanionCheck(fromPlay = false, version = "0.14.0", playerVersion = "0.15.0", protocol = 1, playerProtocol = 2),
+        )
+
+        compose.onNodeWithTag("prefs.androidauto.check.play.warning").assertExists()
+        compose.onNodeWithText("Android Auto won't show it in a car").assertExists()
+        compose.onNodeWithTag("prefs.androidauto.check.version.warning").assertExists()
+        compose.onNodeWithText("Andamp for Android Auto 0.14.0 lacks some of what Andamp 0.15.0", substring = true).assertExists()
+    }
+
+    @Test
+    fun `an app ahead of this Andamp asks for Andamp to be updated`() {
+        showChecked(
+            CompanionCheck(fromPlay = true, version = "0.17.0", playerVersion = "0.16.0", protocol = 3, playerProtocol = 2),
+        )
+
+        compose.onNodeWithTag("prefs.androidauto.check.version.warning").assertExists()
+        compose.onNodeWithText("Newer than Andamp").assertExists()
+    }
+
+    @Test
+    fun `without the app to check the page shows no status`() {
+        show()
+
+        compose.onNodeWithText("Status").assertDoesNotExist()
     }
 
     @Test

@@ -7,6 +7,17 @@
     <string name="prefs_android_auto_skin_note">In Android Auto the main window wears this skin. Default keeps the one you picked for the player.</string>
     <string name="prefs_android_auto_skin_heading">Skin in Android Auto</string>
     <string name="prefs_android_auto_list_section">Playlist</string>
+    <string name="prefs_android_auto_status_section">Status</string>
+    <string name="prefs_android_auto_from_play">Android Auto will show it in the car</string>
+    <string name="prefs_android_auto_from_play_about">Google Play is recorded as the app that installed it.</string>
+    <string name="prefs_android_auto_not_from_play">Android Auto won\'t show it in a car</string>
+    <string name="prefs_android_auto_not_from_play_about">Android Auto shows Andamp for Android Auto in a car only when Google Play installed it.</string>
+    <string name="prefs_android_auto_matches">Matches this Andamp</string>
+    <string name="prefs_android_auto_version">Version %1$s</string>
+    <string name="prefs_android_auto_older">Older than Andamp</string>
+    <string name="prefs_android_auto_older_about">Andamp for Android Auto %1$s lacks some of what Andamp %2$s offers in Android Auto. Update it.</string>
+    <string name="prefs_android_auto_newer">Newer than Andamp</string>
+    <string name="prefs_android_auto_newer_about">Andamp for Android Auto %1$s offers more than Andamp %2$s can show in Android Auto. Update Andamp.</string>
 
     <!-- EffectsPage.kt -->
     <string name="prefs_effects_unavailable_summary">This playback backend does not run effects.</string>
