@@ -9,6 +9,7 @@
     <string name="prefs_android_auto_list_section">Liste de lecture</string>
     <string name="prefs_android_auto_status_section">État</string>
     <string name="prefs_android_auto_versions_section">Versions</string>
+    <string name="prefs_android_auto_version_protocol">%1$s · protocole %2$d</string>
     <string name="prefs_android_auto_from_play">Android Auto l’affiche dans la voiture</string>
     <string name="prefs_android_auto_not_from_play">Android Auto ne l’affiche pas dans une voiture</string>
     <string name="prefs_android_auto_not_from_play_about">Android Auto n’affiche Andamp for Android Auto dans une voiture que si Google Play l’a installé.</string>

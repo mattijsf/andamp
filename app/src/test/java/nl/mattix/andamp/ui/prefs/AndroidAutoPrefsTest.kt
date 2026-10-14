@@ -134,14 +134,14 @@ class AndroidAutoPrefsTest {
     }
 
     @Test
-    fun `the versions of both apps are at the bottom of the page`() {
+    fun `the versions of both apps and their protocols are at the bottom of the page`() {
         showChecked(
             CompanionCheck(fromPlay = true, version = "0.15.0", playerVersion = "0.16.0", protocol = 2, playerProtocol = 2),
         )
 
         compose.onNodeWithText("Versions").assertExists()
-        compose.onNodeWithText("0.16.0").assertExists()
-        compose.onNodeWithText("0.15.0").assertExists()
+        compose.onNodeWithText("0.16.0 · protocol 2").assertExists()
+        compose.onNodeWithText("0.15.0 · protocol 2").assertExists()
     }
 
     @Test

@@ -9,6 +9,7 @@
     <string name="prefs_android_auto_list_section">Playlist</string>
     <string name="prefs_android_auto_status_section">Status</string>
     <string name="prefs_android_auto_versions_section">Versions</string>
+    <string name="prefs_android_auto_version_protocol">%1$s · protocol %2$d</string>
     <string name="prefs_android_auto_companion_name" translatable="false">Andamp for Android Auto</string>
     <string name="prefs_android_auto_from_play">Android Auto will show it in the car</string>
     <string name="prefs_android_auto_not_from_play">Android Auto won\'t show it in a car</string>

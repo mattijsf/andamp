@@ -88,13 +88,22 @@ internal fun AndroidAutoPage(prefs: AndroidAutoPrefs) {
     checked?.let { Versions(it) }
 }
 
-/** Which releases are on the phone: this Andamp's and the app Android Auto talks to. */
+/**
+ * Which releases are on the phone, this Andamp's and the app Android Auto talks to, each with
+ * the version of the interface between them it speaks.
+ */
 @Composable
 private fun Versions(check: CompanionCheck) {
     Section(stringResource(R.string.prefs_android_auto_versions_section))
     Group {
-        StatRow(stringResource(R.string.app_name), check.playerVersion)
-        StatRow(stringResource(R.string.prefs_android_auto_companion_name), check.version)
+        StatRow(
+            stringResource(R.string.app_name),
+            stringResource(R.string.prefs_android_auto_version_protocol, check.playerVersion, check.playerProtocol),
+        )
+        StatRow(
+            stringResource(R.string.prefs_android_auto_companion_name),
+            stringResource(R.string.prefs_android_auto_version_protocol, check.version, check.protocol),
+        )
     }
 }
 

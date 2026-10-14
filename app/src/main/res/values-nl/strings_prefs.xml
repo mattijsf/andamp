@@ -9,6 +9,7 @@
     <string name="prefs_android_auto_list_section">Afspeellijst</string>
     <string name="prefs_android_auto_status_section">Status</string>
     <string name="prefs_android_auto_versions_section">Versies</string>
+    <string name="prefs_android_auto_version_protocol">%1$s · protocol %2$d</string>
     <string name="prefs_android_auto_from_play">Android Auto toont de app in de auto</string>
     <string name="prefs_android_auto_not_from_play">Android Auto toont de app niet in een auto</string>
     <string name="prefs_android_auto_not_from_play_about">Android Auto toont Andamp for Android Auto in een auto alleen als Google Play de app heeft geïnstalleerd.</string>
