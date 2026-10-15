@@ -232,7 +232,7 @@ class LibraryInteractionTest {
         val shelf = PlaylistLibrary(File(app.filesDir, "playlists"))
         shelf.save("Road trip", listOf(Track("r1", "Someone", "One", 60_000, uri = "content://1")))
         vm.libraryOps.switchCategory(LibraryOps.Category.LISTS)
-        settleUntil("the saved lists") { vm.libraryOps.rows.isNotEmpty() }
+        settleUntil("the saved lists") { vm.libraryOps.header == "LISTS" && vm.libraryOps.rows.isNotEmpty() }
         tapWindow(rowX(), rowCenterY(0))
         settleUntil("the list to open") { vm.libraryOps.header == "Road trip" }
 

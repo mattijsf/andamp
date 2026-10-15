@@ -63,7 +63,13 @@ class LibraryRowMenuTest {
     private fun player(): Triple<LibraryOps, WinampState, PlayerFacade> {
         val state = WinampState()
         val facade = PlayerFacade(MockBackend(emptyList(), scope))
-        return Triple(LibraryOps({ Shelf() }, facade, state, scope, lists(), stations(), words = EnglishWords), state, facade)
+        return Triple(
+            LibraryOps({
+                Shelf()
+            }, facade, state, scope, lists(), stations(), io = Dispatchers.Unconfined, words = EnglishWords),
+            state,
+            facade,
+        )
     }
 
     private fun lists() = PlaylistLibrary(temp.newFolder("playlists"))
@@ -82,7 +88,8 @@ class LibraryRowMenuTest {
         val shelf = lists()
         shelf.save("Road trip", listOf(Shelf.track("r1", "One"), Shelf.track("r2", "Two")))
         shelf.save("Gym", listOf(Shelf.track("g1", "Three")))
-        val ops = LibraryOps({ Shelf() }, facade, state, scope, shelf, stations(), words = EnglishWords)
+        val ops =
+            LibraryOps({ Shelf() }, facade, state, scope, shelf, stations(), io = Dispatchers.Unconfined, words = EnglishWords)
         ops.open()
         ops.switchCategory(LibraryOps.Category.LISTS)
         return Saved(ops, state, shelf, facade)
@@ -291,6 +298,7 @@ class LibraryRowMenuTest {
                 shelf,
                 stations(),
                 onListRead = { rows -> read += rows.map { it.id } },
+                io = Dispatchers.Unconfined,
                 words = EnglishWords,
             )
         ops.open()

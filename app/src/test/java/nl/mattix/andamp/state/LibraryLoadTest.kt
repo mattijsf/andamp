@@ -4,6 +4,7 @@ package nl.mattix.andamp.state
 
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
@@ -77,6 +78,7 @@ class LibraryLoadTest {
             this,
             PlaylistLibrary(temp.newFolder()),
             StationStore(File(temp.newFolder(), "stations.m3u")),
+            io = StandardTestDispatcher(testScheduler),
             words = EnglishWords,
         )
 

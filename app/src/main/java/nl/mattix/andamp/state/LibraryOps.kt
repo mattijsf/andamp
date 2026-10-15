@@ -7,9 +7,11 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.AlbumKind
 import nl.mattix.andamp.core.model.LibraryAlbum
@@ -19,6 +21,7 @@ import nl.mattix.andamp.core.model.durationSec
 import nl.mattix.andamp.core.playback.BrowseSource
 import nl.mattix.andamp.core.playback.SourceUnreachable
 import nl.mattix.andamp.core.player.PlayerFacade
+import kotlin.coroutines.CoroutineContext
 
 /**
  * The media library's drill-down: up to five categories along the top, one list at a time
@@ -62,6 +65,8 @@ class LibraryOps(
      * see [FolderAccessOps.listRead].
      */
     private val onListRead: suspend (List<Track>) -> Unit = {},
+    /** Where the saved lists and the stations are read and written. */
+    private val io: CoroutineContext = Dispatchers.IO,
     private val words: Words,
 ) {
     /**
@@ -487,7 +492,11 @@ class LibraryOps(
         state.prompt =
             deleteListPrompt(name, words, onDone = { state.prompt = null }) {
                 scope.launch {
-                    if (lists.delete(name)) savedListDeleted(name) else showFlash(words.get(R.string.library_cant_delete))
+                    if (withContext(io) { lists.delete(name) }) {
+                        savedListDeleted(name)
+                    } else {
+                        showFlash(words.get(R.string.library_cant_delete))
+                    }
                 }
             }
     }
@@ -500,18 +509,22 @@ class LibraryOps(
      */
     fun savedListDeleted(name: String) {
         if (loading) return
-        for (at in crumbs.indices) {
-            val crumb = crumbs[at]
-            if (crumb.page.saved.isEmpty()) continue
+        if (page.saved.isEmpty() && crumbs.all { it.page.saved.isEmpty() }) return
+        scope.launch {
             val next = savedListsPage()
-            crumbs[at] = Crumb(next, scrollWithin(next, crumb.scroll), crumb.selection, crumb.query, crumb.finding)
+            // a level navigated to while the lists were read is left to land
+            if (loading) return@launch
+            for (at in crumbs.indices) {
+                val crumb = crumbs[at]
+                if (crumb.page.saved.isEmpty()) continue
+                crumbs[at] = Crumb(next, scrollWithin(next, crumb.scroll), crumb.selection, crumb.query, crumb.finding)
+            }
+            if (page.saved.isNotEmpty()) {
+                abandonLoad()
+                commit(next, scroll = scrollWithin(next, state.libraryScroll))
+            }
+            if (page.savedName == name) up()
         }
-        if (page.saved.isNotEmpty()) {
-            val next = savedListsPage()
-            abandonLoad()
-            commit(next, scroll = scrollWithin(next, state.libraryScroll))
-        }
-        if (page.savedName == name) up()
     }
 
     /** [scroll], or the last row of [next] when the page has become shorter than that. */
@@ -593,7 +606,7 @@ class LibraryOps(
                         ) { name ->
                             state.namePrompt = null
                             scope.launch {
-                                stations.add(name, url)
+                                withContext(io) { stations.add(name, url) }
                                 if (category == Category.RADIO && depth == 0) load(label(Category.RADIO)) { radioRootPage() }
                             }
                         }
@@ -719,28 +732,28 @@ class LibraryOps(
         list: nl.mattix.andamp.core.model.LibraryPlaylist,
     ): Page = trackListPage(list.name, src.playlistTracks(list.id), empty = words.get(R.string.library_no_tracks))
 
-    private fun savedListsPage(): Page {
-        val saved = lists.list()
+    private suspend fun savedListsPage(): Page {
+        val saved = withContext(io) { lists.list() }
         return Page(
             header = label(Category.LISTS),
             status = count(saved.size, R.plurals.library_count_lists),
             rows = saved.map { Row(it.name, detail = words.get(R.string.library_track_count_short, it.trackCount)) },
             open = saved.map { entry -> { drill(entry.name) { listTracksPage(entry.name) } } },
-            tracksOf = saved.map { entry -> { lists.load(entry.name).orEmpty().also { onListRead(it) } } },
+            tracksOf = saved.map { entry -> { withContext(io) { lists.load(entry.name) }.orEmpty().also { onListRead(it) } } },
             saved = saved.map { it.name },
             empty = words.get(R.string.library_no_saved_lists),
         )
     }
 
     private suspend fun listTracksPage(name: String): Page {
-        val tracks = lists.load(name).orEmpty().also { onListRead(it) }
+        val tracks = withContext(io) { lists.load(name) }.orEmpty().also { onListRead(it) }
         return trackListPage(name, tracks, empty = words.get(R.string.library_no_tracks), savedName = name)
     }
 
-    private fun radioRootPage(): Page {
+    private suspend fun radioRootPage(): Page {
         // one level, no drill: the radio root is itself a playable page, so next and
         // previous step through the stations
-        val all = stations.list()
+        val all = withContext(io) { stations.list() }
         return Page(
             header = label(Category.RADIO),
             status = count(all.size, R.plurals.library_count_stations),
