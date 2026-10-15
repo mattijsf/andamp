@@ -8,6 +8,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import nl.mattix.andamp.core.model.BackendNotice
 import nl.mattix.andamp.core.model.BackendState
 import nl.mattix.andamp.core.model.Capabilities
 import nl.mattix.andamp.core.model.Track
@@ -90,6 +91,14 @@ class MockBackend(
     override fun release() = stopTicker()
 
     /**
+     * Puts [notice] on the state and leaves the transport as it is. Only a test raises one:
+     * the fake clock has no source to give up.
+     */
+    fun raise(notice: BackendNotice) {
+        _state.value = _state.value.raising(notice)
+    }
+
+    /**
      * Applies one of the [TransportRules] and then runs or stops the fake clock.
      *
      * The clock is restarted only when the rule changed what it counts, so an enqueue does
@@ -97,7 +106,15 @@ class MockBackend(
      */
     private fun apply(rule: (BackendState) -> BackendState) {
         val was = _state.value
-        val now = rule(was)
+        val ruled = rule(was)
+        // a press that starts the music is a new attempt, so the notice about the last one
+        // is cleared
+        val now =
+            if (ruled.transport == Transport.Playing && was.transport != Transport.Playing) {
+                ruled.copy(notice = null)
+            } else {
+                ruled
+            }
         _state.value = now
         when {
             now.transport != Transport.Playing -> stopTicker()

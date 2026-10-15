@@ -175,6 +175,11 @@ internal class StreamBackend(
 
     override fun playAt(index: Int) = obey { TransportRules.playAt(it, index) }
 
+    /** Puts [notice] on the state and leaves the transport as it is; for tests. */
+    internal fun raise(notice: BackendNotice) {
+        _state.value = _state.value.raising(notice)
+    }
+
     /**
      * Move inside the track.
      *

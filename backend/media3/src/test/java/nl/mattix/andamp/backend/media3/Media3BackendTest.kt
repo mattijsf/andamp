@@ -268,6 +268,26 @@ class Media3BackendTest {
     }
 
     @Test
+    fun `playAt past the end of the queue plays its last row`() {
+        val b = backend(10, 20, 30)
+        b.playAt(7)
+        idle()
+        assertEquals(2, b.state.value.currentIndex)
+        assertEquals(Transport.Playing, b.state.value.transport)
+    }
+
+    @Test
+    fun `playAt before the head of the queue plays its first row`() {
+        val b = backend(10, 20, 30)
+        b.next()
+        idle()
+        b.playAt(-1)
+        idle()
+        assertEquals(0, b.state.value.currentIndex)
+        assertEquals(Transport.Playing, b.state.value.transport)
+    }
+
+    @Test
     fun `seek clamps to the track duration`() {
         val b = backend(10)
         b.play()

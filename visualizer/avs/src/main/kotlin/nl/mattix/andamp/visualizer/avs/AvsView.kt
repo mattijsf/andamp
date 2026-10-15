@@ -104,9 +104,11 @@ class AvsView(
                         painter.paint(surface, engine.render(frame))
                     } catch (e: RuntimeException) {
                         // a preset that throws while rendering is replaced by
-                        // the idle preset, and the loop goes on
+                        // the idle preset, and the loop goes on. A rebuilt loop
+                        // is not sent back to it.
                         Log.e(TAG, "preset $loadedPath crashed; falling back to idle", e)
                         load(engine, null)
+                        stickyPreset = null
                         announceGaps(PresetGaps(unreadable = true))
                         true
                     }
