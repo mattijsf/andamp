@@ -12,7 +12,8 @@ import kotlin.random.Random
  * shuffle flag, asks for next/previous/goTo, and loads whatever [current]
  * answers. Shuffle permutes the order, so every preset appears once per cycle.
  *
- * There is no timer: the preset changes only when the listener asks.
+ * There is no timer: the preset changes only when the listener asks. Next and previous step
+ * past the presets [skip] names; [goTo] plays any.
  */
 class AvsPlaylist(
     private val random: Random = Random.Default,
@@ -20,6 +21,9 @@ class AvsPlaylist(
     /** The files: a directory's sorted by name, a list's in the order given; empty until either is set. */
     var paths: List<String> = emptyList()
         private set
+
+    /** Presets next and previous step past: ones known not to show. */
+    var skip: (String) -> Boolean = { false }
 
     private var order: List<Int> = emptyList()
     private var at = 0
@@ -67,18 +71,26 @@ class AvsPlaylist(
         paths = found
         shuffled = shuffle
         order = if (shuffle) paths.indices.shuffled(random) else paths.indices.toList()
-        at = order.indexOfFirst { paths[it] == playing }.coerceAtLeast(0)
+        val kept = order.indexOfFirst { paths[it] == playing }
+        at = kept.coerceAtLeast(0)
+        // a new list starts on its first preset that shows, when one does
+        if (kept < 0 && current?.let(skip) == true && !paths.all(skip)) step(1)
         return true
     }
 
-    fun next() {
-        if (order.isEmpty()) return
-        at = (at + 1) % order.size
-    }
+    fun next() = step(1)
 
-    fun previous() {
+    fun previous() = step(-1)
+
+    /** Moves [by] one, past skipped presets; when every one is skipped, by one only. */
+    private fun step(by: Int) {
         if (order.isEmpty()) return
-        at = (at - 1 + order.size) % order.size
+        val from = at
+        repeat(order.size) {
+            at = (at + by + order.size) % order.size
+            if (current?.let(skip) != true) return
+        }
+        at = (from + by + order.size) % order.size
     }
 
     /** Jumps to [index] into [paths], the list the UI shows, whatever the shuffled order is. */

@@ -24,6 +24,8 @@ internal class PresetLoader(
      * all of it when it failed.
      */
     private val onPresetGaps: (String, PresetGaps) -> Unit = { _, _ -> },
+    /** Presets to switch past, unless picked by their place; see [ProjectMEngine.picked]. */
+    private val skip: () -> Set<String> = { emptySet() },
     /** Milliseconds, for [BlankWatch]. */
     private val clock: () -> Long = { System.nanoTime() / NANOS_PER_MILLI },
 ) {
@@ -33,6 +35,7 @@ internal class PresetLoader(
     private var reportedPath: String? = null
     private val log = PresetLog()
     private val blankWatch = BlankWatch()
+    private var skipping = 0
 
     // the presets found drawing only black, this session; one that draws again leaves the set
     private val blank = mutableSetOf<String>()
@@ -73,6 +76,15 @@ internal class PresetLoader(
         if (position == reportedPosition) return
         reportedPosition = position
         val path = engine.playlistItem(position) ?: return
+        // a preset known not to show is passed by, the way the listener was going, but at most
+        // once round the list
+        if (!engine.picked && skipping < engine.playlistSize && path in skip()) {
+            skipping++
+            if (engine.backwards) engine.playlistPrevious() else engine.playlistNext()
+            return
+        }
+        skipping = 0
+        engine.switched()
         reportedPath = path
         blankWatch.start(path, clock())
         onPresetChanged(File(path).nameWithoutExtension)

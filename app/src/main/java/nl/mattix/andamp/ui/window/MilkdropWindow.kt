@@ -278,6 +278,7 @@ private fun MilkdropEngineView(vm: WinampViewModel) {
             // the view applies the pack and the shuffle flag on its own thread
             view.presets = vm.presetOps.active
             view.shuffle = s.presetShuffle
+            view.skipped = vm.presetOps.skipped
         },
     )
 }
@@ -298,6 +299,7 @@ private fun AvsEngineView(vm: WinampViewModel) {
             view.presetFiles = vm.presetOps.activeAvsFiles
             view.presetRoots = vm.presetOps.avsRoots
             view.shuffle = s.presetShuffle
+            view.skipped = vm.presetOps.skipped
         },
     )
 }

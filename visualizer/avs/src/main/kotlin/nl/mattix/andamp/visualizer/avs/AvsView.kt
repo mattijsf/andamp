@@ -56,6 +56,10 @@ class AvsView(
     @Volatile
     var presetRoots: List<File> = emptyList()
 
+    /** Presets next and previous step past: ones known not to show. A pick by index still plays one. */
+    @Volatile
+    var skipped: Set<String> = emptySet()
+
     /** A property for the same reason [presetDirectory] is. */
     @Volatile
     var shuffle: Boolean = false
@@ -87,7 +91,7 @@ class AvsView(
             val pcm = pcmSourceFactory?.invoke(fps)
             val audio = AvsAudio()
             val beat = AvsBeat()
-            val playlist = AvsPlaylist()
+            val playlist = AvsPlaylist().apply { skip = { it in skipped } }
             val playlistSync = PlaylistSync(playlist, ::announcePlaylist)
             val painter = Painter()
             var announced: String? = null

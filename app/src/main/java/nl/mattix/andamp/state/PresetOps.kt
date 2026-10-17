@@ -20,6 +20,8 @@ import kotlinx.coroutines.withContext
 import nl.mattix.andamp.state.presets.Favorite
 import nl.mattix.andamp.state.presets.FavoriteStore
 import nl.mattix.andamp.state.presets.InstalledPack
+import nl.mattix.andamp.state.presets.PresetFingerprint
+import nl.mattix.andamp.state.presets.PresetHealthStore
 import nl.mattix.andamp.state.presets.PresetLibrary
 import nl.mattix.andamp.state.presets.filesFor
 import nl.mattix.andamp.state.presets.runsOn
@@ -55,6 +57,7 @@ class PresetOps(
     private val library: PresetLibrary = PresetLibrary(File(context.filesDir, PRESETS_DIR).apply { mkdirs() }),
     private val store: VisualizerStore = VisualizerStore(context),
     private val favoriteStore: FavoriteStore = FavoriteStore(context),
+    private val healthStore: PresetHealthStore = PresetHealthStore(context),
     // injectable, so a test's virtual clock covers the disk work
     private val io: CoroutineDispatcher = Dispatchers.IO,
 ) {
@@ -69,10 +72,22 @@ class PresetOps(
         private set
 
     /**
-     * What an engine could not show of each preset, by file, as far as this session knows: from
-     * playing it, and for AVS from checking a list ahead ([checkAhead]).
+     * What an engine could not show of each preset, by file: from playing it, for AVS from
+     * checking a list ahead ([checkAhead]), and from earlier launches, found again by the
+     * preset's content ([PresetHealthStore]).
      */
     val health: SnapshotStateMap<String, PresetGaps> = mutableStateMapOf()
+
+    /**
+     * The presets the engines step past on next, previous, shuffle and their own switching:
+     * the ones that could not be read or drew only black. Picking one by hand tries it again.
+     */
+    val skipped: Set<String>
+        get() = health.filterValues { it.unreadable || it.blank }.keys
+
+    // what earlier launches learned, by content; the files' fingerprints, worked out once
+    private var kept: Map<PresetFingerprint, PresetGaps> = emptyMap()
+    private val fingerprints = HashMap<String, PresetFingerprint>()
 
     /** The presets projectM should be running, or null for its built-in idle preset. */
     val active: PresetPack?
@@ -142,6 +157,7 @@ class PresetOps(
         packMemory = remembered.packs
         favoritesOn = remembered.favorites
         favorites = favoriteStore.load()
+        kept = healthStore.load()
         state.visPlugin = remembered.plugin
         state.presetPack = remembered.packFor(remembered.plugin)
         state.presetFavorites = remembered.plugin in favoritesOn
@@ -283,6 +299,8 @@ class PresetOps(
         path: String,
         fromFavorites: Boolean,
     ) {
+        // picked by hand: what was learned about it is forgotten, and it is tried again
+        forget(path)
         val pack = packsFor(state.visPlugin).firstOrNull { path.startsWith(it.dir.absolutePath + File.separator) }
         val playing = if (fromFavorites) state.presetFavorites else !state.presetFavorites && state.presetPack == pack?.name
         val index = state.presetPaths.indexOf(path)
@@ -294,12 +312,72 @@ class PresetOps(
         if (fromFavorites) selectFavorites() else select(pack?.name)
     }
 
-    /** What the engine said it could not show of the preset at [path]; null is its idle preset, which is not kept. */
+    /**
+     * What the engine said it could not show of the preset at [path], kept across launches
+     * when it is anything; null is its idle preset, which is not kept.
+     */
     fun record(
         path: String?,
         gaps: PresetGaps,
     ) {
-        if (path != null) health[path] = gaps
+        if (path == null) return
+        val before = health.put(path, gaps)
+        if ((before ?: PresetGaps.NONE) != gaps) keep(path, gaps)
+    }
+
+    /** Forgets what is known of the preset at [path], here and across launches. */
+    fun forget(path: String) {
+        if (health.remove(path) != null) keep(path, PresetGaps.NONE)
+    }
+
+    private fun keep(
+        path: String,
+        gaps: PresetGaps,
+    ) {
+        scope.launch {
+            val fingerprint = fingerprintOf(path) ?: return@launch
+            val next = if (gaps.none) kept - fingerprint else kept + (fingerprint to gaps)
+            if (next == kept) return@launch
+            kept = next
+            withContext(io) { healthStore.save(next) }
+        }
+    }
+
+    // a file that went away has no fingerprint, and nothing is kept for it
+    private suspend fun fingerprintOf(path: String): PresetFingerprint? =
+        fingerprints[path] ?: withContext(io) {
+            try {
+                PresetFingerprint.of(File(path))
+            } catch (e: java.io.IOException) {
+                Log.w(TAG, "cannot fingerprint $path", e)
+                null
+            }
+        }?.also { fingerprints[path] = it }
+
+    /**
+     * Finds what earlier launches learned in the packs installed now. Only files of a size
+     * something was kept for are read, so a pack of thousands costs a directory listing.
+     */
+    private suspend fun restoreKept() {
+        if (kept.isEmpty()) return
+        val sizes = kept.keys.mapTo(HashSet()) { it.size }
+        val found =
+            withContext(io) {
+                packs.flatMap { it.milkFiles + it.avsFiles }.mapNotNull { path ->
+                    val file = File(path)
+                    if (file.length() !in sizes) return@mapNotNull null
+                    try {
+                        path to PresetFingerprint.of(file)
+                    } catch (e: java.io.IOException) {
+                        Log.w(TAG, "cannot fingerprint $path", e)
+                        null
+                    }
+                }
+            }
+        found.forEach { (path, fingerprint) ->
+            fingerprints[path] = fingerprint
+            kept[fingerprint]?.let { gaps -> if (path !in health) health[path] = gaps }
+        }
     }
 
     private var checking: Job? = null
@@ -321,7 +399,7 @@ class PresetOps(
                 withContext(io) {
                     AvsPresetCheck.check(
                         todo,
-                        onChecked = { path, gaps -> scope.launch { if (path !in health) health[path] = gaps } },
+                        onChecked = { path, gaps -> scope.launch { if (path !in health) record(path, gaps) } },
                         keepGoing = { job?.isActive != false },
                     )
                 }
@@ -365,6 +443,7 @@ class PresetOps(
         // deleted, or that the current engine cannot run, is deselected
         if (state.presetFavorites && favoriteFiles(state.visPlugin).isEmpty()) select(state.presetPack)
         if (state.presetPack != null && packsFor(state.visPlugin).none { it.name == state.presetPack }) select(null)
+        restoreKept()
     }
 
     private fun remember() =

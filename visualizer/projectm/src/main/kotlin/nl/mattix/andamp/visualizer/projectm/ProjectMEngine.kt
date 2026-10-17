@@ -138,9 +138,28 @@ class ProjectMEngine {
         ProjectMNative.nativePlaylistPlayPrevious(handle, hardCut)
     }
 
+    /** Whether the last switch asked for went back, so a preset to skip is skipped the same way. */
+    var backwards = false
+        private set
+
+    /** Whether the last switch asked for was to one preset by its place: that one plays, even when skipped. */
+    var picked = false
+        private set
+
     /** Which way a broken preset is skipped past on the switch about to happen. */
-    private fun heading(backwards: Boolean) {
+    private fun heading(
+        backwards: Boolean,
+        picked: Boolean = false,
+    ) {
+        this.backwards = backwards
+        this.picked = picked
         if (failures != 0L) ProjectMNative.nativeWatchDirection(failures, backwards)
+    }
+
+    /** The switch asked for has happened; projectM's own switching goes forward again. */
+    fun switched() {
+        backwards = false
+        picked = false
     }
 
     fun playlistSetShuffle(shuffle: Boolean) = ProjectMNative.nativePlaylistSetShuffle(playlistHandle(), shuffle)
@@ -158,7 +177,7 @@ class ProjectMEngine {
     ): Boolean {
         val handle = playlistHandle()
         if (index < 0 || index >= ProjectMNative.nativePlaylistSize(handle)) return false
-        heading(backwards = false)
+        heading(backwards = false, picked = true)
         ProjectMNative.nativePlaylistSetPosition(handle, index, hardCut)
         return true
     }

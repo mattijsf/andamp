@@ -4,11 +4,12 @@ package nl.mattix.andamp.visualizer.projectm
 
 /**
  * Finds a preset that loads without an error but draws nothing: projectM compiles some
- * presets and then draws only black, and says nothing about it.
+ * presets and then draws only black, and says nothing about it. Some draw for a moment and
+ * then fade to black for good.
  *
  * Black while the music is quiet proves nothing, since many presets only move with sound. So
- * only black while music plays counts, and [BLACK_MS] of it marks the preset. One frame with
- * anything in it clears the preset for as long as it keeps playing.
+ * the frame is looked at all the time the preset shows, and [BLACK_MS] of black in a row
+ * while music plays marks it. A frame with anything in it starts the count over.
  *
  * Times are in milliseconds, from the caller's clock.
  */
@@ -16,7 +17,7 @@ internal class BlankWatch {
     private var path: String? = null
     private var lastSample = 0L
     private var blackWhileAudible = 0L
-    private var settled = true
+    private var marked = true
 
     /** Starts watching the preset at [path], which began showing at [now]; null watches nothing. */
     fun start(
@@ -25,18 +26,18 @@ internal class BlankWatch {
     ) {
         this.path = path
         blackWhileAudible = 0
-        settled = path == null
+        marked = path == null
         // the first look comes SETTLE_MS in, after projectM's blend from the last preset
         lastSample = now + SETTLE_MS - EVERY_MS
     }
 
     /** Whether the frame drawn at [now] should be looked at. */
-    fun wants(now: Long): Boolean = !settled && now - lastSample >= EVERY_MS
+    fun wants(now: Long): Boolean = !marked && now - lastSample >= EVERY_MS
 
     /**
      * What a look at the frame found: whether it was [black], and whether music was
-     * [audible]. Answers whether the preset is known to draw something (true), to draw nothing
-     * (false), or not known yet (null).
+     * [audible]. Answers that the preset draws something (true), that it draws nothing
+     * (false, once; the watch then stops), or nothing new (null).
      */
     fun sampled(
         black: Boolean,
@@ -46,12 +47,12 @@ internal class BlankWatch {
         val since = now - lastSample
         lastSample = now
         if (!black) {
-            settled = true
+            blackWhileAudible = 0
             return true
         }
         if (audible) blackWhileAudible += since
         if (blackWhileAudible < BLACK_MS) return null
-        settled = true
+        marked = true
         return false
     }
 
@@ -65,7 +66,7 @@ internal class BlankWatch {
         /** How long a preset shows before it is first looked at. */
         const val SETTLE_MS = 1_500L
 
-        /** How long a preset may stay black while music plays. */
+        /** How long a preset may stay black, in a row, while music plays. */
         const val BLACK_MS = 4_000L
     }
 }

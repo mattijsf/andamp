@@ -124,7 +124,19 @@ private fun presetItems(vm: WinampViewModel): List<AmpMenuItem> {
     }
     return buildList {
         s.presetNames.take(PRESET_MENU_MAX).forEachIndexed { index, name ->
-            add(AmpMenuItem.Action(name, checked = name == s.presetName) { s.visualCommands?.goToPreset(index) })
+            add(
+                AmpMenuItem.Action(name, checked = name == s.presetName) {
+                    // picked by hand, so a preset that is skipped is tried again
+                    val path = s.presetPaths.getOrNull(index)
+                    if (path !=
+                        null
+                    ) {
+                        vm.presetOps.play(path, fromFavorites = s.presetFavorites)
+                    } else {
+                        s.visualCommands?.goToPreset(index)
+                    }
+                },
+            )
         }
         if (s.presetNames.size > PRESET_MENU_MAX) {
             add(AmpMenuItem.Divider)

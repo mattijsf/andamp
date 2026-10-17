@@ -167,6 +167,30 @@ class AvsPlaylistTest {
         assertTrue(playlist.paths.single().endsWith("/a.avs"))
     }
 
+    @Test
+    fun `next and previous step past skipped presets, a pick does not`() {
+        val playlist = AvsPlaylist().apply { skip = { it.endsWith("broken.avs") } }
+        playlist.setFiles(listOf("/a.avs", "/broken.avs", "/c.avs"), shuffle = false)
+
+        playlist.next()
+        assertEquals("/c.avs", playlist.current)
+        playlist.previous()
+        assertEquals("/a.avs", playlist.current)
+        playlist.goTo(1)
+        assertEquals("/broken.avs", playlist.current)
+    }
+
+    @Test
+    fun `a new list starts on its first preset that shows, and all skipped still moves`() {
+        val playlist = AvsPlaylist().apply { skip = { it.startsWith("/x") } }
+        playlist.setFiles(listOf("/x1.avs", "/b.avs"), shuffle = false)
+        assertEquals("/b.avs", playlist.current)
+
+        playlist.setFiles(listOf("/x1.avs", "/x2.avs"), shuffle = false)
+        playlist.next()
+        assertEquals("every one skipped: next moves by one", "/x2.avs", playlist.current)
+    }
+
     /** A rebuilt render thread steers back to the preset that was playing. */
     @Test
     fun `a path can be found again in a fresh shuffled playlist`() {

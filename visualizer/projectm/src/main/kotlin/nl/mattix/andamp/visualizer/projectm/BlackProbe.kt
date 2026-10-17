@@ -9,6 +9,10 @@ import java.nio.ByteBuffer
  * Looks at the frame just drawn, on the render thread: three rows and three columns, at a
  * quarter, half and three quarters of the way across. Reading the whole frame back would
  * stall the GPU for longer, and a preset that draws anything reaches one of these lines.
+ *
+ * It reads the window's own framebuffer: projectM leaves one of its internal ones bound for
+ * reading, which holds the picture before the composite shader, and a preset can have a
+ * picture there and still show black.
  */
 internal class BlackProbe {
     private var buffer: ByteBuffer? = null
@@ -21,10 +25,18 @@ internal class BlackProbe {
         if (width <= 0 || height <= 0) return false
         val need = maxOf(width, height) * BYTES_PER_PIXEL
         val pixels = buffer?.takeIf { it.capacity() >= need } ?: ByteBuffer.allocateDirect(need).also { buffer = it }
-        return FRACTIONS.all { at ->
-            black(pixels, 0, (height * at).toInt(), width, 1) && black(pixels, (width * at).toInt(), 0, 1, height)
+        GLES30.glGetIntegerv(GLES30.GL_READ_FRAMEBUFFER_BINDING, bound, 0)
+        GLES30.glBindFramebuffer(GLES30.GL_READ_FRAMEBUFFER, 0)
+        try {
+            return FRACTIONS.all { at ->
+                black(pixels, 0, (height * at).toInt(), width, 1) && black(pixels, (width * at).toInt(), 0, 1, height)
+            }
+        } finally {
+            GLES30.glBindFramebuffer(GLES30.GL_READ_FRAMEBUFFER, bound[0])
         }
     }
+
+    private val bound = IntArray(1)
 
     private fun black(
         pixels: ByteBuffer,

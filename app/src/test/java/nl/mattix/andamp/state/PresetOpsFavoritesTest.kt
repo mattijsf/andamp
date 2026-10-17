@@ -10,6 +10,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import nl.mattix.andamp.state.presets.Favorite
+import nl.mattix.andamp.visualizer.core.PresetGaps
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -226,14 +227,75 @@ class PresetOpsFavoritesTest {
     fun `what an engine could not show is kept by file`() =
         runTest {
             val (_, ops) = started(VisPlugin.Milkdrop)
-            val gaps =
-                nl.mattix.andamp.visualizer.core
-                    .PresetGaps(unreadable = true, reason = "bad")
+            val gaps = PresetGaps(unreadable = true, reason = "bad")
 
             ops.record("/x.milk", gaps)
             ops.record(null, gaps)
 
             assertEquals(mapOf("/x.milk" to gaps), ops.health.toMap())
+        }
+
+    @Test
+    fun `what a preset could not show is kept by its content, and found again after a reinstall`() =
+        runTest {
+            makePack("one", "a.milk", "b.milk")
+            File(root(), "one/a.milk").writeText("a preset that draws nothing")
+            val (_, ops) = started(VisPlugin.Milkdrop, pack = "one")
+            val blank = PresetGaps(blank = true)
+            ops.record(file("one", "a.milk"), blank)
+            advanceUntilIdle()
+            // the pack goes, and comes back under another name with the file renamed
+            ops.remove(ops.packs.first { it.name == "one" })
+            advanceUntilIdle()
+            makePack("again", "renamed.milk", "b.milk")
+            File(root(), "again/renamed.milk").writeText("a preset that draws nothing")
+
+            val (_, later) = started(VisPlugin.Milkdrop, pack = "again")
+
+            assertEquals(blank, later.health[file("again", "renamed.milk")])
+            assertEquals(setOf(file("again", "renamed.milk")), later.skipped)
+        }
+
+    @Test
+    fun `a preset that is changed starts over`() =
+        runTest {
+            makePack("one", "a.milk")
+            val (_, ops) = started(VisPlugin.Milkdrop, pack = "one")
+            ops.record(file("one", "a.milk"), PresetGaps(unreadable = true))
+            advanceUntilIdle()
+            File(root(), "one/a.milk").writeText("fixed")
+
+            val (_, later) = started(VisPlugin.Milkdrop, pack = "one")
+
+            assertNull(later.health[file("one", "a.milk")])
+        }
+
+    @Test
+    fun `a preset left out only in part plays, one that does not show is skipped`() =
+        runTest {
+            val (_, ops) = started(VisPlugin.Milkdrop)
+
+            ops.record("/p/partly.milk", PresetGaps(missing = listOf("warp shader")))
+            ops.record("/p/broken.milk", PresetGaps(unreadable = true))
+            ops.record("/p/black.milk", PresetGaps(blank = true))
+
+            assertEquals(setOf("/p/broken.milk", "/p/black.milk"), ops.skipped)
+        }
+
+    @Test
+    fun `picking a skipped preset by hand forgets what was kept, so it is tried again`() =
+        runTest {
+            makePack("one", "a.milk")
+            val (_, ops) = started(VisPlugin.Milkdrop, pack = "one")
+            ops.record(file("one", "a.milk"), PresetGaps(blank = true))
+            advanceUntilIdle()
+
+            ops.play(file("one", "a.milk"), fromFavorites = false)
+            advanceUntilIdle()
+            val (_, later) = started(VisPlugin.Milkdrop, pack = "one")
+
+            assertTrue(ops.skipped.isEmpty())
+            assertNull("forgotten across launches too", later.health[file("one", "a.milk")])
         }
 
     /** A started [PresetOps] on [plugin] and [pack]; a null plugin keeps what was remembered. */

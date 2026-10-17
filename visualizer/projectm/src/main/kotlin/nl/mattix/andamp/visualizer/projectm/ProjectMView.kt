@@ -43,6 +43,10 @@ class ProjectMView(
     @Volatile
     var shuffle: Boolean = false
 
+    /** Presets switching steps past: ones known not to show. A pick by index still plays one. */
+    @Volatile
+    var skipped: Set<String> = emptySet()
+
     /** Winamp's spacebar, and this window's tap. */
     override fun nextPreset() = onRenderThread { engine -> if (engine.playlistSize > 0) engine.playlistNext() }
 
@@ -82,6 +86,7 @@ class ProjectMView(
                     onPlaylistChanged = ::announcePlaylist,
                     restoreTo = { stickyPreset },
                     onPresetGaps = ::announceGaps,
+                    skip = { skipped },
                 )
             val probe = BlackProbe()
             var audibleAt = Long.MIN_VALUE / 2

@@ -54,11 +54,23 @@ class BlankWatchTest {
     }
 
     @Test
-    fun `anything drawn clears the preset, and the looking stops`() {
+    fun `a preset that draws is watched on, and one that fades to black is marked`() {
         val watch = BlankWatch().apply { start("/a.milk", 0) }
 
         assertEquals(true, watch.run(0, SETTLE_MS + EVERY_MS, black = false))
-        assertFalse(watch.wants(SETTLE_MS * 10))
+        assertTrue("drawing does not end the watch", watch.wants(SETTLE_MS + EVERY_MS * 3))
+        val fadedAt = SETTLE_MS + EVERY_MS * 3
+        assertEquals(false, watch.run(fadedAt, fadedAt + BLACK_MS + EVERY_MS))
+    }
+
+    @Test
+    fun `anything drawn starts the count over`() {
+        val watch = BlankWatch().apply { start("/a.milk", 0) }
+        watch.run(0, SETTLE_MS + BLACK_MS - EVERY_MS * 2)
+
+        val drewAt = SETTLE_MS + BLACK_MS - EVERY_MS
+        assertEquals(true, watch.run(drewAt, drewAt, black = false))
+        assertNull(watch.run(drewAt + 1, drewAt + BLACK_MS - EVERY_MS * 2))
     }
 
     @Test
