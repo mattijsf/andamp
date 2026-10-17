@@ -13,13 +13,16 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -61,9 +64,12 @@ fun MilkdropScreen(
             topBar = {
                 TopAppBar(
                     title = { Text(prefs.plugin.menuLabel) },
-                    actions = {
-                        TextButton(onClick = onClose, modifier = Modifier.testTag("milkdrop.close")) {
-                            Text(stringResource(R.string.prefs_milkdrop_done))
+                    navigationIcon = {
+                        IconButton(onClick = onClose, modifier = Modifier.testTag("milkdrop.close")) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = stringResource(R.string.prefs_back_to_player),
+                            )
                         }
                     },
                 )

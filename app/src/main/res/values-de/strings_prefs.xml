@@ -63,7 +63,6 @@
     <string name="prefs_lists_row_large">Groß</string>
 
     <!-- MilkdropScreen.kt -->
-    <string name="prefs_milkdrop_done">Fertig</string>
     <string name="prefs_milkdrop_presets_section">Voreinstellungen</string>
     <string name="prefs_milkdrop_nothing_loaded">Außer der %1$s ist nichts geladen. Importiere oben ein Paket.</string>
     <string name="prefs_milkdrop_pack_loading">Das Paket wird geladen, oder das Plug-in-Fenster ist geschlossen.</string>
@@ -180,7 +179,7 @@
 
     <!-- PrefsTopBar.kt -->
     <string name="prefs_top_back">Zurück zu den Einstellungen</string>
-    <string name="prefs_top_done">Fertig</string>
+    <string name="prefs_back_to_player">Zurück zum Player</string>
 
     <!-- RackControls.kt -->
     <string name="prefs_rack_about_control">Info zu %1$s</string>

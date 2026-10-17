@@ -63,7 +63,6 @@
     <string name="prefs_lists_row_large">Grande</string>
 
     <!-- MilkdropScreen.kt -->
-    <string name="prefs_milkdrop_done">Terminé</string>
     <string name="prefs_milkdrop_presets_section">Préréglages</string>
     <string name="prefs_milkdrop_nothing_loaded">Rien n’est chargé à part « %1$s ». Importez un pack ci-dessus.</string>
     <string name="prefs_milkdrop_pack_loading">Le pack est en cours de chargement, ou la fenêtre du plugin est fermée.</string>
@@ -180,7 +179,7 @@
 
     <!-- PrefsTopBar.kt -->
     <string name="prefs_top_back">Retour aux préférences</string>
-    <string name="prefs_top_done">Terminé</string>
+    <string name="prefs_back_to_player">Retour au lecteur</string>
 
     <!-- RackControls.kt -->
     <string name="prefs_rack_about_control">Infos sur %1$s</string>
