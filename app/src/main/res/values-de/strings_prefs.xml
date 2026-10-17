@@ -355,4 +355,44 @@
     <string name="prefs_widget_refresh_high">Hoch</string>
     <string name="prefs_widget_refresh_high_summary">Verbraucht am meisten Akku. Die Zeit tickt, und die Visualisierung holt die Musik so oft ein, wie ein Widget es kann.</string>
     <string name="prefs_widget_refresh_ticking_time_only">Die Zeit tickt mit, Sekunde für Sekunde.</string>
+
+    <string name="preset_details_open">Über diese Voreinstellung</string>
+    <string name="preset_details_back">Zurück zur Liste</string>
+    <string name="preset_details_reading">Voreinstellung wird gelesen…</string>
+    <string name="preset_details_by">von %1$s</string>
+    <string name="preset_details_play">Abspielen</string>
+    <string name="preset_details_forget">Nicht mehr überspringen</string>
+    <string name="preset_details_file_section">Datei</string>
+    <string name="preset_details_pack">Paket</string>
+    <string name="preset_details_folder">Ordner</string>
+    <string name="preset_details_size">Größe</string>
+    <string name="preset_details_sha256">SHA-256</string>
+    <string name="preset_details_milkdrop_section">Milkdrop</string>
+    <string name="preset_details_version">Version der Voreinstellung</string>
+    <string name="preset_details_shader_model">Pixel-Shader-Modell</string>
+    <string name="preset_details_shader_model_value">Warp %1$s, Composite %2$s</string>
+    <string name="preset_details_warp">Warp-Shader</string>
+    <string name="preset_details_comp">Composite-Shader</string>
+    <string name="preset_details_per_frame">Gleichungen pro Frame</string>
+    <string name="preset_details_per_pixel">Gleichungen pro Pixel</string>
+    <string name="preset_details_waves">Eigene Wellen</string>
+    <string name="preset_details_shapes">Eigene Formen</string>
+    <string name="preset_details_q">q-Variablen</string>
+    <string name="preset_details_none">Keine</string>
+    <string name="preset_details_textures_section">Texturen</string>
+    <string name="preset_details_texture_found">Im Paket</string>
+    <string name="preset_details_texture_missing">Nicht im Paket</string>
+    <string name="preset_details_texture_random">Eine zufällige aus dem Paket</string>
+    <string name="preset_details_settings_section">Einstellungen in der Datei</string>
+    <string name="preset_details_avs_section">AVS</string>
+    <string name="preset_details_clears">Beginnt jeden Frame mit Schwarz</string>
+    <string name="preset_details_yes">Ja</string>
+    <string name="preset_details_no">Nein</string>
+    <string name="preset_details_components">Bestandteile</string>
+    <string name="preset_details_not_shown">Nicht angezeigt</string>
+    <string name="preset_details_unparsed">Diese Datei konnte nicht als Voreinstellung gelesen werden.</string>
+    <plurals name="preset_details_lines">
+        <item quantity="one">%1$d Zeile</item>
+        <item quantity="other">%1$d Zeilen</item>
+    </plurals>
 </resources>

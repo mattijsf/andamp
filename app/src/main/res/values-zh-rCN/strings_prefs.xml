@@ -349,4 +349,43 @@
     <string name="prefs_widget_refresh_high">高</string>
     <string name="prefs_widget_refresh_high_summary">最耗电。时间逐秒走动，可视化效果以小部件所能达到的最高频率跟上歌曲。</string>
     <string name="prefs_widget_refresh_ticking_time_only">时间逐秒走动。</string>
+
+    <string name="preset_details_open">关于此预设</string>
+    <string name="preset_details_back">返回列表</string>
+    <string name="preset_details_reading">正在读取预设…</string>
+    <string name="preset_details_by">作者：%1$s</string>
+    <string name="preset_details_play">播放</string>
+    <string name="preset_details_forget">不再跳过</string>
+    <string name="preset_details_file_section">文件</string>
+    <string name="preset_details_pack">预设包</string>
+    <string name="preset_details_folder">文件夹</string>
+    <string name="preset_details_size">大小</string>
+    <string name="preset_details_sha256">SHA-256</string>
+    <string name="preset_details_milkdrop_section">Milkdrop</string>
+    <string name="preset_details_version">预设版本</string>
+    <string name="preset_details_shader_model">像素着色器模型</string>
+    <string name="preset_details_shader_model_value">warp %1$s，composite %2$s</string>
+    <string name="preset_details_warp">Warp 着色器</string>
+    <string name="preset_details_comp">Composite 着色器</string>
+    <string name="preset_details_per_frame">每帧方程</string>
+    <string name="preset_details_per_pixel">每像素方程</string>
+    <string name="preset_details_waves">自定义波形</string>
+    <string name="preset_details_shapes">自定义形状</string>
+    <string name="preset_details_q">q 变量</string>
+    <string name="preset_details_none">无</string>
+    <string name="preset_details_textures_section">纹理</string>
+    <string name="preset_details_texture_found">在预设包中</string>
+    <string name="preset_details_texture_missing">不在预设包中</string>
+    <string name="preset_details_texture_random">从预设包中随机选取</string>
+    <string name="preset_details_settings_section">文件中的设置</string>
+    <string name="preset_details_avs_section">AVS</string>
+    <string name="preset_details_clears">每帧从黑色开始</string>
+    <string name="preset_details_yes">是</string>
+    <string name="preset_details_no">否</string>
+    <string name="preset_details_components">组件</string>
+    <string name="preset_details_not_shown">未显示</string>
+    <string name="preset_details_unparsed">无法将此文件作为预设读取。</string>
+    <plurals name="preset_details_lines">
+        <item quantity="other">%1$d 行</item>
+    </plurals>
 </resources>

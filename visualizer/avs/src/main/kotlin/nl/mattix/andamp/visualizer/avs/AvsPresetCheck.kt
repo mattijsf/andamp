@@ -66,6 +66,34 @@ object AvsPresetCheck {
         return PresetGaps(unreadable = path != null && read == null, missing = engine.unimplemented, reason = why)
     }
 
+    /**
+     * The components of the preset at [path], in the order AVS runs them, each with how deep
+     * in Effect Lists it sits; null when the file cannot be read as a preset.
+     */
+    fun outline(path: String): AvsOutline? =
+        try {
+            val file = File(path)
+            if (file.length() > MAX_PRESET_BYTES) throw AvsFormatException("${file.length()} bytes is no preset")
+            val preset = AvsParser.parse(file.readBytes())
+            val parts = mutableListOf<AvsOutline.Part>()
+
+            fun walk(
+                component: AvsComponent,
+                depth: Int,
+            ) {
+                parts += AvsOutline.Part(component.name, depth)
+                component.children().forEach { walk(it, depth + 1) }
+            }
+            preset.components.forEach { walk(it, 0) }
+            AvsOutline(preset.clearEveryFrame, parts)
+        } catch (e: AvsFormatException) {
+            Log.w(TAG, "cannot outline $path: ${e.message}")
+            null
+        } catch (e: java.io.IOException) {
+            Log.w(TAG, "cannot outline $path: ${e.message}")
+            null
+        }
+
     /** What of each of [paths] would not show, checked one at a time with an engine that never draws. */
     fun check(
         paths: List<String>,
@@ -82,4 +110,18 @@ object AvsPresetCheck {
             engine.close()
         }
     }
+}
+
+/** What an `.avs` preset is made of, for a page about it. */
+data class AvsOutline(
+    /** Whether each frame starts from black. */
+    val clearEveryFrame: Boolean,
+    /** Every component, a list before its children. */
+    val parts: List<Part>,
+) {
+    /** A component by the name AVS shows for it, [depth] Effect Lists deep. */
+    data class Part(
+        val name: String,
+        val depth: Int,
+    )
 }

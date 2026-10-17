@@ -7,10 +7,12 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import nl.mattix.andamp.state.presets.PresetDetails
 import nl.mattix.andamp.visualizer.core.PresetGaps
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -199,6 +201,39 @@ class MilkdropScreenTest {
 
         compose.onNodeWithTag("milkdrop.tab.settings").performClick()
         compose.onNodeWithTag("prefs.vis.manage").assertDoesNotExist()
+    }
+
+    @Test
+    fun `a preset's page opens from its row, and back returns to the list`() {
+        var forgotten: String? = null
+        val path = "/presets/pack/preset 2.milk"
+        show(
+            selector =
+                PresetSelector(
+                    paths = paths(3),
+                    gapsOf = { if (it == path) PresetGaps(blank = true) else null },
+                    describe = {
+                        PresetDetails(
+                            path = it,
+                            name = "preset 2",
+                            author = null,
+                            pack = "pack",
+                            folder = null,
+                            fingerprint = null,
+                        )
+                    },
+                    onForget = { forgotten = it },
+                ),
+        )
+
+        compose.onNodeWithTag("milkdrop.preset.preset 2.about").performClick()
+        compose.waitUntil { compose.onAllNodesWithTag("preset.details.forget").fetchSemanticsNodes().isNotEmpty() }
+        compose.onNodeWithTag("preset.details.problem").assertIsDisplayed()
+        compose.onNodeWithTag("preset.details.forget").performClick()
+        compose.onNodeWithTag("preset.details.back").performClick()
+
+        assertEquals(path, forgotten)
+        compose.onNodeWithTag("milkdrop.presets").assertIsDisplayed()
     }
 
     @Test

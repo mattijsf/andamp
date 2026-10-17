@@ -2,7 +2,9 @@
 
 package nl.mattix.andamp.ui.prefs
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -20,10 +22,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Shuffle
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
 import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconToggleButton
@@ -43,6 +47,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -55,8 +61,11 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import nl.mattix.andamp.R
 import nl.mattix.andamp.state.PresetNotice
+import nl.mattix.andamp.state.presets.PresetDetails
 import nl.mattix.andamp.ui.menu.idleLabelRes
 import nl.mattix.andamp.ui.rememberWords
 import nl.mattix.andamp.visualizer.core.PresetGaps
@@ -84,11 +93,24 @@ fun MilkdropScreen(
     preview: @Composable (Modifier) -> Unit = {},
 ) {
     var tab by rememberSaveable { mutableIntStateOf(TAB_PRESETS) }
+    // the preset whose page is open over the list, by file
+    var about by rememberSaveable { mutableStateOf<String?>(null) }
+    BackHandler(enabled = about != null) { about = null }
     Surface(Modifier.fillMaxSize()) {
         Scaffold(
             topBar = {
                 TopAppBar(
                     title = { Text(prefs.plugin.menuLabel) },
+                    navigationIcon = {
+                        if (about != null) {
+                            IconButton(onClick = { about = null }, modifier = Modifier.testTag("preset.details.back")) {
+                                Icon(
+                                    Icons.AutoMirrored.Filled.ArrowBack,
+                                    contentDescription = stringResource(R.string.preset_details_back),
+                                )
+                            }
+                        }
+                    },
                     actions = {
                         TextButton(onClick = onClose, modifier = Modifier.testTag("milkdrop.close")) {
                             Text(stringResource(R.string.prefs_milkdrop_done))
@@ -108,7 +130,11 @@ fun MilkdropScreen(
                             .background(Color.Black)
                             .testTag("milkdrop.preview"),
                     )
-                    NowShowing(prefs, selector)
+                    NowShowing(prefs, selector, onAbout = { about = it })
+                    about?.let { path ->
+                        AboutPreset(path, selector, onPlayed = { about = null })
+                        return@Column
+                    }
                     PrimaryTabRow(selectedTabIndex = tab) {
                         Tab(
                             selected = tab == TAB_PRESETS,
@@ -124,7 +150,7 @@ fun MilkdropScreen(
                         )
                     }
                     when (tab) {
-                        TAB_PRESETS -> PresetList(prefs, selector)
+                        TAB_PRESETS -> PresetList(prefs, selector, onAbout = { about = it })
                         else -> Settings(prefs)
                     }
                 }
@@ -138,6 +164,7 @@ fun MilkdropScreen(
 private fun NowShowing(
     prefs: VisualizerPrefs,
     selector: PresetSelector,
+    onAbout: (String) -> Unit,
 ) {
     val words = rememberWords()
     val current = selector.current
@@ -151,7 +178,17 @@ private fun NowShowing(
                 style = MaterialTheme.typography.titleMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.testTag("milkdrop.current"),
+                // the name opens the preset's page; the idle preset has none
+                modifier =
+                    Modifier
+                        .let { m ->
+                            current?.let {
+                                m.clickable(
+                                    onClickLabel = stringResource(R.string.preset_details_open),
+                                ) { onAbout(it) }
+                            }
+                                ?: m
+                        }.testTag("milkdrop.current"),
             )
             PresetNotice.detailFor(selector.currentGaps, words)?.let { problem ->
                 Problem(problem, selector.currentGaps, Modifier.testTag("milkdrop.current.problem"))
@@ -184,6 +221,7 @@ private fun NowShowing(
 private fun PresetList(
     prefs: VisualizerPrefs,
     selector: PresetSelector,
+    onAbout: (String) -> Unit,
 ) {
     val list = rememberLazyListState()
     val paths = selector.paths
@@ -208,6 +246,7 @@ private fun PresetList(
                 gaps = selector.gapsOf(path),
                 onPlay = { selector.onPlay(path) },
                 onToggleFavorite = { selector.onToggleFavorite(path) },
+                onAbout = { onAbout(path) },
             )
         }
         item { Spacer(Modifier.height(32.dp)) }
@@ -293,6 +332,7 @@ private fun PresetRow(
     gaps: PresetGaps?,
     onPlay: () -> Unit,
     onToggleFavorite: () -> Unit,
+    onAbout: () -> Unit,
 ) {
     val name = File(path).nameWithoutExtension
     val words = rememberWords()
@@ -318,6 +358,9 @@ private fun PresetRow(
             gaps?.let { PresetNotice.detailFor(it, words) }?.let { problem ->
                 Problem(problem, gaps, Modifier.testTag("milkdrop.preset.$name.problem"))
             }
+        }
+        IconButton(onClick = onAbout, modifier = Modifier.testTag("milkdrop.preset.$name.about")) {
+            Icon(Icons.Outlined.Info, contentDescription = stringResource(R.string.preset_details_open))
         }
         Star(favorite = favorite, enabled = true, onToggle = onToggleFavorite, tag = "milkdrop.preset.$name.favorite")
     }
@@ -379,6 +422,27 @@ private fun Settings(prefs: VisualizerPrefs) {
 
 private const val TAB_PRESETS = 0
 private const val TAB_SETTINGS = 1
+
+/** The page about the preset at [path], read off the main thread. */
+@Composable
+private fun AboutPreset(
+    path: String,
+    selector: PresetSelector,
+    onPlayed: () -> Unit,
+) {
+    val details by produceState<PresetDetails?>(null, path) { value = withContext(Dispatchers.IO) { selector.describe(path) } }
+    PresetDetailsPage(
+        details = details,
+        gaps = selector.gapsOf(path),
+        favorite = selector.isFavorite(path),
+        onPlay = {
+            selector.onPlay(path)
+            onPlayed()
+        },
+        onToggleFavorite = { selector.onToggleFavorite(path) },
+        onForget = { selector.onForget(path) },
+    )
+}
 
 /** The sources and the line about the list sit above the presets. */
 private const val HEADER_ITEMS = 2

@@ -356,4 +356,44 @@
     <string name="prefs_widget_refresh_high">Hoog</string>
     <string name="prefs_widget_refresh_high_summary">Verbruikt de meeste batterij. De tijd tikt door, en de visualisatie haalt het nummer zo vaak in als een widget kan.</string>
     <string name="prefs_widget_refresh_ticking_time_only">De tijd tikt door, seconde na seconde.</string>
+
+    <string name="preset_details_open">Over deze preset</string>
+    <string name="preset_details_back">Terug naar de lijst</string>
+    <string name="preset_details_reading">Preset wordt gelezen…</string>
+    <string name="preset_details_by">door %1$s</string>
+    <string name="preset_details_play">Afspelen</string>
+    <string name="preset_details_forget">Niet meer overslaan</string>
+    <string name="preset_details_file_section">Bestand</string>
+    <string name="preset_details_pack">Pakket</string>
+    <string name="preset_details_folder">Map</string>
+    <string name="preset_details_size">Grootte</string>
+    <string name="preset_details_sha256">SHA-256</string>
+    <string name="preset_details_milkdrop_section">Milkdrop</string>
+    <string name="preset_details_version">Presetversie</string>
+    <string name="preset_details_shader_model">Pixel-shadermodel</string>
+    <string name="preset_details_shader_model_value">warp %1$s, composite %2$s</string>
+    <string name="preset_details_warp">Warp-shader</string>
+    <string name="preset_details_comp">Composite-shader</string>
+    <string name="preset_details_per_frame">Vergelijkingen per frame</string>
+    <string name="preset_details_per_pixel">Vergelijkingen per pixel</string>
+    <string name="preset_details_waves">Eigen golven</string>
+    <string name="preset_details_shapes">Eigen vormen</string>
+    <string name="preset_details_q">q-variabelen</string>
+    <string name="preset_details_none">Geen</string>
+    <string name="preset_details_textures_section">Textures</string>
+    <string name="preset_details_texture_found">In het pakket</string>
+    <string name="preset_details_texture_missing">Niet in het pakket</string>
+    <string name="preset_details_texture_random">Een willekeurige uit het pakket</string>
+    <string name="preset_details_settings_section">Instellingen in het bestand</string>
+    <string name="preset_details_avs_section">AVS</string>
+    <string name="preset_details_clears">Begint elk frame vanuit zwart</string>
+    <string name="preset_details_yes">Ja</string>
+    <string name="preset_details_no">Nee</string>
+    <string name="preset_details_components">Onderdelen</string>
+    <string name="preset_details_not_shown">Niet getoond</string>
+    <string name="preset_details_unparsed">Dit bestand kon niet als preset worden gelezen.</string>
+    <plurals name="preset_details_lines">
+        <item quantity="one">%1$d regel</item>
+        <item quantity="other">%1$d regels</item>
+    </plurals>
 </resources>

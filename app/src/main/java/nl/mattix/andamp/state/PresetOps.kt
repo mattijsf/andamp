@@ -20,6 +20,7 @@ import kotlinx.coroutines.withContext
 import nl.mattix.andamp.state.presets.Favorite
 import nl.mattix.andamp.state.presets.FavoriteStore
 import nl.mattix.andamp.state.presets.InstalledPack
+import nl.mattix.andamp.state.presets.PresetDetails
 import nl.mattix.andamp.state.presets.PresetFingerprint
 import nl.mattix.andamp.state.presets.PresetHealthStore
 import nl.mattix.andamp.state.presets.PresetLibrary
@@ -324,6 +325,9 @@ class PresetOps(
         val before = health.put(path, gaps)
         if ((before ?: PresetGaps.NONE) != gaps) keep(path, gaps)
     }
+
+    /** What the preset at [path] is made of, for its page; reads the file, so not on the main thread. */
+    fun describe(path: String): PresetDetails = PresetDetails.read(path, packs)
 
     /** Forgets what is known of the preset at [path], here and across launches. */
     fun forget(path: String) {

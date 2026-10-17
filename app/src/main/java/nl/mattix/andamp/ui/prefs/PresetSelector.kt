@@ -3,6 +3,7 @@
 package nl.mattix.andamp.ui.prefs
 
 import nl.mattix.andamp.state.WinampViewModel
+import nl.mattix.andamp.state.presets.PresetDetails
 import nl.mattix.andamp.visualizer.core.PresetGaps
 
 /**
@@ -27,6 +28,10 @@ data class PresetSelector(
     val onPrevious: () -> Unit = {},
     /** The list a screen shows, for the engine to check ahead where it can. */
     val onShown: (List<String>) -> Unit = {},
+    /** Reads a preset for its page; blocking, so it is called off the main thread. */
+    val describe: (String) -> PresetDetails? = { null },
+    /** Forgets what went wrong with a preset, so it is no longer skipped. */
+    val onForget: (String) -> Unit = {},
 )
 
 /** The selector's data, read off the view model. */
@@ -46,5 +51,7 @@ fun presetSelectorOf(vm: WinampViewModel): PresetSelector {
         onNext = { s.visualCommands?.nextPreset() },
         onPrevious = { s.visualCommands?.previousPreset() },
         onShown = { ops.checkAhead(it) },
+        describe = { ops.describe(it) },
+        onForget = { ops.forget(it) },
     )
 }
