@@ -41,7 +41,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -102,19 +101,18 @@ fun MilkdropScreen(
             topBar = {
                 TopAppBar(
                     title = { Text(if (about != null) stringResource(R.string.preset_details_open) else prefs.plugin.menuLabel) },
+                    // back to the list from a preset's page, and to the player from here
                     navigationIcon = {
-                        if (about != null) {
-                            IconButton(onClick = { about = null }, modifier = Modifier.testTag("preset.details.back")) {
-                                Icon(
-                                    Icons.AutoMirrored.Filled.ArrowBack,
-                                    contentDescription = stringResource(R.string.preset_details_back),
-                                )
-                            }
-                        }
-                    },
-                    actions = {
-                        TextButton(onClick = onClose, modifier = Modifier.testTag("milkdrop.close")) {
-                            Text(stringResource(R.string.prefs_milkdrop_done))
+                        val toList = about != null
+                        IconButton(
+                            onClick = { if (toList) about = null else onClose() },
+                            modifier = Modifier.testTag(if (toList) "preset.details.back" else "milkdrop.close"),
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription =
+                                    stringResource(if (toList) R.string.preset_details_back else R.string.prefs_back_to_player),
+                            )
                         }
                     },
                 )

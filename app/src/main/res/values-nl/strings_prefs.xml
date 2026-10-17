@@ -63,7 +63,6 @@
     <string name="prefs_lists_row_large">Groot</string>
 
     <!-- MilkdropScreen.kt -->
-    <string name="prefs_milkdrop_done">Klaar</string>
     <string name="prefs_milkdrop_presets_section">Presets</string>
     <string name="prefs_milkdrop_pack_loading">Het pakket wordt geladen, of het venster van de plug-in is gesloten.</string>
     <string name="prefs_milkdrop_settings_tab">Instellingen</string>
@@ -190,7 +189,7 @@
 
     <!-- PrefsTopBar.kt -->
     <string name="prefs_top_back">Terug naar voorkeuren</string>
-    <string name="prefs_top_done">Klaar</string>
+    <string name="prefs_back_to_player">Terug naar de speler</string>
 
     <!-- RackControls.kt -->
     <string name="prefs_rack_about_control">Over %1$s</string>
