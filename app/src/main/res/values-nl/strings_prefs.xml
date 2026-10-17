@@ -65,6 +65,13 @@
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">Presets</string>
     <string name="prefs_milkdrop_pack_loading">Het pakket wordt geladen, of het venster van de plug-in is gesloten.</string>
+    <string name="prefs_milkdrop_search_hint">Zoek in presets en mappen</string>
+    <string name="prefs_milkdrop_search_clear">Zoekopdracht wissen</string>
+    <string name="prefs_milkdrop_search_none">Geen preset past bij “%1$s”.</string>
+    <plurals name="prefs_milkdrop_search_count">
+        <item quantity="one">%1$d van %2$d presets past.</item>
+        <item quantity="other">%1$d van %2$d presets passen.</item>
+    </plurals>
     <string name="prefs_milkdrop_settings_tab">Instellingen</string>
     <string name="prefs_milkdrop_favorites_chip">Favorieten (%1$d)</string>
     <plurals name="prefs_milkdrop_favorites_count">

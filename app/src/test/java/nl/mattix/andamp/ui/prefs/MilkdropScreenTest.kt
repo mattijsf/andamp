@@ -8,10 +8,12 @@ import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollToNode
+import androidx.compose.ui.test.performTextInput
 import nl.mattix.andamp.state.presets.PresetDetails
 import nl.mattix.andamp.visualizer.core.PresetGaps
 import org.junit.Assert.assertEquals
@@ -237,6 +239,47 @@ class MilkdropScreenTest {
 
         assertEquals(path, forgotten)
         compose.onNodeWithTag("milkdrop.presets").assertIsDisplayed()
+    }
+
+    @Test
+    fun `typing narrows the list by title and by folder`() {
+        val paths =
+            listOf("/p/pack/Dancer/Glow/Mashup (1).milk", "/p/pack/Fractal/Lattice/Mashup (2).milk", "/p/pack/Jc - Crystal.milk")
+        show(
+            VisualizerPrefs(activePack = "pack"),
+            PresetSelector(paths = paths, placeOf = { path ->
+                path
+                    .split('/')
+                    .drop(3)
+                    .dropLast(1)
+                    .joinToString(" / ")
+                    .ifEmpty { null }
+            }),
+        )
+
+        compose.onNodeWithTag("milkdrop.search").performTextInput("glow")
+        compose.waitUntil { compose.onAllNodesWithTag("milkdrop.preset.Mashup (2)").fetchSemanticsNodes().isEmpty() }
+
+        compose.onNodeWithTag("milkdrop.preset.Mashup (1)").assertIsDisplayed()
+        compose.onNodeWithTag("milkdrop.preset.Jc - Crystal").assertDoesNotExist()
+        compose.onNodeWithText("1 of 3 preset matches.").assertIsDisplayed()
+
+        compose.onNodeWithTag("milkdrop.search.clear").performClick()
+        compose.onNodeWithTag("milkdrop.preset.Mashup (2)").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a search with no match says so`() {
+        show(VisualizerPrefs(activePack = "pack"), PresetSelector(paths = paths(3)))
+
+        compose.onNodeWithTag("milkdrop.search").performTextInput("nothing like this")
+        compose.waitUntil {
+            compose
+                .onAllNodesWithText(
+                    "No preset matches “nothing like this”.",
+                ).fetchSemanticsNodes()
+                .isNotEmpty()
+        }
     }
 
     @Test

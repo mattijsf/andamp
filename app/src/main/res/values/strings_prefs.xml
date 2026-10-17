@@ -69,6 +69,16 @@
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">Presets</string>
     <string name="prefs_milkdrop_pack_loading">The pack is loading, or the plug-in window is closed.</string>
+    <!-- The search field over the preset list. -->
+    <string name="prefs_milkdrop_search_hint">Search presets and folders</string>
+    <string name="prefs_milkdrop_search_clear">Clear the search</string>
+    <!-- What was typed, when no preset has every word of it. -->
+    <string name="prefs_milkdrop_search_none">No preset matches “%1$s”.</string>
+    <!-- How many presets match the search, and how many the list holds. -->
+    <plurals name="prefs_milkdrop_search_count">
+        <item quantity="one">%1$d of %2$d preset matches.</item>
+        <item quantity="other">%1$d of %2$d presets match.</item>
+    </plurals>
     <!-- The tab beside Presets, with the plug-in's settings. -->
     <string name="prefs_milkdrop_settings_tab">Settings</string>
     <!-- The source chip that plays the favorites; how many there are. -->

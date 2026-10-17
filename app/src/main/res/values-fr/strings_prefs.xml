@@ -65,6 +65,13 @@
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">Préréglages</string>
     <string name="prefs_milkdrop_pack_loading">Le pack est en cours de chargement, ou la fenêtre du plugin est fermée.</string>
+    <string name="prefs_milkdrop_search_hint">Rechercher des préréglages et des dossiers</string>
+    <string name="prefs_milkdrop_search_clear">Effacer la recherche</string>
+    <string name="prefs_milkdrop_search_none">Aucun préréglage ne correspond à « %1$s ».</string>
+    <plurals name="prefs_milkdrop_search_count">
+        <item quantity="one">%1$d préréglage sur %2$d correspond.</item>
+        <item quantity="other">%1$d préréglages sur %2$d correspondent.</item>
+    </plurals>
     <string name="prefs_milkdrop_settings_tab">Réglages</string>
     <string name="prefs_milkdrop_favorites_chip">Favoris (%1$d)</string>
     <plurals name="prefs_milkdrop_favorites_count">

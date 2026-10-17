@@ -63,6 +63,12 @@
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">预设</string>
     <string name="prefs_milkdrop_pack_loading">预设包正在载入，或者插件窗口已关闭。</string>
+    <string name="prefs_milkdrop_search_hint">搜索预设和文件夹</string>
+    <string name="prefs_milkdrop_search_clear">清除搜索</string>
+    <string name="prefs_milkdrop_search_none">没有与“%1$s”匹配的预设。</string>
+    <plurals name="prefs_milkdrop_search_count">
+        <item quantity="other">%2$d 个预设中有 %1$d 个匹配。</item>
+    </plurals>
     <string name="prefs_milkdrop_settings_tab">设置</string>
     <string name="prefs_milkdrop_favorites_chip">收藏 (%1$d)</string>
     <plurals name="prefs_milkdrop_favorites_count">

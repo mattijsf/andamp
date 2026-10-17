@@ -65,6 +65,13 @@
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">Voreinstellungen</string>
     <string name="prefs_milkdrop_pack_loading">Das Paket wird geladen, oder das Plug-in-Fenster ist geschlossen.</string>
+    <string name="prefs_milkdrop_search_hint">Voreinstellungen und Ordner durchsuchen</string>
+    <string name="prefs_milkdrop_search_clear">Suche löschen</string>
+    <string name="prefs_milkdrop_search_none">Keine Voreinstellung passt zu „%1$s“.</string>
+    <plurals name="prefs_milkdrop_search_count">
+        <item quantity="one">%1$d von %2$d Voreinstellungen passt.</item>
+        <item quantity="other">%1$d von %2$d Voreinstellungen passen.</item>
+    </plurals>
     <string name="prefs_milkdrop_settings_tab">Einstellungen</string>
     <string name="prefs_milkdrop_favorites_chip">Favoriten (%1$d)</string>
     <plurals name="prefs_milkdrop_favorites_count">

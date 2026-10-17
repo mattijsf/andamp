@@ -4,8 +4,6 @@ package nl.mattix.andamp.ui.prefs
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,7 +28,6 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.StarOutline
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilledTonalIconToggleButton
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconToggleButton
@@ -47,13 +44,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -65,6 +62,7 @@ import kotlinx.coroutines.withContext
 import nl.mattix.andamp.R
 import nl.mattix.andamp.state.PresetNotice
 import nl.mattix.andamp.state.presets.PresetDetails
+import nl.mattix.andamp.state.presets.PresetSearch
 import nl.mattix.andamp.state.presets.PresetTitle
 import nl.mattix.andamp.ui.menu.idleLabelRes
 import nl.mattix.andamp.ui.pulledAside
@@ -241,9 +239,21 @@ private fun PresetList(
     onAbout: (String) -> Unit,
 ) {
     val list = rememberLazyListState()
-    val paths = selector.paths
+    val all = selector.paths
     // a new list is checked ahead, so its rows can say what they will miss before one is picked
-    LaunchedEffect(paths) { selector.onShown(paths) }
+    LaunchedEffect(all) { selector.onShown(all) }
+    var query by rememberSaveable { mutableStateOf("") }
+    // what each preset is searched by, worked out once per list and off the main thread: a pack
+    // can hold thousands
+    val searched by produceState<List<String>?>(null, all) {
+        value = withContext(Dispatchers.Default) { all.map { PresetSearch.text(PresetTitle.of(it), selector.placeOf(it)) } }
+    }
+    val words = PresetSearch.words(query)
+    val paths =
+        remember(all, searched, words) {
+            val texts = searched
+            if (words.isEmpty() || texts == null) all else all.filterIndexed { i, _ -> PresetSearch.matches(texts[i], words) }
+        }
     // the list follows the preset playing when Next or Shuffle takes it out of view
     LaunchedEffect(selector.current, paths) {
         val index = paths.indexOf(selector.current)
@@ -252,94 +262,27 @@ private fun PresetList(
         val shown = list.layoutInfo.visibleItemsInfo
         if (shown.none { it.index == item }) list.scrollToItem(item)
     }
-    LazyColumn(state = list, modifier = Modifier.fillMaxSize().testTag("milkdrop.presets")) {
-        item { Sources(prefs) }
-        item { ListHeader(prefs, selector) }
-        items(paths, key = { it }) { path ->
-            PresetRow(
-                path = path,
-                playing = path == selector.current,
-                favorite = selector.isFavorite(path),
-                gaps = selector.gapsOf(path),
-                place = selector.placeOf(path),
-                onPlay = { selector.onPlay(path) },
-                onToggleFavorite = { selector.onToggleFavorite(path) },
-                onAbout = { onAbout(path) },
-            )
-        }
-        item { Spacer(Modifier.height(32.dp)) }
-    }
-}
-
-/** What can play: the favorites, the engine's idle preset, and each pack. */
-@Composable
-private fun Sources(prefs: VisualizerPrefs) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
-    ) {
-        FilterChip(
-            selected = prefs.favoritesOn,
-            onClick = prefs.onSelectFavorites,
-            enabled = prefs.favoriteCount > 0,
-            label = { Text(stringResource(R.string.prefs_milkdrop_favorites_chip, prefs.favoriteCount)) },
-            leadingIcon = { Icon(Icons.Filled.Star, contentDescription = null) },
-            modifier = Modifier.testTag("milkdrop.source.favorites"),
-        )
-        FilterChip(
-            selected = !prefs.favoritesOn && prefs.activePack == null,
-            onClick = { prefs.onSelectPack(null) },
-            label = { Text(stringResource(prefs.plugin.idleLabelRes)) },
-            modifier = Modifier.testTag("milkdrop.source.idle"),
-        )
-        prefs.packs.forEach { pack ->
-            FilterChip(
-                selected = !prefs.favoritesOn && prefs.activePack == pack.name,
-                onClick = { prefs.onSelectPack(pack.name) },
-                label = { Text(pack.name, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                modifier = Modifier.testTag("milkdrop.source.${pack.name}"),
-            )
-        }
-    }
-}
-
-@Composable
-private fun ListHeader(
-    prefs: VisualizerPrefs,
-    selector: PresetSelector,
-) {
-    val pack = prefs.activePack
-    Text(
-        when {
-            prefs.favoritesOn -> {
-                pluralStringResource(R.plurals.prefs_milkdrop_favorites_count, selector.paths.size, selector.paths.size)
-            }
-
-            pack == null -> {
-                stringResource(
-                    if (prefs.favoriteCount >
-                        0
-                    ) {
-                        R.string.prefs_milkdrop_idle_playing
-                    } else {
-                        R.string.prefs_milkdrop_idle_no_favorites
-                    },
-                    stringResource(prefs.plugin.idleLabelRes),
+    Column(Modifier.fillMaxSize()) {
+        // above the list, not in it: the list opens scrolled to the preset playing
+        if (all.size > 1) SearchField(query, onQuery = { query = it })
+        LazyColumn(state = list, modifier = Modifier.fillMaxSize().testTag("milkdrop.presets")) {
+            item { Sources(prefs) }
+            item { ListHeader(prefs, selector, found = paths.size.takeIf { words.isNotEmpty() }, query = query) }
+            items(paths, key = { it }) { path ->
+                PresetRow(
+                    path = path,
+                    playing = path == selector.current,
+                    favorite = selector.isFavorite(path),
+                    gaps = selector.gapsOf(path),
+                    place = selector.placeOf(path),
+                    onPlay = { selector.onPlay(path) },
+                    onToggleFavorite = { selector.onToggleFavorite(path) },
+                    onAbout = { onAbout(path) },
                 )
             }
-
-            selector.paths.isEmpty() -> {
-                stringResource(R.string.prefs_milkdrop_pack_loading)
-            }
-
-            else -> {
-                pluralStringResource(R.plurals.prefs_milkdrop_pack_count, selector.paths.size, selector.paths.size, pack)
-            }
-        },
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 8.dp).testTag("milkdrop.list.header"),
-    )
+            item { Spacer(Modifier.height(32.dp)) }
+        }
+    }
 }
 
 @Composable
@@ -475,7 +418,7 @@ private fun AboutPreset(
     )
 }
 
-/** The sources and the line about the list sit above the presets. */
+/** The sources and the line about the list sit above the presets; the search field is outside the list. */
 private const val HEADER_ITEMS = 2
 
 /** The preview's height, at most this share of the room below the bar. */
