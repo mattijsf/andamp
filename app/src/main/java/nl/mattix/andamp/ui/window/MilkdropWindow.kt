@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.ui.window
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -15,6 +16,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
@@ -226,7 +228,9 @@ fun MilkdropSurface(
     modifier: Modifier = Modifier,
 ) {
     val s: WinampState = vm.state
-    Box(modifier) {
+    // Black under the engine's view: a TextureView draws nothing until its first frame,
+    // and the window is translucent, so the wallpaper would show through until then.
+    Box(modifier.background(Color.Black)) {
         key(s.visPlugin) {
             when (s.visPlugin) {
                 VisPlugin.Avs -> AvsEngineView(vm)
