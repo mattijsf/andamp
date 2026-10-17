@@ -4,12 +4,15 @@
 // holding the GL context: libprojectM is not thread-safe, and the Kotlin side
 // (ProjectMView's render thread) is what guarantees it.
 
+#include <android/log.h>
 #include <jni.h>
 
 #include <projectM-4/projectM.h>
 #include <projectM-4/playlist.h>
 
+#include <iostream>
 #include <mutex>
+#include <streambuf>
 #include <string>
 #include <vector>
 
@@ -23,6 +26,85 @@ inline projectm_handle handleOf(jlong handle)
 inline projectm_playlist_handle playlistOf(jlong handle)
 {
     return reinterpret_cast<projectm_playlist_handle>(handle);
+}
+
+// Strings for Kotlin as raw bytes, each ended by a zero byte: NewStringUTF wants modified UTF-8
+// and aborts on a 4-byte character, which a file name can hold.
+jbyteArray zeroEnded(JNIEnv* env, const std::vector<std::string>& strings)
+{
+    std::string joined;
+    for (const auto& item : strings) {
+        joined += item;
+        joined += '\0';
+    }
+    jbyteArray result = env->NewByteArray(static_cast<jsize>(joined.size()));
+    env->SetByteArrayRegion(result, 0, static_cast<jsize>(joined.size()), reinterpret_cast<const jbyte*>(joined.data()));
+    return result;
+}
+
+// What projectM writes to std::cerr, which Android drops: which preset it is loading, and
+// what of it would not compile or load, after which it draws the preset without that part
+// (a fallback shader, no custom wave). Each line goes to logcat and is kept for Kotlin to
+// take. Both engines' lines land here; a line is placed by the "Loading preset" line before it.
+class ProjectMLog : public std::streambuf
+{
+public:
+    std::vector<std::string> take()
+    {
+        std::lock_guard<std::mutex> guard(lock);
+        std::vector<std::string> taken;
+        taken.swap(lines);
+        return taken;
+    }
+
+protected:
+    int overflow(int c) override
+    {
+        if (c == traits_type::eof()) {
+            return 0;
+        }
+        if (c == '\n') {
+            endLine();
+        } else {
+            line += static_cast<char>(c);
+        }
+        return c;
+    }
+
+    std::streamsize xsputn(const char* chars, std::streamsize count) override
+    {
+        for (std::streamsize i = 0; i < count; ++i) {
+            overflow(static_cast<unsigned char>(chars[i]));
+        }
+        return count;
+    }
+
+private:
+    // a player that nobody reads from keeps at most this many
+    static constexpr size_t KEPT = 512;
+
+    void endLine()
+    {
+        __android_log_write(ANDROID_LOG_INFO, "projectM", line.c_str());
+        std::lock_guard<std::mutex> guard(lock);
+        if (lines.size() >= KEPT) {
+            lines.erase(lines.begin());
+        }
+        lines.push_back(line);
+        line.clear();
+    }
+
+    std::mutex lock;
+    std::vector<std::string> lines;
+    std::string line;
+};
+
+ProjectMLog& projectMLog()
+{
+    static ProjectMLog log;
+    static std::once_flag installed;
+    std::call_once(installed, [] { std::cerr.rdbuf(&log); });
+    return log;
 }
 
 // The presets a playlist could not switch to since they were last taken, each with
@@ -86,6 +168,7 @@ Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeCreate(
         JNIEnv* /* env */, jobject /* thiz */,
         jint width, jint height, jint meshWidth, jint meshHeight, jint fps)
 {
+    projectMLog();
     projectm_handle instance = projectm_create();
     if (instance == nullptr) {
         return 0;
@@ -325,7 +408,7 @@ Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistUnwatchFa
     delete reinterpret_cast<FailureWatch*>(watch);
 }
 
-JNIEXPORT jobjectArray JNICALL
+JNIEXPORT jbyteArray JNICALL
 Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeTakeFailures(
         JNIEnv* env, jobject /* thiz */, jlong watch)
 {
@@ -337,14 +420,14 @@ Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeTakeFailures(
     }
     // taken once a frame: a new switch gets the whole budget again
     failures->skipped = 0;
-    jclass stringClass = env->FindClass("java/lang/String");
-    jobjectArray result = env->NewObjectArray(static_cast<jsize>(taken.size()), stringClass, nullptr);
-    for (size_t i = 0; i < taken.size(); ++i) {
-        jstring item = env->NewStringUTF(taken[i].c_str());
-        env->SetObjectArrayElement(result, static_cast<jsize>(i), item);
-        env->DeleteLocalRef(item);
-    }
-    return result;
+    return zeroEnded(env, taken);
+}
+
+JNIEXPORT jbyteArray JNICALL
+Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeTakeLog(
+        JNIEnv* env, jobject /* thiz */)
+{
+    return zeroEnded(env, projectMLog().take());
 }
 
 } // extern "C"

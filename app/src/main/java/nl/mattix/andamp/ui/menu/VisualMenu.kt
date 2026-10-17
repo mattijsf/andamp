@@ -42,14 +42,11 @@ fun visualMenuItems(vm: WinampViewModel): List<AmpMenuItem> {
                 vm.presetOps.setShuffle(!s.presetShuffle)
             },
         )
-        // only AVS reports what it left out of a preset
-        if (s.visPlugin == VisPlugin.Avs) {
-            add(
-                AmpMenuItem.Action(vm.words.get(R.string.menu_show_preset_missing), checked = s.presetNotices) {
-                    vm.presetOps.setNotices(!s.presetNotices)
-                },
-            )
-        }
+        add(
+            AmpMenuItem.Action(vm.words.get(R.string.menu_show_preset_missing), checked = s.presetNotices) {
+                vm.presetOps.setNotices(!s.presetNotices)
+            },
+        )
         add(AmpMenuItem.Divider)
         add(AmpMenuItem.Action(vm.words.get(R.string.menu_manage_presets)) { s.presetManagerRequested = true })
         add(AmpMenuItem.Action(vm.words.get(R.string.menu_load_preset_pack)) { s.presetPickRequested = true })

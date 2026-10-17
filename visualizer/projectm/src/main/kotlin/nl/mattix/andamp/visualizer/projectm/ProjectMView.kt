@@ -91,6 +91,7 @@ class ProjectMView(
                 }
                 presetLoader.sync(presets, shuffle)
                 drainCommands(engine)
+                presetLoader.readLog()
                 presetLoader.reportFailures()
                 presetLoader.reportSwitch()
                 val samples = pcm?.read()

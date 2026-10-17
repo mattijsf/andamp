@@ -115,8 +115,14 @@ class ProjectMEngine {
      */
     fun takeFailures(): List<Pair<String, String>> {
         if (failures == 0L) return emptyList()
-        return ProjectMNative.nativeTakeFailures(failures).toList().chunked(2) { (file, reason) -> file to reason }
+        return ProjectMNative
+            .zeroEnded(
+                ProjectMNative.nativeTakeFailures(failures),
+            ).chunked(2) { (file, reason) -> file to reason }
     }
+
+    /** What projectM wrote to its error stream since the last call; see [PresetLog]. */
+    fun takeLog(): List<String> = ProjectMNative.zeroEnded(ProjectMNative.nativeTakeLog())
 
     val playlistSize: Int get() = ProjectMNative.nativePlaylistSize(playlistHandle())
 

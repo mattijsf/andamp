@@ -19,12 +19,17 @@ internal class PresetLoader(
     private val onPlaylistChanged: (List<String>) -> Unit,
     /** What was playing before this loop existed; see `VisualizerView.stickyPreset`. */
     private val restoreTo: () -> String? = { null },
-    /** A preset's file and what of it is not showing: nothing once it runs, all of it when it failed. */
+    /**
+     * A preset's file and what of it is not showing: the parts projectM left out once it runs,
+     * all of it when it failed.
+     */
     private val onPresetGaps: (String, PresetGaps) -> Unit = { _, _ -> },
 ) {
     private var loaded: PresetPack? = null
     private var shuffling: Boolean? = null
     private var reportedPosition = -1
+    private var reportedPath: String? = null
+    private val log = PresetLog()
 
     fun sync(
         pack: PresetPack?,
@@ -62,8 +67,20 @@ internal class PresetLoader(
         if (position == reportedPosition) return
         reportedPosition = position
         val path = engine.playlistItem(position) ?: return
+        reportedPath = path
         onPresetChanged(File(path).nameWithoutExtension)
-        onPresetGaps(path, PresetGaps.NONE)
+        onPresetGaps(path, PresetGaps(missing = log.leftOut(path)))
+    }
+
+    /**
+     * Reads what projectM wrote since the last call. Called before [reportSwitch], so a preset
+     * is announced with what it leaves out; a part that goes missing later, such as a texture
+     * looked up while drawing, is announced again for the preset showing.
+     */
+    fun readLog() {
+        val grew = log.read(engine.takeLog())
+        val showing = reportedPath ?: return
+        if (showing in grew) onPresetGaps(showing, PresetGaps(missing = log.leftOut(showing)))
     }
 
     /** Names every preset projectM tried and could not show since the last call, with its reason. */

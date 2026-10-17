@@ -208,13 +208,13 @@ class MilkdropMenuTest {
         assertFalse(ticked(visualMenu(vm).items).contains(label))
     }
 
-    /** Only AVS reports what it left out of a preset. */
+    /** projectM says what it left out of a preset too: a shader, a custom wave, a texture. */
     @Test
-    fun `the Milkdrop menu has no such switch`() {
+    fun `the Milkdrop menu has the same switch`() {
         val vm = testViewModel()
         vm.presetOps.selectPlugin(VisPlugin.Milkdrop)
 
-        assertFalse(labels(visualMenu(vm).items).contains("Show what a preset is missing"))
+        assertTrue(labels(visualMenu(vm).items).contains("Show what a preset is missing"))
     }
 
     @Test

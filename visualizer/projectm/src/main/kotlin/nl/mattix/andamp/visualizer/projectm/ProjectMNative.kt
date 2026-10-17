@@ -95,8 +95,17 @@ internal object ProjectMNative {
         watch: Long,
     )
 
-    /** What [nativePlaylistWatchFailures] collected since the last call: file, reason, file, reason... */
-    external fun nativeTakeFailures(watch: Long): Array<String>
+    /**
+     * What [nativePlaylistWatchFailures] collected since the last call: file, reason, file,
+     * reason..., as [zeroEnded] strings.
+     */
+    external fun nativeTakeFailures(watch: Long): ByteArray
+
+    /** The lines projectM wrote to its error stream since the last call, from every engine, as [zeroEnded] strings. */
+    external fun nativeTakeLog(): ByteArray
+
+    /** UTF-8 strings that each end with a zero byte, as the take functions hand them over. */
+    fun zeroEnded(bytes: ByteArray): List<String> = String(bytes, Charsets.UTF_8).split('\u0000').dropLast(1)
 
     external fun nativePlaylistSize(playlist: Long): Int
 
