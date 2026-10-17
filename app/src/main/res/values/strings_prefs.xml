@@ -67,7 +67,6 @@
     <string name="prefs_lists_row_large">Large</string>
 
     <!-- MilkdropScreen.kt -->
-    <string name="prefs_milkdrop_done">Done</string>
     <string name="prefs_milkdrop_presets_section">Presets</string>
     <!-- The plug-in's idle visual, named as its menu does. -->
     <string name="prefs_milkdrop_nothing_loaded">Nothing is loaded but the %1$s. Import a pack above.</string>
@@ -194,7 +193,7 @@
 
     <!-- PrefsTopBar.kt -->
     <string name="prefs_top_back">Back to preferences</string>
-    <string name="prefs_top_done">Done</string>
+    <string name="prefs_back_to_player">Back to the player</string>
 
     <!-- RackControls.kt -->
     <!-- The info mark's spoken name; the control's name. -->

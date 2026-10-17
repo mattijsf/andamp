@@ -61,7 +61,6 @@
     <string name="prefs_lists_row_large">大</string>
 
     <!-- MilkdropScreen.kt -->
-    <string name="prefs_milkdrop_done">完成</string>
     <string name="prefs_milkdrop_presets_section">预设</string>
     <string name="prefs_milkdrop_nothing_loaded">除了 %1$s 之外没有载入任何内容。请在上方导入一个预设包。</string>
     <string name="prefs_milkdrop_pack_loading">预设包正在载入，或者插件窗口已关闭。</string>
@@ -178,7 +177,7 @@
 
     <!-- PrefsTopBar.kt -->
     <string name="prefs_top_back">返回首选项</string>
-    <string name="prefs_top_done">完成</string>
+    <string name="prefs_back_to_player">返回播放器</string>
 
     <!-- RackControls.kt -->
     <string name="prefs_rack_about_control">关于 %1$s</string>
