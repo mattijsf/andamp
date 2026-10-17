@@ -30,9 +30,12 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
@@ -232,6 +235,7 @@ fun WinampScreen(
         }
     }
     val covered = here != null && here != Screen.PLAYER
+    SideEffect { vm.state.playerCovered = covered }
     Box(Modifier.fillMaxSize()) {
         // The player is drawn under the nav host rather than as one of its destinations: a
         // Material screen arrives over it and leaves to it, and the back gesture pulls a screen
@@ -686,6 +690,9 @@ private fun ModernScreen(
     // the back gesture pulls the screen aside, onto the player under it; a screen with levels of
     // its own takes the gesture first while it is deeper than its first
     val pull = rememberBackPull(onBack = onLeave)
+    // the player under the screen wakes its visual while the gesture shows it
+    LaunchedEffect(pull) { snapshotFlow { pull.progress > 0f }.collect { state.screenPulled = it } }
+    DisposableEffect(Unit) { onDispose { state.screenPulled = false } }
     MaterialTheme(colorScheme = skin?.let { rememberSkinColorScheme(it) } ?: darkColorScheme()) {
         Surface(Modifier.fillMaxSize().pulledAside(pull), color = MaterialTheme.colorScheme.background) {
             content()

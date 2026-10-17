@@ -114,6 +114,10 @@ class AvsView(
                     stickyPreset = loadedPath
                 }
                 announced = announce(loadedPath, announced)
+                if (resting) {
+                    pacer.await()
+                    continue
+                }
 
                 val frame = audioFrame(pcm, audio, beat)
                 sizeFor(requestedSize)?.let { engine.resize(it.width, it.height) }

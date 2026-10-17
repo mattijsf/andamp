@@ -101,6 +101,10 @@ class ProjectMView(
                 presetLoader.readLog()
                 presetLoader.reportFailures()
                 presetLoader.reportSwitch()
+                if (resting) {
+                    pacer.await()
+                    continue
+                }
                 val samples = pcm?.read()
                 if (samples != null) engine.addPcmFloat(samples, samples.size.coerceAtMost(maxSamples))
                 val now = System.nanoTime() / NANOS_PER_MILLI

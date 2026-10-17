@@ -218,6 +218,12 @@ class WinampState {
     /** The same presets' files, in the same order. */
     var presetPaths by mutableStateOf<List<String>>(emptyList())
 
+    /** Whether a Material screen covers the player; its visual then rests, see `VisualizerView.resting`. */
+    var playerCovered by mutableStateOf(false)
+
+    /** Whether the back gesture is pulling a screen aside, showing the player under it. */
+    var screenPulled by mutableStateOf(false)
+
     /**
      * Whether the preset selector's preview is up. Its engine then leads: it takes the visual's
      * commands and says what is showing, and the plug-in window's engine follows it.

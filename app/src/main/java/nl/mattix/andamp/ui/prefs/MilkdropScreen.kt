@@ -99,6 +99,9 @@ fun MilkdropScreen(
     var about by rememberSaveable { mutableStateOf<String?>(null) }
     // back from a preset's page pulls it aside onto the list under it
     val aboutPull = rememberBackPull(enabled = about != null) { about = null }
+    // a completed gesture leaves the pull at its end; once the page is gone it goes back to rest,
+    // or the next page would open pulled aside
+    LaunchedEffect(about) { if (about == null) aboutPull.rest() }
     Surface(Modifier.fillMaxSize()) {
         Scaffold(
             topBar = {

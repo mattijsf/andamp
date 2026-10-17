@@ -73,6 +73,14 @@ abstract class VisualizerView<T>(
         }
     }
 
+    /**
+     * Whether the view keeps its engine but draws nothing new: what it last drew stays, and
+     * commands and preset changes still reach the engine, so it wakes up on the right preset at
+     * once. Cheaper than [rendering] off, which ends the engine and builds a new one after.
+     */
+    @Volatile
+    var resting: Boolean = false
+
     /** Whether frames are wanted at all; the owner drives this from the lifecycle. */
     var rendering: Boolean = true
         set(value) {
