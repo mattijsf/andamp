@@ -6,9 +6,9 @@ import java.io.File
 import kotlin.random.Random
 
 /**
- * Which preset plays, out of a directory of `.avs` files.
+ * Which preset plays, out of a directory of `.avs` files or a list of them.
  *
- * State only, so a JVM test covers it: the view feeds it a directory and a
+ * State only, so a JVM test covers it: the view feeds it a directory (or files) and a
  * shuffle flag, asks for next/previous/goTo, and loads whatever [current]
  * answers. Shuffle permutes the order, so every preset appears once per cycle.
  *
@@ -17,7 +17,7 @@ import kotlin.random.Random
 class AvsPlaylist(
     private val random: Random = Random.Default,
 ) {
-    /** The files, sorted by name; empty until a directory is set. */
+    /** The files: a directory's sorted by name, a list's in the order given; empty until either is set. */
     var paths: List<String> = emptyList()
         private set
 
@@ -46,6 +46,22 @@ class AvsPlaylist(
                 ?.sortedBy { it.lowercase() }
                 ?.toList()
                 .orEmpty()
+        return replace(found, shuffle)
+    }
+
+    /**
+     * Plays [files], in the order given: presets from several packs, such as the listener's
+     * favorites. Keeps the current preset when it is still there.
+     */
+    fun setFiles(
+        files: List<String>,
+        shuffle: Boolean,
+    ): Boolean = replace(files, shuffle)
+
+    private fun replace(
+        found: List<String>,
+        shuffle: Boolean,
+    ): Boolean {
         if (found == paths && shuffle == shuffled) return false
         val playing = current
         paths = found
@@ -90,27 +106,30 @@ class AvsPlaylist(
 /**
  * Keeps the render loop from walking the disk every frame.
  *
- * The view's directory and shuffle fields are read every frame; the directory
- * walk happens only when one changed. The [File] is compared by identity, so a
- * new instance with the same path (the active pack imported again under the
- * same name) is walked again.
+ * The view's directory, files and shuffle fields are read every frame; the directory
+ * walk happens only when one changed. The [File] and the list are compared by identity,
+ * so a new instance with the same path (the active pack imported again under the
+ * same name) is walked again. The playlist is told as the files' paths.
  */
 internal class PlaylistSync(
     private val playlist: AvsPlaylist,
     private val onPlaylistChanged: (List<String>) -> Unit,
 ) {
     private var appliedDirectory: File? = null
+    private var appliedFiles: List<String>? = null
     private var appliedShuffle: Boolean? = null
 
+    /** Plays [files] when there are any, [directory]'s otherwise. */
     fun apply(
         directory: File?,
+        files: List<String>?,
         shuffle: Boolean,
     ) {
-        if (directory === appliedDirectory && shuffle == appliedShuffle) return
+        if (directory === appliedDirectory && files === appliedFiles && shuffle == appliedShuffle) return
         appliedDirectory = directory
+        appliedFiles = files
         appliedShuffle = shuffle
-        if (playlist.setDirectory(directory, shuffle)) {
-            onPlaylistChanged(playlist.paths.map { File(it).nameWithoutExtension })
-        }
+        val changed = if (files != null) playlist.setFiles(files, shuffle) else playlist.setDirectory(directory, shuffle)
+        if (changed) onPlaylistChanged(playlist.paths)
     }
 }

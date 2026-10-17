@@ -226,6 +226,12 @@ fun MilkdropWindow(
 fun MilkdropSurface(
     vm: WinampViewModel,
     modifier: Modifier = Modifier,
+    /**
+     * In the plug-in window: tap for the next preset, double tap for fullscreen, long press for
+     * the menu, and the line about a preset's problems. Off on the preset selector's preview,
+     * which only takes a tap and shows those problems below itself.
+     */
+    inWindow: Boolean = true,
 ) {
     val s: WinampState = vm.state
     // Black under the engine's view: a TextureView draws nothing until its first frame,
@@ -237,18 +243,22 @@ fun MilkdropSurface(
                 VisPlugin.Milkdrop -> MilkdropEngineView(vm)
             }
         }
-        PresetNoticeLine(s, Modifier.align(Alignment.BottomStart))
+        if (inWindow) PresetNoticeLine(s, Modifier.align(Alignment.BottomStart))
         // The gestures are on a layer above the engine's view: a pointerInput on the
         // AndroidView itself does not receive them.
         Box(
             Modifier
                 .matchParentSize()
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onTap = { s.visualCommands?.nextPreset() },
-                        onDoubleTap = { s.milkdropFullscreen = !s.milkdropFullscreen },
-                        onLongPress = { s.activeMenu = visualMenu(vm) },
-                    )
+                .pointerInput(inWindow) {
+                    if (inWindow) {
+                        detectTapGestures(
+                            onTap = { s.visualCommands?.nextPreset() },
+                            onDoubleTap = { s.milkdropFullscreen = !s.milkdropFullscreen },
+                            onLongPress = { s.activeMenu = visualMenu(vm) },
+                        )
+                    } else {
+                        detectTapGestures(onTap = { s.visualCommands?.nextPreset() })
+                    }
                 },
         )
     }
@@ -262,7 +272,6 @@ private fun MilkdropEngineView(vm: WinampViewModel) {
         factory = { context ->
             ProjectMView(context).apply {
                 pcmSourceFactory = { fps, maxSamples -> TapPcmSource(fps, maxSamples) { vm.audioTap } }
-                onPlaylistChanged = { paths -> s.presetNames = paths.map { File(it).nameWithoutExtension } }
             }
         },
         update = { view ->
@@ -282,11 +291,12 @@ private fun AvsEngineView(vm: WinampViewModel) {
         factory = { context ->
             AvsView(context).apply {
                 pcmSourceFactory = { fps -> TapPcmSource(fps, AvsView.MAX_PCM_SAMPLES) { vm.audioTap } }
-                onPlaylistChanged = { names -> s.presetNames = names }
             }
         },
         update = { view ->
             view.presetDirectory = vm.presetOps.activeAvsDir
+            view.presetFiles = vm.presetOps.activeAvsFiles
+            view.presetRoots = vm.presetOps.avsRoots
             view.shuffle = s.presetShuffle
         },
     )
@@ -320,7 +330,7 @@ private fun <V : VisualizerView<*>> EngineSurface(
     // without holding the view
     DisposableEffect(surface.value) {
         val view = surface.value
-        s.visualCommands =
+        val commands =
             view?.let {
                 object : VisualCommands {
                     override fun nextPreset() = it.nextPreset()
@@ -330,20 +340,35 @@ private fun <V : VisualizerView<*>> EngineSurface(
                     override fun goToPreset(index: Int) = it.goToPreset(index)
                 }
             }
-        onDispose { s.visualCommands = null }
+        s.visualCommands = commands
+        // two views overlap while the preset selector's preview opens over the window; the one
+        // leaving last must not take the other's commands along
+        onDispose { if (s.visualCommands === commands) s.visualCommands = null }
     }
     AndroidView(
         factory = { context ->
             factory(context)
                 .apply {
                     onPresetChanged = { name -> s.presetName = name }
-                    onPresetGaps = { gaps -> s.presetGaps = gaps }
-                    // the engine's own listener runs first, so the list is in state before
-                    // the resume
-                    val engines = onPlaylistChanged
-                    onPlaylistChanged = { names ->
-                        engines?.invoke(names)
-                        if (resumed.compareAndSet(false, true)) {
+                    onPresetGaps = { path, gaps ->
+                        vm.presetOps.record(path, gaps)
+                        // projectM names presets it tried and skipped as well; those are not showing
+                        if (!(s.visPlugin == VisPlugin.Milkdrop && gaps.unreadable)) {
+                            s.presetPath = path
+                            s.presetGaps = gaps
+                        }
+                    }
+                    onPlaylistChanged = { paths ->
+                        val names = paths.map { File(it).nameWithoutExtension }
+                        s.presetPaths = paths
+                        s.presetNames = names
+                        val wanted = s.presetWanted?.let { paths.indexOf(it) }?.takeIf { it >= 0 }
+                        if (wanted != null) {
+                            // a preset picked from a list that was not playing yet
+                            s.presetWanted = null
+                            resumed.set(true)
+                            goToPreset(wanted)
+                        } else if (resumed.compareAndSet(false, true)) {
                             names.indexOf(resumeTo).takeIf { it >= 0 }?.let { goToPreset(it) }
                         }
                     }

@@ -64,9 +64,19 @@
 
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">Préréglages</string>
-    <string name="prefs_milkdrop_nothing_loaded">Rien n’est chargé à part « %1$s ». Importez un pack ci-dessus.</string>
     <string name="prefs_milkdrop_pack_loading">Le pack est en cours de chargement, ou la fenêtre du plugin est fermée.</string>
-    <string name="prefs_milkdrop_presets_in_pack">%1$d dans %2$s, dans l’ordre où le moteur les joue.</string>
+    <string name="prefs_milkdrop_settings_tab">Réglages</string>
+    <string name="prefs_milkdrop_favorites_chip">Favoris (%1$d)</string>
+    <plurals name="prefs_milkdrop_favorites_count">
+        <item quantity="one">%1$d favori, de n’importe quel pack. Suivant et Lecture aléatoire restent parmi eux.</item>
+        <item quantity="other">%1$d favoris, de n’importe quel pack. Suivant et Lecture aléatoire restent parmi eux.</item>
+    </plurals>
+    <string name="prefs_milkdrop_idle_playing">« %1$s » est affiché. Choisissez vos favoris ou un pack ci-dessus.</string>
+    <string name="prefs_milkdrop_idle_no_favorites">« %1$s » est affiché. Choisissez un pack ci-dessus, ou importez-en un dans Réglages.</string>
+    <plurals name="prefs_milkdrop_pack_count">
+        <item quantity="one">%1$d préréglage dans %2$s. Touchez une étoile pour ajouter un préréglage à vos favoris.</item>
+        <item quantity="other">%1$d préréglages dans %2$s. Touchez une étoile pour ajouter un préréglage à vos favoris.</item>
+    </plurals>
 
     <!-- Notices.kt -->
     <string name="prefs_notice_projectm_what">Le moteur de visualisation Milkdrop, qui affiche les préréglages .milk.</string>
@@ -274,6 +284,12 @@
     <plurals name="prefs_visualizer_summary_packs">
         <item quantity="one">%2$s · %1$d pack, %3$d préréglages</item>
         <item quantity="other">%2$s · %1$d packs, %3$d préréglages</item>
+    </plurals>
+    <string name="prefs_visualizer_favorites">Favoris</string>
+    <string name="prefs_visualizer_favorites_none">Les préréglages marqués d’une étoile, de n’importe quel pack, joués comme un seul. Aucun pour l’instant.</string>
+    <plurals name="prefs_visualizer_favorites_summary">
+        <item quantity="one">%1$d préréglage marqué d’une étoile, de n’importe quel pack</item>
+        <item quantity="other">%1$d préréglages marqués d’une étoile, de n’importe quel pack</item>
     </plurals>
     <string name="prefs_visualizer_plugin_section">Plugin</string>
     <string name="prefs_visualizer_avs_blurb">Le plugin de visualisation de Winamp, reconstruit. Joue les vrais préréglages .avs que vous importez.</string>

@@ -64,9 +64,19 @@
 
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">Voorinstellingen</string>
-    <string name="prefs_milkdrop_nothing_loaded">Er is niets geladen behalve: %1$s. Importeer hierboven een pakket.</string>
     <string name="prefs_milkdrop_pack_loading">Het pakket wordt geladen, of het venster van de plug-in is gesloten.</string>
-    <string name="prefs_milkdrop_presets_in_pack">%1$d in %2$s, in de volgorde waarin de engine ze afspeelt.</string>
+    <string name="prefs_milkdrop_settings_tab">Instellingen</string>
+    <string name="prefs_milkdrop_favorites_chip">Favorieten (%1$d)</string>
+    <plurals name="prefs_milkdrop_favorites_count">
+        <item quantity="one">%1$d favoriet, uit elk pakket. Volgende en Willekeurig blijven daarbinnen.</item>
+        <item quantity="other">%1$d favorieten, uit elk pakket. Volgende en Willekeurig blijven daarbinnen.</item>
+    </plurals>
+    <string name="prefs_milkdrop_idle_playing">De %1$s speelt. Kies hierboven je favorieten of een pakket.</string>
+    <string name="prefs_milkdrop_idle_no_favorites">De %1$s speelt. Kies hierboven een pakket, of importeer er een onder Instellingen.</string>
+    <plurals name="prefs_milkdrop_pack_count">
+        <item quantity="one">%1$d voorinstelling in %2$s. Tik op een ster om een voorinstelling aan je favorieten toe te voegen.</item>
+        <item quantity="other">%1$d voorinstellingen in %2$s. Tik op een ster om een voorinstelling aan je favorieten toe te voegen.</item>
+    </plurals>
 
     <!-- Notices.kt -->
     <string name="prefs_notice_projectm_what">De engine voor de Milkdrop-visualisatie, die .milk-voorinstellingen weergeeft.</string>
@@ -274,6 +284,12 @@
     <plurals name="prefs_visualizer_summary_packs">
         <item quantity="one">%2$s · %1$d pakket, %3$d voorinstellingen</item>
         <item quantity="other">%2$s · %1$d pakketten, %3$d voorinstellingen</item>
+    </plurals>
+    <string name="prefs_visualizer_favorites">Favorieten</string>
+    <string name="prefs_visualizer_favorites_none">De voorinstellingen die je een ster geeft, uit elk pakket, afgespeeld als één. Nog geen.</string>
+    <plurals name="prefs_visualizer_favorites_summary">
+        <item quantity="one">%1$d voorinstelling met een ster, uit elk pakket</item>
+        <item quantity="other">%1$d voorinstellingen met een ster, uit elk pakket</item>
     </plurals>
     <string name="prefs_visualizer_plugin_section">Plug-in</string>
     <string name="prefs_visualizer_avs_blurb">De visualisatie van Winamp zelf, opnieuw gebouwd. Speelt echte .avs-voorinstellingen af die je importeert.</string>

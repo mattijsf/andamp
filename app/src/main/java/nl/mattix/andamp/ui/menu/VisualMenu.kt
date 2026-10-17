@@ -27,6 +27,15 @@ fun visualMenuItems(vm: WinampViewModel): List<AmpMenuItem> {
         add(AmpMenuItem.Submenu(vm.words.get(R.string.menu_preset_pack), packItems(vm)))
         add(AmpMenuItem.Action(vm.words.get(R.string.menu_next_preset)) { s.visualCommands?.nextPreset() })
         add(AmpMenuItem.Action(vm.words.get(R.string.menu_previous_preset)) { s.visualCommands?.previousPreset() })
+        // the idle preset is no file, so it cannot be a favorite
+        s.presetPath?.let { path ->
+            val favorite = vm.presetOps.isFavorite(path)
+            add(
+                AmpMenuItem.Action(vm.words.get(if (favorite) R.string.menu_remove_favorite else R.string.menu_add_favorite)) {
+                    vm.presetOps.toggleFavorite(path)
+                },
+            )
+        }
         add(AmpMenuItem.Divider)
         add(
             AmpMenuItem.Action(vm.words.get(R.string.menu_shuffle), checked = s.presetShuffle) {
@@ -56,13 +65,24 @@ fun visualMenuItems(vm: WinampViewModel): List<AmpMenuItem> {
 
 /**
  * Which pack is loaded, from the packs this engine can run something from. The engine's own idle
- * preset is always an option because it needs no import.
+ * preset is always an option because it needs no import. The favorites are one more, played
+ * like a pack, above the rest once there are any.
  */
 private fun packItems(vm: WinampViewModel): List<AmpMenuItem> {
     val s = vm.state
+    val favorites = vm.presetOps.favoriteFiles(s.visPlugin).size
     return buildList {
+        if (favorites > 0) {
+            add(
+                AmpMenuItem.Action(vm.words.get(R.string.menu_favorites_with_count, favorites), checked = s.presetFavorites) {
+                    vm.presetOps.selectFavorites()
+                    vm.presetOps.setWindowOpen(true)
+                },
+            )
+            add(AmpMenuItem.Divider)
+        }
         add(
-            AmpMenuItem.Action(vm.words.get(s.visPlugin.idleLabelRes), checked = s.presetPack == null) {
+            AmpMenuItem.Action(vm.words.get(s.visPlugin.idleLabelRes), checked = !s.presetFavorites && s.presetPack == null) {
                 vm.presetOps.select(null)
                 vm.presetOps.setWindowOpen(true)
             },
@@ -71,7 +91,7 @@ private fun packItems(vm: WinampViewModel): List<AmpMenuItem> {
             add(
                 AmpMenuItem.Action(
                     vm.words.get(R.string.menu_pack_with_count, pack.name, pack.countFor(s.visPlugin)),
-                    checked = s.presetPack == pack.name,
+                    checked = !s.presetFavorites && s.presetPack == pack.name,
                 ) {
                     vm.presetOps.select(pack.name)
                     vm.presetOps.setWindowOpen(true)

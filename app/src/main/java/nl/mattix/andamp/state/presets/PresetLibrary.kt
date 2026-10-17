@@ -108,19 +108,28 @@ class PresetLibrary(
     }
 
     private fun inspect(dir: File): InstalledPack {
-        var milk = 0
-        var avs = 0
+        val milk = mutableListOf<String>()
+        val avs = mutableListOf<String>()
         val textureDirs = linkedSetOf<File>()
         dir.walkTopDown().forEach { file ->
             when {
                 file.isDirectory && file.name.equals(TEXTURES_DIR, ignoreCase = true) -> textureDirs += file
-                file.isFile && file.extension.equals(PRESET_EXT, ignoreCase = true) -> milk++
-                file.isFile && file.extension.equals(AVS_EXT, ignoreCase = true) -> avs++
+                file.isFile && file.extension.equals(PRESET_EXT, ignoreCase = true) -> milk += file.absolutePath
+                file.isFile && file.extension.equals(AVS_EXT, ignoreCase = true) -> avs += file.absolutePath
             }
         }
         // some packs keep their textures next to the presets, so the pack root is searched too
         textureDirs += dir
-        return InstalledPack(dir.name, dir, milk, textureDirs.toList(), avs)
+        val byName = compareBy<String> { File(it).nameWithoutExtension.lowercase() }.thenBy { it.lowercase() }
+        return InstalledPack(
+            dir.name,
+            dir,
+            milk.size,
+            textureDirs.toList(),
+            avs.size,
+            milkFiles = milk.sortedWith(byName),
+            avsFiles = avs.sortedWith(byName),
+        )
     }
 
     private fun sanitize(name: String) = name.replace(UNSAFE, "_").take(MAX_NAME).ifBlank { "presets" }
@@ -151,7 +160,18 @@ data class InstalledPack(
     val textureDirs: List<File>,
     /** How many `.avs` files it holds, which AVS can run. */
     val avsCount: Int = 0,
+    /** Its `.milk` files, by name: the order the selector lists them and the engine plays them in. */
+    val milkFiles: List<String> = emptyList(),
+    /** Its `.avs` files, in the same order. */
+    val avsFiles: List<String> = emptyList(),
 )
+
+/** The files [plugin] plays from this pack, in the order they are listed and played. */
+fun InstalledPack.filesFor(plugin: VisPlugin): List<String> =
+    when (plugin) {
+        VisPlugin.Milkdrop -> milkFiles
+        VisPlugin.Avs -> avsFiles
+    }
 
 /** Whether this pack holds anything [plugin] can run. */
 fun InstalledPack.runsOn(plugin: VisPlugin): Boolean =

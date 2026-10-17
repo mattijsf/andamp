@@ -66,6 +66,9 @@
     <string name="menu_projectm_idle_preset">Ingebouwde projectM-voorinstelling</string>
     <string name="menu_no_presets_loaded">Geen voorinstellingen geladen</string>
     <string name="menu_all_presets">Alle %1$d voorinstellingen...</string>
+    <string name="menu_favorites_with_count">Favorieten (%1$d)</string>
+    <string name="menu_add_favorite">Toevoegen aan favorieten</string>
+    <string name="menu_remove_favorite">Verwijderen uit favorieten</string>
 
     <!-- VisualizationMenu.kt -->
     <string name="menu_visualization_options">Visualisatieopties</string>

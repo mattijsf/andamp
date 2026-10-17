@@ -9,6 +9,7 @@
 #include <projectM-4/projectM.h>
 #include <projectM-4/playlist.h>
 
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -22,6 +23,42 @@ inline projectm_handle handleOf(jlong handle)
 inline projectm_playlist_handle playlistOf(jlong handle)
 {
     return reinterpret_cast<projectm_playlist_handle>(handle);
+}
+
+// The presets a playlist could not switch to since they were last taken, each with
+// projectM's reason. Filled by the playlist's callback and read from Kotlin; both happen on
+// the render thread, and the lock keeps that an assumption rather than a requirement.
+//
+// The playlist's built-in retry only calls back once it gives up, so a preset it skipped past
+// would never be named. The playlist is set to retry nothing, and this moves on itself: up
+// to `retries` presets per switch, in the direction the listener was going.
+struct FailureWatch
+{
+    std::mutex lock;
+    std::vector<std::string> fileAndReason;
+    projectm_playlist_handle playlist{nullptr};
+    uint32_t retries{0};
+    uint32_t skipped{0};
+    bool backwards{false};
+};
+
+void onSwitchFailed(const char* presetFile, const char* message, void* userData)
+{
+    auto* watch = static_cast<FailureWatch*>(userData);
+    {
+        std::lock_guard<std::mutex> guard(watch->lock);
+        watch->fileAndReason.emplace_back(presetFile != nullptr ? presetFile : "");
+        watch->fileAndReason.emplace_back(message != nullptr ? message : "");
+    }
+    if (watch->skipped >= watch->retries) {
+        return;
+    }
+    watch->skipped++;
+    if (watch->backwards) {
+        projectm_playlist_play_previous(watch->playlist, true);
+    } else {
+        projectm_playlist_play_next(watch->playlist, true);
+    }
 }
 
 } // namespace
@@ -243,6 +280,70 @@ Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistItem(
     }
     jstring result = env->NewStringUTF(item);
     projectm_playlist_free_string(item);
+    return result;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistAddPreset(
+        JNIEnv* env, jobject /* thiz */, jlong playlist, jstring path)
+{
+    const char* chars = env->GetStringUTFChars(path, nullptr);
+    if (chars == nullptr) {
+        return JNI_FALSE;
+    }
+    const bool added = projectm_playlist_add_preset(playlistOf(playlist), chars, false);
+    env->ReleaseStringUTFChars(path, chars);
+    return added ? JNI_TRUE : JNI_FALSE;
+}
+
+JNIEXPORT jlong JNICALL
+Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistWatchFailures(
+        JNIEnv* /* env */, jobject /* thiz */, jlong playlist, jint retries)
+{
+    auto* watch = new FailureWatch();
+    watch->playlist = playlistOf(playlist);
+    watch->retries = static_cast<uint32_t>(retries);
+    projectm_playlist_set_retry_count(watch->playlist, 0);
+    projectm_playlist_set_preset_switch_failed_event_callback(watch->playlist, onSwitchFailed, watch);
+    return reinterpret_cast<jlong>(watch);
+}
+
+JNIEXPORT void JNICALL
+Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeWatchDirection(
+        JNIEnv* /* env */, jobject /* thiz */, jlong watch, jboolean backwards)
+{
+    auto* failures = reinterpret_cast<FailureWatch*>(watch);
+    failures->backwards = backwards == JNI_TRUE;
+    failures->skipped = 0;
+}
+
+JNIEXPORT void JNICALL
+Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistUnwatchFailures(
+        JNIEnv* /* env */, jobject /* thiz */, jlong playlist, jlong watch)
+{
+    projectm_playlist_set_preset_switch_failed_event_callback(playlistOf(playlist), nullptr, nullptr);
+    delete reinterpret_cast<FailureWatch*>(watch);
+}
+
+JNIEXPORT jobjectArray JNICALL
+Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeTakeFailures(
+        JNIEnv* env, jobject /* thiz */, jlong watch)
+{
+    auto* failures = reinterpret_cast<FailureWatch*>(watch);
+    std::vector<std::string> taken;
+    {
+        std::lock_guard<std::mutex> guard(failures->lock);
+        taken.swap(failures->fileAndReason);
+    }
+    // taken once a frame: a new switch gets the whole budget again
+    failures->skipped = 0;
+    jclass stringClass = env->FindClass("java/lang/String");
+    jobjectArray result = env->NewObjectArray(static_cast<jsize>(taken.size()), stringClass, nullptr);
+    for (size_t i = 0; i < taken.size(); ++i) {
+        jstring item = env->NewStringUTF(taken[i].c_str());
+        env->SetObjectArrayElement(result, static_cast<jsize>(i), item);
+        env->DeleteLocalRef(item);
+    }
     return result;
 }
 

@@ -70,6 +70,7 @@ import nl.mattix.andamp.ui.online.OnlineSkinsScreen
 import nl.mattix.andamp.ui.prefs.MilkdropScreen
 import nl.mattix.andamp.ui.prefs.PreferencesScreen
 import nl.mattix.andamp.ui.prefs.overlaySettingsIntent
+import nl.mattix.andamp.ui.prefs.presetSelectorOf
 import nl.mattix.andamp.ui.prefs.visualizerPrefsOf
 import nl.mattix.andamp.ui.theme.rememberSkinColorScheme
 import nl.mattix.andamp.ui.welcome.WelcomeChoice
@@ -715,7 +716,14 @@ private fun NavGraphBuilder.modernScreens(
     composable(Screen.MILKDROP) {
         // no onManagePresets: this screen is where that would go
         val leave = { onLeave(Screen.MILKDROP) }
-        ModernScreen(skin, vm.state, leave) { MilkdropScreen(visualizerPrefsOf(vm), onClose = leave) }
+        ModernScreen(skin, vm.state, leave) {
+            MilkdropScreen(
+                visualizerPrefsOf(vm),
+                presetSelectorOf(vm),
+                onClose = leave,
+                preview = { MilkdropSurface(vm, it, inWindow = false) },
+            )
+        }
     }
 }
 

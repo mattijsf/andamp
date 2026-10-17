@@ -188,6 +188,15 @@ class WinampState {
 
     /** Name of the preset pack the current engine runs; null is the engine's idle preset. */
     var presetPack by mutableStateOf<String?>(null)
+
+    /** Whether the current engine plays the listener's favorites, from every pack, instead of [presetPack]. */
+    var presetFavorites by mutableStateOf(false)
+
+    /**
+     * A preset to go to once the engine has loaded its list: one picked from a list that was not
+     * playing yet, such as a favorite while a pack played. Cleared when used.
+     */
+    var presetWanted by mutableStateOf<String?>(null)
     var presetShuffle by mutableStateOf(false)
 
     /** The preset now showing, as the engine reported it. Shown in the window's title. */
@@ -205,6 +214,12 @@ class WinampState {
      * loaded.
      */
     var presetNames by mutableStateOf<List<String>>(emptyList())
+
+    /** The same presets' files, in the same order. */
+    var presetPaths by mutableStateOf<List<String>>(emptyList())
+
+    /** The file of the preset showing, as the engine announced it; null for its idle preset. */
+    var presetPath by mutableStateOf<String?>(null)
 
     /**
      * The commands the visual accepts, published by it while it is on screen, so a menu

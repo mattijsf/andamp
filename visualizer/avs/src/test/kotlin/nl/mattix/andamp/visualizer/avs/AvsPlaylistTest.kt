@@ -113,14 +113,14 @@ class AvsPlaylistTest {
         val sync = PlaylistSync(playlist) { announced++ }
         val directory = folder.root
 
-        sync.apply(directory, shuffle = false)
+        sync.apply(directory, null, shuffle = false)
         assertEquals(1, playlist.paths.size)
 
         folder.newFile("b.avs")
-        sync.apply(directory, shuffle = false)
+        sync.apply(directory, null, shuffle = false)
         assertEquals("the same instance is not rescanned", 1, playlist.paths.size)
 
-        sync.apply(java.io.File(directory.path), shuffle = false)
+        sync.apply(java.io.File(directory.path), null, shuffle = false)
         assertEquals("a fresh instance of the same path rescans", 2, playlist.paths.size)
         assertEquals(2, announced)
     }
@@ -132,10 +132,39 @@ class AvsPlaylistTest {
         val sync = PlaylistSync(playlist) {}
         val directory = folder.root
 
-        sync.apply(directory, shuffle = false)
-        sync.apply(directory, shuffle = true)
+        sync.apply(directory, null, shuffle = false)
+        sync.apply(directory, null, shuffle = true)
 
         assertEquals(1, playlist.paths.size)
+    }
+
+    @Test
+    fun `a list of files plays in the order given, and a new list keeps the preset playing`() {
+        val playlist = AvsPlaylist()
+        playlist.setFiles(listOf("/p/one/b.avs", "/p/two/a.avs", "/p/one/c.avs"), shuffle = false)
+        assertEquals("/p/one/b.avs", playlist.current)
+        playlist.next()
+
+        assertTrue(playlist.setFiles(listOf("/p/one/b.avs", "/p/two/a.avs"), shuffle = false))
+
+        assertEquals("/p/two/a.avs", playlist.current)
+    }
+
+    @Test
+    fun `the sync plays the files over the directory, and a new list once`() {
+        folder.newFile("a.avs")
+        val playlist = AvsPlaylist()
+        val announced = mutableListOf<List<String>>()
+        val sync = PlaylistSync(playlist) { announced += it }
+        val files = listOf("/elsewhere/x.avs")
+
+        sync.apply(folder.root, files, shuffle = false)
+        sync.apply(folder.root, files, shuffle = false)
+
+        assertEquals(listOf(files), announced)
+        sync.apply(folder.root, null, shuffle = false)
+        assertEquals("back on the directory", 1, playlist.paths.size)
+        assertTrue(playlist.paths.single().endsWith("/a.avs"))
     }
 
     /** A rebuilt render thread steers back to the preset that was playing. */

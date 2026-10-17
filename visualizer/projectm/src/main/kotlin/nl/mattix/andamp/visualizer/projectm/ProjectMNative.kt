@@ -69,6 +69,35 @@ internal object ProjectMNative {
         recurse: Boolean,
     ): Int
 
+    external fun nativePlaylistAddPreset(
+        playlist: Long,
+        path: String,
+    ): Boolean
+
+    /**
+     * Starts collecting the presets the playlist could not switch to; answers the collector.
+     * It also takes over the playlist's retry, moving past up to [retries] broken presets per
+     * switch, so every one it skips is collected.
+     */
+    external fun nativePlaylistWatchFailures(
+        playlist: Long,
+        retries: Int,
+    ): Long
+
+    /** The way the next switch goes, for the collector's retry: back for "previous", on for the rest. */
+    external fun nativeWatchDirection(
+        watch: Long,
+        backwards: Boolean,
+    )
+
+    external fun nativePlaylistUnwatchFailures(
+        playlist: Long,
+        watch: Long,
+    )
+
+    /** What [nativePlaylistWatchFailures] collected since the last call: file, reason, file, reason... */
+    external fun nativeTakeFailures(watch: Long): Array<String>
+
     external fun nativePlaylistSize(playlist: Long): Int
 
     external fun nativePlaylistSetShuffle(

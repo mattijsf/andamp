@@ -64,9 +64,19 @@
 
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">Voreinstellungen</string>
-    <string name="prefs_milkdrop_nothing_loaded">Außer der %1$s ist nichts geladen. Importiere oben ein Paket.</string>
     <string name="prefs_milkdrop_pack_loading">Das Paket wird geladen, oder das Plug-in-Fenster ist geschlossen.</string>
-    <string name="prefs_milkdrop_presets_in_pack">%1$d in %2$s, in der Reihenfolge, in der die Engine sie abspielt.</string>
+    <string name="prefs_milkdrop_settings_tab">Einstellungen</string>
+    <string name="prefs_milkdrop_favorites_chip">Favoriten (%1$d)</string>
+    <plurals name="prefs_milkdrop_favorites_count">
+        <item quantity="one">%1$d Favorit, aus jedem Paket. Weiter und Zufall bleiben darin.</item>
+        <item quantity="other">%1$d Favoriten, aus jedem Paket. Weiter und Zufall bleiben darin.</item>
+    </plurals>
+    <string name="prefs_milkdrop_idle_playing">Die %1$s läuft. Wähle oben deine Favoriten oder ein Paket.</string>
+    <string name="prefs_milkdrop_idle_no_favorites">Die %1$s läuft. Wähle oben ein Paket, oder importiere eines unter Einstellungen.</string>
+    <plurals name="prefs_milkdrop_pack_count">
+        <item quantity="one">%1$d Voreinstellung in %2$s. Tippe auf einen Stern, um eine Voreinstellung zu deinen Favoriten hinzuzufügen.</item>
+        <item quantity="other">%1$d Voreinstellungen in %2$s. Tippe auf einen Stern, um eine Voreinstellung zu deinen Favoriten hinzuzufügen.</item>
+    </plurals>
 
     <!-- Notices.kt -->
     <string name="prefs_notice_projectm_what">Die Engine der Milkdrop-Visualisierung; sie rendert .milk-Voreinstellungen.</string>
@@ -274,6 +284,12 @@
     <plurals name="prefs_visualizer_summary_packs">
         <item quantity="one">%2$s · %1$d Paket, %3$d Voreinstellungen</item>
         <item quantity="other">%2$s · %1$d Pakete, %3$d Voreinstellungen</item>
+    </plurals>
+    <string name="prefs_visualizer_favorites">Favoriten</string>
+    <string name="prefs_visualizer_favorites_none">Die Voreinstellungen mit Stern, aus jedem Paket, als eines abgespielt. Noch keine.</string>
+    <plurals name="prefs_visualizer_favorites_summary">
+        <item quantity="one">%1$d Voreinstellung mit Stern, aus jedem Paket</item>
+        <item quantity="other">%1$d Voreinstellungen mit Stern, aus jedem Paket</item>
     </plurals>
     <string name="prefs_visualizer_plugin_section">Plug-in</string>
     <string name="prefs_visualizer_avs_blurb">Winamps eigene Visualisierung, nachgebaut. Spielt echte .avs-Voreinstellungen ab, die du importierst.</string>

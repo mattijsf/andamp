@@ -231,4 +231,22 @@ class MilkdropMenuTest {
         action(vm, "Close").onClick()
         assertEquals(false, vm.state.milkdropOn)
     }
+
+    @Test
+    fun `the preset showing can be made a favorite, the idle preset cannot`() {
+        val vm = testViewModel()
+        assertFalse("Add to favorites" in labels(visualMenu(vm).items))
+
+        vm.state.presetPath = "/presets/pack/a.milk"
+
+        assertTrue("Add to favorites" in labels(visualMenu(vm).items))
+    }
+
+    @Test
+    fun `with no favorites the pack menu does not offer them`() {
+        val vm = testViewModel()
+        val packs = visualMenu(vm).items.filterIsInstance<AmpMenuItem.Submenu>().first { it.label == "Preset pack" }
+
+        assertFalse(labels(packs.items).any { it.startsWith("Favorites") })
+    }
 }

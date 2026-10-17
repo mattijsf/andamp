@@ -42,6 +42,20 @@ class AvsView(
     @Volatile
     var presetDirectory: File? = null
 
+    /**
+     * The `.avs` files to play instead of [presetDirectory]'s, in this order: presets from
+     * several packs, such as the listener's favorites. Null plays the directory.
+     */
+    @Volatile
+    var presetFiles: List<String>? = null
+
+    /**
+     * The packs [presetFiles] come from. A preset's pictures are looked up in the pack it is in,
+     * which is whichever of these holds its file.
+     */
+    @Volatile
+    var presetRoots: List<File> = emptyList()
+
     /** A property for the same reason [presetDirectory] is. */
     @Volatile
     var shuffle: Boolean = false
@@ -81,7 +95,7 @@ class AvsView(
             // the idle preset is loaded first: an empty playlist's current is
             // null, the same as the initial loadedPath, so the loop below
             // would not load it
-            announceGaps(load(engine, null))
+            announceGaps(null, load(engine, null))
 
             while (stillCurrent()) {
                 sync(playlistSync, playlist)
@@ -91,8 +105,8 @@ class AvsView(
                 if (playlist.current != loadedPath) {
                     loadedPath = playlist.current
                     // a preset's pictures are looked up in the pack it came from
-                    images.directory = presetDirectory
-                    announceGaps(load(engine, loadedPath))
+                    images.directory = packOf(loadedPath)
+                    announceGaps(loadedPath, load(engine, loadedPath))
                     stickyPreset = loadedPath
                 }
                 announced = announce(loadedPath, announced)
@@ -109,7 +123,7 @@ class AvsView(
                         Log.e(TAG, "preset $loadedPath crashed; falling back to idle", e)
                         load(engine, null)
                         stickyPreset = null
-                        announceGaps(PresetGaps(unreadable = true))
+                        announceGaps(loadedPath, PresetGaps(unreadable = true, reason = e.message))
                         true
                     }
                 if (!painted) break
@@ -138,9 +152,13 @@ class AvsView(
         sync: PlaylistSync,
         playlist: AvsPlaylist,
     ) {
-        sync.apply(presetDirectory, shuffle)
+        sync.apply(presetDirectory, presetFiles, shuffle)
         drainCommands(playlist)
     }
+
+    /** The pack [path] belongs to, where its pictures are: one of [presetRoots], or the directory playing. */
+    private fun packOf(path: String?): File? =
+        path?.let { p -> presetRoots.firstOrNull { p.startsWith(it.absolutePath + File.separator) } } ?: presetDirectory
 
     /**
      * Loads the preset at [path]; the idle preset when [path] is null, unreadable or does not parse.
@@ -149,34 +167,7 @@ class AvsView(
     private fun load(
         engine: AvsEngine,
         path: String?,
-    ): PresetGaps {
-        val read =
-            path?.let {
-                try {
-                    val file = File(it)
-                    if (file.length() > MAX_PRESET_BYTES) throw AvsFormatException("${file.length()} bytes is no preset")
-                    AvsParser.parse(file.readBytes())
-                } catch (e: AvsFormatException) {
-                    Log.w(TAG, "cannot run $it: ${e.message}")
-                    null
-                } catch (e: java.io.IOException) {
-                    Log.w(TAG, "cannot read $it: ${e.message}")
-                    null
-                }
-            }
-        try {
-            engine.load(read ?: AvsIdlePreset.preset())
-        } catch (
-            // whatever a reader throws over a body it cannot read
-            @Suppress("TooGenericExceptionCaught")
-            e: RuntimeException,
-        ) {
-            Log.e(TAG, "preset $path would not load; falling back to idle", e)
-            engine.load(AvsIdlePreset.preset())
-            return PresetGaps(unreadable = true)
-        }
-        return PresetGaps(unreadable = path != null && read == null, missing = engine.unimplemented)
-    }
+    ): PresetGaps = AvsPresetCheck.load(engine, path)
 
     private fun audioFrame(
         pcm: PcmSource?,
@@ -252,12 +243,6 @@ class AvsView(
 
     companion object {
         private const val TAG = "AvsView"
-
-        /**
-         * The whole file is read into memory before it is parsed, so a larger
-         * file is refused first.
-         */
-        private const val MAX_PRESET_BYTES = 8L * 1024 * 1024
 
         /** The most PCM a frame's analysis uses; equal to [AvsAudio.RING]. */
         const val MAX_PCM_SAMPLES = 2048

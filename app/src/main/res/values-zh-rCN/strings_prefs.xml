@@ -62,9 +62,17 @@
 
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">预设</string>
-    <string name="prefs_milkdrop_nothing_loaded">除了 %1$s 之外没有载入任何内容。请在上方导入一个预设包。</string>
     <string name="prefs_milkdrop_pack_loading">预设包正在载入，或者插件窗口已关闭。</string>
-    <string name="prefs_milkdrop_presets_in_pack">%2$s 中的 %1$d 个，按引擎播放的顺序排列。</string>
+    <string name="prefs_milkdrop_settings_tab">设置</string>
+    <string name="prefs_milkdrop_favorites_chip">收藏 (%1$d)</string>
+    <plurals name="prefs_milkdrop_favorites_count">
+        <item quantity="other">%1$d 个收藏，来自任意预设包。下一个和随机播放只在其中切换。</item>
+    </plurals>
+    <string name="prefs_milkdrop_idle_playing">正在播放 %1$s。请在上方选择收藏或一个预设包。</string>
+    <string name="prefs_milkdrop_idle_no_favorites">正在播放 %1$s。请在上方选择一个预设包，或在“设置”中导入一个。</string>
+    <plurals name="prefs_milkdrop_pack_count">
+        <item quantity="other">%2$s 中的 %1$d 个预设。点按星标可将预设加入收藏。</item>
+    </plurals>
 
     <!-- Notices.kt -->
     <string name="prefs_notice_projectm_what">Milkdrop 可视化效果引擎，用于渲染 .milk 预设。</string>
@@ -271,6 +279,11 @@
     <string name="prefs_visualizer_summary_no_packs">%1$s · 尚无预设包</string>
     <plurals name="prefs_visualizer_summary_packs">
         <item quantity="other">%2$s · %1$d 个预设包，%3$d 个预设</item>
+    </plurals>
+    <string name="prefs_visualizer_favorites">收藏</string>
+    <string name="prefs_visualizer_favorites_none">您加星标的预设，来自任意预设包，作为一个整体播放。暂无。</string>
+    <plurals name="prefs_visualizer_favorites_summary">
+        <item quantity="other">%1$d 个加星标的预设，来自任意预设包</item>
     </plurals>
     <string name="prefs_visualizer_plugin_section">插件</string>
     <string name="prefs_visualizer_avs_blurb">Winamp 自己的可视化效果，重新实现。可运行您导入的真正的 .avs 预设。</string>

@@ -53,6 +53,7 @@
 
     <!-- PresetNotice.kt -->
     <string name="preset_unreadable">Deze voorinstelling kon niet worden gelezen</string>
+    <string name="preset_unreadable_because">Deze voorinstelling kon niet worden gelezen: %1$s</string>
     <string name="preset_not_shown">Niet getoond in deze voorinstelling: %1$s</string>
     <string name="preset_and_more">%1$s en nog %2$d</string>
 

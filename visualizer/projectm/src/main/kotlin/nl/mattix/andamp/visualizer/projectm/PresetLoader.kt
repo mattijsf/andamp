@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.visualizer.projectm
 
+import nl.mattix.andamp.visualizer.core.PresetGaps
 import java.io.File
 
 /**
@@ -18,6 +19,8 @@ internal class PresetLoader(
     private val onPlaylistChanged: (List<String>) -> Unit,
     /** What was playing before this loop existed; see `VisualizerView.stickyPreset`. */
     private val restoreTo: () -> String? = { null },
+    /** A preset's file and what of it is not showing: nothing once it runs, all of it when it failed. */
+    private val onPresetGaps: (String, PresetGaps) -> Unit = { _, _ -> },
 ) {
     private var loaded: PresetPack? = null
     private var shuffling: Boolean? = null
@@ -32,7 +35,7 @@ internal class PresetLoader(
             reportedPosition = -1
             if (pack != null) {
                 engine.setTextureSearchPaths(pack.textureDirs)
-                engine.loadPresetDirectory(pack.presetsDir)
+                if (pack.files.isNotEmpty()) engine.loadPresetFiles(pack.files) else engine.loadPresetDirectory(pack.presetsDir)
                 // published once per pack: this can be thousands of strings
                 // crossing to the main thread
                 val paths = engine.playlistPaths()
@@ -60,5 +63,29 @@ internal class PresetLoader(
         reportedPosition = position
         val path = engine.playlistItem(position) ?: return
         onPresetChanged(File(path).nameWithoutExtension)
+        onPresetGaps(path, PresetGaps.NONE)
+    }
+
+    /** Names every preset projectM tried and could not show since the last call, with its reason. */
+    fun reportFailures() {
+        if (loaded == null) return
+        engine.takeFailures().forEach { (path, reason) ->
+            onPresetGaps(
+                path,
+                PresetGaps(
+                    unreadable = true,
+                    reason =
+                        reason.trim().takeUnless {
+                            it.isEmpty() ||
+                                it in SAYS_NOTHING
+                        },
+                ),
+            )
+        }
+    }
+
+    private companion object {
+        /** Reasons projectM passes on from a C++ exception that carried no message. */
+        val SAYS_NOTHING = setOf("std::exception", "Unknown error")
     }
 }

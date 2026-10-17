@@ -68,11 +68,24 @@
 
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">Presets</string>
-    <!-- The plug-in's idle visual, named as its menu does. -->
-    <string name="prefs_milkdrop_nothing_loaded">Nothing is loaded but the %1$s. Import a pack above.</string>
     <string name="prefs_milkdrop_pack_loading">The pack is loading, or the plug-in window is closed.</string>
+    <!-- The tab beside Presets, with the plug-in's settings. -->
+    <string name="prefs_milkdrop_settings_tab">Settings</string>
+    <!-- The source chip that plays the favorites; how many there are. -->
+    <string name="prefs_milkdrop_favorites_chip">Favorites (%1$d)</string>
+    <plurals name="prefs_milkdrop_favorites_count">
+        <item quantity="one">%1$d favorite, from any pack. Next and Shuffle stay among them.</item>
+        <item quantity="other">%1$d favorites, from any pack. Next and Shuffle stay among them.</item>
+    </plurals>
+    <!-- The plug-in's idle visual, named as its menu does. -->
+    <string name="prefs_milkdrop_idle_playing">The %1$s is playing. Pick your favorites or a pack above.</string>
+    <!-- The plug-in's idle visual, named as its menu does. -->
+    <string name="prefs_milkdrop_idle_no_favorites">The %1$s is playing. Pick a pack above, or import one under Settings.</string>
     <!-- How many presets, and the pack they are in. -->
-    <string name="prefs_milkdrop_presets_in_pack">%1$d in %2$s, in the order the engine plays them.</string>
+    <plurals name="prefs_milkdrop_pack_count">
+        <item quantity="one">%1$d preset in %2$s. Tap a star to add a preset to your favorites.</item>
+        <item quantity="other">%1$d presets in %2$s. Tap a star to add a preset to your favorites.</item>
+    </plurals>
 
     <!-- Notices.kt -->
     <string name="prefs_notice_projectm_what">The Milkdrop visualizer engine, rendering .milk presets.</string>
@@ -297,6 +310,12 @@
     <plurals name="prefs_visualizer_summary_packs">
         <item quantity="one">%2$s · %1$d pack, %3$d presets</item>
         <item quantity="other">%2$s · %1$d packs, %3$d presets</item>
+    </plurals>
+    <string name="prefs_visualizer_favorites">Favorites</string>
+    <string name="prefs_visualizer_favorites_none">The presets you star, from any pack, played as one. None yet.</string>
+    <plurals name="prefs_visualizer_favorites_summary">
+        <item quantity="one">%1$d preset you starred, from any pack</item>
+        <item quantity="other">%1$d presets you starred, from any pack</item>
     </plurals>
     <string name="prefs_visualizer_plugin_section">Plug-in</string>
     <string name="prefs_visualizer_avs_blurb">Winamp\'s own visualizer, rebuilt. Runs real .avs presets you import.</string>

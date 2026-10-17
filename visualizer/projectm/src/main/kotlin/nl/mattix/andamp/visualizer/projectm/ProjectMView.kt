@@ -30,9 +30,9 @@ class ProjectMView(
     var pcmSourceFactory: ((fps: Int, maxSamples: Int) -> PcmSource)? = null
 
     /**
-     * The presets to run. A property and not a queued command, because a surface
-     * can be destroyed and rebuilt (a fold, going to the background) and the
-     * engine that comes back has to load the same pack again.
+     * The presets to run: a pack, or a list of files from several packs. A property and not
+     * a queued command, because a surface can be destroyed and rebuilt (a fold, going to the
+     * background) and the engine that comes back has to load the same presets again.
      *
      * Null keeps projectM's built-in idle preset.
      */
@@ -81,6 +81,7 @@ class ProjectMView(
                     },
                     onPlaylistChanged = ::announcePlaylist,
                     restoreTo = { stickyPreset },
+                    onPresetGaps = ::announceGaps,
                 )
             while (stillCurrent()) {
                 requestedSize?.takeIf { it != appliedSize }?.let { size ->
@@ -90,6 +91,7 @@ class ProjectMView(
                 }
                 presetLoader.sync(presets, shuffle)
                 drainCommands(engine)
+                presetLoader.reportFailures()
                 presetLoader.reportSwitch()
                 val samples = pcm?.read()
                 if (samples != null) engine.addPcmFloat(samples, samples.size.coerceAtMost(maxSamples))
