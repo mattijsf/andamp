@@ -94,17 +94,21 @@ class ProjectMEngine {
     }
 
     /**
-     * Replaces the playlist with [files], in that order: presets from several packs, such as
-     * the listener's favorites.
+     * Replaces the playlist with [files], in that order: a pack's, or presets from several
+     * packs, such as the listener's favorites. Plays the one at [startAt] first, so a list
+     * that goes back to a preset compiles only that one.
      *
      * @return how many were added.
      */
-    fun loadPresetFiles(files: List<String>): Int {
+    fun loadPresetFiles(
+        files: List<String>,
+        startAt: Int = 0,
+    ): Int {
         val handle = playlistHandle()
         ProjectMNative.nativePlaylistClear(handle)
-        val added = files.count { ProjectMNative.nativePlaylistAddPreset(handle, it) }
+        val added = ProjectMNative.nativePlaylistAddPresets(handle, files.toTypedArray())
         heading(backwards = false)
-        if (added > 0) ProjectMNative.nativePlaylistSetPosition(handle, 0, true)
+        if (added > 0) ProjectMNative.nativePlaylistSetPosition(handle, startAt.takeIf { it in 0 until added } ?: 0, true)
         return added
     }
 

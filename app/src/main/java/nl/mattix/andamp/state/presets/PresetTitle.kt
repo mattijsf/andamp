@@ -35,10 +35,22 @@ object PresetTitle {
      * Orders titles as a person reads them: by letters regardless of case, and runs of digits
      * by their value, so "Wire Trace 2" comes before "Wire Trace 10".
      */
-    val ORDER: Comparator<String> =
-        Comparator { a, b ->
-            val left = CHUNK.findAll(a).map { it.value }.toList()
-            val right = CHUNK.findAll(b).map { it.value }.toList()
+    val ORDER: Comparator<String> get() = compareBy(CHUNKS) { title: String -> chunks(title) }
+
+    /**
+     * [paths] in the order of their titles ([ORDER]), each title worked out once: a pack can
+     * hold thousands, and a sort compares each many times.
+     */
+    fun sortedByTitle(paths: List<String>): List<String> =
+        paths
+            .map { path -> Triple(chunks(of(path)), path.lowercase(), path) }
+            .sortedWith(compareBy(CHUNKS) { key: Triple<List<String>, String, String> -> key.first }.thenBy { it.second })
+            .map { it.third }
+
+    private fun chunks(title: String): List<String> = CHUNK.findAll(title).map { it.value }.toList()
+
+    private val CHUNKS: Comparator<List<String>> =
+        Comparator { left, right ->
             for (i in 0 until minOf(left.size, right.size)) {
                 val x = left[i]
                 val y = right[i]

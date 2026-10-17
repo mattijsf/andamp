@@ -120,8 +120,6 @@ class PresetLibrary(
         }
         // some packs keep their textures next to the presets, so the pack root is searched too
         textureDirs += dir
-        // by the name the selector shows, so a pack that numbers its presets per folder stays grouped
-        val byName = compareBy(PresetTitle.ORDER) { path: String -> PresetTitle.of(path) }.thenBy { it.lowercase() }
         // a zip that holds one folder with everything in it: that folder says nothing about a preset
         val wrapper =
             (milk + avs)
@@ -136,8 +134,9 @@ class PresetLibrary(
             milk.size,
             textureDirs.toList(),
             avs.size,
-            milkFiles = milk.sortedWith(byName),
-            avsFiles = avs.sortedWith(byName),
+            // by the name the selector shows, so a pack that numbers its presets per folder stays grouped
+            milkFiles = PresetTitle.sortedByTitle(milk),
+            avsFiles = PresetTitle.sortedByTitle(avs),
             wrapper = wrapper,
         )
     }

@@ -48,15 +48,10 @@ internal class PresetLoader(
             loaded = pack
             reportedPosition = -1
             if (pack != null) {
-                engine.setTextureSearchPaths(pack.textureDirs)
-                if (pack.files.isNotEmpty()) engine.loadPresetFiles(pack.files) else engine.loadPresetDirectory(pack.presetsDir)
+                val paths = load(pack)
                 // published once per pack: this can be thousands of strings
                 // crossing to the main thread
-                val paths = engine.playlistPaths()
                 onPlaylistChanged(paths)
-                // a rebuilt loop goes back to what was playing before it;
-                // otherwise the pack restarts at its first preset
-                PresetRestore.indexOf(paths, restoreTo()).takeIf { it >= 0 }?.let { engine.playlistGoTo(it) }
             } else {
                 onPlaylistChanged(emptyList())
             }
@@ -67,6 +62,23 @@ internal class PresetLoader(
             shuffling = shuffle
             if (loaded != null) engine.playlistSetShuffle(shuffle)
         }
+    }
+
+    /**
+     * Gives projectM [pack]'s presets and answers its list. A rebuilt loop goes back to what was
+     * playing before it; otherwise the pack starts at its first preset.
+     */
+    private fun load(pack: PresetPack): List<String> {
+        engine.setTextureSearchPaths(pack.textureDirs)
+        if (pack.files.isEmpty()) {
+            engine.loadPresetDirectory(pack.presetsDir)
+            return engine.playlistPaths().also { paths ->
+                PresetRestore.indexOf(paths, restoreTo()).takeIf { it >= 0 }?.let { engine.playlistGoTo(it) }
+            }
+        }
+        val added = engine.loadPresetFiles(pack.files, startAt = PresetRestore.indexOf(pack.files, restoreTo()))
+        // the list as given, unless projectM turned one away: then its own
+        return if (added == pack.files.size) pack.files else engine.playlistPaths()
     }
 
     /** Names the preset that is now showing, once per change. */

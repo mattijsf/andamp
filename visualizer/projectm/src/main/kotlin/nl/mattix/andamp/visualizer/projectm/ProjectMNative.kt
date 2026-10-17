@@ -69,10 +69,11 @@ internal object ProjectMNative {
         recurse: Boolean,
     ): Int
 
-    external fun nativePlaylistAddPreset(
+    /** Adds every one of [paths], in order, without checking for one already there; answers how many it took. */
+    external fun nativePlaylistAddPresets(
         playlist: Long,
-        path: String,
-    ): Boolean
+        paths: Array<String>,
+    ): Int
 
     /**
      * Starts collecting the presets the playlist could not switch to; answers the collector.

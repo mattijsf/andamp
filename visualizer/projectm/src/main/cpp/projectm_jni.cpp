@@ -366,17 +366,26 @@ Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistItem(
     return result;
 }
 
-JNIEXPORT jboolean JNICALL
-Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistAddPreset(
-        JNIEnv* env, jobject /* thiz */, jlong playlist, jstring path)
+JNIEXPORT jint JNICALL
+Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistAddPresets(
+        JNIEnv* env, jobject /* thiz */, jlong playlist, jobjectArray paths)
 {
-    const char* chars = env->GetStringUTFChars(path, nullptr);
-    if (chars == nullptr) {
-        return JNI_FALSE;
+    // one crossing for a whole list, and no duplicate check: projectM's is a linear search per
+    // preset, seconds for a pack of thousands, and the list handed over is unique already
+    const jsize count = env->GetArrayLength(paths);
+    jint added = 0;
+    for (jsize i = 0; i < count; ++i) {
+        auto path = static_cast<jstring>(env->GetObjectArrayElement(paths, i));
+        const char* chars = env->GetStringUTFChars(path, nullptr);
+        if (chars != nullptr) {
+            if (projectm_playlist_add_preset(playlistOf(playlist), chars, true)) {
+                ++added;
+            }
+            env->ReleaseStringUTFChars(path, chars);
+        }
+        env->DeleteLocalRef(path);
     }
-    const bool added = projectm_playlist_add_preset(playlistOf(playlist), chars, false);
-    env->ReleaseStringUTFChars(path, chars);
-    return added ? JNI_TRUE : JNI_FALSE;
+    return added;
 }
 
 JNIEXPORT jlong JNICALL
