@@ -1,23 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- EqOps.kt -->
-    <string name="eq_menu_title">Equalizer-voorinstellingen</string>
+    <string name="eq_menu_title">Equalizer-presets</string>
     <string name="eq_menu_load">Laden</string>
     <string name="eq_menu_save">Opslaan</string>
     <string name="eq_menu_delete">Verwijderen</string>
-    <string name="eq_menu_preset">Voorinstelling...</string>
+    <string name="eq_menu_preset">Preset...</string>
     <string name="eq_menu_default">Standaard</string>
-    <string name="eq_auto_load_preset">Auto-voorinstelling</string>
-    <string name="eq_menu_auto_load_delete">Auto-voorinstelling...</string>
-    <string name="eq_save_preset_title">Voorinstelling opslaan</string>
-    <string name="eq_save_auto_preset_title">Auto-voorinstelling opslaan</string>
-    <string name="eq_load_title">Voorinstelling laden</string>
+    <string name="eq_auto_load_preset">Auto-preset</string>
+    <string name="eq_menu_auto_load_delete">Auto-preset...</string>
+    <string name="eq_save_preset_title">Preset opslaan</string>
+    <string name="eq_save_auto_preset_title">Auto-preset opslaan</string>
+    <string name="eq_load_title">Preset laden</string>
     <string name="eq_load_confirm">Laden</string>
     <string name="eq_kind_factory">Ingebouwd</string>
     <string name="eq_kind_saved">Opgeslagen</string>
-    <string name="eq_delete_title">Voorinstellingen verwijderen</string>
+    <string name="eq_delete_title">Presets verwijderen</string>
     <string name="eq_delete_confirm">Verwijderen</string>
-    <string name="eq_delete_empty">Je hebt nog geen voorinstelling opgeslagen</string>
-    <string name="eq_delete_auto_title">Auto-voorinstellingen verwijderen</string>
-    <string name="eq_delete_auto_empty">Nog geen enkel nummer heeft een eigen voorinstelling</string>
+    <string name="eq_delete_empty">Je hebt nog geen preset opgeslagen</string>
+    <string name="eq_delete_auto_title">Auto-presets verwijderen</string>
+    <string name="eq_delete_auto_empty">Nog geen enkel nummer heeft een eigen preset</string>
 </resources>

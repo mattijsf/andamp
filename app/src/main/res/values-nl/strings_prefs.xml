@@ -63,7 +63,8 @@
     <string name="prefs_lists_row_large">Groot</string>
 
     <!-- MilkdropScreen.kt -->
-    <string name="prefs_milkdrop_presets_section">Voorinstellingen</string>
+    <string name="prefs_milkdrop_done">Klaar</string>
+    <string name="prefs_milkdrop_presets_section">Presets</string>
     <string name="prefs_milkdrop_pack_loading">Het pakket wordt geladen, of het venster van de plug-in is gesloten.</string>
     <string name="prefs_milkdrop_settings_tab">Instellingen</string>
     <string name="prefs_milkdrop_favorites_chip">Favorieten (%1$d)</string>
@@ -74,17 +75,17 @@
     <string name="prefs_milkdrop_idle_playing">De %1$s speelt. Kies hierboven je favorieten of een pakket.</string>
     <string name="prefs_milkdrop_idle_no_favorites">De %1$s speelt. Kies hierboven een pakket, of importeer er een onder Instellingen.</string>
     <plurals name="prefs_milkdrop_pack_count">
-        <item quantity="one">%1$d voorinstelling in %2$s. Tik op een ster om een voorinstelling aan je favorieten toe te voegen.</item>
-        <item quantity="other">%1$d voorinstellingen in %2$s. Tik op een ster om een voorinstelling aan je favorieten toe te voegen.</item>
+        <item quantity="one">%1$d preset in %2$s. Tik op een ster om een preset aan je favorieten toe te voegen.</item>
+        <item quantity="other">%1$d presets in %2$s. Tik op een ster om een preset aan je favorieten toe te voegen.</item>
     </plurals>
 
     <!-- Notices.kt -->
-    <string name="prefs_notice_projectm_what">De engine voor de Milkdrop-visualisatie, die .milk-voorinstellingen weergeeft.</string>
+    <string name="prefs_notice_projectm_what">De engine voor de Milkdrop-visualisatie, die .milk-presets weergeeft.</string>
     <string name="prefs_notice_projectm_obligation">Andamp koppelt projectM %1$s dynamisch, als een aparte bibliotheek in de app, zodat die kan worden vervangen. De broncode van precies die revisie is tag v%1$s op het adres hierboven, en de code die Andamp eromheen bouwt staat in de repository van Andamp. Aan projectM is niets gewijzigd.</string>
     <string name="prefs_notice_avs_what">De visualisatie van Winamp, opnieuw geschreven in Kotlin aan de hand van de broncode die Nullsoft heeft vrijgegeven.</string>
-    <string name="prefs_notice_avs_decoder_what">De opbouw en veldindelingen van het .avs-formaat, zoals de lezer van voorinstellingen ze volgt.</string>
-    <string name="prefs_notice_projectm_eval_what">Rekent de expressies uit waarin AVS-voorinstellingen zijn geschreven, ingebouwd in de AVS-bibliotheek.</string>
-    <string name="prefs_notice_milkdrop_what">Het origineel van Ryan Geiss, waarvan projectM de .milk-voorinstellingen weergeeft.</string>
+    <string name="prefs_notice_avs_decoder_what">De opbouw en veldindelingen van het .avs-formaat, zoals de lezer van presets ze volgt.</string>
+    <string name="prefs_notice_projectm_eval_what">Rekent de expressies uit waarin AVS-presets zijn geschreven, ingebouwd in de AVS-bibliotheek.</string>
+    <string name="prefs_notice_milkdrop_what">Het origineel van Ryan Geiss, waarvan projectM de .milk-presets weergeeft.</string>
     <string name="prefs_notice_webamp_what">De sprite-kaarten ervan zijn de maatstaf voor elke coördinaat in de vensters met een skin.</string>
     <string name="prefs_notice_liberation_sans_what">Het lettertype van de afspeellijst, met dezelfde maten als de Arial die PLEDIT.TXT noemt.</string>
     <string name="prefs_notice_liberation_sans_obligation">Ongewijzigd meegeleverd, onder een naam die de licentie toestaat.</string>
@@ -189,7 +190,7 @@
 
     <!-- PrefsTopBar.kt -->
     <string name="prefs_top_back">Terug naar voorkeuren</string>
-    <string name="prefs_back_to_player">Terug naar de speler</string>
+    <string name="prefs_top_done">Klaar</string>
 
     <!-- RackControls.kt -->
     <string name="prefs_rack_about_control">Over %1$s</string>
@@ -280,33 +281,33 @@
     <string name="prefs_tap_assist_off">Knoppen reageren alleen op een gewone tik. Zet dit aan als de kleine lastig te raken zijn.</string>
 
     <!-- VisualizerPrefs.kt -->
-    <string name="prefs_visualizer_summary_no_packs">%1$s · nog geen pakketten met voorinstellingen</string>
+    <string name="prefs_visualizer_summary_no_packs">%1$s · nog geen pakketten met presets</string>
     <plurals name="prefs_visualizer_summary_packs">
-        <item quantity="one">%2$s · %1$d pakket, %3$d voorinstellingen</item>
-        <item quantity="other">%2$s · %1$d pakketten, %3$d voorinstellingen</item>
+        <item quantity="one">%2$s · %1$d pakket, %3$d presets</item>
+        <item quantity="other">%2$s · %1$d pakketten, %3$d presets</item>
     </plurals>
     <string name="prefs_visualizer_favorites">Favorieten</string>
-    <string name="prefs_visualizer_favorites_none">De voorinstellingen die je een ster geeft, uit elk pakket, afgespeeld als één. Nog geen.</string>
+    <string name="prefs_visualizer_favorites_none">De presets die je een ster geeft, uit elk pakket, afgespeeld als één. Nog geen.</string>
     <plurals name="prefs_visualizer_favorites_summary">
-        <item quantity="one">%1$d voorinstelling met een ster, uit elk pakket</item>
-        <item quantity="other">%1$d voorinstellingen met een ster, uit elk pakket</item>
+        <item quantity="one">%1$d preset met een ster, uit elk pakket</item>
+        <item quantity="other">%1$d presets met een ster, uit elk pakket</item>
     </plurals>
     <string name="prefs_visualizer_plugin_section">Plug-in</string>
-    <string name="prefs_visualizer_avs_blurb">De visualisatie van Winamp zelf, opnieuw gebouwd. Speelt echte .avs-voorinstellingen af die je importeert.</string>
-    <string name="prefs_visualizer_milkdrop_blurb">libprojectM. Speelt echte .milk-voorinstellingen af die je importeert.</string>
-    <string name="prefs_visualizer_packs_section">Pakketten met voorinstellingen</string>
-    <string name="prefs_visualizer_import_empty">“%1$s” bevatte geen voorinstellingen.</string>
+    <string name="prefs_visualizer_avs_blurb">De visualisatie van Winamp zelf, opnieuw gebouwd. Speelt echte .avs-presets af die je importeert.</string>
+    <string name="prefs_visualizer_milkdrop_blurb">libprojectM. Speelt echte .milk-presets af die je importeert.</string>
+    <string name="prefs_visualizer_packs_section">Pakketten met presets</string>
+    <string name="prefs_visualizer_import_empty">“%1$s” bevatte geen presets.</string>
     <string name="prefs_visualizer_importing">%1$s importeren... %2$d bestanden</string>
-    <string name="prefs_visualizer_packs_note_avs">Pakketten zijn .zip-bestanden met .avs-voorinstellingen. Ze worden naar de app gekopieerd, omdat AVS voorinstellingen via een pad opent.</string>
-    <string name="prefs_visualizer_packs_note_milkdrop">Pakketten zijn .zip-bestanden met .milk-voorinstellingen. Ze worden naar de app gekopieerd, omdat projectM voorinstellingen via een pad opent.</string>
+    <string name="prefs_visualizer_packs_note_avs">Pakketten zijn .zip-bestanden met .avs-presets. Ze worden naar de app gekopieerd, omdat AVS presets via een pad opent.</string>
+    <string name="prefs_visualizer_packs_note_milkdrop">Pakketten zijn .zip-bestanden met .milk-presets. Ze worden naar de app gekopieerd, omdat projectM presets via een pad opent.</string>
     <string name="prefs_visualizer_import">Pakket importeren...</string>
     <string name="prefs_visualizer_idle_avs">Van deze app zelf. Importeren is niet nodig.</string>
     <string name="prefs_visualizer_idle_milkdrop">Ingebouwd in libprojectM. Importeren is niet nodig.</string>
-    <string name="prefs_visualizer_pack_presets">%1$d voorinstellingen</string>
+    <string name="prefs_visualizer_pack_presets">%1$d presets</string>
     <string name="prefs_visualizer_remove">Verwijderen</string>
-    <string name="prefs_visualizer_browse">Door voorinstellingen bladeren</string>
-    <string name="prefs_visualizer_browse_count">Door %1$d voorinstellingen bladeren</string>
-    <string name="prefs_visualizer_shuffle_title">Voorinstellingen in willekeurige volgorde</string>
+    <string name="prefs_visualizer_browse">Door presets bladeren</string>
+    <string name="prefs_visualizer_browse_count">Door %1$d presets bladeren</string>
+    <string name="prefs_visualizer_shuffle_title">Presets in willekeurige volgorde</string>
     <string name="prefs_visualizer_shuffle_summary">Anders lopen ze in de volgorde waarin ze op de opslag staan.</string>
 
     <!-- VolumePrefs.kt -->

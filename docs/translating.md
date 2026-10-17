@@ -101,7 +101,7 @@ comes from, so that the next person keeps to them.
 | Media Library | mediabibliotheek | Winamp |
 | playlist | afspeellijst | common usage (Winamp: speellijst) |
 | bookmark | bladwijzer | common usage (Winamp: favoriet) |
-| preset | voorinstelling | Winamp |
+| preset | preset | common usage (Winamp: voorinstelling) |
 | plug-in | plug-in | Winamp |
 | Preferences | Voorkeuren | Winamp |
 | Now playing | Nu speelt | Winamp |

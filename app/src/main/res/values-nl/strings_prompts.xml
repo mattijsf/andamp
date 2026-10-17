@@ -52,10 +52,10 @@
     <string name="overlay_needs_permission">Andamp heeft toestemming nodig om vóór andere apps weer te geven, anders kan de speler er niet boven zweven.</string>
 
     <!-- PresetNotice.kt -->
-    <string name="preset_unreadable">Deze voorinstelling kon niet worden gelezen</string>
+    <string name="preset_unreadable">Deze preset kon niet worden gelezen</string>
     <string name="preset_blank">Deze laadt wel, maar tekent alleen zwart terwijl er muziek speelt</string>
-    <string name="preset_unreadable_because">Deze voorinstelling kon niet worden gelezen: %1$s</string>
-    <string name="preset_not_shown">Niet getoond in deze voorinstelling: %1$s</string>
+    <string name="preset_unreadable_because">Deze preset kon niet worden gelezen: %1$s</string>
+    <string name="preset_not_shown">Niet getoond in deze preset: %1$s</string>
     <string name="preset_and_more">%1$s en nog %2$d</string>
 
     <!-- PresetPicker.kt -->
