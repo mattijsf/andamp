@@ -26,4 +26,38 @@ class PresetTitleTest {
             titles.sortedWith(PresetTitle.ORDER),
         )
     }
+
+    private val cream =
+        InstalledPack(
+            name = "Cream",
+            dir = java.io.File("/p/Cream"),
+            presetCount = 2,
+            textureDirs = emptyList(),
+            wrapper = "presets-cream-of-the-crop-master",
+        )
+
+    @Test
+    fun `the line under a title is its folders, without the zip's own`() {
+        assertEquals(
+            "Dancer / Glowsticks Mirror",
+            PresetTitle.placeOf(
+                "/p/Cream/presets-cream-of-the-crop-master/Dancer/Glowsticks Mirror/x - Mashup (189).milk",
+                cream,
+            ),
+        )
+    }
+
+    @Test
+    fun `a numbered preset's line leaves out the folder its title names`() {
+        assertEquals(
+            "Geometric",
+            PresetTitle.placeOf("/p/Cream/presets-cream-of-the-crop-master/Geometric/Wire Trace/153.milk", cream),
+        )
+    }
+
+    @Test
+    fun `a preset at the top of its pack has no line`() {
+        assertEquals(null, PresetTitle.placeOf("/p/Cream/presets-cream-of-the-crop-master/top.milk", cream))
+        assertEquals(null, PresetTitle.placeOf("/elsewhere/a.milk", null))
+    }
 }

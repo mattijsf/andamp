@@ -19,6 +19,19 @@ object PresetTitle {
     }
 
     /**
+     * The line under a preset's title: the folders it sits in inside [pack], without the one
+     * a numbered preset's title already names. Null when there is nothing more to say.
+     */
+    fun placeOf(
+        path: String,
+        pack: InstalledPack?,
+    ): String? {
+        val folder = pack?.folderOf(path) ?: return null
+        val numbered = File(path).nameWithoutExtension.none(Char::isLetter)
+        return if (numbered) folder.substringBeforeLast(" / ", "").takeIf { it.isNotEmpty() } else folder
+    }
+
+    /**
      * Orders titles as a person reads them: by letters regardless of case, and runs of digits
      * by their value, so "Wire Trace 2" comes before "Wire Trace 10".
      */

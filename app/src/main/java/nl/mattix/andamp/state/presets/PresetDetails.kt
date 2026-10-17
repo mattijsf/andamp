@@ -62,10 +62,7 @@ data class PresetDetails(
         ): PresetDetails {
             val file = File(path)
             val pack = packs.firstOrNull { path.startsWith(it.dir.absolutePath + File.separator) }
-            val folder =
-                pack
-                    ?.let { file.parentFile?.relativeTo(it.dir)?.invariantSeparatorsPath }
-                    ?.takeIf { it.isNotEmpty() }
+            val folder = pack?.folderOf(path)
             val milk = file.extension.equals("milk", ignoreCase = true)
             return PresetDetails(
                 path = path,

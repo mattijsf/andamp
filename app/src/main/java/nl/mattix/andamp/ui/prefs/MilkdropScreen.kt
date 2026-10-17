@@ -198,6 +198,15 @@ private fun NowShowing(
                                 ?: m
                         }.testTag("milkdrop.current"),
             )
+            current?.let(selector.placeOf)?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             PresetNotice.detailFor(selector.currentGaps, words)?.let { problem ->
                 Problem(problem, selector.currentGaps, Modifier.testTag("milkdrop.current.problem"))
             }
@@ -252,6 +261,7 @@ private fun PresetList(
                 playing = path == selector.current,
                 favorite = selector.isFavorite(path),
                 gaps = selector.gapsOf(path),
+                place = selector.placeOf(path),
                 onPlay = { selector.onPlay(path) },
                 onToggleFavorite = { selector.onToggleFavorite(path) },
                 onAbout = { onAbout(path) },
@@ -338,6 +348,8 @@ private fun PresetRow(
     playing: Boolean,
     favorite: Boolean,
     gaps: PresetGaps?,
+    /** The folders it sits in, under its name. */
+    place: String?,
     onPlay: () -> Unit,
     onToggleFavorite: () -> Unit,
     onAbout: () -> Unit,
@@ -364,6 +376,16 @@ private fun PresetRow(
                 overflow = TextOverflow.Ellipsis,
                 color = if (playing) MaterialTheme.colorScheme.onSecondaryContainer else MaterialTheme.colorScheme.onSurface,
             )
+            place?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.testTag("milkdrop.preset.$name.place"),
+                )
+            }
             gaps?.let { PresetNotice.detailFor(it, words) }?.let { problem ->
                 Problem(problem, gaps, Modifier.testTag("milkdrop.preset.$name.problem"))
             }

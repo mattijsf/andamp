@@ -122,6 +122,14 @@ class PresetLibrary(
         textureDirs += dir
         // by the name the selector shows, so a pack that numbers its presets per folder stays grouped
         val byName = compareBy(PresetTitle.ORDER) { path: String -> PresetTitle.of(path) }.thenBy { it.lowercase() }
+        // a zip that holds one folder with everything in it: that folder says nothing about a preset
+        val wrapper =
+            (milk + avs)
+                .map { File(it).relativeTo(dir).invariantSeparatorsPath }
+                .map { it.substringBefore('/', "") }
+                .distinct()
+                .singleOrNull()
+                ?.takeIf { it.isNotEmpty() }
         return InstalledPack(
             dir.name,
             dir,
@@ -130,6 +138,7 @@ class PresetLibrary(
             avs.size,
             milkFiles = milk.sortedWith(byName),
             avsFiles = avs.sortedWith(byName),
+            wrapper = wrapper,
         )
     }
 
@@ -165,7 +174,29 @@ data class InstalledPack(
     val milkFiles: List<String> = emptyList(),
     /** Its `.avs` files, in the same order. */
     val avsFiles: List<String> = emptyList(),
+    /** The one folder every preset sits in, when the zip put them all in one; see [folderOf]. */
+    val wrapper: String? = null,
 )
+
+/** The pack of these whose folder holds the file at [path]. */
+fun List<InstalledPack>.holding(path: String): InstalledPack? =
+    firstOrNull { path.startsWith(it.dir.absolutePath + File.separator) }
+
+/**
+ * Where in this pack the preset at [path] sits, as the folders that say something about it:
+ * the [InstalledPack.wrapper] left out, "Dancer/Glowsticks Mirror". Null at the top.
+ */
+fun InstalledPack.folderOf(path: String): String? {
+    val parent = File(path).parentFile ?: return null
+    val inside =
+        parent
+            .relativeTo(dir)
+            .invariantSeparatorsPath
+            .split('/')
+            .filter { it.isNotEmpty() }
+    val shown = if (wrapper != null && inside.firstOrNull() == wrapper) inside.drop(1) else inside
+    return shown.joinToString(" / ").takeIf { it.isNotEmpty() }
+}
 
 /** The files [plugin] plays from this pack, in the order they are listed and played. */
 fun InstalledPack.filesFor(plugin: VisPlugin): List<String> =
