@@ -151,10 +151,23 @@ class PluginOps(
         )
     }
 
+    /**
+     * The plug-in whose row the plug-ins page points out once: the one just added, from
+     * when the listener closes the dialog that said so until its row has lit up.
+     */
+    var justAdded: String? by mutableStateOf(null)
+        private set
+
     /** The listener has read the result or the refusal. */
     fun seen() {
+        added?.let { justAdded = it.entry.pluginId }
         added = null
         problem = null
+    }
+
+    /** The just-added plug-in's row has been pointed out. */
+    fun pointedOut() {
+        justAdded = null
     }
 
     /** A file handed over that could not be opened: reported like a refusal. Nothing was installed. */
