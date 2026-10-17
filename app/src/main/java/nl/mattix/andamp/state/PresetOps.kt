@@ -305,10 +305,12 @@ class PresetOps(
         val pack = packsFor(state.visPlugin).firstOrNull { path.startsWith(it.dir.absolutePath + File.separator) }
         val playing = if (fromFavorites) state.presetFavorites else !state.presetFavorites && state.presetPack == pack?.name
         val index = state.presetPaths.indexOf(path)
-        if (playing && index >= 0) {
-            state.visualCommands?.goToPreset(index)
+        val commands = state.visualCommands
+        if (playing && index >= 0 && commands != null) {
+            commands.goToPreset(index)
             return
         }
+        // with no visual on screen, the next engine goes to it once it has its list
         state.presetWanted = path
         if (fromFavorites) selectFavorites() else select(pack?.name)
     }

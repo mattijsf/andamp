@@ -229,6 +229,9 @@ class MilkdropScreenTest {
         compose.onNodeWithTag("milkdrop.preset.preset 2.about").performClick()
         compose.waitUntil { compose.onAllNodesWithTag("preset.details.forget").fetchSemanticsNodes().isNotEmpty() }
         compose.onNodeWithTag("preset.details.problem").assertIsDisplayed()
+        // the page stands alone: no visual and no preset playing to mistake for this one
+        compose.onNodeWithTag("milkdrop.current").assertDoesNotExist()
+        compose.onNodeWithText("About this preset").assertIsDisplayed()
         compose.onNodeWithTag("preset.details.forget").performClick()
         compose.onNodeWithTag("preset.details.back").performClick()
 

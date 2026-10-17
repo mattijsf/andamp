@@ -100,7 +100,7 @@ fun MilkdropScreen(
         Scaffold(
             topBar = {
                 TopAppBar(
-                    title = { Text(prefs.plugin.menuLabel) },
+                    title = { Text(if (about != null) stringResource(R.string.preset_details_open) else prefs.plugin.menuLabel) },
                     navigationIcon = {
                         if (about != null) {
                             IconButton(onClick = { about = null }, modifier = Modifier.testTag("preset.details.back")) {
@@ -123,6 +123,12 @@ fun MilkdropScreen(
                 // the preview leaves most of a landscape phone to the list
                 val previewH = min(PREVIEW_H.dp, maxHeight * PREVIEW_SHARE)
                 Column(Modifier.fillMaxSize()) {
+                    // a preset's page stands alone: the visual and the preset playing would read
+                    // as the preset the page is about
+                    about?.let { path ->
+                        AboutPreset(path, selector, onPlayed = { about = null })
+                        return@Column
+                    }
                     preview(
                         Modifier
                             .fillMaxWidth()
@@ -131,10 +137,6 @@ fun MilkdropScreen(
                             .testTag("milkdrop.preview"),
                     )
                     NowShowing(prefs, selector, onAbout = { about = it })
-                    about?.let { path ->
-                        AboutPreset(path, selector, onPlayed = { about = null })
-                        return@Column
-                    }
                     PrimaryTabRow(selectedTabIndex = tab) {
                         Tab(
                             selected = tab == TAB_PRESETS,

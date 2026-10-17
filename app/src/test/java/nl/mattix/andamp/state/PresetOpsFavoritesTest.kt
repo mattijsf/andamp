@@ -209,6 +209,18 @@ class PresetOpsFavoritesTest {
         }
 
     @Test
+    fun `picking a preset with no visual on screen waits for the next one`() =
+        runTest {
+            makePack("one", "a.milk", "b.milk")
+            val (state, ops) = started(VisPlugin.Milkdrop, pack = "one")
+            state.presetPaths = listOf(file("one", "a.milk"), file("one", "b.milk"))
+
+            ops.play(file("one", "b.milk"), fromFavorites = false)
+
+            assertEquals(file("one", "b.milk"), state.presetWanted)
+        }
+
+    @Test
     fun `picking a pack leaves the favorites`() =
         runTest {
             makePack("one", "a.milk")
