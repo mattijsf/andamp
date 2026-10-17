@@ -2,7 +2,6 @@
 
 package nl.mattix.andamp.ui.prefs
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -57,6 +56,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.min
@@ -67,6 +67,8 @@ import nl.mattix.andamp.state.PresetNotice
 import nl.mattix.andamp.state.presets.PresetDetails
 import nl.mattix.andamp.state.presets.PresetTitle
 import nl.mattix.andamp.ui.menu.idleLabelRes
+import nl.mattix.andamp.ui.pulledAside
+import nl.mattix.andamp.ui.rememberBackPull
 import nl.mattix.andamp.ui.rememberWords
 import nl.mattix.andamp.visualizer.core.PresetGaps
 import java.io.File
@@ -95,7 +97,8 @@ fun MilkdropScreen(
     var tab by rememberSaveable { mutableIntStateOf(TAB_PRESETS) }
     // the preset whose page is open over the list, by file
     var about by rememberSaveable { mutableStateOf<String?>(null) }
-    BackHandler(enabled = about != null) { about = null }
+    // back from a preset's page pulls it aside onto the list under it
+    val aboutPull = rememberBackPull(enabled = about != null) { about = null }
     Surface(Modifier.fillMaxSize()) {
         Scaffold(
             topBar = {
@@ -121,13 +124,7 @@ fun MilkdropScreen(
             BoxWithConstraints(Modifier.padding(padding).fillMaxSize()) {
                 // the preview leaves most of a landscape phone to the list
                 val previewH = min(PREVIEW_H.dp, maxHeight * PREVIEW_SHARE)
-                Column(Modifier.fillMaxSize()) {
-                    // a preset's page stands alone: the visual and the preset playing would read
-                    // as the preset the page is about
-                    about?.let { path ->
-                        AboutPreset(path, selector, onPlayed = { about = null })
-                        return@Column
-                    }
+                Column(Modifier.fillMaxSize().then(if (about != null) Modifier.clearAndSetSemantics {} else Modifier)) {
                     preview(
                         Modifier
                             .fillMaxWidth()
@@ -153,6 +150,13 @@ fun MilkdropScreen(
                     when (tab) {
                         TAB_PRESETS -> PresetList(prefs, selector, onAbout = { about = it })
                         else -> Settings(prefs)
+                    }
+                }
+                // a preset's page covers the list whole: the visual and the preset playing beside
+                // it would read as the preset the page is about
+                about?.let { path ->
+                    Surface(Modifier.fillMaxSize().pulledAside(aboutPull)) {
+                        AboutPreset(path, selector, onPlayed = { about = null })
                     }
                 }
             }

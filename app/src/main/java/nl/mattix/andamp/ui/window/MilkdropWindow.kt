@@ -11,9 +11,13 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -234,13 +238,23 @@ fun MilkdropSurface(
     inWindow: Boolean = true,
 ) {
     val s: WinampState = vm.state
+    // The player stays under the preset selector, so its window and the selector's preview
+    // run an engine each. The preview leads while it is up: its engine takes the commands and
+    // says what is showing, and the window's follows it to the same preset.
+    if (!inWindow) {
+        DisposableEffect(Unit) {
+            s.visualPreviewOpen = true
+            onDispose { s.visualPreviewOpen = false }
+        }
+    }
+    val leads = !inWindow || !s.visualPreviewOpen
     // Black under the engine's view: a TextureView draws nothing until its first frame,
     // and the window is translucent, so the wallpaper would show through until then.
     Box(modifier.background(Color.Black)) {
         key(s.visPlugin) {
             when (s.visPlugin) {
-                VisPlugin.Avs -> AvsEngineView(vm)
-                VisPlugin.Milkdrop -> MilkdropEngineView(vm)
+                VisPlugin.Avs -> AvsEngineView(vm, leads)
+                VisPlugin.Milkdrop -> MilkdropEngineView(vm, leads)
             }
         }
         if (inWindow) PresetNoticeLine(s, Modifier.align(Alignment.BottomStart))
@@ -265,10 +279,14 @@ fun MilkdropSurface(
 }
 
 @Composable
-private fun MilkdropEngineView(vm: WinampViewModel) {
+private fun MilkdropEngineView(
+    vm: WinampViewModel,
+    leads: Boolean,
+) {
     val s: WinampState = vm.state
     EngineSurface(
         vm = vm,
+        leads = leads,
         factory = { context ->
             ProjectMView(context).apply {
                 pcmSourceFactory = { fps, maxSamples -> TapPcmSource(fps, maxSamples) { vm.audioTap } }
@@ -285,10 +303,14 @@ private fun MilkdropEngineView(vm: WinampViewModel) {
 
 /** The AVS engine's view. */
 @Composable
-private fun AvsEngineView(vm: WinampViewModel) {
+private fun AvsEngineView(
+    vm: WinampViewModel,
+    leads: Boolean,
+) {
     val s: WinampState = vm.state
     EngineSurface(
         vm = vm,
+        leads = leads,
         factory = { context ->
             AvsView(context).apply {
                 pcmSourceFactory = { fps -> TapPcmSource(fps, AvsView.MAX_PCM_SAMPLES) { vm.audioTap } }
@@ -308,13 +330,20 @@ private fun AvsEngineView(vm: WinampViewModel) {
  * Hosts any [VisualizerView]: the lifecycle gate, the published [VisualCommands] and the
  * preset-name announcement are the same for every engine. The factory adds what only its
  * engine has.
+ *
+ * Only a view that [leads] publishes its commands and says what it shows. One that does not
+ * follows the leader to the preset showing.
  */
 @Composable
 private fun <V : VisualizerView<*>> EngineSurface(
     vm: WinampViewModel,
+    leads: Boolean,
     factory: (android.content.Context) -> V,
     update: (V) -> Unit,
 ) {
+    val leading by rememberUpdatedState(leads)
+    // this view's own list, which a following view finds the leader's preset in
+    var ownPaths by remember { mutableStateOf<List<String>>(emptyList()) }
     val s: WinampState = vm.state
     // The preset that was playing before this view was built, read before the new engine
     // announces one. A new engine starts at the top of its playlist, and handing the player
@@ -330,8 +359,8 @@ private fun <V : VisualizerView<*>> EngineSurface(
     WhileOnScreen { onScreen -> surface.value?.rendering = onScreen }
     // the view's commands are published while it exists, so a menu item can reach it
     // without holding the view
-    DisposableEffect(surface.value) {
-        val view = surface.value
+    DisposableEffect(surface.value, leads) {
+        val view = surface.value?.takeIf { leads }
         val commands =
             view?.let {
                 object : VisualCommands {
@@ -342,36 +371,50 @@ private fun <V : VisualizerView<*>> EngineSurface(
                     override fun goToPreset(index: Int) = it.goToPreset(index)
                 }
             }
-        s.visualCommands = commands
-        // two views overlap while the preset selector's preview opens over the window; the one
-        // leaving last must not take the other's commands along
+        // two views overlap while the preset selector's preview is up; the one leaving last
+        // must not take the other's commands along
+        if (commands != null) s.visualCommands = commands
         onDispose { if (s.visualCommands === commands) s.visualCommands = null }
+    }
+    // a following view goes where the leader went, once it has the list to find it in
+    LaunchedEffect(leads, s.presetPath, ownPaths) {
+        if (leads) return@LaunchedEffect
+        val index = ownPaths.indexOf(s.presetPath ?: return@LaunchedEffect)
+        if (index >= 0) surface.value?.goToPreset(index)
     }
     AndroidView(
         factory = { context ->
             factory(context)
                 .apply {
-                    onPresetChanged = { name -> s.presetName = name }
+                    onPresetChanged = { name -> if (leading) s.presetName = name }
                     onPresetGaps = { path, gaps ->
-                        vm.presetOps.record(path, gaps)
                         // projectM names presets it tried and skipped as well; those are not showing
-                        if (!(s.visPlugin == VisPlugin.Milkdrop && gaps.unreadable)) {
-                            s.presetPath = path
-                            s.presetGaps = gaps
+                        if (leading) {
+                            vm.presetOps.record(path, gaps)
+                            if (!(s.visPlugin == VisPlugin.Milkdrop && gaps.unreadable)) {
+                                s.presetPath = path
+                                s.presetGaps = gaps
+                            }
                         }
                     }
                     onPlaylistChanged = { paths ->
-                        val names = paths.map { File(it).nameWithoutExtension }
-                        s.presetPaths = paths
-                        s.presetNames = names
-                        val wanted = s.presetWanted?.let { paths.indexOf(it) }?.takeIf { it >= 0 }
-                        if (wanted != null) {
-                            // a preset picked from a list that was not playing yet
-                            s.presetWanted = null
+                        ownPaths = paths
+                        if (!leading) {
+                            // it follows; the leader already went back to where the visual was
                             resumed.set(true)
-                            goToPreset(wanted)
-                        } else if (resumed.compareAndSet(false, true)) {
-                            names.indexOf(resumeTo).takeIf { it >= 0 }?.let { goToPreset(it) }
+                        } else {
+                            val names = paths.map { File(it).nameWithoutExtension }
+                            s.presetPaths = paths
+                            s.presetNames = names
+                            val wanted = s.presetWanted?.let { paths.indexOf(it) }?.takeIf { it >= 0 }
+                            if (wanted != null) {
+                                // a preset picked from a list that was not playing yet
+                                s.presetWanted = null
+                                resumed.set(true)
+                                goToPreset(wanted)
+                            } else if (resumed.compareAndSet(false, true)) {
+                                names.indexOf(resumeTo).takeIf { it >= 0 }?.let { goToPreset(it) }
+                            }
                         }
                     }
                 }.also { surface.value = it }

@@ -218,6 +218,12 @@ class WinampState {
     /** The same presets' files, in the same order. */
     var presetPaths by mutableStateOf<List<String>>(emptyList())
 
+    /**
+     * Whether the preset selector's preview is up. Its engine then leads: it takes the visual's
+     * commands and says what is showing, and the plug-in window's engine follows it.
+     */
+    var visualPreviewOpen by mutableStateOf(false)
+
     /** The file of the preset showing, as the engine announced it; null for its idle preset. */
     var presetPath by mutableStateOf<String?>(null)
 
