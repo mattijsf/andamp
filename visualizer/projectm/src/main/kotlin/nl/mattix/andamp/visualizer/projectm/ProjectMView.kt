@@ -101,7 +101,7 @@ class ProjectMView(
                 presetLoader.readLog()
                 presetLoader.reportFailures()
                 presetLoader.reportSwitch()
-                if (resting) {
+                if (!frameDue()) {
                     pacer.await()
                     continue
                 }

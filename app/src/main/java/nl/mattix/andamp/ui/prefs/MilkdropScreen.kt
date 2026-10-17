@@ -39,6 +39,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -47,6 +48,7 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -100,6 +102,10 @@ fun MilkdropScreen(
     // a completed gesture leaves the pull at its end; once the page is gone it goes back to rest,
     // or the next page would open pulled aside
     LaunchedEffect(about) { if (about == null) aboutPull.rest() }
+    // a page over the preview hides it, until the gesture pulls the page aside
+    val previewHidden = about != null && aboutPull.progress == 0f
+    LaunchedEffect(previewHidden) { selector.onPreviewHidden(previewHidden) }
+    DisposableEffect(Unit) { onDispose { selector.onPreviewHidden(false) } }
     Surface(Modifier.fillMaxSize()) {
         Scaffold(
             topBar = {
@@ -243,17 +249,27 @@ private fun PresetList(
     // a new list is checked ahead, so its rows can say what they will miss before one is picked
     LaunchedEffect(all) { selector.onShown(all) }
     var query by rememberSaveable { mutableStateOf("") }
-    // what each preset is searched by, worked out once per list and off the main thread: a pack
-    // can hold thousands
-    val searched by produceState<List<String>?>(null, all) {
-        value = withContext(Dispatchers.Default) { all.map { PresetSearch.text(PresetTitle.of(it), selector.placeOf(it)) } }
+    // what each row shows and is searched by, worked out once per list and off the main thread:
+    // a pack can hold thousands, and a row composed while scrolling should cost next to nothing
+    val labels by produceState<Map<String, RowLabel>?>(null, all) {
+        value =
+            withContext(Dispatchers.Default) {
+                all.associateWith { path ->
+                    val title = PresetTitle.of(path)
+                    val place = selector.placeOf(path)
+                    RowLabel(title, place, PresetSearch.text(title, place))
+                }
+            }
     }
     val words = PresetSearch.words(query)
     val paths =
-        remember(all, searched, words) {
-            val texts = searched
-            if (words.isEmpty() || texts == null) all else all.filterIndexed { i, _ -> PresetSearch.matches(texts[i], words) }
+        remember(all, labels, words) {
+            val known = labels
+            if (words.isEmpty() || known == null) all else all.filter { PresetSearch.matches(known.getValue(it).searched, words) }
         }
+    // the preview draws fewer frames while the list moves, so the list gets the GPU
+    LaunchedEffect(list) { snapshotFlow { list.isScrollInProgress }.collect(selector.onScrolling) }
+    DisposableEffect(Unit) { onDispose { selector.onScrolling(false) } }
     // the list follows the preset playing when Next or Shuffle takes it out of view
     LaunchedEffect(selector.current, paths) {
         val index = paths.indexOf(selector.current)
@@ -274,7 +290,7 @@ private fun PresetList(
                     playing = path == selector.current,
                     favorite = selector.isFavorite(path),
                     gaps = selector.gapsOf(path),
-                    place = selector.placeOf(path),
+                    label = labels?.get(path) ?: RowLabel(PresetTitle.of(path), selector.placeOf(path), ""),
                     onPlay = { selector.onPlay(path) },
                     onToggleFavorite = { selector.onToggleFavorite(path) },
                     onAbout = { onAbout(path) },
@@ -291,14 +307,15 @@ private fun PresetRow(
     playing: Boolean,
     favorite: Boolean,
     gaps: PresetGaps?,
-    /** The folders it sits in, under its name. */
-    place: String?,
+    /** Its title, and the folders it sits in under it. */
+    label: RowLabel,
     onPlay: () -> Unit,
     onToggleFavorite: () -> Unit,
     onAbout: () -> Unit,
 ) {
     val name = File(path).nameWithoutExtension
-    val title = PresetTitle.of(path)
+    val title = label.title
+    val place = label.place
     val words = rememberWords()
     val background = if (playing) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface
     Row(
@@ -424,3 +441,10 @@ private const val HEADER_ITEMS = 2
 /** The preview's height, at most this share of the room below the bar. */
 private const val PREVIEW_H = 200
 private const val PREVIEW_SHARE = 0.3f
+
+/** What a row of the list shows, and what it is searched by. */
+private data class RowLabel(
+    val title: String,
+    val place: String?,
+    val searched: String,
+)

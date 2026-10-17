@@ -221,6 +221,12 @@ class WinampState {
     /** Whether a Material screen covers the player; its visual then rests, see `VisualizerView.resting`. */
     var playerCovered by mutableStateOf(false)
 
+    /** Whether a preset's page covers the selector's preview; the preview then rests. */
+    var visualPreviewHidden by mutableStateOf(false)
+
+    /** Whether the preset selector's list is being scrolled; its preview then draws fewer frames. */
+    var presetListScrolling by mutableStateOf(false)
+
     /** Whether the back gesture is pulling a screen aside, showing the player under it. */
     var screenPulled by mutableStateOf(false)
 

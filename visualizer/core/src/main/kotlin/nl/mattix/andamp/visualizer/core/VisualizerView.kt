@@ -7,6 +7,7 @@ import android.graphics.SurfaceTexture
 import android.util.Size
 import android.view.TextureView
 import java.util.concurrent.ConcurrentLinkedQueue
+import kotlin.math.roundToInt
 
 /**
  * The window every visualizer engine renders through.
@@ -80,6 +81,48 @@ abstract class VisualizerView<T>(
      */
     @Volatile
     var resting: Boolean = false
+
+    /**
+     * The share of the view's width and height the engine draws at; the view scales the picture
+     * up to fill itself. Below 1 for a small view beside something else that wants the GPU.
+     * Read when the surface comes and when it changes size.
+     */
+    @Volatile
+    var renderScale: Float = 1f
+
+    /** The surface size the engine draws at, for a view of [width] by [height]; see [renderScale]. */
+    private fun drawnSize(
+        texture: SurfaceTexture,
+        width: Int,
+        height: Int,
+    ): Size {
+        val scale = renderScale
+        if (scale >= 1f) return Size(width, height)
+        val size = Size((width * scale).roundToInt().coerceAtLeast(1), (height * scale).roundToInt().coerceAtLeast(1))
+        texture.setDefaultBufferSize(size.width, size.height)
+        return size
+    }
+
+    /**
+     * The most frames a second the view draws; 0 draws one every refresh of the display. A
+     * small view beside something the listener is moving, such as a list, leaves it the GPU.
+     */
+    @Volatile
+    var maxFps: Int = 0
+
+    private var lastFrameAt = 0L
+
+    /** Whether this pass of the loop should draw, under [resting] and [maxFps]; read by the loop. */
+    protected fun frameDue(): Boolean {
+        if (resting) return false
+        val cap = maxFps
+        if (cap <= 0) return true
+        val now = System.nanoTime()
+        // a little slack, so a cap that divides the display's rate keeps every other refresh
+        if (now - lastFrameAt < NANOS_PER_SECOND / cap - FRAME_SLACK_NANOS) return false
+        lastFrameAt = now
+        return true
+    }
 
     /** Whether frames are wanted at all; the owner drives this from the lifecycle. */
     var rendering: Boolean = true
@@ -169,7 +212,7 @@ abstract class VisualizerView<T>(
         width: Int,
         height: Int,
     ) {
-        requestedSize = Size(width, height)
+        requestedSize = drawnSize(surface, width, height)
     }
 
     final override fun onSurfaceTextureDestroyed(surface: SurfaceTexture): Boolean {
@@ -187,9 +230,10 @@ abstract class VisualizerView<T>(
         if (running || !rendering) return
         if (width <= 0 || height <= 0) return
         running = true
-        requestedSize = Size(width, height)
+        val size = drawnSize(texture, width, height)
+        requestedSize = size
         thread =
-            Thread({ renderLoop(texture, width, height) }, threadName).also {
+            Thread({ renderLoop(texture, size.width, size.height) }, threadName).also {
                 it.priority = Thread.NORM_PRIORITY + 1 // visuals shouldn't lose to background work
                 it.start()
             }
@@ -206,5 +250,7 @@ abstract class VisualizerView<T>(
         const val MIN_FPS = 30
         const val MAX_FPS = 120
         const val DEFAULT_FPS = 60
+        const val NANOS_PER_SECOND = 1_000_000_000L
+        const val FRAME_SLACK_NANOS = 2_000_000L
     }
 }

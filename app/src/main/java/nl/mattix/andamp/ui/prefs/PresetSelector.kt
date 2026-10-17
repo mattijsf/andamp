@@ -34,6 +34,10 @@ data class PresetSelector(
     val placeOf: (String) -> String? = { null },
     /** Reads a preset for its page; blocking, so it is called off the main thread. */
     val describe: (String) -> PresetDetails? = { null },
+    /** Told when a preset's page starts and stops hiding the preview. */
+    val onPreviewHidden: (Boolean) -> Unit = {},
+    /** Told when the list starts and stops scrolling. */
+    val onScrolling: (Boolean) -> Unit = {},
     /** Forgets what went wrong with a preset, so it is no longer skipped. */
     val onForget: (String) -> Unit = {},
 )
@@ -58,5 +62,7 @@ fun presetSelectorOf(vm: WinampViewModel): PresetSelector {
         placeOf = { PresetTitle.placeOf(it, ops.packs.holding(it)) },
         describe = { ops.describe(it) },
         onForget = { ops.forget(it) },
+        onScrolling = { s.presetListScrolling = it },
+        onPreviewHidden = { s.visualPreviewHidden = it },
     )
 }

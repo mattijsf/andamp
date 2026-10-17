@@ -109,13 +109,17 @@ private fun <V : VisualizerView<*>> EngineSurface(
     // the view is told directly: a stopped activity may not apply another recomposition
     val surface = remember { mutableStateOf<V?>(null) }
     WhileOnScreen { onScreen -> surface.value?.rendering = onScreen }
-    val rests = canRest && s.playerCovered && !s.screenPulled
+    // the window's visual under a screen, or the selector's preview under a preset's page
+    val rests = if (canRest) s.playerCovered && !s.screenPulled else s.visualPreviewHidden
 
     LeadOrFollow(s, surface.value, leads, ownPaths)
     AndroidView(
         factory = { context ->
             factory(context)
                 .apply {
+                    // the selector's preview draws at half size: it is small, and shares the GPU
+                    // with a list the listener scrolls
+                    if (!canRest) renderScale = PREVIEW_SCALE
                     onPresetChanged = { name -> if (leading) s.presetName = name }
                     onPresetGaps = { path, gaps ->
                         // projectM names presets it tried and skipped as well; those are not showing
@@ -152,6 +156,15 @@ private fun <V : VisualizerView<*>> EngineSurface(
         update = { view ->
             update(view)
             view.resting = rests
+            // the selector's preview is small, and shares the screen with a list
+            view.maxFps =
+                if (canRest) {
+                    0
+                } else if (s.presetListScrolling) {
+                    PREVIEW_SCROLLING_FPS
+                } else {
+                    PREVIEW_FPS
+                }
         },
         modifier = Modifier.fillMaxSize(),
     )
@@ -192,3 +205,10 @@ private fun LeadOrFollow(
         if (index >= 0) target?.goToPreset(index)
     }
 }
+
+/** The most frames a second the preset selector's preview draws, and while its list scrolls. */
+private const val PREVIEW_FPS = 60
+private const val PREVIEW_SCROLLING_FPS = 30
+
+/** The share of its size the preset selector's preview draws at. */
+private const val PREVIEW_SCALE = 0.5f

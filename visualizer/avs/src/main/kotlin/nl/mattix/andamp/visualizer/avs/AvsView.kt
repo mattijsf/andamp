@@ -114,7 +114,7 @@ class AvsView(
                     stickyPreset = loadedPath
                 }
                 announced = announce(loadedPath, announced)
-                if (resting) {
+                if (!frameDue()) {
                     pacer.await()
                     continue
                 }
