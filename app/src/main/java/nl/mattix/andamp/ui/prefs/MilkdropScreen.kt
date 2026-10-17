@@ -66,6 +66,7 @@ import kotlinx.coroutines.withContext
 import nl.mattix.andamp.R
 import nl.mattix.andamp.state.PresetNotice
 import nl.mattix.andamp.state.presets.PresetDetails
+import nl.mattix.andamp.state.presets.PresetTitle
 import nl.mattix.andamp.ui.menu.idleLabelRes
 import nl.mattix.andamp.ui.rememberWords
 import nl.mattix.andamp.visualizer.core.PresetGaps
@@ -337,6 +338,7 @@ private fun PresetRow(
     onAbout: () -> Unit,
 ) {
     val name = File(path).nameWithoutExtension
+    val title = PresetTitle.of(path)
     val words = rememberWords()
     val background = if (playing) MaterialTheme.colorScheme.secondaryContainer else MaterialTheme.colorScheme.surface
     Row(
@@ -351,7 +353,7 @@ private fun PresetRow(
     ) {
         Column(Modifier.weight(1f)) {
             Text(
-                name,
+                title,
                 style = MaterialTheme.typography.bodyLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,

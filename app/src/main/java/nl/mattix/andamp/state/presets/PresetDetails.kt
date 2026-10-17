@@ -13,7 +13,7 @@ import java.io.File
  */
 data class PresetDetails(
     val path: String,
-    /** The file name without its extension, as the lists show it. */
+    /** The name the lists show it by; see [PresetTitle]. */
     val name: String,
     /** The part of a Milkdrop name before " - ", which is by custom the author. */
     val author: String?,
@@ -69,7 +69,7 @@ data class PresetDetails(
             val milk = file.extension.equals("milk", ignoreCase = true)
             return PresetDetails(
                 path = path,
-                name = file.nameWithoutExtension,
+                name = PresetTitle.of(path),
                 author =
                     file.nameWithoutExtension
                         .substringBefore(" - ", "")

@@ -4,6 +4,7 @@ package nl.mattix.andamp.ui.prefs
 
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.presets.PresetDetails
+import nl.mattix.andamp.state.presets.PresetTitle
 import nl.mattix.andamp.visualizer.core.PresetGaps
 
 /**
@@ -42,7 +43,7 @@ fun presetSelectorOf(vm: WinampViewModel): PresetSelector {
     return PresetSelector(
         paths = ops.listing(if (favorites) null else s.presetPack),
         current = s.presetPath,
-        currentName = s.presetName,
+        currentName = s.presetPath?.let(PresetTitle::of) ?: s.presetName,
         currentGaps = s.presetGaps,
         gapsOf = { ops.health[it] },
         isFavorite = { ops.isFavorite(it) },

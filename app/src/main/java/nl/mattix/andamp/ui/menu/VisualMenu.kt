@@ -9,6 +9,7 @@ import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.VisPlugin
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.presets.InstalledPack
+import nl.mattix.andamp.state.presets.PresetTitle
 
 /**
  * Everything the running plug-in can be told. Reached two ways with the same entries: a long press
@@ -125,7 +126,7 @@ private fun presetItems(vm: WinampViewModel): List<AmpMenuItem> {
     return buildList {
         s.presetNames.take(PRESET_MENU_MAX).forEachIndexed { index, name ->
             add(
-                AmpMenuItem.Action(name, checked = name == s.presetName) {
+                AmpMenuItem.Action(s.presetPaths.getOrNull(index)?.let(PresetTitle::of) ?: name, checked = name == s.presetName) {
                     // picked by hand, so a preset that is skipped is tried again
                     val path = s.presetPaths.getOrNull(index)
                     if (path !=

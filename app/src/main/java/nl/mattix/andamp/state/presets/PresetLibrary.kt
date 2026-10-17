@@ -120,7 +120,8 @@ class PresetLibrary(
         }
         // some packs keep their textures next to the presets, so the pack root is searched too
         textureDirs += dir
-        val byName = compareBy<String> { File(it).nameWithoutExtension.lowercase() }.thenBy { it.lowercase() }
+        // by the name the selector shows, so a pack that numbers its presets per folder stays grouped
+        val byName = compareBy(PresetTitle.ORDER) { path: String -> PresetTitle.of(path) }.thenBy { it.lowercase() }
         return InstalledPack(
             dir.name,
             dir,
