@@ -4,6 +4,27 @@ What changed for somebody who uses Andamp, newest first. It is written from the 
 messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `docs:` and
 `chore:` commits do not appear here.
 
+## [0.16.0](https://github.com/mattijsf/andamp/compare/v0.15.0...v0.16.0) (2026-10-17)
+
+
+### New
+
+* Android's App info page opens Andamp's settings ([aecf444](https://github.com/mattijsf/andamp/commit/aecf444572b48de7e66b7a8c96cb6c6bdbe3d6d1))
+
+
+### Fixed
+
+* a broken AVS preset came back after switching apps ([#69](https://github.com/mattijsf/andamp/issues/69)) ([d0ffd94](https://github.com/mattijsf/andamp/commit/d0ffd9470d73bf0c33ff27742002f7cf50bc4598))
+* a plug-in link from the site opened the start of Preferences ([#73](https://github.com/mattijsf/andamp/issues/73)) ([343fbed](https://github.com/mattijsf/andamp/commit/343fbedf1e6963fbd9a133a42fd12aee1ba736e6))
+* mono tracks showed as stereo ([#57](https://github.com/mattijsf/andamp/issues/57)) ([b3d0d00](https://github.com/mattijsf/andamp/commit/b3d0d0055832814cf295bcb1e4e4ab9956988c82))
+* Preferences and the preset screen close with a back arrow, not Done ([#75](https://github.com/mattijsf/andamp/issues/75)) ([48f1e70](https://github.com/mattijsf/andamp/commit/48f1e708670430934d08dc207307a40a306fc0f2))
+* the visualizer window showed the wallpaper for a moment as it opened ([#72](https://github.com/mattijsf/andamp/issues/72)) ([a3d0e09](https://github.com/mattijsf/andamp/commit/a3d0e0926f477a88c8b14ec5dc85cd604bf1c9de))
+
+
+### Faster
+
+* saved lists open without freezing the library ([#70](https://github.com/mattijsf/andamp/issues/70)) ([0bc862b](https://github.com/mattijsf/andamp/commit/0bc862b58d35df92cf197f708def54d8fff5ea52))
+
 ## [0.15.0](https://github.com/mattijsf/andamp/compare/v0.14.0...v0.15.0) (2026-10-12)
 
 
