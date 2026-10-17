@@ -197,11 +197,13 @@ fun WinampScreen(
         vm.state.presetManagerRequested = false
         nav.navigate(Screen.MILKDROP)
     }
-    // a destination named from outside this screen, such as the floating player's menu
+    // a destination named from outside this screen, such as the floating player's menu. One
+    // already showing is not opened again: it takes the page it was asked for itself, and a
+    // new copy in its place would show its list instead
     LaunchedEffect(vm.state.arrivalDestination) {
         val going = vm.state.arrivalDestination ?: return@LaunchedEffect
         vm.state.arrivalDestination = null
-        nav.navigate(going)
+        if (nav.currentDestination?.route != going) nav.navigate(going)
     }
     val here =
         nav

@@ -88,6 +88,19 @@ class PluginAddedDialogTest {
     }
 
     @Test
+    fun `closing the dialog lights up the new plug-in's row, which then settles`() {
+        val plugins = page()
+        install(plugins, GAIN)
+        val id = plugins.added!!.entry.pluginId
+
+        compose.onNodeWithTag("prefs.plugins.added.ok").performClick()
+        compose.waitForIdle()
+
+        compose.onNodeWithTag("plugin.$id.card").assertIsDisplayed()
+        assertNull("the row has been pointed out", plugins.justAdded)
+    }
+
+    @Test
     fun `a newer version is said to be an update, from the version it replaces`() {
         val plugins = page()
         install(plugins, GAIN)

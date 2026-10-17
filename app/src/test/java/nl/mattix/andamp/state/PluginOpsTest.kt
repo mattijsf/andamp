@@ -209,6 +209,30 @@ class PluginOpsTest {
     }
 
     @Test
+    fun `a plug-in just added is pointed out once its dialog is closed, and only once`() {
+        val (_, plugins) = ops(EffectBackend(scope))
+        plugins.install(GAIN.byteInputStream())
+        settle()
+        val id = plugins.added!!.entry.pluginId
+
+        assertNull("nothing is pointed out while the dialog is up", plugins.justAdded)
+        plugins.seen()
+        assertEquals(id, plugins.justAdded)
+        plugins.pointedOut()
+        assertNull(plugins.justAdded)
+    }
+
+    @Test
+    fun `a refusal closed points nothing out`() {
+        val (_, plugins) = ops(EffectBackend(scope))
+        plugins.unreadable("could not be opened")
+
+        plugins.seen()
+
+        assertNull(plugins.justAdded)
+    }
+
+    @Test
     fun `the very same file again says nothing changed`() {
         val (_, plugins) = ops(EffectBackend(scope))
         plugins.install(GAIN.byteInputStream())
