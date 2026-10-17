@@ -53,6 +53,7 @@
 
     <!-- PresetNotice.kt -->
     <string name="preset_unreadable">Ce préréglage n’a pas pu être lu</string>
+    <string name="preset_blank">Il se charge, mais n’affiche que du noir pendant la lecture de musique</string>
     <string name="preset_unreadable_because">Ce préréglage n’a pas pu être lu : %1$s</string>
     <string name="preset_not_shown">Ce préréglage s’affiche sans : %1$s</string>
     <string name="preset_and_more">%1$s et %2$d de plus</string>

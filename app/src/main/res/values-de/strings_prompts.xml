@@ -53,6 +53,7 @@
 
     <!-- PresetNotice.kt -->
     <string name="preset_unreadable">Diese Voreinstellung konnte nicht gelesen werden</string>
+    <string name="preset_blank">Sie lädt, zeichnet aber nur Schwarz, während Musik läuft</string>
     <string name="preset_unreadable_because">Diese Voreinstellung konnte nicht gelesen werden: %1$s</string>
     <string name="preset_not_shown">In dieser Voreinstellung nicht gezeigt: %1$s</string>
     <string name="preset_and_more">%1$s und %2$d weitere</string>

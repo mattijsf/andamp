@@ -323,7 +323,7 @@ private fun PresetRow(
     }
 }
 
-/** What the engine could not show: in the error color when the preset did not play at all. */
+/** What the engine could not show: in the error color when nothing of the preset shows. */
 @Composable
 private fun Problem(
     text: String,
@@ -333,7 +333,14 @@ private fun Problem(
     Text(
         text,
         style = MaterialTheme.typography.bodySmall,
-        color = if (gaps.unreadable) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+        color =
+            if (gaps.unreadable ||
+                gaps.blank
+            ) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
         maxLines = 3,
         overflow = TextOverflow.Ellipsis,
         modifier = modifier,

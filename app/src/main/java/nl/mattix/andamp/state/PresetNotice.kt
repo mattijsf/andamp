@@ -23,6 +23,7 @@ object PresetNotice {
     ): String? =
         when {
             gaps.unreadable -> words.get(R.string.preset_unreadable)
+            gaps.blank -> words.get(R.string.preset_blank)
             gaps.missing.isEmpty() -> null
             else -> words.get(R.string.preset_not_shown, listed(gaps.missing.map(::plain).distinct(), words))
         }

@@ -16,8 +16,10 @@ data class PresetGaps(
     val missing: List<String> = emptyList(),
     /** Why it could not be read, in the engine's words, when the engine gave one. */
     val reason: String? = null,
+    /** It loaded, but drew nothing but black while music played. */
+    val blank: Boolean = false,
 ) {
-    val none get() = !unreadable && missing.isEmpty()
+    val none get() = !unreadable && missing.isEmpty() && !blank
 
     companion object {
         val NONE = PresetGaps()

@@ -24,12 +24,18 @@ internal class PresetLoader(
      * all of it when it failed.
      */
     private val onPresetGaps: (String, PresetGaps) -> Unit = { _, _ -> },
+    /** Milliseconds, for [BlankWatch]. */
+    private val clock: () -> Long = { System.nanoTime() / NANOS_PER_MILLI },
 ) {
     private var loaded: PresetPack? = null
     private var shuffling: Boolean? = null
     private var reportedPosition = -1
     private var reportedPath: String? = null
     private val log = PresetLog()
+    private val blankWatch = BlankWatch()
+
+    // the presets found drawing only black, this session; one that draws again leaves the set
+    private val blank = mutableSetOf<String>()
 
     fun sync(
         pack: PresetPack?,
@@ -68,8 +74,9 @@ internal class PresetLoader(
         reportedPosition = position
         val path = engine.playlistItem(position) ?: return
         reportedPath = path
+        blankWatch.start(path, clock())
         onPresetChanged(File(path).nameWithoutExtension)
-        onPresetGaps(path, PresetGaps(missing = log.leftOut(path)))
+        onPresetGaps(path, gapsOf(path))
     }
 
     /**
@@ -80,8 +87,24 @@ internal class PresetLoader(
     fun readLog() {
         val grew = log.read(engine.takeLog())
         val showing = reportedPath ?: return
-        if (showing in grew) onPresetGaps(showing, PresetGaps(missing = log.leftOut(showing)))
+        if (showing in grew) onPresetGaps(showing, gapsOf(showing))
     }
+
+    /** Whether the frame about to be drawn should be checked for drawing nothing. */
+    fun wantsBlankCheck(): Boolean = blankWatch.wants(clock())
+
+    /** What a check of the frame found; see [BlankWatch]. */
+    fun blankChecked(
+        black: Boolean,
+        audible: Boolean,
+    ) {
+        val path = blankWatch.watching ?: return
+        val draws = blankWatch.sampled(black, audible, clock()) ?: return
+        val changed = if (draws) blank.remove(path) else blank.add(path)
+        if (changed) onPresetGaps(path, gapsOf(path))
+    }
+
+    private fun gapsOf(path: String) = PresetGaps(missing = log.leftOut(path), blank = path in blank)
 
     /** Names every preset projectM tried and could not show since the last call, with its reason. */
     fun reportFailures() {
@@ -102,6 +125,8 @@ internal class PresetLoader(
     }
 
     private companion object {
+        const val NANOS_PER_MILLI = 1_000_000L
+
         /** Reasons projectM passes on from a C++ exception that carried no message. */
         val SAYS_NOTHING = setOf("std::exception", "Unknown error")
     }

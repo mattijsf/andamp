@@ -83,6 +83,8 @@ class ProjectMView(
                     restoreTo = { stickyPreset },
                     onPresetGaps = ::announceGaps,
                 )
+            val probe = BlackProbe()
+            var audibleAt = Long.MIN_VALUE / 2
             while (stillCurrent()) {
                 requestedSize?.takeIf { it != appliedSize }?.let { size ->
                     appliedSize = size
@@ -96,8 +98,16 @@ class ProjectMView(
                 presetLoader.reportSwitch()
                 val samples = pcm?.read()
                 if (samples != null) engine.addPcmFloat(samples, samples.size.coerceAtMost(maxSamples))
+                val now = System.nanoTime() / NANOS_PER_MILLI
+                if (samples != null && samples.any { it > AUDIBLE || it < -AUDIBLE }) audibleAt = now
                 engine.renderFrame()
                 egl.makeOpaque()
+                if (presetLoader.wantsBlankCheck()) {
+                    presetLoader.blankChecked(
+                        black = probe.isBlack(appliedSize.width, appliedSize.height),
+                        audible = now - audibleAt < AUDIBLE_FOR_MS,
+                    )
+                }
                 if (!egl.swapBuffers()) break
                 pacer.await()
             }
@@ -118,5 +128,13 @@ class ProjectMView(
          */
         const val MESH_W = 48
         const val MESH_H = 36
+
+        const val NANOS_PER_MILLI = 1_000_000L
+
+        /** A sample this far from silence counts as music playing. */
+        const val AUDIBLE = 0.02f
+
+        /** Music counts as playing for this long after the last sample that was. */
+        const val AUDIBLE_FOR_MS = 300L
     }
 }
