@@ -199,4 +199,22 @@ class PresetLibraryTest {
         assertTrue(library.delete(zebra))
         assertEquals(listOf("apple"), library.packs().map { it.name })
     }
+
+    @Test
+    fun `a zip that holds one folder has it named as its wrapper`() {
+        val pack =
+            library().importZip(
+                zipOf("Wrapped/Dancer/a.milk" to "preset", "Wrapped/b.milk" to "preset"),
+                "Wrapped pack",
+            )
+
+        assertEquals("Wrapped", pack?.wrapper)
+    }
+
+    @Test
+    fun `presets in several top folders have no wrapper`() {
+        val pack = library().importZip(zipOf("One/a.milk" to "preset", "Two/b.milk" to "preset"), "Spread")
+
+        assertEquals(null, pack?.wrapper)
+    }
 }

@@ -35,13 +35,17 @@ abstract class VisualizerView<T>(
     @Volatile
     var onPresetChanged: ((String) -> Unit)? = null
 
-    /** Told what the engine could not show of each preset as it starts, on the main thread. */
+    /**
+     * Told what the engine could not show of a preset, with the preset's file (null for the
+     * engine's idle preset), on the main thread: as each preset starts, and for a preset
+     * the engine tried and skipped.
+     */
     @Volatile
-    var onPresetGaps: ((PresetGaps) -> Unit)? = null
+    var onPresetGaps: ((path: String?, gaps: PresetGaps) -> Unit)? = null
 
     /**
-     * The loaded presets, in playlist order, told once per pack. The index into this list
-     * is what [goToPreset] takes.
+     * The loaded presets' files, in playlist order, told once per list. The index into this
+     * list is what [goToPreset] takes.
      */
     @Volatile
     var onPlaylistChanged: ((List<String>) -> Unit)? = null
@@ -68,6 +72,14 @@ abstract class VisualizerView<T>(
             command(target)
         }
     }
+
+    /**
+     * Whether the view keeps its engine but draws nothing new: what it last drew stays, and
+     * commands and preset changes still reach the engine, so it wakes up on the right preset at
+     * once. Cheaper than [rendering] off, which ends the engine and builds a new one after.
+     */
+    @Volatile
+    var resting: Boolean = false
 
     /** Whether frames are wanted at all; the owner drives this from the lifecycle. */
     var rendering: Boolean = true
@@ -111,8 +123,11 @@ abstract class VisualizerView<T>(
     }
 
     /** Hops what a preset is missing to the main thread, as [announcePreset] does its name. */
-    protected fun announceGaps(gaps: PresetGaps) {
-        post { onPresetGaps?.invoke(gaps) }
+    protected fun announceGaps(
+        path: String?,
+        gaps: PresetGaps,
+    ) {
+        post { onPresetGaps?.invoke(path, gaps) }
     }
 
     /**
@@ -131,8 +146,8 @@ abstract class VisualizerView<T>(
         protected set
 
     /** Hops the playlist to the main thread, for the same reason. */
-    protected fun announcePlaylist(names: List<String>) {
-        post { onPlaylistChanged?.invoke(names) }
+    protected fun announcePlaylist(paths: List<String>) {
+        post { onPlaylistChanged?.invoke(paths) }
     }
 
     /** Match the panel: presets move per frame, so the frame rate is the speed. */

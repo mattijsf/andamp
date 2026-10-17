@@ -54,6 +54,10 @@
 
     <!-- PresetNotice.kt: the visualizer's line about a preset -->
     <string name="preset_unreadable">This preset could not be read</string>
+    <!-- The preset loaded without an error, but showed nothing -->
+    <string name="preset_blank">It loads, but draws only black while music plays</string>
+    <!-- %1$s is the engine's reason, in English -->
+    <string name="preset_unreadable_because">This preset could not be read: %1$s</string>
     <!-- %1$s lists the effects left out -->
     <string name="preset_not_shown">Not shown in this preset: %1$s</string>
     <!-- %1$s is the named effects, %2$d how many more -->

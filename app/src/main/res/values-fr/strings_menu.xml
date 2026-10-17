@@ -66,6 +66,9 @@
     <string name="menu_projectm_idle_preset">Préréglage de veille projectM</string>
     <string name="menu_no_presets_loaded">Aucun préréglage chargé</string>
     <string name="menu_all_presets">Les %1$d préréglages...</string>
+    <string name="menu_favorites_with_count">Favoris (%1$d)</string>
+    <string name="menu_add_favorite">Ajouter aux favoris</string>
+    <string name="menu_remove_favorite">Retirer des favoris</string>
 
     <!-- VisualizationMenu.kt -->
     <string name="menu_visualization_options">Options de visualisation</string>

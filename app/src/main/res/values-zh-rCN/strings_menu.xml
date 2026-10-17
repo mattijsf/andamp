@@ -66,6 +66,9 @@
     <string name="menu_projectm_idle_preset">projectM 待机预设</string>
     <string name="menu_no_presets_loaded">未载入预设</string>
     <string name="menu_all_presets">全部 %1$d 个预设...</string>
+    <string name="menu_favorites_with_count">收藏 (%1$d)</string>
+    <string name="menu_add_favorite">加入收藏</string>
+    <string name="menu_remove_favorite">从收藏中移除</string>
 
     <!-- VisualizationMenu.kt -->
     <string name="menu_visualization_options">可视化效果选项</string>

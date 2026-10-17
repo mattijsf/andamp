@@ -16,6 +16,8 @@ data class VisualizerMemory(
     val shuffle: Boolean = false,
     /** Whether the window says what a preset is missing; see [PresetNotice]. */
     val notices: Boolean = true,
+    /** The engines that play the listener's favorites instead of a pack. */
+    val favorites: Set<VisPlugin> = emptySet(),
 ) {
     fun packFor(plugin: VisPlugin): String? = packs[plugin]
 }
@@ -39,6 +41,7 @@ class VisualizerStore(
                 },
             shuffle = prefs.getBoolean(SHUFFLE, false),
             notices = prefs.getBoolean(NOTICES, true),
+            favorites = VisPlugin.entries.filter { prefs.getBoolean(FAVORITES_PREFIX + it.name, false) }.toSet(),
         )
 
     fun save(memory: VisualizerMemory) {
@@ -48,7 +51,10 @@ class VisualizerStore(
                 .putString(PLUGIN, memory.plugin.name)
                 .putBoolean(SHUFFLE, memory.shuffle)
                 .putBoolean(NOTICES, memory.notices)
-        VisPlugin.entries.forEach { edit.putString(PACK_PREFIX + it.name, memory.packs[it]) }
+        VisPlugin.entries.forEach {
+            edit.putString(PACK_PREFIX + it.name, memory.packs[it])
+            edit.putBoolean(FAVORITES_PREFIX + it.name, it in memory.favorites)
+        }
         // drops the migrated key, so a cleared selection does not come back from it
         edit.remove(PACK)
         edit.apply()
@@ -63,5 +69,6 @@ class VisualizerStore(
         const val PACK_PREFIX = "pack."
         const val SHUFFLE = "shuffle"
         const val NOTICES = "notices"
+        const val FAVORITES_PREFIX = "favorites."
     }
 }

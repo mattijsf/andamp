@@ -4,7 +4,6 @@ package nl.mattix.andamp.ui
 
 import android.app.Activity
 import android.os.SystemClock
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Spring
@@ -31,14 +30,18 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -70,6 +73,7 @@ import nl.mattix.andamp.ui.online.OnlineSkinsScreen
 import nl.mattix.andamp.ui.prefs.MilkdropScreen
 import nl.mattix.andamp.ui.prefs.PreferencesScreen
 import nl.mattix.andamp.ui.prefs.overlaySettingsIntent
+import nl.mattix.andamp.ui.prefs.presetSelectorOf
 import nl.mattix.andamp.ui.prefs.visualizerPrefsOf
 import nl.mattix.andamp.ui.theme.rememberSkinColorScheme
 import nl.mattix.andamp.ui.welcome.WelcomeChoice
@@ -230,44 +234,54 @@ fun WinampScreen(
             onFloatingChanged(true)
         }
     }
-    NavHost(
-        nav,
-        startDestination = Screen.PLAYER,
-        modifier = Modifier.fillMaxSize(),
-        // a Material screen fades and scales in over the player
-        enterTransition = { fadeIn(ARRIVING) + scaleIn(ARRIVING, initialScale = FROM) },
-        exitTransition = { fadeOut(LEAVING) + scaleOut(LEAVING, targetScale = FROM) },
-        popEnterTransition = { fadeIn(ARRIVING) + scaleIn(ARRIVING, initialScale = FROM) },
-        popExitTransition = { fadeOut(LEAVING) + scaleOut(LEAVING, targetScale = FROM) },
-    ) {
-        modernScreens(vm, skin, libraryAccess) { route ->
-            nav.popBackStack()
-            // only leaving the screen the visit arrived at ends the visit
-            if (vm.state.leavingEndsTheVisit(route)) onDone()
+    val covered = here != null && here != Screen.PLAYER
+    SideEffect { vm.state.playerCovered = covered }
+    Box(Modifier.fillMaxSize()) {
+        // The player is drawn under the nav host rather than as one of its destinations: a
+        // Material screen arrives over it and leaves to it, and the back gesture pulls a screen
+        // aside onto it, so the player and a visual running in it keep going behind. Covered,
+        // accessibility services do not read it. Until the base skin is decoded the screen stays
+        // black. With the floating player up this one is not laid out: the composition keeps
+        // recomposing after ON_STOP, and two layout passes would write the same window
+        // rectangles, each measured against its own screen.
+        if (skin != null && !vm.overlayOps.gate.showing) {
+            Box(Modifier.fillMaxSize().then(if (covered) Modifier.clearAndSetSemantics {} else Modifier)) {
+                PlayerSurface(
+                    vm,
+                    skin,
+                    playlistActions,
+                    libraryAccess,
+                    onPickSkin = { skinPicker.launch(arrayOf("*/*")) },
+                    onPreferences = { nav.navigate(Screen.PREFERENCES) },
+                    onMuseum = { nav.navigate(Screen.MUSEUM) },
+                    onExit = {
+                        vm.exit() // stops playback + the media notification service
+                        (context as? Activity)?.finish()
+                    },
+                    // minimize moves the task to the back; playback continues
+                    onMinimize = { (context as? Activity)?.moveTaskToBack(true) },
+                    onOverlaySettings = { context.startActivity(overlaySettingsIntent(context)) },
+                    onFloatingChanged = onFloatingChanged,
+                )
+            }
         }
-        composable(Screen.PLAYER) {
-            if (skin == null) return@composable // black screen until the base skin is decoded
-            // One surface lays the player out at a time. This composition keeps recomposing
-            // after ON_STOP, and with the floating player up, two layout passes would write
-            // the same window rectangles, each measured against its own screen.
-            if (vm.overlayOps.gate.showing) return@composable
-            PlayerSurface(
-                vm,
-                skin,
-                playlistActions,
-                libraryAccess,
-                onPickSkin = { skinPicker.launch(arrayOf("*/*")) },
-                onPreferences = { nav.navigate(Screen.PREFERENCES) },
-                onMuseum = { nav.navigate(Screen.MUSEUM) },
-                onExit = {
-                    vm.exit() // stops playback + the media notification service
-                    (context as? Activity)?.finish()
-                },
-                // minimize moves the task to the back; playback continues
-                onMinimize = { (context as? Activity)?.moveTaskToBack(true) },
-                onOverlaySettings = { context.startActivity(overlaySettingsIntent(context)) },
-                onFloatingChanged = onFloatingChanged,
-            )
+        NavHost(
+            nav,
+            startDestination = Screen.PLAYER,
+            modifier = Modifier.fillMaxSize(),
+            // a Material screen fades and scales in over the player
+            enterTransition = { fadeIn(ARRIVING) + scaleIn(ARRIVING, initialScale = FROM) },
+            exitTransition = { fadeOut(LEAVING) + scaleOut(LEAVING, targetScale = FROM) },
+            popEnterTransition = { fadeIn(ARRIVING) + scaleIn(ARRIVING, initialScale = FROM) },
+            popExitTransition = { fadeOut(LEAVING) + scaleOut(LEAVING, targetScale = FROM) },
+        ) {
+            modernScreens(vm, skin, libraryAccess) { route ->
+                nav.popBackStack()
+                // only leaving the screen the visit arrived at ends the visit
+                if (vm.state.leavingEndsTheVisit(route)) onDone()
+            }
+            // the player itself is drawn under the nav host, not as a destination: see above
+            composable(Screen.PLAYER) {}
         }
     }
 }
@@ -276,7 +290,7 @@ fun WinampScreen(
  * The player: every skinned window, the visualizer and the modals over them.
  *
  * It has two callers. The activity shows it under a nav host, where a menu can open
- * Preferences or the museum; the floating overlay shows it over other apps and passes its
+ * Preferences or the museum over it; the floating overlay shows it over other apps and passes its
  * own callbacks for the places it cannot reach.
  */
 @Composable
@@ -673,10 +687,14 @@ private fun ModernScreen(
     onLeave: () -> Unit,
     content: @Composable () -> Unit,
 ) {
-    // the back gesture and the Done button make the same call
-    BackHandler(onBack = onLeave)
+    // the back gesture pulls the screen aside, onto the player under it; a screen with levels of
+    // its own takes the gesture first while it is deeper than its first
+    val pull = rememberBackPull(onBack = onLeave)
+    // the player under the screen wakes its visual while the gesture shows it
+    LaunchedEffect(pull) { snapshotFlow { pull.progress > 0f }.collect { state.screenPulled = it } }
+    DisposableEffect(Unit) { onDispose { state.screenPulled = false } }
     MaterialTheme(colorScheme = skin?.let { rememberSkinColorScheme(it) } ?: darkColorScheme()) {
-        Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+        Surface(Modifier.fillMaxSize().pulledAside(pull), color = MaterialTheme.colorScheme.background) {
             content()
             // a permission prompt or a backend's notice can be raised while one of these
             // screens is open
@@ -715,7 +733,14 @@ private fun NavGraphBuilder.modernScreens(
     composable(Screen.MILKDROP) {
         // no onManagePresets: this screen is where that would go
         val leave = { onLeave(Screen.MILKDROP) }
-        ModernScreen(skin, vm.state, leave) { MilkdropScreen(visualizerPrefsOf(vm), onClose = leave) }
+        ModernScreen(skin, vm.state, leave) {
+            MilkdropScreen(
+                visualizerPrefsOf(vm),
+                presetSelectorOf(vm),
+                onClose = leave,
+                preview = { MilkdropSurface(vm, it, inWindow = false) },
+            )
+        }
     }
 }
 

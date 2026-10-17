@@ -21,6 +21,9 @@ set(BUILD_TESTING OFF CACHE BOOL "" FORCE)
 set(BUILD_DOCS OFF CACHE BOOL "" FORCE)
 set(ENABLE_SYSTEM_GLM OFF CACHE BOOL "" FORCE)         # no system libs on Android; use the vendored copies
 set(ENABLE_SYSTEM_PROJECTM_EVAL OFF CACHE BOOL "" FORCE)
+# Has projectM write to its error stream which preset it loads and which parts of it fail to
+# compile; the JNI glue reads that stream, so the preset selector can say what a preset lacks.
+set(ENABLE_DEBUG_MILKDROP_PRESET ON CACHE BOOL "" FORCE)
 # ENABLE_GLES is forced ON for Android by projectM's own CMakeLists.txt.
 
 # projectm-eval regenerates its flex/bison parser into its own source tree

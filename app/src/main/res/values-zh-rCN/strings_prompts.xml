@@ -53,6 +53,8 @@
 
     <!-- PresetNotice.kt -->
     <string name="preset_unreadable">无法读取此预设</string>
+    <string name="preset_blank">已载入，但播放音乐时只显示黑色</string>
+    <string name="preset_unreadable_because">无法读取此预设：%1$s</string>
     <string name="preset_not_shown">此预设中未显示：%1$s</string>
     <string name="preset_and_more">%1$s 等另外 %2$d 个</string>
 

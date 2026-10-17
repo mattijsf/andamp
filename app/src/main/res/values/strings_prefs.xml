@@ -68,11 +68,34 @@
 
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">Presets</string>
-    <!-- The plug-in's idle visual, named as its menu does. -->
-    <string name="prefs_milkdrop_nothing_loaded">Nothing is loaded but the %1$s. Import a pack above.</string>
     <string name="prefs_milkdrop_pack_loading">The pack is loading, or the plug-in window is closed.</string>
+    <!-- The search field over the preset list. -->
+    <string name="prefs_milkdrop_search_hint">Search presets and folders</string>
+    <string name="prefs_milkdrop_search_clear">Clear the search</string>
+    <!-- What was typed, when no preset has every word of it. -->
+    <string name="prefs_milkdrop_search_none">No preset matches “%1$s”.</string>
+    <!-- How many presets match the search, and how many the list holds. -->
+    <plurals name="prefs_milkdrop_search_count">
+        <item quantity="one">%1$d of %2$d preset matches.</item>
+        <item quantity="other">%1$d of %2$d presets match.</item>
+    </plurals>
+    <!-- The tab beside Presets, with the plug-in's settings. -->
+    <string name="prefs_milkdrop_settings_tab">Settings</string>
+    <!-- The source chip that plays the favorites; how many there are. -->
+    <string name="prefs_milkdrop_favorites_chip">Favorites (%1$d)</string>
+    <plurals name="prefs_milkdrop_favorites_count">
+        <item quantity="one">%1$d favorite, from any pack. Next and Shuffle stay among them.</item>
+        <item quantity="other">%1$d favorites, from any pack. Next and Shuffle stay among them.</item>
+    </plurals>
+    <!-- The plug-in's idle visual, named as its menu does. -->
+    <string name="prefs_milkdrop_idle_playing">The %1$s is playing. Pick your favorites or a pack above.</string>
+    <!-- The plug-in's idle visual, named as its menu does. -->
+    <string name="prefs_milkdrop_idle_no_favorites">The %1$s is playing. Pick a pack above, or import one under Settings.</string>
     <!-- How many presets, and the pack they are in. -->
-    <string name="prefs_milkdrop_presets_in_pack">%1$d in %2$s, in the order the engine plays them.</string>
+    <plurals name="prefs_milkdrop_pack_count">
+        <item quantity="one">%1$d preset in %2$s. Tap a star to add a preset to your favorites.</item>
+        <item quantity="other">%1$d presets in %2$s. Tap a star to add a preset to your favorites.</item>
+    </plurals>
 
     <!-- Notices.kt -->
     <string name="prefs_notice_projectm_what">The Milkdrop visualizer engine, rendering .milk presets.</string>
@@ -298,6 +321,12 @@
         <item quantity="one">%2$s · %1$d pack, %3$d presets</item>
         <item quantity="other">%2$s · %1$d packs, %3$d presets</item>
     </plurals>
+    <string name="prefs_visualizer_favorites">Favorites</string>
+    <string name="prefs_visualizer_favorites_none">The presets you star, from any pack, played as one. None yet.</string>
+    <plurals name="prefs_visualizer_favorites_summary">
+        <item quantity="one">%1$d preset you starred, from any pack</item>
+        <item quantity="other">%1$d presets you starred, from any pack</item>
+    </plurals>
     <string name="prefs_visualizer_plugin_section">Plug-in</string>
     <string name="prefs_visualizer_avs_blurb">Winamp\'s own visualizer, rebuilt. Runs real .avs presets you import.</string>
     <string name="prefs_visualizer_milkdrop_blurb">libprojectM. Runs real .milk presets you import.</string>
@@ -369,4 +398,48 @@
     <string name="prefs_widget_refresh_high_summary">Uses the most battery. The time ticks, and the visualizer catches up with the song as often as a widget can.</string>
     <!-- Medium and High with the visualizer off: both step the clock every second. -->
     <string name="prefs_widget_refresh_ticking_time_only">The time ticks along, second by second.</string>
+
+    <!-- PresetDetailsPage.kt: the page about one preset -->
+    <string name="preset_details_open">About this preset</string>
+    <string name="preset_details_back">Back to the list</string>
+    <string name="preset_details_reading">Reading the preset…</string>
+    <!-- The author, as the preset's file name gives it. -->
+    <string name="preset_details_by">by %1$s</string>
+    <string name="preset_details_play">Play</string>
+    <string name="preset_details_forget">Stop skipping it</string>
+    <string name="preset_details_file_section">File</string>
+    <string name="preset_details_pack">Pack</string>
+    <string name="preset_details_folder">Folder</string>
+    <string name="preset_details_size">Size</string>
+    <string name="preset_details_sha256">SHA-256</string>
+    <string name="preset_details_milkdrop_section">Milkdrop</string>
+    <string name="preset_details_version">Preset version</string>
+    <string name="preset_details_shader_model">Pixel shader model</string>
+    <!-- The two shaders' models, each a number or the word for none. -->
+    <string name="preset_details_shader_model_value">warp %1$s, composite %2$s</string>
+    <string name="preset_details_warp">Warp shader</string>
+    <string name="preset_details_comp">Composite shader</string>
+    <string name="preset_details_per_frame">Per-frame equations</string>
+    <string name="preset_details_per_pixel">Per-pixel equations</string>
+    <string name="preset_details_waves">Custom waves</string>
+    <string name="preset_details_shapes">Custom shapes</string>
+    <string name="preset_details_q">q variables</string>
+    <string name="preset_details_none">None</string>
+    <string name="preset_details_textures_section">Textures</string>
+    <string name="preset_details_texture_found">In the pack</string>
+    <string name="preset_details_texture_missing">Not in the pack</string>
+    <!-- A shader that asks for a random picture gets one of the pack's. -->
+    <string name="preset_details_texture_random">A random one from the pack</string>
+    <string name="preset_details_settings_section">Settings in the file</string>
+    <string name="preset_details_avs_section">AVS</string>
+    <string name="preset_details_clears">Starts each frame from black</string>
+    <string name="preset_details_yes">Yes</string>
+    <string name="preset_details_no">No</string>
+    <string name="preset_details_components">Components</string>
+    <string name="preset_details_not_shown">Not shown</string>
+    <string name="preset_details_unparsed">This file could not be read as a preset.</string>
+    <plurals name="preset_details_lines">
+        <item quantity="one">%1$d line</item>
+        <item quantity="other">%1$d lines</item>
+    </plurals>
 </resources>

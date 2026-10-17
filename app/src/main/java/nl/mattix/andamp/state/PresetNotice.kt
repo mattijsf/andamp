@@ -23,9 +23,23 @@ object PresetNotice {
     ): String? =
         when {
             gaps.unreadable -> words.get(R.string.preset_unreadable)
+            gaps.blank -> words.get(R.string.preset_blank)
             gaps.missing.isEmpty() -> null
             else -> words.get(R.string.preset_not_shown, listed(gaps.missing.map(::plain).distinct(), words))
         }
+
+    /**
+     * The longer line the preset selector shows under a preset: [textFor], with the engine's
+     * reason when it could not read the preset and gave one.
+     */
+    fun detailFor(
+        gaps: PresetGaps,
+        words: Words,
+    ): String? =
+        gaps.reason
+            ?.takeIf { gaps.unreadable && it.isNotBlank() }
+            ?.let { words.get(R.string.preset_unreadable_because, it.trim()) }
+            ?: textFor(gaps, words)
 
     private fun listed(
         names: List<String>,
