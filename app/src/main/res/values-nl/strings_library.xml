@@ -56,6 +56,10 @@
     </plurals>
     <string name="library_hits_capped">%1$d+ TREFFERS</string>
     <string name="library_incomplete">ONVOLLEDIG</string>
+    <plurals name="library_count_chosen">
+        <item quantity="one">%1$d GEKOZEN</item>
+        <item quantity="other">%1$d GEKOZEN</item>
+    </plurals>
     <string name="library_track_count_short">%1$d NRS</string>
 
     <string name="library_recently_added">RECENT TOEGEVOEGD</string>
@@ -63,6 +67,8 @@
     <string name="library_recently_played">LAATST GESPEELD</string>
     <string name="library_not_played_lately">LANG NIET GESPEELD</string>
     <string name="library_bookmarks">BLADWIJZERS</string>
+    <string name="library_folders">MAPPEN</string>
+    <string name="library_genres">GENRES</string>
     <plurals name="library_count_plays">
         <item quantity="one">%1$d KEER</item>
         <item quantity="other">%1$d KEER</item>

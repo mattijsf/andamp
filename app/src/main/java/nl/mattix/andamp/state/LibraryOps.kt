@@ -147,7 +147,35 @@ class LibraryOps(
 
     /** The bottom bar's left text: "245 ARTISTS", "26 TRACKS · 81:09", "245 ARTISTS · INCOMPLETE". */
     val status: String get() =
-        if (page.incomplete) "${page.status} · ${words.get(R.string.library_incomplete)}" else page.status
+        when {
+            chosen.isNotEmpty() -> words.plural(R.plurals.library_count_chosen, chosen.size)
+            page.incomplete -> "${page.status} · ${words.get(R.string.library_incomplete)}"
+            else -> page.status
+        }
+
+    /**
+     * The track rows picked together, through a row menu's Select: while there are any, a tap
+     * on a track row adds it or takes it out, and PLAY and ADD take the picked ones, in page
+     * order. Moving to another page lets them go.
+     */
+    var chosen: Set<Int> by mutableStateOf(emptySet())
+        private set
+
+    /** Whether the row at [index] can be picked with others: a track's. */
+    fun canChoose(index: Int): Boolean = trackIndex(index) != null
+
+    /** The row menu's Select: picks the row at [index], with any picked before it. */
+    fun choose(index: Int) {
+        if (!canChoose(index)) return
+        chosen = chosen + index
+        state.librarySelected = -1
+    }
+
+    /** The tracks of the picked rows, in page order. */
+    private fun chosenTracks(): List<Track> =
+        chosen.sorted().mapNotNull { row ->
+            trackIndex(row)?.let { page.tracks?.getOrNull(it) }
+        }
 
     /** The text an empty list shows, per page. */
     val emptyNote: String get() = page.empty ?: words.get(R.string.library_no_music)
@@ -459,11 +487,16 @@ class LibraryOps(
             return
         }
         val track = trackIndex(index)
-        if (track == null) {
-            page.open.getOrNull(index)?.invoke()
-            return
+        when {
+            track == null -> page.open.getOrNull(index)?.invoke()
+
+            // while rows are picked together, a tap picks or lets go
+            chosen.isNotEmpty() -> chosen = if (index in chosen) chosen - index else chosen + index
+
+            state.librarySelected == index -> playFrom(track)
+
+            else -> state.librarySelected = index
         }
-        if (state.librarySelected == index) playFrom(track) else state.librarySelected = index
     }
 
     /** Which of the page's tracks the row at [index] is; null for a row that is not a track. */
@@ -699,6 +732,7 @@ class LibraryOps(
      * list, it plays everything the page stands for.
      */
     fun playSelection() {
+        if (chosen.isNotEmpty()) return facade.playQueue(chosenTracks(), 0)
         val tracks = page.tracks ?: return onPage { all -> facade.playQueue(all, 0) }
         if (tracks.isEmpty()) return
         playFrom(trackIndex(state.librarySelected) ?: 0)
@@ -709,6 +743,11 @@ class LibraryOps(
      * or a list, it enqueues everything the page stands for.
      */
     fun enqueueSelection() {
+        if (chosen.isNotEmpty()) {
+            val picked = chosenTracks()
+            facade.enqueue(picked)
+            return showFlash(words.get(R.string.library_queued, picked.size))
+        }
         val tracks =
             page.tracks ?: return onPage { all ->
                 facade.enqueue(all)
@@ -748,7 +787,14 @@ class LibraryOps(
 
     /** The back gesture: up a level while there is one, then the window closes. */
     fun back() {
-        if (crumbs.isNotEmpty()) up() else state.libraryOpen = false
+        when {
+            // the back gesture first lets go of the rows picked together
+            chosen.isNotEmpty() -> chosen = emptySet()
+
+            crumbs.isNotEmpty() -> up()
+
+            else -> state.libraryOpen = false
+        }
     }
 
     /**
@@ -892,6 +938,7 @@ class LibraryOps(
         page = next
         state.libraryScroll = scroll
         state.librarySelected = selection
+        chosen = emptySet()
         revision++
         loading = false
     }
@@ -901,6 +948,7 @@ class LibraryOps(
         page = next
         state.libraryScroll = 0
         state.librarySelected = -1
+        chosen = emptySet()
         revision++
     }
 

@@ -41,7 +41,8 @@ class AllLibrary(
     SourceMarks,
     PartialAnswers,
     TrackHomes,
-    EveryTrack {
+    EveryTrack,
+    FoldersAndGenres {
     /** One source in the library: its library and the mark its rows carry. */
     class Member(
         val source: MusicSource,
@@ -185,6 +186,26 @@ class AllLibrary(
             ask { member -> (member.library as? EveryTrack)?.everyTrack().orEmpty() }.flatMap { it.second },
         )
 
+    override suspend fun folders(): List<Pair<String, Int>> = grouped { it.folders() }
+
+    override suspend fun folderTracks(folder: String): List<Track> =
+        ask {
+            (it.library as? FoldersAndGenres)?.folderTracks(folder).orEmpty()
+        }.flatMap { it.second }
+
+    override suspend fun genres(): List<Pair<String, Int>> = grouped { it.genres() }
+
+    override suspend fun genreTracks(genre: String): List<Track> =
+        distinctTracks(ask { (it.library as? FoldersAndGenres)?.genreTracks(genre).orEmpty() }.flatMap { it.second })
+
+    /** What the members that know folders and genres list, one row per name with the counts added up. */
+    private suspend fun grouped(list: suspend (FoldersAndGenres) -> List<Pair<String, Int>>): List<Pair<String, Int>> =
+        ask { (it.library as? FoldersAndGenres)?.let { library -> list(library) }.orEmpty() }
+            .flatMap { it.second }
+            .groupBy { ShelfBuilder.fold(it.first) }
+            .map { (_, same) -> same.first().first to same.sumOf { it.second } }
+            .sortedBy { ShelfBuilder.fold(it.first) }
+
     /** The track's album as the source that plays it knows it, as this library's row for it. */
     override suspend fun albumOf(track: Track): LibraryAlbum? {
         val member = homeOf(track) ?: return null
@@ -292,4 +313,17 @@ interface TrackHomes {
 /** A library that can hand over every track it has at once, for the row that stands for all of them. */
 interface EveryTrack {
     suspend fun everyTrack(): List<Track>
+}
+
+/** A library that knows the folders and the genres of its tracks, for the LISTS tab's FOLDERS and GENRES. */
+interface FoldersAndGenres {
+    /** The folders, each with how many tracks it holds. */
+    suspend fun folders(): List<Pair<String, Int>>
+
+    suspend fun folderTracks(folder: String): List<Track>
+
+    /** The genres, each with how many tracks name it. */
+    suspend fun genres(): List<Pair<String, Int>>
+
+    suspend fun genreTracks(genre: String): List<Track>
 }

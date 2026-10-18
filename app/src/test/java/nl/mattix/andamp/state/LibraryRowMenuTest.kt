@@ -172,7 +172,7 @@ class LibraryRowMenuTest {
         assertEquals(listOf("Play", "Enqueue", "Enqueue next", "Rename list", "Delete list"), labels(ops, 0))
 
         ops.tapRow(0) // into Gym
-        assertEquals(listOf("Play", "Enqueue", "Enqueue next"), labels(ops, 0))
+        assertEquals("a track can be picked with others", listOf("Play", "Enqueue", "Enqueue next", "Select"), labels(ops, 0))
     }
 
     @Test
@@ -197,7 +197,7 @@ class LibraryRowMenuTest {
         ops.open()
         ops.switchCategory(LibraryOps.Category.RADIO)
 
-        assertEquals(listOf("Play", "Enqueue", "Enqueue next", "Rename station", "Delete station"), labels(ops, 0))
+        assertEquals(listOf("Play", "Enqueue", "Enqueue next", "Select", "Rename station", "Delete station"), labels(ops, 0))
     }
 
     @Test

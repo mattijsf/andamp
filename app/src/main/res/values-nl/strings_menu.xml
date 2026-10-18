@@ -110,4 +110,5 @@
     <string name="menu_delete_station">Zender verwijderen</string>
     <string name="menu_go_to_album">Naar album</string>
     <string name="menu_go_to_artist">Naar artiest</string>
+    <string name="menu_select">Selecteren</string>
 </resources>
