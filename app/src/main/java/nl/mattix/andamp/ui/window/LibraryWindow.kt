@@ -32,6 +32,7 @@ import nl.mattix.andamp.skin.PleditStyle
 import nl.mattix.andamp.skin.Sheet
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SpriteMap
+import nl.mattix.andamp.state.AlbumOrder
 import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.LibraryAccess
 import nl.mattix.andamp.state.LibraryOps
@@ -336,6 +337,13 @@ private fun libraryWidgets(
                 enabled = { ops.canPlayPage },
                 taps = Widget.Taps(onTap = { ops.enqueueSelection() }),
             ),
+            // the ALBUMS page has no PLAY or ADD; its order takes their place
+            Widget(
+                "library.order",
+                IntRect(left + listW - LibraryLayout.ORDER_CELL_W, barTop, left + listW, barTop + barH),
+                enabled = { ops.canOrder },
+                taps = Widget.Taps(onTap = { ops.nextOrder() }),
+            ),
         )
 }
 
@@ -374,6 +382,7 @@ internal fun DrawScope.drawLibraryContent(
             canSearch = ops.canSearch,
             newCell = ops.category == LibraryOps.Category.RADIO && ops.atTracks && !ops.searching,
             deleteCell = ops.canDeletePage,
+            order = LibraryRasterizer.wordOf(s.albumOrder).takeIf { ops.canOrder },
             width = width,
             visibleRows = layout.visibleRows,
             slack = layout.slack,
@@ -387,7 +396,9 @@ internal fun DrawScope.drawLibraryContent(
     drawLayer(rasterizer.rows(ops, scene), layout.rowsTop, width, layout.rowsH)
     drawLayer(rasterizer.bar(ops, scene), layout.barTop, width, layout.barH)
     if (s.pressedWidget == "library.scroll") {
-        ops.letterAt(s.libraryScroll)?.let { letter -> drawLetter(rasterizer.letter(letter, scene), skin.pledit, width, layout) }
+        ops.letterAt(s.libraryScroll)?.takeIf { it.isNotEmpty() }?.let { letter ->
+            drawLetter(rasterizer.letter(letter, scene), letter.length, skin.pledit, width, layout)
+        }
     }
 
     // the playlist's scroll handle over plain background: the playlist's rail art is
@@ -428,12 +439,14 @@ private fun DrawScope.drawLayer(
  */
 private fun DrawScope.drawLetter(
     letter: ImageBitmap,
+    length: Int,
     style: PleditStyle,
     width: Int,
     layout: LibraryLayout,
 ) {
-    val boxW = LibraryRasterizer.LETTER_W + 2 * LETTER_PAD
-    val boxH = LibraryRasterizer.LETTER_H + 2 * LETTER_PAD
+    val size = LibraryRasterizer.readoutSize(length)
+    val boxW = size.width + 2 * LETTER_PAD
+    val boxH = size.height + 2 * LETTER_PAD
     val left = (width - LibraryLayout.SCROLLBAR_W - boxW) / 2
     val top = layout.rowsTop + (layout.rowsH - boxH) / 2
     fill(style.current, left - 1, top - 1, left + boxW + 1, boxH + 2)
@@ -441,7 +454,7 @@ private fun DrawScope.drawLetter(
     drawImage(
         letter,
         dstOffset = IntOffset(left + LETTER_PAD, top + LETTER_PAD),
-        dstSize = IntSize(LibraryRasterizer.LETTER_W, LibraryRasterizer.LETTER_H),
+        dstSize = size,
         filterQuality = FilterQuality.None,
     )
 }
@@ -489,6 +502,9 @@ private fun DrawScope.drawLibraryBands(
         if (ops.headingAt(index)) fill(band, 0, top + layout.rowH - LibraryLayout.RULE_H, rowsW, LibraryLayout.RULE_H)
     }
     if (ops.canPlayPage) drawBarBands(ops, s, band, width, layout)
+    if (ops.canOrder && s.pressedWidget == "library.order") {
+        fill(band, width - LibraryLayout.ORDER_CELL_W, layout.barTop, width, layout.barH)
+    }
 }
 
 /** The band under a pressed cell of the bar; the cells are there only where PLAY and ADD act. */
@@ -569,6 +585,8 @@ internal class LibraryRasterizer(
         val skinFont: ImageBitmap? = null,
         /** The library's name in the header's corner, where another can be picked; null where none can. */
         val source: String? = null,
+        /** The string of the order the ALBUMS page is in, for the bar's cell; null where there is none. */
+        val order: Int? = null,
     ) {
         val layout: LibraryLayout get() = LibraryLayout(visibleRows, slack = slack, rowH = rowH)
     }
@@ -687,6 +705,7 @@ internal class LibraryRasterizer(
                 scene.flash,
                 scene.newCell,
                 scene.deleteCell,
+                scene.order,
                 scene.width,
                 scene.scale,
                 scene.style,
@@ -705,8 +724,9 @@ internal class LibraryRasterizer(
     private var letterImage: ImageBitmap? = null
 
     /**
-     * [letter] at [LETTER_ZOOM] times the size of a row's, in the current-track color: the skin's
-     * letter with its pixels made larger, or the outline font drawn that large.
+     * [letter], or a short word such as a year, larger than a row's ([readoutSize]), in the
+     * current-track color: the skin's letters with their pixels made larger, or the outline
+     * font drawn that large.
      */
     fun letter(
         letter: String,
@@ -716,19 +736,21 @@ internal class LibraryRasterizer(
         letterImage?.let { if (key == letterKey) return it }
         val argb = scene.style.current.toArgb()
         val glyphs = glyphsOf(scene.skinFont)?.takeIf { BitmapFont.covers(letter) }
+        val size = readoutSize(letter.length)
         val bitmap =
             if (glyphs != null) {
-                val block = IntArray(BitmapFont.CHAR_W * BitmapFont.CHAR_H)
-                glyphs.write(BitmapFont.normalize(letter), 0, 0, argb, block, BitmapFont.CHAR_W)
-                Bitmap.createBitmap(block, BitmapFont.CHAR_W, BitmapFont.CHAR_H, Bitmap.Config.ARGB_8888)
+                val w = BitmapFont.CHAR_W * letter.length
+                val block = IntArray(w * BitmapFont.CHAR_H)
+                glyphs.write(BitmapFont.normalize(letter), 0, 0, argb, block, w)
+                Bitmap.createBitmap(block, w, BitmapFont.CHAR_H, Bitmap.Config.ARGB_8888)
             } else {
-                val made = Bitmap.createBitmap(LETTER_W * scene.scale, LETTER_H * scene.scale, Bitmap.Config.ARGB_8888)
+                val made = Bitmap.createBitmap(size.width * scene.scale, size.height * scene.scale, Bitmap.Config.ARGB_8888)
                 val canvas = Canvas(made)
                 canvas.scale(scene.scale.toFloat(), scene.scale.toFloat())
-                val paint = paintFor(scene).apply { textSize = LETTER_H.toFloat() }
+                val paint = paintFor(scene).apply { textSize = size.height.toFloat() }
                 paint.color = argb
-                val x = (LETTER_W - paint.measureText(letter)) / 2f
-                canvas.drawText(letter, x, ListText.baseline(paint, 0f, LETTER_H), paint)
+                val x = (size.width - paint.measureText(letter)) / 2f
+                canvas.drawText(letter, x, ListText.baseline(paint, 0f, size.height), paint)
                 made
             }
         return bitmap.asImageBitmap().also {
@@ -880,9 +902,24 @@ internal class LibraryRasterizer(
             when {
                 scene.newCell -> cells.newLeft
                 scene.deleteCell -> cells.deleteLeft
+                scene.order != null -> scene.width - LibraryLayout.ORDER_CELL_W
                 else -> cells.playLeft
             } - DETAIL_GAP
         label(statusText, ListText.LEFT_INSET, statusRight, 0, barH, statusColor.toArgb(), fit = TextLayer.Fit.SQUEEZE)
+        scene.order?.let { word ->
+            val cellLeft = (scene.width - LibraryLayout.ORDER_CELL_W + CELL_PAD).toFloat()
+            val right = scene.width - ListText.RIGHT_INSET
+            label(
+                resources.getString(word),
+                cellLeft,
+                right,
+                0,
+                barH,
+                scene.style.normal.toArgb(),
+                TextLayer.Align.RIGHT,
+                TextLayer.Fit.SQUEEZE,
+            )
+        }
 
         if (!ops.canPlayPage) return
         val normal = scene.style.normal.toArgb()
@@ -909,10 +946,25 @@ internal class LibraryRasterizer(
     }
 
     companion object {
-        /** How much larger than a row's the letter beside a dragged handle is, in the skin's font. */
+        /** How much larger than a row's a single letter beside a dragged handle is, in the skin's font. */
         const val LETTER_ZOOM = 5
-        const val LETTER_W = BitmapFont.CHAR_W * LETTER_ZOOM
-        const val LETTER_H = BitmapFont.CHAR_H * LETTER_ZOOM
+
+        /** How much larger a longer readout, such as a year, is. */
+        private const val WORD_ZOOM = 3
+
+        /** The bar's word for the order the ALBUMS page is in. */
+        fun wordOf(order: AlbumOrder): Int =
+            when (order) {
+                AlbumOrder.TITLE -> R.string.library_order_title
+                AlbumOrder.ARTIST -> R.string.library_order_artist
+                AlbumOrder.YEAR -> R.string.library_order_year
+            }
+
+        /** How large the readout of [length] characters is drawn, in virtual pixels. */
+        fun readoutSize(length: Int): IntSize {
+            val zoom = if (length > 1) WORD_ZOOM else LETTER_ZOOM
+            return IntSize(BitmapFont.CHAR_W * length.coerceAtLeast(1) * zoom, BitmapFont.CHAR_H * zoom)
+        }
 
         /** The status stops this far short of the first cell. */
         private const val DETAIL_GAP = 6f
@@ -998,6 +1050,9 @@ class LibraryLayout(
 
         /** The header's corner that names the library and picks another. */
         const val SOURCE_CELL_W = 64
+
+        /** The bar's cell that puts the ALBUMS page in another order. */
+        const val ORDER_CELL_W = 48
         const val MIN_ROWS = 8
         const val TITLE = "Library"
 

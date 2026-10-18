@@ -7,6 +7,8 @@
     <string name="library_tab_radio">电台</string>
     <string name="library_tab_find">查找</string>
     <string name="library_search_header">搜索</string>
+    <string name="library_all">全部（%1$s）</string>
+    <string name="library_all_header">全部</string>
 
     <string name="library_kind_albums">专辑</string>
     <string name="library_kind_singles">单曲</string>
@@ -76,6 +78,7 @@
     <string name="library_cant_delete">无法删除</string>
     <string name="library_cant_rename">无法重命名</string>
     <string name="library_nothing_to_play">没有可播放的内容</string>
+    <string name="library_nothing_to_open">没有可打开的内容</string>
     <string name="library_not_http">不是 HTTP 网址</string>
 
     <!-- LibraryWindow.kt -->
@@ -83,6 +86,9 @@
     <string name="library_bar_del_list">删除列表</string>
     <string name="library_bar_play">播放</string>
     <string name="library_bar_add">添加</string>
+    <string name="library_order_title">名称</string>
+    <string name="library_order_artist">艺术家</string>
+    <string name="library_order_year">年份</string>
     <string name="library_tap_to_allow">点按以允许“%1$s”</string>
 
     <string name="library_station_url_title">电台网址</string>

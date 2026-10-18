@@ -67,7 +67,9 @@ class IndexedPhoneLibrary(
     private val clock: () -> Long = System::currentTimeMillis,
 ) : BrowseSource,
     SectionedSearch,
-    ShelfUpdates {
+    ShelfUpdates,
+    TrackHomes,
+    EveryTrack {
     override val capabilities = BrowseCapabilities(hasArtists = true, hasAlbums = true, canSearch = true)
 
     override val available: Boolean get() = canRead()
@@ -130,6 +132,16 @@ class IndexedPhoneLibrary(
             val found = index.search(SOURCE, query, limit)
             SectionedSearch.Sections(found.artists.map(::artistOf), found.albums.map(::albumOf), found.tracks)
         }
+
+    override suspend fun albumOf(track: Track): LibraryAlbum? =
+        read(null) { index.homeOf(SOURCE, track.id).first?.let(::albumOf) }
+
+    override suspend fun artistOf(track: Track): LibraryArtist? =
+        read(null) {
+            index.homeOf(SOURCE, track.id).second?.let(::artistOf)
+        }
+
+    override suspend fun everyTrack(): List<Track> = read(emptyList()) { index.everyTrack(SOURCE) }
 
     /** The phone's music by when it arrived, the newest first, at most [limit]. */
     suspend fun recentlyAdded(limit: Int): List<Track> = read(emptyList()) { index.recentlyAdded(SOURCE, limit) }

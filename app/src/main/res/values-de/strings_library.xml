@@ -7,6 +7,8 @@
     <string name="library_tab_radio">RADIO</string>
     <string name="library_tab_find">FINDEN</string>
     <string name="library_search_header">SUCHEN</string>
+    <string name="library_all">ALLE (%1$s)</string>
+    <string name="library_all_header">ALLE</string>
 
     <string name="library_kind_albums">ALBEN</string>
     <string name="library_kind_singles">SINGLES</string>
@@ -86,6 +88,7 @@
     <string name="library_cant_delete">NICHT LÖSCHBAR</string>
     <string name="library_cant_rename">NICHT UMBENENNBAR</string>
     <string name="library_nothing_to_play">NICHTS ABZUSPIELEN</string>
+    <string name="library_nothing_to_open">NICHTS ZU ÖFFNEN</string>
     <string name="library_not_http">KEINE HTTP-URL</string>
 
     <!-- LibraryWindow.kt -->
@@ -93,6 +96,9 @@
     <string name="library_bar_del_list">LÖSCHEN</string>
     <string name="library_bar_play">START</string>
     <string name="library_bar_add">DAZU</string>
+    <string name="library_order_title">A-Z</string>
+    <string name="library_order_artist">KÜNSTLER</string>
+    <string name="library_order_year">JAHR</string>
     <string name="library_tap_to_allow">TIPPEN: %1$s ZULASSEN</string>
 
     <string name="library_station_url_title">Sender-URL</string>

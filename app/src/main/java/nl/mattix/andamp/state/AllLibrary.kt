@@ -39,7 +39,9 @@ class AllLibrary(
 ) : BrowseSource,
     SectionedSearch,
     SourceMarks,
-    PartialAnswers {
+    PartialAnswers,
+    TrackHomes,
+    EveryTrack {
     /** One source in the library: its library and the mark its rows carry. */
     class Member(
         val source: MusicSource,
@@ -177,6 +179,33 @@ class AllLibrary(
             }
         }.flatMap { it.second }
 
+    /** Every track of the members that can hand theirs over, the phone's first, each song once. */
+    override suspend fun everyTrack(): List<Track> =
+        distinctTracks(
+            ask { member -> (member.library as? EveryTrack)?.everyTrack().orEmpty() }.flatMap { it.second },
+        )
+
+    /** The track's album as the source that plays it knows it, as this library's row for it. */
+    override suspend fun albumOf(track: Track): LibraryAlbum? {
+        val member = homeOf(track) ?: return null
+        val album = (member.library as TrackHomes).albumOf(track) ?: return null
+        val id = ALBUM + ShelfBuilder.fold(album.artist) + SEPARATOR + ShelfBuilder.fold(album.title)
+        editions.putIfAbsent(id, listOf(Edition(member, album)))
+        return album.copy(id = id)
+    }
+
+    override suspend fun artistOf(track: Track): LibraryArtist? {
+        val member = homeOf(track) ?: return null
+        val artist = (member.library as TrackHomes).artistOf(track) ?: return null
+        return artist.copy(id = ARTIST + ShelfBuilder.fold(artist.name))
+    }
+
+    /** The member that plays [track] and can follow it home; null when none can. */
+    private fun homeOf(track: Track): Member? {
+        val source = SourceForRows.of(track)
+        return members().firstOrNull { it.source == source && it.library is TrackHomes }
+    }
+
     override fun marksOf(albumId: String): List<SourceMark> = editions[albumId].orEmpty().map { it.member.mark }.distinct()
 
     /**
@@ -249,4 +278,18 @@ class AllLibrary(
         const val VIA = "all:via:"
         const val SEPARATOR = '\u001f'
     }
+}
+
+/** A library that can follow a track it lists to where it belongs: its album and its artist. */
+interface TrackHomes {
+    /** The album [track] is on; null when the library does not know it. */
+    suspend fun albumOf(track: Track): LibraryAlbum?
+
+    /** The artist of the album [track] is on; null when the library does not know it. */
+    suspend fun artistOf(track: Track): LibraryArtist?
+}
+
+/** A library that can hand over every track it has at once, for the row that stands for all of them. */
+interface EveryTrack {
+    suspend fun everyTrack(): List<Track>
 }

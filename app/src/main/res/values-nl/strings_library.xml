@@ -7,6 +7,8 @@
     <string name="library_tab_radio">RADIO</string>
     <string name="library_tab_find">VINDEN</string>
     <string name="library_search_header">ZOEKEN</string>
+    <string name="library_all">ALLE (%1$s)</string>
+    <string name="library_all_header">ALLE</string>
 
     <string name="library_kind_albums">ALBUMS</string>
     <string name="library_kind_singles">SINGLES</string>
@@ -86,6 +88,7 @@
     <string name="library_cant_delete">VERWIJDEREN LUKT NIET</string>
     <string name="library_cant_rename">HERNOEMEN LUKT NIET</string>
     <string name="library_nothing_to_play">NIETS OM AF TE SPELEN</string>
+    <string name="library_nothing_to_open">NIETS OM TE OPENEN</string>
     <string name="library_not_http">GEEN HTTP-URL</string>
 
     <!-- LibraryWindow.kt -->
@@ -93,6 +96,9 @@
     <string name="library_bar_del_list">WIS LIJST</string>
     <string name="library_bar_play">SPEEL</string>
     <string name="library_bar_add">ERBIJ</string>
+    <string name="library_order_title">A-Z</string>
+    <string name="library_order_artist">ARTIEST</string>
+    <string name="library_order_year">JAAR</string>
     <string name="library_tap_to_allow">TIK OM %1$s TOE TE STAAN</string>
 
     <string name="library_station_url_title">Zender-URL</string>

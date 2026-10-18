@@ -31,6 +31,7 @@ import kotlin.coroutines.CoroutineContext
  * A page made from a question the source stopped answering part way says so
  * ([LibraryPage.incomplete]), as [wholeOf] tells.
  */
+@Suppress("TooManyFunctions") // one per kind of page
 internal class LibraryShelves(
     private val words: Words,
     private val lists: PlaylistLibrary,
@@ -46,6 +47,8 @@ internal class LibraryShelves(
     private val drill: (String, suspend () -> LibraryPage) -> Unit,
     /** The lists the library makes itself for the library on show; see [SmartList]. */
     private val smartLists: suspend (BrowseSource) -> List<SmartList> = { emptyList() },
+    /** The order the ALBUMS page is in; see [AlbumOrder]. */
+    private val order: () -> AlbumOrder = { AlbumOrder.TITLE },
 ) {
     private fun label(category: Category): String = words.get(category.label)
 
@@ -132,6 +135,35 @@ internal class LibraryShelves(
         )
     }
 
+    /** [albums] in [order]: as the source listed them by title, or by artist, or by year with the undated last. */
+    private fun ordered(
+        albums: List<LibraryAlbum>,
+        order: AlbumOrder,
+    ): List<LibraryAlbum> =
+        when (order) {
+            AlbumOrder.TITLE -> albums
+            AlbumOrder.ARTIST -> albums.sortedWith(compareBy({ ShelfBuilder.fold(it.artist) }, { ShelfBuilder.fold(it.title) }))
+            AlbumOrder.YEAR -> albums.sortedWith(compareBy({ it.year ?: Int.MAX_VALUE }, { ShelfBuilder.fold(it.title) }))
+        }
+
+    /** The letter [name] files under for the readout: its first letter, or # for a digit. */
+    private fun initial(name: String): String {
+        val first = name.firstOrNull { it.isLetterOrDigit() } ?: return ""
+        return if (first.isDigit()) "#" else first.uppercase()
+    }
+
+    /** [album]'s page of tracks, as a row for it opens it. */
+    suspend fun albumPage(
+        src: BrowseSource,
+        album: LibraryAlbum,
+    ): LibraryPage = tracksPage(src, album)
+
+    /** [artist]'s page of records, as a row for them opens it. */
+    suspend fun artistPage(
+        src: BrowseSource,
+        artist: LibraryArtist,
+    ): LibraryPage = albumsPage(src, artist)
+
     /** The root page of the tab [target], over [src]. */
     suspend fun root(
         target: Category,
@@ -165,10 +197,38 @@ internal class LibraryShelves(
         }
         // a long shelf says "1 ALBUM" a thousand times; each count is worded once
         val worded = HashMap<Int, String>()
-        return artists(src, label(Category.ARTISTS), artists, incomplete = src.partial()) { artist ->
-            artist.albumCount?.let { n -> worded.getOrPut(n) { count(n, R.plurals.library_count_albums) } } ?: ""
-        }
+        val page =
+            artists(src, label(Category.ARTISTS), artists, incomplete = src.partial()) { artist ->
+                artist.albumCount?.let { n -> worded.getOrPut(n) { count(n, R.plurals.library_count_albums) } } ?: ""
+            }
+        return if (src is EveryTrack && artists.isNotEmpty()) withEverything(src, page, artists.size) else page
     }
+
+    /**
+     * [page] with a first row that stands for every track of the library, as Winamp's artist
+     * pane starts with All: it opens them all, and plays or enqueues them all.
+     */
+    private fun withEverything(
+        src: EveryTrack,
+        page: LibraryPage,
+        artists: Int,
+    ): LibraryPage {
+        val all = words.get(R.string.library_all_header)
+        return LibraryPage(
+            header = page.header,
+            status = page.status,
+            rows = listOf(Row(words.get(R.string.library_all, count(artists, R.plurals.library_count_artists)))) + page.rows,
+            open = listOf<(() -> Unit)?>({ drill(all) { everyTrackPage(all, src.everyTrack()) } }) + page.open,
+            tracksOf = listOf<suspend () -> List<Track>>({ src.everyTrack() }) + page.tracksOf,
+            empty = page.empty,
+            incomplete = page.incomplete,
+        )
+    }
+
+    private fun everyTrackPage(
+        header: String,
+        tracks: List<Track>,
+    ) = trackListPage(header, tracks, empty = words.get(R.string.library_no_tracks), byArtist = true)
 
     /** Whether [this] stopped part way through the question it last answered; see [wholeOf]. */
     private fun BrowseSource.partial() = !wholeOf(this)
@@ -202,7 +262,8 @@ internal class LibraryShelves(
             return LibraryPage(label(Category.ALBUMS), count(0, R.plurals.library_count_albums), emptyList())
         }
         access(false)
-        val albums = src.albums(null)
+        val order = order()
+        val albums = ordered(src.albums(null), order)
         // checked again, as for the artists' root
         if (!src.available) {
             access(true)
@@ -212,8 +273,18 @@ internal class LibraryShelves(
             header = label(Category.ALBUMS),
             incomplete = src.partial(),
             status = count(albums.size, R.plurals.library_count_albums),
-            // the artist as the detail, since two albums may share a title
-            rows = albums.map { Row(it.title, detail = it.artist, marks = marksOf(src, it.id)) },
+            // the artist as the detail, since two albums may share a title; by year, the year
+            rows =
+                albums.map {
+                    val detail = if (order == AlbumOrder.YEAR) it.year?.toString() ?: "" else it.artist
+                    Row(it.title, detail = detail, marks = marksOf(src, it.id))
+                },
+            readout =
+                when (order) {
+                    AlbumOrder.TITLE -> emptyList()
+                    AlbumOrder.ARTIST -> albums.map { initial(it.artist) }
+                    AlbumOrder.YEAR -> albums.map { it.year?.toString() ?: "" }
+                },
             open = albums.map { album -> { drill(album.title) { tracksPage(src, album) } } },
             tracksOf = albums.map { album -> { src.tracks(album.id) } },
         )
@@ -322,7 +393,13 @@ internal class LibraryShelves(
         list: LibraryPlaylist,
     ): LibraryPage {
         val tracks = src.playlistTracks(list.id)
-        return trackListPage(list.name, tracks, empty = words.get(R.string.library_no_tracks), incomplete = src.partial())
+        return trackListPage(
+            list.name,
+            tracks,
+            empty = words.get(R.string.library_no_tracks),
+            incomplete = src.partial(),
+            byArtist = true,
+        )
     }
 
     /** The lists this app has saved as files, as LISTS shows them for a source without lists of its own. */
@@ -341,7 +418,7 @@ internal class LibraryShelves(
 
     private suspend fun listTracksPage(name: String): LibraryPage {
         val tracks = withContext(io) { lists.load(name) }.orEmpty().also { onListRead(it) }
-        return trackListPage(name, tracks, empty = words.get(R.string.library_no_tracks), savedName = name)
+        return trackListPage(name, tracks, empty = words.get(R.string.library_no_tracks), savedName = name, byArtist = true)
     }
 
     /** RADIO's one page: the stations, playable as a page of tracks. */
@@ -413,21 +490,35 @@ internal class LibraryShelves(
         album: LibraryAlbum,
     ): LibraryPage {
         val tracks = src.tracks(album.id)
-        return trackListPage(album.title, tracks, empty = words.get(R.string.library_no_tracks), incomplete = src.partial())
+        // a record of one artist names only the songs; a compilation names whose each one is
+        val many = tracks.map { ShelfBuilder.fold(it.artist) }.distinct().size > 1
+        return trackListPage(
+            album.title,
+            tracks,
+            empty = words.get(R.string.library_no_tracks),
+            incomplete = src.partial(),
+            byArtist = many,
+        )
     }
 
+    /** A page of [tracks], each row its number and its title, or its artist and title when [byArtist]. */
+    @Suppress("LongParameterList") // the page's parts, and how its rows are worded
     private fun trackListPage(
         header: String,
         tracks: List<Track>,
         empty: String,
         savedName: String? = null,
         incomplete: Boolean = false,
+        byArtist: Boolean = false,
     ): LibraryPage {
         val time = if (tracks.isEmpty()) "" else " · ${clock(tracks.sumOf { it.durationSec })}"
         return LibraryPage(
             header = header,
             status = count(tracks.size, R.plurals.library_count_tracks) + time,
-            rows = tracks.mapIndexed { at, track -> Row("${at + 1}. ${track.title}", detail = clock(track.durationSec)) },
+            rows =
+                tracks.mapIndexed { at, track ->
+                    Row("${at + 1}. ${if (byArtist) track.displayName else track.title}", detail = clock(track.durationSec))
+                },
             tracks = tracks,
             empty = empty,
             savedName = savedName,

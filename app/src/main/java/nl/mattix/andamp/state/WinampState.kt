@@ -174,6 +174,9 @@ class WinampState {
     /** How tall a row of a list is; see [ListStyleStore]. Mirrored like [listFont]. */
     var rowHeight: RowHeight by mutableStateOf(ListStyleStore.DEFAULT_ROW_HEIGHT)
 
+    /** The order of the library's ALBUMS page; see [ListStyleStore.albumOrder]. Mirrored like [listFont]. */
+    var albumOrder: AlbumOrder by mutableStateOf(AlbumOrder.TITLE)
+
     /** Where the playlist's rows show their source's mark; see [ListStyleStore.marks]. Mirrored like [listFont]. */
     var listMarks: MarkPlace by mutableStateOf(MarkPlace.OFF)
 

@@ -35,6 +35,11 @@ internal class LibraryPage(
     val firstTrack: Int = 0,
     /** The rows that title a section of the page, which do nothing when tapped. */
     val headings: Set<Int> = emptySet(),
+    /**
+     * What the readout beside a dragged scroll handle shows for each row, indexed like
+     * [rows], when the page is in an order other than its rows' own words; empty otherwise.
+     */
+    val readout: List<String> = emptyList(),
     /** The text an empty page shows. */
     val empty: String? = null,
     /**

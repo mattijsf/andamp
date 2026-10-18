@@ -108,4 +108,6 @@
     <string name="menu_rename_list">Lijst hernoemen</string>
     <string name="menu_rename_station">Zender hernoemen</string>
     <string name="menu_delete_station">Zender verwijderen</string>
+    <string name="menu_go_to_album">Naar album</string>
+    <string name="menu_go_to_artist">Naar artiest</string>
 </resources>
