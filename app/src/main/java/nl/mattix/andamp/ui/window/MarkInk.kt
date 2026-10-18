@@ -5,6 +5,7 @@ package nl.mattix.andamp.ui.window
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Path
+import android.graphics.RectF
 import androidx.core.graphics.PathParser
 import nl.mattix.andamp.skin.BitmapFont
 import nl.mattix.andamp.skin.GlyphMask
@@ -12,9 +13,9 @@ import nl.mattix.andamp.state.SourceMark
 
 /**
  * Draws the marks of sources ([SourceMark]) beside a list row's words, in the row's color: as
- * pixel art in the skin's font, a pixel to the virtual pixel like its letters, and as vector
- * paths in the outline font, as tall as its letters, so they scale with the text. A mark
- * without the form the font wants is drawn as its letter.
+ * pixel art in the skin's font, a pixel to the virtual pixel like its letters, and as a vector
+ * path or a shape in the outline font, as tall as its letters, so they scale with the text. A
+ * mark without the form the font wants is drawn as its letter.
  */
 internal object MarkInk {
     /** The room between two marks, in virtual pixels. */
@@ -25,6 +26,9 @@ internal object MarkInk {
 
     /** The paths parsed so far, by their data; a path that does not parse is the letter. */
     private val parsed = HashMap<String, Path?>()
+
+    /** Draws a shape ([SourceMark.mask]) smoothly in the color it is given. */
+    private val shapes = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
 
     /** How wide [marks] are in the skin's font. */
     fun pixelWidth(marks: List<SourceMark>): Int =
@@ -86,8 +90,21 @@ internal object MarkInk {
     ): Float {
         if (marks.isEmpty()) return 0f
         val size = paint.textSize * SIZE_OF_TEXT
-        return marks.sumOf { mark -> (if (pathOf(mark) != null) size else paint.measureText(mark.letter)).toDouble() }.toFloat() +
-            GAP * (marks.size - 1)
+        return marks.sumOf { mark -> widthOf(mark, size, paint).toDouble() }.toFloat() + GAP * (marks.size - 1)
+    }
+
+    /** How wide one mark is in the outline font, its picture [size] tall. */
+    private fun widthOf(
+        mark: SourceMark,
+        size: Float,
+        paint: Paint,
+    ): Float {
+        val mask = mark.mask
+        return when {
+            mask != null -> size * mask.width / mask.height
+            pathOf(mark) != null -> size
+            else -> paint.measureText(mark.letter)
+        }
     }
 
     /** Draws [marks] from [x], in the middle of a line [height] tall at [top], in [paint]'s color. */
@@ -104,6 +121,15 @@ internal object MarkInk {
         val baseline = ListText.baseline(paint, top, height)
         var at = x
         for (mark in marks) {
+            val mask = mark.mask
+            if (mask != null) {
+                val wide = widthOf(mark, size, paint)
+                val y = top + (height - size) / 2f
+                shapes.color = paint.color
+                canvas.drawBitmap(mask, null, RectF(at, y, at + wide, y + size), shapes)
+                at += wide + GAP
+                continue
+            }
             val path = pathOf(mark)
             if (path == null) {
                 canvas.drawText(mark.letter, at, baseline, paint)

@@ -44,6 +44,20 @@ object PackApi {
 
     /** The intent action a pack's own settings screen answers to. */
     const val ACTION_SETTINGS = "nl.mattix.andamp.source.SETTINGS"
+
+    /**
+     * The meta-data of a pack's service that names its mark for the outline font: a monochrome
+     * drawable, its shape drawn in the row's color. Optional, and read from the manifest, so it
+     * is not part of [PACK_API].
+     */
+    const val META_MARK = "nl.mattix.andamp.source.MARK"
+
+    /**
+     * The meta-data of a pack's service that names its mark for the skin's font: a string array
+     * of up to five rows of up to seven characters, `#` for ink and `.` for none. Optional, as
+     * [META_MARK] is.
+     */
+    const val META_MARK_PIXELS = "nl.mattix.andamp.source.MARK_PIXELS"
 }
 
 /** A row in the queue, as [Track] travels. */

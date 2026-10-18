@@ -66,6 +66,50 @@ instead. An alias that the manifest declares disabled can be turned on and off f
 in `onCreate` with the alias name you give in `launcherAlias`. The icon is shown unless
 the listener hid it, and the choice is kept in the source's own preferences.
 
+### The mark in lists
+
+Where the listener has more than one source, Andamp marks each row of the library and, if they
+ask, of the playlist with the source it comes from. A source can give its mark in two forms,
+both named in meta-data on its service, so neither is part of the contract version:
+
+| Meta-data | Points to | Used in |
+|---|---|---|
+| `nl.mattix.andamp.source.MARK` | a monochrome drawable, best a vector | the outline font, drawn as tall as the letters in the row's color |
+| `nl.mattix.andamp.source.MARK_PIXELS` | a string array of up to five rows of up to seven characters, `#` for ink and `.` for none | the skin's pixel font, one pixel to the skin's pixel |
+
+```xml
+<service
+    android:name=".PackService"
+    android:exported="true">
+    <intent-filter>
+        <action android:name="nl.mattix.andamp.source.BIND" />
+    </intent-filter>
+    <meta-data
+        android:name="nl.mattix.andamp.source.MARK"
+        android:resource="@drawable/ic_launcher_monochrome" />
+    <meta-data
+        android:name="nl.mattix.andamp.source.MARK_PIXELS"
+        android:resource="@array/andamp_mark_pixels" />
+</service>
+```
+
+```xml
+<string-array name="andamp_mark_pixels">
+    <item>.###.</item>
+    <item>#...#</item>
+    <item>#.#.#</item>
+    <item>#...#</item>
+    <item>.###.</item>
+</string-array>
+```
+
+Both are optional. Without the drawable, Andamp takes the monochrome layer of the launcher
+icon (Android 13 and up), or else the shape of its foreground layer. Without the pixel art, it
+makes pixel art from whichever picture it took. A picture that is too full or too empty to
+tell apart at that size is left out, and the first letter of the source's name stands in.
+Andamp reads all of this from the installed app, without binding it, and reads it again when
+the app is updated.
+
 ### Application id and signing key
 
 Pick an application id that no other app uses, and keep it. Two apps with the same id

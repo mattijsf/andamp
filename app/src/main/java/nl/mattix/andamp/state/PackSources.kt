@@ -169,7 +169,11 @@ object PackSources {
                 override fun onReceive(
                     from: Context?,
                     about: Intent?,
-                ) = look()
+                ) {
+                    // an update can bring another mark
+                    about?.data?.schemeSpecificPart?.let(PackMarks::forget)
+                    look()
+                }
             }
         listening = listener
         // not exported where the platform supports the flag: these are system broadcasts
