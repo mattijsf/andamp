@@ -59,6 +59,7 @@ class SourceOpsTest {
     private lateinit var library: LibraryOps
 
     private val forgotLibraries = mutableListOf<MusicSource>()
+    private val clearedLibraries = mutableListOf<MusicSource>()
     private val forgotPlayers = mutableListOf<MusicSource>()
 
     /** Whether this device holds a credential for the made-up source; null is a source that could not be asked. */
@@ -135,6 +136,7 @@ class SourceOpsTest {
             reachUnanswered = { reached++ },
             io = Dispatchers.Unconfined,
             forgetLibrary = { forgotLibraries += it },
+            clearLibrary = { clearedLibraries += it },
             forgetPlayer = { forgotPlayers += it },
         )
     }
@@ -258,13 +260,13 @@ class SourceOpsTest {
     }
 
     @Test
-    fun `a sign-out lets go of the source's library and its player`() {
+    fun `a sign-out lets go of the source's library, what the index keeps of it and its player`() {
         val ops = ops(signedIn = true)
 
         ops.signedOut(example)
 
         assertEquals(SourceAbsence.SIGNED_OUT, sources.reach.absence(example))
-        assertEquals(listOf(example), forgotLibraries)
+        assertEquals(listOf(example), clearedLibraries)
         assertEquals(listOf(example), forgotPlayers)
     }
 

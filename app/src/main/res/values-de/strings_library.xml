@@ -56,6 +56,7 @@
     <string name="library_incomplete">UNVOLLSTÄNDIG</string>
     <string name="library_track_count_short">%1$d TITEL</string>
 
+    <string name="library_loading">LÄDT…</string>
     <string name="library_no_music">KEINE MUSIK GEFUNDEN</string>
     <string name="library_no_artists">KEINE KÜNSTLER</string>
     <string name="library_no_matches">KEINE TREFFER</string>

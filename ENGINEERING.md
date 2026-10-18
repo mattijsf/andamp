@@ -444,8 +444,11 @@ one of them steps the clocks (`WinampState.clocksTurn`).
   by. `IndexedPhoneLibrary` reads the phone's media index in one pass (`PhoneShelfReader`),
   groups it (`ShelfBuilder`) and replaces the copy whole when the phone's music changed; a
   small stamp query tells. A `ContentObserver` on the phone's audio marks it, and it is
-  otherwise checked at most every 30 seconds. The file holds nothing that cannot be read
-  again, so a schema change empties it.
+  otherwise checked at most every 30 seconds. A source behind a server is kept a piece
+  at a time (`CachedSourceLibrary`): a page the index holds opens from it at once, also
+  without a network, and the source is asked again behind it when the answer is an hour
+  old or was not asked since the app started. A sign-out drops what is kept of that
+  source. The file holds nothing that cannot be read again, so a schema change empties it.
 
 ## Pixel rules
 

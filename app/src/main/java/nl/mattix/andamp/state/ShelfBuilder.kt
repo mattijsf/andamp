@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.state
 
+import nl.mattix.andamp.core.model.AlbumKind
 import nl.mattix.andamp.core.model.Track
 import java.text.Normalizer
 import java.util.Locale
@@ -58,8 +59,9 @@ data class Shelf(
         val artist: String,
         val year: Int?,
         val trackCount: Int,
-        /** When its newest file was added, in seconds. */
+        /** When its newest file was added, in seconds; zero when the source does not say. */
         val addedAt: Long,
+        val kind: AlbumKind = AlbumKind.ALBUM,
     )
 
     data class ShelfTrack(

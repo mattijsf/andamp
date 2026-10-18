@@ -47,6 +47,7 @@
     <string name="library_incomplete">不完整</string>
     <string name="library_track_count_short">%1$d 首</string>
 
+    <string name="library_loading">加载中…</string>
     <string name="library_no_music">未找到音乐</string>
     <string name="library_no_artists">没有艺术家</string>
     <string name="library_no_matches">没有匹配项</string>

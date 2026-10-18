@@ -70,6 +70,8 @@
     <string name="library_track_count_short">%1$d TRK</string>
 
     <!-- What an empty page says -->
+    <!-- An empty page while its rows are being fetched -->
+    <string name="library_loading">LOADING…</string>
     <string name="library_no_music">NO MUSIC FOUND</string>
     <string name="library_no_artists">NO ARTISTS</string>
     <string name="library_no_matches">NO MATCHES</string>

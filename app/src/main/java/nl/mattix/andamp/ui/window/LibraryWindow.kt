@@ -763,9 +763,13 @@ internal class LibraryRasterizer(
         ops: LibraryOps,
         scene: Scene,
     ) {
-        if (ops.loading) return
         val (text, colour) =
             when {
+                // the first fetch of a page with nothing on it yet: say so rather than show nothing
+                ops.loading -> {
+                    resources.getString(R.string.library_loading) to scene.style.normal
+                }
+
                 ops.needsAccess -> {
                     resources.getString(
                         R.string.library_tap_to_allow,

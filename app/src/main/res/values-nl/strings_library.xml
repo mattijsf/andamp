@@ -56,6 +56,7 @@
     <string name="library_incomplete">ONVOLLEDIG</string>
     <string name="library_track_count_short">%1$d NRS</string>
 
+    <string name="library_loading">LADEN…</string>
     <string name="library_no_music">GEEN MUZIEK GEVONDEN</string>
     <string name="library_no_artists">GEEN ARTIESTEN</string>
     <string name="library_no_matches">GEEN TREFFERS</string>
