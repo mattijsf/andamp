@@ -19,6 +19,12 @@
     <string name="library_kind_singles">SINGLES</string>
     <string name="library_kind_compilations">COMPILATIONS</string>
 
+    <!-- Names for the albums and artists the files do not name: a compilation, and files with no tags.
+         These are rows, not labels, so they are not in capitals. -->
+    <string name="library_various_artists">Various Artists</string>
+    <string name="library_unknown_artist">Unknown Artist</string>
+    <string name="library_unknown_album">Unknown Album</string>
+
     <!-- The count in the header's corner -->
     <plurals name="library_count_artists">
         <item quantity="one">%1$d ARTIST</item>

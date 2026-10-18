@@ -12,6 +12,10 @@
     <string name="library_kind_singles">SINGLES</string>
     <string name="library_kind_compilations">COMPILATIES</string>
 
+    <string name="library_various_artists">Diverse artiesten</string>
+    <string name="library_unknown_artist">Onbekende artiest</string>
+    <string name="library_unknown_album">Onbekend album</string>
+
     <plurals name="library_count_artists">
         <item quantity="one">%1$d ARTIEST</item>
         <item quantity="other">%1$d ARTIESTEN</item>

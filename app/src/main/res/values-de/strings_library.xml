@@ -12,6 +12,10 @@
     <string name="library_kind_singles">SINGLES</string>
     <string name="library_kind_compilations">KOMPILATIONEN</string>
 
+    <string name="library_various_artists">Verschiedene Künstler</string>
+    <string name="library_unknown_artist">Unbekannter Künstler</string>
+    <string name="library_unknown_album">Unbekanntes Album</string>
+
     <plurals name="library_count_artists">
         <item quantity="one">%1$d KÜNSTLER</item>
         <item quantity="other">%1$d KÜNSTLER</item>
