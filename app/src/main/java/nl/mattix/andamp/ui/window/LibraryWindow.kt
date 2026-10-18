@@ -86,7 +86,12 @@ fun LibraryWindow(
         val rowH = s.rowHeight.px
         val minRows = LibraryLayout.minRows(rowH)
         val fits = LibraryLayout.rowsThatFit(screen.safeBottom, frame, rowH)
-        val rows = WindowSizing.effectiveSteps(s.libraryRows, fits, minRows)
+        val rows =
+            WindowSizing.effectiveSteps(
+                s.libraryRows ?: LibraryLayout.defaultRows(screen.safeBottom, frame, rowH),
+                fits,
+                minRows,
+            )
         // the width is limited to the screen's
         val cols = LibraryLayout.WIDTH_STEPS.clamp(s.libraryCols, screen.width)
         val layout =
@@ -128,8 +133,7 @@ fun LibraryWindow(
                             )
                         s.libraryCols = resized.cols
                         s.libraryOffset = resized.offset
-                        // null once it fills the height, so it goes back to the default
-                        s.libraryRows = WindowSizing.rememberedSize(resized.steps, fits)
+                        s.libraryRows = resized.steps
                     },
                 ),
             widgets = widgets,
@@ -930,6 +934,20 @@ class LibraryLayout(
          * window any taller.
          */
         fun minRows(rowH: Int) = ((MIN_ROWS * ROW_H + furnitureH(ROW_H) - furnitureH(rowH)) / rowH).coerceAtLeast(1)
+
+        /**
+         * How much of the screen's height a library that was never resized takes. It opens in
+         * the middle of the screen, so its grip is within reach of a thumb rather than down at
+         * the gesture bar. A size the listener drags it to is kept.
+         */
+        private const val DEFAULT_SHARE_PERCENT = 60
+
+        /** The rows of a library that was never resized, in a screen [availVirtual] tall; see [DEFAULT_SHARE_PERCENT]. */
+        fun defaultRows(
+            availVirtual: Int,
+            frame: WindowFrame,
+            rowH: Int = ROW_H,
+        ): Int = rowsThatFit(availVirtual * DEFAULT_SHARE_PERCENT / 100, frame, rowH)
 
         /** As many rows as the screen holds, never fewer than [minRows]. */
         fun forAvailableHeight(

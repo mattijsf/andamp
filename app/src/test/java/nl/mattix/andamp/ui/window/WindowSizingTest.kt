@@ -4,7 +4,6 @@ package nl.mattix.andamp.ui.window
 
 import androidx.compose.ui.unit.IntOffset
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Test
 
 /** The grip's arithmetic: steps, caps, and the corner that must not move. */
@@ -31,12 +30,6 @@ class WindowSizingTest {
     fun `what fits comes off the available height, never below the minimum`() {
         assertEquals(6, WindowSizing.stepsThatFit(availableH = 232, chromeH = 58, stepPx = playlistStep, min = 2))
         assertEquals(2, WindowSizing.stepsThatFit(availableH = 60, chromeH = 58, stepPx = playlistStep, min = 2))
-    }
-
-    @Test
-    fun `a window dragged to its full size is remembered as auto`() {
-        assertNull(WindowSizing.rememberedSize(count = 8, fits = 8))
-        assertEquals(5, WindowSizing.rememberedSize(count = 5, fits = 8))
     }
 
     @Test

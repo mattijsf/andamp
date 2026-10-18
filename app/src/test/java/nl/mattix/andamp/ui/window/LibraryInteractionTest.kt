@@ -105,7 +105,7 @@ class LibraryInteractionTest {
     /** The layout the window computed for the test container's height. */
     private fun windowLayout(): LibraryLayout {
         val root = compose.onRoot().fetchSemanticsNode().size
-        return LibraryLayout.forAvailableHeight(root.height / SCALE, frame)
+        return LibraryLayout(LibraryLayout.defaultRows(root.height / SCALE, frame))
     }
 
     private fun devicePoint(

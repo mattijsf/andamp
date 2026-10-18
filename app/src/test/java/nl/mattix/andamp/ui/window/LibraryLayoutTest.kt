@@ -53,6 +53,19 @@ class LibraryLayoutTest {
     }
 
     @Test
+    fun `a library that was never resized opens three fifths as tall as the screen`() {
+        for (rowH in listOf(13, 19, 25)) {
+            val rows = LibraryLayout.defaultRows(800, frame, rowH)
+            val height = LibraryLayout(rows, rowH = rowH).height(frame)
+
+            assertTrue("$rowH px rows: $height", height <= 480)
+            assertTrue("$rowH px rows: $height", height > 480 - rowH)
+        }
+        // a short screen still gets the smallest window
+        assertEquals(LibraryLayout.MIN_ROWS, LibraryLayout.defaultRows(100, frame))
+    }
+
+    @Test
     fun `a window held at a height between two rows is exactly that tall, the rest left under the last row`() {
         val whole = LibraryLayout(12).height(frame)
 

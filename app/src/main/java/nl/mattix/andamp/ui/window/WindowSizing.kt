@@ -149,16 +149,6 @@ object WindowSizing {
     ): Int = (classicRows * classicRowH / rowH).coerceAtLeast(1)
 
     /**
-     * The size to remember: null once a window is as big as fits, which restores the
-     * fill-the-screen default, so the window is not pinned to a height that only matches the
-     * current screen.
-     */
-    fun rememberedSize(
-        count: Int,
-        fits: Int,
-    ): Int? = count.takeIf { it < fits }
-
-    /**
      * The count to lay out with: what the listener chose, capped at what fits. The cap is
      * not written back, so a keyboard or a smaller screen shrinks a window only while it
      * applies.
