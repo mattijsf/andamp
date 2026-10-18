@@ -49,6 +49,7 @@
         <item quantity="other">%1$d RÉSULTATS</item>
     </plurals>
     <string name="library_hits_capped">%1$d+ RÉSULTATS</string>
+    <string name="library_incomplete">INCOMPLET</string>
     <string name="library_track_count_short">%1$d MORC.</string>
 
     <string name="library_no_music">AUCUNE MUSIQUE TROUVÉE</string>
@@ -68,6 +69,7 @@
     <string name="library_queued">+%1$d À LA LISTE</string>
     <string name="library_queued_next">+%1$d À SUIVRE</string>
     <string name="library_cant_delete">NON SUPPRIMÉE</string>
+    <string name="library_cant_rename">NON RENOMMÉE</string>
     <string name="library_nothing_to_play">RIEN À LIRE</string>
     <string name="library_not_http">PAS UNE URL HTTP</string>
 

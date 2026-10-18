@@ -113,4 +113,7 @@
     <!-- LibraryRowMenu.kt: a row of the media library -->
     <string name="menu_enqueue_next">Enqueue next</string>
     <string name="menu_delete_list">Delete list</string>
+    <string name="menu_rename_list">Rename list</string>
+    <string name="menu_rename_station">Rename station</string>
+    <string name="menu_delete_station">Delete station</string>
 </resources>

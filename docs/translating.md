@@ -58,7 +58,8 @@ To improve a translation that exists, edit its file and open a pull request.
 
 - **The media library window is narrow.** Its text sits in small cells on one line, in
   capitals in English. Keep those translations about as short as the English. A label
-  that is wider than its cell is squeezed to fit, which reads worse than a shorter word.
+  that is wider than its cell is squeezed to fit, or, in the skin's pixel letters, cut
+  short with an ellipsis. Either reads worse than a shorter word.
 - **Winamp's words.** Where Winamp had a word for something, such as the menu entries and
   the window names, use the word that the Winamp translation into your language used, so
   the app reads the way people remember it. Use another word only where Winamp's would

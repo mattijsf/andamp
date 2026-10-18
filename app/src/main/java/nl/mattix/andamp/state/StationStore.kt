@@ -52,6 +52,28 @@ class StationStore(
         return write(kept + station)
     }
 
+    /**
+     * Renames the station [id], on its row and as the name it plays under; false when there
+     * is none, the name is blank, or the stored file could not be read or written.
+     */
+    fun rename(
+        id: String,
+        name: String,
+    ): Boolean {
+        val called = name.trim()
+        val kept = read()
+        if (called.isEmpty() || kept == null || kept.none { it.id == id }) return false
+        return write(kept.map { if (it.id == id) it.copy(title = called, defaultName = called) else it })
+    }
+
+    /** Removes the station [id]; false when there is none, or the stored file could not be read or written. */
+    fun remove(id: String): Boolean {
+        val kept = read() ?: return false
+        val left = kept.filterNot { it.id == id }
+        if (left.size == kept.size) return false
+        return write(left)
+    }
+
     companion object {
         fun isStreamUrl(url: String): Boolean {
             if (!url.startsWith("http://") && !url.startsWith("https://")) return false

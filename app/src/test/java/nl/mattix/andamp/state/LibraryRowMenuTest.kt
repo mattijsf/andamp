@@ -167,12 +167,37 @@ class LibraryRowMenuTest {
     }
 
     @Test
-    fun `a saved list's row offers Delete list, a track in it does not`() {
+    fun `a saved list's row offers Rename list and Delete list, a track in it does not`() {
         val ops = savedLists().ops
-        assertEquals(listOf("Play", "Enqueue", "Enqueue next", "Delete list"), labels(ops, 0))
+        assertEquals(listOf("Play", "Enqueue", "Enqueue next", "Rename list", "Delete list"), labels(ops, 0))
 
         ops.tapRow(0) // into Gym
         assertEquals(listOf("Play", "Enqueue", "Enqueue next"), labels(ops, 0))
+    }
+
+    @Test
+    fun `a station's row offers Rename station and Delete station`() {
+        val dial = stations()
+        dial.add("Example FM", "http://radio.example.com/stream")
+        val ops =
+            LibraryOps(
+                {
+                    Shelf()
+                },
+                PlayerFacade(
+                    MockBackend(emptyList(), scope),
+                ),
+                WinampState(),
+                scope,
+                lists(),
+                dial,
+                io = Dispatchers.Unconfined,
+                words = EnglishWords,
+            )
+        ops.open()
+        ops.switchCategory(LibraryOps.Category.RADIO)
+
+        assertEquals(listOf("Play", "Enqueue", "Enqueue next", "Rename station", "Delete station"), labels(ops, 0))
     }
 
     @Test

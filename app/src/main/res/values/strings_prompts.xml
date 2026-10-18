@@ -14,6 +14,10 @@
     <string name="prompt_delete_list_title">Delete %1$s?</string>
     <string name="prompt_delete_list_body">This deletes the saved list. The music in it is not deleted.</string>
 
+    <!-- LibraryOps.kt: %1$s is the station's name -->
+    <string name="prompt_delete_station_title">Delete %1$s?</string>
+    <string name="prompt_delete_station_body">The station is removed from your stations. You can add it again later.</string>
+
     <!-- BookmarkOps.kt: why a bookmark was not made -->
     <string name="bookmark_nothing_playing">Nothing is playing</string>
     <string name="bookmark_nowhere">This track has nowhere to come back to</string>

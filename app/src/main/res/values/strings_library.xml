@@ -58,6 +58,8 @@
     </plurals>
     <!-- A search that found as many as it may list -->
     <string name="library_hits_capped">%1$d+ HITS</string>
+    <!-- Beside the count, when the source stopped part way through its answer -->
+    <string name="library_incomplete">INCOMPLETE</string>
     <!-- How many tracks a list holds, beside its name -->
     <string name="library_track_count_short">%1$d TRK</string>
 
@@ -84,6 +86,7 @@
     <string name="library_queued">+%1$d QUEUED</string>
     <string name="library_queued_next">+%1$d NEXT</string>
     <string name="library_cant_delete">CAN\'T DELETE</string>
+    <string name="library_cant_rename">CAN\'T RENAME</string>
     <string name="library_nothing_to_play">NOTHING TO PLAY</string>
     <string name="library_not_http">NOT AN HTTP URL</string>
 

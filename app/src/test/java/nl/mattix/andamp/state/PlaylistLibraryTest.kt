@@ -99,4 +99,27 @@ class PlaylistLibraryTest {
     fun `loading a name that was never saved is null`() {
         assertNull(PlaylistLibrary(temp.newFolder()).load("nothing"))
     }
+
+    @Test
+    fun `a renamed list keeps its tracks under the new name`() {
+        val shelf = PlaylistLibrary(temp.newFolder())
+        shelf.save("Road trip", tracks("One", "Two"))
+
+        assertTrue(shelf.rename("Road trip", "Weekend"))
+
+        assertEquals(listOf("Weekend"), shelf.list().map { it.name })
+        assertEquals(listOf("One", "Two"), shelf.load("Weekend")?.map { it.title })
+    }
+
+    @Test
+    fun `a list is not renamed over another, nor from a name that is not there`() {
+        val shelf = PlaylistLibrary(temp.newFolder())
+        shelf.save("Gym", tracks("One"))
+        shelf.save("Road trip", tracks("Two"))
+
+        assertFalse(shelf.rename("Road trip", "Gym"))
+        assertFalse(shelf.rename("Nothing", "Else"))
+        assertEquals(listOf("Gym", "Road trip"), shelf.list().map { it.name })
+        assertEquals(listOf("One"), shelf.load("Gym")?.map { it.title })
+    }
 }

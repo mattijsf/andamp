@@ -13,6 +13,9 @@
     <string name="prompt_delete_list_title">%1$s verwijderen?</string>
     <string name="prompt_delete_list_body">Hiermee verwijder je de opgeslagen lijst. De muziek erin blijft staan.</string>
 
+    <string name="prompt_delete_station_title">%1$s verwijderen?</string>
+    <string name="prompt_delete_station_body">De zender verdwijnt uit je zenders. Je kunt hem later opnieuw toevoegen.</string>
+
     <!-- BookmarkOps.kt -->
     <string name="bookmark_nothing_playing">Er speelt niets</string>
     <string name="bookmark_nowhere">Naar dit nummer kan niet worden teruggekeerd</string>

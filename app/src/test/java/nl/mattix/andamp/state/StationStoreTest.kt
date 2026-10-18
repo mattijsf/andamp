@@ -93,4 +93,43 @@ class StationStoreTest {
         file.setReadable(true)
         assertEquals(listOf("One", "Two"), dial.list().map { it.title })
     }
+
+    @Test
+    fun `a renamed station keeps its place, its stream and the name it plays under`() {
+        val dial = store()
+        dial.add("One", "http://a.example/1")
+        dial.add("Two", "https://b.example/2")
+        val id = dial.list().first().id
+
+        assertTrue(dial.rename(id, "  First  "))
+
+        val renamed = dial.list().first()
+        assertEquals(listOf("First", "Two"), dial.list().map { it.title })
+        assertEquals("First", renamed.defaultName)
+        assertEquals("http://a.example/1", renamed.uri)
+        assertEquals(id, renamed.id)
+    }
+
+    @Test
+    fun `a blank name or a station that is not there is not renamed`() {
+        val dial = store()
+        dial.add("One", "http://a.example/1")
+
+        assertFalse(dial.rename(dial.list().first().id, "   "))
+        assertFalse(dial.rename("station:gone", "Two"))
+        assertEquals(listOf("One"), dial.list().map { it.title })
+    }
+
+    @Test
+    fun `a removed station is gone and the others stay in order`() {
+        val dial = store()
+        dial.add("One", "http://a.example/1")
+        dial.add("Two", "https://b.example/2")
+        dial.add("Three", "https://c.example/3")
+
+        assertTrue(dial.remove(dial.list()[1].id))
+
+        assertEquals(listOf("One", "Three"), dial.list().map { it.title })
+        assertFalse(dial.remove("station:gone"))
+    }
 }

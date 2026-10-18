@@ -13,6 +13,9 @@
     <string name="prompt_delete_list_title">%1$s löschen?</string>
     <string name="prompt_delete_list_body">Damit wird die gespeicherte Liste gelöscht. Die Musik darin wird nicht gelöscht.</string>
 
+    <string name="prompt_delete_station_title">%1$s löschen?</string>
+    <string name="prompt_delete_station_body">Der Sender wird aus deinen Sendern entfernt. Du kannst ihn später wieder hinzufügen.</string>
+
     <!-- BookmarkOps.kt -->
     <string name="bookmark_nothing_playing">Es wird nichts abgespielt</string>
     <string name="bookmark_nowhere">Zu diesem Titel gibt es keinen Weg zurück</string>

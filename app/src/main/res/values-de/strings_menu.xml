@@ -105,4 +105,7 @@
     <!-- LibraryRowMenu.kt -->
     <string name="menu_enqueue_next">Als Nächstes einreihen</string>
     <string name="menu_delete_list">Liste löschen</string>
+    <string name="menu_rename_list">Liste umbenennen</string>
+    <string name="menu_rename_station">Sender umbenennen</string>
+    <string name="menu_delete_station">Sender löschen</string>
 </resources>

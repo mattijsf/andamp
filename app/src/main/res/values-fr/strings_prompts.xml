@@ -13,6 +13,9 @@
     <string name="prompt_delete_list_title">Supprimer %1$s ?</string>
     <string name="prompt_delete_list_body">La liste enregistrée sera supprimée. La musique qu’elle contient n’est pas supprimée.</string>
 
+    <string name="prompt_delete_station_title">Supprimer %1$s ?</string>
+    <string name="prompt_delete_station_body">La station sera retirée de vos stations. Vous pourrez l’ajouter à nouveau plus tard.</string>
+
     <!-- BookmarkOps.kt -->
     <string name="bookmark_nothing_playing">Aucune lecture en cours</string>
     <string name="bookmark_nowhere">Ce morceau n’a nulle part où revenir</string>
