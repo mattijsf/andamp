@@ -99,10 +99,11 @@ class LibraryOps(
     /** What a tab is called, which is also the header of its root page. */
     fun label(category: Category): String = words.get(category.label)
 
-    /** One row on screen: text only. */
+    /** One row on screen: its words, and the marks of the sources that have it, when there are several. */
     data class Row(
         val label: String,
         val detail: String = "",
+        val marks: List<SourceMark> = emptyList(),
     )
 
     /**

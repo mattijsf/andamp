@@ -414,7 +414,17 @@ class LibraryGoldenTest {
     }
 
     @Test
-    fun `library of every source together, named in the header's corner, albums marked by source`() {
+    fun `library of every source together, named in the header's corner, albums marked by source`() =
+        allSources("library_skin_font_all_sources", ListFont.SKIN)
+
+    @Test
+    fun `library of every source together in the outline font, the phone's mark drawn from its path`() =
+        allSources("library_all_sources", ListFont.REGULAR)
+
+    private fun allSources(
+        name: String,
+        font: ListFont,
+    ) {
         val shelf =
             nl.mattix.andamp.core.playback.BrowseSourceContractTest
                 .Shelf(
@@ -450,18 +460,19 @@ class LibraryGoldenTest {
                             nl.mattix.andamp.state.MusicSource.LOCAL,
                             nl.mattix.andamp.state
                                 .ShelfSource(shelf),
-                            "T",
+                            nl.mattix.andamp.state.SourceMark.PHONE,
                         ),
                     nl.mattix.andamp.state.AllLibrary.Member(
                         nl.mattix.andamp.state
                             .MusicSource("EXAMPLE", "Example"),
                         nl.mattix.andamp.state
                             .ShelfSource(server),
-                        "E",
+                        nl.mattix.andamp.state.SourceMark
+                            .letter("Example"),
                     ),
                 )
             }
-        val state = WinampState().apply { listFont = ListFont.SKIN }
+        val state = WinampState().apply { listFont = font }
         val facade =
             nl.mattix.andamp.core.player
                 .PlayerFacade(
@@ -483,6 +494,6 @@ class LibraryGoldenTest {
             )
         ops.open()
         ops.switchCategory(nl.mattix.andamp.state.LibraryOps.Category.ALBUMS)
-        renderLibrary("library_skin_font_all_sources", ops, state, source = "All Sources")
+        renderLibrary(name, ops, state, source = "All Sources")
     }
 }

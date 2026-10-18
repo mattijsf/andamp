@@ -17,6 +17,12 @@ enum class ListFont {
     REGULAR,
 }
 
+/**
+ * Where a playlist row shows the mark of its source ([SourceMark]), when more than one source is
+ * set up: nowhere, between its number and its title, or in front of its length.
+ */
+enum class MarkPlace { OFF, BEFORE, AFTER }
+
 /** How tall a row of a list is, in virtual pixels. The text keeps its size; a taller row is a larger thing to tap. */
 enum class RowHeight(
     val px: Int,
@@ -42,6 +48,7 @@ class ListStyleStore(
     /** Snapshot state, so the choices and the windows recompose on a change. */
     private var currentFont by mutableStateOf(named(prefs.getString(FONT, null), DEFAULT_FONT))
     private var currentRowHeight by mutableStateOf(named(prefs.getString(ROW_HEIGHT, null), DEFAULT_ROW_HEIGHT))
+    private var currentMarks by mutableStateOf(named(prefs.getString(MARKS, null), MarkPlace.OFF))
 
     var font: ListFont
         get() = currentFont
@@ -57,10 +64,19 @@ class ListStyleStore(
             prefs.edit().putString(ROW_HEIGHT, value.name).apply()
         }
 
+    /** Where the playlist's rows show their source's mark; off unless the listener asks. */
+    var marks: MarkPlace
+        get() = currentMarks
+        set(value) {
+            currentMarks = value
+            prefs.edit().putString(MARKS, value.name).apply()
+        }
+
     companion object {
         private const val PREFS = "liststyle"
         private const val FONT = "font"
         private const val ROW_HEIGHT = "rowheight"
+        private const val MARKS = "marks"
 
         /** The skin's letters, so a skin dresses the lists as it does the main window. */
         val DEFAULT_FONT = ListFont.SKIN

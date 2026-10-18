@@ -14,10 +14,10 @@ import nl.mattix.andamp.core.playback.BrowseSource
 import nl.mattix.andamp.core.playback.SourceUnreachable
 import java.util.concurrent.ConcurrentHashMap
 
-/** A library that can tell which sources have an album, as a short mark per source. */
+/** A library that can tell which sources have an album, by the mark each source's rows carry. */
 interface SourceMarks {
     /** The marks of the sources that have the album [albumId], in the order they are played from; empty when not known. */
-    fun marksOf(albumId: String): String
+    fun marksOf(albumId: String): List<SourceMark>
 }
 
 /**
@@ -44,7 +44,7 @@ class AllLibrary(
     class Member(
         val source: MusicSource,
         val library: BrowseSource,
-        val mark: String,
+        val mark: SourceMark,
     )
 
     override val capabilities: BrowseCapabilities
@@ -177,12 +177,7 @@ class AllLibrary(
             }
         }.flatMap { it.second }
 
-    override fun marksOf(albumId: String): String =
-        editions[albumId]
-            .orEmpty()
-            .map { it.member.mark }
-            .distinct()
-            .joinToString("")
+    override fun marksOf(albumId: String): List<SourceMark> = editions[albumId].orEmpty().map { it.member.mark }.distinct()
 
     /**
      * [question] asked of every member at once, with the answers of those that gave one, in

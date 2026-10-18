@@ -59,6 +59,13 @@
     <string name="prefs_lists_row_classic">经典</string>
     <string name="prefs_lists_row_roomy">宽松</string>
     <string name="prefs_lists_row_large">大</string>
+    <string name="prefs_lists_marks_title">播放列表中的音乐源</string>
+    <string name="prefs_lists_marks_off_about">播放列表的行不显示由哪个音乐源播放。</string>
+    <string name="prefs_lists_marks_before_about">每行在序号和标题之间显示其音乐源的标记。</string>
+    <string name="prefs_lists_marks_after_about">每行在时长前显示其音乐源的标记。</string>
+    <string name="prefs_lists_marks_off">关</string>
+    <string name="prefs_lists_marks_before">前</string>
+    <string name="prefs_lists_marks_after">后</string>
 
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">预设</string>

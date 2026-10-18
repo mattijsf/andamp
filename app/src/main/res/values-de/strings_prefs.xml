@@ -61,6 +61,13 @@
     <string name="prefs_lists_row_classic">Klassisch</string>
     <string name="prefs_lists_row_roomy">Luftig</string>
     <string name="prefs_lists_row_large">Groß</string>
+    <string name="prefs_lists_marks_title">Quelle in der Playlist</string>
+    <string name="prefs_lists_marks_off_about">Die Zeilen der Playlist zeigen nicht, welche Quelle sie spielt.</string>
+    <string name="prefs_lists_marks_before_about">Jede Zeile zeigt das Zeichen ihrer Quelle zwischen Nummer und Titel.</string>
+    <string name="prefs_lists_marks_after_about">Jede Zeile zeigt das Zeichen ihrer Quelle vor der Länge.</string>
+    <string name="prefs_lists_marks_off">Aus</string>
+    <string name="prefs_lists_marks_before">Davor</string>
+    <string name="prefs_lists_marks_after">Dahinter</string>
 
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">Voreinstellungen</string>

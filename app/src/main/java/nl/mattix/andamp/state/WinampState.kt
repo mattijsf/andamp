@@ -174,6 +174,15 @@ class WinampState {
     /** How tall a row of a list is; see [ListStyleStore]. Mirrored like [listFont]. */
     var rowHeight: RowHeight by mutableStateOf(ListStyleStore.DEFAULT_ROW_HEIGHT)
 
+    /** Where the playlist's rows show their source's mark; see [ListStyleStore.marks]. Mirrored like [listFont]. */
+    var listMarks: MarkPlace by mutableStateOf(MarkPlace.OFF)
+
+    /**
+     * The mark of each source this install shows, by its id; empty while there is only the
+     * phone, when no row needs telling apart. Kept by [WinampViewModel].
+     */
+    var sourceMarks: Map<String, SourceMark> by mutableStateOf(emptyMap())
+
     /**
      * How many 25px steps wider than 275 the playlist is: Winamp's width index, as in
      * webamp (`size: [width, height]`, W = 275 + 25 * width).

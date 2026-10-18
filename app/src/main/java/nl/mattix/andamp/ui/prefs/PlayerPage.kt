@@ -21,6 +21,7 @@ internal fun PlayerPage(sections: PrefsSections) {
     Group {
         ListFontRow(sections.lists)
         RowHeightRow(sections.lists)
+        if (sections.lists.marksOffered) SourceMarksRow(sections.lists)
     }
     Section(stringResource(R.string.prefs_player_touch_section))
     Group { TapAssistRow(sections.tapAssist) }
