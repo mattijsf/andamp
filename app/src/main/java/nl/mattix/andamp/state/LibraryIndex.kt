@@ -552,6 +552,50 @@ class LibraryIndex(
         val tracks: List<Track>,
     )
 
+    /**
+     * What the index knows of the tracks at [uris] besides their artist and title, by uri, for the
+     * rows of a list ([RowFormat]); a uri the index does not have is left out. A track without a
+     * number has its place on its album, and one without a year its album's.
+     */
+    fun infoOf(uris: Collection<String>): Map<String, TrackInfo> {
+        val out = HashMap<String, TrackInfo>()
+        for (chunk in uris.distinct().chunked(MAX_ARGS)) {
+            db
+                .rawQuery(
+                    "SELECT t.uri, t.album, COALESCE(t.number, t.position + 1), COALESCE(t.year, a.year), t.genre FROM track t " +
+                        "LEFT JOIN album a ON a.source = t.source AND a.id = t.album_id " +
+                        "WHERE t.uri IN (${chunk.joinToString(",") { "?" }})",
+                    chunk.toTypedArray(),
+                ).use { c ->
+                    while (c.moveToNext()) {
+                        out.putIfAbsent(
+                            c.getString(0),
+                            TrackInfo(c.getString(1), c.intOrNull(2), c.intOrNull(3), c.stringOrNull(4)),
+                        )
+                    }
+                }
+        }
+        return out
+    }
+
+    /** The fields of a song the index has for at least one track, so a list can show them; see [TrackField]. */
+    fun knownFields(): Set<TrackField> {
+        fun any(clause: String) =
+            db
+                .rawQuery(
+                    "SELECT EXISTS(SELECT 1 FROM track t LEFT JOIN album a ON a.source = t.source AND a.id = t.album_id " +
+                        "WHERE $clause)",
+                    null,
+                ).use { c -> c.moveToFirst() && c.getInt(0) != 0 }
+        return buildSet {
+            addAll(TrackField.entries.filter { it.onTrack })
+            if (any("t.album != ''")) add(TrackField.ALBUM)
+            if (any("1")) add(TrackField.NUMBER)
+            if (any("COALESCE(t.year, a.year) IS NOT NULL")) add(TrackField.YEAR)
+            if (any("t.genre IS NOT NULL AND t.genre != ''")) add(TrackField.GENRE)
+        }
+    }
+
     /** How many artists, albums and tracks [source] has. */
     fun counts(source: String): Triple<Int, Int, Int> {
         fun count(sql: String) = db.rawQuery(sql, arrayOf(source)).use { c -> if (c.moveToFirst()) c.getInt(0) else 0 }
@@ -627,6 +671,8 @@ class LibraryIndex(
                     "sample_rate INTEGER, default_name TEXT, is_stream INTEGER NOT NULL, artwork TEXT, " +
                     "PRIMARY KEY (source, album_id, id))",
             )
+            // a list's rows are looked up by the addresses of their tracks
+            db.execSQL("CREATE INDEX track_uri ON track (uri)")
         }
 
         override fun onUpgrade(
@@ -652,7 +698,7 @@ class LibraryIndex(
         const val FILE = "library-index.db"
 
         /** The index's schema; raising it empties the index, which is read again. */
-        private const val SCHEMA = 2
+        private const val SCHEMA = 3
 
         /** The tables that hold a source's rows, besides its shelf's stamp. */
         private val TABLES = listOf("stored", "artist", "album", "artist_album", "track")
@@ -660,6 +706,9 @@ class LibraryIndex(
         private const val ALBUM_COLUMNS = "id, title, key, artist_id, artist, year, track_count, added_at, kind"
         private const val TRACK_COLUMNS =
             "id, title, artist, duration_ms, uri, bitrate, sample_rate, default_name, is_stream, artwork"
+
+        /** How many tracks one lookup asks for, under SQLite's limit on a statement's arguments. */
+        private const val MAX_ARGS = 500
 
         private const val RELATE = "INSERT OR REPLACE INTO artist_album (source, artist_id, album_id, position) VALUES (?,?,?,?)"
     }

@@ -68,6 +68,22 @@
     <string name="prefs_lists_marks_off">Aus</string>
     <string name="prefs_lists_marks_before">Davor</string>
     <string name="prefs_lists_marks_after">Dahinter</string>
+    <string name="prefs_rows_preview_section">Vorschau</string>
+    <string name="prefs_rows_blocks_section">Was eine Zeile zeigt</string>
+    <string name="prefs_rows_blocks_about">Einen Block gedrückt halten, um ihn zu ziehen. Fehlt einem Titel ein Feld, entfällt der Text nach diesem Feld mit ihm.</string>
+    <string name="prefs_rows_before">Text davor</string>
+    <string name="prefs_rows_between">Text dazwischen</string>
+    <string name="prefs_rows_after">Text danach</string>
+    <string name="prefs_rows_add_section">Block hinzufügen</string>
+    <string name="prefs_rows_add_about">Felder, die die Bibliothek für mindestens einen Titel hat.</string>
+    <string name="prefs_rows_reset">Zurück zu Künstler - Titel</string>
+    <string name="prefs_rows_remove">%1$s entfernen</string>
+    <string name="prefs_rows_field_artist">Künstler</string>
+    <string name="prefs_rows_field_title">Titel</string>
+    <string name="prefs_rows_field_album">Album</string>
+    <string name="prefs_rows_field_number">Titelnummer</string>
+    <string name="prefs_rows_field_year">Jahr</string>
+    <string name="prefs_rows_field_genre">Genre</string>
 
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">Voreinstellungen</string>
@@ -127,6 +143,7 @@
     <string name="prefs_player_summary_regular_font">Normale Schriftart in den Listen</string>
     <string name="prefs_player_summary_roomy_rows">Luftige Zeilen</string>
     <string name="prefs_player_summary_large_rows">Große Zeilen</string>
+    <string name="prefs_player_summary_row_format">Eigene Titelzeilen</string>
     <string name="prefs_player_summary_tap_assist">Tipphilfe</string>
     <string name="prefs_player_summary_wallpaper_colors">Farben des Hintergrundbilds</string>
     <string name="prefs_player_summary_all_with_overlay">Immer im Vordergrund, Fenster, Listen, Berührung und Farben</string>
@@ -172,6 +189,7 @@
     <string name="prefs_page_plugins">Plug-ins</string>
     <string name="prefs_page_visualizer">Visualisierung</string>
     <string name="prefs_page_player">Player</string>
+    <string name="prefs_page_rows">Titelzeilen</string>
     <string name="prefs_page_widget">Startbildschirm-Widget</string>
     <string name="prefs_page_android_auto">Android Auto</string>
     <string name="prefs_page_support">Andamp unterstützen</string>

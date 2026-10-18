@@ -37,8 +37,8 @@ enum class RowHeight(
 }
 
 /**
- * How the lists look: the font of the playlist and the media library, and the height of a
- * row in the playlist, the media library and the skin list.
+ * How the lists look: the font of the playlist and the media library, the height of a row in
+ * the playlist, the media library and the skin list, and how their rows write a song.
  *
  * It has its own preferences file because it is read before a window is drawn and written
  * from a settings screen.
@@ -53,6 +53,7 @@ class ListStyleStore(
     private var currentRowHeight by mutableStateOf(named(prefs.getString(ROW_HEIGHT, null), DEFAULT_ROW_HEIGHT))
     private var currentMarks by mutableStateOf(named(prefs.getString(MARKS, null), MarkPlace.OFF))
     private var currentOrder by mutableStateOf(named(prefs.getString(ALBUM_ORDER, null), AlbumOrder.TITLE))
+    private var currentRowFormat by mutableStateOf(prefs.getString(ROW_FORMAT, null)?.let(RowFormat::parse) ?: RowFormat.DEFAULT)
 
     var font: ListFont
         get() = currentFont
@@ -84,12 +85,21 @@ class ListStyleStore(
             prefs.edit().putString(MARKS, value.name).apply()
         }
 
+    /** How a list writes a song; artist and title, as Winamp's playlist, until the listener sets another. */
+    var rowFormat: RowFormat
+        get() = currentRowFormat
+        set(value) {
+            currentRowFormat = value
+            prefs.edit().putString(ROW_FORMAT, value.encode()).apply()
+        }
+
     companion object {
         private const val PREFS = "liststyle"
         private const val FONT = "font"
         private const val ROW_HEIGHT = "rowheight"
         private const val MARKS = "marks"
         private const val ALBUM_ORDER = "albumorder"
+        private const val ROW_FORMAT = "rowformat"
 
         /** The skin's letters, so a skin dresses the lists as it does the main window. */
         val DEFAULT_FONT = ListFont.SKIN

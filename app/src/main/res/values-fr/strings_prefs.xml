@@ -68,6 +68,22 @@
     <string name="prefs_lists_marks_off">Non</string>
     <string name="prefs_lists_marks_before">Avant</string>
     <string name="prefs_lists_marks_after">Après</string>
+    <string name="prefs_rows_preview_section">Aperçu</string>
+    <string name="prefs_rows_blocks_section">Ce qu’une ligne affiche</string>
+    <string name="prefs_rows_blocks_about">Maintenir un bloc pour le déplacer. Quand un morceau n’a pas un champ, le texte après ce champ disparaît avec lui.</string>
+    <string name="prefs_rows_before">Texte avant</string>
+    <string name="prefs_rows_between">Texte entre</string>
+    <string name="prefs_rows_after">Texte après</string>
+    <string name="prefs_rows_add_section">Ajouter un bloc</string>
+    <string name="prefs_rows_add_about">Les champs que la médiathèque connaît pour au moins un morceau.</string>
+    <string name="prefs_rows_reset">Revenir à artiste - titre</string>
+    <string name="prefs_rows_remove">Retirer %1$s</string>
+    <string name="prefs_rows_field_artist">Artiste</string>
+    <string name="prefs_rows_field_title">Titre</string>
+    <string name="prefs_rows_field_album">Album</string>
+    <string name="prefs_rows_field_number">Numéro de piste</string>
+    <string name="prefs_rows_field_year">Année</string>
+    <string name="prefs_rows_field_genre">Genre</string>
 
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">Préréglages</string>
@@ -127,6 +143,7 @@
     <string name="prefs_player_summary_regular_font">Police normale dans les listes</string>
     <string name="prefs_player_summary_roomy_rows">Lignes aérées</string>
     <string name="prefs_player_summary_large_rows">Grandes lignes</string>
+    <string name="prefs_player_summary_row_format">Lignes des morceaux personnalisées</string>
     <string name="prefs_player_summary_tap_assist">Aide au toucher</string>
     <string name="prefs_player_summary_wallpaper_colors">Couleurs du fond d’écran</string>
     <string name="prefs_player_summary_all_with_overlay">Toujours au premier plan, fenêtres, listes, toucher et couleurs</string>
@@ -172,6 +189,7 @@
     <string name="prefs_page_plugins">Plugins</string>
     <string name="prefs_page_visualizer">Visualisation</string>
     <string name="prefs_page_player">Lecteur</string>
+    <string name="prefs_page_rows">Lignes des morceaux</string>
     <string name="prefs_page_widget">Widget de l’écran d’accueil</string>
     <string name="prefs_page_android_auto">Android Auto</string>
     <string name="prefs_page_support">Soutenir Andamp</string>

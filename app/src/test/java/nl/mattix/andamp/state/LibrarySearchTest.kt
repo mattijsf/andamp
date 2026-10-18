@@ -90,8 +90,8 @@ class LibrarySearchTest {
             runCurrent()
 
             assertEquals(1, shelf.calls)
-            assertEquals(listOf("Lithium", "Come as You Are"), ops.rows.map { it.label })
-            assertEquals(listOf("Nirvana", "Nirvana"), ops.rows.map { it.detail })
+            assertEquals(listOf("Nirvana - Lithium", "Nirvana - Come as You Are"), ops.rows.map { it.label })
+            assertEquals(listOf("1:00", "1:00"), ops.rows.map { it.detail })
             assertEquals("2 HITS · 2:00", ops.status)
         }
 
@@ -127,6 +127,6 @@ class LibrarySearchTest {
             advanceTimeBy(2_000)
             runCurrent()
 
-            assertEquals(listOf("Lithium", "Come as You Are"), ops.rows.map { it.label })
+            assertEquals(listOf("Nirvana - Lithium", "Nirvana - Come as You Are"), ops.rows.map { it.label })
         }
 }

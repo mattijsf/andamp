@@ -66,6 +66,22 @@
     <string name="prefs_lists_marks_off">关</string>
     <string name="prefs_lists_marks_before">前</string>
     <string name="prefs_lists_marks_after">后</string>
+    <string name="prefs_rows_preview_section">预览</string>
+    <string name="prefs_rows_blocks_section">每行显示的内容</string>
+    <string name="prefs_rows_blocks_about">按住方块即可拖动。歌曲缺少某个字段时，该字段后的文字一并省略。</string>
+    <string name="prefs_rows_before">前置文字</string>
+    <string name="prefs_rows_between">间隔文字</string>
+    <string name="prefs_rows_after">后置文字</string>
+    <string name="prefs_rows_add_section">添加方块</string>
+    <string name="prefs_rows_add_about">媒体库中至少有一首歌曲具备的字段。</string>
+    <string name="prefs_rows_reset">恢复为“艺术家 - 标题”</string>
+    <string name="prefs_rows_remove">移除%1$s</string>
+    <string name="prefs_rows_field_artist">艺术家</string>
+    <string name="prefs_rows_field_title">标题</string>
+    <string name="prefs_rows_field_album">专辑</string>
+    <string name="prefs_rows_field_number">音轨号</string>
+    <string name="prefs_rows_field_year">年份</string>
+    <string name="prefs_rows_field_genre">流派</string>
 
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">预设</string>
@@ -125,6 +141,7 @@
     <string name="prefs_player_summary_regular_font">列表使用常规字体</string>
     <string name="prefs_player_summary_roomy_rows">宽松的行</string>
     <string name="prefs_player_summary_large_rows">大号的行</string>
+    <string name="prefs_player_summary_row_format">自定义歌曲行</string>
     <string name="prefs_player_summary_tap_assist">点按辅助</string>
     <string name="prefs_player_summary_wallpaper_colors">壁纸颜色</string>
     <string name="prefs_player_summary_all_with_overlay">总在最前、窗口、列表、触控和颜色</string>
@@ -170,6 +187,7 @@
     <string name="prefs_page_plugins">插件</string>
     <string name="prefs_page_visualizer">可视化效果</string>
     <string name="prefs_page_player">播放器</string>
+    <string name="prefs_page_rows">歌曲行</string>
     <string name="prefs_page_widget">主屏幕小部件</string>
     <string name="prefs_page_android_auto">Android Auto</string>
     <string name="prefs_page_support">支持 Andamp</string>

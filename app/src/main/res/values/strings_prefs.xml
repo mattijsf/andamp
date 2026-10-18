@@ -73,6 +73,22 @@
     <string name="prefs_lists_marks_off">Off</string>
     <string name="prefs_lists_marks_before">Before</string>
     <string name="prefs_lists_marks_after">After</string>
+    <string name="prefs_rows_preview_section">Preview</string>
+    <string name="prefs_rows_blocks_section">What a row shows</string>
+    <string name="prefs_rows_blocks_about">Hold a block to drag it. When a song lacks a field, the text after that field is left out with it.</string>
+    <string name="prefs_rows_before">Text before</string>
+    <string name="prefs_rows_between">Text between</string>
+    <string name="prefs_rows_after">Text after</string>
+    <string name="prefs_rows_add_section">Add a block</string>
+    <string name="prefs_rows_add_about">Fields the library has for at least one song.</string>
+    <string name="prefs_rows_reset">Back to artist - title</string>
+    <string name="prefs_rows_remove">Remove %1$s</string>
+    <string name="prefs_rows_field_artist">Artist</string>
+    <string name="prefs_rows_field_title">Title</string>
+    <string name="prefs_rows_field_album">Album</string>
+    <string name="prefs_rows_field_number">Track number</string>
+    <string name="prefs_rows_field_year">Year</string>
+    <string name="prefs_rows_field_genre">Genre</string>
 
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">Presets</string>
@@ -137,6 +153,7 @@
     <string name="prefs_player_summary_regular_font">Regular font in the lists</string>
     <string name="prefs_player_summary_roomy_rows">Roomy rows</string>
     <string name="prefs_player_summary_large_rows">Large rows</string>
+    <string name="prefs_player_summary_row_format">Custom song rows</string>
     <string name="prefs_player_summary_tap_assist">Tap assist</string>
     <string name="prefs_player_summary_wallpaper_colors">Wallpaper colors</string>
     <string name="prefs_player_summary_all_with_overlay">Always on top, windows, lists, touch and colors</string>
@@ -186,6 +203,7 @@
     <string name="prefs_page_plugins">Plug-ins</string>
     <string name="prefs_page_visualizer">Visualizer</string>
     <string name="prefs_page_player">Player</string>
+    <string name="prefs_page_rows">Song rows</string>
     <string name="prefs_page_widget">Home screen widget</string>
     <string name="prefs_page_android_auto">Android Auto</string>
     <string name="prefs_page_support">Support Andamp</string>

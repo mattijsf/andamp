@@ -15,14 +15,22 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import nl.mattix.andamp.R
+import nl.mattix.andamp.core.model.Track
+import nl.mattix.andamp.state.Libraries
+import nl.mattix.andamp.state.LibraryIndex
 import nl.mattix.andamp.state.ListFont
 import nl.mattix.andamp.state.ListStyleStore
 import nl.mattix.andamp.state.MarkPlace
+import nl.mattix.andamp.state.RowFormat
 import nl.mattix.andamp.state.RowHeight
+import nl.mattix.andamp.state.TrackField
+import nl.mattix.andamp.state.TrackInfo
 import nl.mattix.andamp.state.WinampViewModel
 
-/** How the lists look: the font of the playlist and the library, and how tall a row is. */
+/** How the lists look: the font of the playlist and the library, how tall a row is, and how a row writes a song. */
 data class ListPrefs(
     /** Mirrors [ListStyleStore.font]. */
     val font: ListFont = ListStyleStore.DEFAULT_FONT,
@@ -35,6 +43,13 @@ data class ListPrefs(
     val onMarks: (MarkPlace) -> Unit = {},
     /** Whether there is more than one source to tell apart, so the choice of [marks] is offered. */
     val marksOffered: Boolean = false,
+    /** Mirrors [ListStyleStore.rowFormat]. */
+    val rowFormat: RowFormat = RowFormat.DEFAULT,
+    val onRowFormat: (RowFormat) -> Unit = {},
+    /** The fields the library has for at least one song; see [LibraryIndex.knownFields]. */
+    val knownFields: suspend () -> Set<TrackField> = { TrackField.entries.filter { it.onTrack }.toSet() },
+    /** The song playing, with what the library's index knows of it, for the preview; null when there is none. */
+    val playing: suspend () -> Pair<Track, TrackInfo?>? = { null },
 )
 
 /** The choices as [vm] has them: they show the render state, and a change goes to the store that state follows. */
@@ -47,6 +62,16 @@ internal fun listPrefsOf(vm: WinampViewModel) =
         marks = vm.state.listMarks,
         onMarks = { vm.listStyleStore.marks = it },
         marksOffered = vm.librarySources.usable.size > 1,
+        // the store's own, not the windows' copy, which waits for the typing to stop
+        rowFormat = vm.listStyleStore.rowFormat,
+        onRowFormat = { vm.listStyleStore.rowFormat = it },
+        knownFields = { withContext(Dispatchers.IO) { Libraries.index(vm.getApplication()).knownFields() } },
+        playing = {
+            vm.state.playlist.getOrNull(vm.state.currentIndex)?.let { track ->
+                val uri = track.uri
+                track to uri?.let { withContext(Dispatchers.IO) { Libraries.index(vm.getApplication()).infoOf(listOf(it))[it] } }
+            }
+        },
     )
 
 @Composable

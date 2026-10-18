@@ -4,6 +4,7 @@ package nl.mattix.andamp.state
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
+import nl.mattix.andamp.core.model.Track
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -110,5 +111,59 @@ class LibraryIndexTest {
             index.everyTrack("phone").map { it.title },
         )
         assertEquals(null to null, index.homeOf("phone", "media:99"))
+    }
+
+    @Test
+    fun `a list finds what the index knows of a track by its address`() {
+        val roads =
+            PhoneFile(
+                7,
+                "content://media/7",
+                "Roads",
+                "Portishead",
+                "Dummy",
+                null,
+                1,
+                11,
+                null,
+                1994,
+                1000,
+                0,
+                "Music/",
+                "Trip-Hop",
+            )
+        index.replace("phone", ShelfBuilder.build(listOf(roads)), "s1")
+
+        assertEquals(
+            mapOf("content://media/7" to TrackInfo("Dummy", 11, 1994, "Trip-Hop")),
+            index.infoOf(listOf("content://media/7", "content://media/8")),
+        )
+    }
+
+    @Test
+    fun `a source's track has its place on the album for a number, and its album's year`() {
+        val at = LibraryIndex.Stored(1, whole = true)
+        index.storeAlbums("source:x", listOf(Shelf.ShelfAlbum("l1", "Dummy", "dummy", "a1", "Portishead", 1994, 2, 0)), at)
+        index.storeTracks(
+            "source:x",
+            "l1",
+            "Dummy",
+            listOf(
+                Track("t1", "Portishead", "Mysterons", 1000, uri = "x:1"),
+                Track("t2", "Portishead", "Sour Times", 1000, uri = "x:2"),
+            ),
+            at,
+        )
+
+        assertEquals(TrackInfo("Dummy", 2, 1994, null), index.infoOf(listOf("x:2"))["x:2"])
+    }
+
+    @Test
+    fun `the fields offered to a list are the ones the index has for some track`() {
+        assertEquals(setOf(TrackField.ARTIST, TrackField.TITLE), index.knownFields())
+
+        index.replace("phone", shelf, "s1")
+
+        assertEquals(setOf(TrackField.ARTIST, TrackField.TITLE, TrackField.ALBUM, TrackField.NUMBER), index.knownFields())
     }
 }

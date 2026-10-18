@@ -50,4 +50,9 @@ internal class LibraryPage(
     val retry: (() -> Unit)? = null,
     /** The source stopped part way through this page's question; see [LibraryShelves]. */
     val incomplete: Boolean = false,
+    /**
+     * Makes this page again from what it was made of, its songs written in the row format now set
+     * ([RowFormat]); null on a page that writes no songs.
+     */
+    val restyled: (suspend () -> LibraryPage)? = null,
 )

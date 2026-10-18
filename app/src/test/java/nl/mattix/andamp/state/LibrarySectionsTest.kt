@@ -96,7 +96,7 @@ class LibrarySectionsTest {
             search(ops, "aut")
 
             assertEquals(
-                listOf("1 ARTIST", "Autechre", "1 ALBUM", "Amber", "2 TRACKS", "Foil", "Montreal"),
+                listOf("1 ARTIST", "Autechre", "1 ALBUM", "Amber", "2 TRACKS", "Autechre - Foil", "Autechre - Montreal"),
                 ops.rows.map { it.label },
             )
             assertEquals(listOf(0, 2, 4), ops.rows.indices.filter(ops::headingAt))
