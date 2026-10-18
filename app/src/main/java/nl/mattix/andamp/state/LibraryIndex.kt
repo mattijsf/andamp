@@ -417,6 +417,18 @@ class LibraryIndex(
                 arrayOf(source, albumId),
             ).use { c -> c.map(::trackAt) }
 
+    /** [source]'s tracks by when they were added, the newest first, at most [limit]. */
+    fun recentlyAdded(
+        source: String,
+        limit: Int,
+    ): List<Track> =
+        db
+            .rawQuery(
+                "SELECT $TRACK_COLUMNS FROM track WHERE source = ? AND added_at > 0 " +
+                    "ORDER BY added_at DESC, album_id, position LIMIT ?",
+                arrayOf(source, limit.toString()),
+            ).use { c -> c.map(::trackAt) }
+
     /** What [query] finds in [source], at most [limit] of each kind; see [Found]. */
     fun search(
         source: String,

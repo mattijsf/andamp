@@ -131,6 +131,9 @@ class IndexedPhoneLibrary(
             SectionedSearch.Sections(found.artists.map(::artistOf), found.albums.map(::albumOf), found.tracks)
         }
 
+    /** The phone's music by when it arrived, the newest first, at most [limit]. */
+    suspend fun recentlyAdded(limit: Int): List<Track> = read(emptyList()) { index.recentlyAdded(SOURCE, limit) }
+
     /** How many artists, albums and tracks the library window lists; null without the permission. */
     suspend fun counts(): Triple<Int, Int, Int>? = read(null) { index.counts(SOURCE) }
 

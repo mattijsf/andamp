@@ -19,11 +19,11 @@ internal class LibraryPage(
      */
     val tracksOf: List<suspend () -> List<Track>> = emptyList(),
     /**
-     * The saved list each row stands for, indexed like [rows], on the page of the
-     * lists this app keeps as files; empty on every other page. Only these rows can
-     * be deleted.
+     * The saved list each row stands for, indexed like [rows] and null for a row that is not
+     * one, on the page of the lists this app keeps as files; empty on every other page. Only
+     * these rows can be deleted.
      */
-    val saved: List<String> = emptyList(),
+    val saved: List<String?> = emptyList(),
     /** The saved list whose tracks this page shows; null on every other page. */
     val savedName: String? = null,
     /** The playable tracks, when this page is a leaf or ends in tracks. */

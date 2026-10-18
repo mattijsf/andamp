@@ -56,6 +56,16 @@
     <string name="library_incomplete">INCOMPLET</string>
     <string name="library_track_count_short">%1$d MORC.</string>
 
+    <string name="library_recently_added">AJOUTS RÉCENTS</string>
+    <string name="library_most_played">LES PLUS ÉCOUTÉS</string>
+    <string name="library_recently_played">ÉCOUTÉS RÉCEMMENT</string>
+    <string name="library_not_played_lately">PAS ÉCOUTÉS DEPUIS LONGTEMPS</string>
+    <string name="library_bookmarks">SIGNETS</string>
+    <plurals name="library_count_plays">
+        <item quantity="one">%1$d ÉCOUTE</item>
+        <item quantity="other">%1$d ÉCOUTES</item>
+    </plurals>
+
     <string name="library_loading">CHARGEMENT…</string>
     <string name="library_no_music">AUCUNE MUSIQUE TROUVÉE</string>
     <string name="library_no_artists">AUCUN ARTISTE</string>

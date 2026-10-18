@@ -6,7 +6,9 @@ import android.content.Context
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import nl.mattix.andamp.backend.media3.Media3PlaybackHost
+import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.core.playback.PlaybackBackend
 import nl.mattix.andamp.core.player.MixedQueueBackend
 import nl.mattix.andamp.core.player.PlayerFacade
@@ -60,8 +62,35 @@ object PlaybackRoot {
         built = player
         resume(app, player)
         startMirroring(app, player)
+        startCounting(app, player)
         return player
     }
+
+    /**
+     * Keeps the listener's play log ([PlayLog]) from the player itself, so a song played with
+     * no window open counts too. Built once, with the player.
+     */
+    private fun startCounting(
+        app: Context,
+        backend: PlaybackBackend,
+    ) {
+        val log = playLog(app)
+        val counter =
+            PlayCounter { track ->
+                scope.launch(Dispatchers.IO) { runCatching { log.played(track, System.currentTimeMillis()) } }
+            }
+        scope.launch {
+            facadeOver(backend).state.collect { now ->
+                counter.observe(now.currentTrack, now.positionMs, now.transport == Transport.Playing)
+            }
+        }
+    }
+
+    /** The listener's play log, one for the whole process. */
+    fun playLog(context: Context): PlayLog = synchronized(this) { log ?: PlayLog(context.applicationContext).also { log = it } }
+
+    @Volatile
+    private var log: PlayLog? = null
 
     /**
      * Restores shuffle and repeat. Done here, where the player is built, because a press
