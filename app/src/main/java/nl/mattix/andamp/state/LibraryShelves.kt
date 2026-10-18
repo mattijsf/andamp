@@ -76,6 +76,59 @@ internal class LibraryShelves(
         )
     }
 
+    /**
+     * What a search found in a library that finds artists and albums too ([SectionedSearch]):
+     * a section of each kind that found anything, under a heading with its count. An artist or
+     * an album opens as from its tab; the tracks play as a page of their own.
+     */
+    fun sections(
+        src: BrowseSource,
+        found: SectionedSearch.Sections,
+    ): LibraryPage {
+        val rows = mutableListOf<Row>()
+        val open = mutableListOf<(() -> Unit)?>()
+        val tracksOf = mutableListOf<suspend () -> List<Track>>()
+        val headings = mutableSetOf<Int>()
+
+        fun heading(text: String) {
+            headings += rows.size
+            rows += Row(text)
+            open += null
+            tracksOf += { emptyList() }
+        }
+        if (found.artists.isNotEmpty()) {
+            heading(count(found.artists.size, R.plurals.library_count_artists))
+            for (artist in found.artists) {
+                rows += Row(artist.name, detail = artist.albumCount?.let { count(it, R.plurals.library_count_albums) } ?: "")
+                open += { drill(artist.name) { albumsPage(src, artist) } }
+                tracksOf += { gather(src.albums(artist.id).map { album -> { src.tracks(album.id) } }) }
+            }
+        }
+        if (found.albums.isNotEmpty()) {
+            heading(count(found.albums.size, R.plurals.library_count_albums))
+            for (album in found.albums) {
+                rows += Row(album.title, detail = album.artist)
+                open += { drill(album.title) { tracksPage(src, album) } }
+                tracksOf += { src.tracks(album.id) }
+            }
+        }
+        if (found.tracks.isNotEmpty()) heading(count(found.tracks.size, R.plurals.library_count_tracks))
+        val firstTrack = rows.size
+        rows += found.tracks.map { Row(it.title, detail = it.artist) }
+        val hits = found.artists.size + found.albums.size + found.tracks.size
+        return LibraryPage(
+            header = searchHeader,
+            status = count(hits, R.plurals.library_count_hits),
+            rows = rows,
+            open = open,
+            tracksOf = tracksOf,
+            tracks = found.tracks,
+            firstTrack = firstTrack,
+            headings = headings,
+            empty = words.get(R.string.library_no_matches),
+        )
+    }
+
     /** The root page of the tab [target], over [src]. */
     suspend fun root(
         target: Category,
@@ -107,8 +160,10 @@ internal class LibraryShelves(
             access(true)
             return LibraryPage(label(Category.ARTISTS), count(0, R.plurals.library_count_artists), emptyList())
         }
+        // a long shelf says "1 ALBUM" a thousand times; each count is worded once
+        val worded = HashMap<Int, String>()
         return artists(src, label(Category.ARTISTS), artists, incomplete = src.partial()) { artist ->
-            artist.albumCount?.let { count(it, R.plurals.library_count_albums) } ?: ""
+            artist.albumCount?.let { n -> worded.getOrPut(n) { count(n, R.plurals.library_count_albums) } } ?: ""
         }
     }
 

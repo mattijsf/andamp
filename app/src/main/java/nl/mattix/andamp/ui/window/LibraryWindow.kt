@@ -224,7 +224,8 @@ private fun libraryWidgets(
                 onPress = { row, _ ->
                     // the list as it was when the finger went down
                     downRows = ops.rows
-                    if (row in downRows.indices) s.libraryPressedRow = row
+                    // a section's heading is not a thing to press
+                    if (row in downRows.indices && !ops.headingAt(row)) s.libraryPressedRow = row
                 },
                 onScrollStarted = { s.libraryPressedRow = -1 },
                 onRelease = { row, tapped ->
@@ -237,7 +238,7 @@ private fun libraryWidgets(
                 onLongPress = { row ->
                     s.libraryPressedRow = -1
                     val sameList = !ops.loading && ops.rows === downRows
-                    if (sameList && row in ops.rows.indices && !ops.needsAccess) {
+                    if (sameList && ops.hasMenu(row)) {
                         val top = rowsTop + (row - s.libraryScroll) * layout.rowH
                         s.activeMenu =
                             libraryRowMenu(
@@ -426,9 +427,10 @@ private fun DrawScope.drawLibraryBands(
     for (at in 0 until layout.visibleRows) {
         val index = s.libraryScroll + at
         if (index >= ops.rows.size) break
-        if (index == s.librarySelected || index == s.libraryPressedRow) {
-            fill(band, 0, layout.rowsTop + at * layout.rowH, rowsW, layout.rowH)
-        }
+        val top = layout.rowsTop + at * layout.rowH
+        if (index == s.librarySelected || index == s.libraryPressedRow) fill(band, 0, top, rowsW, layout.rowH)
+        // a section's heading stands on a rule, as the header does
+        if (ops.headingAt(index)) fill(band, 0, top + layout.rowH - LibraryLayout.RULE_H, rowsW, LibraryLayout.RULE_H)
     }
     if (ops.canPlayPage) drawBarBands(ops, s, band, width, layout)
 }
@@ -751,7 +753,7 @@ internal class LibraryRasterizer(
         for (at in 0 until scene.visibleRows) {
             val index = scene.scroll + at
             val row = rows.getOrNull(index) ?: break
-            val color = if (index == scene.playingRow) scene.style.current else scene.style.normal
+            val color = if (index == scene.playingRow || ops.headingAt(index)) scene.style.current else scene.style.normal
             row(row.label, row.detail, ListText.LEFT_INSET, right, at * scene.rowH, scene.rowH, color.toArgb())
         }
     }

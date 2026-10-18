@@ -135,8 +135,8 @@ class PhoneLibrary(
         /** Counts the index; null without the permission to read it. */
         private suspend fun countPhone(context: Context): PhoneStats? =
             withContext(Dispatchers.IO) {
-                val browse = MediaStoreBrowseSource(context)
-                if (!browse.available) return@withContext null
+                val library = Libraries.phone(context)
+                if (!library.available) return@withContext null
                 var tracks = 0
                 var durationMs = 0L
                 var bytes = 0L
@@ -150,9 +150,9 @@ class PhoneLibrary(
                 } catch (_: SecurityException) {
                     return@withContext null
                 }
-                if (!browse.available) return@withContext null
                 // artists and albums are counted as the library window lists them
-                PhoneStats(tracks, browse.artists().size, browse.albums(null).size, durationMs, bytes)
+                val (artists, albums, _) = library.counts() ?: return@withContext null
+                PhoneStats(tracks, artists, albums, durationMs, bytes)
             }
 
         /** Passes every music file's duration and size to [each]. */

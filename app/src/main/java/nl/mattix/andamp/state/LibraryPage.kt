@@ -5,12 +5,13 @@ package nl.mattix.andamp.state
 import nl.mattix.andamp.core.model.Track
 
 /** A level of the media library's drill-down, replaced as one piece when its fetch lands. */
+@Suppress("LongParameterList") // all that a page is, set at once when it lands
 internal class LibraryPage(
     val header: String,
     val status: String,
     val rows: List<LibraryOps.Row>,
-    /** Drill actions, indexed like [rows]; empty at the leaf. */
-    val open: List<() -> Unit> = emptyList(),
+    /** Drill actions, indexed like [rows]; empty at the leaf, and null for a row that opens nothing. */
+    val open: List<(() -> Unit)?> = emptyList(),
     /**
      * The tracks each row stands for, indexed like [rows], for a row's menu, which
      * acts on a row without opening it. For an artist or an album this is a fetch.
@@ -25,8 +26,15 @@ internal class LibraryPage(
     val saved: List<String> = emptyList(),
     /** The saved list whose tracks this page shows; null on every other page. */
     val savedName: String? = null,
-    /** The playable tracks, when this page is a leaf. */
+    /** The playable tracks, when this page is a leaf or ends in tracks. */
     val tracks: List<Track>? = null,
+    /**
+     * The row of the first of [tracks]: zero on a page of tracks, and further down on a page
+     * of search results, whose tracks come after its artists and albums.
+     */
+    val firstTrack: Int = 0,
+    /** The rows that title a section of the page, which do nothing when tapped. */
+    val headings: Set<Int> = emptySet(),
     /** The text an empty page shows. */
     val empty: String? = null,
     /**

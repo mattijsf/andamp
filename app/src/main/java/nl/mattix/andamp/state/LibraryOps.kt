@@ -360,6 +360,8 @@ class LibraryOps(
                                 src.findArtists(text),
                                 empty = words.get(R.string.library_no_artists),
                             )
+                        } else if (src is SectionedSearch) {
+                            shelves.sections(src, src.searchSections(text))
                         } else {
                             shelves.results(src.search(text))
                         }
@@ -435,7 +437,7 @@ class LibraryOps(
 
     /**
      * A tap on a row: artist, album and list rows drill in; a track row selects, and a
-     * second tap on the selection plays from it.
+     * second tap on the selection plays from it. A section's heading does nothing.
      */
     fun tapRow(index: Int) {
         if (loading) return
@@ -449,21 +451,32 @@ class LibraryOps(
             state.librarySelected = -1
             return
         }
-        val tracks = page.tracks
-        if (tracks == null) {
+        val track = trackIndex(index)
+        if (track == null) {
             page.open.getOrNull(index)?.invoke()
             return
         }
-        if (state.librarySelected == index) playFrom(index) else state.librarySelected = index
+        if (state.librarySelected == index) playFrom(track) else state.librarySelected = index
     }
+
+    /** Which of the page's tracks the row at [index] is; null for a row that is not a track. */
+    private fun trackIndex(index: Int): Int? {
+        val tracks = page.tracks ?: return null
+        return (index - page.firstTrack).takeIf { it in tracks.indices }
+    }
+
+    /** Whether the row at [index] titles a section, and so has no menu and no tap. */
+    fun headingAt(index: Int): Boolean = index in page.headings
+
+    /** Whether a long press on the row at [index] opens its menu: a row there is, and not a heading or the permission prompt. */
+    fun hasMenu(index: Int): Boolean = index in page.rows.indices && !needsAccess && !headingAt(index)
 
     /**
      * The tracks a row stands for: the leaf's own entry, or everything under an artist or
      * an album. Empty when the row stands for none.
      */
     private suspend fun tracksOfRow(index: Int): List<Track> {
-        val leaf = page.tracks
-        if (leaf != null) return listOfNotNull(leaf.getOrNull(index))
+        trackIndex(index)?.let { at -> return listOfNotNull(page.tracks?.getOrNull(at)) }
         return page.tracksOf
             .getOrNull(index)
             ?.invoke()
@@ -569,6 +582,20 @@ class LibraryOps(
     fun savedListDeleted(name: String) = savedListsChanged(closing = name)
 
     /**
+     * The library on show was read again ([ShelfUpdates]): a tab's root on screen is read
+     * again at its scroll, and the places kept in the other tabs are let go, so nothing shows
+     * a shelf from before. A level deeper in, or a search, is left until it is moved from.
+     */
+    fun shelfChanged() {
+        stashes.clear()
+        val atRoot = !loading && !searching && depth == 0
+        if (!state.libraryOpen || !atRoot) return
+        if (category != Category.ARTISTS && category != Category.ALBUMS) return
+        val tab = category
+        load(label(tab), scroll = state.libraryScroll, selection = state.librarySelected) { shelves.root(tab, source) }
+    }
+
+    /**
      * The saved lists changed: their page is read again wherever it is, at its scroll, as
      * [savedListDeleted] says. The page of the list [closing], when one is given and open,
      * closes.
@@ -623,7 +650,7 @@ class LibraryOps(
     fun playSelection() {
         val tracks = page.tracks ?: return onPage { all -> facade.playQueue(all, 0) }
         if (tracks.isEmpty()) return
-        playFrom(state.librarySelected.takeIf { it in tracks.indices } ?: 0)
+        playFrom(trackIndex(state.librarySelected) ?: 0)
     }
 
     /**
@@ -636,7 +663,7 @@ class LibraryOps(
                 facade.enqueue(all)
                 showFlash(words.get(R.string.library_queued, all.size))
             }
-        val chosen = state.librarySelected.takeIf { it in tracks.indices }?.let { listOf(tracks[it]) } ?: tracks
+        val chosen = trackIndex(state.librarySelected)?.let { listOf(tracks[it]) } ?: tracks
         if (chosen.isEmpty()) return
         facade.enqueue(chosen)
         showFlash(words.get(R.string.library_queued, chosen.size))
@@ -689,7 +716,10 @@ class LibraryOps(
     }
 
     /** The row of the playing track on this page, for the now-playing color; -1 for none. */
-    fun rowOfTrack(trackId: String?): Int = trackId?.let { id -> page.tracks?.indexOfFirst { it.id == id } } ?: -1
+    fun rowOfTrack(trackId: String?): Int {
+        val at = trackId?.let { id -> page.tracks?.indexOfFirst { it.id == id } } ?: -1
+        return if (at < 0) -1 else page.firstTrack + at
+    }
 
     // --- radio's NEW ---
 

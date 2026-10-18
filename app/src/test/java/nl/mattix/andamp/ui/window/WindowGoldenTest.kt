@@ -723,6 +723,75 @@ class WindowGoldenTest {
         renderLibrary("library_skin_font_artist_play", ops, state)
     }
 
+    /** A shelf whose search finds an artist, an album and two tracks, in sections. */
+    private class SectionedShelf :
+        nl.mattix.andamp.core.playback.BrowseSource,
+        nl.mattix.andamp.state.SectionedSearch {
+        override val capabilities =
+            nl.mattix.andamp.core.model
+                .BrowseCapabilities(canSearch = true)
+        override val available = true
+        private val autechre =
+            nl.mattix.andamp.core.model
+                .LibraryArtist("a1", "Autechre", albumCount = 1)
+        private val amber =
+            nl.mattix.andamp.core.model
+                .LibraryAlbum("l1", "Amber", "Autechre", year = 1994)
+        private val tracks =
+            listOf(
+                nl.mattix.andamp.core.model
+                    .Track("g-t1", "Autechre", "Foil", 366_000, uri = "content://1"),
+                nl.mattix.andamp.core.model
+                    .Track("g-t2", "Autechre", "Montreal", 456_000, uri = "content://2"),
+            )
+
+        override suspend fun artists() = listOf(autechre)
+
+        override suspend fun albums(artistId: String?) = listOf(amber)
+
+        override suspend fun tracks(albumId: String) = tracks
+
+        override suspend fun searchSections(
+            query: String,
+            limit: Int,
+        ) = nl.mattix.andamp.state.SectionedSearch
+            .Sections(listOf(autechre), listOf(amber), tracks)
+    }
+
+    @Test
+    fun `library search results in sections, in the skin's font`() {
+        val scheduler = kotlinx.coroutines.test.TestCoroutineScheduler()
+        val clock = kotlinx.coroutines.test.StandardTestDispatcher(scheduler)
+        val state = WinampState().apply { listFont = ListFont.SKIN }
+        val facade =
+            nl.mattix.andamp.core.player
+                .PlayerFacade(
+                    nl.mattix.andamp.backend.mock
+                        .MockBackend(emptyList(), kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined)),
+                )
+        val ops =
+            nl.mattix.andamp.state.LibraryOps(
+                { SectionedShelf() },
+                facade,
+                state,
+                kotlinx.coroutines.CoroutineScope(clock),
+                nl.mattix.andamp.state
+                    .PlaylistLibrary(java.io.File(goldenFiles, "sections-playlists")),
+                nl.mattix.andamp.state
+                    .StationStore(java.io.File(goldenFiles, "sections-stations.m3u")),
+                io = clock,
+                words = EnglishWords,
+            )
+        ops.open()
+        scheduler.advanceUntilIdle()
+        ops.enterSearch()
+        ops.setQuery("aut", 3)
+        scheduler.advanceUntilIdle()
+        state.marqueeStep = 0
+        state.librarySelected = 5 // Foil
+        renderLibrary("library_skin_font_sections", ops, state)
+    }
+
     @Test
     fun `playlist-art window frame`() {
         // what a skin without GEN.BMP wears: playlist chrome, plain bottom

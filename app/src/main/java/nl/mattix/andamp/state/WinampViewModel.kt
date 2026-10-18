@@ -12,6 +12,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.drop
@@ -347,6 +348,12 @@ class WinampViewModel
             }
             viewModelScope.launch {
                 snapshotFlow { listStyleStore.rowHeight }.collect { state.rowHeight = it }
+            }
+            // a library read again while it is shown reaches the window; see ShelfUpdates
+            viewModelScope.launch {
+                snapshotFlow { librarySources.showing }.collectLatest { source ->
+                    (browseSource(source) as? ShelfUpdates)?.revision?.drop(1)?.collect { libraryOps.shelfChanged() }
+                }
             }
             // restores what a previous session left: settings, queue, visuals, windows
             persistence.start()

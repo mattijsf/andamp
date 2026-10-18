@@ -11,9 +11,9 @@ import android.provider.MediaStore
 import nl.mattix.andamp.core.playback.BrowseSourceContractTest
 
 /**
- * A stand-in for the platform's audio library, backed by SQLite, so the selection, the
- * `ALBUM_ID IN (?,?)` list, the LIKE escaping and the sort order that
- * [MediaStoreBrowseSource] sends are applied to the rows.
+ * A stand-in for the platform's audio library, backed by SQLite, so the selections and the
+ * sort orders the app sends are applied to the rows: the one read of every file that
+ * [PhoneShelfReader] makes for the library's index, and the lookups of [MediaStoreAudio].
  *
  * It has only the columns the app asks for.
  */
@@ -32,7 +32,8 @@ class FakeMediaStore : ContentProvider() {
         )
         db.execSQL(
             "CREATE TABLE media (_id INTEGER PRIMARY KEY, title TEXT, artist TEXT, album TEXT, " +
-                "album_id INTEGER, duration INTEGER, track INTEGER, _data TEXT)",
+                "album_id INTEGER, duration INTEGER, track INTEGER, _data TEXT, album_artist TEXT, year INTEGER, " +
+                "date_added INTEGER, date_modified INTEGER, is_music INTEGER DEFAULT 1, genre TEXT, relative_path TEXT)",
         )
         return true
     }
@@ -79,6 +80,10 @@ class FakeMediaStore : ContentProvider() {
                             put("duration", TRACK_MS)
                             if (number != null) put("track", number)
                             put("_data", "/music/${artist.name}/${album.title}/$title.mp3")
+                            put("relative_path", "Music/${artist.name}/${album.title}/")
+                            album.year?.let { put("year", it) }
+                            put("date_added", ADDED + trackId)
+                            put("date_modified", ADDED + trackId)
                         },
                     )
                     trackId++
@@ -127,6 +132,53 @@ class FakeMediaStore : ContentProvider() {
                 put("_data", path)
             },
         )
+    }
+
+    /**
+     * One more file, filed under the album [albumId] as the platform would file it (by its
+     * tags and its folder), with an album artist when [albumArtist] is given. Its id is the
+     * next free one.
+     */
+    @Suppress("LongParameterList") // the tags a file carries
+    fun add(
+        title: String,
+        artist: String,
+        album: String,
+        albumId: Long,
+        albumArtist: String? = null,
+        number: Int? = null,
+    ): Long {
+        val id =
+            db.rawQuery("SELECT COALESCE(MAX(_id), 0) + 1 FROM media", null).use {
+                it.moveToFirst()
+                it.getLong(0)
+            }
+        db.insert(
+            "media",
+            null,
+            ContentValues().apply {
+                put("_id", id)
+                put("title", title)
+                put("artist", artist)
+                put("album", album)
+                put("album_id", albumId)
+                put("duration", TRACK_MS)
+                number?.let { put("track", it) }
+                albumArtist?.let { put("album_artist", it) }
+                put("_data", "/music/$album/$title.mp3")
+                put("date_added", ADDED + id)
+                put("date_modified", ADDED + id)
+            },
+        )
+        return id
+    }
+
+    /** Tags every file of [album] with the album artist [name]. */
+    fun tagAlbumArtist(
+        album: String,
+        name: String,
+    ) {
+        db.execSQL("UPDATE media SET album_artist = ? WHERE album = ?", arrayOf<Any>(name, album))
     }
 
     /** Strips a track's number, the way an untagged file arrives. */
@@ -191,6 +243,9 @@ class FakeMediaStore : ContentProvider() {
         private const val ARTISTS = 2
         private const val LAST = 5
         private const val TRACK_MS = 240_000L
+
+        /** When the seeded files were added, in seconds; each later one a second after. */
+        private const val ADDED = 1_700_000_000L
 
         /** Far enough from any seeded id that a split album cannot collide. */
         private const val SPLIT_OFFSET = 500L

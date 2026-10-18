@@ -438,6 +438,14 @@ one of them steps the clocks (`WinampState.clocksTurn`).
   mirror collector and forwards intents. Disk reads and writes belong to `PersistenceOps`,
   animation clocks to `ui/UiClocks.kt`, and the playlist's file actions to
   `PlaylistFileOps`. A feature that lands in the ViewModel usually belongs somewhere else.
+- **The library's own index.** The library window reads the phone's music from
+  `LibraryIndex`, an SQLite file under `noBackupFilesDir` that holds a copy of each
+  shelf: artists by album artist, albums, tracks in album order, and a folded text to search
+  by. `IndexedPhoneLibrary` reads the phone's media index in one pass (`PhoneShelfReader`),
+  groups it (`ShelfBuilder`) and replaces the copy whole when the phone's music changed; a
+  small stamp query tells. A `ContentObserver` on the phone's audio marks it, and it is
+  otherwise checked at most every 30 seconds. The file holds nothing that cannot be read
+  again, so a schema change empties it.
 
 ## Pixel rules
 
@@ -561,7 +569,7 @@ gets at least one. Before a release, also run a smoke test on an emulator.
 - **`BrowseSourceContractTest`** (same fixtures) does this for the library side: what
   `albums(null)` means, that an album appears once, that an album's tracks come back in
   album order with ten after nine, that every row is playable, and that a source without
-  `canSearch` stays silent and does not throw. `MediaStoreBrowseSourceTest` passes it
+  `canSearch` stays silent and does not throw. `IndexedPhoneLibraryTest` passes it
   under Robolectric against a real content provider over SQLite (`FakeMediaStore`).
 - **`WindowParityTest`** lists every floating window (player, equalizer, playlist,
   plug-in, skin browser, library) in one parameterized suite. Each must publish a

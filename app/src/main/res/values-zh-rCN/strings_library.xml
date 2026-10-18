@@ -12,6 +12,10 @@
     <string name="library_kind_singles">单曲</string>
     <string name="library_kind_compilations">合辑</string>
 
+    <string name="library_various_artists">群星</string>
+    <string name="library_unknown_artist">未知艺术家</string>
+    <string name="library_unknown_album">未知专辑</string>
+
     <plurals name="library_count_artists">
         <item quantity="other">%1$d 位艺术家</item>
     </plurals>
