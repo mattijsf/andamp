@@ -105,4 +105,7 @@
     <!-- LibraryRowMenu.kt -->
     <string name="menu_enqueue_next">下一首播放</string>
     <string name="menu_delete_list">删除列表</string>
+    <string name="menu_rename_list">重命名列表</string>
+    <string name="menu_rename_station">重命名电台</string>
+    <string name="menu_delete_station">删除电台</string>
 </resources>

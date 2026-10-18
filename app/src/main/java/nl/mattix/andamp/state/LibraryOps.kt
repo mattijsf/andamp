@@ -11,13 +11,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 import nl.mattix.andamp.R
-import nl.mattix.andamp.core.model.AlbumKind
-import nl.mattix.andamp.core.model.LibraryAlbum
-import nl.mattix.andamp.core.model.LibraryArtist
 import nl.mattix.andamp.core.model.Track
-import nl.mattix.andamp.core.model.durationSec
 import nl.mattix.andamp.core.playback.BrowseSource
 import nl.mattix.andamp.core.playback.SourceUnreachable
 import nl.mattix.andamp.core.player.PlayerFacade
@@ -34,13 +29,16 @@ import kotlin.coroutines.CoroutineContext
  * the stations ([PlaylistLibrary], [StationStore]) are outside the browse contract.
  *
  * A tap on a track selects it, a second tap (or PLAY) replaces the queue from there, and
- * ADD appends. Search is a level like any other: entering pushes a crumb, so backing out
- * restores the page, scroll and selection it covered. A fetched page replaces the list and
- * the header together, and only the latest fetch asked for lands.
+ * ADD appends. Inside an artist or a list, PLAY and ADD take everything the page stands for.
+ * Search is a level like any other: entering pushes a crumb, so backing out restores the
+ * page, scroll and selection it covered. A fetched page replaces the list and the header
+ * together, and only the latest fetch asked for lands. A tab the listener leaves keeps its
+ * place, and coming back lands there.
  *
  * A source that could not answer ([SourceUnreachable]) gets a page that says CAN'T REACH
  * and the source's name, and a tap on it asks again. An empty answer gets its own text
- * (NO ARTISTS). Nothing here caches answers.
+ * (NO ARTISTS). A source that answered only part of a question gets INCOMPLETE beside the
+ * count. Nothing here caches answers beyond the pages a tab keeps while it is left.
  */
 @Suppress("TooManyFunctions") // the categories, the search flow and the row actions are all here
 class LibraryOps(
@@ -68,6 +66,11 @@ class LibraryOps(
     /** Where the saved lists and the stations are read and written. */
     private val io: CoroutineContext = Dispatchers.IO,
     private val words: Words,
+    /**
+     * Whether the source answered its last question all the way through; false when it
+     * stopped part way and handed back what it had. A [BrowseSource] cannot say this itself.
+     */
+    private val wholeOf: (BrowseSource) -> Boolean = { true },
 ) {
     /**
      * The library as it is now; see [sourceOf]. It is read once per page and handed to
@@ -100,45 +103,12 @@ class LibraryOps(
         val detail: String = "",
     )
 
-    /** A level of the drill-down, replaced as one piece when its fetch lands. */
-    private class Page(
-        val header: String,
-        val status: String,
-        val rows: List<Row>,
-        /** Drill actions, indexed like [rows]; empty at the leaf. */
-        val open: List<() -> Unit> = emptyList(),
-        /**
-         * The tracks each row stands for, indexed like [rows], for a row's menu, which
-         * acts on a row without opening it. For an artist or an album this is a fetch.
-         * Empty where the leaf's own [tracks] answer it.
-         */
-        val tracksOf: List<suspend () -> List<Track>> = emptyList(),
-        /**
-         * The saved list each row stands for, indexed like [rows], on the page of the
-         * lists this app keeps as files; empty on every other page. Only these rows can
-         * be deleted.
-         */
-        val saved: List<String> = emptyList(),
-        /** The saved list whose tracks this page shows; null on every other page. */
-        val savedName: String? = null,
-        /** The playable tracks, when this page is a leaf. */
-        val tracks: List<Track>? = null,
-        /** The text an empty page shows. */
-        val empty: String? = null,
-        /**
-         * Asks again, on a page for a fetch the source could not answer; null on every
-         * other page. When it is set, a tap anywhere on the page, or on its own tab,
-         * retries.
-         */
-        val retry: (() -> Unit)? = null,
-    )
-
     /**
      * Where a drill came from, so up() restores it, including the search that was open on
      * it.
      */
     private class Crumb(
-        val page: Page,
+        val page: LibraryPage,
         val scroll: Int,
         val selection: Int,
         /** What was typed, when the level left was a search; null otherwise. */
@@ -147,16 +117,30 @@ class LibraryOps(
         val finding: Boolean = false,
     )
 
-    private var page: Page by mutableStateOf(Page(label(Category.ARTISTS), "", emptyList()))
+    private var page: LibraryPage by mutableStateOf(LibraryPage(label(Category.ARTISTS), "", emptyList()))
     private val crumbs = ArrayDeque<Crumb>()
+
+    /** Makes the pages; see [LibraryShelves]. */
+    private val shelves =
+        LibraryShelves(
+            words,
+            lists,
+            stations,
+            io,
+            onListRead,
+            wholeOf,
+            access = { needed -> needsAccess = needed },
+            drill = ::drill,
+        )
 
     val rows: List<Row> get() = page.rows
 
     /** The current level's name: the category at its root, an artist, an album. */
     val header: String get() = page.header
 
-    /** The bottom bar's left text: "245 ARTISTS", "26 TRACKS · 81:09". */
-    val status: String get() = page.status
+    /** The bottom bar's left text: "245 ARTISTS", "26 TRACKS · 81:09", "245 ARTISTS · INCOMPLETE". */
+    val status: String get() =
+        if (page.incomplete) "${page.status} · ${words.get(R.string.library_incomplete)}" else page.status
 
     /** The text an empty list shows, per page. */
     val emptyNote: String get() = page.empty ?: words.get(R.string.library_no_music)
@@ -186,6 +170,13 @@ class LibraryOps(
 
     val atTracks: Boolean get() = page.tracks != null
 
+    /**
+     * Whether PLAY and ADD act on this page: a page of tracks, or a level inside an artist
+     * or a list, whose rows stand for tracks. A tab's root is not one: it stands for the
+     * whole library.
+     */
+    val canPlayPage: Boolean get() = atTracks || (depth > 0 && page.tracksOf.isNotEmpty())
+
     // --- categories ---
 
     var category: Category by mutableStateOf(Category.ARTISTS)
@@ -209,17 +200,80 @@ class LibraryOps(
      * Switches tab, from any depth. The active tab at its own root does nothing; the
      * active tab while deep goes back to its root. The FIND tab's root is its search, so
      * tapping it at its root starts the search afresh.
+     *
+     * The tab left keeps its place ([Stash]), and a tab with a place kept lands there. The
+     * lists and stations this app keeps as files are read again instead, at the root's
+     * scroll, because they change without the library being told.
      */
     fun switchCategory(target: Category) {
         if (loading) return
         if (target == category && home && target != Category.FIND) return
+        val leaving = category
+        // the active tab while deep goes back to its root, so its place is not kept
+        if (target == leaving) stashes.remove(target) else stash(leaving)
+        val kept = stashes.remove(target)
         dropSearch()
         category = target
+        if (kept != null && !readEachVisit(target)) {
+            restore(kept)
+            return
+        }
         crumbs.clear()
         depth = 0
         // the FIND tab has no shelf: it opens on its search prompt
-        if (target == Category.FIND) enterFind() else load(label(target)) { rootFor(target) }
+        if (target == Category.FIND) {
+            enterFind()
+        } else {
+            load(
+                label(target),
+                scroll = kept?.rootScroll ?: 0,
+                selection = kept?.rootSelection ?: -1,
+            ) { shelves.root(target, source) }
+        }
     }
+
+    /**
+     * Where the listener was in a tab they left: the page, the levels under it, the scroll and
+     * the selection.
+     */
+    private class Stash(
+        val crumbs: List<Crumb>,
+        val page: LibraryPage,
+        val scroll: Int,
+        val selection: Int,
+    ) {
+        /** The tab's root page's scroll, which is the bottom crumb's when the tab was left deep. */
+        val rootScroll: Int get() = crumbs.firstOrNull()?.scroll ?: scroll
+        val rootSelection: Int get() = crumbs.firstOrNull()?.selection ?: selection
+    }
+
+    /** The places kept per tab; see [switchCategory]. The window's opening clears them. */
+    private val stashes = mutableMapOf<Category, Stash>()
+
+    /**
+     * Keeps [tab]'s place as it is left. A search, a page that could not be fetched and the
+     * permission prompt are not places to come back to: the tab then opens at its root.
+     */
+    private fun stash(tab: Category) {
+        if (searching || page.retry != null || needsAccess) {
+            stashes.remove(tab)
+            return
+        }
+        stashes[tab] = Stash(crumbs.toList(), page, state.libraryScroll, state.librarySelected)
+    }
+
+    private fun restore(kept: Stash) {
+        abandonLoad()
+        crumbs.clear()
+        crumbs.addAll(kept.crumbs)
+        depth = crumbs.size
+        needsAccess = false
+        commit(kept.page, kept.scroll, kept.selection)
+    }
+
+    /** Whether [tab] shows files this app keeps, which are read again on every visit. */
+    private fun readEachVisit(tab: Category): Boolean =
+        tab == Category.RADIO || (tab == Category.LISTS && !source.capabilities.hasPlaylists)
 
     /**
      * At a tab's root, with that root on screen. A root that could not be reached does
@@ -235,7 +289,7 @@ class LibraryOps(
         query = ""
         caret = 0
         searchEpoch++
-        commit(findPromptPage())
+        commit(shelves.prompt(finding = true))
     }
 
     // --- search ---
@@ -277,7 +331,7 @@ class LibraryOps(
         query = ""
         caret = 0
         searchEpoch++
-        commit(promptPage())
+        commit(shelves.prompt(finding = false))
     }
 
     /** The text input's mirror: text and caret arrive here on every keystroke. */
@@ -293,25 +347,25 @@ class LibraryOps(
             scope.launch {
                 delay(SEARCH_DEBOUNCE_MS)
                 if (text.length < MIN_QUERY) {
-                    commitInPlace(searchPrompt())
+                    commitInPlace(shelves.prompt(finding))
                     return@launch
                 }
                 val src = source
                 val page =
                     try {
                         if (finding) {
-                            artistsPage(
+                            shelves.artists(
                                 src,
                                 label(Category.FIND),
                                 src.findArtists(text),
                                 empty = words.get(R.string.library_no_artists),
                             )
                         } else {
-                            resultsPage(src.search(text))
+                            shelves.results(src.search(text))
                         }
                     } catch (_: SourceUnreachable) {
                         // the retry sets the same query again, so a newer query still wins
-                        unreachablePage(if (finding) label(Category.FIND) else searchHeader) { setQuery(text, caret) }
+                        unreachablePage(if (finding) label(Category.FIND) else shelves.searchHeader) { setQuery(text, caret) }
                     }
                 // a slow answer to an old query must not replace a newer one
                 if (searching && query == text) commitInPlace(page)
@@ -330,7 +384,7 @@ class LibraryOps(
             caret = 0
             searchEpoch++
             searchJob?.cancel()
-            commitInPlace(searchPrompt())
+            commitInPlace(shelves.prompt(finding))
         }
     }
 
@@ -359,33 +413,6 @@ class LibraryOps(
     /** Whether the open search is the FIND tab's; see [Category.FIND]. */
     private var finding = false
 
-    private val searchHeader: String get() = words.get(R.string.library_search_header)
-
-    private fun promptPage() = Page(searchHeader, "", emptyList(), empty = words.get(R.string.library_type_to_search))
-
-    private fun findPromptPage() = Page(label(Category.FIND), "", emptyList(), empty = words.get(R.string.library_type_an_artist))
-
-    /** The prompt page for an empty or too-short query, for whichever search is open. */
-    private fun searchPrompt() = if (finding) findPromptPage() else promptPage()
-
-    private fun resultsPage(hits: List<Track>): Page {
-        val capped = hits.size >= BrowseSource.SEARCH_LIMIT
-        val count =
-            if (capped) {
-                words.get(R.string.library_hits_capped, BrowseSource.SEARCH_LIMIT)
-            } else {
-                count(hits.size, R.plurals.library_count_hits)
-            }
-        val time = if (hits.isEmpty() || capped) "" else " · ${clock(hits.sumOf { it.durationSec })}"
-        return Page(
-            header = searchHeader,
-            status = count + time,
-            rows = hits.map { Row(it.title, detail = it.artist) },
-            tracks = hits,
-            empty = words.get(R.string.library_no_matches),
-        )
-    }
-
     // --- open / navigate ---
 
     fun open() {
@@ -396,13 +423,14 @@ class LibraryOps(
         // raised, so it is not opened behind another window
         state.raiseWindow(WindowStore.LIBRARY)
         crumbs.clear()
+        stashes.clear()
         depth = 0
         needsAccess = false
         dropSearch()
         // the tab it was left on may be one the new source does not have (the phone has no
         // FIND tab)
         if (category !in visibleCategories) category = visibleCategories.first()
-        if (category == Category.FIND) enterFind() else load(label(category)) { rootFor(category) }
+        if (category == Category.FIND) enterFind() else load(label(category)) { shelves.root(category, source) }
     }
 
     /**
@@ -466,17 +494,61 @@ class LibraryOps(
             showFlash(words.get(R.string.library_queued_next, chosen.size))
         }
 
-    // --- deleting a saved list ---
+    // --- the lists and stations this app keeps ---
 
-    /** Whether the row is one of the app's saved lists, the only rows that can be deleted. */
-    fun canDeleteRow(index: Int): Boolean = index in page.saved.indices
+    /** The kinds of row this app keeps as files, which its menu can rename and delete. */
+    enum class Kept { LIST, STATION }
+
+    /** What the row is when this app keeps it, a saved list or a station; null for any other row. */
+    fun keptAt(index: Int): Kept? =
+        when {
+            index in page.saved.indices -> Kept.LIST
+            stationAt(index) != null -> Kept.STATION
+            else -> null
+        }
+
+    /** The station on the row, on RADIO's own page; null anywhere else. */
+    private fun stationAt(index: Int): Track? =
+        page.tracks?.getOrNull(index)?.takeIf { category == Category.RADIO && depth == 0 && !searching }
+
+    /** Whether the row can be deleted: a saved list or a station. */
+    fun canDeleteRow(index: Int): Boolean = keptAt(index) != null
 
     /** Whether the page shows the tracks of a saved list, which the bar's DEL LIST deletes. */
     val canDeletePage: Boolean get() = page.savedName != null
 
-    /** The row menu's Delete list, on the page of saved lists. */
+    /** The row menu's Delete list or Delete station. */
     fun promptDeleteRow(index: Int) {
-        page.saved.getOrNull(index)?.let(::promptDelete)
+        page.saved.getOrNull(index)?.let(keeping::deleteList)
+        stationAt(index)?.let(keeping::deleteStation)
+    }
+
+    /** The row menu's Rename list or Rename station. */
+    fun promptRenameRow(index: Int) {
+        page.saved.getOrNull(index)?.let(keeping::renameList)
+        stationAt(index)?.let(keeping::renameStation)
+    }
+
+    /** Asks before it renames or deletes a list or a station; see [LibraryKeeping]. */
+    private val keeping by lazy {
+        LibraryKeeping(
+            state,
+            scope,
+            lists,
+            stations,
+            io,
+            words,
+            flash = ::showFlash,
+            listsChanged = { gone -> if (gone == null) savedListsChanged() else savedListDeleted(gone) },
+            stationsChanged = ::stationsChanged,
+        )
+    }
+
+    /** The stations changed: RADIO's page, when it shows, is read again at its scroll. */
+    private fun stationsChanged() {
+        if (category == Category.RADIO && depth == 0 && !loading) {
+            load(label(Category.RADIO), scroll = state.libraryScroll) { shelves.radio() }
+        }
     }
 
     /**
@@ -485,20 +557,7 @@ class LibraryOps(
      * it, which is why it says LIST.
      */
     fun promptDeletePage() {
-        page.savedName?.let(::promptDelete)
-    }
-
-    private fun promptDelete(name: String) {
-        state.prompt =
-            deleteListPrompt(name, words, onDone = { state.prompt = null }) {
-                scope.launch {
-                    if (withContext(io) { lists.delete(name) }) {
-                        savedListDeleted(name)
-                    } else {
-                        showFlash(words.get(R.string.library_cant_delete))
-                    }
-                }
-            }
+        page.savedName?.let(keeping::deleteList)
     }
 
     /**
@@ -507,11 +566,18 @@ class LibraryOps(
      * going up returns to. Its scroll is kept, so the next list to delete is still under
      * the finger. The deleted list's own page closes.
      */
-    fun savedListDeleted(name: String) {
+    fun savedListDeleted(name: String) = savedListsChanged(closing = name)
+
+    /**
+     * The saved lists changed: their page is read again wherever it is, at its scroll, as
+     * [savedListDeleted] says. The page of the list [closing], when one is given and open,
+     * closes.
+     */
+    private fun savedListsChanged(closing: String? = null) {
         if (loading) return
         if (page.saved.isEmpty() && crumbs.all { it.page.saved.isEmpty() }) return
         scope.launch {
-            val next = savedListsPage()
+            val next = shelves.savedLists()
             // a level navigated to while the lists were read is left to land
             if (loading) return@launch
             for (at in crumbs.indices) {
@@ -523,13 +589,13 @@ class LibraryOps(
                 abandonLoad()
                 commit(next, scroll = scrollWithin(next, state.libraryScroll))
             }
-            if (page.savedName == name) up()
+            if (closing != null && page.savedName == closing) up()
         }
     }
 
     /** [scroll], or the last row of [next] when the page has become shorter than that. */
     private fun scrollWithin(
-        next: Page,
+        next: LibraryPage,
         scroll: Int,
     ) = scroll.coerceIn(0, (next.rows.size - 1).coerceAtLeast(0))
 
@@ -550,20 +616,46 @@ class LibraryOps(
         }
     }
 
-    /** Plays from the selection, or from the top with nothing selected. */
+    /**
+     * Plays from the selection, or from the top with nothing selected. Inside an artist or a
+     * list, it plays everything the page stands for.
+     */
     fun playSelection() {
-        val tracks = page.tracks ?: return
+        val tracks = page.tracks ?: return onPage { all -> facade.playQueue(all, 0) }
         if (tracks.isEmpty()) return
         playFrom(state.librarySelected.takeIf { it in tracks.indices } ?: 0)
     }
 
-    /** Enqueues the selected track, or the whole page with nothing selected. */
+    /**
+     * Enqueues the selected track, or the whole page with nothing selected. Inside an artist
+     * or a list, it enqueues everything the page stands for.
+     */
     fun enqueueSelection() {
-        val tracks = page.tracks ?: return
+        val tracks =
+            page.tracks ?: return onPage { all ->
+                facade.enqueue(all)
+                showFlash(words.get(R.string.library_queued, all.size))
+            }
         val chosen = state.librarySelected.takeIf { it in tracks.indices }?.let { listOf(tracks[it]) } ?: tracks
         if (chosen.isEmpty()) return
         facade.enqueue(chosen)
         showFlash(words.get(R.string.library_queued, chosen.size))
+    }
+
+    /** Fetches every track the rows of a page above the tracks stand for, then acts on them. */
+    private fun onPage(act: (List<Track>) -> Unit) {
+        if (!canPlayPage) return
+        val each = page.tracksOf
+        scope.launch {
+            val all =
+                try {
+                    shelves.gather(each)
+                } catch (_: SourceUnreachable) {
+                    showFlash(cantReach())
+                    return@launch
+                }
+            if (all.isEmpty()) showFlash(words.get(R.string.library_nothing_to_play)) else act(all)
+        }
     }
 
     fun up() {
@@ -581,38 +673,28 @@ class LibraryOps(
         if (crumbs.isNotEmpty()) up() else state.libraryOpen = false
     }
 
+    /**
+     * The letter the row at [index] files under, for the readout beside a dragged scroll
+     * handle: its first letter, or # for a digit. Null on a page of tracks, which keeps an
+     * order of its own, and for a row with neither.
+     */
+    fun letterAt(index: Int): String? {
+        if (page.tracks != null) return null
+        val first =
+            page.rows
+                .getOrNull(index)
+                ?.label
+                ?.firstOrNull { it.isLetterOrDigit() } ?: return null
+        return if (first.isDigit()) "#" else first.uppercase()
+    }
+
     /** The row of the playing track on this page, for the now-playing color; -1 for none. */
     fun rowOfTrack(trackId: String?): Int = trackId?.let { id -> page.tracks?.indexOfFirst { it.id == id } } ?: -1
 
     // --- radio's NEW ---
 
     /** RADIO's NEW cell: asks for a url, then for a name suggested from its host. */
-    fun promptNewStation() {
-        state.namePrompt =
-            NamePrompt(
-                title = words.get(R.string.library_station_url_title),
-                confirmLabel = words.get(R.string.library_station_next),
-            ) { typedUrl ->
-                state.namePrompt = null
-                val url = typedUrl.trim()
-                if (!StationStore.isStreamUrl(url)) {
-                    showFlash(words.get(R.string.library_not_http))
-                } else {
-                    state.namePrompt =
-                        NamePrompt(
-                            title = words.get(R.string.library_station_name_title),
-                            initial = StationStore.hostOf(url).orEmpty(),
-                            confirmLabel = words.get(R.string.library_station_add),
-                        ) { name ->
-                            state.namePrompt = null
-                            scope.launch {
-                                withContext(io) { stations.add(name, url) }
-                                if (category == Category.RADIO && depth == 0) load(label(Category.RADIO)) { radioRootPage() }
-                            }
-                        }
-                }
-            }
-    }
+    fun promptNewStation() = keeping.newStation()
 
     // --- the pages ---
 
@@ -623,215 +705,10 @@ class LibraryOps(
         facade.playQueue(tracks, index)
     }
 
-    private suspend fun rootFor(target: Category): Page {
-        // read once here and handed down; see [source]
-        val src = source
-        return when (target) {
-            Category.ARTISTS -> artistsRootPage(src)
-
-            Category.ALBUMS -> albumsRootPage(src)
-
-            Category.LISTS -> listsRootPage(src)
-
-            Category.RADIO -> radioRootPage()
-
-            // the FIND tab has no root page other than its prompt
-            Category.FIND -> findPromptPage()
-        }
-    }
-
-    private suspend fun artistsRootPage(src: BrowseSource): Page {
-        if (!src.available) {
-            needsAccess = true
-            return Page(label(Category.ARTISTS), count(0, R.plurals.library_count_artists), emptyList())
-        }
-        needsAccess = false
-        val artists = src.artists()
-        // checked again: access can be revoked while the read runs, and the empty answer
-        // then means no permission
-        if (!src.available) {
-            needsAccess = true
-            return Page(label(Category.ARTISTS), count(0, R.plurals.library_count_artists), emptyList())
-        }
-        return artistsPage(src, label(Category.ARTISTS), artists) { artist ->
-            artist.albumCount?.let { count(it, R.plurals.library_count_albums) } ?: ""
-        }
-    }
-
-    /**
-     * Artists as a page, for the listener's own shelf and for the FIND tab's results
-     * alike: each row opens into the artist's records, and stands for every track under
-     * them.
-     */
-    private fun artistsPage(
-        src: BrowseSource,
-        header: String,
-        artists: List<LibraryArtist>,
-        empty: String? = null,
-        detail: (LibraryArtist) -> String = { "" },
-    ) = Page(
-        header = header,
-        status = count(artists.size, R.plurals.library_count_artists),
-        rows = artists.map { Row(it.name, detail = detail(it)) },
-        open = artists.map { artist -> { drill(artist.name) { albumsPage(src, artist) } } },
-        tracksOf = artists.map { artist -> { src.albums(artist.id).flatMap { src.tracks(it.id) } } },
-        empty = empty,
-    )
-
-    private suspend fun albumsRootPage(src: BrowseSource): Page {
-        if (!src.available) {
-            needsAccess = true
-            return Page(label(Category.ALBUMS), count(0, R.plurals.library_count_albums), emptyList())
-        }
-        needsAccess = false
-        val albums = src.albums(null)
-        // checked again, as for the artists' root
-        if (!src.available) {
-            needsAccess = true
-            return Page(label(Category.ALBUMS), count(0, R.plurals.library_count_albums), emptyList())
-        }
-        return Page(
-            header = label(Category.ALBUMS),
-            status = count(albums.size, R.plurals.library_count_albums),
-            // the artist as the detail, since two albums may share a title
-            rows = albums.map { Row(it.title, detail = it.artist) },
-            open = albums.map { album -> { drill(album.title) { tracksPage(src, album) } } },
-            tracksOf = albums.map { album -> { src.tracks(album.id) } },
-        )
-    }
-
-    /**
-     * The LISTS tab's root, for the source the window is showing
-     * ([LibrarySources.showing]). A source that keeps its own playlists shows those; one
-     * that does not shows the lists this app has saved as files. The two are never mixed.
-     */
-    private suspend fun listsRootPage(src: BrowseSource): Page =
-        if (src.capabilities.hasPlaylists) sourceListsPage(src) else savedListsPage()
-
-    private suspend fun sourceListsPage(src: BrowseSource): Page {
-        val their = src.playlists()
-        return Page(
-            header = label(Category.LISTS),
-            status = count(their.size, R.plurals.library_count_lists),
-            rows =
-                their.map {
-                    Row(
-                        it.name,
-                        detail =
-                            it.trackCount?.let { n -> words.get(R.string.library_track_count_short, n) } ?: "",
-                    )
-                },
-            open = their.map { list -> { drill(list.name) { sourceListPage(src, list) } } },
-            tracksOf = their.map { list -> { src.playlistTracks(list.id) } },
-            empty = words.get(R.string.library_no_lists),
-        )
-    }
-
-    private suspend fun sourceListPage(
-        src: BrowseSource,
-        list: nl.mattix.andamp.core.model.LibraryPlaylist,
-    ): Page = trackListPage(list.name, src.playlistTracks(list.id), empty = words.get(R.string.library_no_tracks))
-
-    private suspend fun savedListsPage(): Page {
-        val saved = withContext(io) { lists.list() }
-        return Page(
-            header = label(Category.LISTS),
-            status = count(saved.size, R.plurals.library_count_lists),
-            rows = saved.map { Row(it.name, detail = words.get(R.string.library_track_count_short, it.trackCount)) },
-            open = saved.map { entry -> { drill(entry.name) { listTracksPage(entry.name) } } },
-            tracksOf = saved.map { entry -> { withContext(io) { lists.load(entry.name) }.orEmpty().also { onListRead(it) } } },
-            saved = saved.map { it.name },
-            empty = words.get(R.string.library_no_saved_lists),
-        )
-    }
-
-    private suspend fun listTracksPage(name: String): Page {
-        val tracks = withContext(io) { lists.load(name) }.orEmpty().also { onListRead(it) }
-        return trackListPage(name, tracks, empty = words.get(R.string.library_no_tracks), savedName = name)
-    }
-
-    private suspend fun radioRootPage(): Page {
-        // one level, no drill: the radio root is itself a playable page, so next and
-        // previous step through the stations
-        val all = withContext(io) { stations.list() }
-        return Page(
-            header = label(Category.RADIO),
-            status = count(all.size, R.plurals.library_count_stations),
-            rows = all.map { Row(it.title) },
-            tracks = all,
-            empty = words.get(R.string.library_no_stations),
-        )
-    }
-
-    /**
-     * An artist's records, or the kinds of record first. When a source tells albums,
-     * singles and compilations apart and the artist has more than one kind, the kinds
-     * are a level of their own; otherwise the records are listed directly.
-     */
-    private suspend fun albumsPage(
-        src: BrowseSource,
-        artist: LibraryArtist,
-    ): Page {
-        val albums = src.albums(artist.id)
-        val kinds = AlbumKind.entries.mapNotNull { kind -> albums.filter { it.kind == kind }.takeIf { it.isNotEmpty() } }
-        if (kinds.size < 2) {
-            // a single kind is counted under its own noun; a source that does not tell
-            // kinds apart reports everything as an album
-            val kind = albums.firstOrNull()?.kind ?: AlbumKind.ALBUM
-            return recordsPage(src, artist.name, albums, kind.noun)
-        }
-        return Page(
-            header = artist.name,
-            status = count(albums.size, R.plurals.library_count_records),
-            rows =
-                kinds.map { of ->
-                    Row(words.get(of.first().kind.rowLabel), detail = count(of.size, R.plurals.library_count_records))
-                },
-            open = kinds.map { of -> { drill(artist.name) { recordsPage(src, artist.name, of, of.first().kind.noun) } } },
-            tracksOf = kinds.map { of -> { of.flatMap { src.tracks(it.id) } } },
-        )
-    }
-
-    /** Records, counted under the plural [noun], so a page of singles says "5 SINGLES". */
-    private fun recordsPage(
-        src: BrowseSource,
-        header: String,
-        albums: List<LibraryAlbum>,
-        noun: Int,
-    ) = Page(
-        header = header,
-        status = count(albums.size, noun),
-        rows = albums.map { Row(it.title, detail = it.year?.toString() ?: "") },
-        open = albums.map { album -> { drill(album.title) { tracksPage(src, album) } } },
-        tracksOf = albums.map { album -> { src.tracks(album.id) } },
-    )
-
-    private suspend fun tracksPage(
-        src: BrowseSource,
-        album: LibraryAlbum,
-    ): Page = trackListPage(album.title, src.tracks(album.id), empty = words.get(R.string.library_no_tracks))
-
-    private fun trackListPage(
-        header: String,
-        tracks: List<Track>,
-        empty: String,
-        savedName: String? = null,
-    ): Page {
-        val time = if (tracks.isEmpty()) "" else " · ${clock(tracks.sumOf { it.durationSec })}"
-        return Page(
-            header = header,
-            status = count(tracks.size, R.plurals.library_count_tracks) + time,
-            rows = tracks.mapIndexed { at, track -> Row("${at + 1}. ${track.title}", detail = clock(track.durationSec)) },
-            tracks = tracks,
-            empty = empty,
-            savedName = savedName,
-        )
-    }
-
     /** Opens a row into the page [fetch] makes. [header] is also the header of the page shown if the fetch fails. */
     private fun drill(
         header: String,
-        fetch: suspend () -> Page,
+        fetch: suspend () -> LibraryPage,
     ) {
         if (loading) return
         // the search it was opened from is kept in the crumb, so going back up restores it
@@ -868,11 +745,15 @@ class LibraryOps(
      * A fetch the source could not answer lands too, as the unreachable page under
      * [header]. Its retry is the same fetch without [onLanding], so it replaces the
      * failed page in place.
+     *
+     * The page lands scrolled to [scroll] and with [selection], each kept within its rows.
      */
     private fun load(
         header: String,
         onLanding: () -> Unit = {},
-        fetch: suspend () -> Page,
+        scroll: Int = 0,
+        selection: Int = -1,
+        fetch: suspend () -> LibraryPage,
     ) {
         val stamp = abandonLoad()
         loading = true
@@ -886,7 +767,7 @@ class LibraryOps(
                     }
                 if (stamp != loads) return@launch
                 onLanding()
-                commit(next)
+                commit(next, scrollWithin(next, scroll), selection.takeIf { it in next.rows.indices } ?: -1)
             }
     }
 
@@ -907,7 +788,7 @@ class LibraryOps(
 
     /** The one place a navigated page is set, with its scroll and selection. */
     private fun commit(
-        next: Page,
+        next: LibraryPage,
         scroll: Int = 0,
         selection: Int = -1,
     ) {
@@ -919,7 +800,7 @@ class LibraryOps(
     }
 
     /** A page swap that is not navigation: search results landing under the field. */
-    private fun commitInPlace(next: Page) {
+    private fun commitInPlace(next: LibraryPage) {
         page = next
         state.libraryScroll = 0
         state.librarySelected = -1
@@ -933,7 +814,7 @@ class LibraryOps(
     private fun unreachablePage(
         header: String,
         retry: () -> Unit,
-    ) = Page(header, "", emptyList(), empty = words.get(R.string.library_tap_to_retry, cantReach()), retry = retry)
+    ) = LibraryPage(header, "", emptyList(), empty = words.get(R.string.library_tap_to_retry, cantReach()), retry = retry)
 
     /** "CAN'T REACH" and the name of the library; see [nameOf]. */
     private fun cantReach(): String {
@@ -956,35 +837,10 @@ class LibraryOps(
         }
     }
 
-    /** [n] under the plural [noun], as "1 ARTIST" or "5 ARTISTS". */
-    private fun count(
-        n: Int,
-        noun: Int,
-    ) = words.plural(noun, n)
-
-    private fun clock(seconds: Int) = "%d:%02d".format(seconds / 60, seconds % 60)
-
     private companion object {
         const val FLASH_MS = 1500L
+
         const val SEARCH_DEBOUNCE_MS = 250L
         const val MIN_QUERY = 2
-
-        /** The plural of a kind, for [count], which makes "1 SINGLE" and "5 SINGLES" of it. */
-        val AlbumKind.noun: Int
-            get() =
-                when (this) {
-                    AlbumKind.ALBUM -> R.plurals.library_count_albums
-                    AlbumKind.SINGLE -> R.plurals.library_count_singles
-                    AlbumKind.COMPILATION -> R.plurals.library_count_compilations
-                }
-
-        /** A kind as a row, under an artist whose records are of more than one kind. */
-        val AlbumKind.rowLabel: Int
-            get() =
-                when (this) {
-                    AlbumKind.ALBUM -> R.string.library_kind_albums
-                    AlbumKind.SINGLE -> R.string.library_kind_singles
-                    AlbumKind.COMPILATION -> R.string.library_kind_compilations
-                }
     }
 }

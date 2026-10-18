@@ -29,7 +29,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
@@ -197,7 +199,9 @@ private fun NamePromptDialog(
     prompt: NamePrompt,
     onDismiss: () -> Unit,
 ) {
-    var text by remember(prompt) { mutableStateOf(prompt.initial) }
+    // the suggested name is selected, so typing replaces it and a tap keeps it
+    var field by remember(prompt) { mutableStateOf(TextFieldValue(prompt.initial, TextRange(0, prompt.initial.length))) }
+    val text = field.text
     AmpAlert(
         title = prompt.title,
         onDismiss = onDismiss,
@@ -209,8 +213,8 @@ private fun NamePromptDialog(
         // the keyboard's own key submits too: on a phone held sideways the keyboard can
         // cover the buttons under the field
         OutlinedTextField(
-            value = text,
-            onValueChange = { text = it },
+            value = field,
+            onValueChange = { field = it },
             singleLine = true,
             keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
             keyboardActions = KeyboardActions(onDone = { if (text.isNotBlank()) prompt.onSubmit(text.trim()) }),

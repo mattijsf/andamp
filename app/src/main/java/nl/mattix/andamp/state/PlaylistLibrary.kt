@@ -62,6 +62,25 @@ class PlaylistLibrary(
         return named
     }
 
+    /**
+     * Renames [from] to [to]. False when there is no [from], another list is already called
+     * [to], or the file could not be moved. Two names that make the same file name are one
+     * list, and renaming between them changes nothing.
+     */
+    fun rename(
+        from: String,
+        to: String,
+    ): Boolean {
+        val source = fileFor(from)
+        val target = fileFor(to)
+        return when {
+            !source.isFile -> false
+            target == source -> true
+            target.exists() -> false
+            else -> runCatching { source.renameTo(target) }.getOrDefault(false)
+        }
+    }
+
     /** Deletes [name]; false when it was not there or could not be deleted. */
     fun delete(name: String): Boolean = runCatching { fileFor(name).delete() }.getOrDefault(false)
 

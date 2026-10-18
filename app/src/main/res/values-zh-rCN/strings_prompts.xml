@@ -13,6 +13,9 @@
     <string name="prompt_delete_list_title">删除“%1$s”？</string>
     <string name="prompt_delete_list_body">这会删除已保存的列表，其中的音乐不会被删除。</string>
 
+    <string name="prompt_delete_station_title">删除“%1$s”？</string>
+    <string name="prompt_delete_station_body">该电台将从你的电台中移除，之后可以重新添加。</string>
+
     <!-- BookmarkOps.kt -->
     <string name="bookmark_nothing_playing">当前没有播放任何内容</string>
     <string name="bookmark_nowhere">这首曲目没有可返回的位置</string>

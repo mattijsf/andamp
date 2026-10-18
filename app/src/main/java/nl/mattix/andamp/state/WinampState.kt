@@ -321,7 +321,10 @@ class WinampState {
     var libraryScroll by mutableIntStateOf(0)
     var libraryOffset: androidx.compose.ui.unit.IntOffset by (placementOf(WindowStore.LIBRARY)::offset).orDefault(IntOffset.Zero)
 
-    /** How many rows the library shows; null fills the space there is. */
+    /**
+     * How many rows the library shows; null until it is resized, which opens it at
+     * [nl.mattix.andamp.ui.window.LibraryLayout.defaultRows].
+     */
     var libraryRows: Int? by placementOf(WindowStore.LIBRARY)::size
 
     /** How many 25px steps wider than its narrowest the library is drawn. */

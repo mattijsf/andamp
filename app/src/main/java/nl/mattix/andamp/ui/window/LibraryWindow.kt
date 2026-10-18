@@ -4,6 +4,7 @@ package nl.mattix.andamp.ui.window
 
 import android.content.res.Resources
 import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Typeface
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.runtime.Composable
@@ -25,6 +26,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import nl.mattix.andamp.R
+import nl.mattix.andamp.skin.BitmapFont
 import nl.mattix.andamp.skin.GlyphMask
 import nl.mattix.andamp.skin.PleditStyle
 import nl.mattix.andamp.skin.Sheet
@@ -84,7 +86,12 @@ fun LibraryWindow(
         val rowH = s.rowHeight.px
         val minRows = LibraryLayout.minRows(rowH)
         val fits = LibraryLayout.rowsThatFit(screen.safeBottom, frame, rowH)
-        val rows = WindowSizing.effectiveSteps(s.libraryRows, fits, minRows)
+        val rows =
+            WindowSizing.effectiveSteps(
+                s.libraryRows ?: LibraryLayout.defaultRows(screen.safeBottom, frame, rowH),
+                fits,
+                minRows,
+            )
         // the width is limited to the screen's
         val cols = LibraryLayout.WIDTH_STEPS.clamp(s.libraryCols, screen.width)
         val layout =
@@ -126,8 +133,7 @@ fun LibraryWindow(
                             )
                         s.libraryCols = resized.cols
                         s.libraryOffset = resized.offset
-                        // null once it fills the height, so it goes back to the default
-                        s.libraryRows = WindowSizing.rememberedSize(resized.steps, fits)
+                        s.libraryRows = resized.steps
                     },
                 ),
             widgets = widgets,
@@ -271,13 +277,13 @@ private fun libraryWidgets(
             Widget(
                 "library.play",
                 IntRect(playLeft, barTop, addLeft, barTop + barH),
-                enabled = { ops.atTracks },
+                enabled = { ops.canPlayPage },
                 taps = Widget.Taps(onTap = { ops.playSelection() }),
             ),
             Widget(
                 "library.add",
                 IntRect(addLeft, barTop, left + listW, barTop + barH),
-                enabled = { ops.atTracks },
+                enabled = { ops.canPlayPage },
                 taps = Widget.Taps(onTap = { ops.enqueueSelection() }),
             ),
         )
@@ -327,6 +333,9 @@ internal fun DrawScope.drawLibraryContent(
     drawLayer(rasterizer.top(ops, scene), 0, width, layout.rowsTop)
     drawLayer(rasterizer.rows(ops, scene), layout.rowsTop, width, layout.rowsH)
     drawLayer(rasterizer.bar(ops, scene), layout.barTop, width, layout.barH)
+    if (s.pressedWidget == "library.scroll") {
+        ops.letterAt(s.libraryScroll)?.let { letter -> drawLetter(rasterizer.letter(letter, scene), skin.pledit, width, layout) }
+    }
 
     // the playlist's scroll handle over plain background: the playlist's rail art is
     // part of its frame tile and cannot be drawn here
@@ -359,6 +368,33 @@ private fun DrawScope.drawLayer(
         filterQuality = FilterQuality.None,
     )
 }
+
+/**
+ * The letter of the top row while the scroll handle is held, large in a box in the middle of
+ * the rows, so a long list can be dragged to the right letter.
+ */
+private fun DrawScope.drawLetter(
+    letter: ImageBitmap,
+    style: PleditStyle,
+    width: Int,
+    layout: LibraryLayout,
+) {
+    val boxW = LibraryRasterizer.LETTER_W + 2 * LETTER_PAD
+    val boxH = LibraryRasterizer.LETTER_H + 2 * LETTER_PAD
+    val left = (width - LibraryLayout.SCROLLBAR_W - boxW) / 2
+    val top = layout.rowsTop + (layout.rowsH - boxH) / 2
+    fill(style.current, left - 1, top - 1, left + boxW + 1, boxH + 2)
+    fill(style.selectedBg, left, top, left + boxW, boxH)
+    drawImage(
+        letter,
+        dstOffset = IntOffset(left + LETTER_PAD, top + LETTER_PAD),
+        dstSize = IntSize(LibraryRasterizer.LETTER_W, LibraryRasterizer.LETTER_H),
+        filterQuality = FilterQuality.None,
+    )
+}
+
+/** The room around the letter inside its box. */
+private const val LETTER_PAD = 4
 
 /**
  * Everything under the words: the background, the rules between the parts, the active tab, the
@@ -394,10 +430,10 @@ private fun DrawScope.drawLibraryBands(
             fill(band, 0, layout.rowsTop + at * layout.rowH, rowsW, layout.rowH)
         }
     }
-    if (ops.atTracks) drawBarBands(ops, s, band, width, layout)
+    if (ops.canPlayPage) drawBarBands(ops, s, band, width, layout)
 }
 
-/** The band under a pressed cell of the bar; the cells are there only on a page of tracks. */
+/** The band under a pressed cell of the bar; the cells are there only where PLAY and ADD act. */
 private fun DrawScope.drawBarBands(
     ops: LibraryOps,
     s: WinampState,
@@ -586,7 +622,7 @@ internal class LibraryRasterizer(
             listOf(
                 scene.revision,
                 ops.status,
-                ops.atTracks,
+                ops.canPlayPage,
                 scene.flash,
                 scene.newCell,
                 scene.deleteCell,
@@ -601,6 +637,42 @@ internal class LibraryRasterizer(
             draw(scene.width, layout.barH, scene.scale, glyphsOf(scene.skinFont), paintFor(scene)) {
                 writeBar(ops, scene, layout)
             }
+        }
+    }
+
+    private var letterKey: List<Any?>? = null
+    private var letterImage: ImageBitmap? = null
+
+    /**
+     * [letter] at [LETTER_ZOOM] times the size of a row's, in the current-track color: the skin's
+     * letter with its pixels made larger, or the outline font drawn that large.
+     */
+    fun letter(
+        letter: String,
+        scene: Scene,
+    ): ImageBitmap {
+        val key = listOf(letter, scene.style, scene.scale, scene.skinFont)
+        letterImage?.let { if (key == letterKey) return it }
+        val argb = scene.style.current.toArgb()
+        val glyphs = glyphsOf(scene.skinFont)?.takeIf { BitmapFont.covers(letter) }
+        val bitmap =
+            if (glyphs != null) {
+                val block = IntArray(BitmapFont.CHAR_W * BitmapFont.CHAR_H)
+                glyphs.write(BitmapFont.normalize(letter), 0, 0, argb, block, BitmapFont.CHAR_W)
+                Bitmap.createBitmap(block, BitmapFont.CHAR_W, BitmapFont.CHAR_H, Bitmap.Config.ARGB_8888)
+            } else {
+                val made = Bitmap.createBitmap(LETTER_W * scene.scale, LETTER_H * scene.scale, Bitmap.Config.ARGB_8888)
+                val canvas = Canvas(made)
+                canvas.scale(scene.scale.toFloat(), scene.scale.toFloat())
+                val paint = paintFor(scene).apply { textSize = LETTER_H.toFloat() }
+                paint.color = argb
+                val x = (LETTER_W - paint.measureText(letter)) / 2f
+                canvas.drawText(letter, x, ListText.baseline(paint, 0f, LETTER_H), paint)
+                made
+            }
+        return bitmap.asImageBitmap().also {
+            letterImage = it
+            letterKey = key
         }
     }
 
@@ -732,7 +804,7 @@ internal class LibraryRasterizer(
             } - DETAIL_GAP
         label(statusText, ListText.LEFT_INSET, statusRight, 0, barH, statusColor.toArgb(), fit = TextLayer.Fit.SQUEEZE)
 
-        if (!ops.atTracks) return
+        if (!ops.canPlayPage) return
         val normal = scene.style.normal.toArgb()
 
         fun cell(
@@ -756,12 +828,17 @@ internal class LibraryRasterizer(
         cell(cells.addLeft, scene.width, R.string.library_bar_add)
     }
 
-    private companion object {
+    companion object {
+        /** How much larger than a row's the letter beside a dragged handle is, in the skin's font. */
+        const val LETTER_ZOOM = 5
+        const val LETTER_W = BitmapFont.CHAR_W * LETTER_ZOOM
+        const val LETTER_H = BitmapFont.CHAR_H * LETTER_ZOOM
+
         /** The status stops this far short of the first cell. */
-        const val DETAIL_GAP = 6f
+        private const val DETAIL_GAP = 6f
 
         /** The least room left between a label and the edge of its cell. */
-        const val CELL_PAD = 1
+        private const val CELL_PAD = 1
     }
 }
 
@@ -857,6 +934,20 @@ class LibraryLayout(
          * window any taller.
          */
         fun minRows(rowH: Int) = ((MIN_ROWS * ROW_H + furnitureH(ROW_H) - furnitureH(rowH)) / rowH).coerceAtLeast(1)
+
+        /**
+         * How much of the screen's height a library that was never resized takes. It opens in
+         * the middle of the screen, so its grip is within reach of a thumb rather than down at
+         * the gesture bar. A size the listener drags it to is kept.
+         */
+        private const val DEFAULT_SHARE_PERCENT = 60
+
+        /** The rows of a library that was never resized, in a screen [availVirtual] tall; see [DEFAULT_SHARE_PERCENT]. */
+        fun defaultRows(
+            availVirtual: Int,
+            frame: WindowFrame,
+            rowH: Int = ROW_H,
+        ): Int = rowsThatFit(availVirtual * DEFAULT_SHARE_PERCENT / 100, frame, rowH)
 
         /** As many rows as the screen holds, never fewer than [minRows]. */
         fun forAvailableHeight(

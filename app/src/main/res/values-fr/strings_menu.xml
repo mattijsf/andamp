@@ -105,4 +105,7 @@
     <!-- LibraryRowMenu.kt -->
     <string name="menu_enqueue_next">Lire ensuite</string>
     <string name="menu_delete_list">Supprimer la liste</string>
+    <string name="menu_rename_list">Renommer la liste</string>
+    <string name="menu_rename_station">Renommer la station</string>
+    <string name="menu_delete_station">Supprimer la station</string>
 </resources>

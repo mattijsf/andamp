@@ -105,4 +105,7 @@
     <!-- LibraryRowMenu.kt -->
     <string name="menu_enqueue_next">Hierna afspelen</string>
     <string name="menu_delete_list">Lijst verwijderen</string>
+    <string name="menu_rename_list">Lijst hernoemen</string>
+    <string name="menu_rename_station">Zender hernoemen</string>
+    <string name="menu_delete_station">Zender verwijderen</string>
 </resources>

@@ -40,6 +40,7 @@
         <item quantity="other">%1$d 个结果</item>
     </plurals>
     <string name="library_hits_capped">%1$d+ 个结果</string>
+    <string name="library_incomplete">不完整</string>
     <string name="library_track_count_short">%1$d 首</string>
 
     <string name="library_no_music">未找到音乐</string>
@@ -59,6 +60,7 @@
     <string name="library_queued">+%1$d 已加入队列</string>
     <string name="library_queued_next">+%1$d 下一首播放</string>
     <string name="library_cant_delete">无法删除</string>
+    <string name="library_cant_rename">无法重命名</string>
     <string name="library_nothing_to_play">没有可播放的内容</string>
     <string name="library_not_http">不是 HTTP 网址</string>
 

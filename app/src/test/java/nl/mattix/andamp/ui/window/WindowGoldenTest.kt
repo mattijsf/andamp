@@ -708,6 +708,22 @@ class WindowGoldenTest {
     }
 
     @Test
+    fun `library shows the letter of the top row while its scroll handle is held`() {
+        val names = listOf("Coil", "Cluster", "Can", "Faust", "Kraftwerk", "Laika", "Moebius", "Neu!", "Plaid", "Seefeel")
+        val (ops, state) = libraryFixture(font = ListFont.SKIN, more = names)
+        state.libraryScroll = 4 // Can
+        state.pressedWidget = "library.scroll"
+        renderLibrary("library_skin_font_letter", ops, state)
+    }
+
+    @Test
+    fun `library offers PLAY and ADD inside an artist`() {
+        val (ops, state) = libraryFixture(font = ListFont.SKIN)
+        ops.tapRow(0) // Autechre
+        renderLibrary("library_skin_font_artist_play", ops, state)
+    }
+
+    @Test
     fun `playlist-art window frame`() {
         // what a skin without GEN.BMP wears: playlist chrome, plain bottom
         // filler (no baked ADD/SUB/SEL buttons), title in the skin's own font
