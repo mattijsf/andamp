@@ -50,7 +50,7 @@
     <string name="prefs_limiter_off">Aus · laute Pegelspitzen werden abgeschnitten</string>
 
     <!-- ListPrefs.kt -->
-    <string name="prefs_lists_font_title">Schriftart der Playlist</string>
+    <string name="prefs_lists_font_title">Schriftart der Listen</string>
     <string name="prefs_lists_font_skin_about">Die Pixelbuchstaben des Skins, wie beim Liedtitel im Hauptfenster. Ein Titel in einem Schriftsystem, für das der Skin keine Buchstaben hat, behält die normale Schriftart.</string>
     <string name="prefs_lists_font_regular_about">Eine normale Schriftart, geglättet gezeichnet, mit Groß- und Kleinbuchstaben.</string>
     <string name="prefs_lists_font_skin">Skin</string>
@@ -117,7 +117,7 @@
     <string name="prefs_player_colors_section">Farben</string>
     <string name="prefs_player_summary_always_on_top">Immer im Vordergrund</string>
     <string name="prefs_player_summary_windows_stay_open">Fenster bleiben offen</string>
-    <string name="prefs_player_summary_regular_font">Normale Schriftart in der Playlist</string>
+    <string name="prefs_player_summary_regular_font">Normale Schriftart in den Listen</string>
     <string name="prefs_player_summary_roomy_rows">Luftige Zeilen</string>
     <string name="prefs_player_summary_large_rows">Große Zeilen</string>
     <string name="prefs_player_summary_tap_assist">Tipphilfe</string>

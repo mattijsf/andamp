@@ -16,16 +16,16 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import nl.mattix.andamp.R
+import nl.mattix.andamp.state.ListFont
 import nl.mattix.andamp.state.ListStyleStore
-import nl.mattix.andamp.state.PlaylistFont
 import nl.mattix.andamp.state.RowHeight
 import nl.mattix.andamp.state.WinampViewModel
 
-/** How the lists look: the playlist's font, and how tall a row is. */
+/** How the lists look: the font of the playlist and the library, and how tall a row is. */
 data class ListPrefs(
     /** Mirrors [ListStyleStore.font]. */
-    val font: PlaylistFont = ListStyleStore.DEFAULT_FONT,
-    val onFont: (PlaylistFont) -> Unit = {},
+    val font: ListFont = ListStyleStore.DEFAULT_FONT,
+    val onFont: (ListFont) -> Unit = {},
     /** Mirrors [ListStyleStore.rowHeight]. */
     val rowHeight: RowHeight = ListStyleStore.DEFAULT_ROW_HEIGHT,
     val onRowHeight: (RowHeight) -> Unit = {},
@@ -34,20 +34,20 @@ data class ListPrefs(
 /** The choices as [vm] has them: they show the render state, and a change goes to the store that state follows. */
 internal fun listPrefsOf(vm: WinampViewModel) =
     ListPrefs(
-        font = vm.state.playlistFont,
+        font = vm.state.listFont,
         onFont = { vm.listStyleStore.font = it },
         rowHeight = vm.state.rowHeight,
         onRowHeight = { vm.listStyleStore.rowHeight = it },
     )
 
 @Composable
-fun PlaylistFontRow(prefs: ListPrefs) = PlaylistFontChoice(prefs.font, prefs.onFont, tag = "prefs.lists.font")
+fun ListFontRow(prefs: ListPrefs) = ListFontChoice(prefs.font, prefs.onFont, tag = "prefs.lists.font")
 
-/** A choice of the font a playlist is written in, [font] now; the phone's, or the one in Android Auto. */
+/** A choice of the font the lists are written in, [font] now; the phone's, or the one in Android Auto. */
 @Composable
-internal fun PlaylistFontChoice(
-    font: PlaylistFont,
-    onFont: (PlaylistFont) -> Unit,
+internal fun ListFontChoice(
+    font: ListFont,
+    onFont: (ListFont) -> Unit,
     tag: String,
 ) {
     ChoiceRow(
@@ -55,15 +55,15 @@ internal fun PlaylistFontChoice(
         about =
             stringResource(
                 when (font) {
-                    PlaylistFont.SKIN -> R.string.prefs_lists_font_skin_about
-                    PlaylistFont.REGULAR -> R.string.prefs_lists_font_regular_about
+                    ListFont.SKIN -> R.string.prefs_lists_font_skin_about
+                    ListFont.REGULAR -> R.string.prefs_lists_font_regular_about
                 },
             ),
-        choices = PlaylistFont.entries,
+        choices = ListFont.entries,
         chosen = font,
         onChoose = onFont,
         tag = tag,
-        label = { if (it == PlaylistFont.SKIN) R.string.prefs_lists_font_skin else R.string.prefs_lists_font_regular },
+        label = { if (it == ListFont.SKIN) R.string.prefs_lists_font_skin else R.string.prefs_lists_font_regular },
     )
 }
 

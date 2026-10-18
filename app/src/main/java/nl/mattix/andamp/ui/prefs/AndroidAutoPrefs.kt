@@ -23,7 +23,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LifecycleEventEffect
 import nl.mattix.andamp.R
-import nl.mattix.andamp.state.PlaylistFont
+import nl.mattix.andamp.state.ListFont
 import nl.mattix.andamp.state.SkinEntry
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.Words
@@ -44,8 +44,8 @@ data class AndroidAutoPrefs(
     val skin: String? = null,
     val onSkin: (String?) -> Unit = {},
     /** The font of the list in Android Auto; see [nl.mattix.andamp.state.AndroidAutoStore.listFont]. */
-    val listFont: PlaylistFont = PlaylistFont.REGULAR,
-    val onListFont: (PlaylistFont) -> Unit = {},
+    val listFont: ListFont = ListFont.REGULAR,
+    val onListFont: (ListFont) -> Unit = {},
     /** Checks that app, each time the page is shown; null when it is not on the phone. */
     val check: () -> CompanionCheck? = { null },
 )
@@ -87,7 +87,7 @@ internal fun AndroidAutoPage(prefs: AndroidAutoPrefs) {
         )
     }
     Section(stringResource(R.string.prefs_android_auto_list_section))
-    Group { PlaylistFontChoice(prefs.listFont, prefs.onListFont, tag = "prefs.androidauto.font") }
+    Group { ListFontChoice(prefs.listFont, prefs.onListFont, tag = "prefs.androidauto.font") }
     checked?.let { Versions(it) }
 }
 

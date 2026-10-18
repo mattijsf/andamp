@@ -26,7 +26,7 @@ import nl.mattix.andamp.skin.SkinLoader
 import nl.mattix.andamp.skin.Sprite
 import nl.mattix.andamp.skin.SpriteMap
 import nl.mattix.andamp.state.EnglishWords
-import nl.mattix.andamp.state.PlaylistFont
+import nl.mattix.andamp.state.ListFont
 import nl.mattix.andamp.state.RowHeight
 import nl.mattix.andamp.state.SkinEntry
 import nl.mattix.andamp.state.WinampState
@@ -79,11 +79,11 @@ class WindowGoldenTest {
     }
 
     // the playlist's rows are in the outline font in these two; the skin's font has goldens of its own
-    private fun stoppedState() = WinampState().apply { playlistFont = PlaylistFont.REGULAR }
+    private fun stoppedState() = WinampState().apply { listFont = ListFont.REGULAR }
 
     private fun playingState() =
         WinampState().apply {
-            playlistFont = PlaylistFont.REGULAR
+            listFont = ListFont.REGULAR
             transport = Transport.Playing
             currentIndex = 3
             currentTimeSec = 83
@@ -342,7 +342,7 @@ class WindowGoldenTest {
     @Test
     fun `playlist window in the skin's font`() {
         val layout = PlaylistLayout.ofSegments(4)
-        val state = playingState().apply { playlistFont = PlaylistFont.SKIN }
+        val state = playingState().apply { listFont = ListFont.SKIN }
         render(PL_W, layout.height) { drawPlaylistWindow(skin, state, layout, measurer()) }
             .captureRoboImage("$SNAPSHOT_DIR/playlist_window_skin_font.png")
     }
@@ -358,7 +358,7 @@ class WindowGoldenTest {
     @Test
     fun `playlist window with roomy rows in the skin's font`() {
         val layout = PlaylistLayout.ofSegments(6, rowH = RowHeight.ROOMY.px)
-        val state = playingState().apply { playlistFont = PlaylistFont.SKIN }
+        val state = playingState().apply { listFont = ListFont.SKIN }
         render(PL_W, layout.height) { drawPlaylistWindow(skin, state, layout, measurer()) }
             .captureRoboImage("$SNAPSHOT_DIR/playlist_window_roomy_rows_skin_font.png")
     }
@@ -441,9 +441,10 @@ class WindowGoldenTest {
 
     // --- the media library: deterministic fixtures over a hand-rolled shelf ---
 
-    /** Two artists; the first has one album of two tracks. */
+    /** Two artists, and any [more]; the first has one album of two tracks. */
     private class GoldenShelf(
         override val available: Boolean = true,
+        private val more: List<String> = emptyList(),
     ) : nl.mattix.andamp.core.playback.BrowseSource {
         override val capabilities =
             nl.mattix.andamp.core.model
@@ -455,7 +456,11 @@ class WindowGoldenTest {
                     .LibraryArtist("a1", "Autechre", albumCount = 1),
                 nl.mattix.andamp.core.model
                     .LibraryArtist("a2", "Boards of Canada", albumCount = 1),
-            )
+            ) +
+                more.mapIndexed { at, name ->
+                    nl.mattix.andamp.core.model
+                        .LibraryArtist("m$at", name, albumCount = 1)
+                }
 
         override suspend fun albums(artistId: String?) =
             listOf(
@@ -483,11 +488,17 @@ class WindowGoldenTest {
 
     private val goldenFiles = java.io.File(System.getProperty("java.io.tmpdir"), "andamp-golden-${System.nanoTime()}")
 
+    /**
+     * A library over [GoldenShelf], in the outline font unless [font] says otherwise, so the
+     * goldens that came before the skin's font still show what they showed.
+     */
     private fun libraryFixture(
         available: Boolean = true,
+        font: ListFont = ListFont.REGULAR,
+        more: List<String> = emptyList(),
         seed: (nl.mattix.andamp.state.PlaylistLibrary, nl.mattix.andamp.state.StationStore) -> Unit = { _, _ -> },
     ): Pair<nl.mattix.andamp.state.LibraryOps, WinampState> {
-        val state = WinampState()
+        val state = WinampState().apply { listFont = font }
         val scope =
             kotlinx.coroutines.CoroutineScope(
                 kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Unconfined,
@@ -508,7 +519,7 @@ class WindowGoldenTest {
         val ops =
             nl.mattix.andamp.state
                 .LibraryOps({
-                    GoldenShelf(available)
+                    GoldenShelf(available, more)
                 }, facade, state, scope, lists, stations, io = kotlinx.coroutines.Dispatchers.Unconfined, words = EnglishWords)
         ops.open()
         return ops to state
@@ -575,7 +586,7 @@ class WindowGoldenTest {
 
     @Test
     fun `library tracks with large rows`() {
-        // the tabs, the header and the bar keep their height; only the rows grow
+        // the tabs, the header and the bar grow with the rows, so they are as easy to tap
         val (ops, state) = libraryFixture()
         ops.tapRow(0) // Autechre
         ops.tapRow(0) // Amber
@@ -641,6 +652,59 @@ class WindowGoldenTest {
         )
         ops.tapRow(0)
         renderLibrary("library_list_saved", ops, state)
+    }
+
+    @Test
+    fun `library artists in the skin's font`() {
+        // the tabs, the header, the rows and the bar in TEXT.BMP's letters
+        val (ops, state) = libraryFixture(font = ListFont.SKIN)
+        renderLibrary("library_skin_font_artists", ops, state)
+    }
+
+    @Test
+    fun `library tracks in the skin's font with a selection and the playing row`() {
+        val (ops, state) = libraryFixture(font = ListFont.SKIN)
+        ops.tapRow(0) // Autechre
+        ops.tapRow(0) // Amber
+        state.librarySelected = 0
+        state.playlist =
+            listOf(
+                nl.mattix.andamp.core.model
+                    .Track("g-t1", "Autechre", "Foil", 366_000, uri = "content://1"),
+                nl.mattix.andamp.core.model
+                    .Track("g-t2", "Autechre", "Montreal", 456_000, uri = "content://2"),
+            )
+        state.currentIndex = 1
+        renderLibrary("library_skin_font_tracks", ops, state)
+    }
+
+    @Test
+    fun `library search in the skin's font with the caret and the clear cell`() {
+        val (ops, state) = libraryFixture(font = ListFont.SKIN)
+        ops.enterSearch()
+        ops.setQuery("autech", 6)
+        state.marqueeStep = 0
+        renderLibrary("library_skin_font_search", ops, state)
+    }
+
+    @Test
+    fun `library rows the skin's font cannot spell keep the outline font`() {
+        // a long name ends in the font's ellipsis; a Cyrillic one is drawn in the outline font
+        val (ops, state) =
+            libraryFixture(
+                font = ListFont.SKIN,
+                more = listOf("Godspeed You! Black Emperor and a name that does not fit", "\u041a\u0438\u043d\u043e"),
+            )
+        renderLibrary("library_skin_font_fallback", ops, state)
+    }
+
+    @Test
+    fun `library in the skin's font with large rows and large furniture`() {
+        val (ops, state) = libraryFixture(font = ListFont.SKIN)
+        ops.tapRow(0) // Autechre
+        ops.tapRow(0) // Amber
+        state.librarySelected = 0
+        renderLibrary("library_skin_font_large_rows", ops, state, rowH = RowHeight.LARGE.px)
     }
 
     @Test

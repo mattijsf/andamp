@@ -58,6 +58,20 @@ class BitmapFontTest {
     }
 
     @Test
+    fun `a text that fits its room is only folded`() {
+        assertEquals("autechre", BitmapFont.fitted("Autechre", 8))
+        assertEquals("autechre", BitmapFont.fitted("Autechre", 20))
+    }
+
+    @Test
+    fun `a text too long for its room ends on a whole letter and the ellipsis`() {
+        assertEquals("autec…", BitmapFont.fitted("Autechre", 6))
+        // no room at all still shows that something was cut
+        assertEquals("…", BitmapFont.fitted("Autechre", 1))
+        assertEquals("…", BitmapFont.fitted("Autechre", 0))
+    }
+
+    @Test
     fun `every glyph is a cell of the grid, and the space is one of them`() {
         assertTrue(BitmapFont.sprite(' ') in BitmapFont.glyphs)
         assertTrue(BitmapFont.glyphs.all { it.x % BitmapFont.CHAR_W == 0 && it.y % BitmapFont.CHAR_H == 0 })

@@ -17,7 +17,7 @@ import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.Sprite
 import nl.mattix.andamp.skin.SpriteMap
 import nl.mattix.andamp.state.AmpMenu
-import nl.mattix.andamp.state.PlaylistFont
+import nl.mattix.andamp.state.ListFont
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.ui.bitmapText
@@ -410,7 +410,7 @@ private fun DrawScope.drawTracks(
         // text pre-rasterized, the outline font at device resolution and the skin's font at
         // its own; the virtual dst size makes the canvas transform map the first 1:1 to
         // device pixels and the second to whole squares, so glyphs stay crisp
-        val layer = textLayer.textLayer(s, layout, style, scale, skin[Sheet.TEXT].takeIf { s.playlistFont == PlaylistFont.SKIN })
+        val layer = textLayer.textLayer(s, layout, style, scale, skin[Sheet.TEXT].takeIf { s.listFont == ListFont.SKIN })
         drawImage(
             image = layer,
             srcOffset = IntOffset.Zero,

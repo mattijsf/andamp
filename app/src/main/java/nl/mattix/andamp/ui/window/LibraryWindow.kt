@@ -4,7 +4,6 @@ package nl.mattix.andamp.ui.window
 
 import android.content.res.Resources
 import android.graphics.Bitmap
-import android.graphics.Canvas
 import android.graphics.Typeface
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.runtime.Composable
@@ -13,6 +12,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -23,12 +25,14 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import nl.mattix.andamp.R
+import nl.mattix.andamp.skin.GlyphMask
 import nl.mattix.andamp.skin.PleditStyle
 import nl.mattix.andamp.skin.Sheet
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SpriteMap
 import nl.mattix.andamp.state.LibraryAccess
 import nl.mattix.andamp.state.LibraryOps
+import nl.mattix.andamp.state.ListFont
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.MusicPermission
 import nl.mattix.andamp.state.WinampState
@@ -39,7 +43,6 @@ import nl.mattix.andamp.ui.LibraryAccessHandle
 import nl.mattix.andamp.ui.menu.libraryRowMenu
 import nl.mattix.andamp.ui.sprite
 import nl.mattix.andamp.ui.widget.Widget
-import kotlin.math.min
 import kotlin.math.roundToInt
 
 /**
@@ -111,7 +114,7 @@ fun LibraryWindow(
                                 screen,
                                 heightAxis =
                                     SizeAxis(
-                                        furniture = frame.chromeH + LibraryLayout.FURNITURE_H,
+                                        furniture = frame.chromeH + LibraryLayout.furnitureH(rowH),
                                         step = rowH,
                                         min = minRows,
                                         max = fits,
@@ -158,14 +161,16 @@ private fun libraryWidgets(
     val left = frame.leftW
     val top = frame.titleH
     val listW = layout.listWidth(frame)
-    val headerTop = top + LibraryLayout.HEADER_TOP
-    val rowsTop = top + LibraryLayout.ROWS_TOP
+    val barH = layout.barH
+    val headerTop = top + layout.headerTop
+    val rowsTop = top + layout.rowsTop
     val rowsBottom = top + layout.rowsBottom
     val barTop = top + layout.barTop
-    val addLeft = left + listW - LibraryLayout.ADD_CELL_W
-    val playLeft = addLeft - LibraryLayout.PLAY_CELL_W
-    val newLeft = playLeft - LibraryLayout.NEW_CELL_W
-    val deleteLeft = playLeft - LibraryLayout.DELETE_CELL_W
+    val cells = LibraryLayout.BarCells(listW)
+    val addLeft = left + cells.addLeft
+    val playLeft = left + cells.playLeft
+    val newLeft = left + cells.newLeft
+    val deleteLeft = left + cells.deleteLeft
 
     var downRows: List<LibraryOps.Row> = emptyList()
 
@@ -181,7 +186,7 @@ private fun libraryWidgets(
         LibraryLayout.tabCells(listW, ops.visibleCategories.size).zip(ops.visibleCategories) { cell, category ->
             Widget(
                 "library.tab.${category.name.lowercase()}",
-                IntRect(left + cell.start, top, left + cell.end, top + LibraryLayout.BAR_H),
+                IntRect(left + cell.start, top, left + cell.end, top + barH),
                 taps = Widget.Taps(onTap = { ops.switchCategory(category) }),
             )
         }
@@ -190,13 +195,13 @@ private fun libraryWidgets(
         listOf(
             Widget(
                 "library.header",
-                IntRect(left, headerTop, left + listW, headerTop + LibraryLayout.BAR_H),
+                IntRect(left, headerTop, left + listW, headerTop + barH),
                 taps = Widget.Taps(onTap = { ops.headerTap() }),
             ),
             // after the header: the last widget wins the hit test
             Widget(
                 "library.searchclear",
-                IntRect(left + listW - LibraryLayout.BAR_H, headerTop, left + listW, headerTop + LibraryLayout.BAR_H),
+                IntRect(left + listW - barH, headerTop, left + listW, headerTop + barH),
                 enabled = { ops.searching },
                 taps = Widget.Taps(onTap = { ops.searchClear() }),
             ),
@@ -252,33 +257,37 @@ private fun libraryWidgets(
             ),
             Widget(
                 "library.new",
-                IntRect(newLeft, barTop, playLeft, barTop + LibraryLayout.BAR_H),
+                IntRect(newLeft, barTop, playLeft, barTop + barH),
                 enabled = { ops.category == LibraryOps.Category.RADIO && ops.atTracks && !ops.searching },
                 taps = Widget.Taps(onTap = { ops.promptNewStation() }),
             ),
             // NEW's place: a saved list is never the radio page
             Widget(
                 "library.delete",
-                IntRect(deleteLeft, barTop, playLeft, barTop + LibraryLayout.BAR_H),
+                IntRect(deleteLeft, barTop, playLeft, barTop + barH),
                 enabled = { ops.canDeletePage },
                 taps = Widget.Taps(onTap = { ops.promptDeletePage() }),
             ),
             Widget(
                 "library.play",
-                IntRect(playLeft, barTop, addLeft, barTop + LibraryLayout.BAR_H),
+                IntRect(playLeft, barTop, addLeft, barTop + barH),
                 enabled = { ops.atTracks },
                 taps = Widget.Taps(onTap = { ops.playSelection() }),
             ),
             Widget(
                 "library.add",
-                IntRect(addLeft, barTop, left + listW, barTop + LibraryLayout.BAR_H),
+                IntRect(addLeft, barTop, left + listW, barTop + barH),
                 enabled = { ops.atTracks },
                 taps = Widget.Taps(onTap = { ops.enqueueSelection() }),
             ),
         )
 }
 
-/** Text and bands are one rasterized layer; the scroll handle is skin art on top. */
+/**
+ * The library's content area. The backgrounds and the bands are drawn here; the words are three
+ * cached layers over them (the tabs and the header, the rows, the bar); the scroll handle is skin
+ * art on top. Scrolling makes only the rows' layer again.
+ */
 @Suppress("LongParameterList") // a draw call fed by everything it renders
 internal fun DrawScope.drawLibraryContent(
     rasterizer: LibraryRasterizer,
@@ -290,24 +299,14 @@ internal fun DrawScope.drawLibraryContent(
     layout: LibraryLayout,
 ) {
     val width = layout.listWidth(frame)
+    drawLibraryBands(ops, s, skin.pledit, width, layout)
     val scene =
         LibraryRasterizer.Scene(
             revision = ops.revision,
             scroll = s.libraryScroll,
-            selection = s.librarySelected,
-            pressedRow = s.libraryPressedRow,
+            playingRow = ops.rowOfTrack(s.currentTrack?.id),
             tabs = ops.visibleCategories.map(ops::label),
             activeTab = ops.visibleCategories.indexOf(ops.category),
-            pressedTab =
-                ops.visibleCategories.indexOfFirst {
-                    s.pressedWidget == "library.tab.${it.name.lowercase()}"
-                },
-            headerPressed = s.pressedWidget == "library.header",
-            newPressed = s.pressedWidget == "library.new",
-            deletePressed = s.pressedWidget == "library.delete",
-            playPressed = s.pressedWidget == "library.play",
-            addPressed = s.pressedWidget == "library.add",
-            playingRow = ops.rowOfTrack(s.currentTrack?.id),
             flash = ops.flash,
             searching = ops.searching,
             query = ops.query,
@@ -323,19 +322,17 @@ internal fun DrawScope.drawLibraryContent(
             scale = scale,
             style = skin.pledit,
             rowH = layout.rowH,
+            skinFont = skin[Sheet.TEXT].takeIf { s.listFont == ListFont.SKIN },
         )
-    drawImage(
-        rasterizer.layer(ops, scene),
-        dstOffset = IntOffset.Zero,
-        dstSize = IntSize(width, layout.contentH),
-        filterQuality = FilterQuality.None,
-    )
+    drawLayer(rasterizer.top(ops, scene), 0, width, layout.rowsTop)
+    drawLayer(rasterizer.rows(ops, scene), layout.rowsTop, width, layout.rowsH)
+    drawLayer(rasterizer.bar(ops, scene), layout.barTop, width, layout.barH)
 
     // the playlist's scroll handle over plain background: the playlist's rail art is
     // part of its frame tile and cannot be drawn here
     val maxScroll = (ops.rows.size - layout.visibleRows).coerceAtLeast(0)
     val frac = if (maxScroll == 0) 0f else s.libraryScroll.toFloat() / maxScroll
-    val handleY = LibraryLayout.ROWS_TOP + (frac * (layout.rowsH - LibraryLayout.HANDLE_H)).roundToInt()
+    val handleY = layout.rowsTop + (frac * (layout.rowsH - LibraryLayout.HANDLE_H)).roundToInt()
     val handle =
         if (s.pressedWidget == "library.scroll") {
             SpriteMap.PLAYLIST_SCROLL_HANDLE_SELECTED
@@ -346,30 +343,120 @@ internal fun DrawScope.drawLibraryContent(
 }
 
 /**
- * Draws the library's content area with the playlist's text metrics ([ListText]) in
- * PLEDIT.TXT colors. The bitmap is cached and redrawn only when the [Scene] changes.
+ * A layer [height] virtual pixels tall at [top], at whatever resolution it was made: the outline
+ * font's device pixels map one to one, and the skin font's pixels become whole squares.
+ */
+private fun DrawScope.drawLayer(
+    layer: ImageBitmap,
+    top: Int,
+    width: Int,
+    height: Int,
+) {
+    drawImage(
+        layer,
+        dstOffset = IntOffset(0, top),
+        dstSize = IntSize(width, height),
+        filterQuality = FilterQuality.None,
+    )
+}
+
+/**
+ * Everything under the words: the background, the rules between the parts, the active tab, the
+ * selected row, and whatever the finger is on.
+ */
+private fun DrawScope.drawLibraryBands(
+    ops: LibraryOps,
+    s: WinampState,
+    style: PleditStyle,
+    width: Int,
+    layout: LibraryLayout,
+) {
+    val band = style.selectedBg
+    fill(style.normalBg, 0, 0, width, layout.contentH)
+    val categories = ops.visibleCategories
+    LibraryLayout.tabCells(width, categories.size).zip(categories) { cell, category ->
+        if (category == ops.category || s.pressedWidget == "library.tab.${category.name.lowercase()}") {
+            fill(band, cell.start, 0, cell.end, layout.barH)
+        }
+    }
+    for (rule in listOf(layout.barH, layout.headerTop + layout.barH, layout.rowsBottom)) {
+        fill(band, 0, rule, width, LibraryLayout.RULE_H)
+    }
+    // pressed art only where the header does something: up, or open the search
+    val tappable = ops.depth > 0 || (ops.canSearch && !ops.searching)
+    if (s.pressedWidget == "library.header" && tappable) fill(band, 0, layout.headerTop, width, layout.barH)
+
+    val rowsW = width - LibraryLayout.SCROLLBAR_W
+    for (at in 0 until layout.visibleRows) {
+        val index = s.libraryScroll + at
+        if (index >= ops.rows.size) break
+        if (index == s.librarySelected || index == s.libraryPressedRow) {
+            fill(band, 0, layout.rowsTop + at * layout.rowH, rowsW, layout.rowH)
+        }
+    }
+    if (ops.atTracks) drawBarBands(ops, s, band, width, layout)
+}
+
+/** The band under a pressed cell of the bar; the cells are there only on a page of tracks. */
+private fun DrawScope.drawBarBands(
+    ops: LibraryOps,
+    s: WinampState,
+    band: Color,
+    width: Int,
+    layout: LibraryLayout,
+) {
+    val cells = LibraryLayout.BarCells(width)
+    val top = layout.barTop
+    when (s.pressedWidget) {
+        "library.new" -> {
+            if (ops.category == LibraryOps.Category.RADIO &&
+                !ops.searching
+            ) {
+                fill(band, cells.newLeft, top, cells.playLeft, layout.barH)
+            }
+        }
+
+        "library.delete" -> {
+            if (ops.canDeletePage) fill(band, cells.deleteLeft, top, cells.playLeft, layout.barH)
+        }
+
+        "library.play" -> {
+            fill(band, cells.playLeft, top, cells.addLeft, layout.barH)
+        }
+
+        "library.add" -> {
+            fill(band, cells.addLeft, top, width, layout.barH)
+        }
+    }
+}
+
+/** A rectangle of [color] from [left] to [right], [height] tall from [top], in virtual px. */
+private fun DrawScope.fill(
+    color: Color,
+    left: Int,
+    top: Int,
+    right: Int,
+    height: Int,
+) = drawRect(color, Offset(left.toFloat(), top.toFloat()), Size((right - left).toFloat(), height.toFloat()))
+
+/**
+ * Writes the library's words in the playlist's text metrics ([ListText]) and PLEDIT.TXT colors,
+ * in the skin's font when the lists are set to it ([TextLayer]). Each of the three layers is
+ * cached and made again only when what it shows changes.
  */
 internal class LibraryRasterizer(
     private val arialLike: Typeface,
     /** Where the bar's words come from, in the phone's language. */
     private val resources: Resources,
 ) {
-    /** Everything the layer depends on, as values; the cache key. */
+    /** Everything the layers depend on, as values; the cache keys are made from it. */
     @Suppress("LongParameterList") // the scene is the list of everything that gets drawn
     data class Scene(
         val revision: Int,
         val scroll: Int,
-        val selection: Int,
-        val pressedRow: Int,
+        val playingRow: Int,
         val tabs: List<String>,
         val activeTab: Int,
-        val pressedTab: Int,
-        val headerPressed: Boolean,
-        val newPressed: Boolean,
-        val deletePressed: Boolean,
-        val playPressed: Boolean,
-        val addPressed: Boolean,
-        val playingRow: Int,
         val flash: String,
         val searching: Boolean,
         val query: String,
@@ -384,195 +471,221 @@ internal class LibraryRasterizer(
         val scale: Int,
         val style: PleditStyle,
         val rowH: Int = LibraryLayout.ROW_H,
-    )
+        /** The skin's TEXT.BMP while the lists are in its font; null for the outline font. */
+        val skinFont: ImageBitmap? = null,
+    ) {
+        val layout: LibraryLayout get() = LibraryLayout(visibleRows, slack = slack, rowH = rowH)
+    }
 
-    private var sceneKey: Scene? = null
-    private var image: ImageBitmap? = null
+    /** One layer and the key it was made for. */
+    private class Cached {
+        val text = TextLayer()
+        private var key: List<Any?>? = null
+        private var image: ImageBitmap? = null
 
-    fun layer(
+        fun get(
+            key: List<Any?>,
+            make: TextLayer.() -> Bitmap,
+        ): ImageBitmap {
+            image?.let { if (key == this.key) return it }
+            // a new bitmap per key: the hardware renderer caches a bitmap it has drawn, and
+            // pixels changed in it afterwards do not reach the screen
+            return text.make().asImageBitmap().also {
+                image = it
+                this.key = key
+            }
+        }
+    }
+
+    private val topLayer = Cached()
+    private val rowsLayer = Cached()
+    private val barLayer = Cached()
+
+    private var maskSheet: ImageBitmap? = null
+    private var mask: GlyphMask? = null
+
+    /** The ink of [sheet], made once for as long as the skin is worn; null for the outline font. */
+    private fun glyphsOf(sheet: ImageBitmap?): GlyphMask? {
+        if (sheet == null) return null
+        if (sheet !== maskSheet) {
+            mask = PlaylistTextRasterizer.glyphMaskOf(sheet)
+            maskSheet = sheet
+        }
+        return mask
+    }
+
+    private fun paintFor(scene: Scene) = ListText.paint(ListText.typefaceFor(scene.style.fontName, arialLike))
+
+    /** The tab strip and the header bar under it, as tall as [LibraryLayout.rowsTop]. */
+    fun top(
         ops: LibraryOps,
         scene: Scene,
     ): ImageBitmap {
-        image?.let { if (scene == sceneKey) return it }
-
-        val layout = LibraryLayout(scene.visibleRows, slack = scene.slack, rowH = scene.rowH)
-        val w = scene.width * scene.scale
-        val h = layout.contentH * scene.scale
-        // a new bitmap per scene: the hardware renderer caches a bitmap it has drawn,
-        // and pixels changed in it afterwards do not reach the screen
-        val target = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-        val canvas = Canvas(target)
-        canvas.save()
-        canvas.scale(scene.scale.toFloat(), scene.scale.toFloat())
-        val paint = ListText.paint(ListText.typefaceFor(scene.style.fontName, arialLike))
-
-        paint.color = scene.style.normalBg.toArgb()
-        canvas.drawRect(0f, 0f, scene.width.toFloat(), layout.contentH.toFloat(), paint)
-
-        drawTabs(canvas, paint, scene)
-        drawRule(canvas, paint, scene, LibraryLayout.BAR_H)
-        drawHeader(canvas, paint, ops, scene)
-        drawRule(canvas, paint, scene, LibraryLayout.HEADER_TOP + LibraryLayout.BAR_H)
-        drawRows(canvas, paint, ops, scene)
-        drawRule(canvas, paint, scene, layout.rowsBottom)
-        drawBar(canvas, paint, ops, scene, layout)
-
-        canvas.restore()
-        val wrapped = target.asImageBitmap()
-        image = wrapped
-        sceneKey = scene
-        return wrapped
+        val key =
+            listOf(
+                scene.revision,
+                ops.depth,
+                ops.header,
+                scene.tabs,
+                scene.activeTab,
+                scene.searching,
+                scene.query,
+                scene.caret,
+                scene.caretOn,
+                scene.canSearch,
+                scene.width,
+                scene.scale,
+                scene.style,
+                scene.rowH,
+                scene.skinFont,
+            )
+        val layout = scene.layout
+        return topLayer.get(key) {
+            draw(scene.width, layout.rowsTop, scene.scale, glyphsOf(scene.skinFont), paintFor(scene)) {
+                writeTabs(scene, layout)
+                writeHeader(ops, scene, layout)
+            }
+        }
     }
 
-    /** The tab strip; the active tab has the selection band. */
-    private fun drawTabs(
-        canvas: Canvas,
-        paint: android.graphics.Paint,
+    /** The rows in view, or the note an empty page shows, as tall as [LibraryLayout.rowsH]. */
+    fun rows(
+        ops: LibraryOps,
         scene: Scene,
-    ) {
-        val cells = LibraryLayout.tabCells(scene.width, scene.tabs.size)
-        val baseline = ListText.baseline(paint, 0f, LibraryLayout.BAR_H)
-        cells.forEachIndexed { at, cell ->
-            val active = at == scene.activeTab
-            if (active || at == scene.pressedTab) {
-                paint.color = scene.style.selectedBg.toArgb()
-                canvas.drawRect(cell.start.toFloat(), 0f, cell.end.toFloat(), LibraryLayout.BAR_H.toFloat(), paint)
+    ): ImageBitmap {
+        val key =
+            listOf(
+                scene.revision,
+                scene.scroll,
+                scene.playingRow,
+                ops.loading,
+                ops.needsAccess,
+                ops.unreachable,
+                scene.visibleRows,
+                scene.slack,
+                scene.width,
+                scene.scale,
+                scene.style,
+                scene.rowH,
+                scene.skinFont,
+            )
+        val layout = scene.layout
+        return rowsLayer.get(key) {
+            draw(scene.width, layout.rowsH, scene.scale, glyphsOf(scene.skinFont), paintFor(scene)) {
+                writeRows(ops, scene)
             }
-            paint.color = (if (active) scene.style.current else scene.style.normal).toArgb()
-            val label = scene.tabs[at]
-            val textW = fit(paint, label, (cell.end - cell.start) - 2 * CELL_PAD)
-            val x = cell.start + ((cell.end - cell.start) - textW) / 2f
-            canvas.save()
-            canvas.clipRect(cell.start.toFloat(), 0f, cell.end.toFloat(), LibraryLayout.BAR_H.toFloat())
-            canvas.drawText(label, x, baseline, paint)
-            canvas.restore()
-            paint.textScaleX = 1f
+        }
+    }
+
+    /** The bar under the rows: the status, or a flash in its place, and the cells. */
+    fun bar(
+        ops: LibraryOps,
+        scene: Scene,
+    ): ImageBitmap {
+        val key =
+            listOf(
+                scene.revision,
+                ops.status,
+                ops.atTracks,
+                scene.flash,
+                scene.newCell,
+                scene.deleteCell,
+                scene.width,
+                scene.scale,
+                scene.style,
+                scene.rowH,
+                scene.skinFont,
+            )
+        val layout = scene.layout
+        return barLayer.get(key) {
+            draw(scene.width, layout.barH, scene.scale, glyphsOf(scene.skinFont), paintFor(scene)) {
+                writeBar(ops, scene, layout)
+            }
+        }
+    }
+
+    /** The tab strip; the active tab is in the current-track color. */
+    private fun TextLayer.Words.writeTabs(
+        scene: Scene,
+        layout: LibraryLayout,
+    ) {
+        LibraryLayout.tabCells(scene.width, scene.tabs.size).forEachIndexed { at, cell ->
+            label(
+                scene.tabs[at],
+                (cell.start + CELL_PAD).toFloat(),
+                (cell.end - CELL_PAD).toFloat(),
+                0,
+                layout.barH,
+                (if (at == scene.activeTab) scene.style.current else scene.style.normal).toArgb(),
+                TextLayer.Align.CENTER,
+                TextLayer.Fit.SQUEEZE,
+            )
         }
     }
 
     /**
-     * The bar under the tabs: the way up while inside a level, the search field while
-     * searching, the search entry at a searchable root.
+     * The bar under the tabs: the search field while searching, the way up while inside a
+     * level, the search entry at a searchable root.
      */
-    private fun drawHeader(
-        canvas: Canvas,
-        paint: android.graphics.Paint,
+    private fun TextLayer.Words.writeHeader(
         ops: LibraryOps,
         scene: Scene,
+        layout: LibraryLayout,
     ) {
-        val top = LibraryLayout.HEADER_TOP.toFloat()
-        val baseline = ListText.baseline(paint, top, LibraryLayout.BAR_H)
-        val w = scene.width.toFloat()
-        // pressed art only where the bar does something: up, or open the search
-        val tappable = ops.depth > 0 || (scene.canSearch && !scene.searching)
-        if (scene.headerPressed && tappable) {
-            paint.color = scene.style.selectedBg.toArgb()
-            canvas.drawRect(0f, top, w, top + LibraryLayout.BAR_H, paint)
-        }
+        val top = layout.headerTop
+        val right = scene.width - ListText.RIGHT_INSET
+        val current = scene.style.current.toArgb()
         when {
             scene.searching -> {
-                drawSearchField(canvas, paint, scene, top, baseline)
+                val clearLeft = scene.width - layout.barH
+                field(
+                    scene.query,
+                    scene.caret,
+                    scene.caretOn,
+                    ListText.LEFT_INSET,
+                    clearLeft - ListText.RIGHT_INSET,
+                    top,
+                    layout.barH,
+                    current,
+                )
+                cross(clearLeft, top, layout.barH, scene.style.normal.toArgb())
             }
 
             ops.depth > 0 -> {
-                paint.color = scene.style.current.toArgb()
-                canvas.save()
-                canvas.clipRect(0f, top, w - ListText.RIGHT_INSET, top + LibraryLayout.BAR_H)
-                canvas.drawText(".. ${ops.header.uppercase()}", ListText.LEFT_INSET, baseline, paint)
-                canvas.restore()
+                label(".. ${ops.header.uppercase()}", ListText.LEFT_INSET, right, top, layout.barH, current)
             }
 
             scene.canSearch -> {
-                paint.color = scene.style.normal.toArgb()
-                canvas.drawText(resources.getString(R.string.library_search_header), ListText.LEFT_INSET, baseline, paint)
+                val search = resources.getString(R.string.library_search_header)
+                label(search, ListText.LEFT_INSET, right, top, layout.barH, scene.style.normal.toArgb())
             }
 
             else -> {
-                paint.color = scene.style.current.toArgb()
-                canvas.drawText(ops.header, ListText.LEFT_INSET, baseline, paint)
+                label(ops.header, ListText.LEFT_INSET, right, top, layout.barH, current)
             }
         }
     }
 
-    private fun drawSearchField(
-        canvas: Canvas,
-        paint: android.graphics.Paint,
-        scene: Scene,
-        top: Float,
-        baseline: Float,
-    ) {
-        val fieldRight = scene.width - LibraryLayout.BAR_H - ListText.RIGHT_INSET
-        paint.color = scene.style.current.toArgb()
-        // when the query outgrows the bar, its end stays visible
-        val textW = paint.measureText(scene.query)
-        val x = min(ListText.LEFT_INSET, fieldRight - textW - CARET_W)
-        canvas.save()
-        canvas.clipRect(0f, top, fieldRight, top + LibraryLayout.BAR_H)
-        canvas.drawText(scene.query, x, baseline, paint)
-        if (scene.caretOn) {
-            val caretX = x + paint.measureText(scene.query.substring(0, scene.caret))
-            canvas.drawRect(caretX, top + 2f, caretX + CARET_W, top + LibraryLayout.BAR_H - 2f, paint)
-        }
-        canvas.restore()
-
-        // the clear cell: an x drawn as two lines
-        paint.color = scene.style.normal.toArgb()
-        val cellLeft = scene.width - LibraryLayout.BAR_H
-        val inset = 4f
-        canvas.drawLine(cellLeft + inset, top + inset, scene.width - inset, top + LibraryLayout.BAR_H - inset, paint)
-        canvas.drawLine(cellLeft + inset, top + LibraryLayout.BAR_H - inset, scene.width - inset, top + inset, paint)
-    }
-
-    private fun drawRule(
-        canvas: Canvas,
-        paint: android.graphics.Paint,
-        scene: Scene,
-        y: Int,
-    ) {
-        paint.color = scene.style.selectedBg.toArgb()
-        canvas.drawRect(0f, y.toFloat(), scene.width.toFloat(), (y + LibraryLayout.RULE_H).toFloat(), paint)
-    }
-
-    private fun drawRows(
-        canvas: Canvas,
-        paint: android.graphics.Paint,
+    private fun TextLayer.Words.writeRows(
         ops: LibraryOps,
         scene: Scene,
     ) {
-        val rowsW = (scene.width - LibraryLayout.SCROLLBAR_W).toFloat()
         val rows = ops.rows
         if (rows.isEmpty()) {
-            drawEmptyNote(canvas, paint, ops, scene)
+            writeEmptyNote(ops, scene)
             return
         }
-        rows.drop(scene.scroll).take(scene.visibleRows).forEachIndexed { at, row ->
+        val right = scene.width - LibraryLayout.SCROLLBAR_W - ListText.RIGHT_INSET
+        for (at in 0 until scene.visibleRows) {
             val index = scene.scroll + at
-            val top = (LibraryLayout.ROWS_TOP + at * scene.rowH).toFloat()
-            val baseline = ListText.baseline(paint, top, scene.rowH)
-            val banded = index == scene.selection || index == scene.pressedRow
-            if (banded) {
-                paint.color = scene.style.selectedBg.toArgb()
-                canvas.drawRect(0f, top, rowsW, top + scene.rowH, paint)
-            }
-            paint.color = (if (index == scene.playingRow) scene.style.current else scene.style.normal).toArgb()
-
-            var labelRight = rowsW - ListText.RIGHT_INSET
-            if (row.detail.isNotBlank()) {
-                val detail = paint.measureText(row.detail)
-                canvas.drawText(row.detail, labelRight - detail, baseline, paint)
-                labelRight -= detail + DETAIL_GAP
-            }
-            canvas.save()
-            canvas.clipRect(0f, top, labelRight, top + scene.rowH)
-            canvas.drawText(row.label, ListText.LEFT_INSET, baseline, paint)
-            canvas.restore()
+            val row = rows.getOrNull(index) ?: break
+            val color = if (index == scene.playingRow) scene.style.current else scene.style.normal
+            row(row.label, row.detail, ListText.LEFT_INSET, right, at * scene.rowH, scene.rowH, color.toArgb())
         }
     }
 
     /** The note an empty list shows in its first row. */
-    private fun drawEmptyNote(
-        canvas: Canvas,
-        paint: android.graphics.Paint,
+    private fun TextLayer.Words.writeEmptyNote(
         ops: LibraryOps,
         scene: Scene,
     ) {
@@ -596,144 +709,68 @@ internal class LibraryRasterizer(
                     ops.emptyNote to scene.style.normal
                 }
             }
-        paint.color = colour.toArgb()
-        val baseline = ListText.baseline(paint, LibraryLayout.ROWS_TOP.toFloat(), scene.rowH)
-        fit(paint, text, scene.width - LibraryLayout.SCROLLBAR_W - ListText.LEFT_INSET - ListText.RIGHT_INSET)
-        canvas.drawText(text, ListText.LEFT_INSET, baseline, paint)
-        paint.textScaleX = 1f
+        val right = scene.width - LibraryLayout.SCROLLBAR_W - ListText.RIGHT_INSET
+        label(text, ListText.LEFT_INSET, right, 0, scene.rowH, colour.toArgb(), fit = TextLayer.Fit.SQUEEZE)
     }
 
-    private fun drawBar(
-        canvas: Canvas,
-        paint: android.graphics.Paint,
+    private fun TextLayer.Words.writeBar(
         ops: LibraryOps,
         scene: Scene,
         layout: LibraryLayout,
     ) {
-        val top = layout.barTop.toFloat()
-        val baseline = ListText.baseline(paint, top, LibraryLayout.BAR_H)
-        val w = scene.width.toFloat()
-
-        val addLeft = w - LibraryLayout.ADD_CELL_W
-        val playLeft = addLeft - LibraryLayout.PLAY_CELL_W
-        val newLeft = playLeft - LibraryLayout.NEW_CELL_W
-        val deleteLeft = playLeft - LibraryLayout.DELETE_CELL_W
+        val cells = LibraryLayout.BarCells(scene.width)
+        val barH = layout.barH
 
         // status on the left; the enqueue flash replaces it, in the current-track color
         val statusText = scene.flash.ifEmpty { ops.status }
-        paint.color = (if (scene.flash.isEmpty()) scene.style.normal else scene.style.current).toArgb()
+        val statusColor = if (scene.flash.isEmpty()) scene.style.normal else scene.style.current
         val statusRight =
             when {
-                scene.newCell -> newLeft
-                scene.deleteCell -> deleteLeft
-                else -> playLeft
+                scene.newCell -> cells.newLeft
+                scene.deleteCell -> cells.deleteLeft
+                else -> cells.playLeft
             } - DETAIL_GAP
-        canvas.save()
-        canvas.clipRect(0f, top, statusRight, top + LibraryLayout.BAR_H)
-        fit(paint, statusText, statusRight - ListText.LEFT_INSET)
-        canvas.drawText(statusText, ListText.LEFT_INSET, baseline, paint)
-        paint.textScaleX = 1f
-        canvas.restore()
+        label(statusText, ListText.LEFT_INSET, statusRight, 0, barH, statusColor.toArgb(), fit = TextLayer.Fit.SQUEEZE)
 
         if (!ops.atTracks) return
-        if (scene.newCell) {
-            drawBarButton(
-                canvas,
-                paint,
-                scene,
-                top,
-                baseline,
-                newLeft,
-                playLeft,
-                resources.getString(R.string.library_bar_new),
-                scene.newPressed,
-            )
-        }
-        if (scene.deleteCell) {
-            drawBarButton(
-                canvas,
-                paint,
-                scene,
-                top,
-                baseline,
-                deleteLeft,
-                playLeft,
-                resources.getString(R.string.library_bar_del_list),
-                scene.deletePressed,
-            )
-        }
-        drawBarButton(
-            canvas,
-            paint,
-            scene,
-            top,
-            baseline,
-            playLeft,
-            addLeft,
-            resources.getString(R.string.library_bar_play),
-            scene.playPressed,
-        )
-        drawBarButton(
-            canvas,
-            paint,
-            scene,
-            top,
-            baseline,
-            addLeft,
-            w,
-            resources.getString(R.string.library_bar_add),
-            scene.addPressed,
-        )
-    }
+        val normal = scene.style.normal.toArgb()
 
-    @Suppress("LongParameterList") // one button cell: geometry, label, pressed
-    private fun drawBarButton(
-        canvas: Canvas,
-        paint: android.graphics.Paint,
-        scene: Scene,
-        top: Float,
-        baseline: Float,
-        cellLeft: Float,
-        cellRight: Float,
-        label: String,
-        pressed: Boolean,
-    ) {
-        if (pressed) {
-            paint.color = scene.style.selectedBg.toArgb()
-            canvas.drawRect(cellLeft, top, cellRight, top + LibraryLayout.BAR_H, paint)
-        }
-        paint.color = scene.style.normal.toArgb()
-        val textW = fit(paint, label, cellRight - cellLeft - ListText.RIGHT_INSET - CELL_PAD)
-        canvas.drawText(label, cellRight - ListText.RIGHT_INSET - textW, baseline, paint)
-        paint.textScaleX = 1f
-    }
+        fun cell(
+            left: Int,
+            right: Int,
+            word: Int,
+        ) = label(
+            resources.getString(word),
+            (left + CELL_PAD).toFloat(),
+            right - ListText.RIGHT_INSET,
+            0,
+            barH,
+            normal,
+            TextLayer.Align.RIGHT,
+            TextLayer.Fit.SQUEEZE,
+        )
 
-    /**
-     * Sets [paint] to draw [text] within [room] pixels and answers the width it then takes; see
-     * [ListText.squeeze]. The caller draws, then sets `textScaleX` back to 1.
-     */
-    private fun fit(
-        paint: android.graphics.Paint,
-        text: String,
-        room: Float,
-    ): Float {
-        val natural = paint.measureText(text)
-        paint.textScaleX = ListText.squeeze(natural, room)
-        return natural * paint.textScaleX
+        if (scene.newCell) cell(cells.newLeft, cells.playLeft, R.string.library_bar_new)
+        if (scene.deleteCell) cell(cells.deleteLeft, cells.playLeft, R.string.library_bar_del_list)
+        cell(cells.playLeft, cells.addLeft, R.string.library_bar_play)
+        cell(cells.addLeft, scene.width, R.string.library_bar_add)
     }
 
     private companion object {
+        /** The status stops this far short of the first cell. */
         const val DETAIL_GAP = 6f
 
         /** The least room left between a label and the edge of its cell. */
-        const val CELL_PAD = 1f
-        const val CARET_W = 1f
+        const val CELL_PAD = 1
     }
 }
 
 /**
  * The library window's geometry: a tab strip, a header, the rows beside a scrollbar, and a
  * status and action bar, in virtual px inside the frame's content area.
+ *
+ * The strip, the header and the bar are as tall as a row ([barH]), so a taller row makes them
+ * larger things to tap as well.
  */
 class LibraryLayout(
     val visibleRows: Int,
@@ -761,9 +798,25 @@ class LibraryLayout(
         val end: Int,
     )
 
+    /** Where the bar's cells start, counted from the right of a content area [width] wide. */
+    class BarCells(
+        width: Int,
+    ) {
+        val addLeft = width - ADD_CELL_W
+        val playLeft = addLeft - PLAY_CELL_W
+
+        /** RADIO's NEW, in the place a saved list's DEL LIST takes. */
+        val newLeft = playLeft - NEW_CELL_W
+        val deleteLeft = playLeft - DELETE_CELL_W
+    }
+
+    /** How tall the tab strip, the header and the bar are. */
+    val barH = rowH
+    val headerTop = headerTop(rowH)
+    val rowsTop = rowsTop(rowH)
     val rowsH = visibleRows * rowH + slack
-    val contentH = FURNITURE_H + rowsH
-    val rowsBottom = ROWS_TOP + rowsH
+    val contentH = furnitureH(rowH) + rowsH
+    val rowsBottom = rowsTop + rowsH
     val barTop = rowsBottom + RULE_H
 
     fun height(frame: WindowFrame) = frame.chromeH + contentH
@@ -772,16 +825,12 @@ class LibraryLayout(
     fun rowAt(
         y: Float,
         frame: WindowFrame,
-    ) = ((y - frame.titleH - ROWS_TOP) / rowH).toInt().coerceAtLeast(0)
+    ) = ((y - frame.titleH - rowsTop) / rowH).toInt().coerceAtLeast(0)
 
     companion object {
         const val WIDTH = 275
         const val ROW_H = 13
-        const val BAR_H = 13
         const val RULE_H = 1
-        const val HEADER_TOP = BAR_H + RULE_H
-        const val ROWS_TOP = HEADER_TOP + BAR_H + RULE_H
-        const val FURNITURE_H = ROWS_TOP + RULE_H + BAR_H
         const val SCROLLBAR_W = 8
         const val SCROLL_HIT_W = 15
         const val HANDLE_H = 18
@@ -792,12 +841,22 @@ class LibraryLayout(
         const val MIN_ROWS = 8
         const val TITLE = "Library"
 
+        /** Where the header starts, under the tab strip and its rule, for rows [rowH] tall. */
+        fun headerTop(rowH: Int) = rowH + RULE_H
+
+        /** Where the rows start, under the header and its rule. */
+        fun rowsTop(rowH: Int) = headerTop(rowH) + rowH + RULE_H
+
+        /** All of the content area that is not rows: the strip, the header, the bar and their rules. */
+        fun furnitureH(rowH: Int) = rowsTop(rowH) + RULE_H + rowH
+
         /**
-         * The fewest rows of [rowH] the window is drawn with: as many as fit the height
-         * [MIN_ROWS] of Winamp's rows take, so taller rows do not make the smallest window
-         * any taller.
+         * The fewest rows of [rowH] the window is drawn with: as many as fit in the content area
+         * of the smallest classic window, [MIN_ROWS] of Winamp's rows, once the strip, the
+         * header and the bar have taken their height. Taller rows do not make the smallest
+         * window any taller.
          */
-        fun minRows(rowH: Int) = WindowSizing.minRows(MIN_ROWS, ROW_H, rowH)
+        fun minRows(rowH: Int) = ((MIN_ROWS * ROW_H + furnitureH(ROW_H) - furnitureH(rowH)) / rowH).coerceAtLeast(1)
 
         /** As many rows as the screen holds, never fewer than [minRows]. */
         fun forAvailableHeight(
@@ -810,7 +869,7 @@ class LibraryLayout(
             availVirtual: Int,
             frame: WindowFrame,
             rowH: Int = ROW_H,
-        ): Int = ((availVirtual - frame.chromeH - FURNITURE_H) / rowH).coerceAtLeast(minRows(rowH))
+        ): Int = ((availVirtual - frame.chromeH - furnitureH(rowH)) / rowH).coerceAtLeast(minRows(rowH))
 
         /** The layout of a window exactly [height] tall and [width] wide; see [WindowSizing.rowsAndSlack]. */
         fun filling(
@@ -819,7 +878,7 @@ class LibraryLayout(
             frame: WindowFrame,
             rowH: Int = ROW_H,
         ): LibraryLayout {
-            val (rows, slack) = WindowSizing.rowsAndSlack(height, frame.chromeH + FURNITURE_H, rowH, minRows(rowH))
+            val (rows, slack) = WindowSizing.rowsAndSlack(height, frame.chromeH + furnitureH(rowH), rowH, minRows(rowH))
             return LibraryLayout(rows, width, slack, rowH)
         }
 

@@ -17,7 +17,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import nl.mattix.andamp.state.EnglishWords
-import nl.mattix.andamp.state.PlaylistFont
+import nl.mattix.andamp.state.ListFont
 import nl.mattix.andamp.state.SkinEntry
 import nl.mattix.andamp.ui.remote.CompanionCheck
 import org.junit.Assert.assertEquals
@@ -83,7 +83,7 @@ class AndroidAutoPrefsTest {
 
     @Test
     fun `the list's font is chosen apart from the skin`() {
-        var font by mutableStateOf(PlaylistFont.REGULAR)
+        var font by mutableStateOf(ListFont.REGULAR)
         compose.setContent {
             Column {
                 AndroidAutoPage(
@@ -95,7 +95,7 @@ class AndroidAutoPrefsTest {
         compose.onNodeWithTag("prefs.androidauto.font.regular").assertIsSelected()
         compose.onNodeWithTag("prefs.androidauto.font.skin").performClick()
 
-        assertEquals(PlaylistFont.SKIN, font)
+        assertEquals(ListFont.SKIN, font)
         compose.onNodeWithTag("prefs.androidauto.font.skin").assertIsSelected()
     }
 

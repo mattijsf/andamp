@@ -57,15 +57,15 @@ class AndroidAutoStore(
             prefs.edit().putBoolean(FILL, value).apply()
         }
 
-    private var font: PlaylistFont by mutableStateOf(
-        PlaylistFont.entries.firstOrNull { it.name == prefs.getString(LIST_FONT, null) } ?: PlaylistFont.REGULAR,
+    private var font: ListFont by mutableStateOf(
+        ListFont.entries.firstOrNull { it.name == prefs.getString(LIST_FONT, null) } ?: ListFont.REGULAR,
     )
 
     /**
      * The font of the list in Android Auto, the regular one until the listener picks the
      * skin's. The phone's playlist font is another choice and is not touched from here.
      */
-    var listFont: PlaylistFont
+    var listFont: ListFont
         get() = font
         set(value) {
             font = value

@@ -71,6 +71,22 @@ object BitmapFont {
         }
 
     /**
+     * [text] folded by [normalize] and cut to at most [room] letters. A cut text ends on a whole
+     * letter and the font's own ellipsis glyph, as webamp ends a title too long for its row.
+     */
+    fun fitted(
+        text: String,
+        room: Int,
+    ): String {
+        val normal = normalize(text)
+        val letters = room.coerceAtLeast(1)
+        return if (normal.length > letters) normal.take(letters - 1) + ELLIPSIS else normal
+    }
+
+    /** The font's glyph for text that was cut. */
+    private const val ELLIPSIS = '…'
+
+    /**
      * Whether the font can spell [text]: every letter and digit in it folds to a glyph. Other
      * signs the font lacks are drawn as a space, and do not count.
      */

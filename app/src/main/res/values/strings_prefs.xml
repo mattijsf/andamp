@@ -54,7 +54,7 @@
     <string name="prefs_limiter_off">Off · loud peaks are cut off</string>
 
     <!-- ListPrefs.kt -->
-    <string name="prefs_lists_font_title">Playlist font</string>
+    <string name="prefs_lists_font_title">List font</string>
     <string name="prefs_lists_font_skin_about">The skin\'s own pixel letters, like the song title in the main window. A title in a script the skin has no letters for keeps the regular font.</string>
     <string name="prefs_lists_font_regular_about">A regular font, drawn smooth, with small and capital letters.</string>
     <string name="prefs_lists_font_skin">Skin</string>
@@ -126,7 +126,7 @@
     <string name="prefs_player_colors_section">Colors</string>
     <string name="prefs_player_summary_always_on_top">Always on top</string>
     <string name="prefs_player_summary_windows_stay_open">Windows stay open</string>
-    <string name="prefs_player_summary_regular_font">Regular font in the playlist</string>
+    <string name="prefs_player_summary_regular_font">Regular font in the lists</string>
     <string name="prefs_player_summary_roomy_rows">Roomy rows</string>
     <string name="prefs_player_summary_large_rows">Large rows</string>
     <string name="prefs_player_summary_tap_assist">Tap assist</string>

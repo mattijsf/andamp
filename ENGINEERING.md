@@ -461,13 +461,16 @@ one of them steps the clocks (`WinampState.clocksTurn`).
    `WidgetLayout.px`/`span` is the single rounding that drawing and placing both use.
 3. **`FilterQuality.None` on every `drawImage`.** Use the `sprite()` helper. It also
    clamps source rectangles for skin sheets that are too small.
-4. **Playlist text is the skin's font, or an outline font drawn smooth.** Preferences >
-   Player > Playlist font picks one; Skin is what the app starts with.
+4. **List text is the skin's font, or an outline font drawn smooth.** Preferences >
+   Player > List font picks one for the playlist and the media library; Skin is what the
+   app starts with.
    For Skin, `GlyphMask` turns the skin's `TEXT.BMP` into ink, how much of each pixel is
    letter, once per skin, and `PlaylistTextRasterizer` writes the rows into a pixel block
    in the `PLEDIT.TXT` colors, one pixel to the virtual pixel; the window scales the layer
    unfiltered. A row the font cannot spell (`BitmapFont.covers`) keeps the outline font,
-   and the layer is then at device scale.
+   and the layer is then at device scale. The library writes its tabs, header, rows and
+   bar the same way through `TextLayer`, which decides per piece of text; its bands are
+   drawn under the words, so a fling makes only the rows' layer again.
    For Regular, the rasterizer lays out glyphs in virtual coordinates with the bundled
    Liberation Sans (metric-compatible with the Arial that `PLEDIT.TXT` names), rasterizes
    at device scale with antialiasing, and draws 1:1 through the canvas transform.
@@ -477,7 +480,8 @@ one of them steps the clocks (`WinampState.clocksTurn`).
    shows changes, so a frame costs one image draw whatever the length of the list.
    Row height, on the same page, is `RowHeight`: 13 px as in Winamp, or 19 or 25. The
    playlist, the library and the skin list each take it as their layout's `rowH`; the text
-   keeps its size and sits in the middle of the row. Each height is odd, which centers
+   keeps its size and sits in the middle of the row. The library's tab strip, header and
+   bar are as tall as a row, so they grow with it. Each height is odd, which centers
    the five-pixel letters of the skin's font exactly.
 5. **Window shapes come from `REGION.TXT`.** The player and the equalizer, in normal and
    shade form, are clipped to the skin's polygons. These are the four sections webamp
@@ -697,7 +701,8 @@ the phone's language.
   English: a German noun keeps its capital. A word that reads differently inside a line
   gets a resource for that place, as the widget's summary line has.
 - **The library window squeezes a label that is wider than its cell** (`ListText.squeeze`),
-  since its cells were sized for the English.
+  since its cells were sized for the English. In the skin's font it cuts the label to whole
+  letters and the font's ellipsis instead (`BitmapFont.fitted`).
 - **Tests** keep asserting the English words. A Robolectric test reads the real resources,
   whose default is English. A plain JVM test passes `EnglishWords`, which reads the same
   XML from disk.

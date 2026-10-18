@@ -48,7 +48,7 @@
     <string name="prefs_limiter_off">关闭 · 响亮的峰值会被削波</string>
 
     <!-- ListPrefs.kt -->
-    <string name="prefs_lists_font_title">播放列表字体</string>
+    <string name="prefs_lists_font_title">列表字体</string>
     <string name="prefs_lists_font_skin_about">皮肤自带的像素字母，与主窗口中的歌曲标题一样。皮肤没有对应字符的文字（例如中文）仍使用常规字体。</string>
     <string name="prefs_lists_font_regular_about">常规字体，平滑绘制，区分大小写。</string>
     <string name="prefs_lists_font_skin">皮肤</string>
@@ -115,7 +115,7 @@
     <string name="prefs_player_colors_section">颜色</string>
     <string name="prefs_player_summary_always_on_top">总在最前</string>
     <string name="prefs_player_summary_windows_stay_open">窗口保持展开</string>
-    <string name="prefs_player_summary_regular_font">播放列表使用常规字体</string>
+    <string name="prefs_player_summary_regular_font">列表使用常规字体</string>
     <string name="prefs_player_summary_roomy_rows">宽松的行</string>
     <string name="prefs_player_summary_large_rows">大号的行</string>
     <string name="prefs_player_summary_tap_assist">点按辅助</string>

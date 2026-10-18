@@ -12,8 +12,8 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performClick
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.state.EnglishWords
+import nl.mattix.andamp.state.ListFont
 import nl.mattix.andamp.state.ListStyleStore
-import nl.mattix.andamp.state.PlaylistFont
 import nl.mattix.andamp.state.RowHeight
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -47,7 +47,7 @@ class ListPrefsTest {
                     onRowHeight = { store.rowHeight = it },
                 )
             Column {
-                PlaylistFontRow(lists)
+                ListFontRow(lists)
                 RowHeightRow(lists)
             }
         }
@@ -65,14 +65,14 @@ class ListPrefsTest {
         compose.onNodeWithTag("prefs.lists.font.regular").performClick()
 
         compose.onNodeWithTag("prefs.lists.font.regular").assertIsSelected()
-        assertEquals(PlaylistFont.REGULAR, store().font)
+        assertEquals(ListFont.REGULAR, store().font)
         // a second store over the same file is the next launch
-        assertEquals(PlaylistFont.REGULAR, ListStyleStore(prefs).font)
+        assertEquals(ListFont.REGULAR, ListStyleStore(prefs).font)
 
         compose.onNodeWithTag("prefs.lists.font.skin").performClick()
 
         compose.onNodeWithTag("prefs.lists.font.skin").assertIsSelected()
-        assertEquals(PlaylistFont.SKIN, ListStyleStore(prefs).font)
+        assertEquals(ListFont.SKIN, ListStyleStore(prefs).font)
     }
 
     @Test
@@ -93,7 +93,7 @@ class ListPrefsTest {
 
         assertEquals(RowHeight.ROOMY, ListStyleStore(prefs).rowHeight)
         // the font is its own choice
-        assertEquals(PlaylistFont.SKIN, ListStyleStore(prefs).font)
+        assertEquals(ListFont.SKIN, ListStyleStore(prefs).font)
     }
 
     @Test
@@ -103,8 +103,8 @@ class ListPrefsTest {
         assertFalse("rows" in plain)
 
         val picked =
-            PrefsSections(lists = ListPrefs(font = PlaylistFont.REGULAR, rowHeight = RowHeight.ROOMY)).playerSummary(EnglishWords)
-        assertTrue("Regular font in the playlist" in picked)
+            PrefsSections(lists = ListPrefs(font = ListFont.REGULAR, rowHeight = RowHeight.ROOMY)).playerSummary(EnglishWords)
+        assertTrue("Regular font in the lists" in picked)
         assertTrue("Roomy rows" in picked)
     }
 }

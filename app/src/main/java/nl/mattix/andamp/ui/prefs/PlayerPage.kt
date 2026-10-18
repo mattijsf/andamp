@@ -5,7 +5,7 @@ package nl.mattix.andamp.ui.prefs
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import nl.mattix.andamp.R
-import nl.mattix.andamp.state.PlaylistFont
+import nl.mattix.andamp.state.ListFont
 import nl.mattix.andamp.state.RowHeight
 import nl.mattix.andamp.state.Words
 
@@ -19,7 +19,7 @@ internal fun PlayerPage(sections: PrefsSections) {
     }
     Section(stringResource(R.string.prefs_player_lists_section))
     Group {
-        PlaylistFontRow(sections.lists)
+        ListFontRow(sections.lists)
         RowHeightRow(sections.lists)
     }
     Section(stringResource(R.string.prefs_player_touch_section))
@@ -38,7 +38,7 @@ internal fun PrefsSections.playerSummary(words: Words): String {
         listOfNotNull(
             R.string.prefs_player_summary_always_on_top.takeIf { overlay.wanted },
             R.string.prefs_player_summary_windows_stay_open.takeIf { !shade.shadeEnabled },
-            R.string.prefs_player_summary_regular_font.takeIf { lists.font == PlaylistFont.REGULAR },
+            R.string.prefs_player_summary_regular_font.takeIf { lists.font == ListFont.REGULAR },
             when (lists.rowHeight) {
                 RowHeight.CLASSIC -> null
                 RowHeight.ROOMY -> R.string.prefs_player_summary_roomy_rows

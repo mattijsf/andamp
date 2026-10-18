@@ -110,9 +110,9 @@ class AndroidAutoStoreTest {
     fun `the list in the car keeps the regular font until the skin's is chosen`() {
         val kept = prefs()
 
-        assertEquals(PlaylistFont.REGULAR, AndroidAutoStore(kept).listFont)
-        AndroidAutoStore(kept).listFont = PlaylistFont.SKIN
+        assertEquals(ListFont.REGULAR, AndroidAutoStore(kept).listFont)
+        AndroidAutoStore(kept).listFont = ListFont.SKIN
 
-        assertEquals(PlaylistFont.SKIN, AndroidAutoStore(kept).listFont)
+        assertEquals(ListFont.SKIN, AndroidAutoStore(kept).listFont)
     }
 }

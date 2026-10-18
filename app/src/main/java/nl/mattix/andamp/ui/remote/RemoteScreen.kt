@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.IntRect
 import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.skin.RegionTxt
 import nl.mattix.andamp.skin.Skin
-import nl.mattix.andamp.state.PlaylistFont
+import nl.mattix.andamp.state.ListFont
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.ui.InPlayerVisualizerDriver
@@ -81,7 +81,7 @@ internal fun RemoteScreen(
     showing: Showing = remember { Showing() },
     fill: Boolean = false,
     onFill: () -> Unit = {},
-    listFont: PlaylistFont = PlaylistFont.REGULAR,
+    listFont: ListFont = ListFont.REGULAR,
 ) {
     val s = vm.state
     var up by showing::up

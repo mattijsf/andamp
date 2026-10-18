@@ -137,16 +137,15 @@ class LibraryInteractionTest {
         up()
     }
 
-    private fun rowCenterY(row: Int) =
-        frame.titleH + LibraryLayout.ROWS_TOP + row * LibraryLayout.ROW_H + LibraryLayout.ROW_H / 2f
+    private fun rowCenterY(row: Int) = frame.titleH + layout.rowsTop + row * LibraryLayout.ROW_H + LibraryLayout.ROW_H / 2f
 
     private fun rowX() = frame.leftW + 40f
 
-    private fun headerY() = frame.titleH + LibraryLayout.HEADER_TOP + LibraryLayout.BAR_H / 2f
+    private fun headerY() = frame.titleH + layout.headerTop + layout.barH / 2f
 
-    private fun tabsY() = frame.titleH + LibraryLayout.BAR_H / 2f
+    private fun tabsY() = frame.titleH + layout.barH / 2f
 
-    private fun barY() = frame.titleH + layout.barTop + LibraryLayout.BAR_H / 2f
+    private fun barY() = frame.titleH + layout.barTop + layout.barH / 2f
 
     private fun settle() {
         shadowOf(Looper.getMainLooper()).idle()
