@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.distinctUntilChangedBy
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.mattix.andamp.R
@@ -212,16 +213,32 @@ class WinampViewModel
                 words = words,
             )
 
+        /** Every source the library can show, together; see [AllLibrary]. */
+        private val allLibrary =
+            AllLibrary { librarySources.usable.map { AllLibrary.Member(it, browseSource(it), markOf(it, words)) } }
+
+        /** The library the window shows: every source together, or the one picked. */
+        private val showingLibrary: () -> BrowseSource =
+            { if (librarySources.showingAll) allLibrary else browseSource(librarySources.showing) }
+
         /** The media library window: artists, albums, lists and radio. */
         val libraryOps =
             LibraryOps(
-                { browseSource(librarySources.showing) },
+                showingLibrary,
                 facade,
                 state,
                 viewModelScope,
                 playlistLibrary,
                 stationStore,
-                nameOf = { librarySources.showing.shown(words) },
+                nameOf = {
+                    if (librarySources.showingAll) {
+                        words.get(
+                            R.string.source_all,
+                        )
+                    } else {
+                        librarySources.showing.shown(words)
+                    }
+                },
                 onListRead = folderAccess::listRead,
                 words = words,
                 // a source says whether its last answer got to the end
@@ -348,10 +365,16 @@ class WinampViewModel
             viewModelScope.launch {
                 snapshotFlow { listStyleStore.rowHeight }.collect { state.rowHeight = it }
             }
-            // a library read again while it is shown reaches the window; see ShelfUpdates
+            // a library read again while it is shown reaches the window; see ShelfUpdates. With
+            // every source together, any of them read again does.
             viewModelScope.launch {
-                snapshotFlow { librarySources.showing }.collectLatest { source ->
-                    (browseSource(source) as? ShelfUpdates)?.revision?.drop(1)?.collect { libraryOps.shelfChanged() }
+                snapshotFlow {
+                    if (librarySources.showingAll) librarySources.usable else listOf(librarySources.showing)
+                }.collectLatest { shown ->
+                    shown
+                        .mapNotNull { (browseSource(it) as? ShelfUpdates)?.revision?.drop(1) }
+                        .merge()
+                        .collect { libraryOps.shelfChanged() }
                 }
             }
             // restores what a previous session left: settings, queue, visuals, windows

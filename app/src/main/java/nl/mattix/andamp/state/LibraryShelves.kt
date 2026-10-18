@@ -107,7 +107,7 @@ internal class LibraryShelves(
         if (found.albums.isNotEmpty()) {
             heading(count(found.albums.size, R.plurals.library_count_albums))
             for (album in found.albums) {
-                rows += Row(album.title, detail = album.artist)
+                rows += Row(album.title, detail = marked(src, album.id, album.artist))
                 open += { drill(album.title) { tracksPage(src, album) } }
                 tracksOf += { src.tracks(album.id) }
             }
@@ -210,7 +210,7 @@ internal class LibraryShelves(
             incomplete = src.partial(),
             status = count(albums.size, R.plurals.library_count_albums),
             // the artist as the detail, since two albums may share a title
-            rows = albums.map { Row(it.title, detail = it.artist) },
+            rows = albums.map { Row(it.title, detail = marked(src, it.id, it.artist)) },
             open = albums.map { album -> { drill(album.title) { tracksPage(src, album) } } },
             tracksOf = albums.map { album -> { src.tracks(album.id) } },
         )
@@ -222,7 +222,46 @@ internal class LibraryShelves(
      * that does not shows the lists this app has saved as files. The two are never mixed.
      */
     private suspend fun listsRootPage(src: BrowseSource): LibraryPage =
-        if (src.capabilities.hasPlaylists) sourceListsPage(src) else savedLists()
+        when {
+            // every source together: the lists this app saved, then each source's own
+            src is AllLibrary && src.capabilities.hasPlaylists -> together(savedLists(), sourceListsPage(src))
+
+            src.capabilities.hasPlaylists -> sourceListsPage(src)
+
+            else -> savedLists()
+        }
+
+    /** The saved lists and the sources' lists as one page, the saved ones first, as [LibraryPage.saved] wants. */
+    private fun together(
+        saved: LibraryPage,
+        theirs: LibraryPage,
+    ) = LibraryPage(
+        header = label(Category.LISTS),
+        status = count(saved.rows.size + theirs.rows.size, R.plurals.library_count_lists),
+        rows = saved.rows + theirs.rows,
+        open = saved.open + theirs.open,
+        tracksOf = saved.tracksOf + theirs.tracksOf,
+        saved = saved.saved,
+        empty = saved.empty,
+        incomplete = theirs.incomplete,
+    )
+
+    /**
+     * [detail] with the marks of the sources that have the album, when every source is shown
+     * together ([SourceMarks]); [detail] alone otherwise.
+     */
+    private fun marked(
+        src: BrowseSource,
+        albumId: String,
+        detail: String,
+    ): String {
+        val marks = (src as? SourceMarks)?.marksOf(albumId).orEmpty()
+        return when {
+            marks.isEmpty() -> detail
+            detail.isEmpty() -> marks
+            else -> "$detail · $marks"
+        }
+    }
 
     private suspend fun sourceListsPage(src: BrowseSource): LibraryPage {
         val their = src.playlists()
@@ -330,7 +369,7 @@ internal class LibraryShelves(
         header = header,
         incomplete = incomplete,
         status = count(albums.size, noun),
-        rows = albums.map { Row(it.title, detail = it.year?.toString() ?: "") },
+        rows = albums.map { Row(it.title, detail = marked(src, it.id, it.year?.toString() ?: "")) },
         open = albums.map { album -> { drill(album.title) { tracksPage(src, album) } } },
         tracksOf = albums.map { album -> { src.tracks(album.id) } },
     )

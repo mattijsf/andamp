@@ -106,6 +106,8 @@
 
     <!-- MusicSource.kt: the music on the phone itself, as a source beside the ones that are installed -->
     <string name="source_this_phone">This Phone</string>
+    <!-- AllLibrary.kt: every source the library can show, together -->
+    <string name="source_all">All Sources</string>
 
     <!-- PackSource.kt: whose app plays a source. Its name, its package, and the start of its signing fingerprint. -->
     <string name="source_played_by">Played by %1$s (%2$s)</string>

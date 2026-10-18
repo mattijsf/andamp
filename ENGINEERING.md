@@ -449,6 +449,12 @@ one of them steps the clocks (`WinampState.clocksTurn`).
   without a network, and the source is asked again behind it when the answer is an hour
   old or was not asked since the app started. A sign-out drops what is kept of that
   source. The file holds nothing that cannot be read again, so a schema change empties it.
+- **Every source together.** With more than one source to show, the window starts on
+  `AllLibrary`: the phone and each signed-in source as one library. Artists match by
+  folded name, albums by artist and title; an album's copies are its editions, and its
+  tracks come from the first that answers, the phone first, so a server that is down
+  falls back to another copy. A source's own lists and catalog keep ids that lead back to
+  it. The header's corner names the library on show and picks another.
 
 ## Pixel rules
 

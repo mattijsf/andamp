@@ -91,6 +91,7 @@
 
     <!-- MusicSource.kt -->
     <string name="source_this_phone">本机</string>
+    <string name="source_all">全部音乐源</string>
 
     <!-- PackSource.kt -->
     <string name="source_played_by">由 %1$s 播放（%2$s）</string>

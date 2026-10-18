@@ -39,9 +39,36 @@ class LibrarySources(
 
     /**
      * The source the window shows: the one picked, or the phone when the picked one cannot
-     * be shown (signed out, or its app gone). The pick is kept for when it can.
+     * be shown (signed out, or its app gone). The pick is kept for when it can. While
+     * [showingAll], it is the phone.
      */
     val showing: MusicSource get() = present.firstOrNull { it.id == store.id }?.takeIf(::usable) ?: MusicSource.LOCAL
+
+    /** The sources there is something to show of: the phone, and each source with an account here. */
+    val usable: List<MusicSource> get() = present.filter(::usable)
+
+    /**
+     * Whether the window shows every usable source together ([AllLibrary]): when that was
+     * picked, or when nothing was, and in both cases only while there is more than one.
+     */
+    val showingAll: Boolean get() = usable.size > 1 && (store.id == null || store.id == LibrarySourceStore.ALL)
+
+    /** Main menu > Media Library > All Sources, with the window [open] or not. */
+    fun pickAll(open: Boolean): Pick =
+        when {
+            usable.size < 2 -> {
+                Pick.Nothing
+            }
+
+            open && showingAll -> {
+                Pick.Close
+            }
+
+            else -> {
+                store.id = LibrarySourceStore.ALL
+                Pick.Show
+            }
+        }
 
     /** Main menu > Media Library > [wanted], with the window [open] or not. */
     fun pick(
@@ -58,7 +85,7 @@ class LibrarySources(
             }
 
             // the entry is ticked, and a ticked window entry closes its window
-            open && wanted == showing -> {
+            open && !showingAll && wanted == showing -> {
                 Pick.Close
             }
 
@@ -83,10 +110,18 @@ class LibrarySources(
         onReach(reach)
     }
 
-    /** Signed in to [source]: it also becomes the library window's pick. */
-    fun signedIn(source: MusicSource) {
+    /**
+     * Signed in to [source]: it also becomes the library window's pick when the listener
+     * [picked] it, or when the window shows a single source; with every source together, it
+     * joins them.
+     */
+    fun signedIn(
+        source: MusicSource,
+        picked: Boolean = false,
+    ) {
+        val together = showingAll || store.id == null
         signed = signed + source
-        store.id = source.id
+        if (picked || !together) store.id = source.id
         onReach(reach)
     }
 

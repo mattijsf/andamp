@@ -32,6 +32,7 @@ import nl.mattix.andamp.skin.PleditStyle
 import nl.mattix.andamp.skin.Sheet
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SpriteMap
+import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.LibraryAccess
 import nl.mattix.andamp.state.LibraryOps
 import nl.mattix.andamp.state.ListFont
@@ -41,8 +42,10 @@ import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.state.Words
+import nl.mattix.andamp.state.shown
 import nl.mattix.andamp.ui.LibraryAccessHandle
 import nl.mattix.andamp.ui.menu.libraryRowMenu
+import nl.mattix.andamp.ui.menu.sourceItems
 import nl.mattix.andamp.ui.sprite
 import nl.mattix.andamp.ui.widget.Widget
 import kotlin.math.roundToInt
@@ -140,13 +143,58 @@ fun LibraryWindow(
             // the window centers and clamps in the whole container
             modifier = Modifier.matchParentSize(),
         ) {
-            drawLibraryContent(rasterizer, vm.libraryOps, s, skin, scale, frame, layout)
+            drawLibraryContent(rasterizer, vm.libraryOps, s, skin, scale, frame, layout, sourceChip(vm))
         }
         // carries the keystrokes for the canvas-drawn search field
         if (vm.libraryOps.searching) {
             LibrarySearchConduit(vm.libraryOps)
         }
     }
+}
+
+/**
+ * The name of the library on show, for the header's corner, where another is picked: every
+ * source together, or one of them. Null with only one to show, which then needs no name.
+ */
+internal fun sourceChip(vm: WinampViewModel): String? {
+    val sources = vm.librarySources
+    if (sources.usable.size < 2) return null
+    return if (sources.showingAll) vm.words.get(R.string.source_all) else sources.showing.shown(vm.words)
+}
+
+/**
+ * The header's corner at [cell], which names the library on show and picks another from a
+ * menu: every source together, or one of them.
+ */
+private fun sourceWidget(
+    vm: WinampViewModel,
+    cell: IntRect,
+): Widget {
+    val ops = vm.libraryOps
+    val sources = vm.librarySources
+    return Widget(
+        "library.source",
+        cell,
+        enabled = { sourceChip(vm) != null && !ops.searching && ops.depth == 0 },
+        taps =
+            Widget.Taps(onTap = {
+                vm.state.activeMenu =
+                    AmpMenu(
+                        title = vm.words.get(R.string.menu_media_library),
+                        items =
+                            sourceItems(
+                                sources = sources.usable,
+                                showing = sources.showing.takeIf { !sources.showingAll },
+                                onSource = { source -> vm.sourceOps.libraryFrom(source, onSignIn = {}) },
+                                named = { it.shown(vm.words) },
+                                all = vm.words.get(R.string.source_all),
+                                showingAll = sources.showingAll,
+                                onAll = vm.sourceOps::libraryAll,
+                            ),
+                        anchor = MenuAnchor(WindowStore.LIBRARY, cell.left, cell.top, cell.width, cell.height),
+                    )
+            }),
+    )
 }
 
 /**
@@ -205,6 +253,7 @@ private fun libraryWidgets(
                 taps = Widget.Taps(onTap = { ops.headerTap() }),
             ),
             // after the header: the last widget wins the hit test
+            sourceWidget(vm, IntRect(left + listW - LibraryLayout.SOURCE_CELL_W, headerTop, left + listW, headerTop + barH)),
             Widget(
                 "library.searchclear",
                 IntRect(left + listW - barH, headerTop, left + listW, headerTop + barH),
@@ -304,9 +353,11 @@ internal fun DrawScope.drawLibraryContent(
     scale: Int,
     frame: WindowFrame,
     layout: LibraryLayout,
+    /** The library's name in the header's corner; see [sourceChip]. */
+    source: String? = null,
 ) {
     val width = layout.listWidth(frame)
-    drawLibraryBands(ops, s, skin.pledit, width, layout)
+    drawLibraryBands(ops, s, skin.pledit, width, layout, source != null)
     val scene =
         LibraryRasterizer.Scene(
             revision = ops.revision,
@@ -330,6 +381,7 @@ internal fun DrawScope.drawLibraryContent(
             style = skin.pledit,
             rowH = layout.rowH,
             skinFont = skin[Sheet.TEXT].takeIf { s.listFont == ListFont.SKIN },
+            source = source,
         )
     drawLayer(rasterizer.top(ops, scene), 0, width, layout.rowsTop)
     drawLayer(rasterizer.rows(ops, scene), layout.rowsTop, width, layout.rowsH)
@@ -407,6 +459,7 @@ private fun DrawScope.drawLibraryBands(
     style: PleditStyle,
     width: Int,
     layout: LibraryLayout,
+    hasSource: Boolean,
 ) {
     val band = style.selectedBg
     fill(style.normalBg, 0, 0, width, layout.contentH)
@@ -422,6 +475,9 @@ private fun DrawScope.drawLibraryBands(
     // pressed art only where the header does something: up, or open the search
     val tappable = ops.depth > 0 || (ops.canSearch && !ops.searching)
     if (s.pressedWidget == "library.header" && tappable) fill(band, 0, layout.headerTop, width, layout.barH)
+    if (hasSource && s.pressedWidget == "library.source") {
+        fill(band, width - LibraryLayout.SOURCE_CELL_W, layout.headerTop, width, layout.barH)
+    }
 
     val rowsW = width - LibraryLayout.SCROLLBAR_W
     for (at in 0 until layout.visibleRows) {
@@ -511,6 +567,8 @@ internal class LibraryRasterizer(
         val rowH: Int = LibraryLayout.ROW_H,
         /** The skin's TEXT.BMP while the lists are in its font; null for the outline font. */
         val skinFont: ImageBitmap? = null,
+        /** The library's name in the header's corner, where another can be picked; null where none can. */
+        val source: String? = null,
     ) {
         val layout: LibraryLayout get() = LibraryLayout(visibleRows, slack = slack, rowH = rowH)
     }
@@ -571,6 +629,7 @@ internal class LibraryRasterizer(
                 scene.caret,
                 scene.caretOn,
                 scene.canSearch,
+                scene.source,
                 scene.width,
                 scene.scale,
                 scene.style,
@@ -707,8 +766,23 @@ internal class LibraryRasterizer(
         layout: LibraryLayout,
     ) {
         val top = layout.headerTop
-        val right = scene.width - ListText.RIGHT_INSET
         val current = scene.style.current.toArgb()
+        // the library's name in the corner, at a tab's root
+        val source = scene.source?.takeIf { !scene.searching && ops.depth == 0 }
+        val right = scene.width - ListText.RIGHT_INSET - if (source != null) LibraryLayout.SOURCE_CELL_W else 0
+        if (source != null) {
+            val cellLeft = (scene.width - LibraryLayout.SOURCE_CELL_W).toFloat()
+            label(
+                source.uppercase(),
+                cellLeft + 1,
+                scene.width - ListText.RIGHT_INSET,
+                top,
+                layout.barH,
+                current,
+                TextLayer.Align.RIGHT,
+                TextLayer.Fit.SQUEEZE,
+            )
+        }
         when {
             scene.searching -> {
                 val clearLeft = scene.width - layout.barH
@@ -921,6 +995,9 @@ class LibraryLayout(
         const val DELETE_CELL_W = 52
         const val PLAY_CELL_W = 34
         const val ADD_CELL_W = 30
+
+        /** The header's corner that names the library and picks another. */
+        const val SOURCE_CELL_W = 64
         const val MIN_ROWS = 8
         const val TITLE = "Library"
 
