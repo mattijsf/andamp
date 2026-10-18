@@ -166,12 +166,12 @@ class WinampState {
     var tapAssist: Boolean by mutableStateOf(TapAssistStore.DEFAULT)
 
     /**
-     * The font of the playlist's rows; see [ListStyleStore]. Mirrored here for the same
+     * The font of the playlist and the media library; see [ListStyleStore]. Mirrored here for the same
      * reason as [shadeEnabled].
      */
-    var playlistFont: PlaylistFont by mutableStateOf(ListStyleStore.DEFAULT_FONT)
+    var listFont: ListFont by mutableStateOf(ListStyleStore.DEFAULT_FONT)
 
-    /** How tall a row of a list is; see [ListStyleStore]. Mirrored like [playlistFont]. */
+    /** How tall a row of a list is; see [ListStyleStore]. Mirrored like [listFont]. */
     var rowHeight: RowHeight by mutableStateOf(ListStyleStore.DEFAULT_ROW_HEIGHT)
 
     /**

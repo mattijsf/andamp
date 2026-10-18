@@ -331,7 +331,7 @@ class WinampViewModel
             // render state follows them
             state.shadeEnabled = shadeStore.enabled
             state.tapAssist = tapAssistStore.enabled
-            state.playlistFont = listStyleStore.font
+            state.listFont = listStyleStore.font
             state.rowHeight = listStyleStore.rowHeight
             viewModelScope.launch {
                 snapshotFlow { shadeStore.enabled }.collect { state.shadeEnabled = it }
@@ -340,7 +340,7 @@ class WinampViewModel
                 snapshotFlow { tapAssistStore.enabled }.collect { state.tapAssist = it }
             }
             viewModelScope.launch {
-                snapshotFlow { listStyleStore.font }.collect { state.playlistFont = it }
+                snapshotFlow { listStyleStore.font }.collect { state.listFont = it }
             }
             viewModelScope.launch {
                 snapshotFlow { listStyleStore.rowHeight }.collect { state.rowHeight = it }

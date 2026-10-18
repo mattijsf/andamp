@@ -54,7 +54,7 @@ internal fun SkinPreviewCanvas(
     val context = LocalContext.current
     // the demo playlist looks the way the listener's own does
     val lists = remember { ListStyleStore(context) }
-    val state = remember { SkinDemo.state().apply { playlistFont = lists.font } }
+    val state = remember { SkinDemo.state().apply { listFont = lists.font } }
     val player = remember(state) { SkinDemo.Player(state) }
     val text = remember { PlaylistTextRasterizer(Typeface.createFromAsset(context.assets, PlaylistTextRasterizer.ASSET_PATH)) }
     val layout = remember { PlaylistLayout(height = PLAYLIST_H, width = PL_W, rowH = lists.rowHeight.px) }

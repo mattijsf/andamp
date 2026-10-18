@@ -50,7 +50,7 @@
     <string name="prefs_limiter_off">Désactivé · les crêtes fortes sont coupées</string>
 
     <!-- ListPrefs.kt -->
-    <string name="prefs_lists_font_title">Police de la liste de lecture</string>
+    <string name="prefs_lists_font_title">Police des listes</string>
     <string name="prefs_lists_font_skin_about">Les lettres en pixels du skin, comme le titre du morceau dans la fenêtre principale. Un titre dans une écriture pour laquelle le skin n’a pas de lettres garde la police normale.</string>
     <string name="prefs_lists_font_regular_about">Une police normale, au tracé lisse, avec minuscules et majuscules.</string>
     <string name="prefs_lists_font_skin">Skin</string>
@@ -117,7 +117,7 @@
     <string name="prefs_player_colors_section">Couleurs</string>
     <string name="prefs_player_summary_always_on_top">Toujours au premier plan</string>
     <string name="prefs_player_summary_windows_stay_open">Les fenêtres restent ouvertes</string>
-    <string name="prefs_player_summary_regular_font">Police normale dans la liste de lecture</string>
+    <string name="prefs_player_summary_regular_font">Police normale dans les listes</string>
     <string name="prefs_player_summary_roomy_rows">Lignes aérées</string>
     <string name="prefs_player_summary_large_rows">Grandes lignes</string>
     <string name="prefs_player_summary_tap_assist">Aide au toucher</string>

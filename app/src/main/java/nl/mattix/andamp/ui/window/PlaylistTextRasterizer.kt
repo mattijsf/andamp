@@ -209,17 +209,12 @@ class PlaylistTextRasterizer(
             val left = ListText.LEFT_INSET.toInt()
             val durX = width - ListText.RIGHT_INSET.toInt() - duration.length * BitmapFont.CHAR_W
             glyphs.write(duration, durX, y, argb, block, width)
-            val room = ((durX - DURATION_GAP - left) / BitmapFont.CHAR_W).coerceAtLeast(1)
-            val normal = BitmapFont.normalize(title)
-            val shown = if (normal.length > room) normal.take(room - 1) + ELLIPSIS else normal
-            glyphs.write(shown, left, y, argb, block, width)
+            val room = (durX - DURATION_GAP - left) / BitmapFont.CHAR_W
+            glyphs.write(BitmapFont.fitted(title, room), left, y, argb, block, width)
         }
 
         /** The title stops this far short of the duration. */
         private const val DURATION_GAP = 4
-
-        /** The skin font's own glyph for a title that was cut. */
-        private const val ELLIPSIS = '…'
 
         /** Skin art is scaled without filtering, so a pixel stays a square. */
         private val UNFILTERED = Paint().apply { isFilterBitmap = false }

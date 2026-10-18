@@ -8,8 +8,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
-/** The font the playlist's rows are written in. */
-enum class PlaylistFont {
+/** The font the playlist and the media library are written in. */
+enum class ListFont {
     /** The skin's own pixel letters, the ones the main window writes the song title in. */
     SKIN,
 
@@ -28,8 +28,8 @@ enum class RowHeight(
 }
 
 /**
- * How the lists look: the font of the playlist, and the height of a row in the playlist, the
- * media library and the skin list.
+ * How the lists look: the font of the playlist and the media library, and the height of a
+ * row in the playlist, the media library and the skin list.
  *
  * It has its own preferences file because it is read before a window is drawn and written
  * from a settings screen.
@@ -43,7 +43,7 @@ class ListStyleStore(
     private var currentFont by mutableStateOf(named(prefs.getString(FONT, null), DEFAULT_FONT))
     private var currentRowHeight by mutableStateOf(named(prefs.getString(ROW_HEIGHT, null), DEFAULT_ROW_HEIGHT))
 
-    var font: PlaylistFont
+    var font: ListFont
         get() = currentFont
         set(value) {
             currentFont = value
@@ -62,8 +62,8 @@ class ListStyleStore(
         private const val FONT = "font"
         private const val ROW_HEIGHT = "rowheight"
 
-        /** The skin's letters, so a skin dresses the playlist as it does the main window. */
-        val DEFAULT_FONT = PlaylistFont.SKIN
+        /** The skin's letters, so a skin dresses the lists as it does the main window. */
+        val DEFAULT_FONT = ListFont.SKIN
 
         /** As in Winamp. */
         val DEFAULT_ROW_HEIGHT = RowHeight.CLASSIC

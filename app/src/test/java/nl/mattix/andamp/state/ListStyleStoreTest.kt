@@ -23,7 +23,7 @@ class ListStyleStoreTest {
     fun `the playlist is in the skin's font, in rows as tall as Winamp's, until the listener picks otherwise`() {
         val store = ListStyleStore(prefs())
 
-        assertEquals(PlaylistFont.SKIN, store.font)
+        assertEquals(ListFont.SKIN, store.font)
         assertEquals(RowHeight.CLASSIC, store.rowHeight)
         assertEquals(13, store.rowHeight.px)
     }
@@ -32,13 +32,13 @@ class ListStyleStoreTest {
     fun `what the listener picked is what comes back`() {
         val prefs = prefs()
         ListStyleStore(prefs).apply {
-            font = PlaylistFont.REGULAR
+            font = ListFont.REGULAR
             rowHeight = RowHeight.LARGE
         }
 
         // a second store over the same file is the next launch
         val next = ListStyleStore(prefs)
-        assertEquals(PlaylistFont.REGULAR, next.font)
+        assertEquals(ListFont.REGULAR, next.font)
         assertEquals(RowHeight.LARGE, next.rowHeight)
     }
 
@@ -53,7 +53,7 @@ class ListStyleStoreTest {
 
         val store = ListStyleStore(prefs)
 
-        assertEquals(PlaylistFont.SKIN, store.font)
+        assertEquals(ListFont.SKIN, store.font)
         assertEquals(RowHeight.CLASSIC, store.rowHeight)
     }
 

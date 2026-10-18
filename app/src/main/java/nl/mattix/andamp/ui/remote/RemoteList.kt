@@ -37,7 +37,7 @@ import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.skin.Sheet
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SpriteMap
-import nl.mattix.andamp.state.PlaylistFont
+import nl.mattix.andamp.state.ListFont
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.rowLabel
@@ -79,7 +79,7 @@ internal fun RemoteList(
     fit: PlayerViewport,
     scroll: ListScroll,
     sliders: Sliders,
-    font: PlaylistFont = PlaylistFont.REGULAR,
+    font: ListFont = ListFont.REGULAR,
     onClose: () -> Unit,
 ) {
     val s = vm.state
@@ -97,7 +97,7 @@ internal fun RemoteList(
         }
     val skinRows =
         remember(skin, font, layout, scale) {
-            if (font != PlaylistFont.SKIN) return@remember null
+            if (font != ListFont.SKIN) return@remember null
             PlaylistTextRasterizer.glyphMaskOf(skin[Sheet.TEXT])?.let { SkinRows(it, layout, scale) }
         }
     var pressed by remember { mutableIntStateOf(NO_ROW) }

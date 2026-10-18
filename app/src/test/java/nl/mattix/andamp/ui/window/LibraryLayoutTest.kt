@@ -18,14 +18,14 @@ class LibraryLayoutTest {
     @Test
     fun `a touch in the header area clamps to row zero`() {
         val layout = LibraryLayout(12)
-        assertEquals(0, layout.rowAt((frame.titleH + LibraryLayout.ROWS_TOP - 1).toFloat(), frame))
+        assertEquals(0, layout.rowAt((frame.titleH + layout.rowsTop - 1).toFloat(), frame))
         assertEquals(0, layout.rowAt(0f, frame))
     }
 
     @Test
     fun `rows map back from their own pixels`() {
         val layout = LibraryLayout(12)
-        val top = frame.titleH + LibraryLayout.ROWS_TOP
+        val top = frame.titleH + layout.rowsTop
         assertEquals(0, layout.rowAt(top.toFloat(), frame))
         assertEquals(0, layout.rowAt((top + LibraryLayout.ROW_H - 1).toFloat(), frame))
         assertEquals(1, layout.rowAt((top + LibraryLayout.ROW_H).toFloat(), frame))
@@ -35,7 +35,7 @@ class LibraryLayoutTest {
     @Test
     fun `the window height is chrome plus furniture plus the rows`() {
         val layout = LibraryLayout(12)
-        assertEquals(LibraryLayout.FURNITURE_H + 12 * LibraryLayout.ROW_H, layout.contentH)
+        assertEquals(LibraryLayout.furnitureH(LibraryLayout.ROW_H) + 12 * LibraryLayout.ROW_H, layout.contentH)
         assertEquals(frame.chromeH + layout.contentH, layout.height(frame))
     }
 
@@ -43,7 +43,10 @@ class LibraryLayoutTest {
     fun `available height fills with rows and never goes below the minimum`() {
         // a 800-virtual-px screen: everything left after chrome and furniture
         val tall = LibraryLayout.forAvailableHeight(800, frame)
-        assertEquals((800 - frame.chromeH - LibraryLayout.FURNITURE_H) / LibraryLayout.ROW_H, tall.visibleRows)
+        assertEquals(
+            (800 - frame.chromeH - LibraryLayout.furnitureH(LibraryLayout.ROW_H)) / LibraryLayout.ROW_H,
+            tall.visibleRows,
+        )
 
         val cramped = LibraryLayout.forAvailableHeight(50, frame)
         assertEquals(LibraryLayout.MIN_ROWS, cramped.visibleRows)
@@ -72,17 +75,39 @@ class LibraryLayoutTest {
     @Test
     fun `the bar sits directly under the rows and their rule`() {
         val layout = LibraryLayout(10)
-        assertEquals(LibraryLayout.ROWS_TOP + 10 * LibraryLayout.ROW_H, layout.rowsBottom)
+        assertEquals(layout.rowsTop + 10 * LibraryLayout.ROW_H, layout.rowsBottom)
         assertEquals(layout.rowsBottom + LibraryLayout.RULE_H, layout.barTop)
     }
 
     @Test
     fun `the rows start under the tab strip, its rule, the header and its rule`() {
-        assertEquals(LibraryLayout.BAR_H + LibraryLayout.RULE_H, LibraryLayout.HEADER_TOP)
-        assertEquals(
-            LibraryLayout.HEADER_TOP + LibraryLayout.BAR_H + LibraryLayout.RULE_H,
-            LibraryLayout.ROWS_TOP,
-        )
+        val layout = LibraryLayout(rowsFixture)
+        assertEquals(layout.barH + LibraryLayout.RULE_H, layout.headerTop)
+        assertEquals(layout.headerTop + layout.barH + LibraryLayout.RULE_H, layout.rowsTop)
+        // Winamp's own: 13 px parts, the rows 28 px down
+        assertEquals(13, layout.barH)
+        assertEquals(28, layout.rowsTop)
+    }
+
+    @Test
+    fun `taller rows make the strip, the header and the bar as tall as a row`() {
+        for (rowH in listOf(19, 25)) {
+            val layout = LibraryLayout(rowsFixture, rowH = rowH)
+            assertEquals(rowH, layout.barH)
+            assertEquals(2 * rowH + 2 * LibraryLayout.RULE_H, layout.rowsTop)
+            assertEquals(layout.rowsTop + rowsFixture * rowH + LibraryLayout.RULE_H, layout.barTop)
+            assertEquals(layout.barTop + rowH, layout.contentH)
+        }
+    }
+
+    @Test
+    fun `the bar's cells are counted from its right edge`() {
+        val cells = LibraryLayout.BarCells(262)
+
+        assertEquals(262 - LibraryLayout.ADD_CELL_W, cells.addLeft)
+        assertEquals(cells.addLeft - LibraryLayout.PLAY_CELL_W, cells.playLeft)
+        assertEquals(cells.playLeft - LibraryLayout.NEW_CELL_W, cells.newLeft)
+        assertEquals(cells.playLeft - LibraryLayout.DELETE_CELL_W, cells.deleteLeft)
     }
 
     @Test
@@ -133,12 +158,12 @@ class LibraryLayoutTest {
     @Test
     fun `taller rows map back from their own pixels, and make the rows' area taller`() {
         val layout = LibraryLayout(6, rowH = 25)
-        val top = frame.titleH + LibraryLayout.ROWS_TOP
+        val top = frame.titleH + layout.rowsTop
 
         assertEquals(0, layout.rowAt((top + 24).toFloat(), frame))
         assertEquals(1, layout.rowAt((top + 25).toFloat(), frame))
         assertEquals(6 * 25, layout.rowsH)
-        assertEquals(LibraryLayout.FURNITURE_H + 6 * 25, layout.contentH)
+        assertEquals(LibraryLayout.furnitureH(25) + 6 * 25, layout.contentH)
     }
 
     @Test
@@ -160,7 +185,7 @@ class LibraryLayoutTest {
     fun `available height fills with as many taller rows as fit`() {
         val tall = LibraryLayout.forAvailableHeight(800, frame, rowH = 25)
 
-        assertEquals((800 - frame.chromeH - LibraryLayout.FURNITURE_H) / 25, tall.visibleRows)
+        assertEquals((800 - frame.chromeH - LibraryLayout.furnitureH(25)) / 25, tall.visibleRows)
         assertTrue(tall.height(frame) <= 800)
     }
 }

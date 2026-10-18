@@ -50,7 +50,7 @@
     <string name="prefs_limiter_off">Uit · luide pieken worden afgekapt</string>
 
     <!-- ListPrefs.kt -->
-    <string name="prefs_lists_font_title">Lettertype van de afspeellijst</string>
+    <string name="prefs_lists_font_title">Lettertype van de lijsten</string>
     <string name="prefs_lists_font_skin_about">De pixelletters van de skin, zoals de titel van het nummer in het hoofdvenster. Een titel in een schrift waarvoor de skin geen letters heeft, houdt het gewone lettertype.</string>
     <string name="prefs_lists_font_regular_about">Een gewoon lettertype, glad getekend, met kleine letters en hoofdletters.</string>
     <string name="prefs_lists_font_skin">Skin</string>
@@ -117,7 +117,7 @@
     <string name="prefs_player_colors_section">Kleuren</string>
     <string name="prefs_player_summary_always_on_top">Altijd bovenaan</string>
     <string name="prefs_player_summary_windows_stay_open">Vensters blijven open</string>
-    <string name="prefs_player_summary_regular_font">Gewoon lettertype in de afspeellijst</string>
+    <string name="prefs_player_summary_regular_font">Gewoon lettertype in de lijsten</string>
     <string name="prefs_player_summary_roomy_rows">Ruime rijen</string>
     <string name="prefs_player_summary_large_rows">Grote rijen</string>
     <string name="prefs_player_summary_tap_assist">Tikhulp</string>
