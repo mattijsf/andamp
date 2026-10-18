@@ -3,10 +3,12 @@
 package nl.mattix.andamp.ui.menu
 
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
@@ -117,6 +119,21 @@ class AmpContextMenuTest {
         compose.onNodeWithText("Save").performClick()
         compose.waitForIdle()
         assertNull(submitted)
+    }
+
+    @Test
+    fun `typing into a name prompt replaces the name it suggests`() {
+        var named: String? = null
+        state.namePrompt = NamePrompt(title = "Station name", initial = "radio.example.com", confirmLabel = "Save") { named = it }
+        compose.setContent {
+            AmpModals(state, anchorBounds = { IntRect(IntOffset.Zero, IntSize.Zero) })
+        }
+
+        compose.onNode(hasSetTextAction()).performTextInput("Late Example")
+        compose.onNodeWithText("Save").performClick()
+        compose.waitForIdle()
+
+        assertEquals("Late Example", named)
     }
 
     @Test
