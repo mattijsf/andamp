@@ -21,7 +21,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import nl.mattix.andamp.R
-import nl.mattix.andamp.backend.pack.PackBrowse
 import nl.mattix.andamp.core.model.TrackKey
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.core.model.displayName
@@ -225,8 +224,8 @@ class WinampViewModel
                 nameOf = { librarySources.showing.shown(words) },
                 onListRead = folderAccess::listRead,
                 words = words,
-                // a source's pack says whether its last walk got to the end
-                wholeOf = { source -> (source as? PackBrowse)?.whole?.value ?: true },
+                // a source says whether its last answer got to the end
+                wholeOf = { source -> (source as? PartialAnswers)?.whole ?: true },
             )
 
         /** Picking a library, and what a sign-in or a sign-out changes; see [SourceOps]. */

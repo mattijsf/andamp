@@ -56,6 +56,7 @@
     <string name="library_incomplete">INCOMPLET</string>
     <string name="library_track_count_short">%1$d MORC.</string>
 
+    <string name="library_loading">CHARGEMENT…</string>
     <string name="library_no_music">AUCUNE MUSIQUE TROUVÉE</string>
     <string name="library_no_artists">AUCUN ARTISTE</string>
     <string name="library_no_matches">AUCUN RÉSULTAT</string>

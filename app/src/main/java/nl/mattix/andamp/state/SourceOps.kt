@@ -29,6 +29,8 @@ class SourceOps(
     private val io: CoroutineContext = Dispatchers.IO,
     /** Drops a source's cached library; see [Libraries.forget]. */
     private val forgetLibrary: (MusicSource) -> Unit = Libraries::forget,
+    /** Drops what the library's index keeps of a source nobody is signed in to; see [Libraries.clear]. */
+    private val clearLibrary: (MusicSource) -> Unit = Libraries::clear,
     /** Releases the player that holds a source's key; see [PlaybackRoot.signedOut]. */
     private val forgetPlayer: (MusicSource) -> Unit = PlaybackRoot::signedOut,
 ) {
@@ -92,8 +94,8 @@ class SourceOps(
     }
 
     /**
-     * A source is signing out, or was found signed out by [reconcile]: its library and
-     * the player that holds its key are dropped.
+     * A source is signing out, or was found signed out by [reconcile]: its library, what
+     * the library's index keeps of it, and the player that holds its key are dropped.
      *
      * Which source the window showed is read before the sign-out, because afterwards the
      * window has already fallen back to the phone.
@@ -102,7 +104,7 @@ class SourceOps(
         pendingPick = null
         val wasShowing = sources.showing
         sources.signedOut(source)
-        forgetLibrary(source)
+        clearLibrary(source)
         forgetPlayer(source)
         if (state.libraryOpen && wasShowing == source) library.open()
     }
