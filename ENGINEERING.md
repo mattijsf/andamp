@@ -458,7 +458,8 @@ one of them steps the clocks (`WinampState.clocksTurn`).
 - **Source marks.** Where several sources show, a row carries its source's `SourceMark`:
   1-bit pixel art for the skin's font, written like its letters, and a vector path (SVG
   path data in a 24-unit square) for the outline font, so it scales with the text
-  (`MarkInk`). The phone's is built in. A pack's comes from its app (`PackMarks`): a drawable
+  (`MarkInk`). Each takes a cell as wide as the widest mark shown, so titles beside marks of
+  different widths line up. The phone's is built in. A pack's comes from its app (`PackMarks`): a drawable
   and pixel art named in its service's meta-data, else the shape of its launcher icon, with
   pixel art made from it, else its first letter. The meta-data is read from the manifest, so
   packs built before it keep working and no `PACK_API` change was needed. The playlist shows
