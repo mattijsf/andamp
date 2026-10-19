@@ -52,20 +52,23 @@
     <string name="menu_bookmark_items">Item(s) als bladwijzer toevoegen</string>
 
     <!-- VisualMenu.kt -->
-    <string name="menu_presets">Voorinstellingen</string>
-    <string name="menu_preset_pack">Pakket met voorinstellingen</string>
-    <string name="menu_next_preset">Volgende voorinstelling</string>
-    <string name="menu_previous_preset">Vorige voorinstelling</string>
-    <string name="menu_show_preset_missing">Tonen wat een voorinstelling mist</string>
-    <string name="menu_manage_presets">Voorinstellingen beheren...</string>
-    <string name="menu_load_preset_pack">Pakket met voorinstellingen laden...</string>
+    <string name="menu_presets">Presets</string>
+    <string name="menu_preset_pack">Pakket met presets</string>
+    <string name="menu_next_preset">Volgende preset</string>
+    <string name="menu_previous_preset">Vorige preset</string>
+    <string name="menu_show_preset_missing">Tonen wat een preset mist</string>
+    <string name="menu_manage_presets">Presets beheren...</string>
+    <string name="menu_load_preset_pack">Pakket met presets laden...</string>
     <string name="menu_fullscreen">Volledig scherm</string>
     <string name="menu_close">Sluiten</string>
     <string name="menu_pack_with_count">%1$s (%2$d)</string>
-    <string name="menu_avs_idle_preset">Ingebouwde AVS-voorinstelling</string>
-    <string name="menu_projectm_idle_preset">Ingebouwde projectM-voorinstelling</string>
-    <string name="menu_no_presets_loaded">Geen voorinstellingen geladen</string>
-    <string name="menu_all_presets">Alle %1$d voorinstellingen...</string>
+    <string name="menu_avs_idle_preset">Ingebouwde AVS-preset</string>
+    <string name="menu_projectm_idle_preset">Ingebouwde projectM-preset</string>
+    <string name="menu_no_presets_loaded">Geen presets geladen</string>
+    <string name="menu_all_presets">Alle %1$d presets...</string>
+    <string name="menu_favorites_with_count">Favorieten (%1$d)</string>
+    <string name="menu_add_favorite">Toevoegen aan favorieten</string>
+    <string name="menu_remove_favorite">Verwijderen uit favorieten</string>
 
     <!-- VisualizationMenu.kt -->
     <string name="menu_visualization_options">Visualisatieopties</string>

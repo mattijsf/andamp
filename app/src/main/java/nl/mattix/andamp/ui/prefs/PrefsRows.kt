@@ -158,17 +158,18 @@ internal fun RadioRow(
     tag: String,
     onSelect: () -> Unit,
     trailing: (@Composable () -> Unit)? = null,
+    enabled: Boolean = true,
 ) {
     ListItem(
         headlineContent = { Text(title) },
         supportingContent = { Text(summary) },
-        leadingContent = { RadioButton(selected = selected, onClick = null) },
+        leadingContent = { RadioButton(selected = selected, onClick = null, enabled = enabled) },
         trailingContent = trailing,
         colors = rowColors(),
         modifier =
             Modifier
                 .prefsRow()
-                .selectable(selected = selected, role = Role.RadioButton, onClick = onSelect)
+                .selectable(selected = selected, enabled = enabled, role = Role.RadioButton, onClick = onSelect)
                 .testTag(tag),
     )
 }

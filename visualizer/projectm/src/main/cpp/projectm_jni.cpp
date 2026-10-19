@@ -4,11 +4,15 @@
 // holding the GL context: libprojectM is not thread-safe, and the Kotlin side
 // (ProjectMView's render thread) is what guarantees it.
 
+#include <android/log.h>
 #include <jni.h>
 
 #include <projectM-4/projectM.h>
 #include <projectM-4/playlist.h>
 
+#include <iostream>
+#include <mutex>
+#include <streambuf>
 #include <string>
 #include <vector>
 
@@ -22,6 +26,121 @@ inline projectm_handle handleOf(jlong handle)
 inline projectm_playlist_handle playlistOf(jlong handle)
 {
     return reinterpret_cast<projectm_playlist_handle>(handle);
+}
+
+// Strings for Kotlin as raw bytes, each ended by a zero byte: NewStringUTF wants modified UTF-8
+// and aborts on a 4-byte character, which a file name can hold.
+jbyteArray zeroEnded(JNIEnv* env, const std::vector<std::string>& strings)
+{
+    std::string joined;
+    for (const auto& item : strings) {
+        joined += item;
+        joined += '\0';
+    }
+    jbyteArray result = env->NewByteArray(static_cast<jsize>(joined.size()));
+    env->SetByteArrayRegion(result, 0, static_cast<jsize>(joined.size()), reinterpret_cast<const jbyte*>(joined.data()));
+    return result;
+}
+
+// What projectM writes to std::cerr, which Android drops: which preset it is loading, and
+// what of it would not compile or load, after which it draws the preset without that part
+// (a fallback shader, no custom wave). Each line goes to logcat and is kept for Kotlin to
+// take. Both engines' lines land here; a line is placed by the "Loading preset" line before it.
+class ProjectMLog : public std::streambuf
+{
+public:
+    std::vector<std::string> take()
+    {
+        std::lock_guard<std::mutex> guard(lock);
+        std::vector<std::string> taken;
+        taken.swap(lines);
+        return taken;
+    }
+
+protected:
+    int overflow(int c) override
+    {
+        if (c == traits_type::eof()) {
+            return 0;
+        }
+        if (c == '\n') {
+            endLine();
+        } else {
+            line += static_cast<char>(c);
+        }
+        return c;
+    }
+
+    std::streamsize xsputn(const char* chars, std::streamsize count) override
+    {
+        for (std::streamsize i = 0; i < count; ++i) {
+            overflow(static_cast<unsigned char>(chars[i]));
+        }
+        return count;
+    }
+
+private:
+    // a player that nobody reads from keeps at most this many
+    static constexpr size_t KEPT = 512;
+
+    void endLine()
+    {
+        __android_log_write(ANDROID_LOG_INFO, "projectM", line.c_str());
+        std::lock_guard<std::mutex> guard(lock);
+        if (lines.size() >= KEPT) {
+            lines.erase(lines.begin());
+        }
+        lines.push_back(line);
+        line.clear();
+    }
+
+    std::mutex lock;
+    std::vector<std::string> lines;
+    std::string line;
+};
+
+ProjectMLog& projectMLog()
+{
+    static ProjectMLog log;
+    static std::once_flag installed;
+    std::call_once(installed, [] { std::cerr.rdbuf(&log); });
+    return log;
+}
+
+// The presets a playlist could not switch to since they were last taken, each with
+// projectM's reason. Filled by the playlist's callback and read from Kotlin; both happen on
+// the render thread, and the lock keeps that an assumption rather than a requirement.
+//
+// The playlist's built-in retry only calls back once it gives up, so a preset it skipped past
+// would never be named. The playlist is set to retry nothing, and this moves on itself: up
+// to `retries` presets per switch, in the direction the listener was going.
+struct FailureWatch
+{
+    std::mutex lock;
+    std::vector<std::string> fileAndReason;
+    projectm_playlist_handle playlist{nullptr};
+    uint32_t retries{0};
+    uint32_t skipped{0};
+    bool backwards{false};
+};
+
+void onSwitchFailed(const char* presetFile, const char* message, void* userData)
+{
+    auto* watch = static_cast<FailureWatch*>(userData);
+    {
+        std::lock_guard<std::mutex> guard(watch->lock);
+        watch->fileAndReason.emplace_back(presetFile != nullptr ? presetFile : "");
+        watch->fileAndReason.emplace_back(message != nullptr ? message : "");
+    }
+    if (watch->skipped >= watch->retries) {
+        return;
+    }
+    watch->skipped++;
+    if (watch->backwards) {
+        projectm_playlist_play_previous(watch->playlist, true);
+    } else {
+        projectm_playlist_play_next(watch->playlist, true);
+    }
 }
 
 } // namespace
@@ -49,6 +168,7 @@ Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeCreate(
         JNIEnv* /* env */, jobject /* thiz */,
         jint width, jint height, jint meshWidth, jint meshHeight, jint fps)
 {
+    projectMLog();
     projectm_handle instance = projectm_create();
     if (instance == nullptr) {
         return 0;
@@ -244,6 +364,79 @@ Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistItem(
     jstring result = env->NewStringUTF(item);
     projectm_playlist_free_string(item);
     return result;
+}
+
+JNIEXPORT jint JNICALL
+Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistAddPresets(
+        JNIEnv* env, jobject /* thiz */, jlong playlist, jobjectArray paths)
+{
+    // one crossing for a whole list, and no duplicate check: projectM's is a linear search per
+    // preset, seconds for a pack of thousands, and the list handed over is unique already
+    const jsize count = env->GetArrayLength(paths);
+    jint added = 0;
+    for (jsize i = 0; i < count; ++i) {
+        auto path = static_cast<jstring>(env->GetObjectArrayElement(paths, i));
+        const char* chars = env->GetStringUTFChars(path, nullptr);
+        if (chars != nullptr) {
+            if (projectm_playlist_add_preset(playlistOf(playlist), chars, true)) {
+                ++added;
+            }
+            env->ReleaseStringUTFChars(path, chars);
+        }
+        env->DeleteLocalRef(path);
+    }
+    return added;
+}
+
+JNIEXPORT jlong JNICALL
+Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistWatchFailures(
+        JNIEnv* /* env */, jobject /* thiz */, jlong playlist, jint retries)
+{
+    auto* watch = new FailureWatch();
+    watch->playlist = playlistOf(playlist);
+    watch->retries = static_cast<uint32_t>(retries);
+    projectm_playlist_set_retry_count(watch->playlist, 0);
+    projectm_playlist_set_preset_switch_failed_event_callback(watch->playlist, onSwitchFailed, watch);
+    return reinterpret_cast<jlong>(watch);
+}
+
+JNIEXPORT void JNICALL
+Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeWatchDirection(
+        JNIEnv* /* env */, jobject /* thiz */, jlong watch, jboolean backwards)
+{
+    auto* failures = reinterpret_cast<FailureWatch*>(watch);
+    failures->backwards = backwards == JNI_TRUE;
+    failures->skipped = 0;
+}
+
+JNIEXPORT void JNICALL
+Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativePlaylistUnwatchFailures(
+        JNIEnv* /* env */, jobject /* thiz */, jlong playlist, jlong watch)
+{
+    projectm_playlist_set_preset_switch_failed_event_callback(playlistOf(playlist), nullptr, nullptr);
+    delete reinterpret_cast<FailureWatch*>(watch);
+}
+
+JNIEXPORT jbyteArray JNICALL
+Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeTakeFailures(
+        JNIEnv* env, jobject /* thiz */, jlong watch)
+{
+    auto* failures = reinterpret_cast<FailureWatch*>(watch);
+    std::vector<std::string> taken;
+    {
+        std::lock_guard<std::mutex> guard(failures->lock);
+        taken.swap(failures->fileAndReason);
+    }
+    // taken once a frame: a new switch gets the whole budget again
+    failures->skipped = 0;
+    return zeroEnded(env, taken);
+}
+
+JNIEXPORT jbyteArray JNICALL
+Java_nl_mattix_andamp_visualizer_projectm_ProjectMNative_nativeTakeLog(
+        JNIEnv* env, jobject /* thiz */)
+{
+    return zeroEnded(env, projectMLog().take());
 }
 
 } // extern "C"

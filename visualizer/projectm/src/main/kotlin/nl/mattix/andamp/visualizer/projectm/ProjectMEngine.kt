@@ -14,6 +14,9 @@ class ProjectMEngine {
     private var handle = 0L
     private var playlist = 0L
 
+    /** The collector of failed preset switches; see [takeFailures]. */
+    private var failures = 0L
+
     /** Whether [create] succeeded and [destroy] has not run. */
     val isAlive: Boolean get() = handle != 0L
 
@@ -85,15 +88,83 @@ class ProjectMEngine {
         val handle = playlistHandle()
         ProjectMNative.nativePlaylistClear(handle)
         val added = ProjectMNative.nativePlaylistAddPath(handle, directory, recurse)
+        heading(backwards = false)
         if (added > 0) ProjectMNative.nativePlaylistSetPosition(handle, 0, true)
         return added
     }
 
+    /**
+     * Replaces the playlist with [files], in that order: a pack's, or presets from several
+     * packs, such as the listener's favorites. Plays the one at [startAt] first, so a list
+     * that goes back to a preset compiles only that one.
+     *
+     * @return how many were added.
+     */
+    fun loadPresetFiles(
+        files: List<String>,
+        startAt: Int = 0,
+    ): Int {
+        val handle = playlistHandle()
+        ProjectMNative.nativePlaylistClear(handle)
+        val added = ProjectMNative.nativePlaylistAddPresets(handle, files.toTypedArray())
+        heading(backwards = false)
+        if (added > 0) ProjectMNative.nativePlaylistSetPosition(handle, startAt.takeIf { it in 0 until added } ?: 0, true)
+        return added
+    }
+
+    /**
+     * The presets the playlist could not switch to since the last call, each with projectM's
+     * reason. A preset that fails is skipped (see [PRESET_RETRIES]), so this is the only place
+     * the listener can learn why.
+     */
+    fun takeFailures(): List<Pair<String, String>> {
+        if (failures == 0L) return emptyList()
+        return ProjectMNative
+            .zeroEnded(
+                ProjectMNative.nativeTakeFailures(failures),
+            ).chunked(2) { (file, reason) -> file to reason }
+    }
+
+    /** What projectM wrote to its error stream since the last call; see [PresetLog]. */
+    fun takeLog(): List<String> = ProjectMNative.zeroEnded(ProjectMNative.nativeTakeLog())
+
     val playlistSize: Int get() = ProjectMNative.nativePlaylistSize(playlistHandle())
 
-    fun playlistNext(hardCut: Boolean = true) = ProjectMNative.nativePlaylistPlayNext(playlistHandle(), hardCut)
+    fun playlistNext(hardCut: Boolean = true) {
+        val handle = playlistHandle()
+        heading(backwards = false)
+        ProjectMNative.nativePlaylistPlayNext(handle, hardCut)
+    }
 
-    fun playlistPrevious(hardCut: Boolean = true) = ProjectMNative.nativePlaylistPlayPrevious(playlistHandle(), hardCut)
+    fun playlistPrevious(hardCut: Boolean = true) {
+        val handle = playlistHandle()
+        heading(backwards = true)
+        ProjectMNative.nativePlaylistPlayPrevious(handle, hardCut)
+    }
+
+    /** Whether the last switch asked for went back, so a preset to skip is skipped the same way. */
+    var backwards = false
+        private set
+
+    /** Whether the last switch asked for was to one preset by its place: that one plays, even when skipped. */
+    var picked = false
+        private set
+
+    /** Which way a broken preset is skipped past on the switch about to happen. */
+    private fun heading(
+        backwards: Boolean,
+        picked: Boolean = false,
+    ) {
+        this.backwards = backwards
+        this.picked = picked
+        if (failures != 0L) ProjectMNative.nativeWatchDirection(failures, backwards)
+    }
+
+    /** The switch asked for has happened; projectM's own switching goes forward again. */
+    fun switched() {
+        backwards = false
+        picked = false
+    }
 
     fun playlistSetShuffle(shuffle: Boolean) = ProjectMNative.nativePlaylistSetShuffle(playlistHandle(), shuffle)
 
@@ -110,6 +181,7 @@ class ProjectMEngine {
     ): Boolean {
         val handle = playlistHandle()
         if (index < 0 || index >= ProjectMNative.nativePlaylistSize(handle)) return false
+        heading(backwards = false, picked = true)
         ProjectMNative.nativePlaylistSetPosition(handle, index, hardCut)
         return true
     }
@@ -143,8 +215,9 @@ class ProjectMEngine {
             check(playlist != 0L) { "projectm_playlist_create failed" }
             // projectM's HLSL translation does not handle every preset in the
             // wild. Retrying moves on to the next one instead of leaving the
-            // window on a preset that failed to compile.
-            ProjectMNative.nativePlaylistSetRetryCount(playlist, PRESET_RETRIES)
+            // window on a preset that failed to compile, and each one skipped
+            // is collected with its reason.
+            failures = ProjectMNative.nativePlaylistWatchFailures(playlist, PRESET_RETRIES)
         }
         return playlist
     }
@@ -153,6 +226,8 @@ class ProjectMEngine {
         if (!isAlive) return
         // the playlist holds a reference to the projectM instance, so it goes first
         if (playlist != 0L) {
+            if (failures != 0L) ProjectMNative.nativePlaylistUnwatchFailures(playlist, failures)
+            failures = 0L
             ProjectMNative.nativePlaylistDestroy(playlist)
             playlist = 0L
         }

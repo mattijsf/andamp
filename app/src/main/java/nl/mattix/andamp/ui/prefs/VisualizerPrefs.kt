@@ -12,6 +12,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import nl.mattix.andamp.R
@@ -34,16 +35,17 @@ data class VisualizerPrefs(
     val onShuffle: (Boolean) -> Unit = {},
     val activePack: String? = null,
     val onSelectPack: (String?) -> Unit = {},
+    /** Whether the engine plays the favorites rather than [activePack]. */
+    val favoritesOn: Boolean = false,
+    /** How many favorites the engine has, from every pack. */
+    val favoriteCount: Int = 0,
+    val onSelectFavorites: () -> Unit = {},
     val packs: List<InstalledPack> = emptyList(),
     val onDeletePack: (InstalledPack) -> Unit = {},
     val onImportPack: () -> Unit = {},
     val importing: PresetImport? = null,
     /** The loaded pack's presets, in the engine's playlist order. */
     val presets: List<String> = emptyList(),
-    /** The one showing, as the engine announced it. */
-    val current: String? = null,
-    /** Plays the preset at that index of [presets]. */
-    val onSelectPreset: (Int) -> Unit = {},
     /** Opens the screen that browses [presets]; null where that screen already is. */
     val onManagePresets: (() -> Unit)? = null,
 )
@@ -126,15 +128,28 @@ private fun PresetPacks(prefs: VisualizerPrefs) {
                         VisPlugin.Milkdrop -> R.string.prefs_visualizer_idle_milkdrop
                     },
                 ),
-            selected = prefs.activePack == null,
+            selected = !prefs.favoritesOn && prefs.activePack == null,
             tag = "prefs.vis.pack.idle",
             onSelect = { prefs.onSelectPack(null) },
+        )
+        RadioRow(
+            title = stringResource(R.string.prefs_visualizer_favorites),
+            summary =
+                if (prefs.favoriteCount == 0) {
+                    stringResource(R.string.prefs_visualizer_favorites_none)
+                } else {
+                    pluralStringResource(R.plurals.prefs_visualizer_favorites_summary, prefs.favoriteCount, prefs.favoriteCount)
+                },
+            selected = prefs.favoritesOn,
+            enabled = prefs.favoriteCount > 0,
+            tag = "prefs.vis.pack.favorites",
+            onSelect = prefs.onSelectFavorites,
         )
         prefs.packs.forEach { pack ->
             RadioRow(
                 title = pack.name,
                 summary = stringResource(R.string.prefs_visualizer_pack_presets, pack.countFor(prefs.plugin)),
-                selected = prefs.activePack == pack.name,
+                selected = !prefs.favoritesOn && prefs.activePack == pack.name,
                 tag = "prefs.vis.pack.${pack.name}",
                 onSelect = { prefs.onSelectPack(pack.name) },
                 trailing = {

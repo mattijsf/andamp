@@ -66,6 +66,9 @@
     <string name="menu_projectm_idle_preset">projectM-Leerlaufvoreinstellung</string>
     <string name="menu_no_presets_loaded">Keine Voreinstellungen geladen</string>
     <string name="menu_all_presets">Alle %1$d Voreinstellungen...</string>
+    <string name="menu_favorites_with_count">Favoriten (%1$d)</string>
+    <string name="menu_add_favorite">Zu Favoriten hinzufügen</string>
+    <string name="menu_remove_favorite">Aus Favoriten entfernen</string>
 
     <!-- VisualizationMenu.kt -->
     <string name="menu_visualization_options">Visualisierungsoptionen</string>

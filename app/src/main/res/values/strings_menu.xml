@@ -72,6 +72,10 @@
     <string name="menu_no_presets_loaded">No presets loaded</string>
     <!-- The last entry of a long preset list; the count of presets. Opens the preset manager. -->
     <string name="menu_all_presets">All %1$d presets...</string>
+    <!-- The preset pack entry that plays the favorites; how many there are. -->
+    <string name="menu_favorites_with_count">Favorites (%1$d)</string>
+    <string name="menu_add_favorite">Add to favorites</string>
+    <string name="menu_remove_favorite">Remove from favorites</string>
 
     <!-- VisualizationMenu.kt -->
     <string name="menu_visualization_options">Visualization options</string>

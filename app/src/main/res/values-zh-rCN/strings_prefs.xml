@@ -85,9 +85,23 @@
 
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">预设</string>
-    <string name="prefs_milkdrop_nothing_loaded">除了 %1$s 之外没有载入任何内容。请在上方导入一个预设包。</string>
     <string name="prefs_milkdrop_pack_loading">预设包正在载入，或者插件窗口已关闭。</string>
-    <string name="prefs_milkdrop_presets_in_pack">%2$s 中的 %1$d 个，按引擎播放的顺序排列。</string>
+    <string name="prefs_milkdrop_search_hint">搜索预设和文件夹</string>
+    <string name="prefs_milkdrop_search_clear">清除搜索</string>
+    <string name="prefs_milkdrop_search_none">没有与“%1$s”匹配的预设。</string>
+    <plurals name="prefs_milkdrop_search_count">
+        <item quantity="other">%2$d 个预设中有 %1$d 个匹配。</item>
+    </plurals>
+    <string name="prefs_milkdrop_settings_tab">设置</string>
+    <string name="prefs_milkdrop_favorites_chip">收藏 (%1$d)</string>
+    <plurals name="prefs_milkdrop_favorites_count">
+        <item quantity="other">%1$d 个收藏，来自任意预设包。下一个和随机播放只在其中切换。</item>
+    </plurals>
+    <string name="prefs_milkdrop_idle_playing">正在播放 %1$s。请在上方选择收藏或一个预设包。</string>
+    <string name="prefs_milkdrop_idle_no_favorites">正在播放 %1$s。请在上方选择一个预设包，或在“设置”中导入一个。</string>
+    <plurals name="prefs_milkdrop_pack_count">
+        <item quantity="other">%2$s 中的 %1$d 个预设。点按星标可将预设加入收藏。</item>
+    </plurals>
 
     <!-- Notices.kt -->
     <string name="prefs_notice_projectm_what">Milkdrop 可视化效果引擎，用于渲染 .milk 预设。</string>
@@ -297,6 +311,11 @@
     <plurals name="prefs_visualizer_summary_packs">
         <item quantity="other">%2$s · %1$d 个预设包，%3$d 个预设</item>
     </plurals>
+    <string name="prefs_visualizer_favorites">收藏</string>
+    <string name="prefs_visualizer_favorites_none">您加星标的预设，来自任意预设包，作为一个整体播放。暂无。</string>
+    <plurals name="prefs_visualizer_favorites_summary">
+        <item quantity="other">%1$d 个加星标的预设，来自任意预设包</item>
+    </plurals>
     <string name="prefs_visualizer_plugin_section">插件</string>
     <string name="prefs_visualizer_avs_blurb">Winamp 自己的可视化效果，重新实现。可运行您导入的真正的 .avs 预设。</string>
     <string name="prefs_visualizer_milkdrop_blurb">libprojectM。可运行您导入的真正的 .milk 预设。</string>
@@ -361,4 +380,43 @@
     <string name="prefs_widget_refresh_high">高</string>
     <string name="prefs_widget_refresh_high_summary">最耗电。时间逐秒走动，可视化效果以小部件所能达到的最高频率跟上歌曲。</string>
     <string name="prefs_widget_refresh_ticking_time_only">时间逐秒走动。</string>
+
+    <string name="preset_details_open">关于此预设</string>
+    <string name="preset_details_back">返回列表</string>
+    <string name="preset_details_reading">正在读取预设…</string>
+    <string name="preset_details_by">作者：%1$s</string>
+    <string name="preset_details_play">播放</string>
+    <string name="preset_details_forget">不再跳过</string>
+    <string name="preset_details_file_section">文件</string>
+    <string name="preset_details_pack">预设包</string>
+    <string name="preset_details_folder">文件夹</string>
+    <string name="preset_details_size">大小</string>
+    <string name="preset_details_sha256">SHA-256</string>
+    <string name="preset_details_milkdrop_section">Milkdrop</string>
+    <string name="preset_details_version">预设版本</string>
+    <string name="preset_details_shader_model">像素着色器模型</string>
+    <string name="preset_details_shader_model_value">warp %1$s，composite %2$s</string>
+    <string name="preset_details_warp">Warp 着色器</string>
+    <string name="preset_details_comp">Composite 着色器</string>
+    <string name="preset_details_per_frame">每帧方程</string>
+    <string name="preset_details_per_pixel">每像素方程</string>
+    <string name="preset_details_waves">自定义波形</string>
+    <string name="preset_details_shapes">自定义形状</string>
+    <string name="preset_details_q">q 变量</string>
+    <string name="preset_details_none">无</string>
+    <string name="preset_details_textures_section">纹理</string>
+    <string name="preset_details_texture_found">在预设包中</string>
+    <string name="preset_details_texture_missing">不在预设包中</string>
+    <string name="preset_details_texture_random">从预设包中随机选取</string>
+    <string name="preset_details_settings_section">文件中的设置</string>
+    <string name="preset_details_avs_section">AVS</string>
+    <string name="preset_details_clears">每帧从黑色开始</string>
+    <string name="preset_details_yes">是</string>
+    <string name="preset_details_no">否</string>
+    <string name="preset_details_components">组件</string>
+    <string name="preset_details_not_shown">未显示</string>
+    <string name="preset_details_unparsed">无法将此文件作为预设读取。</string>
+    <plurals name="preset_details_lines">
+        <item quantity="other">%1$d 行</item>
+    </plurals>
 </resources>

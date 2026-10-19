@@ -51,7 +51,7 @@ class SimplifiedChineseTest {
     @Test
     fun `placeholders may come in another order than in English`() {
         // English: "12 in Pack, in the order the engine plays them."
-        assertEquals("Pack 中的 12 个，按引擎播放的顺序排列。", words.get(R.string.prefs_milkdrop_presets_in_pack, 12, "Pack"))
+        assertEquals("Pack 中的 12 个预设。点按星标可将预设加入收藏。", words.plural(R.plurals.prefs_milkdrop_pack_count, 12, "Pack"))
     }
 
     @Test

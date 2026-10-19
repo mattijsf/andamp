@@ -108,19 +108,37 @@ class PresetLibrary(
     }
 
     private fun inspect(dir: File): InstalledPack {
-        var milk = 0
-        var avs = 0
+        val milk = mutableListOf<String>()
+        val avs = mutableListOf<String>()
         val textureDirs = linkedSetOf<File>()
         dir.walkTopDown().forEach { file ->
             when {
                 file.isDirectory && file.name.equals(TEXTURES_DIR, ignoreCase = true) -> textureDirs += file
-                file.isFile && file.extension.equals(PRESET_EXT, ignoreCase = true) -> milk++
-                file.isFile && file.extension.equals(AVS_EXT, ignoreCase = true) -> avs++
+                file.isFile && file.extension.equals(PRESET_EXT, ignoreCase = true) -> milk += file.absolutePath
+                file.isFile && file.extension.equals(AVS_EXT, ignoreCase = true) -> avs += file.absolutePath
             }
         }
         // some packs keep their textures next to the presets, so the pack root is searched too
         textureDirs += dir
-        return InstalledPack(dir.name, dir, milk, textureDirs.toList(), avs)
+        // a zip that holds one folder with everything in it: that folder says nothing about a preset
+        val wrapper =
+            (milk + avs)
+                .map { File(it).relativeTo(dir).invariantSeparatorsPath }
+                .map { it.substringBefore('/', "") }
+                .distinct()
+                .singleOrNull()
+                ?.takeIf { it.isNotEmpty() }
+        return InstalledPack(
+            dir.name,
+            dir,
+            milk.size,
+            textureDirs.toList(),
+            avs.size,
+            // by the name the selector shows, so a pack that numbers its presets per folder stays grouped
+            milkFiles = PresetTitle.sortedByTitle(milk),
+            avsFiles = PresetTitle.sortedByTitle(avs),
+            wrapper = wrapper,
+        )
     }
 
     private fun sanitize(name: String) = name.replace(UNSAFE, "_").take(MAX_NAME).ifBlank { "presets" }
@@ -151,7 +169,40 @@ data class InstalledPack(
     val textureDirs: List<File>,
     /** How many `.avs` files it holds, which AVS can run. */
     val avsCount: Int = 0,
+    /** Its `.milk` files, by name: the order the selector lists them and the engine plays them in. */
+    val milkFiles: List<String> = emptyList(),
+    /** Its `.avs` files, in the same order. */
+    val avsFiles: List<String> = emptyList(),
+    /** The one folder every preset sits in, when the zip put them all in one; see [folderOf]. */
+    val wrapper: String? = null,
 )
+
+/** The pack of these whose folder holds the file at [path]. */
+fun List<InstalledPack>.holding(path: String): InstalledPack? =
+    firstOrNull { path.startsWith(it.dir.absolutePath + File.separator) }
+
+/**
+ * Where in this pack the preset at [path] sits, as the folders that say something about it:
+ * the [InstalledPack.wrapper] left out, "Dancer/Glowsticks Mirror". Null at the top.
+ */
+fun InstalledPack.folderOf(path: String): String? {
+    val parent = File(path).parentFile ?: return null
+    val inside =
+        parent
+            .relativeTo(dir)
+            .invariantSeparatorsPath
+            .split('/')
+            .filter { it.isNotEmpty() }
+    val shown = if (wrapper != null && inside.firstOrNull() == wrapper) inside.drop(1) else inside
+    return shown.joinToString(" / ").takeIf { it.isNotEmpty() }
+}
+
+/** The files [plugin] plays from this pack, in the order they are listed and played. */
+fun InstalledPack.filesFor(plugin: VisPlugin): List<String> =
+    when (plugin) {
+        VisPlugin.Milkdrop -> milkFiles
+        VisPlugin.Avs -> avsFiles
+    }
 
 /** Whether this pack holds anything [plugin] can run. */
 fun InstalledPack.runsOn(plugin: VisPlugin): Boolean =

@@ -87,9 +87,26 @@
 
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">Préréglages</string>
-    <string name="prefs_milkdrop_nothing_loaded">Rien n’est chargé à part « %1$s ». Importez un pack ci-dessus.</string>
     <string name="prefs_milkdrop_pack_loading">Le pack est en cours de chargement, ou la fenêtre du plugin est fermée.</string>
-    <string name="prefs_milkdrop_presets_in_pack">%1$d dans %2$s, dans l’ordre où le moteur les joue.</string>
+    <string name="prefs_milkdrop_search_hint">Rechercher des préréglages et des dossiers</string>
+    <string name="prefs_milkdrop_search_clear">Effacer la recherche</string>
+    <string name="prefs_milkdrop_search_none">Aucun préréglage ne correspond à « %1$s ».</string>
+    <plurals name="prefs_milkdrop_search_count">
+        <item quantity="one">%1$d préréglage sur %2$d correspond.</item>
+        <item quantity="other">%1$d préréglages sur %2$d correspondent.</item>
+    </plurals>
+    <string name="prefs_milkdrop_settings_tab">Réglages</string>
+    <string name="prefs_milkdrop_favorites_chip">Favoris (%1$d)</string>
+    <plurals name="prefs_milkdrop_favorites_count">
+        <item quantity="one">%1$d favori, de n’importe quel pack. Suivant et Lecture aléatoire restent parmi eux.</item>
+        <item quantity="other">%1$d favoris, de n’importe quel pack. Suivant et Lecture aléatoire restent parmi eux.</item>
+    </plurals>
+    <string name="prefs_milkdrop_idle_playing">« %1$s » est affiché. Choisissez vos favoris ou un pack ci-dessus.</string>
+    <string name="prefs_milkdrop_idle_no_favorites">« %1$s » est affiché. Choisissez un pack ci-dessus, ou importez-en un dans Réglages.</string>
+    <plurals name="prefs_milkdrop_pack_count">
+        <item quantity="one">%1$d préréglage dans %2$s. Touchez une étoile pour ajouter un préréglage à vos favoris.</item>
+        <item quantity="other">%1$d préréglages dans %2$s. Touchez une étoile pour ajouter un préréglage à vos favoris.</item>
+    </plurals>
 
     <!-- Notices.kt -->
     <string name="prefs_notice_projectm_what">Le moteur de visualisation Milkdrop, qui affiche les préréglages .milk.</string>
@@ -300,6 +317,12 @@
         <item quantity="one">%2$s · %1$d pack, %3$d préréglages</item>
         <item quantity="other">%2$s · %1$d packs, %3$d préréglages</item>
     </plurals>
+    <string name="prefs_visualizer_favorites">Favoris</string>
+    <string name="prefs_visualizer_favorites_none">Les préréglages marqués d’une étoile, de n’importe quel pack, joués comme un seul. Aucun pour l’instant.</string>
+    <plurals name="prefs_visualizer_favorites_summary">
+        <item quantity="one">%1$d préréglage marqué d’une étoile, de n’importe quel pack</item>
+        <item quantity="other">%1$d préréglages marqués d’une étoile, de n’importe quel pack</item>
+    </plurals>
     <string name="prefs_visualizer_plugin_section">Plugin</string>
     <string name="prefs_visualizer_avs_blurb">Le plugin de visualisation de Winamp, reconstruit. Joue les vrais préréglages .avs que vous importez.</string>
     <string name="prefs_visualizer_milkdrop_blurb">libprojectM. Joue les vrais préréglages .milk que vous importez.</string>
@@ -364,4 +387,44 @@
     <string name="prefs_widget_refresh_high">Élevée</string>
     <string name="prefs_widget_refresh_high_summary">Celle qui consomme le plus de batterie. Le temps avance seconde par seconde, et la visualisation rattrape le morceau aussi souvent qu’un widget le peut.</string>
     <string name="prefs_widget_refresh_ticking_time_only">Le temps avance, seconde par seconde.</string>
+
+    <string name="preset_details_open">À propos de ce préréglage</string>
+    <string name="preset_details_back">Retour à la liste</string>
+    <string name="preset_details_reading">Lecture du préréglage…</string>
+    <string name="preset_details_by">par %1$s</string>
+    <string name="preset_details_play">Lire</string>
+    <string name="preset_details_forget">Ne plus l’ignorer</string>
+    <string name="preset_details_file_section">Fichier</string>
+    <string name="preset_details_pack">Pack</string>
+    <string name="preset_details_folder">Dossier</string>
+    <string name="preset_details_size">Taille</string>
+    <string name="preset_details_sha256">SHA-256</string>
+    <string name="preset_details_milkdrop_section">Milkdrop</string>
+    <string name="preset_details_version">Version du préréglage</string>
+    <string name="preset_details_shader_model">Modèle de pixel shader</string>
+    <string name="preset_details_shader_model_value">warp %1$s, composite %2$s</string>
+    <string name="preset_details_warp">Shader warp</string>
+    <string name="preset_details_comp">Shader composite</string>
+    <string name="preset_details_per_frame">Équations par image</string>
+    <string name="preset_details_per_pixel">Équations par pixel</string>
+    <string name="preset_details_waves">Ondes personnalisées</string>
+    <string name="preset_details_shapes">Formes personnalisées</string>
+    <string name="preset_details_q">Variables q</string>
+    <string name="preset_details_none">Aucun</string>
+    <string name="preset_details_textures_section">Textures</string>
+    <string name="preset_details_texture_found">Dans le pack</string>
+    <string name="preset_details_texture_missing">Absente du pack</string>
+    <string name="preset_details_texture_random">Une au hasard dans le pack</string>
+    <string name="preset_details_settings_section">Réglages du fichier</string>
+    <string name="preset_details_avs_section">AVS</string>
+    <string name="preset_details_clears">Chaque image part du noir</string>
+    <string name="preset_details_yes">Oui</string>
+    <string name="preset_details_no">Non</string>
+    <string name="preset_details_components">Composants</string>
+    <string name="preset_details_not_shown">Non affiché</string>
+    <string name="preset_details_unparsed">Ce fichier n’a pas pu être lu comme un préréglage.</string>
+    <plurals name="preset_details_lines">
+        <item quantity="one">%1$d ligne</item>
+        <item quantity="other">%1$d lignes</item>
+    </plurals>
 </resources>

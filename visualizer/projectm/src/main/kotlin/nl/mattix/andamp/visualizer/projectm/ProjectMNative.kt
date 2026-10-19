@@ -69,6 +69,45 @@ internal object ProjectMNative {
         recurse: Boolean,
     ): Int
 
+    /** Adds every one of [paths], in order, without checking for one already there; answers how many it took. */
+    external fun nativePlaylistAddPresets(
+        playlist: Long,
+        paths: Array<String>,
+    ): Int
+
+    /**
+     * Starts collecting the presets the playlist could not switch to; answers the collector.
+     * It also takes over the playlist's retry, moving past up to [retries] broken presets per
+     * switch, so every one it skips is collected.
+     */
+    external fun nativePlaylistWatchFailures(
+        playlist: Long,
+        retries: Int,
+    ): Long
+
+    /** The way the next switch goes, for the collector's retry: back for "previous", on for the rest. */
+    external fun nativeWatchDirection(
+        watch: Long,
+        backwards: Boolean,
+    )
+
+    external fun nativePlaylistUnwatchFailures(
+        playlist: Long,
+        watch: Long,
+    )
+
+    /**
+     * What [nativePlaylistWatchFailures] collected since the last call: file, reason, file,
+     * reason..., as [zeroEnded] strings.
+     */
+    external fun nativeTakeFailures(watch: Long): ByteArray
+
+    /** The lines projectM wrote to its error stream since the last call, from every engine, as [zeroEnded] strings. */
+    external fun nativeTakeLog(): ByteArray
+
+    /** UTF-8 strings that each end with a zero byte, as the take functions hand them over. */
+    fun zeroEnded(bytes: ByteArray): List<String> = String(bytes, Charsets.UTF_8).split('\u0000').dropLast(1)
+
     external fun nativePlaylistSize(playlist: Long): Int
 
     external fun nativePlaylistSetShuffle(

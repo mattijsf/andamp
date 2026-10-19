@@ -6,14 +6,14 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -22,24 +22,16 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
-import androidx.compose.ui.viewinterop.AndroidView
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.PresetImport
-import nl.mattix.andamp.state.TapPcmSource
 import nl.mattix.andamp.state.VisPlugin
-import nl.mattix.andamp.state.VisualCommands
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.ui.SkinCut
-import nl.mattix.andamp.ui.WhileOnScreen
 import nl.mattix.andamp.ui.menu.visualMenu
 import nl.mattix.andamp.ui.widget.Widget
 import nl.mattix.andamp.ui.widget.button
-import nl.mattix.andamp.visualizer.avs.AvsView
-import nl.mattix.andamp.visualizer.core.VisualizerView
-import nl.mattix.andamp.visualizer.projectm.ProjectMView
-import java.io.File
 
 /** The plug-in window's narrowest width, in virtual pixels. */
 const val MILKDROP_W = 275
@@ -226,130 +218,50 @@ fun MilkdropWindow(
 fun MilkdropSurface(
     vm: WinampViewModel,
     modifier: Modifier = Modifier,
+    /**
+     * In the plug-in window: tap for the next preset, double tap for fullscreen, long press for
+     * the menu, and the line about a preset's problems. Off on the preset selector's preview,
+     * which only takes a tap and shows those problems below itself.
+     */
+    inWindow: Boolean = true,
 ) {
     val s: WinampState = vm.state
+    // The player stays under the preset selector, so its window and the selector's preview
+    // run an engine each. The preview leads while it is up: its engine takes the commands and
+    // says what is showing, and the window's follows it to the same preset.
+    if (!inWindow) {
+        DisposableEffect(Unit) {
+            s.visualPreviewOpen = true
+            onDispose { s.visualPreviewOpen = false }
+        }
+    }
+    val leads = !inWindow || !s.visualPreviewOpen
     // Black under the engine's view: a TextureView draws nothing until its first frame,
     // and the window is translucent, so the wallpaper would show through until then.
     Box(modifier.background(Color.Black)) {
         key(s.visPlugin) {
             when (s.visPlugin) {
-                VisPlugin.Avs -> AvsEngineView(vm)
-                VisPlugin.Milkdrop -> MilkdropEngineView(vm)
+                VisPlugin.Avs -> AvsEngineView(vm, leads, canRest = inWindow)
+                VisPlugin.Milkdrop -> MilkdropEngineView(vm, leads, canRest = inWindow)
             }
         }
-        PresetNoticeLine(s, Modifier.align(Alignment.BottomStart))
+        if (inWindow) PresetNoticeLine(s, Modifier.align(Alignment.BottomStart))
         // The gestures are on a layer above the engine's view: a pointerInput on the
         // AndroidView itself does not receive them.
         Box(
             Modifier
                 .matchParentSize()
-                .pointerInput(Unit) {
-                    detectTapGestures(
-                        onTap = { s.visualCommands?.nextPreset() },
-                        onDoubleTap = { s.milkdropFullscreen = !s.milkdropFullscreen },
-                        onLongPress = { s.activeMenu = visualMenu(vm) },
-                    )
+                .pointerInput(inWindow) {
+                    if (inWindow) {
+                        detectTapGestures(
+                            onTap = { s.visualCommands?.nextPreset() },
+                            onDoubleTap = { s.milkdropFullscreen = !s.milkdropFullscreen },
+                            onLongPress = { s.activeMenu = visualMenu(vm) },
+                        )
+                    } else {
+                        detectTapGestures(onTap = { s.visualCommands?.nextPreset() })
+                    }
                 },
         )
     }
-}
-
-@Composable
-private fun MilkdropEngineView(vm: WinampViewModel) {
-    val s: WinampState = vm.state
-    EngineSurface(
-        vm = vm,
-        factory = { context ->
-            ProjectMView(context).apply {
-                pcmSourceFactory = { fps, maxSamples -> TapPcmSource(fps, maxSamples) { vm.audioTap } }
-                onPlaylistChanged = { paths -> s.presetNames = paths.map { File(it).nameWithoutExtension } }
-            }
-        },
-        update = { view ->
-            // the view applies the pack and the shuffle flag on its own thread
-            view.presets = vm.presetOps.active
-            view.shuffle = s.presetShuffle
-        },
-    )
-}
-
-/** The AVS engine's view. */
-@Composable
-private fun AvsEngineView(vm: WinampViewModel) {
-    val s: WinampState = vm.state
-    EngineSurface(
-        vm = vm,
-        factory = { context ->
-            AvsView(context).apply {
-                pcmSourceFactory = { fps -> TapPcmSource(fps, AvsView.MAX_PCM_SAMPLES) { vm.audioTap } }
-                onPlaylistChanged = { names -> s.presetNames = names }
-            }
-        },
-        update = { view ->
-            view.presetDirectory = vm.presetOps.activeAvsDir
-            view.shuffle = s.presetShuffle
-        },
-    )
-}
-
-/**
- * Hosts any [VisualizerView]: the lifecycle gate, the published [VisualCommands] and the
- * preset-name announcement are the same for every engine. The factory adds what only its
- * engine has.
- */
-@Composable
-private fun <V : VisualizerView<*>> EngineSurface(
-    vm: WinampViewModel,
-    factory: (android.content.Context) -> V,
-    update: (V) -> Unit,
-) {
-    val s: WinampState = vm.state
-    // The preset that was playing before this view was built, read before the new engine
-    // announces one. A new engine starts at the top of its playlist, and handing the player
-    // between the activity and the floating window creates a new engine.
-    val resumeTo = remember { s.presetName }
-    val resumed =
-        remember {
-            java.util.concurrent.atomic
-                .AtomicBoolean(false)
-        }
-    // the view is told directly: a stopped activity may not apply another recomposition
-    val surface = remember { mutableStateOf<V?>(null) }
-    WhileOnScreen { onScreen -> surface.value?.rendering = onScreen }
-    // the view's commands are published while it exists, so a menu item can reach it
-    // without holding the view
-    DisposableEffect(surface.value) {
-        val view = surface.value
-        s.visualCommands =
-            view?.let {
-                object : VisualCommands {
-                    override fun nextPreset() = it.nextPreset()
-
-                    override fun previousPreset() = it.previousPreset()
-
-                    override fun goToPreset(index: Int) = it.goToPreset(index)
-                }
-            }
-        onDispose { s.visualCommands = null }
-    }
-    AndroidView(
-        factory = { context ->
-            factory(context)
-                .apply {
-                    onPresetChanged = { name -> s.presetName = name }
-                    onPresetGaps = { gaps -> s.presetGaps = gaps }
-                    // the engine's own listener runs first, so the list is in state before
-                    // the resume
-                    val engines = onPlaylistChanged
-                    onPlaylistChanged = { names ->
-                        engines?.invoke(names)
-                        if (resumed.compareAndSet(false, true)) {
-                            names.indexOf(resumeTo).takeIf { it >= 0 }?.let { goToPreset(it) }
-                        }
-                    }
-                }.also { surface.value = it }
-        },
-        update = update,
-        modifier = Modifier.fillMaxSize(),
-    )
 }

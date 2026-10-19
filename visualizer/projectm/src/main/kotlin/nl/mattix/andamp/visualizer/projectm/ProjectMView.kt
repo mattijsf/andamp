@@ -30,9 +30,9 @@ class ProjectMView(
     var pcmSourceFactory: ((fps: Int, maxSamples: Int) -> PcmSource)? = null
 
     /**
-     * The presets to run. A property and not a queued command, because a surface
-     * can be destroyed and rebuilt (a fold, going to the background) and the
-     * engine that comes back has to load the same pack again.
+     * The presets to run: a pack, or a list of files from several packs. A property and not
+     * a queued command, because a surface can be destroyed and rebuilt (a fold, going to the
+     * background) and the engine that comes back has to load the same presets again.
      *
      * Null keeps projectM's built-in idle preset.
      */
@@ -42,6 +42,10 @@ class ProjectMView(
     /** A property for the same reason [presets] is. */
     @Volatile
     var shuffle: Boolean = false
+
+    /** Presets switching steps past: ones known not to show. A pick by index still plays one. */
+    @Volatile
+    var skipped: Set<String> = emptySet()
 
     /** Winamp's spacebar, and this window's tap. */
     override fun nextPreset() = onRenderThread { engine -> if (engine.playlistSize > 0) engine.playlistNext() }
@@ -81,7 +85,11 @@ class ProjectMView(
                     },
                     onPlaylistChanged = ::announcePlaylist,
                     restoreTo = { stickyPreset },
+                    onPresetGaps = ::announceGaps,
+                    skip = { skipped },
                 )
+            val probe = BlackProbe()
+            var audibleAt = Long.MIN_VALUE / 2
             while (stillCurrent()) {
                 requestedSize?.takeIf { it != appliedSize }?.let { size ->
                     appliedSize = size
@@ -90,11 +98,25 @@ class ProjectMView(
                 }
                 presetLoader.sync(presets, shuffle)
                 drainCommands(engine)
+                presetLoader.readLog()
+                presetLoader.reportFailures()
                 presetLoader.reportSwitch()
+                if (!frameDue()) {
+                    pacer.await()
+                    continue
+                }
                 val samples = pcm?.read()
                 if (samples != null) engine.addPcmFloat(samples, samples.size.coerceAtMost(maxSamples))
+                val now = System.nanoTime() / NANOS_PER_MILLI
+                if (samples != null && samples.any { it > AUDIBLE || it < -AUDIBLE }) audibleAt = now
                 engine.renderFrame()
                 egl.makeOpaque()
+                if (presetLoader.wantsBlankCheck()) {
+                    presetLoader.blankChecked(
+                        black = probe.isBlack(appliedSize.width, appliedSize.height),
+                        audible = now - audibleAt < AUDIBLE_FOR_MS,
+                    )
+                }
                 if (!egl.swapBuffers()) break
                 pacer.await()
             }
@@ -115,5 +137,13 @@ class ProjectMView(
          */
         const val MESH_W = 48
         const val MESH_H = 36
+
+        const val NANOS_PER_MILLI = 1_000_000L
+
+        /** A sample this far from silence counts as music playing. */
+        const val AUDIBLE = 0.02f
+
+        /** Music counts as playing for this long after the last sample that was. */
+        const val AUDIBLE_FOR_MS = 300L
     }
 }

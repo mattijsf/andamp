@@ -54,4 +54,24 @@ class PresetNoticeTest {
             PresetNotice.textFor(PresetGaps(unreadable = true, missing = listOf("Text")), EnglishWords),
         )
     }
+
+    @Test
+    fun `a preset that draws only black says so`() {
+        assertEquals(
+            "It loads, but draws only black while music plays",
+            PresetNotice.textFor(PresetGaps(missing = listOf("warp shader"), blank = true), EnglishWords),
+        )
+    }
+
+    @Test
+    fun `the selector's line gives the engine's reason`() {
+        assertEquals(
+            "This preset could not be read: bad header",
+            PresetNotice.detailFor(PresetGaps(unreadable = true, reason = " bad header "), EnglishWords),
+        )
+        assertEquals(
+            "This preset could not be read",
+            PresetNotice.detailFor(PresetGaps(unreadable = true, reason = " "), EnglishWords),
+        )
+    }
 }
