@@ -5,6 +5,8 @@ package nl.mattix.andamp.state
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -33,8 +35,45 @@ class LibrarySourcesTest {
     ) = LibrarySources(store, present, if (signedIn) setOf(example) else emptySet())
 
     @Test
-    fun `nothing picked shows the phone`() {
-        assertEquals(MusicSource.LOCAL, sources().showing)
+    fun `nothing picked shows every source together, once there is more than one`() {
+        assertTrue(sources().showingAll)
+        assertFalse("the phone alone is shown by itself", sources(signedIn = false).showingAll)
+        assertEquals(MusicSource.LOCAL, sources(signedIn = false).showing)
+    }
+
+    @Test
+    fun `every source together is picked, ticked and closed like an entry`() {
+        val sources = sources()
+        sources.pick(MusicSource.LOCAL, open = false)
+        assertFalse(sources.showingAll)
+
+        assertEquals(LibrarySources.Pick.Show, sources.pickAll(open = true))
+        assertTrue(sources.showingAll)
+        assertEquals(LibrarySources.Pick.Close, sources.pickAll(open = true))
+        assertEquals(
+            "with one source there is nothing to put together",
+            LibrarySources.Pick.Nothing,
+            sources(signedIn = false).pickAll(open = false),
+        )
+    }
+
+    @Test
+    fun `a sign-in joins every source together rather than taking the window`() {
+        val sources = sources(signedIn = false)
+
+        sources.signedIn(example)
+
+        assertTrue(sources.showingAll)
+    }
+
+    @Test
+    fun `a pick from before every source together is let go once`() {
+        val prefs = prefs()
+        prefs.edit().putString("source", example.id).apply()
+
+        assertTrue("the old pick is let go", sources(store = LibrarySourceStore(prefs)).showingAll)
+        sources(store = LibrarySourceStore(prefs)).pick(example, open = false)
+        assertEquals("a pick after it is kept", example, sources(store = LibrarySourceStore(prefs)).showing)
     }
 
     @Test
@@ -54,6 +93,7 @@ class LibrarySourcesTest {
     @Test
     fun `a ticked entry closes its window, and the other entry moves it`() {
         val sources = sources()
+        sources.pick(MusicSource.LOCAL, open = false)
 
         assertEquals(LibrarySources.Pick.Close, sources.pick(MusicSource.LOCAL, open = true))
         assertEquals(LibrarySources.Pick.Show, sources.pick(example, open = true))

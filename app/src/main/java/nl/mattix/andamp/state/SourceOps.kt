@@ -75,6 +75,18 @@ class SourceOps(
     }
 
     /**
+     * Main menu > Media Library > All Sources: the window opens on every source together,
+     * moves onto it, or closes when the entry is already ticked.
+     */
+    fun libraryAll() {
+        when (sources.pickAll(state.libraryOpen)) {
+            LibrarySources.Pick.Show -> state.setWindowOpen(WindowStore.LIBRARY, true) { library.open() }
+            LibrarySources.Pick.Close -> state.libraryOpen = false
+            else -> Unit
+        }
+    }
+
+    /**
      * A source is signed in: from Preferences, or found by [reconcile].
      *
      * An open library window moves onto it; a closed one opens only when a Media Library
@@ -85,7 +97,7 @@ class SourceOps(
         val headedThere = pendingPick == source
         pendingPick = null
         forgetLibrary(source)
-        sources.signedIn(source)
+        sources.signedIn(source, picked = headedThere)
         when {
             state.libraryOpen -> library.open()
             headedThere -> state.setWindowOpen(WindowStore.LIBRARY, true) { library.open() }
@@ -103,10 +115,11 @@ class SourceOps(
     fun signedOut(source: MusicSource) {
         pendingPick = null
         val wasShowing = sources.showing
+        val wasTogether = sources.showingAll
         sources.signedOut(source)
         clearLibrary(source)
         forgetPlayer(source)
-        if (state.libraryOpen && wasShowing == source) library.open()
+        if (state.libraryOpen && (wasShowing == source || wasTogether)) library.open()
     }
 
     /** Preferences was closed: a pending Media Library pick is dropped. */

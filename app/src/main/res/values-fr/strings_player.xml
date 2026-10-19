@@ -100,6 +100,7 @@
 
     <!-- MusicSource.kt -->
     <string name="source_this_phone">Ce téléphone</string>
+    <string name="source_all">Toutes les sources</string>
 
     <!-- PackSource.kt -->
     <string name="source_played_by">Lecture par %1$s (%2$s)</string>

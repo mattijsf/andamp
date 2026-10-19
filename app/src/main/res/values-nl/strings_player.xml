@@ -99,6 +99,7 @@
 
     <!-- MusicSource.kt -->
     <string name="source_this_phone">Deze telefoon</string>
+    <string name="source_all">Alle bronnen</string>
 
     <!-- PackSource.kt -->
     <string name="source_played_by">Afgespeeld door %1$s (%2$s)</string>

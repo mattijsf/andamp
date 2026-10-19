@@ -100,6 +100,7 @@
 
     <!-- MusicSource.kt -->
     <string name="source_this_phone">Dieses Smartphone</string>
+    <string name="source_all">Alle Quellen</string>
 
     <!-- PackSource.kt -->
     <string name="source_played_by">Abgespielt von %1$s (%2$s)</string>

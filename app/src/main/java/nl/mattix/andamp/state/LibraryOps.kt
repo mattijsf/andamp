@@ -273,7 +273,7 @@ class LibraryOps(
 
     /** Whether [tab] shows files this app keeps, which are read again on every visit. */
     private fun readEachVisit(tab: Category): Boolean =
-        tab == Category.RADIO || (tab == Category.LISTS && !source.capabilities.hasPlaylists)
+        tab == Category.RADIO || (tab == Category.LISTS && (!source.capabilities.hasPlaylists || source is AllLibrary))
 
     /**
      * At a tab's root, with that root on screen. A root that could not be reached does
@@ -604,7 +604,13 @@ class LibraryOps(
         if (loading) return
         if (page.saved.isEmpty() && crumbs.all { it.page.saved.isEmpty() }) return
         scope.launch {
-            val next = shelves.savedLists()
+            // with every source together the saved lists share their page with the sources'
+            val next =
+                try {
+                    if (source is AllLibrary) shelves.root(Category.LISTS, source) else shelves.savedLists()
+                } catch (_: SourceUnreachable) {
+                    shelves.savedLists()
+                }
             // a level navigated to while the lists were read is left to land
             if (loading) return@launch
             for (at in crumbs.indices) {

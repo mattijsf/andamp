@@ -74,7 +74,7 @@ fun mainMenu(
             libraryItem(
                 label = vm.words.get(R.string.menu_media_library),
                 sources = vm.librarySources.present,
-                showing = vm.librarySources.showing.takeIf { vm.state.libraryOpen },
+                showing = vm.librarySources.showing.takeIf { vm.state.libraryOpen && !vm.librarySources.showingAll },
                 onToggle = {
                     // open() raises on its own; this keeps both directions in one shape
                     vm.state.setWindowOpen(WindowStore.LIBRARY, !vm.state.libraryOpen) { on ->
@@ -83,6 +83,9 @@ fun mainMenu(
                 },
                 onSource = { source -> vm.sourceOps.libraryFrom(source, onSignIn = onPreferences) },
                 named = { it.shown(vm.words) },
+                all = vm.words.get(R.string.source_all).takeIf { vm.librarySources.usable.size > 1 },
+                showingAll = vm.state.libraryOpen && vm.librarySources.showingAll,
+                onAll = vm.sourceOps::libraryAll,
             ),
             AmpMenuItem.Divider,
             AmpMenuItem.Submenu(vm.words.get(R.string.menu_options), options),
@@ -110,11 +113,14 @@ fun mainMenu(
  * Media Library, as one entry or as one per source.
  *
  * With one source it is a single entry. With more, each source is an entry in a submenu, the way
- * Winamp 5 lists its sources in the library's tree.
+ * Winamp 5 lists its sources in the library's tree, under an entry for every source together
+ * when [all] names it.
  *
- * [showing] is the source on screen, or null with the window closed, so the tick marks the open
- * library. [label] is what the entry is called.
+ * [showing] is the source on screen, or null with the window closed or showing every source,
+ * so the tick marks the open library; [showingAll] ticks the entry for every source. [label] is
+ * what the entry is called.
  */
+@Suppress("LongParameterList") // the entries, what is ticked, and what each does
 internal fun libraryItem(
     label: String,
     sources: List<MusicSource>,
@@ -123,17 +129,34 @@ internal fun libraryItem(
     onSource: (MusicSource) -> Unit,
     /** What a source is called in the submenu. */
     named: (MusicSource) -> String = { it.label },
+    /** The entry for every source together, or null when it is not offered. */
+    all: String? = null,
+    showingAll: Boolean = false,
+    onAll: () -> Unit = {},
 ): AmpMenuItem {
     if (sources.size < 2) {
         return AmpMenuItem.Action(label, checked = showing != null, needsTheApp = true, onClick = onToggle)
     }
-    return AmpMenuItem.Submenu(
-        label,
+    return AmpMenuItem.Submenu(label, sourceItems(sources, showing, onSource, named, all, showingAll, onAll), needsTheApp = true)
+}
+
+/** One entry per source, under one for every source together when [all] names it; see [libraryItem]. */
+@Suppress("LongParameterList") // see libraryItem
+internal fun sourceItems(
+    sources: List<MusicSource>,
+    showing: MusicSource?,
+    onSource: (MusicSource) -> Unit,
+    named: (MusicSource) -> String,
+    all: String?,
+    showingAll: Boolean,
+    onAll: () -> Unit,
+): List<AmpMenuItem> {
+    val each =
         sources.map { source ->
             AmpMenuItem.Action(named(source), checked = source == showing, needsTheApp = true) { onSource(source) }
-        },
-        needsTheApp = true,
-    )
+        }
+    if (all == null) return each
+    return listOf(AmpMenuItem.Action(all, checked = showingAll, needsTheApp = true, onClick = onAll), AmpMenuItem.Divider) + each
 }
 
 /**

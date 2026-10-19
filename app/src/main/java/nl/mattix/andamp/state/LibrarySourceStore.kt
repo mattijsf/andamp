@@ -13,25 +13,43 @@ import androidx.compose.runtime.setValue
  * from what is playing.
  *
  * Stored as the source's id, which [LibrarySources] matches against the sources this install
- * has; an unknown id matches nothing and the window shows the phone. Held as snapshot state
- * too, so the menu's tick moves when a source is picked.
+ * has; an unknown id matches nothing and the window shows the phone. [ALL] is every source
+ * together, and null is no pick at all, which [LibrarySources] reads as every source when
+ * there is more than one. Held as snapshot state too, so the menu's tick moves when a source
+ * is picked.
  */
 class LibrarySourceStore(
     private val prefs: SharedPreferences,
 ) {
     constructor(context: Context) : this(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE))
 
-    private var current by mutableStateOf(prefs.getString(KEY, null) ?: MusicSource.LOCAL.id)
+    init {
+        // every source together came after the single pick, and is where every install
+        // starts: a pick from before it is let go once
+        if (!prefs.getBoolean(ALL_OFFERED, false)) {
+            prefs
+                .edit()
+                .remove(KEY)
+                .putBoolean(ALL_OFFERED, true)
+                .apply()
+        }
+    }
 
-    var id: String
+    private var current by mutableStateOf(prefs.getString(KEY, null))
+
+    var id: String?
         get() = current
         set(value) {
             current = value
             prefs.edit().putString(KEY, value).apply()
         }
 
-    private companion object {
-        const val PREFS = "library"
-        const val KEY = "source"
+    companion object {
+        /** Every source together. */
+        const val ALL = "ALL"
+
+        private const val PREFS = "library"
+        private const val KEY = "source"
+        private const val ALL_OFFERED = "all"
     }
 }
