@@ -47,6 +47,15 @@
     <string name="library_incomplete">不完整</string>
     <string name="library_track_count_short">%1$d 首</string>
 
+    <string name="library_recently_added">最近添加</string>
+    <string name="library_most_played">最常播放</string>
+    <string name="library_recently_played">最近播放</string>
+    <string name="library_not_played_lately">很久没听</string>
+    <string name="library_bookmarks">书签</string>
+    <plurals name="library_count_plays">
+        <item quantity="other">%1$d 次</item>
+    </plurals>
+
     <string name="library_loading">加载中…</string>
     <string name="library_no_music">未找到音乐</string>
     <string name="library_no_artists">没有艺术家</string>

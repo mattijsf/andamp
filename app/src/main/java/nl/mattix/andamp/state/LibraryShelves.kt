@@ -14,6 +14,7 @@ import nl.mattix.andamp.core.model.LibraryAlbum
 import nl.mattix.andamp.core.model.LibraryArtist
 import nl.mattix.andamp.core.model.LibraryPlaylist
 import nl.mattix.andamp.core.model.Track
+import nl.mattix.andamp.core.model.displayName
 import nl.mattix.andamp.core.model.durationSec
 import nl.mattix.andamp.core.playback.BrowseSource
 import nl.mattix.andamp.state.LibraryOps.Category
@@ -43,6 +44,8 @@ internal class LibraryShelves(
     private val access: (needed: Boolean) -> Unit,
     /** Opens a level: the header it lands under, and the fetch of its page. */
     private val drill: (String, suspend () -> LibraryPage) -> Unit,
+    /** The lists the library makes itself for the library on show; see [SmartList]. */
+    private val smartLists: suspend (BrowseSource) -> List<SmartList> = { emptyList() },
 ) {
     private fun label(category: Category): String = words.get(category.label)
 
@@ -221,15 +224,57 @@ internal class LibraryShelves(
      * ([LibrarySources.showing]). A source that keeps its own playlists shows those; one
      * that does not shows the lists this app has saved as files. The two are never mixed.
      */
-    private suspend fun listsRootPage(src: BrowseSource): LibraryPage =
-        when {
-            // every source together: the lists this app saved, then each source's own
-            src is AllLibrary && src.capabilities.hasPlaylists -> together(savedLists(), sourceListsPage(src))
+    private suspend fun listsRootPage(src: BrowseSource): LibraryPage {
+        val lists =
+            when {
+                // every source together: the lists this app saved, then each source's own
+                src is AllLibrary && src.capabilities.hasPlaylists -> together(savedLists(), sourceListsPage(src))
 
-            src.capabilities.hasPlaylists -> sourceListsPage(src)
+                src.capabilities.hasPlaylists -> sourceListsPage(src)
 
-            else -> savedLists()
-        }
+                else -> savedLists()
+            }
+        return withSmartLists(smartLists(src), lists)
+    }
+
+    /**
+     * The lists the library makes itself, at the top of [lists], the way Winamp's library
+     * tree has its views above the playlists. Each opens as a page of tracks.
+     */
+    private fun withSmartLists(
+        smart: List<SmartList>,
+        lists: LibraryPage,
+    ): LibraryPage {
+        if (smart.isEmpty()) return lists
+        return LibraryPage(
+            header = lists.header,
+            status = count(smart.size + lists.rows.size, R.plurals.library_count_lists),
+            rows =
+                smart.map { Row(it.name, detail = words.get(R.string.library_track_count_short, it.entries.size)) } + lists.rows,
+            open = smart.map { list -> { drill(list.name) { smartPage(list) } } } + lists.open,
+            tracksOf =
+                smart.map<SmartList, suspend () -> List<Track>> { list -> { list.entries.map { it.first } } } + lists.tracksOf,
+            saved = smart.map { null } + lists.saved,
+            empty = lists.empty,
+            incomplete = lists.incomplete,
+        )
+    }
+
+    /** A list the library made, as a page of tracks, each with what its entry says on the right. */
+    private fun smartPage(list: SmartList): LibraryPage {
+        val tracks = list.entries.map { it.first }
+        val time = if (tracks.isEmpty()) "" else " · ${clock(tracks.sumOf { it.durationSec })}"
+        return LibraryPage(
+            header = list.name,
+            status = count(tracks.size, R.plurals.library_count_tracks) + time,
+            rows =
+                list.entries.mapIndexed { at, (track, detail) ->
+                    Row("${at + 1}. ${track.displayName}", detail = detail ?: clock(track.durationSec))
+                },
+            tracks = tracks,
+            empty = words.get(R.string.library_no_tracks),
+        )
+    }
 
     /** The saved lists and the sources' lists as one page, the saved ones first, as [LibraryPage.saved] wants. */
     private fun together(
@@ -443,3 +488,13 @@ internal class LibraryShelves(
                 }
     }
 }
+
+/**
+ * A list the library makes itself rather than one the listener saved: what was added lately,
+ * played most, played last, not played for a while, or bookmarked. Its [entries] are each a
+ * track and what its row says on the right, or null for the track's length.
+ */
+class SmartList(
+    val name: String,
+    val entries: List<Pair<Track, String?>>,
+)

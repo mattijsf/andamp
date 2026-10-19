@@ -221,6 +221,15 @@ class WinampViewModel
         private val showingLibrary: () -> BrowseSource =
             { if (librarySources.showingAll) allLibrary else browseSource(librarySources.showing) }
 
+        /** The lists the library makes itself, over what was added, played and bookmarked; see [SmartLists]. */
+        private val smartLists =
+            SmartLists(
+                plays = { PlaybackRoot.playLog(app) },
+                phone = { Libraries.phone(app) },
+                bookmarks = bookmarkStore::list,
+                words = words,
+            )
+
         /** The media library window: artists, albums, lists and radio. */
         val libraryOps =
             LibraryOps(
@@ -243,6 +252,10 @@ class WinampViewModel
                 words = words,
                 // a source says whether its last answer got to the end
                 wholeOf = { source -> (source as? PartialAnswers)?.whole ?: true },
+                smartLists = {
+                    val shown = if (librarySources.showingAll) librarySources.usable.toSet() else setOf(librarySources.showing)
+                    smartLists.of(shown)
+                },
             )
 
         /** Picking a library, and what a sign-in or a sign-out changes; see [SourceOps]. */

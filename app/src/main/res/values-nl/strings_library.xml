@@ -56,6 +56,16 @@
     <string name="library_incomplete">ONVOLLEDIG</string>
     <string name="library_track_count_short">%1$d NRS</string>
 
+    <string name="library_recently_added">RECENT TOEGEVOEGD</string>
+    <string name="library_most_played">VAAKST GESPEELD</string>
+    <string name="library_recently_played">LAATST GESPEELD</string>
+    <string name="library_not_played_lately">LANG NIET GESPEELD</string>
+    <string name="library_bookmarks">BLADWIJZERS</string>
+    <plurals name="library_count_plays">
+        <item quantity="one">%1$d KEER</item>
+        <item quantity="other">%1$d KEER</item>
+    </plurals>
+
     <string name="library_loading">LADEN…</string>
     <string name="library_no_music">GEEN MUZIEK GEVONDEN</string>
     <string name="library_no_artists">GEEN ARTIESTEN</string>

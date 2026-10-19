@@ -69,6 +69,18 @@
     <!-- How many tracks a list holds, beside its name -->
     <string name="library_track_count_short">%1$d TRK</string>
 
+    <!-- SmartLists.kt: the lists the library makes itself, at the top of LISTS -->
+    <string name="library_recently_added">RECENTLY ADDED</string>
+    <string name="library_most_played">MOST PLAYED</string>
+    <string name="library_recently_played">RECENTLY PLAYED</string>
+    <string name="library_not_played_lately">NOT PLAYED LATELY</string>
+    <string name="library_bookmarks">BOOKMARKS</string>
+    <!-- How often a song was played -->
+    <plurals name="library_count_plays">
+        <item quantity="one">%1$d PLAY</item>
+        <item quantity="other">%1$d PLAYS</item>
+    </plurals>
+
     <!-- What an empty page says -->
     <!-- An empty page while its rows are being fetched -->
     <string name="library_loading">LOADING…</string>

@@ -40,7 +40,7 @@ import kotlin.coroutines.CoroutineContext
  * (NO ARTISTS). A source that answered only part of a question gets INCOMPLETE beside the
  * count. Nothing here caches answers beyond the pages a tab keeps while it is left.
  */
-@Suppress("TooManyFunctions") // the categories, the search flow and the row actions are all here
+@Suppress("TooManyFunctions", "LongParameterList") // the categories, the search and the rows; collaborators are seams
 class LibraryOps(
     /**
      * The library to browse, asked for each time, because the listener can pick another
@@ -71,6 +71,8 @@ class LibraryOps(
      * stopped part way and handed back what it had. A [BrowseSource] cannot say this itself.
      */
     private val wholeOf: (BrowseSource) -> Boolean = { true },
+    /** The lists the library makes itself, at the top of LISTS; see [SmartList]. */
+    private val smartLists: suspend (BrowseSource) -> List<SmartList> = { emptyList() },
 ) {
     /**
      * The library as it is now; see [sourceOf]. It is read once per page and handed to
@@ -131,6 +133,7 @@ class LibraryOps(
             wholeOf,
             access = { needed -> needsAccess = needed },
             drill = ::drill,
+            smartLists = smartLists,
         )
 
     val rows: List<Row> get() = page.rows
@@ -515,7 +518,7 @@ class LibraryOps(
     /** What the row is when this app keeps it, a saved list or a station; null for any other row. */
     fun keptAt(index: Int): Kept? =
         when {
-            index in page.saved.indices -> Kept.LIST
+            page.saved.getOrNull(index) != null -> Kept.LIST
             stationAt(index) != null -> Kept.STATION
             else -> null
         }
@@ -602,12 +605,13 @@ class LibraryOps(
      */
     private fun savedListsChanged(closing: String? = null) {
         if (loading) return
-        if (page.saved.isEmpty() && crumbs.all { it.page.saved.isEmpty() }) return
+        if (!page.holdsSaved && crumbs.none { it.page.holdsSaved }) return
         scope.launch {
-            // with every source together the saved lists share their page with the sources'
+            // the saved lists share their page with the lists the library makes, and with every
+            // source together with the sources' own
             val next =
                 try {
-                    if (source is AllLibrary) shelves.root(Category.LISTS, source) else shelves.savedLists()
+                    shelves.root(Category.LISTS, source)
                 } catch (_: SourceUnreachable) {
                     shelves.savedLists()
                 }
@@ -615,10 +619,10 @@ class LibraryOps(
             if (loading) return@launch
             for (at in crumbs.indices) {
                 val crumb = crumbs[at]
-                if (crumb.page.saved.isEmpty()) continue
+                if (!crumb.page.holdsSaved) continue
                 crumbs[at] = Crumb(next, scrollWithin(next, crumb.scroll), crumb.selection, crumb.query, crumb.finding)
             }
-            if (page.saved.isNotEmpty()) {
+            if (page.holdsSaved) {
                 abandonLoad()
                 commit(next, scroll = scrollWithin(next, state.libraryScroll))
             }
@@ -880,3 +884,6 @@ class LibraryOps(
         const val MIN_QUERY = 2
     }
 }
+
+/** Whether the page lists any of the lists this app saved. */
+private val LibraryPage.holdsSaved: Boolean get() = saved.any { it != null }
