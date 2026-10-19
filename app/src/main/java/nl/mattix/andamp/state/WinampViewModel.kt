@@ -214,9 +214,12 @@ class WinampViewModel
                 words = words,
             )
 
+        /** The mark a pack's app gives or suggests for a source; see [PackMarks]. */
+        private val packMark: (MusicSource) -> SourceMark? = { source -> PackMarks.forSource(app, source, source.shown(words)) }
+
         /** Every source the library can show, together; see [AllLibrary]. */
         private val allLibrary =
-            AllLibrary { librarySources.usable.map { AllLibrary.Member(it, browseSource(it), markOf(it, words)) } }
+            AllLibrary { librarySources.usable.map { AllLibrary.Member(it, browseSource(it), markOf(it, words, packMark)) } }
 
         /** The library the window shows: every source together, or the one picked. */
         private val showingLibrary: () -> BrowseSource =
@@ -412,10 +415,17 @@ class WinampViewModel
                     }
                 }
             }
-            // a row's source needs telling apart only when there is more than one
+            // a row's source needs telling apart only when there is more than one. A pack's mark is
+            // read from its app, off the main thread, and again when the pack changes, as an update
+            // can bring another
             viewModelScope.launch {
-                snapshotFlow { librarySources.usable }.collect { usable ->
-                    state.sourceMarks = if (usable.size > 1) usable.associate { it.id to markOf(it, words) } else emptyMap()
+                snapshotFlow { librarySources.usable to PackMarks.changes }.collectLatest { (usable, _) ->
+                    state.sourceMarks =
+                        if (usable.size > 1) {
+                            withContext(Dispatchers.IO) { usable.associate { it.id to markOf(it, words, packMark) } }
+                        } else {
+                            emptyMap()
+                        }
                 }
             }
             // a library read again while it is shown reaches the window; see ShelfUpdates. With

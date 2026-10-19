@@ -458,9 +458,12 @@ one of them steps the clocks (`WinampState.clocksTurn`).
 - **Source marks.** Where several sources show, a row carries its source's `SourceMark`:
   1-bit pixel art for the skin's font, written like its letters, and a vector path (SVG
   path data in a 24-unit square) for the outline font, so it scales with the text
-  (`MarkInk`). The phone's is built in; a source without one is its first letter. The
-  playlist shows them too when Preferences > Player > Source in the playlist says before or
-  after, which is offered only with more than one source.
+  (`MarkInk`). The phone's is built in. A pack's comes from its app (`PackMarks`): a drawable
+  and pixel art named in its service's meta-data, else the shape of its launcher icon, with
+  pixel art made from it, else its first letter. The meta-data is read from the manifest, so
+  packs built before it keep working and no `PACK_API` change was needed. The playlist shows
+  marks too when Preferences > Player > Source in the playlist says before or after, which is
+  offered only with more than one source.
 - **Song rows.** The playlist, the main window's title and the library's lists of songs write
   a song in one `RowFormat`, set under Preferences > Player > Song rows and stored as Winamp
   writes a title format (`%artist% - %title%`). A field a song lacks is left out with the text

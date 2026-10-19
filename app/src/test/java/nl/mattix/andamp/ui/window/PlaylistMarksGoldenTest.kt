@@ -4,7 +4,10 @@ package nl.mattix.andamp.ui.window
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.Typeface
+import android.graphics.drawable.AdaptiveIconDrawable
+import android.graphics.drawable.ColorDrawable
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Canvas
 import androidx.compose.ui.graphics.ImageBitmap
@@ -18,9 +21,11 @@ import com.github.takahirom.roborazzi.captureRoboImage
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SkinLoader
+import nl.mattix.andamp.state.Frame
 import nl.mattix.andamp.state.ListFont
 import nl.mattix.andamp.state.MarkPlace
 import nl.mattix.andamp.state.MusicSource
+import nl.mattix.andamp.state.PackMarks
 import nl.mattix.andamp.state.SourceMark
 import nl.mattix.andamp.state.WinampState
 import org.junit.Before
@@ -64,10 +69,11 @@ class PlaylistMarksGoldenTest {
     private fun state(
         font: ListFont,
         place: MarkPlace,
+        example: SourceMark,
     ) = WinampState().apply {
         listFont = font
         listMarks = place
-        sourceMarks = mapOf(MusicSource.LOCAL.id to SourceMark.PHONE, "EXAMPLE" to SourceMark.letter("Example"))
+        sourceMarks = mapOf(MusicSource.LOCAL.id to SourceMark.PHONE, "EXAMPLE" to example)
         playlist =
             List(6) { at ->
                 val uri = if (at % 2 == 0) "content://media/external/audio/media/$at" else "example:track:$at"
@@ -86,9 +92,10 @@ class PlaylistMarksGoldenTest {
         name: String,
         font: ListFont,
         place: MarkPlace,
+        example: SourceMark = SourceMark.letter("Example"),
     ) {
         val layout = PlaylistLayout.ofSegments(4)
-        render(PL_W, layout.height) { drawPlaylistWindow(skin, state(font, place), layout, measurer()) }
+        render(PL_W, layout.height) { drawPlaylistWindow(skin, state(font, place, example), layout, measurer()) }
             .captureRoboImage("src/test/snapshots/$name.png")
     }
 
@@ -103,4 +110,44 @@ class PlaylistMarksGoldenTest {
     @Test
     fun `playlist rows marked by source before their titles, in the outline font`() =
         capture("playlist_marks_before", ListFont.REGULAR, MarkPlace.BEFORE)
+
+    /** The Example source's pack names no mark, and its launcher icon's monochrome layer stands in. */
+    private fun fromIcon() =
+        PackMarks.markFrom(
+            null,
+            null,
+            AdaptiveIconDrawable(ColorDrawable(Color.BLUE), ColorDrawable(Color.RED), Frame()),
+            "Example",
+        )
+
+    @Test
+    fun `playlist rows marked by a pack's icon, in the outline font`() =
+        capture("playlist_marks_pack_icon", ListFont.REGULAR, MarkPlace.BEFORE, fromIcon())
+
+    @Test
+    fun `pixel art taller than the letters stands out above and below them, centered`() =
+        capture(
+            "playlist_marks_tall_art_skin_font",
+            ListFont.SKIN,
+            MarkPlace.BEFORE,
+            SourceMark(
+                pixels =
+                    listOf(
+                        "....#....",
+                        "...###...",
+                        "..#####..",
+                        ".###.###.",
+                        "###...###",
+                        ".###.###.",
+                        "..#####..",
+                        "...###...",
+                        "....#....",
+                    ),
+                letter = "E",
+            ),
+        )
+
+    @Test
+    fun `playlist rows marked by a pack's icon, in pixel art made from it`() =
+        capture("playlist_marks_pack_icon_skin_font", ListFont.SKIN, MarkPlace.BEFORE, fromIcon())
 }
