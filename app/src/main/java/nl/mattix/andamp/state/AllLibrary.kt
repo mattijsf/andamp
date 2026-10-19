@@ -21,6 +21,12 @@ interface SourceMarks {
 
     /** The mark of the source the playlist [listId] belongs to; null when not known. */
     fun markOfList(listId: String): SourceMark?
+
+    /** The mark of [source], when it is one of these; null otherwise. */
+    fun markOfSource(source: MusicSource): SourceMark?
+
+    /** The one source the folders and genres come from; null when none does, or several. */
+    fun foldersAndGenresFrom(): MusicSource?
 }
 
 /**
@@ -233,6 +239,10 @@ class AllLibrary(
     override fun marksOf(albumId: String): List<SourceMark> = editions[albumId].orEmpty().map { it.member.mark }.distinct()
 
     override fun markOfList(listId: String): SourceMark? = routed(listId)?.first?.mark
+
+    override fun markOfSource(source: MusicSource): SourceMark? = members().firstOrNull { it.source.id == source.id }?.mark
+
+    override fun foldersAndGenresFrom(): MusicSource? = members().filter { it.library is FoldersAndGenres }.singleOrNull()?.source
 
     /**
      * [question] asked of every member at once, with the answers of those that gave one, in
