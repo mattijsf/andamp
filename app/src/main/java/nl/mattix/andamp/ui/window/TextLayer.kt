@@ -132,12 +132,15 @@ internal class TextLayer {
             argb: Int,
             /** The marks of the sources that have it, at the row's end; see [MarkInk]. */
             marks: List<SourceMark> = emptyList(),
+            /** Every source's mark, so each of [marks] takes the room of the widest; see [MarkInk]. */
+            peers: Collection<SourceMark> = marks,
         ) {
             pieces +=
                 Row(
                     label,
                     detail,
                     marks,
+                    peers,
                     left,
                     right,
                     top,
@@ -247,6 +250,7 @@ internal class TextLayer {
         val label: String,
         val detail: String,
         val marks: List<SourceMark>,
+        val peers: Collection<SourceMark>,
         val left: Float,
         val right: Float,
         val top: Int,
@@ -262,8 +266,8 @@ internal class TextLayer {
             val y = letterTop(top, height)
             var labelRight = right.toInt()
             if (marks.isNotEmpty()) {
-                val w = MarkInk.pixelWidth(marks)
-                MarkInk.spell(marks, labelRight - w, y, argb, glyphs, block, stride)
+                val w = MarkInk.pixelWidth(marks, peers)
+                MarkInk.spell(marks, labelRight - w, y, argb, glyphs, block, stride, peers)
                 labelRight -= w + DETAIL_GAP.toInt()
             }
             if (detail.isNotBlank()) {
@@ -284,8 +288,8 @@ internal class TextLayer {
             val baseline = ListText.baseline(paint, top.toFloat(), height)
             var labelRight = right
             if (marks.isNotEmpty()) {
-                val w = MarkInk.outlineWidth(marks, paint)
-                MarkInk.outline(marks, labelRight - w, top.toFloat(), height, canvas, paint)
+                val w = MarkInk.outlineWidth(marks, paint, peers)
+                MarkInk.outline(marks, labelRight - w, top.toFloat(), height, canvas, paint, peers)
                 labelRight -= w + DETAIL_GAP
             }
             if (detail.isNotBlank()) {

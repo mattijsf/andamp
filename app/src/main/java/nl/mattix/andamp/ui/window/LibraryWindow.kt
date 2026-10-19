@@ -36,6 +36,7 @@ import nl.mattix.andamp.state.LibraryOps
 import nl.mattix.andamp.state.ListFont
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.MusicPermission
+import nl.mattix.andamp.state.SourceMark
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
@@ -388,6 +389,7 @@ internal fun DrawScope.drawLibraryContent(
             rowH = layout.rowH,
             skinFont = skin[Sheet.TEXT].takeIf { s.listFont == ListFont.SKIN },
             source = source,
+            marks = s.sourceMarks.values,
         )
     drawLayer(rasterizer.top(ops, scene), 0, width, layout.rowsTop)
     drawLayer(rasterizer.rows(ops, scene), layout.rowsTop, width, layout.rowsH)
@@ -497,6 +499,8 @@ internal class LibraryRasterizer(
         val source: String? = null,
         /** The string of the order the ALBUMS page is in, for the bar's cell; null where there is none. */
         val order: Int? = null,
+        /** Every source's mark, so a row's marks each take the room of the widest; see [MarkInk]. */
+        val marks: Collection<SourceMark> = emptyList(),
     ) {
         val layout: LibraryLayout get() = LibraryLayout(visibleRows, slack = slack, rowH = rowH)
     }
@@ -593,6 +597,7 @@ internal class LibraryRasterizer(
                 scene.style,
                 scene.rowH,
                 scene.skinFont,
+                scene.marks.toList(),
             )
         val layout = scene.layout
         return rowsLayer.get(key) {
@@ -760,7 +765,17 @@ internal class LibraryRasterizer(
             val index = scene.scroll + at
             val row = rows.getOrNull(index) ?: break
             val color = if (index == scene.playingRow || ops.headingAt(index)) scene.style.current else scene.style.normal
-            row(row.label, row.detail, ListText.LEFT_INSET, right, at * scene.rowH, scene.rowH, color.toArgb(), row.marks)
+            row(
+                row.label,
+                row.detail,
+                ListText.LEFT_INSET,
+                right,
+                at * scene.rowH,
+                scene.rowH,
+                color.toArgb(),
+                row.marks,
+                scene.marks,
+            )
         }
     }
 
