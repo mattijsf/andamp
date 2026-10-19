@@ -447,6 +447,51 @@ class LibraryIndex(
                 arrayOf(source, albumId),
             ).use { c -> c.map(::trackAt) }
 
+    /** The folders [source]'s tracks are in, by name, each with how many tracks it holds. */
+    fun folders(source: String): List<Pair<String, Int>> =
+        groups(
+            "SELECT folder, COUNT(*) FROM track WHERE source = ? AND folder != '' GROUP BY folder ORDER BY folder COLLATE NOCASE",
+            source,
+        )
+
+    /** The genres [source]'s tracks name, by name, each with how many tracks name it. */
+    fun genres(source: String): List<Pair<String, Int>> =
+        groups(
+            "SELECT MIN(genre), COUNT(*) FROM track WHERE source = ? AND genre IS NOT NULL AND genre != '' " +
+                "GROUP BY genre COLLATE NOCASE ORDER BY genre COLLATE NOCASE",
+            source,
+        )
+
+    private fun groups(
+        sql: String,
+        source: String,
+    ): List<Pair<String, Int>> = db.rawQuery(sql, arrayOf(source)).use { c -> c.map { it.getString(0) to it.getInt(1) } }
+
+    /** The tracks in [folder], album by album. */
+    fun folderTracks(
+        source: String,
+        folder: String,
+    ): List<Track> = tracksWhere("t.folder = ?", source, folder)
+
+    /** The tracks that name [genre], whatever its case, by artist and album. */
+    fun genreTracks(
+        source: String,
+        genre: String,
+    ): List<Track> = tracksWhere("t.genre = ? COLLATE NOCASE", source, genre)
+
+    private fun tracksWhere(
+        clause: String,
+        source: String,
+        value: String,
+    ): List<Track> =
+        db
+            .rawQuery(
+                "SELECT ${TRACK_COLUMNS.split(", ").joinToString { "t.$it" }} FROM track t " +
+                    "JOIN album a ON a.source = t.source AND a.id = t.album_id " +
+                    "WHERE t.source = ? AND $clause ORDER BY a.artist COLLATE NOCASE, a.key, t.position",
+                arrayOf(source, value),
+            ).use { c -> c.map(::trackAt) }
+
     /** Every track [source] has stored, album by album in title order, each album in its own order. */
     fun everyTrack(source: String): List<Track> =
         db

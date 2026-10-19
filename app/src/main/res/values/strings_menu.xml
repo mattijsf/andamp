@@ -118,4 +118,5 @@
     <string name="menu_delete_station">Delete station</string>
     <string name="menu_go_to_album">Go to album</string>
     <string name="menu_go_to_artist">Go to artist</string>
+    <string name="menu_select">Select</string>
 </resources>

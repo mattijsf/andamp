@@ -69,7 +69,8 @@ class IndexedPhoneLibrary(
     SectionedSearch,
     ShelfUpdates,
     TrackHomes,
-    EveryTrack {
+    EveryTrack,
+    FoldersAndGenres {
     override val capabilities = BrowseCapabilities(hasArtists = true, hasAlbums = true, canSearch = true)
 
     override val available: Boolean get() = canRead()
@@ -142,6 +143,14 @@ class IndexedPhoneLibrary(
         }
 
     override suspend fun everyTrack(): List<Track> = read(emptyList()) { index.everyTrack(SOURCE) }
+
+    override suspend fun folders(): List<Pair<String, Int>> = read(emptyList()) { index.folders(SOURCE) }
+
+    override suspend fun folderTracks(folder: String): List<Track> = read(emptyList()) { index.folderTracks(SOURCE, folder) }
+
+    override suspend fun genres(): List<Pair<String, Int>> = read(emptyList()) { index.genres(SOURCE) }
+
+    override suspend fun genreTracks(genre: String): List<Track> = read(emptyList()) { index.genreTracks(SOURCE, genre) }
 
     /** The phone's music by when it arrived, the newest first, at most [limit]. */
     suspend fun recentlyAdded(limit: Int): List<Track> = read(emptyList()) { index.recentlyAdded(SOURCE, limit) }

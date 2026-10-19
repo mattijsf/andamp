@@ -305,8 +305,74 @@ internal class LibraryShelves(
 
                 else -> savedLists()
             }
-        return withSmartLists(smartLists(src), lists)
+        return withSmartLists(smartLists(src), withFoldersAndGenres(src, lists))
     }
+
+    /**
+     * FOLDERS and GENRES at the top of [lists], for a library that knows them
+     * ([FoldersAndGenres]): each opens a page of its folders or genres, and each of those its
+     * tracks. A view with nothing in it is left out.
+     */
+    private suspend fun withFoldersAndGenres(
+        src: BrowseSource,
+        lists: LibraryPage,
+    ): LibraryPage {
+        if (src !is FoldersAndGenres) return lists
+        val views =
+            listOfNotNull(
+                src.folders().takeIf { it.isNotEmpty() }?.let { folders ->
+                    View(words.get(R.string.library_folders), folders, src::folderTracks) { it.trimEnd('/') }
+                },
+                src.genres().takeIf { it.isNotEmpty() }?.let { genres ->
+                    View(words.get(R.string.library_genres), genres, src::genreTracks) { it }
+                },
+            )
+        if (views.isEmpty()) return lists
+        return LibraryPage(
+            header = lists.header,
+            status = count(views.size + lists.rows.size, R.plurals.library_count_lists),
+            rows = views.map { Row(it.name, detail = it.groups.size.toString()) } + lists.rows,
+            open = views.map<View, (() -> Unit)?> { view -> { drill(view.name) { groupsPage(view) } } } + lists.open,
+            tracksOf = views.map<View, suspend () -> List<Track>> { { emptyList() } } + lists.tracksOf,
+            saved = views.map { null } + lists.saved,
+            empty = lists.empty,
+            incomplete = lists.incomplete,
+        )
+    }
+
+    /** FOLDERS or GENRES: its [groups] with their counts, the tracks of each, and how a group's name reads. */
+    private class View(
+        val name: String,
+        val groups: List<Pair<String, Int>>,
+        val tracksOf: suspend (String) -> List<Track>,
+        val shown: (String) -> String,
+    )
+
+    /** A view's folders or genres, each opening as a page of its tracks. */
+    private fun groupsPage(view: View) =
+        LibraryPage(
+            header = view.name,
+            status = count(view.groups.size, R.plurals.library_count_lists),
+            rows =
+                view.groups.map { (group, n) ->
+                    Row(view.shown(group), detail = words.get(R.string.library_track_count_short, n))
+                },
+            open =
+                view.groups.map { (group, _) ->
+                    {
+                        drill(view.shown(group)) {
+                            trackListPage(
+                                view.shown(group),
+                                view.tracksOf(group),
+                                words.get(R.string.library_no_tracks),
+                                byArtist = true,
+                            )
+                        }
+                    }
+                },
+            tracksOf = view.groups.map { (group, _) -> { view.tracksOf(group) } },
+            empty = words.get(R.string.library_no_lists),
+        )
 
     /**
      * The lists the library makes itself, at the top of [lists], the way Winamp's library

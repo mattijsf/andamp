@@ -34,6 +34,16 @@ fun libraryRowMenu(
                 AmpMenuItem.Action(words.get(R.string.menu_enqueue_next)) { ops.enqueueNextRow(row) },
             ) +
                 (
+                    if (ops.canChoose(
+                            row,
+                        )
+                    ) {
+                        listOf(AmpMenuItem.Action(words.get(R.string.menu_select)) { ops.choose(row) })
+                    } else {
+                        emptyList()
+                    }
+                ) +
+                (
                     if (ops.canGoHome(row)) {
                         listOf(
                             AmpMenuItem.Divider,

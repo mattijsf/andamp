@@ -70,6 +70,11 @@
     <string name="library_hits_capped">%1$d+ HITS</string>
     <!-- Beside the count, when the source stopped part way through its answer -->
     <string name="library_incomplete">INCOMPLETE</string>
+    <!-- How many tracks are picked together, in place of the count -->
+    <plurals name="library_count_chosen">
+        <item quantity="one">%1$d CHOSEN</item>
+        <item quantity="other">%1$d CHOSEN</item>
+    </plurals>
     <!-- How many tracks a list holds, beside its name -->
     <string name="library_track_count_short">%1$d TRK</string>
 
@@ -79,6 +84,8 @@
     <string name="library_recently_played">RECENTLY PLAYED</string>
     <string name="library_not_played_lately">NOT PLAYED LATELY</string>
     <string name="library_bookmarks">BOOKMARKS</string>
+    <string name="library_folders">FOLDERS</string>
+    <string name="library_genres">GENRES</string>
     <!-- How often a song was played -->
     <plurals name="library_count_plays">
         <item quantity="one">%1$d PLAY</item>
