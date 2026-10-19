@@ -125,6 +125,29 @@ class PlaylistMarksGoldenTest {
         capture("playlist_marks_pack_icon", ListFont.REGULAR, MarkPlace.BEFORE, fromIcon())
 
     @Test
+    fun `pixel art taller than the letters stands out above and below them, centered`() =
+        capture(
+            "playlist_marks_tall_art_skin_font",
+            ListFont.SKIN,
+            MarkPlace.BEFORE,
+            SourceMark(
+                pixels =
+                    listOf(
+                        "....#....",
+                        "...###...",
+                        "..#####..",
+                        ".###.###.",
+                        "###...###",
+                        ".###.###.",
+                        "..#####..",
+                        "...###...",
+                        "....#....",
+                    ),
+                letter = "E",
+            ),
+        )
+
+    @Test
     fun `playlist rows marked by a pack's icon, in pixel art made from it`() =
         capture("playlist_marks_pack_icon_skin_font", ListFont.SKIN, MarkPlace.BEFORE, fromIcon())
 }

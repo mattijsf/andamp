@@ -45,9 +45,12 @@ object PackMarks {
     /** The alpha above which a pixel counts as ink. */
     private const val INK = 128
 
-    /** The share of a picture's zone its ink may cover: less is a speck, more is a filled square, as a full-bleed layer is. */
-    private const val MIN_COVER = 0.02f
-    private const val MAX_COVER = 0.6f
+    /**
+     * The share of an icon layer's zone its ink may cover: less is a speck, more is a filled square,
+     * as a full-bleed layer is. A mark a pack names is its choice, and only has to have ink.
+     */
+    private val ICON_COVER = 0.02f..0.6f
+    private val NAMED_COVER = 0.001f..1f
 
     /** The share of the cells of made pixel art that may be ink: outside it, the art is a blob or a dot and says nothing. */
     private const val MIN_INK = 0.2f
@@ -115,7 +118,7 @@ object PackMarks {
         val drawn =
             resource(PackApi.META_MARK)
                 ?.let { id -> runCatching { resources?.getDrawable(id, null) }.getOrNull() }
-                ?.let { maskOf(it, inset = 0f) }
+                ?.let { maskOf(it, inset = 0f, cover = NAMED_COVER) }
         val mask = drawn ?: icon?.let(::iconMask)
         val given =
             resource(PackApi.META_MARK_PIXELS)
@@ -133,16 +136,17 @@ object PackMarks {
         val adaptive = icon as? AdaptiveIconDrawable ?: return null
         val monochrome = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) adaptive.monochrome else null
         val layer = monochrome ?: adaptive.foreground ?: return null
-        return maskOf(layer, ADAPTIVE_INSET)
+        return maskOf(layer, ADAPTIVE_INSET, ICON_COVER)
     }
 
     /**
      * [drawable]'s ink as an `ALPHA_8` bitmap, cropped to it and [MASK_H] tall, read inside the
-     * zone [inset] in from each edge; null when the ink covers too little or too much of the zone.
+     * zone [inset] in from each edge; null when the share of the zone the ink covers is outside [cover].
      */
     internal fun maskOf(
         drawable: Drawable,
         inset: Float,
+        cover: ClosedFloatingPointRange<Float>,
     ): Bitmap? {
         val whole = Bitmap.createBitmap(READ, READ, Bitmap.Config.ARGB_8888)
         drawable.setBounds(0, 0, READ, READ)
@@ -153,8 +157,7 @@ object PackMarks {
         whole.getPixels(alpha, 0, side, from, from, side, side)
         for (at in alpha.indices) alpha[at] = alpha[at] ushr ALPHA_SHIFT
         val box = inkBox(alpha, side) ?: return null
-        val cover = alpha.count { it >= INK }.toFloat() / alpha.size
-        if (cover !in MIN_COVER..MAX_COVER) return null
+        if (alpha.count { it >= INK }.toFloat() / alpha.size !in cover) return null
         val art = Bitmap.createBitmap(whole, from + box.left, from + box.top, box.width, box.height).extractAlpha()
         val width = (box.width * MASK_H.toFloat() / box.height).roundToInt().coerceAtLeast(1)
         return Bitmap.createScaledBitmap(art, width, MASK_H, true)
@@ -194,8 +197,8 @@ object PackMarks {
 
     /**
      * Pixel art made from a picture [width] by [height], whose ink [alpha] gives at each pixel:
-     * [SourceMark.MAX_H] rows, or fewer for a wide picture, and as many columns as keep its shape,
-     * up to [SourceMark.MAX_W]. A cell is ink when half the points read in it are. Art with too few or too
+     * as tall as a letter ([SourceMark.LETTER_H] rows), or less for a wide picture, and as many
+     * columns as keep its shape, up to [MADE_W]. A cell is ink when half the points read in it are. Art with too few or too
      * many ink cells to tell apart is empty, so the letter stands in.
      */
     internal fun pixelsFrom(
@@ -206,8 +209,8 @@ object PackMarks {
         if (width <= 0 || height <= 0) return emptyList()
         val wide = width.toFloat() / height
         // a picture wider than the art may be keeps its shape in fewer rows
-        val rows = minOf(SourceMark.MAX_H.toFloat(), SourceMark.MAX_W / wide).roundToInt().coerceIn(1, SourceMark.MAX_H)
-        val columns = (rows * wide).roundToInt().coerceIn(1, SourceMark.MAX_W)
+        val rows = minOf(SourceMark.LETTER_H.toFloat(), MADE_W / wide).roundToInt().coerceIn(1, SourceMark.LETTER_H)
+        val columns = (rows * wide).roundToInt().coerceIn(1, MADE_W)
         val grid = Grid(width, height, columns, rows, alpha)
         val art = List(rows) { row -> String(CharArray(columns) { column -> if (grid.ink(column, row)) '#' else '.' }) }
         val share = art.sumOf { row -> row.count { it == '#' } }.toFloat() / (art.size * columns)
@@ -241,6 +244,9 @@ object PackMarks {
             return ink * 2 >= SAMPLES * SAMPLES
         }
     }
+
+    /** The widest pixel art made from a picture: the art a pack draws may be larger. */
+    private const val MADE_W = 7
 
     /** How many points are read across a cell of made pixel art, and down it. */
     private const val SAMPLES = 4

@@ -62,7 +62,7 @@ internal object MarkInk {
         }
     }
 
-    /** One mark's pixel art into [block], its top-left corner at ([x], [y]). */
+    /** One mark's pixel art into [block], from [x], centered on the letters whose tops are at [y]. */
     @Suppress("LongParameterList") // the mark, where it goes, and the block it goes into
     private fun stamp(
         mark: SourceMark,
@@ -73,8 +73,9 @@ internal object MarkInk {
         stride: Int,
     ) {
         val rows = block.size / stride
-        for (py in 0 until SourceMark.MAX_H) {
-            val by = y + py
+        val top = y + (SourceMark.LETTER_H - mark.pixels.size) / 2
+        for (py in mark.pixels.indices) {
+            val by = top + py
             if (by !in 0 until rows) continue
             for (px in 0 until mark.pixelWidth) {
                 val bx = x + px

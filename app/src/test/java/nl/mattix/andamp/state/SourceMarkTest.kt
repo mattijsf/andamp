@@ -30,8 +30,8 @@ class SourceMarkTest {
     @Test
     fun `pixel art too large or with other signs is not taken`() {
         assertEquals(listOf("#.#", ".#."), SourceMark.pixelsOrEmpty(listOf("#.#", ".#.")))
-        assertEquals(emptyList<String>(), SourceMark.pixelsOrEmpty(listOf("########")))
-        assertEquals(emptyList<String>(), SourceMark.pixelsOrEmpty(List(6) { "#" }))
+        assertEquals(emptyList<String>(), SourceMark.pixelsOrEmpty(listOf("##########")))
+        assertEquals(emptyList<String>(), SourceMark.pixelsOrEmpty(List(10) { "#" }))
         assertEquals(emptyList<String>(), SourceMark.pixelsOrEmpty(listOf("#x#")))
     }
 }

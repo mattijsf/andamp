@@ -8,11 +8,14 @@ package nl.mattix.andamp.state
  *
  * It comes in two forms, one per list font. [pixels] is 1-bit pixel art for the skin's font,
  * written one pixel to the virtual pixel like the font's letters, at most [MAX_W] wide and
- * [MAX_H] tall: `#` is ink, anything else is not. For the outline font the picture is drawn as
- * tall as the letters, so it scales with the text: as vector path data ([path], the `d` of an
- * SVG path in a [VIEWPORT]-unit square) for a mark built in, or as a shape ([mask], an
- * `ALPHA_8` bitmap cropped to its ink) for one read from a pack's app ([PackMarks]). Where a
- * form is missing, [letter] stands in for it, in the font's letters.
+ * [MAX_H] tall, centered on the letters' [LETTER_H] rows: `#` is ink, anything else is not.
+ * Art taller than a letter stands out above and below it, room a logo needs to be told apart.
+ *
+ * For the outline font the picture is drawn as tall as the letters, so it scales with the text:
+ * as vector path data ([path], the `d` of an SVG path in a [VIEWPORT]-unit square) for a mark
+ * built in, or as a shape ([mask], an `ALPHA_8` bitmap cropped to its ink) for one read from a
+ * pack's app ([PackMarks]). Where a form is missing, [letter] stands in for it, in the font's
+ * letters.
  */
 class SourceMark(
     val pixels: List<String> = emptyList(),
@@ -39,10 +42,13 @@ class SourceMark(
 
     companion object {
         /** The widest pixel art a mark has: a letter of the skin's font is five. */
-        const val MAX_W = 7
+        const val MAX_W = 9
 
-        /** The tallest: a letter of the skin's font has five rows of ink over a blank one. */
-        const val MAX_H = 5
+        /** The tallest: two rows above a letter and two below, inside the shortest row of a list. */
+        const val MAX_H = 9
+
+        /** How many rows of ink a letter of the skin's font has, over a blank one. */
+        const val LETTER_H = 5
 
         /** The square a [path] is drawn in, as an Android vector drawable's viewport. */
         const val VIEWPORT = 24f

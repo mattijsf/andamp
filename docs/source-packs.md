@@ -75,7 +75,7 @@ both named in meta-data on its service, so neither is part of the contract versi
 | Meta-data | Points to | Used in |
 |---|---|---|
 | `nl.mattix.andamp.source.MARK` | a monochrome drawable, best a vector | the outline font, drawn as tall as the letters in the row's color |
-| `nl.mattix.andamp.source.MARK_PIXELS` | a string array of up to five rows of up to seven characters, `#` for ink and `.` for none | the skin's pixel font, one pixel to the skin's pixel |
+| `nl.mattix.andamp.source.MARK_PIXELS` | a string array of up to nine rows of up to nine characters, `#` for ink and `.` for none | the skin's pixel font, one pixel to the skin's pixel, centered on the letters |
 
 ```xml
 <service
@@ -102,6 +102,9 @@ both named in meta-data on its service, so neither is part of the contract versi
     <item>.###.</item>
 </string-array>
 ```
+
+The skin's letters are five pixels tall. Art of five rows sits level with them; a logo that
+needs more room to be recognized can take up to nine, and stands out two pixels above and below.
 
 Both are optional. Without the drawable, Andamp takes the monochrome layer of the launcher
 icon (Android 13 and up), or else the shape of its foreground layer. Without the pixel art, it

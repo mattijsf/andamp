@@ -107,6 +107,22 @@ class PackMarksTest {
     }
 
     @Test
+    fun `a mark a pack names is taken however much of its square it fills, as a logo on a disc does`() {
+        val meta = Bundle().apply { putInt(PackApi.META_MARK, FILLED) }
+
+        @Suppress("DEPRECATION") // the constructor a pack's resources stand in with
+        val filled =
+            object : Resources(app.resources.assets, app.resources.displayMetrics, app.resources.configuration) {
+                override fun getDrawable(
+                    id: Int,
+                    theme: Theme?,
+                ): Drawable = ColorDrawable(Color.WHITE)
+            }
+
+        assertNotNull(PackMarks.markFrom(meta, filled, null, "Example").mask)
+    }
+
+    @Test
     fun `an older pack is marked from its icon's monochrome layer, in pixel art made from it`() {
         val mark = PackMarks.markFrom(null, null, icon(ColorDrawable(Color.RED), Frame()), "Example")
 
@@ -142,5 +158,6 @@ class PackMarksTest {
     private companion object {
         const val MARK = 0x7f0f0001
         const val PIXELS = 0x7f0f0002
+        const val FILLED = 0x7f0f0003
     }
 }

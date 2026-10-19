@@ -54,8 +54,8 @@ object PackApi {
 
     /**
      * The meta-data of a pack's service that names its mark for the skin's font: a string array
-     * of up to five rows of up to seven characters, `#` for ink and `.` for none. Optional, as
-     * [META_MARK] is.
+     * of up to nine rows of up to nine characters, `#` for ink and `.` for none, centered on the
+     * letters, which are five rows tall. Optional, as [META_MARK] is.
      */
     const val META_MARK_PIXELS = "nl.mattix.andamp.source.MARK_PIXELS"
 }
