@@ -142,7 +142,7 @@ fun LibraryWindow(
             // the window centers and clamps in the whole container
             modifier = Modifier.matchParentSize(),
         ) {
-            drawLibraryContent(rasterizer, vm.libraryOps, s, skin, scale, frame, layout, sourceChip(vm))
+            drawLibraryContent(rasterizer, vm.libraryOps, s, skin, scale, frame, layout, sourceChip(vm), sourceChipMark(vm))
         }
         // carries the keystrokes for the canvas-drawn search field
         if (vm.libraryOps.searching) {
@@ -159,6 +159,13 @@ internal fun sourceChip(vm: WinampViewModel): String? {
     val sources = vm.librarySources
     if (sources.usable.size < 2) return null
     return if (sources.showingAll) vm.words.get(R.string.source_all) else sources.showing.shown(vm.words)
+}
+
+/** The mark of the one source on show, for the header's corner; null for every source together or with only one. */
+internal fun sourceChipMark(vm: WinampViewModel): SourceMark? {
+    val sources = vm.librarySources
+    if (sources.usable.size < 2 || sources.showingAll) return null
+    return vm.state.sourceMarks[sources.showing.id]
 }
 
 /**
@@ -189,6 +196,7 @@ private fun sourceWidget(
                                 all = vm.words.get(R.string.source_all),
                                 showingAll = sources.showingAll,
                                 onAll = vm.sourceOps::libraryAll,
+                                markOf = { vm.state.sourceMarks[it.id] },
                             ),
                         anchor = MenuAnchor(WindowStore.LIBRARY, cell.left, cell.top, cell.width, cell.height),
                     )
@@ -361,6 +369,8 @@ internal fun DrawScope.drawLibraryContent(
     layout: LibraryLayout,
     /** The library's name in the header's corner; see [sourceChip]. */
     source: String? = null,
+    /** The mark before that name, for one source on show; see [sourceChipMark]. */
+    sourceMark: SourceMark? = null,
 ) {
     val width = layout.listWidth(frame)
     drawLibraryBands(ops, s, skin.pledit, width, layout, source != null)
@@ -389,6 +399,7 @@ internal fun DrawScope.drawLibraryContent(
             rowH = layout.rowH,
             skinFont = skin[Sheet.TEXT].takeIf { s.listFont == ListFont.SKIN },
             source = source,
+            sourceMark = sourceMark,
             marks = s.sourceMarks.values,
         )
     drawLayer(rasterizer.top(ops, scene), 0, width, layout.rowsTop)
@@ -497,6 +508,8 @@ internal class LibraryRasterizer(
         val skinFont: ImageBitmap? = null,
         /** The library's name in the header's corner, where another can be picked; null where none can. */
         val source: String? = null,
+        /** The mark of the one source on show, before its name in the corner; null for every source together. */
+        val sourceMark: SourceMark? = null,
         /** The string of the order the ALBUMS page is in, for the bar's cell; null where there is none. */
         val order: Int? = null,
         /** Every source's mark, so a row's marks each take the room of the widest; see [MarkInk]. */
@@ -562,6 +575,7 @@ internal class LibraryRasterizer(
                 scene.caretOn,
                 scene.canSearch,
                 scene.source,
+                scene.sourceMark,
                 scene.width,
                 scene.scale,
                 scene.style,
@@ -709,16 +723,30 @@ internal class LibraryRasterizer(
         val right = scene.width - ListText.RIGHT_INSET - if (source != null) LibraryLayout.SOURCE_CELL_W else 0
         if (source != null) {
             val cellLeft = (scene.width - LibraryLayout.SOURCE_CELL_W).toFloat()
-            label(
-                source.uppercase(),
-                cellLeft + 1,
-                scene.width - ListText.RIGHT_INSET,
-                top,
-                layout.barH,
-                current,
-                TextLayer.Align.RIGHT,
-                TextLayer.Fit.SQUEEZE,
-            )
+            val mark = scene.sourceMark
+            if (mark != null) {
+                marked(
+                    source.uppercase(),
+                    mark,
+                    scene.marks,
+                    cellLeft + 1,
+                    scene.width - ListText.RIGHT_INSET,
+                    top,
+                    layout.barH,
+                    current,
+                )
+            } else {
+                label(
+                    source.uppercase(),
+                    cellLeft + 1,
+                    scene.width - ListText.RIGHT_INSET,
+                    top,
+                    layout.barH,
+                    current,
+                    TextLayer.Align.RIGHT,
+                    TextLayer.Fit.SQUEEZE,
+                )
+            }
         }
         when {
             scene.searching -> {

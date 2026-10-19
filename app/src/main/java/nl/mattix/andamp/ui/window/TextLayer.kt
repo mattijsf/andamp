@@ -151,6 +151,24 @@ internal class TextLayer {
         }
 
         /**
+         * [text] standing against [right] with a source's [mark] just before it, both in the
+         * room from [left]: the words are squeezed, never the mark. See [MarkInk].
+         */
+        @Suppress("LongParameterList") // the words, their mark and their room
+        fun marked(
+            text: String,
+            mark: SourceMark,
+            peers: Collection<SourceMark>,
+            left: Float,
+            right: Float,
+            top: Int,
+            height: Int,
+            argb: Int,
+        ) {
+            pieces += Marked(text, mark, peers, left, right, top, height, argb, spells(text + mark.letter))
+        }
+
+        /**
          * A text field: [query] from [left], kept in view at its end when it outgrows [right],
          * with a caret after the [caret]th character while [caretOn].
          */
@@ -242,6 +260,49 @@ internal class TextLayer {
             canvas.save()
             canvas.clipRect(min(x, left), top.toFloat(), right, (top + height).toFloat())
             canvas.drawText(text, x, ListText.baseline(paint, top.toFloat(), height), paint)
+            canvas.restore()
+        }
+    }
+
+    private class Marked(
+        val text: String,
+        val mark: SourceMark,
+        val peers: Collection<SourceMark>,
+        val left: Float,
+        val right: Float,
+        val top: Int,
+        val height: Int,
+        argb: Int,
+        skin: Boolean,
+    ) : Piece(argb, skin) {
+        override fun spell(
+            glyphs: GlyphMask,
+            block: IntArray,
+            stride: Int,
+        ) {
+            val w = MarkInk.pixelWidth(listOf(mark), peers)
+            val room = right - left - w - MARK_GAP
+            val shown = BitmapFont.fitted(text, (room / BitmapFont.CHAR_W).toInt())
+            val x = right.roundToInt() - shown.length * BitmapFont.CHAR_W
+            val y = letterTop(top, height)
+            glyphs.write(shown, x, y, argb, block, stride, right.roundToInt())
+            MarkInk.spell(listOf(mark), x - MARK_GAP.toInt() - w, y, argb, glyphs, block, stride, peers)
+        }
+
+        override fun outline(
+            canvas: Canvas,
+            paint: Paint,
+        ) {
+            val w = MarkInk.outlineWidth(listOf(mark), paint, peers)
+            val room = right - left - w - MARK_GAP
+            val natural = paint.measureText(text)
+            canvas.save()
+            canvas.clipRect(left, top.toFloat(), right, (top + height).toFloat())
+            paint.textScaleX = ListText.squeeze(natural, room)
+            val x = right - natural * paint.textScaleX
+            canvas.drawText(text, x, ListText.baseline(paint, top.toFloat(), height), paint)
+            paint.textScaleX = 1f
+            MarkInk.outline(listOf(mark), x - MARK_GAP - w, top.toFloat(), height, canvas, paint, peers)
             canvas.restore()
         }
     }
@@ -383,6 +444,9 @@ internal class TextLayer {
     private companion object {
         /** A row's label stops this far short of its detail. */
         const val DETAIL_GAP = 6f
+
+        /** The room between a mark and the words it stands before: about a letter's spacing. */
+        const val MARK_GAP = 2f
 
         const val CARET_W = 1
 

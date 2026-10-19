@@ -8,6 +8,7 @@ import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.MusicSource
 import nl.mattix.andamp.state.SkinEntry
+import nl.mattix.andamp.state.SourceMark
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.state.shown
@@ -86,6 +87,7 @@ fun mainMenu(
                 all = vm.words.get(R.string.source_all).takeIf { vm.librarySources.usable.size > 1 },
                 showingAll = vm.state.libraryOpen && vm.librarySources.showingAll,
                 onAll = vm.sourceOps::libraryAll,
+                markOf = { vm.state.sourceMarks[it.id] },
             ),
             AmpMenuItem.Divider,
             AmpMenuItem.Submenu(vm.words.get(R.string.menu_options), options),
@@ -133,11 +135,17 @@ internal fun libraryItem(
     all: String? = null,
     showingAll: Boolean = false,
     onAll: () -> Unit = {},
+    /** Each source's mark, beside its name in the submenu. */
+    markOf: (MusicSource) -> SourceMark? = { null },
 ): AmpMenuItem {
     if (sources.size < 2) {
         return AmpMenuItem.Action(label, checked = showing != null, needsTheApp = true, onClick = onToggle)
     }
-    return AmpMenuItem.Submenu(label, sourceItems(sources, showing, onSource, named, all, showingAll, onAll), needsTheApp = true)
+    return AmpMenuItem.Submenu(
+        label,
+        sourceItems(sources, showing, onSource, named, all, showingAll, onAll, markOf),
+        needsTheApp = true,
+    )
 }
 
 /** One entry per source, under one for every source together when [all] names it; see [libraryItem]. */
@@ -150,10 +158,14 @@ internal fun sourceItems(
     all: String?,
     showingAll: Boolean,
     onAll: () -> Unit,
+    /** Each source's mark, beside its name, as its rows carry it. */
+    markOf: (MusicSource) -> SourceMark? = { null },
 ): List<AmpMenuItem> {
     val each =
         sources.map { source ->
-            AmpMenuItem.Action(named(source), checked = source == showing, needsTheApp = true) { onSource(source) }
+            AmpMenuItem.Action(named(source), checked = source == showing, needsTheApp = true, mark = markOf(source)) {
+                onSource(source)
+            }
         }
     if (all == null) return each
     return listOf(AmpMenuItem.Action(all, checked = showingAll, needsTheApp = true, onClick = onAll), AmpMenuItem.Divider) + each

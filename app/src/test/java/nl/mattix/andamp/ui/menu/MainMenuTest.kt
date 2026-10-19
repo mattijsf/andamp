@@ -10,6 +10,7 @@ import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.MusicSource
 import nl.mattix.andamp.state.SkinEntry
 import nl.mattix.andamp.state.SkinLibrary
+import nl.mattix.andamp.state.SourceMark
 import nl.mattix.andamp.ui.window.testViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -237,6 +238,26 @@ class MainMenuTest {
 
         (entry as AmpMenuItem.Action).onClick()
         assertEquals(1, toggled)
+    }
+
+    @Test
+    fun `each source in the library's submenu carries its mark, every source together none`() {
+        val example = MusicSource("EXAMPLE", "Example")
+        val marks = mapOf(MusicSource.LOCAL.id to SourceMark.PHONE, example.id to SourceMark.letter("Example"))
+
+        val item =
+            libraryItem(
+                LIBRARY,
+                listOf(MusicSource.LOCAL, example),
+                showing = null,
+                onToggle = {},
+                onSource = {},
+                all = "All Sources",
+                markOf = { marks[it.id] },
+            )
+
+        val entries = actions((item as AmpMenuItem.Submenu).items)
+        assertEquals(listOf(null, SourceMark.PHONE, SourceMark.letter("Example")), entries.map { it.mark })
     }
 
     /** What an entry is called, whichever kind of entry it is. */
