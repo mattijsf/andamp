@@ -8,6 +8,7 @@ import android.graphics.Paint
 import android.graphics.RectF
 import nl.mattix.andamp.skin.BitmapFont
 import nl.mattix.andamp.skin.GlyphMask
+import nl.mattix.andamp.state.SourceMark
 import kotlin.math.min
 import kotlin.math.roundToInt
 
@@ -129,8 +130,21 @@ internal class TextLayer {
             top: Int,
             height: Int,
             argb: Int,
+            /** The marks of the sources that have it, at the row's end; see [MarkInk]. */
+            marks: List<SourceMark> = emptyList(),
         ) {
-            pieces += Row(label, detail, left, right, top, height, argb, spells(label + detail))
+            pieces +=
+                Row(
+                    label,
+                    detail,
+                    marks,
+                    left,
+                    right,
+                    top,
+                    height,
+                    argb,
+                    spells(label + detail + marks.joinToString("") { it.letter }),
+                )
         }
 
         /**
@@ -232,6 +246,7 @@ internal class TextLayer {
     private class Row(
         val label: String,
         val detail: String,
+        val marks: List<SourceMark>,
         val left: Float,
         val right: Float,
         val top: Int,
@@ -246,6 +261,11 @@ internal class TextLayer {
         ) {
             val y = letterTop(top, height)
             var labelRight = right.toInt()
+            if (marks.isNotEmpty()) {
+                val w = MarkInk.pixelWidth(marks)
+                MarkInk.spell(marks, labelRight - w, y, argb, glyphs, block, stride)
+                labelRight -= w + DETAIL_GAP.toInt()
+            }
             if (detail.isNotBlank()) {
                 val shown = BitmapFont.normalize(detail)
                 val x = labelRight - shown.length * BitmapFont.CHAR_W
@@ -263,6 +283,11 @@ internal class TextLayer {
         ) {
             val baseline = ListText.baseline(paint, top.toFloat(), height)
             var labelRight = right
+            if (marks.isNotEmpty()) {
+                val w = MarkInk.outlineWidth(marks, paint)
+                MarkInk.outline(marks, labelRight - w, top.toFloat(), height, canvas, paint)
+                labelRight -= w + DETAIL_GAP
+            }
             if (detail.isNotBlank()) {
                 val w = paint.measureText(detail)
                 canvas.drawText(detail, labelRight - w, baseline, paint)

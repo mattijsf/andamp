@@ -828,7 +828,7 @@ internal class LibraryRasterizer(
             val index = scene.scroll + at
             val row = rows.getOrNull(index) ?: break
             val color = if (index == scene.playingRow || ops.headingAt(index)) scene.style.current else scene.style.normal
-            row(row.label, row.detail, ListText.LEFT_INSET, right, at * scene.rowH, scene.rowH, color.toArgb())
+            row(row.label, row.detail, ListText.LEFT_INSET, right, at * scene.rowH, scene.rowH, color.toArgb(), row.marks)
         }
     }
 

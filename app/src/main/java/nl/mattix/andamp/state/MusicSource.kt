@@ -55,17 +55,3 @@ fun sourceRoute(source: MusicSource): String = "source/" + source.id.lowercase()
  * phone's language, and an installed source under the name the source's app gives it.
  */
 fun MusicSource.shown(words: Words): String = if (this == MusicSource.LOCAL) words.get(R.string.source_this_phone) else label
-
-/**
- * The letter a row of this source carries among every source's rows: the first letter or digit
- * of its name, as [shown] gives it.
- */
-fun markOf(
-    source: MusicSource,
-    words: Words,
-): String =
-    source
-        .shown(words)
-        .firstOrNull { it.isLetterOrDigit() }
-        ?.uppercase()
-        .orEmpty()

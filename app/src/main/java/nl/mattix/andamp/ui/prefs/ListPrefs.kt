@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import nl.mattix.andamp.R
 import nl.mattix.andamp.state.ListFont
 import nl.mattix.andamp.state.ListStyleStore
+import nl.mattix.andamp.state.MarkPlace
 import nl.mattix.andamp.state.RowHeight
 import nl.mattix.andamp.state.WinampViewModel
 
@@ -29,6 +30,11 @@ data class ListPrefs(
     /** Mirrors [ListStyleStore.rowHeight]. */
     val rowHeight: RowHeight = ListStyleStore.DEFAULT_ROW_HEIGHT,
     val onRowHeight: (RowHeight) -> Unit = {},
+    /** Mirrors [ListStyleStore.marks]. */
+    val marks: MarkPlace = MarkPlace.OFF,
+    val onMarks: (MarkPlace) -> Unit = {},
+    /** Whether there is more than one source to tell apart, so the choice of [marks] is offered. */
+    val marksOffered: Boolean = false,
 )
 
 /** The choices as [vm] has them: they show the render state, and a change goes to the store that state follows. */
@@ -38,6 +44,9 @@ internal fun listPrefsOf(vm: WinampViewModel) =
         onFont = { vm.listStyleStore.font = it },
         rowHeight = vm.state.rowHeight,
         onRowHeight = { vm.listStyleStore.rowHeight = it },
+        marks = vm.state.listMarks,
+        onMarks = { vm.listStyleStore.marks = it },
+        marksOffered = vm.librarySources.usable.size > 1,
     )
 
 @Composable
@@ -121,4 +130,31 @@ private fun <T : Enum<T>> ChoiceRow(
         }
         Text(about, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
+}
+
+/** Where the playlist's rows show their source's mark, offered once there is more than one source. */
+@Composable
+fun SourceMarksRow(prefs: ListPrefs) {
+    ChoiceRow(
+        title = stringResource(R.string.prefs_lists_marks_title),
+        about =
+            stringResource(
+                when (prefs.marks) {
+                    MarkPlace.OFF -> R.string.prefs_lists_marks_off_about
+                    MarkPlace.BEFORE -> R.string.prefs_lists_marks_before_about
+                    MarkPlace.AFTER -> R.string.prefs_lists_marks_after_about
+                },
+            ),
+        choices = MarkPlace.entries,
+        chosen = prefs.marks,
+        onChoose = prefs.onMarks,
+        tag = "prefs.lists.marks",
+        label = {
+            when (it) {
+                MarkPlace.OFF -> R.string.prefs_lists_marks_off
+                MarkPlace.BEFORE -> R.string.prefs_lists_marks_before
+                MarkPlace.AFTER -> R.string.prefs_lists_marks_after
+            }
+        },
+    )
 }

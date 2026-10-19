@@ -14,6 +14,9 @@ import nl.mattix.andamp.core.model.durationSec
 import nl.mattix.andamp.skin.BitmapFont
 import nl.mattix.andamp.skin.GlyphMask
 import nl.mattix.andamp.skin.PleditStyle
+import nl.mattix.andamp.state.MarkPlace
+import nl.mattix.andamp.state.SourceForRows
+import nl.mattix.andamp.state.SourceMark
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.rowLabel
 
@@ -68,6 +71,8 @@ class PlaylistTextRasterizer(
                 s.currentIndex,
                 s.connecting,
                 s.reach,
+                s.listMarks,
+                s.sourceMarks,
                 style,
                 // the bitmap is as wide as the text column and as tall as the rows
                 layout.textRight - layout.textLeft,
@@ -82,12 +87,13 @@ class PlaylistTextRasterizer(
         val glyphs = skinFont?.let(::maskOf)
         val (spelled, outlined) =
             if (glyphs == null) emptyList<Row>() to rows else rows.partition { BitmapFont.covers(it.title) }
-        val pixels = glyphs?.takeIf { spelled.isNotEmpty() }?.let { pixelRows(spelled, it, layout) }
+        val before = s.listMarks == MarkPlace.BEFORE
+        val pixels = glyphs?.takeIf { spelled.isNotEmpty() }?.let { pixelRows(spelled, it, layout, before) }
         val bitmap =
             if (pixels != null && outlined.isEmpty()) {
                 pixels
             } else {
-                outlineRows(outlined, layout, scale, style, under = pixels)
+                outlineRows(outlined, layout, scale, style, under = pixels, before = before)
             }
 
         return bitmap.asImageBitmap().also {
@@ -96,12 +102,18 @@ class PlaylistTextRasterizer(
         }
     }
 
-    /** One row in view: where its top is in the layer, what it says and in which color. */
+    /**
+     * One row in view: where its top is in the layer, what it says (its [number], its [title]
+     * and its [duration]), in which color, and the mark of its source when the playlist
+     * shows them.
+     */
     private class Row(
         val top: Int,
+        val number: String,
         val title: String,
         val duration: String,
         val argb: Int,
+        val mark: SourceMark?,
     )
 
     private fun rowsIn(
@@ -116,9 +128,11 @@ class PlaylistTextRasterizer(
                 add(
                     Row(
                         top = ListText.TOP_PAD.toInt() + visRow * layout.rowH,
-                        title = "${index + 1}. ${s.rowLabel(track, index)}",
+                        number = "${index + 1}. ",
+                        title = s.rowLabel(track, index),
                         duration = formatTime(track.durationSec),
                         argb = (if (index == s.currentIndex) style.current else style.normal).toArgb(),
+                        mark = if (s.listMarks == MarkPlace.OFF) null else s.sourceMarks[SourceForRows.of(track).id],
                     ),
                 )
             }
@@ -138,6 +152,7 @@ class PlaylistTextRasterizer(
         rows: List<Row>,
         glyphs: GlyphMask,
         layout: PlaylistLayout,
+        before: Boolean,
     ): Bitmap {
         val width = layout.textRight - layout.textLeft
         val height = layout.middleH
@@ -146,7 +161,7 @@ class PlaylistTextRasterizer(
         for (row in rows) {
             // a glyph is five pixels of letter over one of nothing: the letter is centered
             val y = row.top + (layout.rowH - BitmapFont.CHAR_H + 1) / 2
-            writeRow(glyphs, row.title, row.duration, row.argb, y, block, width)
+            writeRow(glyphs, row.title, row.duration, row.argb, y, block, width, row.number, row.mark, before)
         }
         return Bitmap.createBitmap(block, width, height, Bitmap.Config.ARGB_8888)
     }
@@ -158,6 +173,7 @@ class PlaylistTextRasterizer(
         scale: Int,
         style: PleditStyle,
         under: Bitmap?,
+        before: Boolean,
     ): Bitmap {
         val width = layout.textRight - layout.textLeft
         val bitmap = Bitmap.createBitmap(width * scale, layout.middleH * scale, Bitmap.Config.ARGB_8888)
@@ -173,9 +189,25 @@ class PlaylistTextRasterizer(
             val durX = width - ListText.RIGHT_INSET - paint.measureText(row.duration)
             canvas.drawText(row.duration, durX, baseline, paint)
 
+            var titleLeft = ListText.LEFT_INSET
+            var titleRight = durX - DURATION_GAP
+            val marks = listOfNotNull(row.mark)
+            if (marks.isNotEmpty()) {
+                val markW = MarkInk.outlineWidth(marks, paint)
+                if (before) {
+                    canvas.drawText(row.number, titleLeft, baseline, paint)
+                    titleLeft += paint.measureText(row.number)
+                    MarkInk.outline(marks, titleLeft, top, layout.rowH, canvas, paint)
+                    titleLeft += markW + MARK_GAP
+                } else {
+                    MarkInk.outline(marks, titleRight - markW, top, layout.rowH, canvas, paint)
+                    titleRight -= markW + MARK_GAP
+                }
+            }
+            val words = if (marks.isNotEmpty() && before) row.title else row.number + row.title
             canvas.save()
-            canvas.clipRect(0f, top, durX - DURATION_GAP, top + layout.rowH)
-            canvas.drawText(row.title, ListText.LEFT_INSET, baseline, paint)
+            canvas.clipRect(0f, top, titleRight, top + layout.rowH)
+            canvas.drawText(words, titleLeft, baseline, paint)
             canvas.restore()
         }
         return bitmap
@@ -192,9 +224,11 @@ class PlaylistTextRasterizer(
         }
 
         /**
-         * Writes one row in the skin's font into [block], [width] pixels wide: [title] from
-         * the left and [duration] against the right, in [argb], the letters' tops at [y]. A
-         * title too long for the row ends on a whole letter and the font's ellipsis.
+         * Writes one row in the skin's font into [block], [width] pixels wide: [number] and
+         * [title] from the left and [duration] against the right, in [argb], the letters' tops
+         * at [y]. A title too long for the row ends on a whole letter and the font's ellipsis.
+         * [mark], when given, is the row's source's: between the number and the title when
+         * [before], else in front of the duration.
          */
         @Suppress("LongParameterList") // a row's words and color, and where they go
         fun writeRow(
@@ -205,13 +239,35 @@ class PlaylistTextRasterizer(
             y: Int,
             block: IntArray,
             width: Int,
+            number: String = "",
+            mark: SourceMark? = null,
+            before: Boolean = false,
         ) {
-            val left = ListText.LEFT_INSET.toInt()
+            var left = ListText.LEFT_INSET.toInt()
+            if (number.isNotEmpty()) {
+                glyphs.write(BitmapFont.normalize(number), left, y, argb, block, width)
+                left += number.length * BitmapFont.CHAR_W
+            }
             val durX = width - ListText.RIGHT_INSET.toInt() - duration.length * BitmapFont.CHAR_W
             glyphs.write(duration, durX, y, argb, block, width)
-            val room = (durX - DURATION_GAP - left) / BitmapFont.CHAR_W
+            var right = durX - DURATION_GAP
+            if (mark != null) {
+                val marks = listOf(mark)
+                val markW = MarkInk.pixelWidth(marks)
+                if (before) {
+                    MarkInk.spell(marks, left, y, argb, glyphs, block, width)
+                    left += markW + MARK_GAP
+                } else {
+                    MarkInk.spell(marks, right - markW, y, argb, glyphs, block, width)
+                    right -= markW + MARK_GAP
+                }
+            }
+            val room = (right - left) / BitmapFont.CHAR_W
             glyphs.write(BitmapFont.fitted(title, room), left, y, argb, block, width)
         }
+
+        /** The room between a source's mark and the words beside it. */
+        private const val MARK_GAP = 3
 
         /** The title stops this far short of the duration. */
         private const val DURATION_GAP = 4

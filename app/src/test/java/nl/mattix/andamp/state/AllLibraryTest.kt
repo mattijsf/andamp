@@ -20,7 +20,7 @@ class AllLibraryTest : BrowseSourceContractTest() {
     private val server = MusicSource("EXAMPLE", "Example")
 
     private fun together(vararg members: Pair<MusicSource, BrowseSource>) =
-        AllLibrary { members.map { (source, library) -> AllLibrary.Member(source, library, source.label.take(1)) } }
+        AllLibrary { members.map { (source, library) -> AllLibrary.Member(source, library, SourceMark.letter(source.label)) } }
 
     override fun createSource(shelf: Shelf): BrowseSource = together(server to ShelfSource(shelf))
 
@@ -67,7 +67,7 @@ class AllLibraryTest : BrowseSourceContractTest() {
             val absolution = albums.single { it.title == "Absolution" }
 
             assertEquals(listOf("Absolution", "The Wow! Signal"), albums.map { it.title })
-            assertEquals("TE", library.marksOf(absolution.id))
+            assertEquals(listOf("T", "E"), library.marksOf(absolution.id).map { it.letter })
             assertEquals(
                 "the phone's copy has one track",
                 listOf("Stockholm Syndrome"),

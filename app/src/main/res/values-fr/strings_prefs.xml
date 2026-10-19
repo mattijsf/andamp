@@ -61,6 +61,13 @@
     <string name="prefs_lists_row_classic">Classique</string>
     <string name="prefs_lists_row_roomy">Aérée</string>
     <string name="prefs_lists_row_large">Grande</string>
+    <string name="prefs_lists_marks_title">Source dans la liste de lecture</string>
+    <string name="prefs_lists_marks_off_about">Les lignes de la liste de lecture ne disent pas quelle source les lit.</string>
+    <string name="prefs_lists_marks_before_about">Chaque ligne montre la marque de sa source entre son numéro et son titre.</string>
+    <string name="prefs_lists_marks_after_about">Chaque ligne montre la marque de sa source devant sa durée.</string>
+    <string name="prefs_lists_marks_off">Non</string>
+    <string name="prefs_lists_marks_before">Avant</string>
+    <string name="prefs_lists_marks_after">Après</string>
 
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">Préréglages</string>

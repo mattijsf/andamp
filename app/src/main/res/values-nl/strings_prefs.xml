@@ -61,6 +61,13 @@
     <string name="prefs_lists_row_classic">Klassiek</string>
     <string name="prefs_lists_row_roomy">Ruim</string>
     <string name="prefs_lists_row_large">Groot</string>
+    <string name="prefs_lists_marks_title">Bron in de afspeellijst</string>
+    <string name="prefs_lists_marks_off_about">De rijen van de afspeellijst laten niet zien welke bron ze speelt.</string>
+    <string name="prefs_lists_marks_before_about">Elke rij toont het merkje van zijn bron tussen het nummer en de titel.</string>
+    <string name="prefs_lists_marks_after_about">Elke rij toont het merkje van zijn bron voor de speelduur.</string>
+    <string name="prefs_lists_marks_off">Uit</string>
+    <string name="prefs_lists_marks_before">Voor</string>
+    <string name="prefs_lists_marks_after">Achter</string>
 
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">Voorinstellingen</string>

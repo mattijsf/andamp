@@ -378,6 +378,15 @@ class WinampViewModel
             viewModelScope.launch {
                 snapshotFlow { listStyleStore.rowHeight }.collect { state.rowHeight = it }
             }
+            viewModelScope.launch {
+                snapshotFlow { listStyleStore.marks }.collect { state.listMarks = it }
+            }
+            // a row's source needs telling apart only when there is more than one
+            viewModelScope.launch {
+                snapshotFlow { librarySources.usable }.collect { usable ->
+                    state.sourceMarks = if (usable.size > 1) usable.associate { it.id to markOf(it, words) } else emptyMap()
+                }
+            }
             // a library read again while it is shown reaches the window; see ShelfUpdates. With
             // every source together, any of them read again does.
             viewModelScope.launch {

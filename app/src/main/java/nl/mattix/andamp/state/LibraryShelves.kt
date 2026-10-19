@@ -110,7 +110,7 @@ internal class LibraryShelves(
         if (found.albums.isNotEmpty()) {
             heading(count(found.albums.size, R.plurals.library_count_albums))
             for (album in found.albums) {
-                rows += Row(album.title, detail = marked(src, album.id, album.artist))
+                rows += Row(album.title, detail = album.artist, marks = marksOf(src, album.id))
                 open += { drill(album.title) { tracksPage(src, album) } }
                 tracksOf += { src.tracks(album.id) }
             }
@@ -213,7 +213,7 @@ internal class LibraryShelves(
             incomplete = src.partial(),
             status = count(albums.size, R.plurals.library_count_albums),
             // the artist as the detail, since two albums may share a title
-            rows = albums.map { Row(it.title, detail = marked(src, it.id, it.artist)) },
+            rows = albums.map { Row(it.title, detail = it.artist, marks = marksOf(src, it.id)) },
             open = albums.map { album -> { drill(album.title) { tracksPage(src, album) } } },
             tracksOf = albums.map { album -> { src.tracks(album.id) } },
         )
@@ -291,22 +291,11 @@ internal class LibraryShelves(
         incomplete = theirs.incomplete,
     )
 
-    /**
-     * [detail] with the marks of the sources that have the album, when every source is shown
-     * together ([SourceMarks]); [detail] alone otherwise.
-     */
-    private fun marked(
+    /** The marks of the sources that have the album, when every source is shown together ([SourceMarks]). */
+    private fun marksOf(
         src: BrowseSource,
         albumId: String,
-        detail: String,
-    ): String {
-        val marks = (src as? SourceMarks)?.marksOf(albumId).orEmpty()
-        return when {
-            marks.isEmpty() -> detail
-            detail.isEmpty() -> marks
-            else -> "$detail · $marks"
-        }
-    }
+    ): List<SourceMark> = (src as? SourceMarks)?.marksOf(albumId).orEmpty()
 
     private suspend fun sourceListsPage(src: BrowseSource): LibraryPage {
         val their = src.playlists()
@@ -414,7 +403,7 @@ internal class LibraryShelves(
         header = header,
         incomplete = incomplete,
         status = count(albums.size, noun),
-        rows = albums.map { Row(it.title, detail = marked(src, it.id, it.year?.toString() ?: "")) },
+        rows = albums.map { Row(it.title, detail = it.year?.toString() ?: "", marks = marksOf(src, it.id)) },
         open = albums.map { album -> { drill(album.title) { tracksPage(src, album) } } },
         tracksOf = albums.map { album -> { src.tracks(album.id) } },
     )

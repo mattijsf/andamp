@@ -455,6 +455,12 @@ one of them steps the clocks (`WinampState.clocksTurn`).
   tracks come from the first that answers, the phone first, so a server that is down
   falls back to another copy. A source's own lists and catalog keep ids that lead back to
   it. The header's corner names the library on show and picks another.
+- **Source marks.** Where several sources show, a row carries its source's `SourceMark`:
+  1-bit pixel art for the skin's font, written like its letters, and a vector path (SVG
+  path data in a 24-unit square) for the outline font, so it scales with the text
+  (`MarkInk`). The phone's is built in; a source without one is its first letter. The
+  playlist shows them too when Preferences > Player > Source in the playlist says before or
+  after, which is offered only with more than one source.
 
 ## Pixel rules
 

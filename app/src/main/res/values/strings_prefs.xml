@@ -65,6 +65,14 @@
     <string name="prefs_lists_row_classic">Classic</string>
     <string name="prefs_lists_row_roomy">Roomy</string>
     <string name="prefs_lists_row_large">Large</string>
+    <!-- ListPrefs.kt: the mark of a row's source in the playlist, offered with more than one source -->
+    <string name="prefs_lists_marks_title">Source in the playlist</string>
+    <string name="prefs_lists_marks_off_about">Playlist rows do not say which source plays them.</string>
+    <string name="prefs_lists_marks_before_about">Each row shows its source\'s mark between its number and its title.</string>
+    <string name="prefs_lists_marks_after_about">Each row shows its source\'s mark in front of its length.</string>
+    <string name="prefs_lists_marks_off">Off</string>
+    <string name="prefs_lists_marks_before">Before</string>
+    <string name="prefs_lists_marks_after">After</string>
 
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">Presets</string>
