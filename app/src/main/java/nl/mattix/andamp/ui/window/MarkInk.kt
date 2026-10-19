@@ -114,9 +114,10 @@ internal object MarkInk {
         paint: Paint,
     ): Float {
         val mask = mark.mask
+        val ink = inkOf(mark)
         return when {
             mask != null -> size * mask.width / mask.height
-            pathOf(mark) != null -> size
+            ink != null -> size * ink.width() / ink.height()
             else -> paint.measureText(mark.letter)
         }
     }
@@ -168,9 +169,13 @@ internal object MarkInk {
             }
 
             else -> {
+                // cropped to its ink, like a pack's shape, so every mark is as tall as the next
+                val ink = inkOf(mark) ?: return
+                val scale = size / ink.height()
                 canvas.save()
                 canvas.translate(x, top + (height - size) / 2f)
-                canvas.scale(size / SourceMark.VIEWPORT, size / SourceMark.VIEWPORT)
+                canvas.scale(scale, scale)
+                canvas.translate(-ink.left, -ink.top)
                 val style = paint.style
                 paint.style = Paint.Style.FILL
                 canvas.drawPath(path, paint)
@@ -179,6 +184,16 @@ internal object MarkInk {
             }
         }
     }
+
+    /** The part of a path mark's viewport its ink covers; null for a mark without a path. */
+    private fun inkOf(mark: SourceMark): RectF? {
+        val path = pathOf(mark) ?: return null
+        return synchronized(inks) {
+            inks.getOrPut(path) { RectF().also { path.computeBounds(it, true) } }.takeIf { it.width() > 0f && it.height() > 0f }
+        }
+    }
+
+    private val inks = HashMap<Path, RectF>()
 
     private fun pathOf(mark: SourceMark): Path? {
         val data = mark.path ?: return null

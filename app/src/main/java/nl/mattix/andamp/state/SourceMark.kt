@@ -55,16 +55,23 @@ class SourceMark(
 
         private const val PRIME = 31
 
-        /** The phone's own mark: a handset with its home button. */
+        /**
+         * The phone's own mark: a handset with rounded corners and its home button, as tall as
+         * the other sources' logos, so it reads as a phone and not as a square.
+         */
         val PHONE =
             SourceMark(
                 pixels =
                     listOf(
+                        ".###.",
+                        "#...#",
+                        "#...#",
+                        "#...#",
+                        "#...#",
+                        "#...#",
                         "#####",
-                        "#...#",
-                        "#...#",
-                        "#...#",
                         "##.##",
+                        ".###.",
                     ),
                 // a handset's outline with its screen cut out and a button under it, drawn even-odd
                 path = "M7 1h10a2 2 0 0 1 2 2v18a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V3a2 2 0 0 1 2-2zM7 4v14h10V4zM11 19.5h2v1.5h-2z",

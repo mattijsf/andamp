@@ -16,8 +16,11 @@ class SourceMarkTest {
         assertEquals(SourceMark.PHONE, phone)
         assertTrue(phone.pixelWidth in 1..SourceMark.MAX_W)
         assertTrue(phone.pixels.size <= SourceMark.MAX_H)
-        assertTrue(phone.ink(0, 0))
-        assertFalse(phone.ink(1, 1))
+        assertEquals("as tall as the logos beside it", SourceMark.MAX_H, phone.pixels.size)
+        // rounded corners, and a screen inside the case
+        assertFalse(phone.ink(0, 0))
+        assertTrue(phone.ink(1, 0))
+        assertFalse(phone.ink(2, 3))
     }
 
     @Test
