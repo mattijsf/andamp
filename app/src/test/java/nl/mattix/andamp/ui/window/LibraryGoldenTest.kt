@@ -421,9 +421,14 @@ class LibraryGoldenTest {
     fun `library of every source together in the outline font, the phone's mark drawn from its path`() =
         allSources("library_all_sources", ListFont.REGULAR)
 
+    @Test
+    fun `every source together lists each source's lists with its mark, the app's own lists without`() =
+        allSources("library_all_sources_lists", ListFont.SKIN, nl.mattix.andamp.state.LibraryOps.Category.LISTS)
+
     private fun allSources(
         name: String,
         font: ListFont,
+        category: nl.mattix.andamp.state.LibraryOps.Category = nl.mattix.andamp.state.LibraryOps.Category.ALBUMS,
     ) {
         val shelf =
             nl.mattix.andamp.core.playback.BrowseSourceContractTest
@@ -451,6 +456,11 @@ class LibraryGoldenTest {
                         ),
                     ),
                 ),
+                playlists =
+                    listOf(
+                        nl.mattix.andamp.core.playback.BrowseSourceContractTest
+                            .ShelfPlaylist("Late Night", listOf("Foil", "Dael")),
+                    ),
             )
         val all =
             nl.mattix.andamp.state.AllLibrary {
@@ -493,7 +503,7 @@ class LibraryGoldenTest {
                 words = EnglishWords,
             )
         ops.open()
-        ops.switchCategory(nl.mattix.andamp.state.LibraryOps.Category.ALBUMS)
+        ops.switchCategory(category)
         renderLibrary(name, ops, state, source = "All Sources")
     }
 }

@@ -459,6 +459,8 @@ internal class LibraryShelves(
                         it.name,
                         detail =
                             it.trackCount?.let { n -> words.get(R.string.library_track_count_short, n) } ?: "",
+                        // every source together: whose list it is
+                        marks = listOfNotNull((src as? SourceMarks)?.markOfList(it.id)),
                     )
                 },
             open = their.map { list -> { drill(list.name) { sourceListPage(src, list) } } },

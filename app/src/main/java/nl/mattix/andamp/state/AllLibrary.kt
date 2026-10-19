@@ -18,6 +18,9 @@ import java.util.concurrent.ConcurrentHashMap
 interface SourceMarks {
     /** The marks of the sources that have the album [albumId], in the order they are played from; empty when not known. */
     fun marksOf(albumId: String): List<SourceMark>
+
+    /** The mark of the source the playlist [listId] belongs to; null when not known. */
+    fun markOfList(listId: String): SourceMark?
 }
 
 /**
@@ -228,6 +231,8 @@ class AllLibrary(
     }
 
     override fun marksOf(albumId: String): List<SourceMark> = editions[albumId].orEmpty().map { it.member.mark }.distinct()
+
+    override fun markOfList(listId: String): SourceMark? = routed(listId)?.first?.mark
 
     /**
      * [question] asked of every member at once, with the answers of those that gave one, in

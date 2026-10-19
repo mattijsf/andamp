@@ -116,6 +116,8 @@ class AllLibraryTest : BrowseSourceContractTest() {
             val driving = library.playlists().single { it.name == "Driving" }
 
             assertEquals(listOf("Mysterons"), library.playlistTracks(driving.id).map { it.title })
+            assertEquals("a list is marked by its source", "E", library.markOfList(driving.id)?.letter)
+            assertEquals("a list from nowhere has no mark", null, library.markOfList("Driving"))
         }
 
     @Test
