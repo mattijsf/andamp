@@ -48,6 +48,8 @@ class LibraryViewsTest {
         override suspend fun tracks(albumId: String) = emptyList<Track>()
     }
 
+    private val index = LibraryIndex(ApplicationProvider.getApplicationContext<Application>(), null)
+
     /** The phone's music in two folders and two genres, from the library's own index. */
     private fun phone(): IndexedPhoneLibrary {
         fun file(
@@ -65,7 +67,7 @@ class LibraryViewsTest {
             1,
             id.toInt(),
             null,
-            null,
+            1994,
             1000,
             0,
             folder,
@@ -83,8 +85,10 @@ class LibraryViewsTest {
                         file(3, roads, "Download/", "Trip-Hop"),
                     )
             }
-        return IndexedPhoneLibrary({ true }, reader, LibraryIndex(app, null), EnglishWords, io = Dispatchers.Unconfined)
+        return IndexedPhoneLibrary({ true }, reader, index, EnglishWords, io = Dispatchers.Unconfined)
     }
+
+    private val state = WinampState()
 
     private fun library(source: BrowseSource): Pair<LibraryOps, PlayerFacade> {
         val facade = PlayerFacade(MockBackend(emptyList(), scope))
@@ -92,12 +96,13 @@ class LibraryViewsTest {
             LibraryOps(
                 { source },
                 facade,
-                WinampState(),
+                state,
                 scope,
                 PlaylistLibrary(temp.newFolder("playlists")),
                 StationStore(File(temp.newFolder("radio"), "stations.m3u")),
                 io = Dispatchers.Unconfined,
                 words = EnglishWords,
+                infoOf = index::infoOf,
             )
         ops.open()
         return ops to facade
@@ -158,5 +163,21 @@ class LibraryViewsTest {
         ops.back()
         assertEquals(emptySet<Int>(), ops.chosen)
         assertEquals("Music/Autechre", ops.header)
+    }
+
+    @Test
+    fun `a list of songs is written in the row format, and again where it is when the format changes`() {
+        val (ops, _) = library(phone())
+        ops.switchCategory(LibraryOps.Category.LISTS)
+        ops.tapRow(1) // GENRES
+        ops.tapRow(0) // Electronic
+
+        state.rowFormat = RowFormat.parse("%title% (%album%, %year%)")
+        ops.restyle()
+
+        assertEquals("Electronic", ops.header)
+        assertEquals(listOf("1. Foil (Amber, 1994)", "2. Montreal (Amber, 1994)"), ops.rows.map { it.label })
+        ops.up()
+        assertEquals("the page above is still where it was", "GENRES", ops.header)
     }
 }

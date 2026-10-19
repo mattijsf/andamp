@@ -190,7 +190,7 @@ class LibraryUnreachableTest {
             down.tapRow(0)
             advanceTimeBy(SEARCH_PAUSE_MS)
             runCurrent()
-            assertEquals(listOf("Foil"), down.rows.map { it.label })
+            assertEquals(listOf("Autechre - Foil"), down.rows.map { it.label })
         }
 
     @Test

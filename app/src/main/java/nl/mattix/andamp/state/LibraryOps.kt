@@ -75,6 +75,8 @@ class LibraryOps(
     private val smartLists: suspend (BrowseSource) -> List<SmartList> = { emptyList() },
     /** Keeps the order the listener picked for the ALBUMS page; see [AlbumOrder]. */
     private val onOrder: (AlbumOrder) -> Unit = {},
+    /** What the library's index knows of the tracks at some uris, for the row format; see [LibraryIndex.infoOf]. */
+    infoOf: suspend (List<String>) -> Map<String, TrackInfo> = { emptyMap() },
 ) {
     /**
      * The library as it is now; see [sourceOf]. It is read once per page and handed to
@@ -120,7 +122,10 @@ class LibraryOps(
         val query: String? = null,
         /** Whether that search was the FIND tab's; see [Category.FIND]. */
         val finding: Boolean = false,
-    )
+    ) {
+        /** The same place, on [next] in place of its page. */
+        fun with(next: LibraryPage) = Crumb(next, scroll, selection, query, finding)
+    }
 
     private var page: LibraryPage by mutableStateOf(LibraryPage(label(Category.ARTISTS), "", emptyList()))
     private val crumbs = ArrayDeque<Crumb>()
@@ -138,6 +143,7 @@ class LibraryOps(
             drill = ::drill,
             smartLists = smartLists,
             order = { state.albumOrder },
+            songs = SongWords({ state.rowFormat }, infoOf),
         )
 
     val rows: List<Row> get() = page.rows
@@ -657,6 +663,34 @@ class LibraryOps(
      * the finger. The deleted list's own page closes.
      */
     fun savedListDeleted(name: String) = savedListsChanged(closing = name)
+
+    /**
+     * The row format changed ([RowFormat]): the page on show and the levels above it write their
+     * songs again, each where it was scrolled to. A tab left for another opens at its root.
+     */
+    fun restyle() {
+        stashes.clear()
+        if (page.restyled == null && crumbs.none { it.page.restyled != null }) return
+        scope.launch {
+            val shown = page
+            val above = crumbs.toList()
+            val again = shown.restyled?.invoke()
+            val kept =
+                above.map { crumb ->
+                    crumb.page.restyled
+                        ?.invoke()
+                        ?.let { crumb.with(it) } ?: crumb
+                }
+            // the listener moved on meanwhile; the next page is made in the new format anyway
+            if (page !== shown || crumbs.toList() != above) return@launch
+            crumbs.clear()
+            crumbs.addAll(kept)
+            if (again != null) {
+                page = again
+                revision++
+            }
+        }
+    }
 
     /**
      * The library on show was read again ([ShelfUpdates]): a tab's root on screen is read

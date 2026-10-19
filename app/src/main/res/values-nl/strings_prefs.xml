@@ -68,6 +68,22 @@
     <string name="prefs_lists_marks_off">Uit</string>
     <string name="prefs_lists_marks_before">Voor</string>
     <string name="prefs_lists_marks_after">Achter</string>
+    <string name="prefs_rows_preview_section">Voorbeeld</string>
+    <string name="prefs_rows_blocks_section">Wat een rij toont</string>
+    <string name="prefs_rows_blocks_about">Houd een blok vast om het te slepen. Mist een nummer een veld, dan valt de tekst na dat veld mee weg.</string>
+    <string name="prefs_rows_before">Tekst ervoor</string>
+    <string name="prefs_rows_between">Tekst ertussen</string>
+    <string name="prefs_rows_after">Tekst erna</string>
+    <string name="prefs_rows_add_section">Blok toevoegen</string>
+    <string name="prefs_rows_add_about">Velden die de bibliotheek voor minstens één nummer heeft.</string>
+    <string name="prefs_rows_reset">Terug naar artiest - titel</string>
+    <string name="prefs_rows_remove">%1$s verwijderen</string>
+    <string name="prefs_rows_field_artist">Artiest</string>
+    <string name="prefs_rows_field_title">Titel</string>
+    <string name="prefs_rows_field_album">Album</string>
+    <string name="prefs_rows_field_number">Tracknummer</string>
+    <string name="prefs_rows_field_year">Jaar</string>
+    <string name="prefs_rows_field_genre">Genre</string>
 
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">Voorinstellingen</string>
@@ -127,6 +143,7 @@
     <string name="prefs_player_summary_regular_font">Gewoon lettertype in de lijsten</string>
     <string name="prefs_player_summary_roomy_rows">Ruime rijen</string>
     <string name="prefs_player_summary_large_rows">Grote rijen</string>
+    <string name="prefs_player_summary_row_format">Eigen nummerrijen</string>
     <string name="prefs_player_summary_tap_assist">Tikhulp</string>
     <string name="prefs_player_summary_wallpaper_colors">Achtergrondkleuren</string>
     <string name="prefs_player_summary_all_with_overlay">Altijd bovenaan, vensters, lijsten, aanraking en kleuren</string>
@@ -172,6 +189,7 @@
     <string name="prefs_page_plugins">Plug-ins</string>
     <string name="prefs_page_visualizer">Visualisatie</string>
     <string name="prefs_page_player">Speler</string>
+    <string name="prefs_page_rows">Nummerrijen</string>
     <string name="prefs_page_widget">Widget op het startscherm</string>
     <string name="prefs_page_android_auto">Android Auto</string>
     <string name="prefs_page_support">Andamp steunen</string>

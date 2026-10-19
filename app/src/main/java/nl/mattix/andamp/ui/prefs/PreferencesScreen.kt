@@ -308,6 +308,7 @@ private enum class PrefsPage(
     INSTALLED(R.string.prefs_page_plugins, PLUGINS_PAGE),
     VISUALIZER(R.string.prefs_page_visualizer, "visualizer", Icons.Outlined.AutoAwesome),
     PLAYER(R.string.prefs_page_player, "player", Icons.Outlined.PlayCircleOutline),
+    ROWS(R.string.prefs_page_rows, ROWS_PAGE),
     WIDGET(R.string.prefs_page_widget, WIDGET_PAGE, Icons.Outlined.Widgets),
     ANDROID_AUTO(R.string.prefs_page_android_auto, ANDROID_AUTO_PAGE, Icons.Outlined.DirectionsCar),
     SUPPORT(R.string.prefs_page_support, SUPPORT_PAGE, Icons.Outlined.Favorite),
@@ -443,7 +444,7 @@ fun PreferencesPage(
                         }
                         page(PrefsPage.INSTALLED.route) { InstalledPlugins(plugins, dsp, snackbars, scope, onPickPlugin) }
                         page(PrefsPage.VISUALIZER.route) { VisualizerSettings(sections.visualizer) }
-                        page(PrefsPage.PLAYER.route) { PlayerPage(sections) }
+                        playerPages(sections, pages::navigate)
                         page(PrefsPage.WIDGET.route) { WidgetRows(sections.widget) }
                         page(PrefsPage.ANDROID_AUTO.route) { AndroidAutoPage(sections.androidAuto) }
                         page(PrefsPage.SUPPORT.route) { SupportPage(sections.support) }
@@ -511,11 +512,21 @@ private fun NavGraphBuilder.page(
     }
 }
 
+/** Player, and Song rows, which it opens. */
+private fun NavGraphBuilder.playerPages(
+    sections: PrefsSections,
+    navigate: (String) -> Unit,
+) {
+    page(PrefsPage.PLAYER.route) { PlayerPage(sections) { navigate(PrefsPage.ROWS.route) } }
+    page(PrefsPage.ROWS.route) { RowFormatPage(sections.lists) }
+}
+
 /** The list's row a page belongs to: a page opened from inside another is marked as that one. */
 private fun rootRowOf(route: String?): String? =
     when (route) {
         PrefsPage.INSTALLED.route -> PrefsPage.DSP.route
         PrefsPage.LICENCES.route -> PrefsPage.ABOUT.route
+        PrefsPage.ROWS.route -> PrefsPage.PLAYER.route
         else -> route
     }
 

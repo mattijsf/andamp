@@ -461,6 +461,14 @@ one of them steps the clocks (`WinampState.clocksTurn`).
   (`MarkInk`). The phone's is built in; a source without one is its first letter. The
   playlist shows them too when Preferences > Player > Source in the playlist says before or
   after, which is offered only with more than one source.
+- **Song rows.** The playlist, the main window's title and the library's lists of songs write
+  a song in one `RowFormat`, set under Preferences > Player > Song rows and stored as Winamp
+  writes a title format (`%artist% - %title%`). A field a song lacks is left out with the text
+  after it. Artist and title come with the track; album, number, year and genre come from the
+  library's index by the track's uri (`LibraryIndex.infoOf`), asked only when the format names
+  one of them. The playlist keeps that lookup in `WinampState.rowInfo`; a library page keeps
+  how to make itself again (`LibraryPage.restyled`), so a new format rewrites the page on show
+  without asking the source. An album page of one artist shows only the titles.
 
 ## Pixel rules
 

@@ -14,7 +14,6 @@ import nl.mattix.andamp.core.model.LibraryAlbum
 import nl.mattix.andamp.core.model.LibraryArtist
 import nl.mattix.andamp.core.model.LibraryPlaylist
 import nl.mattix.andamp.core.model.Track
-import nl.mattix.andamp.core.model.displayName
 import nl.mattix.andamp.core.model.durationSec
 import nl.mattix.andamp.core.playback.BrowseSource
 import nl.mattix.andamp.state.LibraryOps.Category
@@ -49,6 +48,8 @@ internal class LibraryShelves(
     private val smartLists: suspend (BrowseSource) -> List<SmartList> = { emptyList() },
     /** The order the ALBUMS page is in; see [AlbumOrder]. */
     private val order: () -> AlbumOrder = { AlbumOrder.TITLE },
+    /** Writes a row of each song in the listener's [RowFormat]. */
+    private val songs: SongWords = SongWords({ RowFormat.DEFAULT }) { emptyMap() },
 ) {
     private fun label(category: Category): String = words.get(category.label)
 
@@ -64,7 +65,7 @@ internal class LibraryShelves(
         }
 
     /** A search's hits, as a page of tracks. */
-    fun results(hits: List<Track>): LibraryPage {
+    suspend fun results(hits: List<Track>): LibraryPage {
         val capped = hits.size >= BrowseSource.SEARCH_LIMIT
         val count =
             if (capped) {
@@ -76,18 +77,28 @@ internal class LibraryShelves(
         return LibraryPage(
             header = searchHeader,
             status = count + time,
-            rows = hits.map { Row(it.title, detail = it.artist) },
+            rows = songRows(hits),
             tracks = hits,
             empty = words.get(R.string.library_no_matches),
+            restyled = { results(hits) },
         )
     }
+
+    /** A row for each of [tracks]: its song in the row format, numbered from one when [numbered], and its length. */
+    private suspend fun songRows(
+        tracks: List<Track>,
+        numbered: Boolean = false,
+    ): List<Row> =
+        songs.of(tracks).mapIndexed { at, song ->
+            Row(if (numbered) "${at + 1}. $song" else song, detail = clock(tracks[at].durationSec))
+        }
 
     /**
      * What a search found in a library that finds artists and albums too ([SectionedSearch]):
      * a section of each kind that found anything, under a heading with its count. An artist or
      * an album opens as from its tab; the tracks play as a page of their own.
      */
-    fun sections(
+    suspend fun sections(
         src: BrowseSource,
         found: SectionedSearch.Sections,
     ): LibraryPage {
@@ -120,7 +131,7 @@ internal class LibraryShelves(
         }
         if (found.tracks.isNotEmpty()) heading(count(found.tracks.size, R.plurals.library_count_tracks))
         val firstTrack = rows.size
-        rows += found.tracks.map { Row(it.title, detail = it.artist) }
+        rows += songRows(found.tracks)
         val hits = found.artists.size + found.albums.size + found.tracks.size
         return LibraryPage(
             header = searchHeader,
@@ -132,6 +143,7 @@ internal class LibraryShelves(
             firstTrack = firstTrack,
             headings = headings,
             empty = words.get(R.string.library_no_matches),
+            restyled = { sections(src, found) },
         )
     }
 
@@ -225,7 +237,7 @@ internal class LibraryShelves(
         )
     }
 
-    private fun everyTrackPage(
+    private suspend fun everyTrackPage(
         header: String,
         tracks: List<Track>,
     ) = trackListPage(header, tracks, empty = words.get(R.string.library_no_tracks), byArtist = true)
@@ -398,18 +410,19 @@ internal class LibraryShelves(
     }
 
     /** A list the library made, as a page of tracks, each with what its entry says on the right. */
-    private fun smartPage(list: SmartList): LibraryPage {
+    private suspend fun smartPage(list: SmartList): LibraryPage {
         val tracks = list.entries.map { it.first }
         val time = if (tracks.isEmpty()) "" else " · ${clock(tracks.sumOf { it.durationSec })}"
         return LibraryPage(
             header = list.name,
             status = count(tracks.size, R.plurals.library_count_tracks) + time,
             rows =
-                list.entries.mapIndexed { at, (track, detail) ->
-                    Row("${at + 1}. ${track.displayName}", detail = detail ?: clock(track.durationSec))
+                songRows(tracks, numbered = true).mapIndexed { at, row ->
+                    list.entries[at].second?.let { row.copy(detail = it) } ?: row
                 },
             tracks = tracks,
             empty = words.get(R.string.library_no_tracks),
+            restyled = { smartPage(list) },
         )
     }
 
@@ -567,9 +580,12 @@ internal class LibraryShelves(
         )
     }
 
-    /** A page of [tracks], each row its number and its title, or its artist and title when [byArtist]. */
+    /**
+     * A page of [tracks], each row its number and its title, or its song in the row format when
+     * [byArtist]: a record of one artist names only its songs, as its header names the record.
+     */
     @Suppress("LongParameterList") // the page's parts, and how its rows are worded
-    private fun trackListPage(
+    private suspend fun trackListPage(
         header: String,
         tracks: List<Track>,
         empty: String,
@@ -582,13 +598,16 @@ internal class LibraryShelves(
             header = header,
             status = count(tracks.size, R.plurals.library_count_tracks) + time,
             rows =
-                tracks.mapIndexed { at, track ->
-                    Row("${at + 1}. ${if (byArtist) track.displayName else track.title}", detail = clock(track.durationSec))
+                if (byArtist) {
+                    songRows(tracks, numbered = true)
+                } else {
+                    tracks.mapIndexed { at, track -> Row("${at + 1}. ${track.title}", detail = clock(track.durationSec)) }
                 },
             tracks = tracks,
             empty = empty,
             savedName = savedName,
             incomplete = incomplete,
+            restyled = if (byArtist) ({ trackListPage(header, tracks, empty, savedName, incomplete, byArtist) }) else null,
         )
     }
 

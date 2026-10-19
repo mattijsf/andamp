@@ -6,12 +6,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import nl.mattix.andamp.R
 import nl.mattix.andamp.state.ListFont
+import nl.mattix.andamp.state.RowFormat
 import nl.mattix.andamp.state.RowHeight
 import nl.mattix.andamp.state.Words
 
-/** Preferences > Player: the player window's own switches, grouped by what they touch. */
+/** Preferences > Player: the player window's own switches, grouped by what they touch; [onRows] opens Song rows. */
 @Composable
-internal fun PlayerPage(sections: PrefsSections) {
+internal fun PlayerPage(
+    sections: PrefsSections,
+    onRows: () -> Unit = {},
+) {
     Section(stringResource(R.string.prefs_player_windows_section))
     Group {
         OverlayRow(sections.overlay)
@@ -21,6 +25,7 @@ internal fun PlayerPage(sections: PrefsSections) {
     Group {
         ListFontRow(sections.lists)
         RowHeightRow(sections.lists)
+        RowFormatRow(sections.lists, onRows)
         if (sections.lists.marksOffered) SourceMarksRow(sections.lists)
     }
     Section(stringResource(R.string.prefs_player_touch_section))
@@ -45,6 +50,7 @@ internal fun PrefsSections.playerSummary(words: Words): String {
                 RowHeight.ROOMY -> R.string.prefs_player_summary_roomy_rows
                 RowHeight.LARGE -> R.string.prefs_player_summary_large_rows
             },
+            R.string.prefs_player_summary_row_format.takeIf { lists.rowFormat != RowFormat.DEFAULT },
             R.string.prefs_player_summary_tap_assist.takeIf { tapAssist.enabled },
             R.string.prefs_player_summary_wallpaper_colors.takeIf { palette.offered && palette.enabled },
         )

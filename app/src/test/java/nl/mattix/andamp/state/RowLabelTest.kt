@@ -101,4 +101,16 @@ class RowLabelTest {
             reaching(SourceReach(listOf(MusicSource.LOCAL, styled))).rowLabel(chop, 0),
         )
     }
+
+    @Test
+    fun `a song row is written in the row format, with what the library's index knows of it`() {
+        val state =
+            state(connecting = false).apply {
+                rowFormat = RowFormat.parse("%tracknumber%. %title% [%album%]")
+                rowInfo = mapOf("content://media/42" to TrackInfo(album = "Absolution", number = 12))
+            }
+
+        assertEquals("12. Hexagons [Absolution]", state.rowLabel(song, 0))
+        assertEquals("a song the index does not have shows what it carries", "Hexagons", state.rowLabel(song.copy(uri = null), 0))
+    }
 }

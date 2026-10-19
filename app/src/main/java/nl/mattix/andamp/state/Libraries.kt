@@ -70,7 +70,7 @@ object Libraries {
     }
 
     /** The library's own index, one for the whole process. */
-    private fun index(context: Context): LibraryIndex =
+    fun index(context: Context): LibraryIndex =
         synchronized(this) { index ?: LibraryIndex(context.applicationContext).also { index = it } }
 
     /** A source's name in the index, apart from the phone's. */

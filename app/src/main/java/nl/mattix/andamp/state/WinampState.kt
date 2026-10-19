@@ -14,7 +14,6 @@ import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.sync.Mutex
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.model.Transport
-import nl.mattix.andamp.core.model.displayName
 import nl.mattix.andamp.ui.window.LockedStack
 import nl.mattix.andamp.ui.window.WindowScreen
 import nl.mattix.andamp.visualizer.core.PresetGaps
@@ -176,6 +175,15 @@ class WinampState {
 
     /** The order of the library's ALBUMS page; see [ListStyleStore.albumOrder]. Mirrored like [listFont]. */
     var albumOrder: AlbumOrder by mutableStateOf(AlbumOrder.TITLE)
+
+    /** How a list writes a song; see [ListStyleStore.rowFormat]. Mirrored like [listFont]. */
+    var rowFormat: RowFormat by mutableStateOf(RowFormat.DEFAULT)
+
+    /**
+     * What the library's index knows of the playlist's tracks, by uri, for a [rowFormat] that
+     * names more than a track carries; empty otherwise. Kept by [WinampViewModel].
+     */
+    var rowInfo: Map<String, TrackInfo> by mutableStateOf(emptyMap())
 
     /** Where the playlist's rows show their source's mark; see [ListStyleStore.marks]. Mirrored like [listFont]. */
     var listMarks: MarkPlace by mutableStateOf(MarkPlace.OFF)
@@ -729,7 +737,7 @@ class WinampState {
  *
  * A row whose source is absent says so and names the source; that label comes first. A
  * station being connected to shows `[Connecting]` and its address, as Winamp does; this
- * applies only to the current row. Any other row shows the track's display name.
+ * applies only to the current row. Any other row writes its song in [WinampState.rowFormat].
  */
 fun WinampState.rowLabel(
     track: nl.mattix.andamp.core.model.Track,
@@ -738,9 +746,10 @@ fun WinampState.rowLabel(
     val known = reach
     val source = SourceForRows.of(track)
     val absent = known?.absence(source)
+    val song = rowFormat.write(track, track.uri?.let(rowInfo::get))
     return when {
-        known != null && absent != null -> "[${absent.words}: ${known.named(source).label}] ${track.displayName}"
+        known != null && absent != null -> "[${absent.words}: ${known.named(source).label}] $song"
         connecting && index == currentIndex && track.isStream -> "[Connecting] ${track.uri.orEmpty()}"
-        else -> track.displayName
+        else -> song
     }
 }

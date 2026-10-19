@@ -12,6 +12,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.distinctUntilChangedBy
@@ -257,6 +258,7 @@ class WinampViewModel
                     smartLists.of(shown)
                 },
                 onOrder = { listStyleStore.albumOrder = it },
+                infoOf = { uris -> withContext(Dispatchers.IO) { Libraries.index(app).infoOf(uris) } },
             )
 
         /** Picking a library, and what a sign-in or a sign-out changes; see [SourceOps]. */
@@ -368,6 +370,7 @@ class WinampViewModel
             state.listFont = listStyleStore.font
             state.rowHeight = listStyleStore.rowHeight
             state.albumOrder = listStyleStore.albumOrder
+            state.rowFormat = listStyleStore.rowFormat
             viewModelScope.launch {
                 snapshotFlow { shadeStore.enabled }.collect { state.shadeEnabled = it }
             }
@@ -385,6 +388,29 @@ class WinampViewModel
             }
             viewModelScope.launch {
                 snapshotFlow { listStyleStore.albumOrder }.collect { state.albumOrder = it }
+            }
+            // the windows follow once the typing between the blocks stops, so a page of songs is
+            // written again once and not at every letter
+            viewModelScope.launch {
+                snapshotFlow { listStyleStore.rowFormat }.collectLatest { format ->
+                    if (format == state.rowFormat) return@collectLatest
+                    delay(ROW_FORMAT_SETTLE_MS)
+                    state.rowFormat = format
+                    libraryOps.restyle()
+                }
+            }
+            // the playlist's rows ask the library's index only for a format that names more than
+            // a track carries, and again when the phone's music is read again, which can bring tags
+            viewModelScope.launch {
+                snapshotFlow { state.rowFormat.needsIndex to state.playlist }.collectLatest { (needed, tracks) ->
+                    if (!needed) {
+                        state.rowInfo = emptyMap()
+                        return@collectLatest
+                    }
+                    Libraries.phone(app).revision.collect {
+                        state.rowInfo = withContext(Dispatchers.IO) { Libraries.index(app).infoOf(tracks.mapNotNull { it.uri }) }
+                    }
+                }
             }
             // a row's source needs telling apart only when there is more than one
             viewModelScope.launch {
@@ -643,5 +669,8 @@ class WinampViewModel
         private companion object {
             /** Winamp's balance slider runs -100..+100 either side of center. */
             const val BALANCE_RANGE = 100
+
+            /** How long the row format rests before the windows write their songs in it. */
+            const val ROW_FORMAT_SETTLE_MS = 300L
         }
     }
