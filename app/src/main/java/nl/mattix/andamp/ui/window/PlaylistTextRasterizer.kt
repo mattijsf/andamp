@@ -88,12 +88,14 @@ class PlaylistTextRasterizer(
         val (spelled, outlined) =
             if (glyphs == null) emptyList<Row>() to rows else rows.partition { BitmapFont.covers(it.title) }
         val before = s.listMarks == MarkPlace.BEFORE
-        val pixels = glyphs?.takeIf { spelled.isNotEmpty() }?.let { pixelRows(spelled, it, layout, before) }
+        // every source's mark takes the room of the widest, so the titles beside them line up
+        val peers = s.sourceMarks.values
+        val pixels = glyphs?.takeIf { spelled.isNotEmpty() }?.let { pixelRows(spelled, it, layout, before, peers) }
         val bitmap =
             if (pixels != null && outlined.isEmpty()) {
                 pixels
             } else {
-                outlineRows(outlined, layout, scale, style, under = pixels, before = before)
+                outlineRows(outlined, layout, scale, style, under = pixels, before = before, peers = peers)
             }
 
         return bitmap.asImageBitmap().also {
@@ -153,6 +155,7 @@ class PlaylistTextRasterizer(
         glyphs: GlyphMask,
         layout: PlaylistLayout,
         before: Boolean,
+        peers: Collection<SourceMark>,
     ): Bitmap {
         val width = layout.textRight - layout.textLeft
         val height = layout.middleH
@@ -161,12 +164,13 @@ class PlaylistTextRasterizer(
         for (row in rows) {
             // a glyph is five pixels of letter over one of nothing: the letter is centered
             val y = row.top + (layout.rowH - BitmapFont.CHAR_H + 1) / 2
-            writeRow(glyphs, row.title, row.duration, row.argb, y, block, width, row.number, row.mark, before)
+            writeRow(glyphs, row.title, row.duration, row.argb, y, block, width, row.number, row.mark, before, peers)
         }
         return Bitmap.createBitmap(block, width, height, Bitmap.Config.ARGB_8888)
     }
 
     /** [rows] in the outline font at device resolution, over the skin-font rows in [under], if any. */
+    @Suppress("LongParameterList") // the rows, the room and the style they are drawn in
     private fun outlineRows(
         rows: List<Row>,
         layout: PlaylistLayout,
@@ -174,6 +178,7 @@ class PlaylistTextRasterizer(
         style: PleditStyle,
         under: Bitmap?,
         before: Boolean,
+        peers: Collection<SourceMark>,
     ): Bitmap {
         val width = layout.textRight - layout.textLeft
         val bitmap = Bitmap.createBitmap(width * scale, layout.middleH * scale, Bitmap.Config.ARGB_8888)
@@ -193,14 +198,14 @@ class PlaylistTextRasterizer(
             var titleRight = durX - DURATION_GAP
             val marks = listOfNotNull(row.mark)
             if (marks.isNotEmpty()) {
-                val markW = MarkInk.outlineWidth(marks, paint)
+                val markW = MarkInk.outlineWidth(marks, paint, peers)
                 if (before) {
                     canvas.drawText(row.number, titleLeft, baseline, paint)
                     titleLeft += paint.measureText(row.number)
-                    MarkInk.outline(marks, titleLeft, top, layout.rowH, canvas, paint)
+                    MarkInk.outline(marks, titleLeft, top, layout.rowH, canvas, paint, peers)
                     titleLeft += markW + MARK_GAP
                 } else {
-                    MarkInk.outline(marks, titleRight - markW, top, layout.rowH, canvas, paint)
+                    MarkInk.outline(marks, titleRight - markW, top, layout.rowH, canvas, paint, peers)
                     titleRight -= markW + MARK_GAP
                 }
             }
@@ -228,7 +233,7 @@ class PlaylistTextRasterizer(
          * [title] from the left and [duration] against the right, in [argb], the letters' tops
          * at [y]. A title too long for the row ends on a whole letter and the font's ellipsis.
          * [mark], when given, is the row's source's: between the number and the title when
-         * [before], else in front of the duration.
+         * [before], else in front of the duration, in a cell as wide as the widest of [peers].
          */
         @Suppress("LongParameterList") // a row's words and color, and where they go
         fun writeRow(
@@ -242,6 +247,7 @@ class PlaylistTextRasterizer(
             number: String = "",
             mark: SourceMark? = null,
             before: Boolean = false,
+            peers: Collection<SourceMark> = listOfNotNull(mark),
         ) {
             var left = ListText.LEFT_INSET.toInt()
             if (number.isNotEmpty()) {
@@ -253,12 +259,12 @@ class PlaylistTextRasterizer(
             var right = durX - DURATION_GAP
             if (mark != null) {
                 val marks = listOf(mark)
-                val markW = MarkInk.pixelWidth(marks)
+                val markW = MarkInk.pixelWidth(marks, peers)
                 if (before) {
-                    MarkInk.spell(marks, left, y, argb, glyphs, block, width)
+                    MarkInk.spell(marks, left, y, argb, glyphs, block, width, peers)
                     left += markW + MARK_GAP
                 } else {
-                    MarkInk.spell(marks, right - markW, y, argb, glyphs, block, width)
+                    MarkInk.spell(marks, right - markW, y, argb, glyphs, block, width, peers)
                     right -= markW + MARK_GAP
                 }
             }

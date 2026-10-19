@@ -16,6 +16,9 @@ import nl.mattix.andamp.state.SourceMark
  * pixel art in the skin's font, a pixel to the virtual pixel like its letters, and as a vector
  * path or a shape in the outline font, as tall as its letters, so they scale with the text. A
  * mark without the form the font wants is drawn as its letter.
+ *
+ * Each mark sits in the middle of a cell as wide as the widest of its peers, the marks of every
+ * source shown, so the words beside marks of different widths line up.
  */
 internal object MarkInk {
     /** The room between two marks, in virtual pixels. */
@@ -30,16 +33,20 @@ internal object MarkInk {
     /** Draws a shape ([SourceMark.mask]) smoothly in the color it is given. */
     private val shapes = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
 
-    /** How wide [marks] are in the skin's font. */
-    fun pixelWidth(marks: List<SourceMark>): Int =
-        if (marks.isEmpty()) {
-            0
-        } else {
-            marks.sumOf { if (it.pixelWidth > 0) it.pixelWidth else BitmapFont.CHAR_W } +
-                GAP * (marks.size - 1)
-        }
+    /** How wide one mark is in the skin's font: its pixel art, or its letter. */
+    private fun pixelWidthOf(mark: SourceMark): Int = if (mark.pixelWidth > 0) mark.pixelWidth else BitmapFont.CHAR_W
 
-    /** Writes [marks] into [block] from [x], their tops at [y], in [argb]. */
+    /** How wide [marks] are in the skin's font, each in a cell as wide as the widest of [peers]. */
+    fun pixelWidth(
+        marks: List<SourceMark>,
+        peers: Collection<SourceMark> = marks,
+    ): Int {
+        if (marks.isEmpty()) return 0
+        val cell = peers.maxOfOrNull(::pixelWidthOf) ?: 0
+        return marks.sumOf { maxOf(cell, pixelWidthOf(it)) } + GAP * (marks.size - 1)
+    }
+
+    /** Writes [marks] into [block] from [x], centered on letters whose tops are at [y], in [argb]; see [pixelWidth]. */
     @Suppress("LongParameterList") // the marks, where they go, and the block they go into
     fun spell(
         marks: List<SourceMark>,
@@ -49,16 +56,20 @@ internal object MarkInk {
         glyphs: GlyphMask,
         block: IntArray,
         stride: Int,
+        peers: Collection<SourceMark> = marks,
     ) {
+        val cell = peers.maxOfOrNull(::pixelWidthOf) ?: 0
         var at = x
         for (mark in marks) {
+            val own = pixelWidthOf(mark)
+            val slot = maxOf(cell, own)
+            val from = at + (slot - own) / 2
             if (mark.pixelWidth == 0) {
-                glyphs.write(BitmapFont.normalize(mark.letter), at, y, argb, block, stride)
-                at += BitmapFont.CHAR_W + GAP
+                glyphs.write(BitmapFont.normalize(mark.letter), from, y, argb, block, stride)
             } else {
-                stamp(mark, at, y, argb, block, stride)
-                at += mark.pixelWidth + GAP
+                stamp(mark, from, y, argb, block, stride)
             }
+            at += slot + GAP
         }
     }
 
@@ -84,14 +95,16 @@ internal object MarkInk {
         }
     }
 
-    /** How wide [marks] are in the outline font of [paint]. */
+    /** How wide [marks] are in the outline font of [paint], each in a cell as wide as the widest of [peers]. */
     fun outlineWidth(
         marks: List<SourceMark>,
         paint: Paint,
+        peers: Collection<SourceMark> = marks,
     ): Float {
         if (marks.isEmpty()) return 0f
         val size = paint.textSize * SIZE_OF_TEXT
-        return marks.sumOf { mark -> widthOf(mark, size, paint).toDouble() }.toFloat() + GAP * (marks.size - 1)
+        val cell = peers.maxOfOrNull { widthOf(it, size, paint) } ?: 0f
+        return marks.sumOf { mark -> maxOf(cell, widthOf(mark, size, paint)).toDouble() }.toFloat() + GAP * (marks.size - 1)
     }
 
     /** How wide one mark is in the outline font, its picture [size] tall. */
@@ -101,14 +114,15 @@ internal object MarkInk {
         paint: Paint,
     ): Float {
         val mask = mark.mask
+        val ink = inkOf(mark)
         return when {
             mask != null -> size * mask.width / mask.height
-            pathOf(mark) != null -> size
+            ink != null -> size * ink.width() / ink.height()
             else -> paint.measureText(mark.letter)
         }
     }
 
-    /** Draws [marks] from [x], in the middle of a line [height] tall at [top], in [paint]'s color. */
+    /** Draws [marks] from [x], in the middle of a line [height] tall at [top], in [paint]'s color; see [outlineWidth]. */
     @Suppress("LongParameterList") // the marks, where they go, and what draws them
     fun outline(
         marks: List<SourceMark>,
@@ -117,37 +131,69 @@ internal object MarkInk {
         height: Int,
         canvas: Canvas,
         paint: Paint,
+        peers: Collection<SourceMark> = marks,
     ) {
         val size = paint.textSize * SIZE_OF_TEXT
-        val baseline = ListText.baseline(paint, top, height)
+        val cell = peers.maxOfOrNull { widthOf(it, size, paint) } ?: 0f
         var at = x
         for (mark in marks) {
-            val mask = mark.mask
-            if (mask != null) {
-                val wide = widthOf(mark, size, paint)
-                val y = top + (height - size) / 2f
-                shapes.color = paint.color
-                canvas.drawBitmap(mask, null, RectF(at, y, at + wide, y + size), shapes)
-                at += wide + GAP
-                continue
-            }
-            val path = pathOf(mark)
-            if (path == null) {
-                canvas.drawText(mark.letter, at, baseline, paint)
-                at += paint.measureText(mark.letter) + GAP
-                continue
-            }
-            canvas.save()
-            canvas.translate(at, top + (height - size) / 2f)
-            canvas.scale(size / SourceMark.VIEWPORT, size / SourceMark.VIEWPORT)
-            val style = paint.style
-            paint.style = Paint.Style.FILL
-            canvas.drawPath(path, paint)
-            paint.style = style
-            canvas.restore()
-            at += size + GAP
+            val own = widthOf(mark, size, paint)
+            val slot = maxOf(cell, own)
+            draw(mark, at + (slot - own) / 2f, top, height, size, canvas, paint)
+            at += slot + GAP
         }
     }
+
+    /** One mark from [x], [size] tall in the middle of a line [height] tall at [top]. */
+    @Suppress("LongParameterList") // the mark, where it goes, and what draws it
+    private fun draw(
+        mark: SourceMark,
+        x: Float,
+        top: Float,
+        height: Int,
+        size: Float,
+        canvas: Canvas,
+        paint: Paint,
+    ) {
+        val mask = mark.mask
+        val path = pathOf(mark)
+        when {
+            mask != null -> {
+                val y = top + (height - size) / 2f
+                shapes.color = paint.color
+                canvas.drawBitmap(mask, null, RectF(x, y, x + widthOf(mark, size, paint), y + size), shapes)
+            }
+
+            path == null -> {
+                canvas.drawText(mark.letter, x, ListText.baseline(paint, top, height), paint)
+            }
+
+            else -> {
+                // cropped to its ink, like a pack's shape, so every mark is as tall as the next
+                val ink = inkOf(mark) ?: return
+                val scale = size / ink.height()
+                canvas.save()
+                canvas.translate(x, top + (height - size) / 2f)
+                canvas.scale(scale, scale)
+                canvas.translate(-ink.left, -ink.top)
+                val style = paint.style
+                paint.style = Paint.Style.FILL
+                canvas.drawPath(path, paint)
+                paint.style = style
+                canvas.restore()
+            }
+        }
+    }
+
+    /** The part of a path mark's viewport its ink covers; null for a mark without a path. */
+    private fun inkOf(mark: SourceMark): RectF? {
+        val path = pathOf(mark) ?: return null
+        return synchronized(inks) {
+            inks.getOrPut(path) { RectF().also { path.computeBounds(it, true) } }.takeIf { it.width() > 0f && it.height() > 0f }
+        }
+    }
+
+    private val inks = HashMap<Path, RectF>()
 
     private fun pathOf(mark: SourceMark): Path? {
         val data = mark.path ?: return null
