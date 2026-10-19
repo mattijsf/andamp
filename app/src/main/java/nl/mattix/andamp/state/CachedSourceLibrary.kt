@@ -55,7 +55,8 @@ class CachedSourceLibrary(
 ) : BrowseSource,
     SectionedSearch,
     ShelfUpdates,
-    PartialAnswers {
+    PartialAnswers,
+    TrackHomes {
     override val capabilities: BrowseCapabilities get() = upstream.capabilities
 
     override val available: Boolean get() = upstream.available
@@ -143,6 +144,15 @@ class CachedSourceLibrary(
             }
         return SectionedSearch.Sections(kept.artists.map(::artistOf), kept.albums.map(::albumOf), tracks)
     }
+
+    /** The album the index keeps [track] under, once that album was opened. */
+    override suspend fun albumOf(track: Track): LibraryAlbum? =
+        withContext(io) { index.homeOf(key, track.id).first?.let(::albumOf) }
+
+    override suspend fun artistOf(track: Track): LibraryArtist? =
+        withContext(io) {
+            index.homeOf(key, track.id).second?.let(::artistOf)
+        }
 
     override suspend fun playlists(): List<LibraryPlaylist> = upstream.playlists()
 

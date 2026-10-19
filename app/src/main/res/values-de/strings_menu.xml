@@ -108,4 +108,6 @@
     <string name="menu_rename_list">Liste umbenennen</string>
     <string name="menu_rename_station">Sender umbenennen</string>
     <string name="menu_delete_station">Sender löschen</string>
+    <string name="menu_go_to_album">Zum Album</string>
+    <string name="menu_go_to_artist">Zum Künstler</string>
 </resources>

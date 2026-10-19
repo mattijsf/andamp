@@ -380,7 +380,7 @@ class LibraryOpsTest {
 
         ops.tapRow(0)
         assertEquals("Road trip", ops.header)
-        assertEquals(listOf("1. One", "2. Two"), ops.rows.map { it.label })
+        assertEquals("a list names each song's artist", listOf("1. A - One", "2. B - Two"), ops.rows.map { it.label })
 
         ops.tapRow(1)
         ops.tapRow(1)

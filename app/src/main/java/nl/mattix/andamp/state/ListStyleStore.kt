@@ -23,6 +23,9 @@ enum class ListFont {
  */
 enum class MarkPlace { OFF, BEFORE, AFTER }
 
+/** The order of the library's ALBUMS page: by title, by artist, or by year, the oldest first. */
+enum class AlbumOrder { TITLE, ARTIST, YEAR }
+
 /** How tall a row of a list is, in virtual pixels. The text keeps its size; a taller row is a larger thing to tap. */
 enum class RowHeight(
     val px: Int,
@@ -49,6 +52,7 @@ class ListStyleStore(
     private var currentFont by mutableStateOf(named(prefs.getString(FONT, null), DEFAULT_FONT))
     private var currentRowHeight by mutableStateOf(named(prefs.getString(ROW_HEIGHT, null), DEFAULT_ROW_HEIGHT))
     private var currentMarks by mutableStateOf(named(prefs.getString(MARKS, null), MarkPlace.OFF))
+    private var currentOrder by mutableStateOf(named(prefs.getString(ALBUM_ORDER, null), AlbumOrder.TITLE))
 
     var font: ListFont
         get() = currentFont
@@ -64,6 +68,14 @@ class ListStyleStore(
             prefs.edit().putString(ROW_HEIGHT, value.name).apply()
         }
 
+    /** The order of the library's ALBUMS page; by title until the listener picks another. */
+    var albumOrder: AlbumOrder
+        get() = currentOrder
+        set(value) {
+            currentOrder = value
+            prefs.edit().putString(ALBUM_ORDER, value.name).apply()
+        }
+
     /** Where the playlist's rows show their source's mark; off unless the listener asks. */
     var marks: MarkPlace
         get() = currentMarks
@@ -77,6 +89,7 @@ class ListStyleStore(
         private const val FONT = "font"
         private const val ROW_HEIGHT = "rowheight"
         private const val MARKS = "marks"
+        private const val ALBUM_ORDER = "albumorder"
 
         /** The skin's letters, so a skin dresses the lists as it does the main window. */
         val DEFAULT_FONT = ListFont.SKIN

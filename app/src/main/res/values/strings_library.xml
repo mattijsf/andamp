@@ -13,6 +13,10 @@
     <string name="library_tab_find">FIND</string>
     <!-- The header of the search page -->
     <string name="library_search_header">SEARCH</string>
+    <!-- The first row of ARTISTS, for every track of the library, as Winamp's artist pane starts with All; %1$s is the count of artists -->
+    <string name="library_all">ALL (%1$s)</string>
+    <!-- The header of the page it opens -->
+    <string name="library_all_header">ALL</string>
 
     <!-- An artist's records by kind, as rows -->
     <string name="library_kind_albums">ALBUMS</string>
@@ -108,6 +112,7 @@
     <string name="library_cant_delete">CAN\'T DELETE</string>
     <string name="library_cant_rename">CAN\'T RENAME</string>
     <string name="library_nothing_to_play">NOTHING TO PLAY</string>
+    <string name="library_nothing_to_open">NOTHING TO OPEN</string>
     <string name="library_not_http">NOT AN HTTP URL</string>
 
     <!-- LibraryWindow.kt: the cells of the bar under the rows. Each is about four letters wide. -->
@@ -115,6 +120,10 @@
     <string name="library_bar_del_list">DEL LIST</string>
     <string name="library_bar_play">PLAY</string>
     <string name="library_bar_add">ADD</string>
+    <!-- The bar's cell on the ALBUMS page: the order it is in; a tap moves to the next -->
+    <string name="library_order_title">A-Z</string>
+    <string name="library_order_artist">ARTIST</string>
+    <string name="library_order_year">YEAR</string>
     <!-- The first row while the phone has not allowed its music to be read; %1$s is the permission's name, in capitals -->
     <string name="library_tap_to_allow">TAP TO ALLOW %1$s</string>
 

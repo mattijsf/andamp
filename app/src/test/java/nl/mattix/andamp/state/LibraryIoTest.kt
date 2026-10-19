@@ -96,7 +96,7 @@ class LibraryIoTest {
         assertTrue("the page waits for the read", ops.loading)
         release()
         assertEquals("Gym", ops.header)
-        assertEquals(listOf("1. Song"), ops.rows.map { it.label })
+        assertEquals(listOf("1. Artist - Song"), ops.rows.map { it.label })
     }
 
     @Test

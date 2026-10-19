@@ -108,4 +108,6 @@
     <string name="menu_rename_list">Renommer la liste</string>
     <string name="menu_rename_station">Renommer la station</string>
     <string name="menu_delete_station">Supprimer la station</string>
+    <string name="menu_go_to_album">Aller à l’album</string>
+    <string name="menu_go_to_artist">Aller à l’artiste</string>
 </resources>

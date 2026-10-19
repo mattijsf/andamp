@@ -256,6 +256,7 @@ class WinampViewModel
                     val shown = if (librarySources.showingAll) librarySources.usable.toSet() else setOf(librarySources.showing)
                     smartLists.of(shown)
                 },
+                onOrder = { listStyleStore.albumOrder = it },
             )
 
         /** Picking a library, and what a sign-in or a sign-out changes; see [SourceOps]. */
@@ -366,6 +367,7 @@ class WinampViewModel
             state.tapAssist = tapAssistStore.enabled
             state.listFont = listStyleStore.font
             state.rowHeight = listStyleStore.rowHeight
+            state.albumOrder = listStyleStore.albumOrder
             viewModelScope.launch {
                 snapshotFlow { shadeStore.enabled }.collect { state.shadeEnabled = it }
             }
@@ -380,6 +382,9 @@ class WinampViewModel
             }
             viewModelScope.launch {
                 snapshotFlow { listStyleStore.marks }.collect { state.listMarks = it }
+            }
+            viewModelScope.launch {
+                snapshotFlow { listStyleStore.albumOrder }.collect { state.albumOrder = it }
             }
             // a row's source needs telling apart only when there is more than one
             viewModelScope.launch {

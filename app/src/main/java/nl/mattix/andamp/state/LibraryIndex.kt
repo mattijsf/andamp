@@ -28,6 +28,7 @@ import nl.mattix.andamp.core.model.Track
  *
  * Every call blocks on the database; callers run it on an IO dispatcher.
  */
+@Suppress("TooManyFunctions") // one read and one write per question the window asks
 class LibraryIndex(
     private val helper: SQLiteOpenHelper,
 ) {
@@ -388,6 +389,35 @@ class LibraryIndex(
                 ).use { c -> c.map(::albumAt) }
         }
 
+    /**
+     * The album and the artist the track [trackId] of [source] is stored under; null for
+     * either that is not stored. The artist is the album's, found by id, or by name for a
+     * source whose albums do not carry their artist's id.
+     */
+    fun homeOf(
+        source: String,
+        trackId: String,
+    ): Pair<Shelf.ShelfAlbum?, Shelf.ShelfArtist?> {
+        val albumId =
+            db
+                .rawQuery("SELECT album_id FROM track WHERE source = ? AND id = ? LIMIT 1", arrayOf(source, trackId))
+                .use { if (it.moveToFirst()) it.getString(0) else null }
+        val album = albumId?.let { album(source, it) } ?: return null to null
+        val byId = album.artistId.takeIf { it.isNotEmpty() }?.let { id -> artistWhere("id = ?", source, id) }
+        return album to (byId ?: artistWhere("key = ?", source, ShelfBuilder.fold(album.artist)))
+    }
+
+    private fun artistWhere(
+        clause: String,
+        source: String,
+        value: String,
+    ): Shelf.ShelfArtist? =
+        db
+            .rawQuery(
+                "SELECT id, name, key, album_count, track_count FROM artist WHERE source = ? AND $clause LIMIT 1",
+                arrayOf(source, value),
+            ).use { c -> if (c.moveToFirst()) artistAt(c) else null }
+
     /** Whether [source] has the artist [artistId] among its artists. */
     fun hasArtist(
         source: String,
@@ -415,6 +445,16 @@ class LibraryIndex(
             .rawQuery(
                 "SELECT $TRACK_COLUMNS FROM track WHERE source = ? AND album_id = ? ORDER BY position",
                 arrayOf(source, albumId),
+            ).use { c -> c.map(::trackAt) }
+
+    /** Every track [source] has stored, album by album in title order, each album in its own order. */
+    fun everyTrack(source: String): List<Track> =
+        db
+            .rawQuery(
+                "SELECT ${TRACK_COLUMNS.split(", ").joinToString { "t.$it" }} FROM track t " +
+                    "JOIN album a ON a.source = t.source AND a.id = t.album_id " +
+                    "WHERE t.source = ? ORDER BY a.key, a.artist, t.position",
+                arrayOf(source),
             ).use { c -> c.map(::trackAt) }
 
     /** [source]'s tracks by when they were added, the newest first, at most [limit]. */

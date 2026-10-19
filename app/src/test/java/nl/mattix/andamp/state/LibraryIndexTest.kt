@@ -96,4 +96,19 @@ class LibraryIndexTest {
         assertEquals(listOf("100% Pure"), index.search("phone", "100%", 10).tracks.map { it.title })
         assertEquals(emptyList<Any>(), index.search("phone", "1_0", 10).tracks)
     }
+
+    @Test
+    fun `a track is followed to its album and its artist, and every track comes album by album`() {
+        index.replace("phone", shelf, "s1")
+
+        val (album, artist) = index.homeOf("phone", "media:3")
+
+        assertEquals("Mezzanine", album?.title)
+        assertEquals("Massive Attack", artist?.name)
+        assertEquals(
+            listOf("Mysterons", "Sour Times", "Glory Box", "Teardrop", "Angel"),
+            index.everyTrack("phone").map { it.title },
+        )
+        assertEquals(null to null, index.homeOf("phone", "media:99"))
+    }
 }

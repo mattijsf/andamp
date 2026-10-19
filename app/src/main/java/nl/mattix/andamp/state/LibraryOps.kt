@@ -73,6 +73,8 @@ class LibraryOps(
     private val wholeOf: (BrowseSource) -> Boolean = { true },
     /** The lists the library makes itself, at the top of LISTS; see [SmartList]. */
     private val smartLists: suspend (BrowseSource) -> List<SmartList> = { emptyList() },
+    /** Keeps the order the listener picked for the ALBUMS page; see [AlbumOrder]. */
+    private val onOrder: (AlbumOrder) -> Unit = {},
 ) {
     /**
      * The library as it is now; see [sourceOf]. It is read once per page and handed to
@@ -135,6 +137,7 @@ class LibraryOps(
             access = { needed -> needsAccess = needed },
             drill = ::drill,
             smartLists = smartLists,
+            order = { state.albumOrder },
         )
 
     val rows: List<Row> get() = page.rows
@@ -472,6 +475,43 @@ class LibraryOps(
     /** Whether the row at [index] titles a section, and so has no menu and no tap. */
     fun headingAt(index: Int): Boolean = index in page.headings
 
+    /**
+     * Whether the row at [index] is a track the library can follow to its album and its
+     * artist ([TrackHomes]), for the row menu's Go to album and Go to artist.
+     */
+    fun canGoHome(index: Int): Boolean = source is TrackHomes && trackIndex(index) != null
+
+    /** The row menu's Go to album: opens the album of the track at [index], one level deeper. */
+    fun goToAlbum(index: Int) =
+        goHome(index) { src, track ->
+            (src as TrackHomes).albumOf(track)?.let { album -> album.title to suspend { shelves.albumPage(src, album) } }
+        }
+
+    /** The row menu's Go to artist: opens the records of the artist of the track at [index]. */
+    fun goToArtist(index: Int) =
+        goHome(index) { src, track ->
+            (src as TrackHomes).artistOf(track)?.let { artist -> artist.name to suspend { shelves.artistPage(src, artist) } }
+        }
+
+    /** Finds where the track at [index] belongs, then opens it as a level, or says there is nothing to open. */
+    private fun goHome(
+        index: Int,
+        find: suspend (BrowseSource, Track) -> Pair<String, suspend () -> LibraryPage>?,
+    ) {
+        val at = trackIndex(index) ?: return
+        val track = page.tracks?.getOrNull(at) ?: return
+        val src = source
+        scope.launch {
+            val home =
+                try {
+                    find(src, track)
+                } catch (_: SourceUnreachable) {
+                    null
+                }
+            if (home == null) showFlash(words.get(R.string.library_nothing_to_open)) else drill(home.first, home.second)
+        }
+    }
+
     /** Whether a long press on the row at [index] opens its menu: a row there is, and not a heading or the permission prompt. */
     fun hasMenu(index: Int): Boolean = index in page.rows.indices && !needsAccess && !headingAt(index)
 
@@ -717,13 +757,29 @@ class LibraryOps(
      * order of its own, and for a row with neither.
      */
     fun letterAt(index: Int): String? {
-        if (page.tracks != null) return null
+        page.readout.getOrNull(index)?.let { return it }
         val first =
             page.rows
                 .getOrNull(index)
                 ?.label
-                ?.firstOrNull { it.isLetterOrDigit() } ?: return null
-        return if (first.isDigit()) "#" else first.uppercase()
+                ?.firstOrNull { it.isLetterOrDigit() }
+        return when {
+            page.tracks != null || first == null -> null
+            first.isDigit() -> "#"
+            else -> first.uppercase()
+        }
+    }
+
+    /** Whether the bar offers the order of the page: on the ALBUMS tab's own page. */
+    val canOrder: Boolean get() = category == Category.ALBUMS && depth == 0 && !searching && !loading && page.retry == null
+
+    /** The bar's order cell: the ALBUMS page goes into the next order, by title, artist or year. */
+    fun nextOrder() {
+        if (!canOrder) return
+        val next = AlbumOrder.entries[(state.albumOrder.ordinal + 1) % AlbumOrder.entries.size]
+        state.albumOrder = next
+        onOrder(next)
+        load(label(Category.ALBUMS)) { shelves.root(Category.ALBUMS, source) }
     }
 
     /** The row of the playing track on this page, for the now-playing color; -1 for none. */

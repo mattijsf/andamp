@@ -108,4 +108,6 @@
     <string name="menu_rename_list">重命名列表</string>
     <string name="menu_rename_station">重命名电台</string>
     <string name="menu_delete_station">删除电台</string>
+    <string name="menu_go_to_album">转到专辑</string>
+    <string name="menu_go_to_artist">转到艺术家</string>
 </resources>
