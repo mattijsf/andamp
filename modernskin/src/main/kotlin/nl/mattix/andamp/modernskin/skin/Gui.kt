@@ -113,6 +113,7 @@ open class GuiObject(
     ): Boolean {
         val k = key.lowercase()
         attrs[k] = value
+        val placedBefore = if (k in GEOMETRY) placement() else null
         when (k) {
             "id" -> {
                 id = value.lowercase()
@@ -235,10 +236,19 @@ open class GuiObject(
                 return false
             }
         }
-        // a new position or size needs a new layout, anything else only a redraw
-        if (k in GEOMETRY) rt.relayout() else rt.invalidate()
+        // a new position or size needs a new layout (a script setting the same one again does not),
+        // anything else only a redraw
+        if (placedBefore == null) {
+            rt.invalidate()
+        } else if (placement() != placedBefore) {
+            rt.relayout()
+        }
         return true
     }
+
+    /** What the geometry parameters set, to tell whether one of them changed anything. */
+    private fun placement(): List<Any?> =
+        listOf(x, y, w, h, defaultW, defaultH, relatX, relatY, relatW, relatH, padLeft, padRight)
 
     /** `default_w` / `default_h`: the size of a group that writes none. */
     var defaultW: Int? = null
@@ -331,12 +341,19 @@ open class GuiObject(
         val eased = (1 - kotlin.math.cos(Math.PI * f)) / 2
 
         fun lerp(i: Int) = to[i]?.let { Math.round(from[i] + (it - from[i]) * eased).toInt() }
+        val place = listOf(x, y, w, h)
+        val wasAlpha = alpha
         lerp(0)?.let { x = it }
         lerp(1)?.let { y = it }
         lerp(2)?.let { w = it }
         lerp(3)?.let { h = it }
         lerp(4)?.let { alpha = it.coerceIn(0, 255) }
-        rt.relayout()
+        // a fade only repaints; the windows are laid out again only when something moved or resized
+        if (listOf(x, y, w, h) != place) {
+            rt.relayout()
+        } else if (alpha != wasAlpha) {
+            rt.invalidate()
+        }
         if (f >= 1.0) {
             moveStart = null
             rt.moving.remove(this)

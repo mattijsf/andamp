@@ -1150,7 +1150,12 @@ class SkinRuntime(
         } while (needsLayout && ++passes < MAX_LAYOUT_PASSES)
     }
 
+    /** Layout passes run so far. */
+    var layoutPasses = 0L
+        private set
+
     private fun layoutPass() {
+        layoutPasses++
         needsLayout = false
         arrange()
         for (l in windows) l.layoutRoot()
