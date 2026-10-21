@@ -3,6 +3,7 @@
 package nl.mattix.andamp.state
 
 import kotlinx.coroutines.test.runTest
+import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.playback.BrowseSource
 import nl.mattix.andamp.core.playback.BrowseSourceContractTest
 import nl.mattix.andamp.core.playback.SourceUnreachable
@@ -116,7 +117,27 @@ class AllLibraryTest : BrowseSourceContractTest() {
             val driving = library.playlists().single { it.name == "Driving" }
 
             assertEquals(listOf("Mysterons"), library.playlistTracks(driving.id).map { it.title })
+            assertEquals("a list is marked by its source", "E", library.markOfList(driving.id)?.letter)
+            assertEquals("a list from nowhere has no mark", null, library.markOfList("Driving"))
         }
+
+    @Test
+    fun `a source's mark is found by the source, and folders and genres come from none of these`() {
+        val library = together(phone to ShelfSource(phoneShelf), server to ShelfSource(serverShelf))
+
+        assertEquals("E", library.markOfSource(server)?.letter)
+        assertEquals(null, library.markOfSource(MusicSource("ELSEWHERE", "Elsewhere")))
+        assertEquals("neither shelf knows folders or genres", null, library.foldersAndGenresFrom())
+    }
+
+    @Test
+    fun `a list the library makes knows the one source its songs come from`() {
+        val local = Track("a", "Muse", "Cryogen", 4, uri = "content://media/external/audio/media/1")
+        val remote = Track("b", "Portishead", "Mysterons", 1, uri = "example:track:1")
+
+        assertEquals(MusicSource.LOCAL.id, SmartList("Recently Added", listOf(local to null)).from?.id)
+        assertEquals(null, SmartList("Recently Played", listOf(local to null, remote to null)).from)
+    }
 
     @Test
     fun `a track two sources have is found once, the phone's`() =

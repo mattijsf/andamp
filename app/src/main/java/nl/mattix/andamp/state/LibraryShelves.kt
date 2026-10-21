@@ -317,7 +317,7 @@ internal class LibraryShelves(
 
                 else -> savedLists()
             }
-        return withSmartLists(smartLists(src), withFoldersAndGenres(src, lists))
+        return withSmartLists(src, smartLists(src), withFoldersAndGenres(src, lists))
     }
 
     /**
@@ -340,10 +340,12 @@ internal class LibraryShelves(
                 },
             )
         if (views.isEmpty()) return lists
+        // every source together: folders and genres one source alone gives carry its mark
+        val mark = (src as? SourceMarks)?.let { marks -> marks.foldersAndGenresFrom()?.let(marks::markOfSource) }
         return LibraryPage(
             header = lists.header,
             status = count(views.size + lists.rows.size, R.plurals.library_count_lists),
-            rows = views.map { Row(it.name, detail = it.groups.size.toString()) } + lists.rows,
+            rows = views.map { Row(it.name, detail = it.groups.size.toString(), marks = listOfNotNull(mark)) } + lists.rows,
             open = views.map<View, (() -> Unit)?> { view -> { drill(view.name) { groupsPage(view) } } } + lists.open,
             tracksOf = views.map<View, suspend () -> List<Track>> { { emptyList() } } + lists.tracksOf,
             saved = views.map { null } + lists.saved,
@@ -391,15 +393,24 @@ internal class LibraryShelves(
      * tree has its views above the playlists. Each opens as a page of tracks.
      */
     private fun withSmartLists(
+        src: BrowseSource,
         smart: List<SmartList>,
         lists: LibraryPage,
     ): LibraryPage {
         if (smart.isEmpty()) return lists
+        // every source together: a list whose songs all come from one source carries its mark
+        val marks = src as? SourceMarks
         return LibraryPage(
             header = lists.header,
             status = count(smart.size + lists.rows.size, R.plurals.library_count_lists),
             rows =
-                smart.map { Row(it.name, detail = words.get(R.string.library_track_count_short, it.entries.size)) } + lists.rows,
+                smart.map {
+                    Row(
+                        it.name,
+                        detail = words.get(R.string.library_track_count_short, it.entries.size),
+                        marks = listOfNotNull(it.from?.let { from -> marks?.markOfSource(from) }),
+                    )
+                } + lists.rows,
             open = smart.map { list -> { drill(list.name) { smartPage(list) } } } + lists.open,
             tracksOf =
                 smart.map<SmartList, suspend () -> List<Track>> { list -> { list.entries.map { it.first } } } + lists.tracksOf,
@@ -459,6 +470,8 @@ internal class LibraryShelves(
                         it.name,
                         detail =
                             it.trackCount?.let { n -> words.get(R.string.library_track_count_short, n) } ?: "",
+                        // every source together: whose list it is
+                        marks = listOfNotNull((src as? SourceMarks)?.markOfList(it.id)),
                     )
                 },
             open = their.map { list -> { drill(list.name) { sourceListPage(src, list) } } },
@@ -662,4 +675,7 @@ internal class LibraryShelves(
 class SmartList(
     val name: String,
     val entries: List<Pair<Track, String?>>,
-)
+) {
+    /** The one source every entry comes from; null when they come from several. */
+    val from: MusicSource? = entries.map { SourceForRows.of(it.first) }.distinctBy { it.id }.singleOrNull()
+}
