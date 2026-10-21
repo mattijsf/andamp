@@ -41,6 +41,8 @@ sealed interface AmpMenuItem {
         /** Ticked, as Winamp ticks its open windows and the current skin. */
         val checked: Boolean = false,
         override val needsTheApp: Boolean = false,
+        /** The mark of the source the entry stands for, before its label; see [SourceMark]. */
+        val mark: SourceMark? = null,
         val onClick: () -> Unit,
     ) : AmpMenuItem
 
