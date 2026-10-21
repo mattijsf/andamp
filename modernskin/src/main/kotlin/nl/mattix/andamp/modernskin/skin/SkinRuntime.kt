@@ -132,6 +132,15 @@ class SkinRuntime(
 
     /** Ids the default set defined and the skin did not; a skin's own definition under either name comes before them. */
     private val baseBitmaps = HashSet<String>()
+
+    /** Groupdefs that came from the default element set. */
+    private val baseGroupDefs = HashSet<XmlNode>()
+
+    /**
+     * What of the default element set this skin used so far: "bitmap:", "color:", "group:" and
+     * "script:" entries. For replacing the default set with our own.
+     */
+    val baseUsage = sortedSetOf<String>()
     private val baseColors = HashSet<String>()
     private var collectingBase = false
 
@@ -150,7 +159,10 @@ class SkinRuntime(
                 key = aliases[key] ?: break
             }
         }
-        fromBase?.let { return it }
+        fromBase?.let {
+            baseUsage.add("bitmap:${it.id}")
+            return it
+        }
         // a plain file name used as an image
         if (files.exists(id)) return bitmaps.getOrPut(id.lowercase()) { BitmapDef(id.lowercase(), id, 0, 0, null, null) }
         return null
@@ -251,6 +263,7 @@ class SkinRuntime(
     ): Rgb? {
         val names = namesFor(id).filter { it in colors || it in colorAliases }
         val key = names.firstOrNull { it !in baseColors } ?: names.firstOrNull() ?: return null
+        if (key in baseColors) baseUsage.add("color:$key")
         // an alias takes the other color's RGB, tinted by its own group (or the other's when it has none)
         val c =
             colors[key] ?: colorAliases[key]?.takeIf { depth < MAX_ALIAS_DEPTH }?.let { plainColor(it, depth + 1) } ?: return null
@@ -452,7 +465,7 @@ class SkinRuntime(
                     val given = node["file"] ?: return
                     // a picture Winamp makes itself: a made-up name the hosts' files answer
                     val file =
-                        if (given.equals(
+                        if (given.substringAfterLast('/').equals(
                                 "\$solid",
                                 ignoreCase = true,
                             )
@@ -545,6 +558,7 @@ class SkinRuntime(
             "groupdef" -> {
                 node["id"]?.let { id ->
                     groupDefs.put(id.lowercase(), node)?.let { earlierDefs[node] = it }
+                    if (collectingBase) baseGroupDefs.add(node)
                     node["xuitag"]?.let { xuiTags[it.lowercase()] = id.lowercase() }
                 }
             }
@@ -660,6 +674,8 @@ class SkinRuntime(
         seen: MutableSet<XmlNode>,
     ) {
         if (!seen.add(def)) return
+        if (def in baseGroupDefs) baseUsage.add("group:${def["id"]?.lowercase()}")
+        GroupBehavior.of(this, group, def)?.let { group.behavior = it }
         val named = def["inherit_group"]?.lowercase()?.takeIf { it != def["id"]?.lowercase() }
         val base = named?.let { groupDefs[it] } ?: earlierDefs[def]
         if (base != null) {
@@ -950,6 +966,12 @@ class SkinRuntime(
         group: Group?,
     ) {
         val file = node["file"] ?: return
+        if (file.startsWith(
+                LayeredSkinFiles.BASE_PREFIX,
+            )
+        ) {
+            baseUsage.add("script:${file.removePrefix(LayeredSkinFiles.BASE_PREFIX)}")
+        }
         val program =
             programs.getOrPut(file.lowercase()) {
                 val bytes = files.read(file) ?: files.read("scripts/" + file.substringAfterLast('/'))
@@ -1087,6 +1109,7 @@ class SkinRuntime(
             lastRects.clear()
         }
         for (o in all) if (o is Group) deliverXuiParams(o)
+        for (o in all) if (o is Group) o.behavior?.afterLayout()
         // objects whose place or size changed hear about it, as Wasabi calls onResize on every move
         // (Bento's pledit.maki hides its playlist time from the text's own onResize)
         if (scriptsStarted) {
@@ -1112,7 +1135,15 @@ class SkinRuntime(
      * look their objects up.
      */
     fun deliverXuiParams(g: Group) {
-        if (g.xuiParams.isEmpty() || g.systemObjects.isEmpty() || !g.systemObjects.all { it.started }) return
+        if (g.xuiParams.isEmpty()) return
+        // a default-set group the engine runs hears its parameters at once
+        g.behavior?.let { b ->
+            val params = g.xuiParams.toList()
+            g.xuiParams.clear()
+            for ((k, v) in params) b.onXuiParam(k, v)
+            return
+        }
+        if (g.systemObjects.isEmpty() || !g.systemObjects.all { it.started }) return
         val params = g.xuiParams.toList()
         g.xuiParams.clear()
         for ((k, v) in params) for (s in g.systemObjects) dispatch(s, "onsetxuiparam", listOf(Value.Str(k), Value.Str(v)))
@@ -1798,7 +1829,7 @@ class SkinRuntime(
     private companion object {
         /** Everything a groupdef holds, and its attributes that are no params of the group. */
         val ALL_CONTENT = setOf("params", "xui", "scripts")
-        val DEF_ATTRS = setOf("id", "xuitag", "inherit_group", "inherit_content", "inherit_params")
+        val DEF_ATTRS = setOf("id", "xuitag", "inherit_group", "inherit_content", "inherit_params", "behavior", "contentrect")
         const val MAX_LAYOUT_PASSES = 4
         val FILE_NODES = setOf("bitmap", "bitmapfont", "truetypefont", "script")
         const val MAX_ALIAS_DEPTH = 8

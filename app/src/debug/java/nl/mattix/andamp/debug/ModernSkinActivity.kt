@@ -633,7 +633,8 @@ private fun ModernSkinScreen(
 ) {
     val files =
         remember {
-            // Winamp's default element set behind the skin, when files/wasabi-defaults.zip is there (test-only)
+            // the default element set behind the skin: Andamp's own, or Winamp's when
+            // files/wasabi-defaults.zip is there (for comparing against Winamp only)
             val defaults = File(file.parentFile, "wasabi-defaults.zip")
             // the other skins in the folder as siblings: Bento reads from "Big Bento"
             val siblings =
@@ -644,12 +645,9 @@ private fun ModernSkinScreen(
             val skin =
                 nl.mattix.andamp.modernskin.skin
                     .SkinsFolderFiles(ZipSkinFiles(file), siblings)
-            if (defaults.exists()) {
-                nl.mattix.andamp.modernskin.skin
-                    .LayeredSkinFiles(skin, ZipSkinFiles(defaults))
-            } else {
-                skin
-            }
+            val base = if (defaults.exists()) ZipSkinFiles(defaults) else nl.mattix.andamp.modernskin.skin.AndampDefaultSet
+            nl.mattix.andamp.modernskin.skin
+                .LayeredSkinFiles(skin, base)
         }
     val context = androidx.compose.ui.platform.LocalContext.current
     val host = remember { AndroidSkinHost(WithGeneratedImages(files), context.cacheDir, context.assets) }

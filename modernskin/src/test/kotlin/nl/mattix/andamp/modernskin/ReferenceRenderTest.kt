@@ -3,6 +3,7 @@ package nl.mattix.andamp.modernskin
 
 import nl.mattix.andamp.modernskin.maki.Value
 import nl.mattix.andamp.modernskin.skin.Align
+import nl.mattix.andamp.modernskin.skin.AndampDefaultSet
 import nl.mattix.andamp.modernskin.skin.DrawCmd
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.FontDef
@@ -60,6 +61,8 @@ class ReferenceRenderTest {
      * uses only the elements it brings.
      */
     private fun withDefaults(skin: SkinFiles): SkinFiles {
+        // -Ddefaults=andamp: Andamp's own default element set instead of Winamp's
+        if (System.getProperty("defaults") == "andamp") return LayeredSkinFiles(skin, AndampDefaultSet)
         val zip = File(out.parentFile, "wasabi-defaults.zip")
         return if (zip.exists()) LayeredSkinFiles(skin, ZipSkinFiles(zip)) else skin
     }
@@ -542,6 +545,7 @@ class ReferenceRenderTest {
         // whether that was TrueType text (fonts are scored apart from shapes)
         val owner = arrayOfNulls<String>(w * h)
         val isText = BooleanArray(w * h)
+        val fromBase = BooleanArray(w * h)
         var target = img
         val targets = ArrayDeque<BufferedImage>()
         val clips = ArrayDeque<java.awt.Shape?>()
@@ -702,6 +706,7 @@ class ReferenceRenderTest {
                     if (cmd is DrawCmd.Text) isText[i] = true
                     if (colorDistance(after[i], before[i]) > OWNER_DELTA) {
                         owner[i] = cmd.owner ?: cmd.javaClass.simpleName
+                        fromBase[i] = cmd is DrawCmd.Image && cmd.bitmap.file.startsWith(LayeredSkinFiles.BASE_PREFIX)
                         if (cmd !is DrawCmd.Text) isText[i] = false
                     }
                 }
@@ -709,6 +714,13 @@ class ReferenceRenderTest {
         }
         g.dispose()
         ImageIO.write(img, "png", File(out, "ours-$name.png"))
+        // -Dtrace.base: what of Winamp's default element set the scenario used, and the share of the
+        // window's pixels that show its pictures
+        if (System.getProperty("trace.base") != null) {
+            rt.baseUsage.forEach { println("BASE $name $it") }
+            val visible = (0 until w * h).count { (img.getRGB(it % w, it / w) ushr 24) > 0 }
+            println("BASEPX $name ${fromBase.count { it }} of $visible")
+        }
         println("$name: ${w}x$h, log ${host.log.size} lines")
         host.log.forEach { println("  log: $it") }
         return triage(name, img, owner, isText)

@@ -1,0 +1,161 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Andamp's default groups: the frames, title bar and widgets skins build their windows from.
+  Ids, xui tags and positions are what skins address; behavior="..." asks the engine to do what
+  Winamp does with a script there (place the frame's content, center the title).
+-->
+<WinampAbstractionLayer version="0.8">
+
+<!-- frame edges, window buttons and title bar, shared by every standard frame -->
+<groupdef id="wasabi.frame.layout">
+  <layer id="window.top.left" x="0" y="0" image="wasabi.frame.top.left" resize="topleft"/>
+  <layer id="window.top" x="15" y="0" w="-30" relatw="1" image="wasabi.frame.top" resize="top"/>
+  <layer id="window.top.right" x="-15" y="0" relatx="1" image="wasabi.frame.top.right" resize="topright"/>
+  <layer id="window.left" x="0" y="15" h="0" relath="1" image="wasabi.frame.left" resize="left"/>
+  <layer id="window.right" x="-5" y="15" h="0" relatx="1" relath="1" image="wasabi.frame.right" resize="right"/>
+  <layer id="window.resize.disabler" x="5" y="5" w="-10" h="-10" relatw="1" relath="1"/>
+  <LayoutStatus id="sysmenu.status" bg="0" x="5" y="3" w="14" h="9" includeonly="{system}"/>
+  <hideobject target="sysmenu.status"/>
+  <button id="controlmenu.inactive" action="controlmenu" x="5" y="3" image="wasabi.button.sysmenu.pressed"
+          downImage="wasabi.button.sysmenu" activeAlpha="0"/>
+  <button id="controlmenu" action="controlmenu" x="5" y="3" image="wasabi.button.sysmenu"
+          downImage="wasabi.button.sysmenu.pressed" inactiveAlpha="0"/>
+  <button id="Close.inactive" action="CLOSE" x="-18" y="3" relatx="1" image="wasabi.button.close.pressed"
+          downImage="wasabi.button.close" activeAlpha="0"/>
+  <button id="Close" action="CLOSE" x="-18" y="3" relatx="1" image="wasabi.button.close"
+          downImage="wasabi.button.close.pressed" inactiveAlpha="0"/>
+  <Wasabi:TitleBar id="wasabi.titlebar" x="22" y="2" w="-42" h="11" relatw="1"/>
+</groupdef>
+
+<!-- the bottom edge, as three rows of three pieces; [h] is the middle row's height -->
+<groupdef id="wasabi.standardframe.statusbar" background="wasabi.frame.basetexture" sysregion="1"
+          xuitag="Wasabi:StandardFrame:Status" behavior="standardframe" contentrect="5,15,-10,-34">
+  <group id="wasabi.frame.layout" x="0" y="0" w="0" relatw="1" h="-19" relath="1"/>
+  <layer id="window.bottom.left.top" x="0" y="-19" relaty="1" image="wasabi.frame.bottom.left.top" resize="bottomleft"/>
+  <layer id="window.bottom.left" x="0" y="-17" h="15" relaty="1" image="wasabi.frame.bottom.left" resize="bottomleft"/>
+  <layer id="window.bottom.left.bottom" x="0" y="-2" relaty="1" image="wasabi.frame.bottom.left.bottom" resize="bottomleft"/>
+  <layer id="window.bottom.top" x="15" y="-19" w="-30" relatw="1" relaty="1" image="wasabi.frame.bottom.top"/>
+  <layer id="window.bottom" x="15" y="-17" w="-30" h="15" relatw="1" relaty="1" image="wasabi.frame.bottom" resize="bottom"/>
+  <layer id="window.bottom.bottom" x="15" y="-2" w="-30" relatw="1" relaty="1" image="wasabi.frame.bottom.bottom" resize="bottom"/>
+  <layer id="window.bottom.right.top" x="-15" y="-19" relatx="1" relaty="1" image="wasabi.frame.bottom.right.top" resize="bottomright"/>
+  <layer id="window.bottom.right" x="-15" y="-17" h="15" relatx="1" relaty="1" image="wasabi.frame.bottom.right" resize="bottomright"/>
+  <layer id="window.bottom.right.bottom" x="-15" y="-2" relatx="1" relaty="1" image="wasabi.frame.bottom.right.bottom" resize="bottomright"/>
+  <layer id="window.resizer" x="-16" y="-16" relatx="1" relaty="1" image="wasabi.frame.resizer" resize="bottomright" scale="bottomright"/>
+  <LayoutStatus id="standardframe.layoutstatus" x="4" y="-17" relaty="1" w="-23" relatw="1" h="15" exclude="{system}"/>
+</groupdef>
+
+<groupdef id="wasabi.standardframe.nostatusbar" background="wasabi.frame.basetexture" sysregion="1"
+          xuitag="Wasabi:StandardFrame:NoStatus" behavior="standardframe" contentrect="5,15,-10,-20">
+  <group id="wasabi.frame.layout" x="0" y="0" w="0" h="-5" relatw="1" relath="1"/>
+  <layer id="window.bottom.left.top" x="0" y="-5" relaty="1" image="wasabi.frame.bottom.left.top" resize="bottomleft"/>
+  <layer id="window.bottom.left" x="0" y="-3" h="1" relaty="1" image="wasabi.frame.bottom.left" resize="bottomleft"/>
+  <layer id="window.bottom.left.bottom" x="0" y="-2" relaty="1" image="wasabi.frame.bottom.left.bottom" resize="bottomleft"/>
+  <layer id="window.bottom.top" x="15" y="-5" w="-30" relatw="1" relaty="1" image="wasabi.frame.bottom.top"/>
+  <layer id="window.bottom" x="15" y="-3" w="-30" h="1" relatw="1" relaty="1" image="wasabi.frame.bottom" resize="bottom"/>
+  <layer id="window.bottom.bottom" x="15" y="-2" w="-30" relatw="1" relaty="1" image="wasabi.frame.bottom.bottom" resize="bottom"/>
+  <layer id="window.bottom.right.top" x="-15" y="-5" relatx="1" relaty="1" image="wasabi.frame.bottom.right.top" resize="bottomright"/>
+  <layer id="window.bottom.right" x="-15" y="-3" h="1" relatx="1" relaty="1" image="wasabi.frame.bottom.right" resize="bottomright"/>
+  <layer id="window.bottom.right.bottom" x="-15" y="-2" relatx="1" relaty="1" image="wasabi.frame.bottom.right.bottom" resize="bottomright"/>
+</groupdef>
+
+<!-- frames that cannot be resized: a dialog without a control menu, and a fixed window -->
+<groupdef id="wasabi.standardframe.modal" inherit_group="wasabi.standardframe.nostatusbar" sysregion="1"
+          xuitag="Wasabi:StandardFrame:Modal">
+  <group id="wasabi.panel" x="5" y="15" w="-10" h="-20" relatw="1" relath="1"/>
+  <hideobject target="controlmenu;controlmenu.inactive"/>
+  <sendparams target="wasabi.titlebar" x="4" w="-24" relatw="1"/>
+  <sendparams target="window.top.left;window.top;window.top.right;window.left;window.right;window.bottom.left.top;window.bottom.left;window.bottom.left.bottom;window.bottom.top;window.bottom;window.bottom.bottom;window.bottom.right.top;window.bottom.right;window.bottom.right.bottom" resize="0"/>
+</groupdef>
+<groupdef id="wasabi.standardframe.static" inherit_group="wasabi.standardframe.nostatusbar" sysregion="1"
+          xuitag="Wasabi:StandardFrame:Static">
+  <group id="wasabi.panel" x="5" y="15" w="-10" h="-20" relatw="1" relath="1"/>
+  <sendparams target="window.top.left;window.top;window.top.right;window.left;window.right;window.bottom.left.top;window.bottom.left;window.bottom.left.bottom;window.bottom.top;window.bottom;window.bottom.bottom;window.bottom.right.top;window.bottom.right;window.bottom.right.bottom" resize="0"/>
+</groupdef>
+
+<!-- title bar: two streaks with the window's name between them, centered on the window -->
+<groupdef id="wasabi.titlebar" xuitag="Wasabi:TitleBar" embed_xui="window.titlebar.title" behavior="titlebar">
+  <group id="wasabi.titlebar.streak" instanceid="wasabi.titlebar.streak.left" x="0" y="0" w="95" h="11"/>
+  <sendparams group="wasabi.titlebar.streak.left" target="titlebar.center.active;titlebar.center.inactive" w="-16"/>
+  <sendparams group="wasabi.titlebar.streak.left" target="titlebar.right.active;titlebar.right.inactive" x="-9"/>
+  <text id="window.titlebar.title" x="100" y="0" w="50" h="11" default=":componentname" font="studio.component.title" inactiveAlpha="128"/>
+  <group id="wasabi.titlebar.streak" instanceid="wasabi.titlebar.streak.right" x="155" y="0" w="-155" relatw="1" h="11"/>
+  <sendparams group="wasabi.titlebar.streak.right" target="titlebar.center.active;titlebar.center.inactive" x="9" w="-16"/>
+  <sendparams group="wasabi.titlebar.streak.right" target="titlebar.left.active;titlebar.left.inactive" x="2"/>
+  <layer id="mousetrap" x="0" y="0" w="0" h="0" relatw="1" relath="1" move="1"/>
+</groupdef>
+<groupdef id="wasabi.titlebar.streak">
+  <layer id="titlebar.left.active" x="0" y="1" image="wasabi.titlebar.left.active" inactiveAlpha="0"/>
+  <layer id="titlebar.center.active" x="7" y="1" w="-14" relatw="1" image="wasabi.titlebar.center.active" inactiveAlpha="0"/>
+  <layer id="titlebar.right.active" x="-7" y="1" relatx="1" image="wasabi.titlebar.right.active" inactiveAlpha="0"/>
+  <layer id="titlebar.left.inactive" x="0" y="1" image="wasabi.titlebar.left.inactive" activeAlpha="0"/>
+  <layer id="titlebar.center.inactive" x="7" y="1" w="-14" relatw="1" image="wasabi.titlebar.center.inactive" activeAlpha="0"/>
+  <layer id="titlebar.right.inactive" x="-7" y="1" relatx="1" image="wasabi.titlebar.right.inactive" activeAlpha="0"/>
+</groupdef>
+
+<!-- frames around content -->
+<groupdef id="wasabi.objectframe.group">
+  <grid id="objectframe.grid" x="0" y="0" w="0" h="0" relatw="1" relath="1"
+        topleft="wasabi.objectframe.top.left" top="wasabi.objectframe.top" topright="wasabi.objectframe.top.right"
+        left="wasabi.objectframe.left" middle="wasabi.objectframe.center" right="wasabi.objectframe.right"
+        bottomleft="wasabi.objectframe.bottom.left" bottom="wasabi.objectframe.bottom" bottomright="wasabi.objectframe.bottom.right"/>
+</groupdef>
+<groupdef id="wasabi.panel">
+  <grid id="panel.grid" x="0" y="0" w="0" h="0" relatw="1" relath="1"
+        topleft="wasabi.panel.top.left" top="wasabi.panel.top" topright="wasabi.panel.top.right"
+        left="wasabi.panel.left" right="wasabi.panel.right"
+        bottomleft="wasabi.panel.bottom.left" bottom="wasabi.panel.bottom" bottomright="wasabi.panel.bottom.right"/>
+</groupdef>
+<groupdef id="wasabi.window">
+  <layer id="window.center.stretch" x="0" y="0" w="0" h="0" relatw="1" relath="1" image="wasabi.window.center"/>
+</groupdef>
+<groupdef id="wasabi.window.embedded">
+  <grid id="window.embedded.grid" x="0" y="0" w="0" h="0" relatw="1" relath="1"
+        topleft="wasabi.window.top.left" top="wasabi.window.top" topright="wasabi.window.top.right"
+        left="wasabi.window.left" middle="wasabi.window.center" right="wasabi.window.right"
+        bottomleft="wasabi.window.bottom.left" bottom="wasabi.window.bottom" bottomright="wasabi.window.bottom.right"/>
+</groupdef>
+<groupdef id="wasabi.buttonbar.stack" default_h="18">
+  <grid x="0" y="0" w="0" h="0" relatw="1" relath="1"
+        topleft="wasabi.label.top.left" top="wasabi.label.top" topright="wasabi.label.top.right"
+        left="wasabi.label.left" middle="wasabi.label.middle" right="wasabi.label.right"
+        bottomleft="wasabi.label.bottom.left" bottom="wasabi.label.bottom" bottomright="wasabi.label.bottom.right"/>
+  <text id="buttonbar.text" x="5" y="0" w="-10" h="0" relatw="1" relath="1" default="" font="Arial" fontsize="15"
+        color="wasabi.text.color" shadowcolor="wasabi.text.color.inverse" shadowx="1" shadowy="1"/>
+  <layer id="buttonbar.arrow" x="-15" y="8" relatx="1" image="wasabi.button.label.arrow.down"/>
+  <button id="mousetrap" x="0" y="0" w="0" h="0" relatw="1" relath="1" rectrgn="1"/>
+</groupdef>
+
+<!-- xui widgets: Wasabi:Button, Wasabi:ToggleButton, Wasabi:Text, sliders, edit boxes -->
+<groupdef id="wasabi.button.group" xuitag="Wasabi:Button" embed_xui="wasabi.button" h="21" autowidthsource="wasabi.button">
+  <button id="wasabi.button" x="0" y="0" w="0" h="0" relatw="1" relath="1" borders="1"/>
+</groupdef>
+<groupdef id="wasabi.togglebutton.group" xuitag="Wasabi:ToggleButton" embed_xui="wasabi.button" h="21" autowidthsource="wasabi.button">
+  <togglebutton id="wasabi.button" x="0" y="0" w="0" h="0" relatw="1" relath="1" borders="1"/>
+</groupdef>
+<groupdef id="wasabi.text.group" xuitag="Wasabi:Text" embed_xui="wasabi.text" h="12">
+  <text id="wasabi.text" x="0" y="0" w="0" h="0" relatw="1" relath="1" font="tahoma" color="white" fontsize="14" wrap="1" valign="top"/>
+</groupdef>
+<groupdef id="wasabi.slider.horizontal" embed_xui="slider.button" xuitag="Wasabi:HSlider" h="15">
+  <layer id="slider.background" x="0" y="1" image="wasabi.slider.horizontal.left"/>
+  <layer id="slider.background" x="8" y="1" w="-16" relatw="1" image="wasabi.slider.horizontal.middle"/>
+  <layer id="slider.background" x="-8" y="1" relatx="1" image="wasabi.slider.horizontal.right"/>
+  <slider id="slider.button" x="0" y="0" w="0" h="13" relatw="1" thumb="wasabi.slider.horizontal.button"
+          downThumb="wasabi.slider.horizontal.button.pressed"/>
+</groupdef>
+<groupdef id="wasabi.slider.vertical" embed_xui="slider.button" xuitag="Wasabi:VSlider" w="16">
+  <layer id="slider.background" x="4" y="0" image="wasabi.slider.vertical.top"/>
+  <layer id="slider.background" x="4" y="8" h="-17" relath="1" image="wasabi.slider.vertical.middle"/>
+  <layer id="slider.background" x="4" y="-9" relaty="1" image="wasabi.slider.vertical.bottom"/>
+  <slider id="slider.button" x="0" y="0" w="16" h="0" relath="1" thumb="wasabi.slider.vertical.button"
+          downThumb="wasabi.slider.vertical.button.pressed" orientation="v"/>
+</groupdef>
+<groupdef id="wasabi.edit" inherit_group="wasabi.objectframe.group" xuitag="Wasabi:EditBox" embed_xui="wasabi.edit.box" h="20">
+  <edit id="wasabi.edit.box" x="1" y="1" w="-2" h="-2" relatw="1" relath="1"/>
+</groupdef>
+
+<!-- what a component window holds -->
+<groupdef id="component.content.group">
+  <windowholder x="0" y="0" w="0" relatw="1" h="0" relath="1" hold="@ALL@"/>
+</groupdef>
+
+</WinampAbstractionLayer>

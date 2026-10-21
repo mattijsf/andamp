@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Andamp's default element set: the element names skins restyle, each a plain
+     picture of the same size in our own colors. Generated from the element inventory. -->
+<WinampAbstractionLayer version="0.8">
+<elements>
+  <color id="wasabi.button.dimmedtext" value="96,96,96" gammagroup="Text"/>
+  <color id="wasabi.button.hilitetext" value="120,220,120" gammagroup="Text"/>
+  <color id="wasabi.button.text" value="16,16,16" gammagroup="Text"/>
+  <color id="wasabi.component.title.border" value="60,60,68" gammagroup="Text Backgrounds"/>
+  <color id="wasabi.component.title.foreground" value="240,240,240" gammagroup="Text"/>
+  <color id="wasabi.edit.background" value="24,24,28" gammagroup="Text Backgrounds"/>
+  <color id="wasabi.edit.selection" value="232,232,232" gammagroup="Text Backgrounds"/>
+  <color id="wasabi.edit.text" value="232,232,232" gammagroup="Text"/>
+  <color id="wasabi.itemlist.outline.current" value="232,232,232"/>
+  <color id="wasabi.itemlist.outline.focus" value="232,232,232"/>
+  <color id="wasabi.itemlist.selborder" value="60,60,68"/>
+  <color id="wasabi.labelwnd.background" value="24,24,28" gammagroup="Text Backgrounds"/>
+  <color id="wasabi.labelwnd.foreground" value="240,240,240" gammagroup="Text"/>
+  <color id="wasabi.list.column.background" value="24,24,28" gammagroup="Text Backgrounds"/>
+  <color id="wasabi.list.column.separator" value="232,232,232" gammagroup="Backgrounds"/>
+  <color id="wasabi.list.column.text" value="232,232,232" gammagroup="Text"/>
+  <color id="wasabi.list.item.focused" value="232,232,232" gammagroup="Text Backgrounds"/>
+  <color id="wasabi.list.item.selected" value="74,98,150" gammagroup="Text Backgrounds"/>
+  <color id="wasabi.list.item.selected.fg" value="74,98,150" gammagroup="Text"/>
+  <color id="wasabi.list.text" value="232,232,232" gammagroup="Text"/>
+  <color id="wasabi.msgbox.background" value="24,24,28" gammagroup="Backgrounds"/>
+  <color id="wasabi.popup.dimmedtext" value="96,96,96" gammagroup="Text"/>
+  <color id="wasabi.popup.hilitetext" value="120,220,120" gammagroup="Text"/>
+  <color id="wasabi.popup.text" value="232,232,232" gammagroup="Text"/>
+  <color id="wasabi.text.color" value="232,232,232" gammagroup="Text"/>
+  <color id="wasabi.text.color.inverse" value="232,232,232" gammagroup="Text Inverse"/>
+  <color id="wasabi.textbar.background" value="24,24,28" gammagroup="Text Backgrounds"/>
+  <color id="wasabi.textbar.text" value="232,232,232" gammagroup="Text"/>
+  <color id="wasabi.tree.hiliteddrop" value="120,220,120"/>
+  <color id="wasabi.tree.selected" value="74,98,150" gammagroup="Text Backgrounds"/>
+  <color id="wasabi.tree.text" value="232,232,232" gammagroup="Text"/>
+  <bitmap id="studio.border.bottom" file="$solid" w="30" h="2" color="84,86,96"/>
+  <bitmap id="studio.border.left" file="$solid" w="2" h="30" color="84,86,96"/>
+  <bitmap id="studio.border.lowerleft" file="$solid" w="2" h="2" color="84,86,96"/>
+  <bitmap id="studio.border.lowerright" file="$solid" w="2" h="2" color="84,86,96"/>
+  <bitmap id="studio.border.right" file="$solid" w="2" h="30" color="84,86,96"/>
+  <bitmap id="studio.border.top" file="$solid" w="30" h="2" color="84,86,96"/>
+  <bitmap id="studio.border.upperleft" file="$solid" w="2" h="2" color="84,86,96"/>
+  <bitmap id="studio.border.upperright" file="$solid" w="2" h="2" color="84,86,96"/>
+  <bitmap id="wasabi.basetexture" file="$solid" w="498" h="394" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.button.appmenu" file="$solid" w="10" h="9" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.appmenu.pressed" file="$solid" w="10" h="9" color="120,122,132" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.bottom" file="$solid" w="25" h="4" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.bottom.left" file="$solid" w="4" h="4" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.bottom.right" file="$solid" w="4" h="4" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.center" file="$solid" w="25" h="25" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.checkbox" file="$solid" w="7" h="7" color="168,170,180" gammagroup="Checkboxes and Radio Buttons"/>
+  <bitmap id="wasabi.button.checkbox.pressed" file="$solid" w="7" h="7" color="120,122,132" gammagroup="Checkboxes and Radio Buttons"/>
+  <bitmap id="wasabi.button.checkbox.xbox" file="$solid" w="7" h="7" color="168,170,180" gammagroup="Checkboxes and Radio Buttons"/>
+  <bitmap id="wasabi.button.checkbox.xbox.pressed" file="$solid" w="7" h="7" color="120,122,132" gammagroup="Checkboxes and Radio Buttons"/>
+  <bitmap id="wasabi.button.close" file="$solid" w="14" h="9" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.close.flat" file="$solid" w="10" h="9" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.close.flat.pressed" file="$solid" w="10" h="9" color="120,122,132" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.close.pressed" file="$solid" w="14" h="9" color="120,122,132" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.exit" file="$solid" w="10" h="9" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.exit.pressed" file="$solid" w="10" h="9" color="120,122,132" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.hover.bottom" file="$solid" w="25" h="4" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.hover.bottom.left" file="$solid" w="4" h="4" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.hover.bottom.right" file="$solid" w="4" h="4" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.hover.center" file="$solid" w="25" h="25" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.hover.left" file="$solid" w="4" h="25" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.hover.right" file="$solid" w="4" h="25" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.hover.top" file="$solid" w="25" h="4" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.hover.top.left" file="$solid" w="4" h="4" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.hover.top.right" file="$solid" w="4" h="4" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.label.arrow.down" file="$solid" w="7" h="4" color="120,122,132" gammagroup="Button Fonts"/>
+  <bitmap id="wasabi.button.label.arrow.left" file="$solid" w="4" h="7" color="168,170,180" gammagroup="Button Fonts"/>
+  <bitmap id="wasabi.button.label.arrow.right" file="$solid" w="4" h="7" color="168,170,180" gammagroup="Button Fonts"/>
+  <bitmap id="wasabi.button.label.arrow.up" file="$solid" w="7" h="4" color="168,170,180" gammagroup="Button Fonts"/>
+  <bitmap id="wasabi.button.label.ellipses" file="$solid" w="5" h="1" color="168,170,180" gammagroup="Button Fonts"/>
+  <bitmap id="wasabi.button.left" file="$solid" w="4" h="25" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.less" file="$solid" w="14" h="9" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.less.pressed" file="$solid" w="14" h="9" color="120,122,132" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.middle" file="$solid" w="25" h="25" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.minimize" file="$solid" w="14" h="9" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.minimize.pressed" file="$solid" w="14" h="9" color="120,122,132" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.more" file="$solid" w="14" h="9" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.more.pressed" file="$solid" w="14" h="9" color="120,122,132" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.pressed.bottom" file="$solid" w="25" h="4" color="120,122,132" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.pressed.bottom.left" file="$solid" w="4" h="4" color="120,122,132" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.pressed.bottom.right" file="$solid" w="4" h="4" color="120,122,132" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.pressed.center" file="$solid" w="25" h="25" color="120,122,132" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.pressed.left" file="$solid" w="4" h="25" color="120,122,132" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.pressed.middle" file="$solid" w="25" h="25" color="120,122,132" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.pressed.right" file="$solid" w="4" h="25" color="120,122,132" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.pressed.top" file="$solid" w="25" h="4" color="120,122,132" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.pressed.top.left" file="$solid" w="4" h="4" color="120,122,132" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.pressed.top.right" file="$solid" w="4" h="4" color="120,122,132" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.radio" file="$solid" w="7" h="7" color="168,170,180" gammagroup="Checkboxes and Radio Buttons"/>
+  <bitmap id="wasabi.button.radio.background" file="$solid" w="11" h="11" color="168,170,180" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.button.radio.background.display" file="$solid" w="9" h="9" color="168,170,180" gammagroup="Display Backgrounds"/>
+  <bitmap id="wasabi.button.radio.pressed" file="$solid" w="7" h="7" color="120,122,132" gammagroup="Checkboxes and Radio Buttons"/>
+  <bitmap id="wasabi.button.right" file="$solid" w="4" h="25" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.sysmenu" file="$solid" w="14" h="9" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.sysmenu.pressed" file="$solid" w="14" h="9" color="120,122,132" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.top" file="$solid" w="25" h="4" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.top.left" file="$solid" w="4" h="4" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.top.right" file="$solid" w="4" h="4" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.winshade" file="$solid" w="14" h="9" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.button.winshade.pressed" file="$solid" w="14" h="9" color="120,122,132" gammagroup="Buttons"/>
+  <bitmap id="wasabi.dropdownlist.list.bottom" file="$solid" w="10" h="1" color="136,138,148"/>
+  <bitmap id="wasabi.dropdownlist.list.bottom.left" file="$solid" w="1" h="1" color="136,138,148"/>
+  <bitmap id="wasabi.dropdownlist.list.bottom.right" file="$solid" w="1" h="1" color="136,138,148"/>
+  <bitmap id="wasabi.dropdownlist.list.center" file="$solid" w="10" h="8" color="136,138,148" gammagroup="Display Backgrounds"/>
+  <bitmap id="wasabi.dropdownlist.list.left" file="$solid" w="1" h="8" color="136,138,148"/>
+  <bitmap id="wasabi.dropdownlist.list.right" file="$solid" w="1" h="8" color="136,138,148"/>
+  <bitmap id="wasabi.dropdownlist.list.top" file="$solid" w="10" h="1" color="136,138,148"/>
+  <bitmap id="wasabi.dropdownlist.list.top.left" file="$solid" w="1" h="1" color="136,138,148"/>
+  <bitmap id="wasabi.dropdownlist.list.top.right" file="$solid" w="1" h="1" color="136,138,148"/>
+  <bitmap id="wasabi.frame.basetexture" file="$solid" w="498" h="394" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.frame.bottom" file="$solid" w="15" h="1" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.frame.bottom.bottom" file="$solid" w="15" h="2" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.frame.bottom.left" file="$solid" w="15" h="1" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.frame.bottom.left.bottom" file="$solid" w="15" h="2" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.frame.bottom.left.top" file="$solid" w="15" h="2" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.frame.bottom.right" file="$solid" w="15" h="1" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.frame.bottom.right.bottom" file="$solid" w="15" h="2" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.frame.bottom.right.top" file="$solid" w="15" h="2" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.frame.bottom.top" file="$solid" w="15" h="2" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.frame.divider.arrow.down" file="$solid" w="7" h="4" color="120,122,132"/>
+  <bitmap id="wasabi.frame.divider.arrow.up" file="$solid" w="7" h="4" color="84,86,96"/>
+  <bitmap id="wasabi.frame.left" file="$solid" w="5" h="15" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.frame.resizer" file="$solid" w="12" h="12" color="84,86,96"/>
+  <bitmap id="wasabi.frame.right" file="$solid" w="5" h="15" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.frame.status" file="$solid" w="12" h="12" color="84,86,96"/>
+  <bitmap id="wasabi.frame.status.left" file="$solid" w="12" h="12" color="84,86,96"/>
+  <bitmap id="wasabi.frame.status.right" file="$solid" w="12" h="12" color="84,86,96"/>
+  <bitmap id="wasabi.frame.top" file="$solid" w="15" h="15" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.frame.top.left" file="$solid" w="15" h="15" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.frame.top.right" file="$solid" w="15" h="15" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.framewnd.horizontaldivider" file="$solid" w="65" h="8" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.framewnd.horizontalgrabber" file="$solid" w="65" h="8" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.framewnd.verticaldivider" file="$solid" w="8" h="65" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.framewnd.verticalgrabber" file="$solid" w="8" h="65" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.framewnd.windowshade" file="$solid" w="2" h="4" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.groupbox.bottom" file="$solid" w="8" h="3" color="136,138,148" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.groupbox.bottom.left" file="$solid" w="3" h="3" color="136,138,148" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.groupbox.bottom.right" file="$solid" w="3" h="3" color="136,138,148" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.groupbox.left" file="$solid" w="3" h="8" color="136,138,148" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.groupbox.right" file="$solid" w="3" h="8" color="136,138,148" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.groupbox.top" file="$solid" w="8" h="3" color="136,138,148" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.groupbox.top.left" file="$solid" w="3" h="3" color="136,138,148" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.groupbox.top.right" file="$solid" w="3" h="3" color="136,138,148" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.label.bottom" file="$solid" w="101" h="2" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.label.bottom.left" file="$solid" w="2" h="2" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.label.bottom.right" file="$solid" w="2" h="2" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.label.left" file="$solid" w="2" h="7" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.label.middle" file="$solid" w="101" h="7" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.label.right" file="$solid" w="2" h="7" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.label.top" file="$solid" w="101" h="2" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.label.top.left" file="$solid" w="2" h="2" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.label.top.right" file="$solid" w="2" h="2" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.list.background" file="$solid" w="17" h="17" color="136,138,148" gammagroup="Display Backgrounds"/>
+  <bitmap id="wasabi.objectframe.bottom" file="$solid" w="17" h="1" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.objectframe.bottom.left" file="$solid" w="1" h="1" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.objectframe.bottom.right" file="$solid" w="1" h="1" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.objectframe.center" file="$solid" w="17" h="17" color="108,110,120" gammagroup="Display Backgrounds"/>
+  <bitmap id="wasabi.objectframe.left" file="$solid" w="1" h="17" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.objectframe.right" file="$solid" w="1" h="17" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.objectframe.top" file="$solid" w="17" h="1" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.objectframe.top.left" file="$solid" w="1" h="1" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.objectframe.top.right" file="$solid" w="1" h="1" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.panel.bottom" file="$solid" w="16" h="2" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.panel.bottom.left" file="$solid" w="2" h="2" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.panel.bottom.right" file="$solid" w="2" h="2" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.panel.left" file="$solid" w="2" h="16" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.panel.right" file="$solid" w="2" h="16" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.panel.tint" file="$solid" w="10" h="10" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.panel.top" file="$solid" w="16" h="2" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.panel.top.left" file="$solid" w="2" h="2" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.panel.top.right" file="$solid" w="2" h="2" color="108,110,120" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.popup.menu.background" file="$solid" w="134" h="134" color="136,138,148" gammagroup="Menus"/>
+  <bitmap id="wasabi.popup.menu.border.bottom" file="$solid" w="8" h="2" color="84,86,96" gammagroup="Menus"/>
+  <bitmap id="wasabi.popup.menu.border.bottomleft" file="$solid" w="2" h="2" color="84,86,96" gammagroup="Menus"/>
+  <bitmap id="wasabi.popup.menu.border.bottomright" file="$solid" w="4" h="2" color="84,86,96" gammagroup="Menus"/>
+  <bitmap id="wasabi.popup.menu.border.left" file="$solid" w="2" h="8" color="84,86,96" gammagroup="Menus"/>
+  <bitmap id="wasabi.popup.menu.border.right" file="$solid" w="4" h="8" color="84,86,96" gammagroup="Menus"/>
+  <bitmap id="wasabi.popup.menu.border.top" file="$solid" w="8" h="2" color="84,86,96" gammagroup="Menus"/>
+  <bitmap id="wasabi.popup.menu.border.topleft" file="$solid" w="2" h="2" color="84,86,96" gammagroup="Menus"/>
+  <bitmap id="wasabi.popup.menu.border.topright" file="$solid" w="4" h="2" color="84,86,96" gammagroup="Menus"/>
+  <bitmap id="wasabi.popup.menu.check" file="$solid" w="10" h="9" color="136,138,148"/>
+  <bitmap id="wasabi.popup.menu.selection.center" file="$solid" w="20" h="10" color="136,138,148" gammagroup="Menus"/>
+  <bitmap id="wasabi.popup.menu.selection.left" file="$solid" w="5" h="10" color="136,138,148" gammagroup="Menus"/>
+  <bitmap id="wasabi.popup.menu.selection.right" file="$solid" w="5" h="10" color="136,138,148" gammagroup="Menus"/>
+  <bitmap id="wasabi.popup.menu.seperator" file="$solid" w="11" h="6" color="136,138,148" gammagroup="Menus"/>
+  <bitmap id="wasabi.popup.menu.submenu" file="$solid" w="10" h="9" color="136,138,148"/>
+  <bitmap id="wasabi.scrollbar.horizontal.background.left" file="$solid" w="5" h="5" color="112,114,124"/>
+  <bitmap id="wasabi.scrollbar.horizontal.background.middle" file="$solid" w="5" h="5" color="112,114,124"/>
+  <bitmap id="wasabi.scrollbar.horizontal.background.right" file="$solid" w="5" h="5" color="112,114,124"/>
+  <bitmap id="wasabi.scrollbar.horizontal.button" file="$solid" w="41" h="13" color="168,170,180" gammagroup="Scrollbar Buttons"/>
+  <bitmap id="wasabi.scrollbar.horizontal.button.hover" file="$solid" w="41" h="13" color="168,170,180" gammagroup="Scrollbar Buttons"/>
+  <bitmap id="wasabi.scrollbar.horizontal.button.pressed" file="$solid" w="41" h="13" color="120,122,132" gammagroup="Scrollbar Buttons"/>
+  <bitmap id="wasabi.scrollbar.horizontal.grip" file="$solid" w="8" h="6" color="112,114,124" gammagroup="Scrollbar Buttons"/>
+  <bitmap id="wasabi.scrollbar.horizontal.left" file="$solid" w="17" h="13" color="112,114,124" gammagroup="Scrollbar Buttons"/>
+  <bitmap id="wasabi.scrollbar.horizontal.left.hover" file="$solid" w="17" h="13" color="112,114,124" gammagroup="Scrollbar Buttons"/>
+  <bitmap id="wasabi.scrollbar.horizontal.left.pressed" file="$solid" w="17" h="13" color="120,122,132" gammagroup="Scrollbar Buttons"/>
+  <bitmap id="wasabi.scrollbar.horizontal.right" file="$solid" w="17" h="13" color="112,114,124" gammagroup="Scrollbar Buttons"/>
+  <bitmap id="wasabi.scrollbar.horizontal.right.hover" file="$solid" w="17" h="13" color="112,114,124" gammagroup="Scrollbar Buttons"/>
+  <bitmap id="wasabi.scrollbar.horizontal.right.pressed" file="$solid" w="17" h="13" color="120,122,132" gammagroup="Scrollbar Buttons"/>
+  <bitmap id="wasabi.scrollbar.vertical.background.bottom" file="$solid" w="5" h="5" color="112,114,124"/>
+  <bitmap id="wasabi.scrollbar.vertical.background.middle" file="$solid" w="5" h="5" color="112,114,124"/>
+  <bitmap id="wasabi.scrollbar.vertical.background.top" file="$solid" w="5" h="5" color="112,114,124"/>
+  <bitmap id="wasabi.scrollbar.vertical.button" file="$solid" w="13" h="41" color="168,170,180" gammagroup="Scrollbar Buttons"/>
+  <bitmap id="wasabi.scrollbar.vertical.button.hover" file="$solid" w="13" h="41" color="168,170,180" gammagroup="Scrollbar Buttons"/>
+  <bitmap id="wasabi.scrollbar.vertical.button.pressed" file="$solid" w="13" h="41" color="120,122,132" gammagroup="Scrollbar Buttons"/>
+  <bitmap id="wasabi.scrollbar.vertical.grip" file="$solid" w="6" h="8" color="112,114,124" gammagroup="Scrollbar Buttons"/>
+  <bitmap id="wasabi.scrollbar.vertical.left" file="$solid" w="13" h="17" color="112,114,124" gammagroup="Scrollbar Buttons"/>
+  <bitmap id="wasabi.scrollbar.vertical.left.hover" file="$solid" w="13" h="17" color="112,114,124" gammagroup="Scrollbar Buttons"/>
+  <bitmap id="wasabi.scrollbar.vertical.left.pressed" file="$solid" w="13" h="17" color="120,122,132" gammagroup="Scrollbar Buttons"/>
+  <bitmap id="wasabi.scrollbar.vertical.right" file="$solid" w="13" h="17" color="112,114,124" gammagroup="Scrollbar Buttons"/>
+  <bitmap id="wasabi.scrollbar.vertical.right.hover" file="$solid" w="13" h="17" color="112,114,124" gammagroup="Scrollbar Buttons"/>
+  <bitmap id="wasabi.scrollbar.vertical.right.pressed" file="$solid" w="13" h="17" color="120,122,132" gammagroup="Scrollbar Buttons"/>
+  <bitmap id="wasabi.slider.horizontal.button" file="$solid" w="15" h="13" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.slider.horizontal.button.pressed" file="$solid" w="15" h="13" color="120,122,132" gammagroup="Buttons"/>
+  <bitmap id="wasabi.slider.horizontal.left" file="$solid" w="8" h="8" color="150,152,162" gammagroup="Sliders Backgrounds"/>
+  <bitmap id="wasabi.slider.horizontal.middle" file="$solid" w="10" h="8" color="150,152,162" gammagroup="Sliders Backgrounds"/>
+  <bitmap id="wasabi.slider.horizontal.right" file="$solid" w="8" h="8" color="150,152,162" gammagroup="Sliders Backgrounds"/>
+  <bitmap id="wasabi.slider.vertical.bottom" file="$solid" w="8" h="8" color="150,152,162" gammagroup="Sliders Backgrounds"/>
+  <bitmap id="wasabi.slider.vertical.button" file="$solid" w="16" h="12" color="168,170,180" gammagroup="Buttons"/>
+  <bitmap id="wasabi.slider.vertical.button.pressed" file="$solid" w="16" h="12" color="120,122,132" gammagroup="Buttons"/>
+  <bitmap id="wasabi.slider.vertical.middle" file="$solid" w="8" h="10" color="150,152,162" gammagroup="Sliders Backgrounds"/>
+  <bitmap id="wasabi.slider.vertical.top" file="$solid" w="8" h="8" color="150,152,162" gammagroup="Sliders Backgrounds"/>
+  <bitmap id="wasabi.titlebar.center.active" file="$solid" w="7" h="9" color="74,98,150" gammagroup="Titlebars"/>
+  <bitmap id="wasabi.titlebar.center.inactive" file="$solid" w="7" h="9" color="104,106,116" gammagroup="Titlebars"/>
+  <bitmap id="wasabi.titlebar.left.active" file="$solid" w="7" h="9" color="74,98,150" gammagroup="Titlebars"/>
+  <bitmap id="wasabi.titlebar.left.inactive" file="$solid" w="7" h="9" color="104,106,116" gammagroup="Titlebars"/>
+  <bitmap id="wasabi.titlebar.right.active" file="$solid" w="7" h="9" color="74,98,150" gammagroup="Titlebars"/>
+  <bitmap id="wasabi.titlebar.right.inactive" file="$solid" w="7" h="9" color="104,106,116" gammagroup="Titlebars"/>
+  <bitmap id="wasabi.tree.background" file="$solid" w="17" h="17" color="136,138,148" gammagroup="Display Backgrounds"/>
+  <bitmap id="wasabi.tree.link.tab.top.bottom" file="$solid" w="14" h="14" color="136,138,148" gammagroup="Tree Color"/>
+  <bitmap id="wasabi.tree.link.tab.top.right" file="$solid" w="14" h="14" color="136,138,148" gammagroup="Tree Color"/>
+  <bitmap id="wasabi.tree.link.tab.top.rightbottom" file="$solid" w="14" h="14" color="136,138,148" gammagroup="Tree Color"/>
+  <bitmap id="wasabi.tree.link.top.bottom" file="$solid" w="14" h="14" color="136,138,148" gammagroup="Tree Color"/>
+  <bitmap id="wasabi.tree.link.top.right" file="$solid" w="14" h="14" color="136,138,148" gammagroup="Tree Color"/>
+  <bitmap id="wasabi.tree.link.top.rightbottom" file="$solid" w="14" h="14" color="136,138,148" gammagroup="Tree Color"/>
+  <bitmap id="wasabi.tree.tab.closed" file="$solid" w="14" h="14" color="136,138,148" gammagroup="Tree Color"/>
+  <bitmap id="wasabi.tree.tab.open" file="$solid" w="14" h="14" color="136,138,148" gammagroup="Tree Color"/>
+  <bitmap id="wasabi.window.bottom" file="$solid" w="17" h="1" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.window.bottom.left" file="$solid" w="1" h="1" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.window.bottom.right" file="$solid" w="1" h="1" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.window.center" file="$solid" w="17" h="17" color="84,86,96" gammagroup="Display Backgrounds"/>
+  <bitmap id="wasabi.window.left" file="$solid" w="1" h="17" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.window.right" file="$solid" w="1" h="17" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.window.top" file="$solid" w="17" h="1" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.window.top.left" file="$solid" w="1" h="1" color="84,86,96" gammagroup="Backgrounds"/>
+  <bitmap id="wasabi.window.top.right" file="$solid" w="1" h="1" color="84,86,96" gammagroup="Backgrounds"/>
+  <truetypefont id="studio.component.title" file="fonts/DejaVuSansCondensed.ttf"/>
+  <truetypefont id="wasabi.font.button.small" file="fonts/DejaVuSansCondensed.ttf"/>
+  <truetypefont id="wasabi.font.button.normal" file="fonts/DejaVuSansCondensed.ttf"/>
+  <truetypefont id="wasabi.font.default" file="fonts/DejaVuSansCondensed.ttf"/>
+  <truetypefont id="studio.component.statusbar" file="fonts/DejaVuSansCondensed.ttf"/>
+</elements>
+</WinampAbstractionLayer>
