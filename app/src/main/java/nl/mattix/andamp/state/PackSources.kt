@@ -170,8 +170,10 @@ object PackSources {
                     from: Context?,
                     about: Intent?,
                 ) {
-                    // an update can bring another mark
-                    about?.data?.schemeSpecificPart?.let(PackMarks::forget)
+                    val changed = about?.data?.schemeSpecificPart
+                    // an update can bring another mark, and other folders and genres
+                    changed?.let(PackMarks::forget)
+                    found.firstOrNull { it.packageName == changed }?.let { Libraries.forget(it.source) }
                     look()
                 }
             }

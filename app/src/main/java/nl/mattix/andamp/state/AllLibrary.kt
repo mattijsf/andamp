@@ -195,24 +195,27 @@ class AllLibrary(
             ask { member -> (member.library as? EveryTrack)?.everyTrack().orEmpty() }.flatMap { it.second },
         )
 
-    override suspend fun folders(): List<Pair<String, Int>> = grouped { it.folders() }
+    override suspend fun folders(): List<Pair<String, Int?>> = grouped { it.folders() }
 
     override suspend fun folderTracks(folder: String): List<Track> =
         ask {
             (it.library as? FoldersAndGenres)?.folderTracks(folder).orEmpty()
         }.flatMap { it.second }
 
-    override suspend fun genres(): List<Pair<String, Int>> = grouped { it.genres() }
+    override suspend fun genres(): List<Pair<String, Int?>> = grouped { it.genres() }
 
     override suspend fun genreTracks(genre: String): List<Track> =
         distinctTracks(ask { (it.library as? FoldersAndGenres)?.genreTracks(genre).orEmpty() }.flatMap { it.second })
 
-    /** What the members that know folders and genres list, one row per name with the counts added up. */
-    private suspend fun grouped(list: suspend (FoldersAndGenres) -> List<Pair<String, Int>>): List<Pair<String, Int>> =
+    /**
+     * What the members that know folders and genres list, one row per name with the counts
+     * added up; a count no member knows stays unknown.
+     */
+    private suspend fun grouped(list: suspend (FoldersAndGenres) -> List<Pair<String, Int?>>): List<Pair<String, Int?>> =
         ask { (it.library as? FoldersAndGenres)?.let { library -> list(library) }.orEmpty() }
             .flatMap { it.second }
             .groupBy { ShelfBuilder.fold(it.first) }
-            .map { (_, same) -> same.first().first to same.sumOf { it.second } }
+            .map { (_, same) -> same.first().first to same.mapNotNull { it.second }.takeIf { it.isNotEmpty() }?.sum() }
             .sortedBy { ShelfBuilder.fold(it.first) }
 
     /** The track's album as the source that plays it knows it, as this library's row for it. */
@@ -330,15 +333,18 @@ interface EveryTrack {
     suspend fun everyTrack(): List<Track>
 }
 
-/** A library that knows the folders and the genres of its tracks, for the LISTS tab's FOLDERS and GENRES. */
+/**
+ * A library that knows the folders and the genres of its tracks, for the LISTS tab's FOLDERS and
+ * GENRES. A folder or a genre is named, and asked for, by the name the window shows.
+ */
 interface FoldersAndGenres {
-    /** The folders, each with how many tracks it holds. */
-    suspend fun folders(): List<Pair<String, Int>>
+    /** The folders, each with how many tracks it holds; null when that is not known. */
+    suspend fun folders(): List<Pair<String, Int?>>
 
     suspend fun folderTracks(folder: String): List<Track>
 
-    /** The genres, each with how many tracks name it. */
-    suspend fun genres(): List<Pair<String, Int>>
+    /** The genres, each with how many tracks name it; null when that is not known. */
+    suspend fun genres(): List<Pair<String, Int?>>
 
     suspend fun genreTracks(genre: String): List<Track>
 }

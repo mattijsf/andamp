@@ -6,6 +6,8 @@ import android.app.Application
 import android.content.ComponentName
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.os.Bundle
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.cancel
@@ -124,6 +126,30 @@ class PackSourceTest {
         assertFalse("the source offers no skin choice", subject.skinnable)
         assertNull(subject.browse(app))
         assertNull(subject.backend(app, scope))
+    }
+
+    /** FOLDERS and GENRES are the pack's to offer, in its service's meta-data; a pack that says nothing offers neither. */
+    @Test
+    fun `folders and genres are offered as the pack's manifest says`() {
+        assertEquals(GroupsOffered.NONE, subject.groupsOffered(app))
+
+        val service = app.packageManager.getServiceInfo(ComponentName(PACK, "$PACK.PackService"), PackageManager.GET_META_DATA)
+        service.metaData = Bundle().apply { putBoolean(PackApi.META_GENRES, true) }
+        shadowOf(app.packageManager).addOrUpdateService(service)
+
+        assertEquals(GroupsOffered(folders = false, genres = true), subject.groupsOffered(app))
+    }
+
+    @Test
+    fun `only a true flag offers a view`() {
+        val meta =
+            Bundle().apply {
+                putBoolean(PackApi.META_FOLDERS, true)
+                putString(PackApi.META_GENRES, "yes")
+            }
+
+        assertEquals(GroupsOffered(folders = true, genres = false), groupsFrom(meta))
+        assertEquals(GroupsOffered.NONE, groupsFrom(null))
     }
 
     /**

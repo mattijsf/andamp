@@ -126,8 +126,8 @@ The contract is one AIDL interface (`IMusicSourcePack`), one callback interface
 (`IPackListener`) and the parcelable types in `Wire.kt`. It is published on Maven Central:
 
 ```kotlin
-implementation("nl.mattix.andamp:source-api:0.1.0")     // the contract (:core:packapi)
-implementation("nl.mattix.andamp:source-common:0.1.0")  // the service side shared by every source (:pack:common)
+implementation("nl.mattix.andamp:source-api:0.2.0")     // the contract (:core:packapi)
+implementation("nl.mattix.andamp:source-common:0.2.0")  // the service side shared by every source (:pack:common)
 ```
 
 Most sources depend on `source-common` and extend `PackServiceBase`. You can also copy the
@@ -207,12 +207,50 @@ A source that plays its audio somewhere else, such as on another device, sets
 ### The library
 
 `ask` answers one page of one question (`PackQuestion.kind`: artists, albums, tracks,
-playlists, playlist tracks, search, find artists). A page holds at most
+playlists, playlist tracks, search, find artists, and the four of
+[folders and genres](#folders-and-genres)). A page holds at most
 `PackQuestion.PAGE` (500) items; set `PackAnswer.more` when there are more.
 
 Return `PackAnswer(failed = true)` when you cannot answer, for example because the
 connection is down. An answer with empty lists means there is nothing there, and Andamp
 shows it as an empty library.
+
+### Folders and genres
+
+The library window's Lists tab has FOLDERS and GENRES. A source can add its folders and
+genres to the phone's there. It says which of the two it gives in meta-data on its service, so they
+are not part of the contract version:
+
+```xml
+<meta-data
+    android:name="nl.mattix.andamp.source.FOLDERS"
+    android:value="true" />
+<meta-data
+    android:name="nl.mattix.andamp.source.GENRES"
+    android:value="true" />
+```
+
+Andamp then asks four more kinds of question. It asks them of no other source, because a
+source answers a kind it does not know as failed.
+
+| `PackQuestion.kind` | `id` | Answer |
+|---|---|---|
+| `folders` | | the folders that hold tracks, in `playlists` |
+| `folderTracks` | a folder's id | the tracks in that folder, not those in folders below it |
+| `genres` | | the genres the tracks are tagged with, in `playlists` |
+| `genreTracks` | a genre's id | the tracks tagged with that genre |
+
+A folder or a genre crosses as a `PackPlaylist` with no owner: its id, its name and how many
+tracks it holds (`UNKNOWN_COUNT` when you do not know). Name a folder by its path from the
+folder above the top of the library, `Music/Artist/Album`, the way the phone's folders read.
+Under All Sources, a folder or genre with the same name in several sources is one row, with
+the tracks of each.
+
+A source built on `BrowseSource` and `PackAnswers` implements `BrowseGroups` on its library.
+A server that lists tracks with the paths of their files but no folders can group them with
+`TrackFolders` in `source-common`. Andamp keeps the lists of folders and genres between
+launches and asks for them again in the background, so listing every folder may take a
+while; the tracks of a folder or genre are asked for when it is opened.
 
 ### The account
 

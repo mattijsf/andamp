@@ -4,11 +4,13 @@ package nl.mattix.andamp.pack.common
 
 import nl.mattix.andamp.core.model.LibraryAlbum
 import nl.mattix.andamp.core.model.LibraryArtist
+import nl.mattix.andamp.core.model.LibraryGroup
 import nl.mattix.andamp.core.model.LibraryPlaylist
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.packapi.PackAnswer
 import nl.mattix.andamp.core.packapi.PackQuestion
 import nl.mattix.andamp.core.packapi.toPack
+import nl.mattix.andamp.core.playback.BrowseGroups
 import nl.mattix.andamp.core.playback.BrowseSource
 import nl.mattix.andamp.core.playback.SourceUnreachable
 import kotlin.coroutines.cancellation.CancellationException
@@ -67,10 +69,24 @@ class PackAnswers(
 
             PackQuestion.FIND_ARTISTS -> source.findArtists(question.query, question.reach()).artists(question)
 
+            PackQuestion.FOLDERS -> grouped(source) { it.folders().groups(question) }
+
+            PackQuestion.FOLDER_TRACKS -> grouped(source) { it.folderTracks(question.id).tracks(question) }
+
+            PackQuestion.GENRES -> grouped(source) { it.genres().groups(question) }
+
+            PackQuestion.GENRE_TRACKS -> grouped(source) { it.genreTracks(question.id).tracks(question) }
+
             // an unknown kind is a failed answer; an empty one would show the library as
             // empty
             else -> FAILED
         }
+
+    /** A question about folders or genres, failed for a source that does not file its tracks so ([BrowseGroups]). */
+    private suspend fun grouped(
+        source: BrowseSource,
+        answer: suspend (BrowseGroups) -> PackAnswer,
+    ): PackAnswer = (source as? BrowseGroups)?.let { answer(it) } ?: FAILED
 
     private companion object {
         val FAILED = PackAnswer(failed = true)
@@ -107,6 +123,10 @@ private fun List<LibraryAlbum>.albums(question: PackQuestion): PackAnswer =
     page(question).let { page -> PackAnswer(albums = page.items.map { it.toPack() }, more = page.more) }
 
 private fun List<LibraryPlaylist>.playlists(question: PackQuestion): PackAnswer =
+    page(question).let { page -> PackAnswer(playlists = page.items.map { it.toPack() }, more = page.more) }
+
+/** Folders and genres travel as lists do; see [PackQuestion.FOLDERS]. */
+private fun List<LibraryGroup>.groups(question: PackQuestion): PackAnswer =
     page(question).let { page -> PackAnswer(playlists = page.items.map { it.toPack() }, more = page.more) }
 
 private fun List<Track>.tracks(question: PackQuestion): PackAnswer =

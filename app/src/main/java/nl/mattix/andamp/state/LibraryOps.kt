@@ -695,13 +695,14 @@ class LibraryOps(
     /**
      * The library on show was read again ([ShelfUpdates]): a tab's root on screen is read
      * again at its scroll, and the places kept in the other tabs are let go, so nothing shows
-     * a shelf from before. A level deeper in, or a search, is left until it is moved from.
+     * a shelf from before. A level deeper in, or a search, is left until it is moved from. The
+     * LISTS tab is among them because a source's folders and genres arrive this way.
      */
     fun shelfChanged() {
         stashes.clear()
         val atRoot = !loading && !searching && depth == 0
         if (!state.libraryOpen || !atRoot) return
-        if (category != Category.ARTISTS && category != Category.ALBUMS) return
+        if (category != Category.ARTISTS && category != Category.ALBUMS && category != Category.LISTS) return
         val tab = category
         load(label(tab), scroll = state.libraryScroll, selection = state.librarySelected) { shelves.root(tab, source) }
     }

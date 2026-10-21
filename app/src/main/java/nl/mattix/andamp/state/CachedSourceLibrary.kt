@@ -40,15 +40,17 @@ interface PartialAnswers {
  * What is not the listener's library passes through untouched: the catalog ([findArtists], and
  * the albums and tracks of an artist or album the library does not have), the source's own
  * lists, and search, which falls back to the index only when the source cannot be reached.
+ *
+ * [GroupedSourceLibrary] adds the folders and genres of a source that gives them.
  */
-class CachedSourceLibrary(
+open class CachedSourceLibrary(
     /** The source's name in the index. */
-    private val key: String,
+    protected val key: String,
     private val upstream: BrowseSource,
-    private val index: LibraryIndex,
+    protected val index: LibraryIndex,
     /** Where the questions asked behind a stored answer run; lives as long as the process. */
     private val scope: CoroutineScope,
-    private val io: CoroutineContext = Dispatchers.IO,
+    protected val io: CoroutineContext = Dispatchers.IO,
     private val clock: () -> Long = System::currentTimeMillis,
     /** Whether [upstream] answered its last question all the way through. */
     private val wholeOf: (BrowseSource) -> Boolean = { true },
@@ -65,7 +67,7 @@ class CachedSourceLibrary(
     override val revision: StateFlow<Int> = _revision.asStateFlow()
 
     @Volatile
-    override var whole: Boolean = true
+    final override var whole: Boolean = true
         private set
 
     /** The pieces asked of the source since the app started; see the class KDoc. */
@@ -167,16 +169,26 @@ class CachedSourceLibrary(
      * The answer to [piece]: the stored one, with the source asked again behind it when it is
      * due, or the source's, stored. Read back from the index either way, so a page lists in
      * the same order whether it came from the source or from the index.
+     *
+     * With [first] set to [First.BEHIND], a piece the index does not hold yet is asked behind
+     * as well, and answered for now with what the empty index reads; it is shown when it
+     * arrives, through [revision]. That is for a piece that takes long to ask and is not the
+     * page's to wait for.
      */
-    private suspend fun <T> cached(
+    protected suspend fun <T> cached(
         piece: Piece,
         read: () -> T,
         ask: suspend () -> T,
         store: (T, LibraryIndex.Stored) -> Unit,
+        first: First = First.WAIT,
     ): T {
         val stored = withContext(io) { index.stored(key, piece) }
-        if (stored != null) {
+        if (stored != null || first == First.BEHIND) {
             val held = withContext(io) { read() }
+            if (stored == null) {
+                if (asked.add(piece)) askBehind(piece, held, read, ask, store)
+                return held
+            }
             whole = stored.whole
             val due = clock() - stored.at >= MAX_AGE_MS
             if (asked.add(piece) || due) askBehind(piece, held, read, ask, store)
@@ -250,6 +262,15 @@ class CachedSourceLibrary(
 
     /** A count the source gave, or null for the one it did not. */
     private fun Int.known(): Int? = takeIf { it != UNKNOWN }
+
+    /** How a piece the index does not hold yet is answered; see [cached]. */
+    protected enum class First {
+        /** Asked of the source, and the answer waited for. */
+        WAIT,
+
+        /** Asked behind an empty answer. */
+        BEHIND,
+    }
 
     companion object {
         /** How old a stored answer may be before the source is asked again behind it. */

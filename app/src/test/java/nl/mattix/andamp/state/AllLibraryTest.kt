@@ -130,6 +130,77 @@ class AllLibraryTest : BrowseSourceContractTest() {
         assertEquals("neither shelf knows folders or genres", null, library.foldersAndGenresFrom())
     }
 
+    /** A library that knows folders and genres, as the phone does and a source that gives them does. */
+    private class Filed(
+        shelf: BrowseSource,
+        private val folders: List<Pair<String, Int?>> = emptyList(),
+        private val genres: List<Pair<String, Int?>> = emptyList(),
+        private val tracks: Map<String, List<Track>> = emptyMap(),
+    ) : BrowseSource by shelf,
+        FoldersAndGenres {
+        override suspend fun folders() = folders
+
+        override suspend fun folderTracks(folder: String) = tracks[folder].orEmpty()
+
+        override suspend fun genres() = genres
+
+        override suspend fun genreTracks(genre: String) = tracks[genre].orEmpty()
+    }
+
+    @Test
+    fun `the folders and genres of every source that gives them are one list, unmarked`() =
+        runTest {
+            val library =
+                together(
+                    phone to Filed(ShelfSource(phoneShelf), folders = listOf("Music/Muse/" to 3), genres = listOf("Rock" to 3)),
+                    server to
+                        Filed(
+                            ShelfSource(serverShelf),
+                            folders = listOf("music/Dummy" to null),
+                            genres =
+                                listOf(
+                                    "rock" to null,
+                                    "Trip Hop" to 1,
+                                ),
+                        ),
+                )
+
+            assertEquals(listOf("music/Dummy" to null, "Music/Muse/" to 3), library.folders())
+            assertEquals("a count only some sources know is theirs", listOf("Rock" to 3, "Trip Hop" to 1), library.genres())
+            assertEquals("several sources give them", null, library.foldersAndGenresFrom())
+        }
+
+    @Test
+    fun `a genre's tracks come from every source that has it, each song once`() =
+        runTest {
+            val stockholm = Track("p1", "Muse", "Stockholm Syndrome", 1)
+            val library =
+                together(
+                    phone to Filed(ShelfSource(phoneShelf), tracks = mapOf("Rock" to listOf(stockholm))),
+                    server to
+                        Filed(
+                            ShelfSource(serverShelf),
+                            tracks =
+                                mapOf(
+                                    "Rock" to
+                                        listOf(
+                                            Track("s1", "MUSE", "Stockholm Syndrome", 1),
+                                            Track("s2", "Muse", "Hysteria", 1),
+                                        ),
+                                ),
+                        ),
+                )
+
+            assertEquals(listOf("p1", "s2"), library.genreTracks("Rock").map { it.id })
+        }
+
+    @Test
+    fun `folders and genres one source alone gives come from that source`() {
+        val library = together(phone to ShelfSource(phoneShelf), server to Filed(ShelfSource(serverShelf)))
+
+        assertEquals(server, library.foldersAndGenresFrom())
+    }
+
     @Test
     fun `a list the library makes knows the one source its songs come from`() {
         val local = Track("a", "Muse", "Cryogen", 4, uri = "content://media/external/audio/media/1")
