@@ -29,6 +29,10 @@ import nl.mattix.andamp.core.model.Transport
  *   size check. A parcel with an added, removed or reordered field is misread by a side
  *   built against the other layout, without an error, so no field can be added compatibly.
  * - Any change to a call of `IMusicSourcePack` or `IPackListener` needs a new [PACK_API].
+ * - A new kind of [PackQuestion] does not. A pack answers a kind it does not know as failed,
+ *   so the player asks a newer kind only of a pack that says in its manifest that it
+ *   answers it ([PackApi.META_FOLDERS], [PackApi.META_GENRES]), and its answer is carried
+ *   in the parcels that are already here.
  * - The player compares a pack's `apiVersion()` with its own [PACK_API] before it asks
  *   anything else, and refuses a pack whose number differs.
  * - [Transport], [AlbumKind] and [BackendNotice] cross as names, and a name the reader does
@@ -58,6 +62,16 @@ object PackApi {
      * letters, which are five rows tall. Optional, as [META_MARK] is.
      */
     const val META_MARK_PIXELS = "nl.mattix.andamp.source.MARK_PIXELS"
+
+    /**
+     * The meta-data of a pack's service that says it answers [PackQuestion.FOLDERS] and
+     * [PackQuestion.FOLDER_TRACKS]: a boolean, `true`. Optional, and read from the manifest,
+     * so a pack built before it is not asked, and it is not part of [PACK_API].
+     */
+    const val META_FOLDERS = "nl.mattix.andamp.source.FOLDERS"
+
+    /** As [META_FOLDERS], for [PackQuestion.GENRES] and [PackQuestion.GENRE_TRACKS]. */
+    const val META_GENRES = "nl.mattix.andamp.source.GENRES"
 }
 
 /** A row in the queue, as [Track] travels. */
@@ -213,6 +227,25 @@ data class PackQuestion(
 
         /** Artists in the source's catalog matching [query], not only in the library. */
         const val FIND_ARTISTS = "findArtists"
+
+        /**
+         * The folders that hold tracks, each as a [PackPlaylist] with no owner: its id, its
+         * path from the top of the library as its name, and how many tracks it holds. Asked
+         * only of a pack whose manifest has [PackApi.META_FOLDERS].
+         */
+        const val FOLDERS = "folders"
+
+        /** The tracks in the folder named by [id], not those in folders below it. */
+        const val FOLDER_TRACKS = "folderTracks"
+
+        /**
+         * The genres the tracks are tagged with, each as a [PackPlaylist] with no owner, as
+         * [FOLDERS]. Asked only of a pack whose manifest has [PackApi.META_GENRES].
+         */
+        const val GENRES = "genres"
+
+        /** The tracks tagged with the genre named by [id]. */
+        const val GENRE_TRACKS = "genreTracks"
 
         /**
          * The default page size. A binder transaction buffer is about a megabyte for the

@@ -10,12 +10,16 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import nl.mattix.andamp.core.model.BrowseCapabilities
+import nl.mattix.andamp.core.model.LibraryGroup
 import nl.mattix.andamp.core.packapi.PackAccount
 import nl.mattix.andamp.core.packapi.PackAnswer
 import nl.mattix.andamp.core.packapi.PackApi
 import nl.mattix.andamp.core.packapi.PackArtist
+import nl.mattix.andamp.core.packapi.PackPlaylist
 import nl.mattix.andamp.core.packapi.PackQuestion
 import nl.mattix.andamp.core.packapi.PackTrack
+import nl.mattix.andamp.core.packapi.UNKNOWN_COUNT
+import nl.mattix.andamp.core.playback.BrowseGroups
 import nl.mattix.andamp.core.playback.SourceUnreachable
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -81,6 +85,44 @@ class PackBrowseTest {
 
             assertEquals(6, artists.size)
             assertEquals("Artist 5", artists.last().name)
+        }
+
+    /** Folders and genres cross as lists do, and their tracks are asked for by the group's id. */
+    @Test
+    fun `folders and genres are asked by their kinds and read as groups`() =
+        runTest {
+            val pack =
+                FakePack(answers = {
+                    when (it.kind) {
+                        PackQuestion.FOLDERS -> {
+                            PackAnswer(playlists = listOf(PackPlaylist("/srv/a", "music/a", 2)))
+                        }
+
+                        PackQuestion.GENRES -> {
+                            PackAnswer(playlists = listOf(PackPlaylist("g1", "Rock", UNKNOWN_COUNT)))
+                        }
+
+                        PackQuestion.FOLDER_TRACKS, PackQuestion.GENRE_TRACKS -> {
+                            PackAnswer(tracks = listOf(PackTrack(it.id, "Artist", "Title", 1_000, "example:track:${it.id}")))
+                        }
+
+                        else -> {
+                            PackAnswer(failed = true)
+                        }
+                    }
+                })
+            app.install(pack)
+            val groups = clientFor().browse() as BrowseGroups
+            advanceUntilIdle()
+
+            assertEquals(listOf(LibraryGroup("/srv/a", "music/a", 2)), groups.folders())
+            assertEquals(listOf(LibraryGroup("g1", "Rock", null)), groups.genres())
+            assertEquals(listOf("/srv/a"), groups.folderTracks("/srv/a").map { it.id })
+            assertEquals(listOf("g1"), groups.genreTracks("g1").map { it.id })
+            assertEquals(
+                listOf(PackQuestion.FOLDER_TRACKS to "/srv/a", PackQuestion.GENRE_TRACKS to "g1"),
+                pack.asked.filter { it.kind.endsWith("Tracks") }.map { it.kind to it.id },
+            )
         }
 
     /** The offset moves by the rows that came back, not by the page size asked for. */

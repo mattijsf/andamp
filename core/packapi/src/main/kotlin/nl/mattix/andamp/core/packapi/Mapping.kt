@@ -5,6 +5,7 @@ package nl.mattix.andamp.core.packapi
 import nl.mattix.andamp.core.model.AlbumKind
 import nl.mattix.andamp.core.model.LibraryAlbum
 import nl.mattix.andamp.core.model.LibraryArtist
+import nl.mattix.andamp.core.model.LibraryGroup
 import nl.mattix.andamp.core.model.LibraryPlaylist
 import nl.mattix.andamp.core.model.Track
 
@@ -59,3 +60,8 @@ fun PackAlbum.toAlbum(): LibraryAlbum =
 fun LibraryPlaylist.toPack(): PackPlaylist = PackPlaylist(id, name, trackCount ?: UNKNOWN_COUNT, owner)
 
 fun PackPlaylist.toPlaylist(): LibraryPlaylist = LibraryPlaylist(id, name, trackCount.takeIf { it >= 0 }, owner)
+
+/** A folder or a genre crosses as a [PackPlaylist] with no owner; see [PackQuestion.FOLDERS]. */
+fun LibraryGroup.toPack(): PackPlaylist = PackPlaylist(id, name, trackCount ?: UNKNOWN_COUNT)
+
+fun PackPlaylist.toGroup(): LibraryGroup = LibraryGroup(id, name, trackCount.takeIf { it >= 0 })

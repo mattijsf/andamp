@@ -30,7 +30,7 @@ billing = "9.1.0"
 # the source SDK this build publishes: :core:model, :core:playback,
 # :core:network, :core:packapi and :pack:common, under the names below. One
 # number for the five, because a source takes them together.
-andampSdk = "0.1.0"
+andampSdk = "0.2.0"
 mavenPublish = "0.37.0"
 
 [libraries]

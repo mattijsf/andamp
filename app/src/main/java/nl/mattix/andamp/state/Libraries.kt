@@ -8,6 +8,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
 import nl.mattix.andamp.backend.pack.PackBrowse
+import nl.mattix.andamp.core.playback.BrowseGroups
 import nl.mattix.andamp.core.playback.BrowseSource
 
 /**
@@ -15,7 +16,8 @@ import nl.mattix.andamp.core.playback.BrowseSource
  *
  * Cached per source, so the window can ask on every draw and a source keeps the shelves it
  * fetched while another is shown. A source's library is kept in the library's own index
- * ([CachedSourceLibrary]), and a source with no library of its own to give gets the phone's.
+ * ([CachedSourceLibrary]), with its folders and genres when its app says it gives them
+ * ([GroupedSourceLibrary]), and a source with no library to give gets the phone's.
  * The phone's is one for the whole process: it follows the phone's audio
  * ([IndexedPhoneLibrary.follow]) from its first use.
  */
@@ -28,11 +30,21 @@ object Libraries {
         val app = context.applicationContext
         return synchronized(this) {
             held.getOrPut(source) {
-                val browse = PackSources.found.firstOrNull { it.source == source }?.browse(app)
-                if (browse == null) {
-                    phone(app)
-                } else {
-                    CachedSourceLibrary(keyOf(source), browse, index(app), background, wholeOf = ::wholeOf)
+                val pack = PackSources.found.firstOrNull { it.source == source }
+                val browse = pack?.browse(app)
+                val offered = pack?.groupsOffered(app) ?: GroupsOffered.NONE
+                when {
+                    browse == null -> {
+                        phone(app)
+                    }
+
+                    browse is BrowseGroups && offered.any -> {
+                        GroupedSourceLibrary(keyOf(source), browse, browse, offered, index(app), background, wholeOf = ::wholeOf)
+                    }
+
+                    else -> {
+                        CachedSourceLibrary(keyOf(source), browse, index(app), background, wholeOf = ::wholeOf)
+                    }
                 }
             }
         }

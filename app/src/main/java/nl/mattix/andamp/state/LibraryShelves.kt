@@ -357,7 +357,7 @@ internal class LibraryShelves(
     /** FOLDERS or GENRES: its [groups] with their counts, the tracks of each, and how a group's name reads. */
     private class View(
         val name: String,
-        val groups: List<Pair<String, Int>>,
+        val groups: List<Pair<String, Int?>>,
         val tracksOf: suspend (String) -> List<Track>,
         val shown: (String) -> String,
     )
@@ -369,7 +369,7 @@ internal class LibraryShelves(
             status = count(view.groups.size, R.plurals.library_count_lists),
             rows =
                 view.groups.map { (group, n) ->
-                    Row(view.shown(group), detail = words.get(R.string.library_track_count_short, n))
+                    Row(view.shown(group), detail = n?.let { words.get(R.string.library_track_count_short, it) } ?: "")
                 },
             open =
                 view.groups.map { (group, _) ->

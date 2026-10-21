@@ -449,6 +449,14 @@ one of them steps the clocks (`WinampState.clocksTurn`).
   without a network, and the source is asked again behind it when the answer is an hour
   old or was not asked since the app started. A sign-out drops what is kept of that
   source. The file holds nothing that cannot be read again, so a schema change empties it.
+- **Folders and genres.** The phone's come from its index. A source gives folders and
+  genres when its service's meta-data says so (`PackApi.META_FOLDERS`, `META_GENRES`),
+  read from the manifest like the marks; Andamp then asks it the question kinds
+  `folders`, `folderTracks`, `genres` and `genreTracks`, which a pack built before them
+  answers as failed. No parcel or call changed, so `PACK_API` did not. `GroupedSourceLibrary`
+  keeps a source's lists in the index as two more pieces, reads the first one in the
+  background, and asks for a group's tracks by the source's ids behind the name the window
+  shows. Under All Sources, groups match by folded name across sources.
 - **Every source together.** With more than one source to show, the window starts on
   `AllLibrary`: the phone and each signed-in source as one library. Artists match by
   folded name, albums by artist and title; an album's copies are its editions, and its

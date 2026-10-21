@@ -4,6 +4,7 @@ package nl.mattix.andamp.state
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
+import nl.mattix.andamp.core.model.LibraryGroup
 import nl.mattix.andamp.core.model.Track
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -165,5 +166,24 @@ class LibraryIndexTest {
         index.replace("phone", shelf, "s1")
 
         assertEquals(setOf(TrackField.ARTIST, TrackField.TITLE, TrackField.ALBUM, TrackField.NUMBER), index.knownFields())
+    }
+
+    @Test
+    fun `a source's folders read back in its order, found by name, and go with the source`() {
+        val folders =
+            listOf(LibraryGroup("/srv/b", "music/b", 2), LibraryGroup("/srv/a", "music/a"), LibraryGroup("/old/a", "music/a", 1))
+        val at = LibraryIndex.Stored(1, whole = true)
+
+        index.storeGroups("source:example", LibraryIndex.Piece.FOLDERS, folders, at)
+        index.storeGroups("source:example", LibraryIndex.Piece.GENRES, listOf(LibraryGroup("rock", "Rock", 4)), at)
+
+        assertEquals(folders, index.storedGroups("source:example", LibraryIndex.Piece.FOLDERS))
+        assertEquals(listOf("/srv/a", "/old/a"), index.groupIds("source:example", LibraryIndex.Piece.FOLDERS, "music/a"))
+        assertEquals(at, index.stored("source:example", LibraryIndex.Piece.FOLDERS))
+
+        index.clear("source:example")
+
+        assertEquals(emptyList<LibraryGroup>(), index.storedGroups("source:example", LibraryIndex.Piece.GENRES))
+        assertNull(index.stored("source:example", LibraryIndex.Piece.FOLDERS))
     }
 }

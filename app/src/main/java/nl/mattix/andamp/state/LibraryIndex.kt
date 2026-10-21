@@ -9,6 +9,7 @@ import android.database.sqlite.SQLiteDatabase
 import android.database.sqlite.SQLiteOpenHelper
 import android.database.sqlite.SQLiteStatement
 import nl.mattix.andamp.core.model.AlbumKind
+import nl.mattix.andamp.core.model.LibraryGroup
 import nl.mattix.andamp.core.model.Track
 
 /**
@@ -20,8 +21,8 @@ import nl.mattix.andamp.core.model.Track
  * A source is stored in one of two ways. The phone's music is read whole and stored as one
  * [Shelf], replaced in one transaction under the [stamp] it was read with. A source behind a
  * server is stored a piece at a time as the library asks for it ([Piece]): its artists, its
- * albums, an artist's albums, an album's tracks, each with when it was stored and whether the
- * source answered it all the way through.
+ * albums, an artist's albums, an album's tracks, its folders and its genres, each with when it
+ * was stored and whether the source answered it all the way through.
  *
  * The file is a cache: it holds nothing that cannot be read again, so it lives where backups do
  * not go, and a schema change starts it over.
@@ -89,6 +90,12 @@ class LibraryIndex(
         companion object {
             val ARTISTS = Piece("artists")
             val ALBUMS = Piece("albums")
+
+            /** The source's folders, for a source that gives them; see [storeGroups]. */
+            val FOLDERS = Piece("folders")
+
+            /** The source's genres, for a source that gives them; see [storeGroups]. */
+            val GENRES = Piece("genres")
 
             fun artist(id: String) = Piece("artist", id)
 
@@ -185,6 +192,52 @@ class LibraryIndex(
         insertTracks(db, source, albumId, rows)
         mark(db, source, Piece.album(albumId), at)
     }
+
+    /** Stores [source]'s folders or genres ([Piece.FOLDERS], [Piece.GENRES]), in the order the source gave them. */
+    fun storeGroups(
+        source: String,
+        piece: Piece,
+        groups: List<LibraryGroup>,
+        at: Stored,
+    ) = transaction { db ->
+        db.delete("grouping", "source = ? AND kind = ?", arrayOf(source, piece.kind))
+        db.compileStatement(GROUP).use { s ->
+            groups.forEachIndexed { position, group ->
+                s.clearBindings()
+                s.bindString(1, source)
+                s.bindString(2, piece.kind)
+                s.bindString(3, group.id)
+                s.bindString(4, group.name)
+                s.bindNullable(5, group.trackCount)
+                s.bindLong(6, position.toLong())
+                s.executeInsert()
+            }
+        }
+        mark(db, source, piece, at)
+    }
+
+    /** [source]'s folders or genres as stored, in the source's order. */
+    fun storedGroups(
+        source: String,
+        piece: Piece,
+    ): List<LibraryGroup> =
+        db
+            .rawQuery(
+                "SELECT id, name, track_count FROM grouping WHERE source = ? AND kind = ? ORDER BY position",
+                arrayOf(source, piece.kind),
+            ).use { c -> c.map { LibraryGroup(it.getString(0), it.getString(1), it.intOrNull(2)) } }
+
+    /** The source's ids of the folders or genres called [name], as stored. */
+    fun groupIds(
+        source: String,
+        piece: Piece,
+        name: String,
+    ): List<String> =
+        db
+            .rawQuery(
+                "SELECT id FROM grouping WHERE source = ? AND kind = ? AND name = ? ORDER BY position",
+                arrayOf(source, piece.kind, name),
+            ).use { c -> c.map { it.getString(0) } }
 
     private fun mark(
         db: SQLiteDatabase,
@@ -673,6 +726,10 @@ class LibraryIndex(
             )
             // a list's rows are looked up by the addresses of their tracks
             db.execSQL("CREATE INDEX track_uri ON track (uri)")
+            db.execSQL(
+                "CREATE TABLE grouping (source TEXT NOT NULL, kind TEXT NOT NULL, id TEXT NOT NULL, name TEXT NOT NULL, " +
+                    "track_count INTEGER, position INTEGER NOT NULL, PRIMARY KEY (source, kind, id))",
+            )
         }
 
         override fun onUpgrade(
@@ -698,10 +755,10 @@ class LibraryIndex(
         const val FILE = "library-index.db"
 
         /** The index's schema; raising it empties the index, which is read again. */
-        private const val SCHEMA = 3
+        private const val SCHEMA = 4
 
         /** The tables that hold a source's rows, besides its shelf's stamp. */
-        private val TABLES = listOf("stored", "artist", "album", "artist_album", "track")
+        private val TABLES = listOf("stored", "artist", "album", "artist_album", "track", "grouping")
 
         private const val ALBUM_COLUMNS = "id, title, key, artist_id, artist, year, track_count, added_at, kind"
         private const val TRACK_COLUMNS =
@@ -711,6 +768,9 @@ class LibraryIndex(
         private const val MAX_ARGS = 500
 
         private const val RELATE = "INSERT OR REPLACE INTO artist_album (source, artist_id, album_id, position) VALUES (?,?,?,?)"
+
+        private const val GROUP =
+            "INSERT OR REPLACE INTO grouping (source, kind, id, name, track_count, position) VALUES (?,?,?,?,?,?)"
     }
 }
 

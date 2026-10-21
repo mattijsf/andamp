@@ -8,14 +8,17 @@ import kotlinx.coroutines.flow.asStateFlow
 import nl.mattix.andamp.core.model.BrowseCapabilities
 import nl.mattix.andamp.core.model.LibraryAlbum
 import nl.mattix.andamp.core.model.LibraryArtist
+import nl.mattix.andamp.core.model.LibraryGroup
 import nl.mattix.andamp.core.model.LibraryPlaylist
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.packapi.PackAnswer
 import nl.mattix.andamp.core.packapi.PackQuestion
 import nl.mattix.andamp.core.packapi.toAlbum
 import nl.mattix.andamp.core.packapi.toArtist
+import nl.mattix.andamp.core.packapi.toGroup
 import nl.mattix.andamp.core.packapi.toPlaylist
 import nl.mattix.andamp.core.packapi.toTrack
+import nl.mattix.andamp.core.playback.BrowseGroups
 import nl.mattix.andamp.core.playback.BrowseSource
 import nl.mattix.andamp.core.playback.SourceUnreachable
 
@@ -31,10 +34,15 @@ import nl.mattix.andamp.core.playback.SourceUnreachable
  * defines for this.
  *
  * A walk that fails after some pages returns the pages it read and sets [whole] to false.
+ *
+ * Folders and genres ([BrowseGroups]) are asked of whatever pack this is; the player asks
+ * them only of a pack whose manifest says it answers them, because another answers them as
+ * failed.
  */
 class PackBrowse internal constructor(
     private val client: PackClient,
-) : BrowseSource {
+) : BrowseSource,
+    BrowseGroups {
     /**
      * What the pack says its library holds. A getter because the descriptor arrives with the
      * binding; until then no shelf is offered.
@@ -87,6 +95,20 @@ class PackBrowse internal constructor(
         gathered(PackQuestion(PackQuestion.FIND_ARTISTS, query = query, limit = limit), pages = 1)
             .flatMap { page -> page.artists.map { it.toArtist() } }
             .take(limit)
+
+    override suspend fun folders(): List<LibraryGroup> = groups(PackQuestion(PackQuestion.FOLDERS))
+
+    override suspend fun folderTracks(id: String): List<Track> =
+        gathered(PackQuestion(PackQuestion.FOLDER_TRACKS, id = id)).flatMap { page -> page.tracks.map { it.toTrack() } }
+
+    override suspend fun genres(): List<LibraryGroup> = groups(PackQuestion(PackQuestion.GENRES))
+
+    override suspend fun genreTracks(id: String): List<Track> =
+        gathered(PackQuestion(PackQuestion.GENRE_TRACKS, id = id)).flatMap { page -> page.tracks.map { it.toTrack() } }
+
+    /** Folders or genres, which cross as lists do; see [PackQuestion.FOLDERS]. */
+    private suspend fun groups(question: PackQuestion): List<LibraryGroup> =
+        gathered(question).flatMap { page -> page.playlists.map { it.toGroup() } }
 
     /**
      * One question's pages, in order, until the pack says there are no more.

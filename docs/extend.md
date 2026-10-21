@@ -55,8 +55,8 @@ accepts.
 A source is written against the SDK, from Maven Central:
 
 ```kotlin
-implementation("nl.mattix.andamp:source-api:0.1.0")     // the contract
-implementation("nl.mattix.andamp:source-common:0.1.0")  // the source side that is the same in every source
+implementation("nl.mattix.andamp:source-api:0.2.0")     // the contract
+implementation("nl.mattix.andamp:source-common:0.2.0")  // the source side that is the same in every source
 ```
 
 | | |

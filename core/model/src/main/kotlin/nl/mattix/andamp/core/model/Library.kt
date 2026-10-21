@@ -53,6 +53,19 @@ data class LibraryPlaylist(
 )
 
 /**
+ * A group a library files tracks in besides their artist and album: a folder or a genre.
+ *
+ * [id] is the source's id for the group, and its tracks are asked for by it. [name] is what the
+ * listener reads: a folder's path from the top of the library (`Music/Artist/Album`), a
+ * genre's name.
+ */
+data class LibraryGroup(
+    val id: String,
+    val name: String,
+    val trackCount: Int? = null,
+)
+
+/**
  * What a browse source can answer, declared up front like [Capabilities]. The UI skips a
  * level the source does not have.
  */

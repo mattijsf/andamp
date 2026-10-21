@@ -144,11 +144,11 @@ class IndexedPhoneLibrary(
 
     override suspend fun everyTrack(): List<Track> = read(emptyList()) { index.everyTrack(SOURCE) }
 
-    override suspend fun folders(): List<Pair<String, Int>> = read(emptyList()) { index.folders(SOURCE) }
+    override suspend fun folders(): List<Pair<String, Int?>> = read(emptyList()) { index.folders(SOURCE) }
 
     override suspend fun folderTracks(folder: String): List<Track> = read(emptyList()) { index.folderTracks(SOURCE, folder) }
 
-    override suspend fun genres(): List<Pair<String, Int>> = read(emptyList()) { index.genres(SOURCE) }
+    override suspend fun genres(): List<Pair<String, Int?>> = read(emptyList()) { index.genres(SOURCE) }
 
     override suspend fun genreTracks(genre: String): List<Track> = read(emptyList()) { index.genreTracks(SOURCE, genre) }
 

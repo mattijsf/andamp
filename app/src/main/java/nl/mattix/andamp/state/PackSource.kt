@@ -4,7 +4,9 @@ package nl.mattix.andamp.state
 
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
+import android.os.Bundle
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -18,6 +20,7 @@ import nl.mattix.andamp.backend.pack.PackCard
 import nl.mattix.andamp.backend.pack.PackClient
 import nl.mattix.andamp.backend.pack.PackReach
 import nl.mattix.andamp.backend.pack.descriptor
+import nl.mattix.andamp.core.packapi.PackApi
 import nl.mattix.andamp.core.packapi.PackDescriptor
 import nl.mattix.andamp.core.playback.BrowseSource
 import nl.mattix.andamp.core.playback.PlaybackBackend
@@ -109,6 +112,25 @@ class PackSource(
     /** The listener's library inside the pack, or null while the pack is not ready. */
     override fun browse(context: Context): BrowseSource? = if (reach is PackReach.Ready) client.browse() else null
 
+    /**
+     * Which of FOLDERS and GENRES the pack gives, as its service's meta-data says
+     * ([PackApi.META_FOLDERS], [PackApi.META_GENRES]). Read from the manifest on each call, because
+     * an update of the pack can change it; a pack that says nothing gives neither.
+     */
+    fun groupsOffered(context: Context): GroupsOffered {
+        // the flag-taking overload is the only one below API 33
+        @Suppress("DEPRECATION")
+        val meta =
+            runCatching {
+                context.packageManager
+                    .queryIntentServices(Intent(PackApi.ACTION_BIND).setPackage(packageName), PackageManager.GET_META_DATA)
+                    .firstOrNull()
+                    ?.serviceInfo
+                    ?.metaData
+            }.getOrNull()
+        return groupsFrom(meta)
+    }
+
     @Composable
     override fun Summary(signedIn: Boolean): String {
         val now by client.reach.collectAsState()
@@ -161,3 +183,10 @@ private fun standingOf(reach: PackReach): SourceStanding =
         is PackReach.SignedOut -> SourceStanding.SIGNED_OUT
         else -> SourceStanding.ABSENT
     }
+
+/** What a pack's meta-data says about FOLDERS and GENRES; see [PackSource.groupsOffered]. */
+internal fun groupsFrom(meta: Bundle?): GroupsOffered =
+    GroupsOffered(
+        folders = meta?.getBoolean(PackApi.META_FOLDERS) == true,
+        genres = meta?.getBoolean(PackApi.META_GENRES) == true,
+    )

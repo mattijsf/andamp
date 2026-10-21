@@ -41,8 +41,10 @@ class LibrarySectionsTest {
     /** One artist with one album; a search finds the artist, the album and both tracks. */
     private inner class Shelf :
         BrowseSource,
-        SectionedSearch {
+        SectionedSearch,
+        FoldersAndGenres {
         var artists = listOf(LibraryArtist("a1", "Autechre", albumCount = 1))
+        var genres = emptyList<Pair<String, Int?>>()
         override val capabilities = BrowseCapabilities(canSearch = true)
         override val available = true
 
@@ -56,6 +58,14 @@ class LibrarySectionsTest {
             query: String,
             limit: Int,
         ) = SectionedSearch.Sections(artists, albums(null), listOf(foil, montreal))
+
+        override suspend fun folders() = emptyList<Pair<String, Int?>>()
+
+        override suspend fun folderTracks(folder: String) = emptyList<Track>()
+
+        override suspend fun genres() = genres
+
+        override suspend fun genreTracks(genre: String) = listOf(foil)
     }
 
     private val shelf = Shelf()
@@ -181,5 +191,20 @@ class LibrarySectionsTest {
 
             assertEquals("Autechre", ops.header)
             assertFalse(ops.loading)
+        }
+
+    @Test
+    fun `genres that arrive while the lists are on screen are shown`() =
+        runTest {
+            val ops = library()
+            ops.switchCategory(LibraryOps.Category.LISTS)
+            advanceUntilIdle()
+            val before = ops.rows.map { it.label }
+            shelf.genres = listOf("IDM" to 2)
+
+            ops.shelfChanged()
+            advanceUntilIdle()
+
+            assertEquals(listOf("GENRES") + before, ops.rows.map { it.label })
         }
 }
