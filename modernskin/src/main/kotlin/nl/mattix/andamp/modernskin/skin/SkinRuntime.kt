@@ -1261,6 +1261,13 @@ class SkinRuntime(
     /** Whether something moves by itself right now (a target slide or a playing animation): tick every frame. */
     val animating: Boolean get() = moving.isNotEmpty() || animations.any { it.playing }
 
+    /** Script steps run since the last [tick] began, across every script. */
+    val scriptSteps: Long get() = scripts.sumOf { it.stepsSinceRefill.toLong() }
+
+    /** Timer events fired so far. */
+    var timerFires = 0L
+        private set
+
     /** Advances timers, tickers and player-driven objects. Returns true when a redraw is due. */
     fun tick(): Boolean {
         val t = now()
@@ -1270,6 +1277,7 @@ class SkinRuntime(
         val due = timers.filter { it.running && t >= it.nextAt }
         for (timer in due) {
             timer.nextAt = t + maxOf(1, timer.delay)
+            timerFires++
             dispatch(timer, "ontimer", emptyList())
         }
         val status = player.status

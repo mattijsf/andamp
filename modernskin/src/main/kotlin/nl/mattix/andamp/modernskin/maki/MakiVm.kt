@@ -70,6 +70,9 @@ class Script(
         budget = STEPS_PER_FRAME
     }
 
+    /** Steps run since the last [refill]. */
+    val stepsSinceRefill: Int get() = STEPS_PER_FRAME - budget
+
     /** A script that failed [MAX_FAILURES] times is switched off: its handlers no longer run. */
     var disabled = false
         private set

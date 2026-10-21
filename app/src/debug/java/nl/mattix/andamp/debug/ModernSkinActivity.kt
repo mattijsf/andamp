@@ -111,10 +111,23 @@ class ModernSkinActivity : ComponentActivity() {
 
     private fun openFrom(intent: android.content.Intent) {
         check = Check.from(intent)
-        intent.getStringExtra("wal")?.let { name -> File(filesDir, name).takeIf { it.exists() }?.let { current = it } }
+        probe = intent.getBooleanExtra("probe", false)
+        intent.getStringExtra("wal")?.let { name ->
+            File(filesDir, name).takeIf { it.exists() }?.let {
+                current = it
+                // a start for the skin already on screen still starts the run over
+                launches++
+            }
+        }
     }
 
-    private var check: Check? = null
+    private var check by mutableStateOf<Check?>(null)
+
+    /** `--ez probe true`: times the skin on this phone (see [Probe]) instead of showing it for use. */
+    private var probe by mutableStateOf(false)
+
+    /** Starts with a skin named, so each one shows the skin anew. */
+    private var launches by mutableIntStateOf(0)
 
     // a start with a skin named while the task already exists arrives here
     override fun onNewIntent(intent: android.content.Intent) {
@@ -137,9 +150,23 @@ class ModernSkinActivity : ComponentActivity() {
         setContent {
             val file = current
             if (file == null) {
-                SkinList(skins, onOpen = { current = it }, onPick = { pick.launch(arrayOf("*/*")) })
+                SkinList(
+                    skins,
+                    onOpen = {
+                        // a skin opened from the list is for use, whatever the start asked for
+                        check = null
+                        probe = false
+                        current = it
+                    },
+                    onPick = { pick.launch(arrayOf("*/*")) },
+                )
             } else {
-                androidx.compose.runtime.key(file, check) { ModernSkinScreen(file, check) }
+                androidx.compose.runtime.key(
+                    file,
+                    check,
+                    probe,
+                    launches,
+                ) { ModernSkinScreen(file, check, if (probe) Probe(file.name) else null) }
             }
         }
     }
@@ -607,6 +634,101 @@ private class AndroidSkinHost(
     }
 }
 
+/**
+ * Times a skin on the phone: opening its archive and the other skins beside it, loading (cold,
+ * then again warm with fresh caches), and then each frame of a fixed run on the display clock:
+ * settle 2 s (the first draws after the warm load), stopped 10 s, playing 10 s, stopped 10 s. Per
+ * frame it keeps the tick, drawWindows and drawing times, their sum, script steps and timer
+ * events. Writes files/probe/<skin>.json and logs "probe done".
+ */
+private class Probe(
+    val skin: String,
+) {
+    var openMs = 0.0
+    var siblingsOpenMs = 0.0
+    var loadMs = 0.0
+    var loadSteps = 0L
+    var warmLoadMs = 0.0
+    var phase = "idle"
+
+    /** The last tick's time, added to the draw that follows it. */
+    var lastTickUs = 0L
+
+    class Frame(
+        val phase: String,
+        val tickUs: Long,
+        val steps: Long,
+        val timers: Long,
+        val changed: Boolean,
+    )
+
+    val frames = ArrayList<Frame>()
+    private val drawWindowsUs = HashMap<String, MutableList<Long>>()
+    private val renderUs = HashMap<String, MutableList<Long>>()
+    private val frameUs = HashMap<String, MutableList<Long>>()
+    val phaseMs = LinkedHashMap<String, Long>()
+
+    fun drew(
+        windowsNanos: Long,
+        renderNanos: Long,
+    ) {
+        drawWindowsUs.getOrPut(phase) { ArrayList() } += windowsNanos / 1000
+        renderUs.getOrPut(phase) { ArrayList() } += renderNanos / 1000
+        frameUs.getOrPut(phase) { ArrayList() } += lastTickUs + (windowsNanos + renderNanos) / 1000
+        lastTickUs = 0
+    }
+
+    private fun stats(v: List<Long>): org.json.JSONObject {
+        val o = org.json.JSONObject().put("n", v.size)
+        if (v.isEmpty()) return o
+        val s = v.sorted()
+
+        fun at(q: Double) = s[minOf(s.size - 1, (q * s.size).toInt())]
+        return o
+            .put("p50", at(0.5))
+            .put("p95", at(0.95))
+            .put("max", s.last())
+            .put("mean", s.sum() / s.size)
+    }
+
+    fun json(): String {
+        val phases = org.json.JSONObject()
+        for ((ph, ms) in phaseMs) {
+            val f = frames.filter { it.phase == ph }
+            val timers = f.sumOf { it.timers }
+            phases.put(
+                ph,
+                org.json
+                    .JSONObject()
+                    .put("ms", ms)
+                    .put("tickUs", stats(f.map { it.tickUs }))
+                    .put("drawWindowsUs", stats(drawWindowsUs[ph].orEmpty()))
+                    .put("renderUs", stats(renderUs[ph].orEmpty()))
+                    .put("frameUs", stats(frameUs[ph].orEmpty()))
+                    .put("redraws", f.count { it.changed })
+                    .put("worstSteps", f.maxOfOrNull { it.steps } ?: 0)
+                    .put("steps", f.sumOf { it.steps })
+                    .put("timerFires", timers)
+                    .put("timerPerSec", timers * 1000.0 / maxOf(1L, ms)),
+            )
+        }
+        return org.json
+            .JSONObject()
+            .put("skin", skin)
+            .put("openMs", openMs)
+            .put("siblingsOpenMs", siblingsOpenMs)
+            .put("loadMs", loadMs)
+            .put("loadSteps", loadSteps)
+            .put("warmLoadMs", warmLoadMs)
+            .put("phases", phases)
+            .toString()
+    }
+
+    fun mark(name: String) {
+        phase = name
+    }
+}
+
 /** Frames drawn during one slide or animation, written to logcat (tag ModernSkin) when it ends. */
 private class SlideStats {
     var startedAt = 0L
@@ -642,6 +764,7 @@ private class SlideStats {
 private fun ModernSkinScreen(
     file: File,
     check: Check? = null,
+    probe: Probe? = null,
 ) {
     val files =
         remember {
@@ -649,15 +772,21 @@ private fun ModernSkinScreen(
             // files/wasabi-defaults.zip is there (for comparing against Winamp only)
             val defaults = File(file.parentFile, "wasabi-defaults.zip")
             // the other skins in the folder as siblings: Bento reads from "Big Bento"
+            val siblingsStart = System.nanoTime()
             val siblings =
                 file.parentFile
                     .listFiles { f -> f.name.endsWith(".wal", ignoreCase = true) && f != file }
                     .orEmpty()
                     .associate { f -> f.nameWithoutExtension.replace(" ", "").lowercase() to ZipSkinFiles(f) }
+            probe?.siblingsOpenMs = (System.nanoTime() - siblingsStart) / 1e6
+            val openStart = System.nanoTime()
+            val zip = ZipSkinFiles(file)
+            probe?.openMs = (System.nanoTime() - openStart) / 1e6
             val skin =
                 nl.mattix.andamp.modernskin.skin
-                    .SkinsFolderFiles(ZipSkinFiles(file), siblings)
-            val base = if (defaults.exists()) ZipSkinFiles(defaults) else AndampDefaultSet
+                    .SkinsFolderFiles(zip, siblings)
+            // a probe times what ships: Andamp's default set
+            val base = if (defaults.exists() && probe == null) ZipSkinFiles(defaults) else AndampDefaultSet
             nl.mattix.andamp.modernskin.skin
                 .LayeredSkinFiles(skin, base)
         }
@@ -710,19 +839,11 @@ private fun ModernSkinScreen(
                     it.viewportW = CHECK_VIEWPORT_W
                     it.viewportH = CHECK_VIEWPORT_H
                 }
-                // Winamp's getSkinName() is the skin's folder name: here the file's
-                it.skinName = file.nameWithoutExtension
-                // the reference VM has Winamp's library inside the skin; the phone's library is its own screen
-                it.haveLibrary = check != null
-                // Winamp Modern ships its drawer animation off; start with it on
-                it.storedSettings["Animate Config Drawer"] = "1"
-                if (check == null) {
-                    // Bento opens the component it remembers, "Media Library" at first; Andamp's library is
-                    // a screen of its own, so start Bento on its video tab instead (its playlist tab would
-                    // pull the playlist out of the top-right pane and collapse that pane)
-                    it.privateStrings["${file.nameWithoutExtension.lowercase()}/component"] = "Video"
-                }
+                prepare(it, file, check)
+                val loadStart = System.nanoTime()
                 runCatching { it.load() }.onFailure { e -> host.log("load failed: $e") }
+                probe?.loadMs = (System.nanoTime() - loadStart) / 1e6
+                probe?.loadSteps = it.scriptSteps
                 // the color theme picked last time for this skin, as Winamp keeps it per skin
                 if (check ==
                     null
@@ -790,6 +911,53 @@ private fun ModernSkinScreen(
             Log.i("ModernSkin", "check done: ${rt.windows.size} windows")
         }
     }
+    if (probe != null) {
+        LaunchedEffect(probe) {
+            // the same skin loaded again in this process, with fresh caches: the load once the engine's code is warm
+            run {
+                val warmHost = AndroidSkinHost(WithGeneratedImages(files), context.cacheDir)
+                val again = SkinRuntime(files, warmHost, FakePlayer())
+                prepare(again, file, check)
+                val t0 = System.nanoTime()
+                runCatching { again.load() }
+                probe.warmLoadMs = (System.nanoTime() - t0) / 1e6
+            }
+            var lastTimers = rt.timerFires
+            var seen = host.version
+
+            suspend fun runPhase(
+                name: String,
+                ms: Long,
+            ) {
+                probe.mark(name)
+                val start = System.currentTimeMillis()
+                while (System.currentTimeMillis() - start < ms) {
+                    withFrameNanos { }
+                    val t0 = System.nanoTime()
+                    val changed = runCatching { rt.tick() }.getOrDefault(false)
+                    val tickUs = (System.nanoTime() - t0) / 1000
+                    probe.lastTickUs = tickUs
+                    val timers = rt.timerFires - lastTimers
+                    lastTimers = rt.timerFires
+                    probe.frames += Probe.Frame(name, tickUs, rt.scriptSteps, timers, changed)
+                    if (changed || host.version != seen) {
+                        seen = host.version
+                        frame++
+                    }
+                }
+                probe.phaseMs[name] = System.currentTimeMillis() - start
+            }
+            runPhase("settle", 2_000)
+            runPhase("stopped", 10_000)
+            player.play()
+            runPhase("playing", 10_000)
+            player.stop()
+            runPhase("stoppedAgain", 10_000)
+            val out = File(context.filesDir, "probe").apply { mkdirs() }
+            File(out, file.nameWithoutExtension + ".json").writeText(probe.json())
+            Log.i("ModernSkin", "probe done: ${file.name}")
+        }
+    }
     LaunchedEffect(Unit) {
         var seen = -1
         while (true) {
@@ -797,7 +965,7 @@ private fun ModernSkinScreen(
             if (!rt.animating && slide.startedAt != 0L) slide.report()
             // during a check only its stepped loop ticks, so tickers advance the same number of times as in the JVM test
             val changed =
-                if (check != null) {
+                if (check != null || probe != null) {
                     false
                 } else {
                     runCatching { rt.tick() }.getOrElse { e ->
@@ -904,6 +1072,7 @@ private fun ModernSkinScreen(
                             host.log("draw: $e")
                             emptyList()
                         }
+                    val windowsDone = System.nanoTime()
                     // the stack centered across the screen, as the classic player places its windows
                     val left = if (check == null) leftFor(size.width, layout.contentRight(), scale) else 0f
                     translate(left, 0f) {
@@ -919,6 +1088,7 @@ private fun ModernSkinScreen(
                         }
                     }
                     if (slide.startedAt != 0L) slide.frame(System.nanoTime() - drawStart)
+                    probe?.drew(windowsDone - drawStart, System.nanoTime() - windowsDone)
                 }
             }
         }
@@ -927,6 +1097,26 @@ private fun ModernSkinScreen(
             style = TextStyle(color = Color(0xFFB0FFB0), fontSize = 10.sp),
             modifier = Modifier.fillMaxWidth().padding(4.dp),
         )
+    }
+}
+
+/** What a runtime for [file] is given before it loads, the same for every load of it. */
+private fun prepare(
+    rt: SkinRuntime,
+    file: File,
+    check: Check?,
+) {
+    // Winamp's getSkinName() is the skin's folder name: here the file's
+    rt.skinName = file.nameWithoutExtension
+    // the reference VM has Winamp's library inside the skin; the phone's library is its own screen
+    rt.haveLibrary = check != null
+    // Winamp Modern ships its drawer animation off; start with it on
+    rt.storedSettings["Animate Config Drawer"] = "1"
+    if (check == null) {
+        // Bento opens the component it remembers, "Media Library" at first; Andamp's library is
+        // a screen of its own, so start Bento on its video tab instead (its playlist tab would
+        // pull the playlist out of the top-right pane and collapse that pane)
+        rt.privateStrings["${file.nameWithoutExtension.lowercase()}/component"] = "Video"
     }
 }
 
