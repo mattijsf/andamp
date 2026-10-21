@@ -9,40 +9,33 @@ messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `doc
 
 ### New
 
-* a source's library opens at once, also without a network ([#79](https://github.com/mattijsf/andamp/issues/79)) ([80297b7](https://github.com/mattijsf/andamp/commit/80297b7a139ee49fa8dc188d7b6d2a3c2ffb41b4))
-* Android's App info page opens Andamp's settings ([aecf444](https://github.com/mattijsf/andamp/commit/aecf444572b48de7e66b7a8c96cb6c6bdbe3d6d1))
-* browse the phone's music by folder or genre, and pick several songs at once ([#85](https://github.com/mattijsf/andamp/issues/85)) ([3226c1c](https://github.com/mattijsf/andamp/commit/3226c1c2d530a008e89cb0b7352dcd96b7a14559))
-* choose how songs show in the playlist and the library ([#86](https://github.com/mattijsf/andamp/issues/86)) ([3d6db9a](https://github.com/mattijsf/andamp/commit/3d6db9a191c2e0b8a8b6274363d4bfb715618086))
-* each source's rows carry a small picture, also in the playlist if you like ([#82](https://github.com/mattijsf/andamp/issues/82)) ([58eb185](https://github.com/mattijsf/andamp/commit/58eb18501f7ac6e5abe7990b8b05e70f313aff6f))
-* every source shows a little picture of itself in the lists ([#87](https://github.com/mattijsf/andamp/issues/87)) ([f2f16bc](https://github.com/mattijsf/andamp/commit/f2f16bc2f18dcb443c26a955a1b50a03016c6529))
-* favorite visualizer presets, with a preview and why one failed ([#74](https://github.com/mattijsf/andamp/issues/74)) ([724099a](https://github.com/mattijsf/andamp/commit/724099a91223dca97e7cee448ab70e55bb6d97a5))
-* Folders and Genres in the library include your music servers ([#93](https://github.com/mattijsf/andamp/issues/93)) ([04b95e4](https://github.com/mattijsf/andamp/commit/04b95e4434f0cac92c37ecd0376159f72de6c621))
-* one Media Library for all your sources, with the phone's copy played first ([#80](https://github.com/mattijsf/andamp/issues/80)) ([736488f](https://github.com/mattijsf/andamp/commit/736488faeb7da17fc54e87e8251d5eb81e5464e8))
-* Recently Added, Folders and Genres carry the mark of the source they come from ([866c364](https://github.com/mattijsf/andamp/commit/866c3642faa0d5b97b43cbece3bad9fa851f00e2))
-* sort albums, jump from a song to its album or artist, and play every track at once ([#83](https://github.com/mattijsf/andamp/issues/83)) ([73374ed](https://github.com/mattijsf/andamp/commit/73374edbb16979f196306e1e31261064f13aa6ab))
-* the library's source menu and its corner show each source's mark ([#89](https://github.com/mattijsf/andamp/issues/89)) ([1d06dff](https://github.com/mattijsf/andamp/commit/1d06dff3dbaf1efa932cce2e869ffb0441d34ad2))
-* the media library keeps lists of what you added lately and what you play most ([#81](https://github.com/mattijsf/andamp/issues/81)) ([6522918](https://github.com/mattijsf/andamp/commit/6522918807fc52d921643c5b452bbee0ef601d81))
-* the media library keeps your place in each tab ([#77](https://github.com/mattijsf/andamp/issues/77)) ([f7cb1f3](https://github.com/mattijsf/andamp/commit/f7cb1f375cf5b97658f6ef0e6035eee525a556ae))
-* the media library opens faster and its search finds artists and albums too ([#78](https://github.com/mattijsf/andamp/issues/78)) ([0167ab2](https://github.com/mattijsf/andamp/commit/0167ab2504bbd3df97173af4db40e9583a20267f))
-* the media library writes in the skin's letters, like the playlist ([#76](https://github.com/mattijsf/andamp/issues/76)) ([09b3288](https://github.com/mattijsf/andamp/commit/09b32888f1ee53e06a042db49604ac7a3e30b515))
-* with every source shown, each source's playlists carry its mark ([866c364](https://github.com/mattijsf/andamp/commit/866c3642faa0d5b97b43cbece3bad9fa851f00e2))
+* One library for all your music: the songs on your phone and on your music servers, together. If a song is in both places, Andamp plays the one on your phone ([#80](https://github.com/mattijsf/andamp/issues/80))
+* Browse by folder or by genre, on your phone and on your music server ([#85](https://github.com/mattijsf/andamp/issues/85)) ([#93](https://github.com/mattijsf/andamp/issues/93))
+* See what you added lately and what you play most ([#81](https://github.com/mattijsf/andamp/issues/81))
+* Sort albums, jump from a song to its album or artist, and play a whole album or artist in one tap ([#83](https://github.com/mattijsf/andamp/issues/83))
+* Select several songs at once ([#85](https://github.com/mattijsf/andamp/issues/85))
+* The library opens faster, even without a connection, and remembers where you were in each tab. Search now finds artists and albums too ([#79](https://github.com/mattijsf/andamp/issues/79)) ([#77](https://github.com/mattijsf/andamp/issues/77)) ([#78](https://github.com/mattijsf/andamp/issues/78))
+* The library can use your skin's font, just like the playlist, and you choose how songs are shown ([#76](https://github.com/mattijsf/andamp/issues/76)) ([#86](https://github.com/mattijsf/andamp/issues/86))
+* A small logo next to each song, album and playlist shows where it comes from. The source menu shows them too ([#82](https://github.com/mattijsf/andamp/issues/82)) ([#87](https://github.com/mattijsf/andamp/issues/87)) ([#89](https://github.com/mattijsf/andamp/issues/89)) ([#90](https://github.com/mattijsf/andamp/issues/90))
+* Mark visualizer presets as favorites and preview one before you pick it. If a preset won't load, Andamp tells you why ([#74](https://github.com/mattijsf/andamp/issues/74))
+* The App info page in Android's settings now opens Andamp's settings ([#67](https://github.com/mattijsf/andamp/issues/67))
 
 
 ### Fixed
 
-* a broken AVS preset came back after switching apps ([#69](https://github.com/mattijsf/andamp/issues/69)) ([d0ffd94](https://github.com/mattijsf/andamp/commit/d0ffd9470d73bf0c33ff27742002f7cf50bc4598))
-* a plug-in link from the site opened the start of Preferences ([#73](https://github.com/mattijsf/andamp/issues/73)) ([343fbed](https://github.com/mattijsf/andamp/commit/343fbedf1e6963fbd9a133a42fd12aee1ba736e6))
-* a skin's own digits no longer show through the clock while paused ([#91](https://github.com/mattijsf/andamp/issues/91)) ([4832e6a](https://github.com/mattijsf/andamp/commit/4832e6ab24a2a0c1d3bb26b4b0b4e0cf224cf78c))
-* mono tracks showed as stereo ([#57](https://github.com/mattijsf/andamp/issues/57)) ([b3d0d00](https://github.com/mattijsf/andamp/commit/b3d0d0055832814cf295bcb1e4e4ab9956988c82))
-* Preferences and the preset screen close with a back arrow, not Done ([#75](https://github.com/mattijsf/andamp/issues/75)) ([48f1e70](https://github.com/mattijsf/andamp/commit/48f1e708670430934d08dc207307a40a306fc0f2))
-* the app no longer declares the Notifications permission ([#92](https://github.com/mattijsf/andamp/issues/92)) ([dc23498](https://github.com/mattijsf/andamp/commit/dc23498089380fe4ea8e48e35fb1aa9778c631c8))
-* the visualizer window showed the wallpaper for a moment as it opened ([#72](https://github.com/mattijsf/andamp/issues/72)) ([a3d0e09](https://github.com/mattijsf/andamp/commit/a3d0e0926f477a88c8b14ec5dc85cd604bf1c9de))
-* titles line up beside source marks of different widths ([#88](https://github.com/mattijsf/andamp/issues/88)) ([5c694d2](https://github.com/mattijsf/andamp/commit/5c694d252dea4fcb32e51ee4bae01b013734bc07))
+* Preferences and the preset screen now close with a back arrow instead of Done ([#75](https://github.com/mattijsf/andamp/issues/75))
+* Mono songs no longer show as stereo ([#57](https://github.com/mattijsf/andamp/issues/57))
+* With some skins, the clock flickered to 00:00 while paused ([#91](https://github.com/mattijsf/andamp/issues/91))
+* A broken AVS preset no longer comes back after you switch apps ([#69](https://github.com/mattijsf/andamp/issues/69))
+* The visualizer window no longer flashes your wallpaper when it opens ([#72](https://github.com/mattijsf/andamp/issues/72))
+* Plug-in links from the website now open the right page in Preferences ([#73](https://github.com/mattijsf/andamp/issues/73))
+* Song titles line up next to the source logos ([#88](https://github.com/mattijsf/andamp/issues/88))
+* Andamp no longer lists a notifications permission it never used ([#92](https://github.com/mattijsf/andamp/issues/92))
 
 
 ### Faster
 
-* saved lists open without freezing the library ([#70](https://github.com/mattijsf/andamp/issues/70)) ([0bc862b](https://github.com/mattijsf/andamp/commit/0bc862b58d35df92cf197f708def54d8fff5ea52))
+* Saved playlists open without freezing the library ([#70](https://github.com/mattijsf/andamp/issues/70))
 
 ## [0.15.0](https://github.com/mattijsf/andamp/compare/v0.14.0...v0.15.0) (2026-10-12)
 
