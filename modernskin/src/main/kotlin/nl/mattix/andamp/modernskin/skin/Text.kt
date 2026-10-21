@@ -65,6 +65,9 @@ class Text(
     private var scrollPause = 0
     private var lastText = ""
 
+    /** What a text that follows the player (`display`) showed at the last tick, to tell when it changes. */
+    private var lastShown: String? = null
+
     /** When a temporary message (setAlternateText) clears. */
     private var alternateUntil = 0L
 
@@ -389,7 +392,7 @@ class Text(
             alternateText = null
             rt.invalidate()
         }
-        if (!ticker || rect.width <= 0) return false
+        if (!ticker || rect.width <= 0) return shownChanged()
         val text = currentText
         if (text != lastText) {
             val wasTime = display in TIME_DISPLAYS && lastText.isNotEmpty()
@@ -420,6 +423,15 @@ class Text(
             return false
         }
         return if (songTicker) songStep(now, text) else textStep(now, overflow)
+    }
+
+    /** Whether a text that follows the player now shows something else: a new second, a new bitrate. */
+    private fun shownChanged(): Boolean {
+        if (display == null) return false
+        val text = currentText
+        if (text == lastShown) return false
+        lastShown = text
+        return true
     }
 
     /** A text's ticker: on every third poll tick it moves `tickerstep` px, pausing 4 s at each end. */
