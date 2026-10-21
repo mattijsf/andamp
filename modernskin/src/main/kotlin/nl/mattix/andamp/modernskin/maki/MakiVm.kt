@@ -169,7 +169,14 @@ private class Interpreter(
     private val stack = ArrayDeque<Cell>()
     private val callStack = ArrayDeque<Int>()
 
-    private fun pop(): Cell = stack.removeLastOrNull() ?: throw MakiRuntimeException("stack underflow")
+    /** The instruction running, for error messages. */
+    private var current: Op? = null
+
+    private fun pop(): Cell =
+        stack.removeLastOrNull()
+            ?: throw MakiRuntimeException(
+                "stack underflow at ${current?.offset} (opcode 0x${current?.opcode?.toString(16)})",
+            )
 
     private fun push(c: Cell) {
         if (stack.size >= MAX_STACK) throw MakiRuntimeException("stack overflow")
@@ -207,6 +214,7 @@ private class Interpreter(
             if (++steps > STEP_LIMIT) throw MakiRuntimeException("step limit at ${code[ip].offset}")
             if (--script.budget < 0) throw MakiRuntimeException("frame budget used up at ${code[ip].offset}")
             val op = code[ip]
+            current = op
             when (op.opcode) {
                 Opcodes.PUSH -> {
                     push(cells[op.arg])
@@ -371,7 +379,10 @@ private class Interpreter(
                 }
 
                 Opcodes.DELETE -> {
-                    pop()
+                    // `delete x` is an expression to the compiler, which drops its value with the POP
+                    // that always follows: take the object, leave a value in its place
+                    pop().value.asObject?.delete()
+                    pushValue(Value.Null, Kind.OBJECT)
                 }
 
                 else -> {

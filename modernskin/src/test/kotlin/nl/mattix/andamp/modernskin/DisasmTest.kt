@@ -55,7 +55,7 @@ class DisasmTest {
                         ""
                     }
                 }
-            println("$i: ${names[op.opcode] ?: op.opcode}$extra")
+            println("$i @${op.offset}: ${names[op.opcode] ?: op.opcode}$extra")
         }
     }
 }
