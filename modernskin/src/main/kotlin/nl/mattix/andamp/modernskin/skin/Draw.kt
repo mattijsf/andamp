@@ -200,13 +200,18 @@ sealed class DrawCmd {
 
     object Unclip : DrawCmd()
 
-    /** A small ARGB picture ([w] x [h], rows top first) stretched over [rect] with nearest pixels: the vis and EQ graph. */
+    /**
+     * A small ARGB picture ([w] x [h], rows top first) stretched over [rect] with nearest pixels: the
+     * vis, the EQ graph and gradients. [stable] means the same [argb] array comes back unchanged in
+     * later frames until the picture changes, so a host may keep what it made from it.
+     */
     class Pixels(
         val rect: Rect,
         val w: Int,
         val h: Int,
         val argb: IntArray,
         val alpha: Int,
+        val stable: Boolean = false,
     ) : DrawCmd()
 }
 

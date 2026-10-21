@@ -36,7 +36,10 @@ tasks.test {
         "private",
         "setting",
         "trace.content",
+        "timing.reps",
     ).forEach { k ->
         System.getProperty(k)?.let { systemProperty(k, it) }
     }
+    // -Djfr=<file>: a flight recording of the test run, for profiling
+    System.getProperty("jfr")?.let { jvmArgs("-XX:StartFlightRecording=filename=$it,settings=profile") }
 }
