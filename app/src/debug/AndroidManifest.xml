@@ -31,5 +31,19 @@
             android:permission="android.permission.DUMP"
             android:taskAffinity="nl.mattix.andamp.screenshotdesktop"
             android:theme="@style/ScreenshotDesktop" />
+
+        <!-- Proof of concept: modern (.wal) skins, in the launcher of debug builds only. -->
+        <activity
+            android:name="nl.mattix.andamp.debug.ModernSkinActivity"
+            android:exported="true"
+            android:label="Andamp Modern"
+            android:launchMode="singleTop"
+            android:taskAffinity="nl.mattix.andamp.modernskin"
+            android:theme="@style/Theme.AndAmp">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
     </application>
 </manifest>
