@@ -158,11 +158,12 @@ class LibraryGoldenTest {
         slack: Int = 0,
         rowH: Int = LibraryLayout.ROW_H,
         source: String? = null,
+        sourceMark: nl.mattix.andamp.state.SourceMark? = null,
     ) {
         val frame = GenFrame
         val layout = LibraryLayout(8, LibraryLayout.widthOfCols(cols), slack, rowH)
         render(layout.listWidth(frame), layout.contentH) {
-            drawLibraryContent(libraryRasterizer(), ops, state, skin, 1, frame, layout, source)
+            drawLibraryContent(libraryRasterizer(), ops, state, skin, 1, frame, layout, source, sourceMark)
         }.captureRoboImage("$SNAPSHOT_DIR/$name.png")
     }
 
@@ -425,10 +426,30 @@ class LibraryGoldenTest {
     fun `every source together lists each source's lists with its mark, the app's own lists without`() =
         allSources("library_all_sources_lists", ListFont.SKIN, nl.mattix.andamp.state.LibraryOps.Category.LISTS)
 
+    @Test
+    fun `one source on show carries its mark before its name in the header's corner`() =
+        allSources(
+            "library_skin_font_one_source",
+            ListFont.SKIN,
+            source = "This Phone",
+            sourceMark = nl.mattix.andamp.state.SourceMark.PHONE,
+        )
+
+    @Test
+    fun `one source on show carries its mark before its name, in the outline font`() =
+        allSources(
+            "library_one_source",
+            ListFont.REGULAR,
+            source = "This Phone",
+            sourceMark = nl.mattix.andamp.state.SourceMark.PHONE,
+        )
+
     private fun allSources(
         name: String,
         font: ListFont,
         category: nl.mattix.andamp.state.LibraryOps.Category = nl.mattix.andamp.state.LibraryOps.Category.ALBUMS,
+        source: String = "All Sources",
+        sourceMark: nl.mattix.andamp.state.SourceMark? = null,
     ) {
         val shelf =
             nl.mattix.andamp.core.playback.BrowseSourceContractTest
@@ -504,6 +525,6 @@ class LibraryGoldenTest {
             )
         ops.open()
         ops.switchCategory(category)
-        renderLibrary(name, ops, state, source = "All Sources")
+        renderLibrary(name, ops, state, source = source, sourceMark = sourceMark)
     }
 }

@@ -1,6 +1,6 @@
 # Andamp — Privacy Policy
 
-*Last updated 2 October 2026. Applies to Andamp for Android (`nl.mattix.andamp`) and to the music source apps published for it.*
+*Last updated 8 October 2026. Applies to Andamp for Android (`nl.mattix.andamp`) and to the music source apps published for it.*
 
 Andamp is a music player that runs on your phone. It has no account of its own and no
 server that collects anything. **Nothing about you or what you listen to is sent to the
@@ -101,7 +101,6 @@ policy.
 | Network state and Wi-Fi state | To notice when the connection comes back, so a radio stream can reconnect, and to keep Wi-Fi awake while a stream plays. |
 | Keep awake (`WAKE_LOCK`) | So the phone does not sleep in the middle of a track. |
 | Foreground service (media playback) | So playback continues, with a notification, when the app is not on screen. |
-| Notifications (`POST_NOTIFICATIONS`) | Declared, but never asked for. The playback controls in the notification shade and on the lock screen work without it. |
 
 Music source apps ask for Internet and network state only.
 

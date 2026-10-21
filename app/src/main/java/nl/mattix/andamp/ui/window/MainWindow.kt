@@ -349,24 +349,26 @@ private fun DrawScope.drawTime(
     s: WinampState,
 ) {
     if (s.transport == Transport.Stopped) return
-    if (s.transport == Transport.Paused && !s.blinkOn) return
     val sheet = skin.numbersSheet
     val duration = s.currentTrack?.durationSec ?: return
+    // Every slot is painted, a blank cell where there is no digit: a skin may have digits of
+    // its own in the plate under the clock, which would show through an unpainted slot.
+    val blinkedOut = s.transport == Transport.Paused && !s.blinkOn
+    val minus = s.timeRemaining && !blinkedOut
+    if (skin.hasNumsEx) {
+        sprite(sheet, if (minus) SpriteMap.MINUS_SIGN_EX else SpriteMap.NO_MINUS_SIGN_EX, Dest.TIME_MINUS_EX)
+    } else {
+        sprite(sheet, if (minus) SpriteMap.MINUS_SIGN else SpriteMap.NO_MINUS_SIGN, Dest.TIME_MINUS)
+    }
     val shown = if (s.timeRemaining) (duration - s.currentTimeSec).coerceAtLeast(0) else s.currentTimeSec
     val minutes = (shown / 60).coerceAtMost(99)
     val seconds = shown % 60
-    // minus sign (or its blank placeholder art)
-    if (skin.hasNumsEx) {
-        val sp = if (s.timeRemaining) SpriteMap.MINUS_SIGN_EX else SpriteMap.NO_MINUS_SIGN_EX
-        sprite(sheet, sp, Dest.TIME_MINUS_EX)
-    } else {
-        val sp = if (s.timeRemaining) SpriteMap.MINUS_SIGN else SpriteMap.NO_MINUS_SIGN
-        sprite(sheet, sp, Dest.TIME_MINUS)
-    }
     val digits = intArrayOf(minutes / 10, minutes % 10, seconds / 10, seconds % 10)
     for (i in digits.indices) {
-        if (i == 0 && digits[0] == 0) continue // tens-of-minutes slot stays blank under 10:00
-        sprite(sheet, SpriteMap.digit(digits[i]), Dest.TIME_DIGIT_X[i], Dest.TIME_DIGIT_Y)
+        // the tens-of-minutes slot stays blank under 10:00
+        val blank = blinkedOut || (i == 0 && digits[0] == 0)
+        val cell = if (blank) SpriteMap.DIGIT_BLANK else SpriteMap.digit(digits[i])
+        sprite(sheet, cell, Dest.TIME_DIGIT_X[i], Dest.TIME_DIGIT_Y)
     }
 }
 

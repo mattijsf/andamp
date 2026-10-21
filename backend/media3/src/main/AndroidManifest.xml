@@ -3,7 +3,6 @@
 
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <!--
       setWakeMode, and AudioManners for a backend that renders its own audio:
       the CPU may not sleep mid-track, and a stream needs the radio too

@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.ui.menu
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -26,6 +27,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
+import androidx.compose.ui.graphics.nativeCanvas
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.stringResource
@@ -34,6 +39,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import nl.mattix.andamp.R
 import nl.mattix.andamp.state.AmpMenu
@@ -41,9 +47,12 @@ import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.AmpPrompt
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.NamePrompt
+import nl.mattix.andamp.state.SourceMark
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.ui.about.AboutDialog
 import nl.mattix.andamp.ui.theme.rememberSkinColorScheme
+import nl.mattix.andamp.ui.window.MarkInk
+import kotlin.math.roundToInt
 
 /**
  * Renders whatever modal the state asks for (context menu, pickers, prompts) in a Material theme.
@@ -114,10 +123,19 @@ internal fun AmpContextMenu(
                 MenuRow(open.label, leading = "‹", emphasized = true) { path = path.dropLast(1) }
                 HorizontalDivider()
             }
-            (open?.items ?: menu.items).forEach { item ->
+            val items = open?.items ?: menu.items
+            // the sources' marks in this list, so each takes the room of the widest
+            val marks = items.mapNotNull { (it as? AmpMenuItem.Action)?.mark }
+            items.forEach { item ->
                 when (item) {
                     is AmpMenuItem.Action -> {
-                        MenuRow(item.label, enabled = item.enabled, leading = if (item.checked) "\u2713" else null) {
+                        MenuRow(
+                            item.label,
+                            enabled = item.enabled,
+                            leading = if (item.checked) "\u2713" else null,
+                            mark = item.mark,
+                            marks = marks,
+                        ) {
                             item.onClick()
                             onDismiss()
                         }
@@ -143,6 +161,9 @@ private fun MenuRow(
     leading: String? = null,
     trailing: String? = null,
     emphasized: Boolean = false,
+    /** A source's mark before the label, in a cell as wide as the widest of [marks]. */
+    mark: SourceMark? = null,
+    marks: List<SourceMark> = emptyList(),
     onClick: () -> Unit,
 ) {
     Row(
@@ -160,6 +181,7 @@ private fun MenuRow(
         if (leading != null) {
             Text(leading, color = color, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(end = 10.dp))
         }
+        if (mark != null) MenuMark(mark, marks, color, style.fontSize)
         Text(label, color = color, style = style, modifier = Modifier.weight(1f))
         if (trailing != null) Text(trailing, color = color, style = MaterialTheme.typography.titleMedium)
     }
@@ -224,3 +246,28 @@ private fun NamePromptDialog(
 
 private const val ROW_HEIGHT = 42
 private const val MIN_WIDTH = 190
+
+/** A source's mark drawn as its rows draw it in the outline font, as tall as the menu's letters. */
+@Composable
+private fun MenuMark(
+    mark: SourceMark,
+    peers: List<SourceMark>,
+    color: Color,
+    fontSize: TextUnit,
+) {
+    val density = LocalDensity.current
+    val paint =
+        remember(fontSize, density) {
+            android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG).apply { textSize = with(density) { fontSize.toPx() } }
+        }
+    paint.color = color.toArgb()
+    val width = MarkInk.outlineWidth(listOf(mark), paint, peers)
+    val height = paint.fontSpacing
+    Canvas(
+        Modifier
+            .padding(end = 8.dp)
+            .size(with(density) { width.toDp() }, with(density) { height.toDp() }),
+    ) {
+        drawIntoCanvas { MarkInk.outline(listOf(mark), 0f, 0f, height.roundToInt(), it.nativeCanvas, paint, peers) }
+    }
+}
