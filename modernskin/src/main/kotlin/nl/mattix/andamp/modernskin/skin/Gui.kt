@@ -743,6 +743,9 @@ open class Group(
     var autoHeightSource: String? = null
     val systemObjects = ArrayList<SystemObject>()
 
+    /** What the engine does for this group where Winamp's default set runs a script. */
+    internal var behavior: GroupBehavior? = null
+
     /** Attributes a xui tag got that are no GUI attributes; sent to its scripts as `onSetXuiParam`. */
     val xuiParams = LinkedHashMap<String, String>()
 

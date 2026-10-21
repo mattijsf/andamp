@@ -104,3 +104,33 @@ class SkinsFolderFiles(
 
     override fun names(): List<String> = skin.names()
 }
+
+/**
+ * Andamp's default element set (module resources under `defaultset/`), for use as the base of
+ * [LayeredSkinFiles] in place of Winamp's: the frames, title bar and widgets skins build on, in
+ * plain pictures of our own. Its `$solid` pictures are answered by [GeneratedImages].
+ */
+object AndampDefaultSet : SkinFiles {
+    private const val ROOT = "/nl/mattix/andamp/modernskin/defaultset/"
+    private val FILES =
+        listOf(
+            "wasabi.xml",
+            "elements.xml",
+            "aliases.xml",
+            "groups.xml",
+            "fonts/DejaVuSansCondensed.ttf",
+            "fonts/DejaVuSansCondensed-Bold.ttf",
+        )
+
+    // paths reach a SkinFiles normalized to lower case; resources keep their own spelling
+    private val byLowerName = FILES.associateBy { it.lowercase() }
+
+    override fun read(path: String): ByteArray? {
+        val n = SkinFiles.normalize(path)
+        GeneratedImages.read(n)?.let { return it }
+        val name = byLowerName[n] ?: return null
+        return AndampDefaultSet::class.java.getResourceAsStream(ROOT + name)?.use { it.readBytes() }
+    }
+
+    override fun names(): List<String> = FILES
+}

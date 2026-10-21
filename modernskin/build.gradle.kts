@@ -28,6 +28,8 @@ tasks.test {
         "scenario",
         "timing",
         "probe.color",
+        "trace.base",
+        "defaults",
         "sysfonts",
         "have.library",
         "private",
