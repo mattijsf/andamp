@@ -408,6 +408,7 @@ dependencies {
     testImplementation(platform(libs.compose.bom))
     testImplementation(libs.compose.ui.test.junit4)
     debugImplementation(libs.compose.ui.test.manifest) // merges ComponentActivity into the debug manifest for Robolectric
+    debugImplementation(project(":modernskin")) // proof of concept: modern (.wal) skins, debug builds only
 }
 
 /**
