@@ -132,6 +132,8 @@
     <string name="prefs_notice_webamp_what">Its sprite maps are the ground truth for every coordinate in the skinned windows.</string>
     <string name="prefs_notice_liberation_sans_what">The playlist\'s font, metric-compatible with the Arial that PLEDIT.TXT names.</string>
     <string name="prefs_notice_liberation_sans_obligation">Bundled unmodified, under a name the license permits.</string>
+    <string name="prefs_notice_dejavu_what">Stands in for the Windows fonts that Winamp modern skins name without carrying them.</string>
+    <string name="prefs_notice_dejavu_obligation">Bundled unmodified, with its license text.</string>
     <string name="prefs_notice_luaj_what">Runs the .lua files that describe effects, in a sandbox.</string>
     <string name="prefs_notice_androidx_what">The UI toolkit, navigation, lifecycle, and Media3 for local playback.</string>
     <string name="prefs_notice_kotlin_what">The language and its concurrency library.</string>

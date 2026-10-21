@@ -118,6 +118,8 @@
     <string name="prefs_notice_webamp_what">Ses tables de sprites servent de référence pour chaque coordonnée des fenêtres à skin.</string>
     <string name="prefs_notice_liberation_sans_what">La police de la liste de lecture, aux métriques compatibles avec l’Arial que nomme PLEDIT.TXT.</string>
     <string name="prefs_notice_liberation_sans_obligation">Fournie sans modification, sous un nom que la licence autorise.</string>
+    <string name="prefs_notice_dejavu_what">Remplace les polices Windows que les skins modernes de Winamp nomment sans les fournir.</string>
+    <string name="prefs_notice_dejavu_obligation">Fournie sans modification, avec le texte de sa licence.</string>
     <string name="prefs_notice_luaj_what">Exécute dans un bac à sable les fichiers .lua qui décrivent les effets.</string>
     <string name="prefs_notice_androidx_what">La boîte à outils d’interface, la navigation, le cycle de vie, et Media3 pour la lecture locale.</string>
     <string name="prefs_notice_kotlin_what">Le langage et sa bibliothèque de concurrence.</string>

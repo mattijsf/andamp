@@ -84,4 +84,9 @@
     <!-- WinampViewModel.kt -->
     <string name="prompt_jump_to_time_title">Ga naar tijd</string>
     <string name="prompt_jump_to_time_confirm">Ga</string>
+
+    <string name="skin_modern_title">“%1$s” is een moderne skin</string>
+    <string name="skin_modern_body">Andamp laadt klassieke Winamp-skins (.wsz). Moderne skins (.wal) kunnen in deze versie niet worden toegevoegd.</string>
+    <string name="skin_too_large_title">“%1$s” is te groot</string>
+    <string name="skin_too_large_body">Dit bestand is te groot om als skin te laden.</string>
 </resources>

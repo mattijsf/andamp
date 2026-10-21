@@ -119,7 +119,7 @@ class WinampViewModel
         /** Non-null when the backend can feed real PCM to the visualizer. */
         val audioTap get() = facade.audioTap
 
-        val skinOps = SkinOps(app, state, viewModelScope, skinLibrary)
+        val skinOps = SkinOps(app, state, viewModelScope, skinLibrary, words = words)
 
         /** The skin each music source asks for, worn while its tracks play; see [SourceSkins]. */
         val sourceSkinOps = SourceSkinOps(SourceSkins(app), skinOps::wear)

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-// Proof of concept: Winamp "modern" (Wasabi) skin loading and a MAKI interpreter, with no Android
-// dependency so the parser and the VM run under plain JVM tests.
+// Winamp "modern" (Wasabi) skins: the .wal loader, the MAKI interpreter and the runtime, with no
+// Android dependency so they run under plain JVM tests.
 plugins {
     alias(libs.plugins.kotlin.jvm)
 }

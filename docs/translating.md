@@ -98,6 +98,7 @@ comes from, so that the next person keeps to them.
 | English | Nederlands | From |
 |---|---|---|
 | skin | skin | Winamp |
+| modern skin | moderne skin | unverified |
 | visualization | visualisatie | Winamp |
 | Media Library | mediabibliotheek | Winamp |
 | playlist | afspeellijst | common usage (Winamp: speellijst) |
@@ -121,6 +122,7 @@ comes from, so that the next person keeps to them.
 | English | Français | From |
 |---|---|---|
 | skin | skin | Winamp |
+| modern skin | skin moderne | unverified |
 | visualization | visualisation | Winamp |
 | Media Library | médiathèque | Winamp |
 | playlist | liste de lecture | Winamp |
@@ -148,6 +150,7 @@ comes from, so that the next person keeps to them.
 | English | Deutsch | From |
 |---|---|---|
 | skin | Skin | Winamp |
+| modern skin | moderner Skin | unverified |
 | visualization | Visualisierung | Winamp |
 | Media Library | Medienbibliothek | Winamp |
 | playlist | Playlist | Winamp |
@@ -175,6 +178,7 @@ comes from, so that the next person keeps to them.
 | English | 简体中文 | From |
 |---|---|---|
 | skin | 皮肤 | common usage (Winamp: 面板) |
+| modern skin | 现代皮肤 | unverified |
 | visualization | 可视化效果 | Winamp |
 | Media Library | 媒体库 | Winamp |
 | playlist | 播放列表 | Winamp |

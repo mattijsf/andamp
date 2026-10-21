@@ -602,8 +602,24 @@ class WinampState {
     /** Winamp's Preferences > Bookmarks; null while it is not shown. */
     var bookmarkSheet by mutableStateOf<BookmarkSheet?>(null)
 
-    /** A prompt for the listener; null while there is none. */
-    var prompt by mutableStateOf<AmpPrompt?>(null)
+    private var promptShown by mutableStateOf<AmpPrompt?>(null)
+
+    /**
+     * A prompt for the listener; null while there is none. Setting it to null shows
+     * [waitingNotice] instead, when one waits.
+     */
+    var prompt: AmpPrompt?
+        get() = promptShown
+        set(value) {
+            promptShown = value ?: waitingNotice
+            if (value == null) waitingNotice = null
+        }
+
+    /**
+     * A notice waiting for [prompt] to be free, such as why a picked skin was not added. It
+     * is set only while a prompt shows, and [prompt] going to null shows it.
+     */
+    var waitingNotice by mutableStateOf<AmpPrompt?>(null)
 
     /** A request for music access, waiting for the screen to ask; see [LibraryPrompt]. */
     var libraryAsk by mutableStateOf<LibraryAsk?>(null)

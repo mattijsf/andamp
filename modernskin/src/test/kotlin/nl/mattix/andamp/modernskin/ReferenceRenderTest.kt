@@ -882,8 +882,8 @@ class ReferenceRenderTest {
         /** -Dsysfonts=<dir>: Windows fonts by file name, e.g. the reference VM's (Microsoft's; local only, never committed). */
         val SYS_FONTS: File? = System.getProperty("sysfonts")?.let { File(it) }
 
-        /** The app's stand-ins for Windows fonts a skin names without a file (ModernSkinActivity's STAND_INS). */
-        val APP_FONTS = File("../app/src/debug/assets/fonts")
+        /** The stand-ins for Windows fonts a skin names without a file (ModernSkinActivity's STAND_INS), from the default set. */
+        val APP_FONTS = File("src/main/resources/nl/mattix/andamp/modernskin/defaultset/fonts")
         val STAND_INS = mapOf("tahoma" to "DejaVuSansCondensed")
 
         /** A command owns a pixel only when it changed it by more than this (0-255 per channel, root mean square). */

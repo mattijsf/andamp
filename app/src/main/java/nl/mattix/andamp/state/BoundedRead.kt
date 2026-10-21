@@ -42,3 +42,25 @@ internal class StreamTooLarge(
 
 /** Bytes read per call. */
 private const val CHUNK = 16 * 1024
+
+/**
+ * Copies the stream into [out] until it ends or passes [max] bytes; see [readAtMost].
+ *
+ * @return true when the whole stream fit in [max] bytes. False when it went past: the copy
+ *     then stops after the read that passed [max], so [out] holds more than [max] bytes, at
+ *     most one read's worth more, and the rest of the stream is left unread.
+ */
+internal fun InputStream.copyAtMost(
+    out: java.io.OutputStream,
+    max: Long,
+): Boolean {
+    val chunk = ByteArray(CHUNK)
+    var total = 0L
+    while (true) {
+        val read = read(chunk)
+        if (read < 0) return true
+        out.write(chunk, 0, read)
+        total += read
+        if (total > max) return false
+    }
+}

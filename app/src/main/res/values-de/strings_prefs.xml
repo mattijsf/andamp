@@ -118,6 +118,8 @@
     <string name="prefs_notice_webamp_what">Seine Sprite-Tabellen sind die Referenz für jede Koordinate in den Fenstern mit Skin.</string>
     <string name="prefs_notice_liberation_sans_what">Die Schriftart der Playlist, metrisch kompatibel mit der Arial, die PLEDIT.TXT nennt.</string>
     <string name="prefs_notice_liberation_sans_obligation">Unverändert beigelegt, unter einem Namen, den die Lizenz erlaubt.</string>
+    <string name="prefs_notice_dejavu_what">Ersetzt die Windows-Schriftarten, die moderne Winamp-Skins nennen, aber nicht mitbringen.</string>
+    <string name="prefs_notice_dejavu_obligation">Unverändert beigelegt, mit dem Lizenztext.</string>
     <string name="prefs_notice_luaj_what">Führt die .lua-Dateien, die Effekte beschreiben, in einer Sandbox aus.</string>
     <string name="prefs_notice_androidx_what">Das UI-Toolkit, Navigation, Lifecycle und Media3 für die lokale Wiedergabe.</string>
     <string name="prefs_notice_kotlin_what">Die Sprache und ihre Bibliothek für Nebenläufigkeit.</string>

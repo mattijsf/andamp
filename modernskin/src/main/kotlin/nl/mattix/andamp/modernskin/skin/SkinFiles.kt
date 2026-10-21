@@ -46,13 +46,11 @@ class ZipSkinFiles(
                 all[SkinFiles.normalize(e.name)] = bytes
             }
             // some archives hold the skin in one folder: strip it when skin.xml sits there
-            val prefix = all.keys.firstOrNull { it.endsWith("/skin.xml") }?.removeSuffix("skin.xml")
-            if ("skin.xml" !in all &&
-                prefix != null
-            ) {
-                all.filterKeys { it.startsWith(prefix) }.mapKeys { it.key.removePrefix(prefix) }
-            } else {
+            val prefix = WalArchive.skinFolder(all.keys)
+            if (prefix.isNullOrEmpty()) {
                 all
+            } else {
+                all.filterKeys { it.startsWith(prefix) }.mapKeys { it.key.removePrefix(prefix) }
             }
         }
 

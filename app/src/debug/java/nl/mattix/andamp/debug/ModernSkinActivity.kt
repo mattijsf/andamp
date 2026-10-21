@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import nl.mattix.andamp.modernskin.maki.Value
 import nl.mattix.andamp.modernskin.skin.Align
+import nl.mattix.andamp.modernskin.skin.AndampDefaultSet
 import nl.mattix.andamp.modernskin.skin.DrawCmd
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.FontDef
@@ -208,7 +209,7 @@ private data class Check(
 /** 2026-10-20 12:00:00 UTC, the moment ReferenceRenderTest's clock starts at. */
 private const val CHECK_CLOCK_START = 1_792_324_800_000L
 
-/** Windows fonts skins name without a file, and the free font in assets/fonts that stands in. */
+/** Windows fonts skins name without a file, and the free font in Andamp's default set that stands in. */
 private val STAND_INS = mapOf("tahoma" to "DejaVuSansCondensed")
 
 /** The Winamp VM's work area, which ReferenceRenderTest uses as the viewport too. */
@@ -289,7 +290,6 @@ private fun SkinList(
 private class AndroidSkinHost(
     private val files: SkinFiles,
     private val cacheDir: File,
-    private val assets: android.content.res.AssetManager,
 ) : SkinHost {
     val log = ArrayDeque<String>()
 
@@ -510,8 +510,13 @@ private class AndroidSkinHost(
         bold: Boolean,
     ): Typeface? {
         val base = STAND_INS[font?.takeIf { it.file.isEmpty() }?.id ?: return null] ?: return null
-        val asset = "fonts/$base${if (bold) "-Bold" else ""}.ttf"
-        return typefaces.getOrPut(asset) { runCatching { Typeface.createFromAsset(assets, asset) }.getOrNull() }
+        val path = "fonts/$base${if (bold) "-Bold" else ""}.ttf"
+        return typefaces.getOrPut(path) {
+            val bytes = AndampDefaultSet.read(path) ?: return@getOrPut null
+            val f = File(cacheDir, "standin-$base${if (bold) "-Bold" else ""}.ttf")
+            if (!f.exists()) f.writeBytes(bytes)
+            runCatching { Typeface.createFromFile(f) }.getOrNull()
+        }
     }
 
     fun typeface(font: FontDef?): Typeface? {
@@ -541,7 +546,7 @@ private class AndroidSkinHost(
                     if (standIn !=
                         null
                     ) {
-                        runCatching { assets.open(standIn).use { it.readBytes() } }.getOrNull()
+                        AndampDefaultSet.read(standIn)
                     } else {
                         files.read(f.file)
                     }
@@ -652,12 +657,12 @@ private fun ModernSkinScreen(
             val skin =
                 nl.mattix.andamp.modernskin.skin
                     .SkinsFolderFiles(ZipSkinFiles(file), siblings)
-            val base = if (defaults.exists()) ZipSkinFiles(defaults) else nl.mattix.andamp.modernskin.skin.AndampDefaultSet
+            val base = if (defaults.exists()) ZipSkinFiles(defaults) else AndampDefaultSet
             nl.mattix.andamp.modernskin.skin
                 .LayeredSkinFiles(skin, base)
         }
     val context = androidx.compose.ui.platform.LocalContext.current
-    val host = remember { AndroidSkinHost(WithGeneratedImages(files), context.cacheDir, context.assets) }
+    val host = remember { AndroidSkinHost(WithGeneratedImages(files), context.cacheDir) }
     val player =
         remember {
             FakePlayer().apply {

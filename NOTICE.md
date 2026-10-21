@@ -20,8 +20,8 @@ source compiles against. A source is its author's own app and may carry any lice
 player uses these modules like any other Apache-2.0 library.
 
 Everything below keeps its own terms. With one exception, none of them conflicts with the
-GPL: Apache-2.0 and LGPL-2.1 code can be combined with GPLv3 code, and BSD, MIT and OFL
-only ask for attribution. The exception is the Google Play Billing Library, which is why
+GPL: Apache-2.0 and LGPL-2.1 code can be combined with GPLv3 code, and BSD, MIT, OFL and
+the Bitstream Vera license only ask for attribution. The exception is the Google Play Billing Library, which is why
 it has an additional permission of its own. One thing to watch: GPLv2-only code cannot be combined with the Apache-2.0
 libraries this app links.
 
@@ -118,6 +118,19 @@ metric-compatible with the Arial that `PLEDIT.TXT` names and renders the playlis
 The license text is in `docs/LiberationSans-LICENSE.txt`, and the build copies it into the
 APK as the asset `licenses/LiberationSans-OFL-1.1.txt`.
 
+## DejaVu Sans Condensed: Bitstream Vera license
+
+<https://github.com/dejavu-fonts/dejavu-fonts>
+
+Bundled unmodified, regular and bold, as resources of the modern skin engine
+(`modernskin/src/main/resources/nl/mattix/andamp/modernskin/defaultset/fonts/`). It stands
+in for the Windows fonts that Winamp modern skins name without carrying them, with widths
+close to Tahoma's. The fonts are Bitstream Vera with DejaVu's changes, which are in the
+public domain, and glyphs from Arev, under Arev's license, whose terms match Bitstream
+Vera's. The license text is in
+`DejaVu-LICENSE.txt` beside the fonts, and the build copies it into the APK as the asset
+`licenses/DejaVu-Bitstream-Vera.txt`.
+
 ## Google Play Billing Library: Android SDK License
 
 <https://developer.android.com/google/play/billing>
@@ -155,7 +168,8 @@ attribution, which this file and the in-app licenses screen give.
 ## The licenses screen
 
 `app/.../ui/prefs/Notices.kt` holds the same list for the in-app licenses screen, because
-LGPL-2.1 and the OFL both require something the installed app has to carry. `NoticesTest`
+LGPL-2.1, the OFL and the Bitstream Vera license require something the installed app has to
+carry. `NoticesTest`
 reads every `implementation(...)` in every module and fails when one has no entry. It also
 checks that the projectM revision on that screen is the tag in the table above.
 

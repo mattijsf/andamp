@@ -10,9 +10,10 @@ import nl.mattix.andamp.state.Store
  * What ships inside Andamp that somebody else wrote.
  *
  * `NOTICE.md` records this for readers of the repository; this list is the copy in the app.
- * LGPL-2.1 asks for its text, an offer of source and the means to relink, and the OFL asks for its
- * text to be carried. Both texts ship as assets ([Notices.PROJECTM_LICENSE_ASSET],
- * [Notices.LIBERATION_SANS_LICENSE_ASSET]); no screen shows them.
+ * LGPL-2.1 asks for its text, an offer of source and the means to relink, and the OFL and the
+ * Bitstream Vera license ask for their text to be carried. The texts ship as assets
+ * ([Notices.PROJECTM_LICENSE_ASSET], [Notices.LIBERATION_SANS_LICENSE_ASSET],
+ * [Notices.DEJAVU_LICENSE_ASSET]); no screen shows them.
  *
  * Kept as data so `NoticesTest` can check it against the build files and catch a new dependency
  * that has no entry. The names, licenses and addresses are the same in every language; [Notice.what]
@@ -50,6 +51,9 @@ object Notices {
 
     /** Liberation Sans's OFL 1.1 text in the APK's assets, copied there by the same task. */
     const val LIBERATION_SANS_LICENSE_ASSET = "licenses/LiberationSans-OFL-1.1.txt"
+
+    /** The DejaVu fonts' license (Bitstream Vera, with Arev's) in the APK's assets, copied there by the same task. */
+    const val DEJAVU_LICENSE_ASSET = "licenses/DejaVu-Bitstream-Vera.txt"
 
     /** Every entry, worded from [res]: the list of this project, then what the store's build carries. */
     fun all(res: Resources): List<Notice> =
@@ -97,6 +101,13 @@ object Notices {
                 what = res.getString(R.string.prefs_notice_liberation_sans_what),
                 url = "https://github.com/liberationfonts/liberation-fonts",
                 obligation = res.getString(R.string.prefs_notice_liberation_sans_obligation),
+            ),
+            Notice(
+                name = "DejaVu Sans Condensed",
+                licence = "Bitstream Vera",
+                what = res.getString(R.string.prefs_notice_dejavu_what),
+                url = "https://github.com/dejavu-fonts/dejavu-fonts",
+                obligation = res.getString(R.string.prefs_notice_dejavu_obligation),
             ),
             Notice(
                 name = "LuaJ",

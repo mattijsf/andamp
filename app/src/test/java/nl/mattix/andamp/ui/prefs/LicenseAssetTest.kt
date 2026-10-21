@@ -10,7 +10,10 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
-/** LGPL-2.1 and the OFL ask that their text accompany what they cover, so both are in the packaged assets. */
+/**
+ * LGPL-2.1, the OFL and the Bitstream Vera license ask that their text accompany what they cover,
+ * so each is in the packaged assets.
+ */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
 class LicenseAssetTest {
@@ -38,5 +41,17 @@ class LicenseAssetTest {
                 .use { it.readText() }
 
         assertTrue("the text is the OFL", text.contains("SIL OPEN FONT LICENSE Version 1.1"))
+    }
+
+    @Test
+    fun `DejaVu's license text is packaged with the app`() {
+        val text =
+            app.assets
+                .open(Notices.DEJAVU_LICENSE_ASSET)
+                .bufferedReader()
+                .use { it.readText() }
+
+        assertTrue("the text is Bitstream Vera's", text.contains("Bitstream Vera Fonts Copyright"))
+        assertTrue("the text carries Arev's terms", text.contains("Arev Fonts Copyright"))
     }
 }
