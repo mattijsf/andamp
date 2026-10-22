@@ -45,7 +45,7 @@ class Binding(
 
 class Op(
     val opcode: Int,
-    /** Variable, method or class index, or a code index for jumps. */
+    /** Variable, method or class index, or a code index for jumps (a byte offset while MakiParser reads the code). */
     val arg: Int,
     /** The argument count carried by a stack-protected call, or -1. */
     val argc: Int,

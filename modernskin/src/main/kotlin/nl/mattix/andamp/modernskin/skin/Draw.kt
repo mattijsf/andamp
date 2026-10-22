@@ -160,6 +160,7 @@ sealed class DrawCmd {
         fun isCutPixel(argb: Int): Boolean = (argb ushr 24) >= 128
     }
 
+    @Suppress("LongParameterList") // a run of text: its words, font, color, box, ticker offset and shadow
     class Text(
         val text: String,
         val font: FontDef?,

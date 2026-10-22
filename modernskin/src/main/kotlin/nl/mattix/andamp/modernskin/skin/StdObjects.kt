@@ -142,10 +142,11 @@ class MakiMap(
     ): Int? {
         val def = bitmap?.let { rt.bitmap(it) } ?: return null
         val (w, h) = rt.bitmapSize(def.id) ?: return null
-        if (x < 0 || y < 0 || x >= w || y >= h) return null
+        if (x !in 0 until w || y !in 0 until h) return null
         return rt.host.pixel(def.file, def.x + x, def.y + y)
     }
 
+    @Suppress("CyclomaticComplexMethod") // one branch per method a script can call on a map
     override fun makiCall(
         name: String,
         args: List<Value>,

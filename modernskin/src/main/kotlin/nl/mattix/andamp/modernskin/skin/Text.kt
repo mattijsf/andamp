@@ -75,6 +75,7 @@ class Text(
     private var tickedAt = -1L
     private var skipped = 0
 
+    @Suppress("CyclomaticComplexMethod") // one flat branch per text attribute a skin can set
     override fun setParam(
         key: String,
         value: String,
@@ -409,20 +410,31 @@ class Text(
         }
         if (tickedAt < 0) tickedAt = now
         val overflow = textWidth(text) - rect.width
-        if (overflow <= 0) {
-            tickedAt = now
-            if (scroll != 0) {
-                scroll = 0
-                return true
+        return when {
+            overflow <= 0 -> {
+                tickedAt = now
+                if (scroll != 0) {
+                    scroll = 0
+                    true
+                } else {
+                    false
+                }
             }
-            return false
+
+            // a temporary message holds the ticker still
+            !alternateText.isNullOrEmpty() -> {
+                tickedAt = now
+                false
+            }
+
+            songTicker -> {
+                songStep(now, text)
+            }
+
+            else -> {
+                textStep(now, overflow)
+            }
         }
-        // a temporary message holds the ticker still
-        if (!alternateText.isNullOrEmpty()) {
-            tickedAt = now
-            return false
-        }
-        return if (songTicker) songStep(now, text) else textStep(now, overflow)
     }
 
     /** Whether a text that follows the player now shows something else: a new second, a new bitrate. */
@@ -514,84 +526,87 @@ class Text(
             val box = Rect(rect.left + lp + offsetX, rect.top + offsetY, maxOf(0, rect.width - lp + rightPadding), rect.height)
             out.add(DrawCmd.BitmapText(shown, bf, box, a, effectiveAlpha, valign, colonWidth, if (wide) scroll else 0))
         } else {
-            val c = colorId?.let { rt.color(it) } ?: color
-            // a shadow only with an offset, black unless shadowcolor says otherwise
-            val sh = if (shadowX != 0 || shadowY != 0) shadow ?: shadowId?.let { rt.color(it) } ?: Rgb(0) else null
-            // 2 px in, plus leftpadding unless a centered text fits; the right edge stays at the
-            // box less 2; a songticker starts at its padding
-            val rect =
-                if (songTicker) {
-                    val lp = leftPadding ?: 0
-                    Rect(rect.left + lp + offsetX, rect.top + offsetY, maxOf(0, rect.width - lp + rightPadding), rect.height)
-                } else {
-                    val lp = if (a == Align.CENTER && !wide) 0 else leftPadding ?: 0
-                    Rect(rect.left + PAD + lp + offsetX, rect.top + offsetY, maxOf(0, rect.width - PAD), rect.height)
-                }
-            if (isTime && !wide && ':' in text) {
-                // a time: the pieces laid out by hand, each colon at the left of its slot; 2 px in
-                // from the side it is aligned to, none when centered
-                val pieces = text.split(':')
-                val (widths, cw) = timePieces(text)
-                val total = widths.sum() + cw * (pieces.size - 1)
-                val box = this.rect
-                var x =
-                    when (a) {
-                        Align.LEFT -> box.left + PAD + (leftPadding ?: 0)
-                        Align.CENTER -> box.left + (box.width - total) / 2
-                        Align.RIGHT -> box.right - rightPadding - PAD - total
-                    } + offsetX
-                pieces.forEachIndexed { i, piece ->
-                    if (piece.isNotEmpty()) {
-                        out.add(
-                            DrawCmd.Text(
-                                piece,
-                                ttf(),
-                                effectiveSize,
-                                c,
-                                Rect(x, rect.top, widths[i], rect.height),
-                                Align.LEFT,
-                                0,
-                                effectiveAlpha,
-                                valign,
-                                bold,
-                                sh,
-                                shadowX,
-                                shadowY,
-                            ),
-                        )
-                    }
-                    x += widths[i]
-                    if (i < pieces.size - 1) {
-                        out.add(
-                            DrawCmd.Text(
-                                ":",
-                                ttf(),
-                                effectiveSize,
-                                c,
-                                Rect(x, rect.top, cw, rect.height),
-                                Align.LEFT,
-                                0,
-                                effectiveAlpha,
-                                valign,
-                                bold,
-                                sh,
-                                shadowX,
-                                shadowY,
-                            ),
-                        )
-                        x += cw
-                    }
-                }
+            drawTrueType(out, text, shown, wide, a)
+        }
+    }
+
+    /** [shown] in a TrueType font, aligned by [a]: a time by its pieces, anything else in one run. */
+    private fun drawTrueType(
+        out: MutableList<DrawCmd>,
+        text: String,
+        shown: String,
+        wide: Boolean,
+        a: Align,
+    ) {
+        val c = colorId?.let { rt.color(it) } ?: color
+        // a shadow only with an offset, black unless shadowcolor says otherwise
+        val sh = if (shadowX != 0 || shadowY != 0) shadow ?: shadowId?.let { rt.color(it) } ?: Rgb(0) else null
+        // 2 px in, plus leftpadding unless a centered text fits; the right edge stays at the
+        // box less 2; a songticker starts at its padding
+        val rect =
+            if (songTicker) {
+                val lp = leftPadding ?: 0
+                Rect(rect.left + lp + offsetX, rect.top + offsetY, maxOf(0, rect.width - lp + rightPadding), rect.height)
             } else {
+                val lp = if (a == Align.CENTER && !wide) 0 else leftPadding ?: 0
+                Rect(rect.left + PAD + lp + offsetX, rect.top + offsetY, maxOf(0, rect.width - PAD), rect.height)
+            }
+        if (isTime && !wide && ':' in text) {
+            drawTime(out, text, a, c, sh, rect)
+        } else {
+            out.add(
+                DrawCmd.Text(
+                    shown,
+                    ttf(),
+                    effectiveSize,
+                    c,
+                    rect,
+                    a,
+                    if (wide) scroll else 0,
+                    effectiveAlpha,
+                    valign,
+                    bold,
+                    sh,
+                    shadowX,
+                    shadowY,
+                ),
+            )
+        }
+    }
+
+    /**
+     * A time: the pieces laid out by hand, each colon at the left of its slot; 2 px in from the side
+     * it is aligned to, none when centered. The pieces take their top and height from [textRect].
+     */
+    private fun drawTime(
+        out: MutableList<DrawCmd>,
+        text: String,
+        a: Align,
+        c: Rgb,
+        sh: Rgb?,
+        textRect: Rect,
+    ) {
+        val pieces = text.split(':')
+        val (widths, cw) = timePieces(text)
+        val total = widths.sum() + cw * (pieces.size - 1)
+        val box = rect
+        var x =
+            when (a) {
+                Align.LEFT -> box.left + PAD + (leftPadding ?: 0)
+                Align.CENTER -> box.left + (box.width - total) / 2
+                Align.RIGHT -> box.right - rightPadding - PAD - total
+            } + offsetX
+        pieces.forEachIndexed { i, piece ->
+            if (piece.isNotEmpty()) {
                 out.add(
                     DrawCmd.Text(
-                        shown,
+                        piece,
                         ttf(),
                         effectiveSize,
                         c,
-                        rect,
-                        a,
-                        if (wide) scroll else 0,
+                        Rect(x, textRect.top, widths[i], textRect.height),
+                        Align.LEFT,
+                        0,
                         effectiveAlpha,
                         valign,
                         bold,
@@ -600,6 +615,27 @@ class Text(
                         shadowY,
                     ),
                 )
+            }
+            x += widths[i]
+            if (i < pieces.size - 1) {
+                out.add(
+                    DrawCmd.Text(
+                        ":",
+                        ttf(),
+                        effectiveSize,
+                        c,
+                        Rect(x, textRect.top, cw, textRect.height),
+                        Align.LEFT,
+                        0,
+                        effectiveAlpha,
+                        valign,
+                        bold,
+                        sh,
+                        shadowX,
+                        shadowY,
+                    ),
+                )
+                x += cw
             }
         }
     }

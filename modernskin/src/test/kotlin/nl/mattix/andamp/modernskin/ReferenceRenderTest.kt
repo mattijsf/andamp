@@ -152,21 +152,8 @@ class ReferenceRenderTest {
                 nl.mattix.andamp.modernskin.skin.Text
                     .emSize(size)
             if (def != null && def.file.isEmpty()) {
-                // a system font by name (Bento's Tahoma): the free stand-in the app carries, as the
-                // phone draws it; -Dsysfonts=<dir> takes <name>.ttf / <name>bd.ttf from there instead
-                // (the reference VM's own fonts, ~/Development/winamp-vm/fonts, to compare against)
-                val key = def.id + if (bold) "/bold" else ""
-                val sys =
-                    fonts.getOrPut(key) {
-                        val file =
-                            SYS_FONTS?.let { File(it, def.id.replace(" ", "") + (if (bold) "bd" else "") + ".ttf") }
-                                ?: STAND_INS[def.id]?.let { File(APP_FONTS, it + (if (bold) "-Bold" else "") + ".ttf") }
-                        file?.takeIf { it.exists() }?.let { f ->
-                            GdiLineMetrics.read(f.readBytes())?.let { gdi[key] = it }
-                            runCatching { Font.createFont(Font.TRUETYPE_FONT, f) }.getOrNull()
-                        }
-                    }
-                if (sys != null) return sys.deriveFont(Font.PLAIN, em).also { lineOf[it] = gdi[key] }
+                val sys = systemFont(def, bold, em)
+                if (sys != null) return sys
             }
             val base =
                 def?.let {
@@ -178,6 +165,31 @@ class ReferenceRenderTest {
                     }
                 } ?: Font("Arial", Font.PLAIN, size)
             return base.deriveFont(if (bold) Font.BOLD else Font.PLAIN, em).also { f -> def?.let { lineOf[f] = gdi[it.id] } }
+        }
+
+        /**
+         * A system font by name (Bento's Tahoma): the free stand-in the app carries, as the phone
+         * draws it; -Dsysfonts=<dir> takes <name>.ttf / <name>bd.ttf from there instead (the
+         * reference VM's fonts, ~/Development/winamp-vm/fonts, to compare against). Null when no
+         * file for it loads.
+         */
+        private fun systemFont(
+            def: FontDef,
+            bold: Boolean,
+            em: Float,
+        ): Font? {
+            val key = def.id + if (bold) "/bold" else ""
+            val sys =
+                fonts.getOrPut(key) {
+                    val file =
+                        SYS_FONTS?.let { File(it, def.id.replace(" ", "") + (if (bold) "bd" else "") + ".ttf") }
+                            ?: STAND_INS[def.id]?.let { File(APP_FONTS, it + (if (bold) "-Bold" else "") + ".ttf") }
+                    file?.takeIf { it.exists() }?.let { f ->
+                        GdiLineMetrics.read(f.readBytes())?.let { gdi[key] = it }
+                        runCatching { Font.createFont(Font.TRUETYPE_FONT, f) }.getOrNull()
+                    }
+                }
+            return sys?.deriveFont(Font.PLAIN, em)?.also { lineOf[it] = gdi[key] }
         }
 
         private val gdi = HashMap<String, GdiLineMetrics>()
@@ -334,23 +346,15 @@ class ReferenceRenderTest {
         val src = (if (mask) host.cutMask(cmd.bitmap.file) else host.image(cmd.bitmap.file, cmd.gamma)) ?: return
         val sw = cmd.bitmap.w ?: (src.width - cmd.bitmap.x)
         val sh = cmd.bitmap.h ?: (src.height - cmd.bitmap.y)
-        if (sw <= 0 || sh <= 0 || cmd.dst.width <= 0 || cmd.dst.height <= 0) return
+        val nothingToDraw = sw <= 0 || sh <= 0 || cmd.dst.width <= 0 || cmd.dst.height <= 0
+        if (nothingToDraw) return
         g.composite = AlphaComposite.getInstance(rule, cmd.alpha / 255f)
         g.setRenderingHint(
             RenderingHints.KEY_INTERPOLATION,
             if (cmd.smooth) RenderingHints.VALUE_INTERPOLATION_BILINEAR else RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR,
         )
         if (!cmd.smooth && (sw != cmd.dst.width || sh != cmd.dst.height)) {
-            // stretched as Winamp stretches: each pixel from source row/column floor(d * src / dst)
-            val out = BufferedImage(cmd.dst.width, cmd.dst.height, BufferedImage.TYPE_INT_ARGB)
-            for (y in 0 until cmd.dst.height) {
-                val sy = cmd.bitmap.y + (y.toLong() * sh / cmd.dst.height).toInt()
-                for (x in 0 until cmd.dst.width) {
-                    val sx = cmd.bitmap.x + (x.toLong() * sw / cmd.dst.width).toInt()
-                    if (sx < src.width && sy < src.height) out.setRGB(x, y, src.getRGB(sx, sy))
-                }
-            }
-            g.drawImage(out, cmd.dst.left - ox, cmd.dst.top - oy, null)
+            g.drawImage(stretched(src, cmd, sw, sh), cmd.dst.left - ox, cmd.dst.top - oy, null)
             return
         }
         g.drawImage(
@@ -365,6 +369,27 @@ class ReferenceRenderTest {
             cmd.bitmap.y + sh,
             null,
         )
+    }
+
+    /**
+     * [cmd]'s [sw] x [sh] source area in [src] at its destination size, as Winamp stretches: each
+     * pixel from source row/column floor(d * src / dst).
+     */
+    private fun stretched(
+        src: BufferedImage,
+        cmd: DrawCmd.Image,
+        sw: Int,
+        sh: Int,
+    ): BufferedImage {
+        val out = BufferedImage(cmd.dst.width, cmd.dst.height, BufferedImage.TYPE_INT_ARGB)
+        for (y in 0 until cmd.dst.height) {
+            val sy = cmd.bitmap.y + (y.toLong() * sh / cmd.dst.height).toInt()
+            for (x in 0 until cmd.dst.width) {
+                val sx = cmd.bitmap.x + (x.toLong() * sw / cmd.dst.width).toInt()
+                if (sx < src.width && sy < src.height) out.setRGB(x, y, src.getRGB(sx, sy))
+            }
+        }
+        return out
     }
 
     /**
@@ -413,6 +438,7 @@ class ReferenceRenderTest {
     }
 
     /** Renders, compares and returns the share of pixels that differ from the reference, in percent (null without one). */
+    @Suppress("LongMethod", "CyclomaticComplexMethod", "NestedBlockDepth") // the VM's steps in order, one arm per draw command
     private fun render(sc: Scenario): Double? {
         val res = File(localResource("/CornerAmp_Redux.wal").toURI()).parentFile
         val name = sc.name
@@ -553,7 +579,9 @@ class ReferenceRenderTest {
         val clips = ArrayDeque<java.awt.Shape?>()
         val windows = ArrayDeque<Triple<BufferedImage, java.awt.Graphics2D, DrawCmd.WindowStart>>()
         if (System.getProperty("probe.rect") != null) {
-            val (px0, py0, px1, py1) = System.getProperty("probe.rect").split(",").map { it.toInt() }
+            // -Dprobe.rect=x0,y0,x1,y1
+            val p = System.getProperty("probe.rect").split(",").map { it.toInt() }
+            val probe = Rect(p[0], p[1], p[2] - p[0], p[3] - p[1])
             for (c in rt.draw(layout)) {
                 if (c is DrawCmd.WindowStart) {
                     println("PROBE $name WindowStart ${c.owner} pics=${c.region.pics().map { it.bitmap.id + "@" + it.dst }}")
@@ -562,7 +590,7 @@ class ReferenceRenderTest {
                         "PROBE $name ${c.javaClass.simpleName} ${c.owner}" +
                             if (c is DrawCmd.Text) " '${c.text}' ${c.rect} ${c.align} size=${c.size}" else "",
                     )
-                } else if (c is DrawCmd.Image && c.dst.left < px1 && c.dst.right > px0 && c.dst.top < py1 && c.dst.bottom > py0) {
+                } else if (c is DrawCmd.Image && overlaps(c.dst, probe)) {
                     println(
                         "PROBE $name ${c.owner} ${c.bitmap.id} ${c.bitmap.file} src=${c.bitmap.x},${c.bitmap.y} " +
                             "${c.bitmap.w}x${c.bitmap.h} dst=${c.dst} a=${c.alpha} sheet=${host.imageSize(c.bitmap.file)}",
@@ -897,5 +925,11 @@ class ReferenceRenderTest {
             }
             return Math.sqrt(sum / 4)
         }
+
+        /** Whether [a] and [b] overlap: on both axes, each starts before the other ends. */
+        fun overlaps(
+            a: Rect,
+            b: Rect,
+        ) = a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top
     }
 }

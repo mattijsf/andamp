@@ -19,7 +19,7 @@ import kotlin.math.tan
  * lives in. One per script instance, since `getScriptGroup()` and `getParam()` differ per place.
  * [started] once its onScriptLoaded ran: xui parameters wait for that.
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions") // the System object's script API, method by method
 class SystemObject(
     private val rt: SkinRuntime,
     val group: Group?,
@@ -38,7 +38,7 @@ class SystemObject(
 
     private fun num(d: Double) = Value.Num(d)
 
-    @Suppress("CyclomaticComplexMethod", "LongMethod")
+    @Suppress("CyclomaticComplexMethod", "LongMethod") // one arm per script method of System
     override fun makiCall(
         name: String,
         args: List<Value>,

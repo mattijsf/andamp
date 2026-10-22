@@ -15,7 +15,7 @@ class ApiClass(
 )
 
 /** The MAKI standard library: class GUIDs, their parents and each method's arity and return kind. */
-@Suppress("LargeClass", "LongMethod", "MaxLineLength")
+@Suppress("LargeClass", "LongMethod", "MaxLineLength") // a table of the standard library, one line per class
 object StdApi {
     private fun m(
         params: Int,

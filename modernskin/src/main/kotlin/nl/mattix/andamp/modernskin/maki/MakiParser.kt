@@ -6,7 +6,8 @@ import java.nio.ByteOrder
 
 class MakiFormatException(
     message: String,
-) : Exception(message)
+    cause: Throwable? = null,
+) : Exception(message, cause)
 
 /**
  * Reads a `.maki` file: a fixed sequence of sections without headers, all little endian.
@@ -19,6 +20,7 @@ object MakiParser {
     private const val MAGIC = "FG"
     private const val MAX_TABLE = 1 shl 16
 
+    @Suppress("TooGenericExceptionCaught") // any read can fail on a damaged file; each failure becomes a MakiFormatException
     fun parse(
         bytes: ByteArray,
         id: String,
@@ -29,7 +31,7 @@ object MakiParser {
             throw e
         } catch (e: RuntimeException) {
             // a cut-off or damaged file reads past its end or out of its tables
-            throw MakiFormatException("$id: damaged (${e.javaClass.simpleName})")
+            throw MakiFormatException("$id: damaged (${e.javaClass.simpleName})", e)
         }
 
     private fun read(
@@ -138,42 +140,7 @@ object MakiParser {
                     }
 
                     else -> {
-                        val kind =
-                            when (typeOffset) {
-                                2 -> Kind.INT
-                                3 -> Kind.FLOAT
-                                4 -> Kind.DOUBLE
-                                5 -> Kind.BOOLEAN
-                                6 -> Kind.STRING
-                                else -> throw MakiFormatException("$id: primitive type $typeOffset")
-                            }
-                        val initial =
-                            when (kind) {
-                                Kind.INT -> {
-                                    Value.Int((u2 shl 16) or u1)
-                                }
-
-                                Kind.BOOLEAN -> {
-                                    Value.Bool(u1 != 0)
-                                }
-
-                                Kind.FLOAT, Kind.DOUBLE -> {
-                                    Value.Num(
-                                        java.lang.Float
-                                            .intBitsToFloat((u2 shl 16) or u1)
-                                            .toDouble(),
-                                    )
-                                }
-
-                                Kind.STRING -> {
-                                    Value.Str("")
-                                }
-
-                                Kind.OBJECT -> {
-                                    Value.Null
-                                }
-                            }
-                        VarDecl(kind, null, null, global, initial)
+                        primitiveVar(id, typeOffset, u1, u2, global)
                     }
                 }
             out.add(decl)
@@ -218,47 +185,107 @@ object MakiParser {
         if (length < 0 || length > buf.remaining()) throw MakiFormatException("$id: code length $length")
         val start = buf.position()
         val end = start + length
-        val raw = ArrayList<IntArray>()
+        val raw = ArrayList<Op>()
         val offsetToIndex = HashMap<Int, Int>()
         while (buf.position() < end) {
-            val pos = buf.position() - start
-            val opcode = buf.get().toInt() and 0xff
-            var arg = 0
-            var argc = -1
-            val hasArg = opcode in Opcodes.jumpOps || opcode in Opcodes.indexOps
-            if (hasArg) {
-                if (buf.position() + 4 > end) throw MakiFormatException("$id: opcode $opcode truncated at $pos")
-                arg =
-                    if (opcode in Opcodes.jumpOps) {
-                        buf.int + 5 + pos
-                    } else {
-                        buf.int
-                    }
-                if (buf.position() + 4 <= end) {
-                    val peek = buf.getInt(buf.position()).toLong() and 0xffffffffL
-                    if (peek in 0xffff0000L..0xffff000fL) {
-                        buf.int
-                        argc = (peek and 0xffff).toInt()
-                    }
-                }
-                if (opcode == Opcodes.CALL2) {
-                    val count = buf.get().toInt() and 0xff
-                    if (argc < 0) argc = count
-                }
-            }
-            offsetToIndex[pos] = raw.size
-            raw.add(intArrayOf(opcode, arg, argc, pos))
+            val op = readOp(buf, id, start, end)
+            offsetToIndex[op.offset] = raw.size
+            raw.add(op)
         }
         val ops =
-            raw.map { (opcode, arg, argc, pos) ->
+            raw.map { op ->
                 val resolved =
-                    if (opcode in Opcodes.jumpOps) {
-                        offsetToIndex[arg] ?: throw MakiFormatException("$id: jump to bad offset $arg from $pos")
+                    if (op.opcode in Opcodes.jumpOps) {
+                        offsetToIndex[op.arg] ?: throw MakiFormatException("$id: jump to bad offset ${op.arg} from ${op.offset}")
                     } else {
-                        arg
+                        op.arg
                     }
-                Op(opcode, resolved, argc, pos)
+                Op(op.opcode, resolved, op.argc, op.offset)
             }
         return ops to offsetToIndex
     }
+
+    /**
+     * Reads the instruction at the buffer's position in the code section that runs from [start] to
+     * [end]. A jump's argument is the byte offset it goes to, which [readCode] turns into a code index.
+     */
+    private fun readOp(
+        buf: ByteBuffer,
+        id: String,
+        start: Int,
+        end: Int,
+    ): Op {
+        val pos = buf.position() - start
+        val opcode = buf.get().toInt() and 0xff
+        var arg = 0
+        var argc = -1
+        val hasArg = opcode in Opcodes.jumpOps || opcode in Opcodes.indexOps
+        if (hasArg) {
+            if (buf.position() + 4 > end) throw MakiFormatException("$id: opcode $opcode truncated at $pos")
+            arg =
+                if (opcode in Opcodes.jumpOps) {
+                    buf.int + 5 + pos
+                } else {
+                    buf.int
+                }
+            if (buf.position() + 4 <= end) {
+                val peek = buf.getInt(buf.position()).toLong() and 0xffffffffL
+                if (peek in 0xffff0000L..0xffff000fL) {
+                    buf.int
+                    argc = (peek and 0xffff).toInt()
+                }
+            }
+            if (opcode == Opcodes.CALL2) {
+                val count = buf.get().toInt() and 0xff
+                if (argc < 0) argc = count
+            }
+        }
+        return Op(opcode, arg, argc, pos)
+    }
+}
+
+/** A variable of a primitive type; [u1] and [u2] are the low and high halves of its initial value. */
+private fun primitiveVar(
+    id: String,
+    typeOffset: Int,
+    u1: Int,
+    u2: Int,
+    global: Boolean,
+): VarDecl {
+    val kind =
+        when (typeOffset) {
+            2 -> Kind.INT
+            3 -> Kind.FLOAT
+            4 -> Kind.DOUBLE
+            5 -> Kind.BOOLEAN
+            6 -> Kind.STRING
+            else -> throw MakiFormatException("$id: primitive type $typeOffset")
+        }
+    val initial =
+        when (kind) {
+            Kind.INT -> {
+                Value.Int((u2 shl 16) or u1)
+            }
+
+            Kind.BOOLEAN -> {
+                Value.Bool(u1 != 0)
+            }
+
+            Kind.FLOAT, Kind.DOUBLE -> {
+                Value.Num(
+                    java.lang.Float
+                        .intBitsToFloat((u2 shl 16) or u1)
+                        .toDouble(),
+                )
+            }
+
+            Kind.STRING -> {
+                Value.Str("")
+            }
+
+            Kind.OBJECT -> {
+                Value.Null
+            }
+        }
+    return VarDecl(kind, null, null, global, initial)
 }

@@ -57,7 +57,8 @@ class Images(
     }
 
     override fun draw(out: MutableList<DrawCmd>) {
-        if (!visible || spacing <= 0 || rect.width <= 0 || rect.height <= 0) return
+        if (!visible || rect.width <= 0 || rect.height <= 0) return
+        if (spacing <= 0) return
         val id = image ?: return
         val def = rt.bitmap(id) ?: return
         val sheetH = def.h ?: rt.bitmapSize(id)?.second ?: return

@@ -46,8 +46,7 @@ class GdiLineMetrics private constructor(
             val upem = u16(head + 18)
             val ascent = u16(os2 + 74)
             val descent = u16(os2 + 76)
-            if (upem <= 0 || ascent < 0 || descent < 0) return null
-            return GdiLineMetrics(upem, ascent, descent)
+            return if (upem <= 0 || ascent < 0 || descent < 0) null else GdiLineMetrics(upem, ascent, descent)
         }
     }
 }

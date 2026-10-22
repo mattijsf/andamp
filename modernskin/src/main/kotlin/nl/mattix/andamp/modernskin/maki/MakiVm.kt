@@ -120,6 +120,7 @@ class Script(
     /** What the last handler this script ran returned. */
     var lastReturn: Value = Value.Null
 
+    @Suppress("TooGenericExceptionCaught") // whatever a handler throws is logged and ends that run, not the player
     fun run(
         start: Int,
         args: List<Value>,
@@ -133,7 +134,7 @@ class Script(
         } catch (e: RuntimeException) {
             // a native call given what it cannot use (a skin's mistake or a hostile file)
             fail(what, e.toString())
-        } catch (e: StackOverflowError) {
+        } catch (_: StackOverflowError) {
             fail(what, "too deep")
         }
     }
@@ -200,7 +201,7 @@ private class Interpreter(
         }
 
     /** Runs a handler; returns what it left for its caller (the value pushed before its last RETURN). */
-    @Suppress("CyclomaticComplexMethod", "LongMethod")
+    @Suppress("CyclomaticComplexMethod", "LongMethod", "ThrowsCount") // one arm per opcode and a throw per limit a script hits
     fun run(
         start: Int,
         args: List<Value>,

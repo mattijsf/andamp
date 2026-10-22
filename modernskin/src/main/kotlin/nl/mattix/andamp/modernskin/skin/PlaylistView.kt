@@ -110,8 +110,6 @@ class PlaylistView(
         out.add(DrawCmd.Fill(Rect(x + CHANNEL_X - 1, rect.top, 1, rect.height), light, effectiveAlpha))
         out.add(DrawCmd.Fill(Rect(x + CHANNEL_X, rect.top, CHANNEL_W, rect.height), channel, effectiveAlpha))
         out.add(DrawCmd.Fill(Rect(x + CHANNEL_X + CHANNEL_W, rect.top, 1, rect.height), light, effectiveAlpha))
-        val content = TOP + rt.player.tracks.size * ROW
-        val view = listRect.height
         // the thumb keeps its size however long the list (Wasabi SDK scrollbar; WinampModern-pllong)
         val thumbH = THUMB_MIN
         val travel = maxOf(0, rect.height - 2 - thumbH)

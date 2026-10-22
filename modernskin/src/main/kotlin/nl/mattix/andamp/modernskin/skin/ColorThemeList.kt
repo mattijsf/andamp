@@ -192,46 +192,62 @@ class ColorThemeList(
     private fun drawScrollbars(out: MutableList<DrawCmd>) {
         val bw = barW
         val hh = hbarH
-        if (bw > 0) {
-            val up = rt.bitmap(UP) ?: return
-            val down = rt.bitmap(DOWN) ?: return
-            val thumb = rt.bitmap(THUMB) ?: return
-            val group = up.gammaGroup
+        // a vertical bar with a picture missing leaves out the horizontal bar too
+        if (bw > 0 && !drawVerticalBar(out, bw, hh)) return
+        if (hh > 0) drawHorizontalBar(out, bw, hh)
+    }
 
-            fun BitmapDef.tinted() = if (gammaGroup != null) this else BitmapDef(id, file, x, y, w, h, group)
-            val x = rect.right - bw
-            val barH = rect.height - hh
-            val upH = rt.bitmapSize(UP)?.second ?: 0
-            val downH = rt.bitmapSize(DOWN)?.second ?: 0
-            val thumbH = rt.bitmapSize(THUMB)?.second ?: 0
-            // the track runs under the arrows too, so their rounded corners show it
-            rt.bitmap(TRACK)?.let { out.add(DrawCmd.Image(it.tinted(), Rect(x, rect.top, bw, barH), effectiveAlpha)) }
-            out.add(DrawCmd.Image(up, Rect(x, rect.top, bw, upH), effectiveAlpha))
-            out.add(DrawCmd.Image(down, Rect(x, rect.top + barH - downH, bw, downH), effectiveAlpha))
-            val travel = maxOf(0, barH - upH - downH - thumbH)
-            val max = maxScroll()
-            val thumbTop = rect.top + upH + if (max == 0) 0 else travel * scrollPx / max
-            out.add(DrawCmd.Image(thumb, Rect(x, thumbTop, bw, thumbH), effectiveAlpha))
-        }
-        if (hh > 0) {
-            val left = rt.bitmap(LEFT) ?: return
-            val right = rt.bitmap(RIGHT) ?: return
-            val thumb = rt.bitmap(HTHUMB) ?: return
-            val group = left.gammaGroup
+    /** The vertical bar, [bw] wide, above a horizontal bar [hh] tall; false when one of its pictures is missing. */
+    private fun drawVerticalBar(
+        out: MutableList<DrawCmd>,
+        bw: Int,
+        hh: Int,
+    ): Boolean {
+        val up = rt.bitmap(UP) ?: return false
+        val down = rt.bitmap(DOWN) ?: return false
+        val thumb = rt.bitmap(THUMB) ?: return false
+        val group = up.gammaGroup
 
-            fun BitmapDef.tinted() = if (gammaGroup != null) this else BitmapDef(id, file, x, y, w, h, group)
-            val y = rect.bottom - hh
-            val barW = rect.width - bw
-            val leftW = rt.bitmapSize(LEFT)?.first ?: 0
-            val rightW = rt.bitmapSize(RIGHT)?.first ?: 0
-            val thumbW = rt.bitmapSize(HTHUMB)?.first ?: 0
-            rt.bitmap(HTRACK)?.let { out.add(DrawCmd.Image(it.tinted(), Rect(rect.left, y, barW, hh), effectiveAlpha)) }
-            out.add(DrawCmd.Image(left, Rect(rect.left, y, leftW, hh), effectiveAlpha))
-            out.add(DrawCmd.Image(right, Rect(rect.left + barW - rightW, y, rightW, hh), effectiveAlpha))
-            // nothing scrolls sideways here: the thumb sits at the start
-            out.add(DrawCmd.Image(thumb, Rect(rect.left + leftW, y, thumbW, hh), effectiveAlpha))
-            if (bw > 0) out.add(DrawCmd.Fill(Rect(rect.right - bw, y, bw, hh), Rgb(0), effectiveAlpha))
-        }
+        fun BitmapDef.tinted() = if (gammaGroup != null) this else BitmapDef(id, file, x, y, w, h, group)
+        val x = rect.right - bw
+        val barH = rect.height - hh
+        val upH = rt.bitmapSize(UP)?.second ?: 0
+        val downH = rt.bitmapSize(DOWN)?.second ?: 0
+        val thumbH = rt.bitmapSize(THUMB)?.second ?: 0
+        // the track runs under the arrows too, so their rounded corners show it
+        rt.bitmap(TRACK)?.let { out.add(DrawCmd.Image(it.tinted(), Rect(x, rect.top, bw, barH), effectiveAlpha)) }
+        out.add(DrawCmd.Image(up, Rect(x, rect.top, bw, upH), effectiveAlpha))
+        out.add(DrawCmd.Image(down, Rect(x, rect.top + barH - downH, bw, downH), effectiveAlpha))
+        val travel = maxOf(0, barH - upH - downH - thumbH)
+        val max = maxScroll()
+        val thumbTop = rect.top + upH + if (max == 0) 0 else travel * scrollPx / max
+        out.add(DrawCmd.Image(thumb, Rect(x, thumbTop, bw, thumbH), effectiveAlpha))
+        return true
+    }
+
+    /** The horizontal bar, [hh] tall, left of a vertical bar [bw] wide, and the black square between them. */
+    private fun drawHorizontalBar(
+        out: MutableList<DrawCmd>,
+        bw: Int,
+        hh: Int,
+    ) {
+        val left = rt.bitmap(LEFT) ?: return
+        val right = rt.bitmap(RIGHT) ?: return
+        val thumb = rt.bitmap(HTHUMB) ?: return
+        val group = left.gammaGroup
+
+        fun BitmapDef.tinted() = if (gammaGroup != null) this else BitmapDef(id, file, x, y, w, h, group)
+        val y = rect.bottom - hh
+        val barW = rect.width - bw
+        val leftW = rt.bitmapSize(LEFT)?.first ?: 0
+        val rightW = rt.bitmapSize(RIGHT)?.first ?: 0
+        val thumbW = rt.bitmapSize(HTHUMB)?.first ?: 0
+        rt.bitmap(HTRACK)?.let { out.add(DrawCmd.Image(it.tinted(), Rect(rect.left, y, barW, hh), effectiveAlpha)) }
+        out.add(DrawCmd.Image(left, Rect(rect.left, y, leftW, hh), effectiveAlpha))
+        out.add(DrawCmd.Image(right, Rect(rect.left + barW - rightW, y, rightW, hh), effectiveAlpha))
+        // nothing scrolls sideways here: the thumb sits at the start
+        out.add(DrawCmd.Image(thumb, Rect(rect.left + leftW, y, thumbW, hh), effectiveAlpha))
+        if (bw > 0) out.add(DrawCmd.Fill(Rect(rect.right - bw, y, bw, hh), Rgb(0), effectiveAlpha))
     }
 
     override fun pointerDown(
