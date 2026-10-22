@@ -130,4 +130,7 @@ interface MakiObject {
         name: String,
         args: List<Value>,
     ): Value?
+
+    /** A script's `delete`: the object stops what it does (a timer no longer fires). */
+    fun delete() = Unit
 }

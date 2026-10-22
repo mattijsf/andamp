@@ -29,6 +29,8 @@ class Timer(
         rt.timers.remove(this)
     }
 
+    override fun delete() = stop()
+
     override fun makiCall(
         name: String,
         args: List<Value>,
