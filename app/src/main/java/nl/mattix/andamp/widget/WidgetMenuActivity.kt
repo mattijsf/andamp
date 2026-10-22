@@ -3,6 +3,7 @@
 package nl.mattix.andamp.widget
 
 import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -53,16 +54,7 @@ class WidgetMenuActivity : ComponentActivity() {
         val skin = CurrentSkin.cached(this)
         // an activity result launcher has to be registered before the activity starts, so it is
         // made here and the menu is given a way to fire it
-        val skinPicker =
-            registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
-                picking = false
-                uri?.let {
-                    contentResolver.openInputStream(it)?.let { stream ->
-                        player.skinOps.load(stream, displayNameOf(it) ?: getString(R.string.skin_picked_name))
-                    }
-                }
-                finish()
-            }
+        val skinPicker = registerForActivityResult(ActivityResultContracts.OpenDocument(), ::skinPicked)
         // Winamp's Play file... and Play directory... No permission is asked first: what is picked
         // is granted by the picker itself
         val filePicker =
@@ -108,8 +100,9 @@ class WidgetMenuActivity : ComponentActivity() {
             LaunchedEffect(heard) {
                 if (heard != null && menu != null) menu = build()
             }
-            // closes when nothing is showing: the menu, a modal it opened, or a picker in front
-            val showing = picking || menu != null || player.state.showingAModal()
+            // closes when nothing is showing: the menu, a modal it opened, a picker in front, or
+            // a picked skin still loading
+            val showing = picking || importing || menu != null || player.state.showingAModal()
             LaunchedEffect(showing) { if (!showing) finish() }
             // the status bar sits on the wallpaper here, as it does over a floating player
             StatusBarIcons(onPlayer = true, playerFillsScreen = false, dark = false)
@@ -126,6 +119,25 @@ class WidgetMenuActivity : ComponentActivity() {
                 skin = skin,
             )
         }
+    }
+
+    /**
+     * The skin picker's answer. The window stays until the load is done, so a notice about the
+     * pick has a window to show in; it closes once nothing shows.
+     */
+    internal fun skinPicked(uri: Uri?) {
+        picking = false
+        // a window made again while the picker was in front has built its menu anew
+        menu = null
+        val stream = uri?.let { contentResolver.openInputStream(it) }
+        if (uri == null || stream == null) {
+            finish()
+            return
+        }
+        importing = true
+        player.skinOps
+            .load(stream, displayNameOf(uri) ?: getString(R.string.skin_picked_name))
+            .invokeOnCompletion { importing = false }
     }
 
     /** Closes the menu on the way out, so returning here does not reopen it. */
@@ -146,6 +158,9 @@ class WidgetMenuActivity : ComponentActivity() {
 
     /** True while the document picker is in front, waiting for an answer. */
     private var picking by mutableStateOf(false)
+
+    /** True while a picked skin is loading, which may end in a notice. */
+    private var importing by mutableStateOf(false)
 
     /** This window's own menu, kept out of the state every other host draws. */
     private var menu by mutableStateOf<nl.mattix.andamp.state.AmpMenu?>(null)

@@ -118,6 +118,8 @@
     <string name="prefs_notice_webamp_what">De sprite-kaarten ervan zijn de maatstaf voor elke coördinaat in de vensters met een skin.</string>
     <string name="prefs_notice_liberation_sans_what">Het lettertype van de afspeellijst, met dezelfde maten als de Arial die PLEDIT.TXT noemt.</string>
     <string name="prefs_notice_liberation_sans_obligation">Ongewijzigd meegeleverd, onder een naam die de licentie toestaat.</string>
+    <string name="prefs_notice_dejavu_what">Vervangt de Windows-lettertypen die moderne Winamp-skins noemen maar niet meeleveren.</string>
+    <string name="prefs_notice_dejavu_obligation">Ongewijzigd meegeleverd, met de licentietekst.</string>
     <string name="prefs_notice_luaj_what">Voert de .lua-bestanden uit die effecten beschrijven, in een sandbox.</string>
     <string name="prefs_notice_androidx_what">De UI-toolkit, navigatie, levenscyclus, en Media3 voor lokaal afspelen.</string>
     <string name="prefs_notice_kotlin_what">De programmeertaal en de bijbehorende bibliotheek voor gelijktijdigheid.</string>

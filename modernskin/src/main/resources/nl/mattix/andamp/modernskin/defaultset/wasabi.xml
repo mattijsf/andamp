@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Andamp's default element set: what a skin builds on when it does not bring its own. -->
+<WinampAbstractionLayer version="0.8">
+<include file="elements.xml"/>
+<include file="aliases.xml"/>
+<include file="groups.xml"/>
+</WinampAbstractionLayer>

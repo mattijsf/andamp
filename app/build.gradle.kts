@@ -128,12 +128,13 @@ val bundledSkins =
     }
 
 /**
- * The license texts of projectM and Liberation Sans, copied into the packaged
- * assets.
+ * The license texts of projectM, Liberation Sans and DejaVu, copied into the
+ * packaged assets.
  *
- * LGPL-2.1 and the OFL ask that their text accompany what they cover, and the
- * app ships projectM as a native library and the font as an asset. The asset
- * paths are under `licenses/`, and Notices names them.
+ * LGPL-2.1, the OFL and the Bitstream Vera license ask that their text
+ * accompany what they cover, and the app ships projectM as a native library,
+ * Liberation Sans as an asset and the DejaVu fonts inside the modern skin
+ * engine. The asset paths are under `licenses/`, and Notices names them.
  */
 abstract class BundleLicenses : DefaultTask() {
     @get:InputFile
@@ -143,6 +144,10 @@ abstract class BundleLicenses : DefaultTask() {
     @get:InputFile
     @get:PathSensitive(PathSensitivity.NONE)
     abstract val liberationSans: RegularFileProperty
+
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.NONE)
+    abstract val dejaVu: RegularFileProperty
 
     @get:OutputDirectory
     abstract val into: DirectoryProperty
@@ -155,6 +160,7 @@ abstract class BundleLicenses : DefaultTask() {
         files.sync {
             from(projectM) { rename { "projectM-LGPL-2.1.txt" } }
             from(liberationSans) { rename { "LiberationSans-OFL-1.1.txt" } }
+            from(dejaVu) { rename { "DejaVu-Bitstream-Vera.txt" } }
             into(this@BundleLicenses.into.dir("licenses"))
         }
     }
@@ -162,8 +168,13 @@ abstract class BundleLicenses : DefaultTask() {
 
 val bundledLicenses =
     tasks.register<BundleLicenses>("bundledLicenses") {
-        description = "Copies the license texts of projectM and Liberation Sans into the packaged assets."
+        description = "Copies the license texts of projectM, Liberation Sans and DejaVu into the packaged assets."
         liberationSans.set(rootProject.layout.projectDirectory.file("docs/LiberationSans-LICENSE.txt"))
+        dejaVu.set(
+            rootProject.layout.projectDirectory.file(
+                "modernskin/src/main/resources/nl/mattix/andamp/modernskin/defaultset/fonts/DejaVu-LICENSE.txt",
+            ),
+        )
         projectM.set(
             rootProject.layout.projectDirectory.file("visualizer/projectm/third_party/projectm/LICENSE.txt"),
         )
@@ -383,6 +394,9 @@ dependencies {
     implementation(project(":core:packapi"))
     implementation(project(":visualizer:avs"))
     implementation(project(":visualizer:projectm"))
+    // Winamp modern skins (.wal). A picked skin file is sniffed with it; proguard-rules.pro keeps
+    // the whole engine in every release, including the parts no screen reaches
+    implementation(project(":modernskin"))
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.foundation)

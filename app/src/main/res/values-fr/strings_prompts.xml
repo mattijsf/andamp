@@ -84,4 +84,9 @@
     <!-- WinampViewModel.kt -->
     <string name="prompt_jump_to_time_title">Sauter à la position</string>
     <string name="prompt_jump_to_time_confirm">Sauter</string>
+
+    <string name="skin_modern_title">« %1$s » est un skin moderne</string>
+    <string name="skin_modern_body">Andamp charge les skins Winamp classiques (.wsz). Les skins modernes (.wal) ne peuvent pas être ajoutés dans cette version.</string>
+    <string name="skin_too_large_title">« %1$s » est trop volumineux</string>
+    <string name="skin_too_large_body">Ce fichier est trop volumineux pour être chargé comme skin.</string>
 </resources>

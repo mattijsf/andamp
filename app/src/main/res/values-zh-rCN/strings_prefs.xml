@@ -113,6 +113,8 @@
     <string name="prefs_notice_webamp_what">它的精灵图坐标是带皮肤的窗口中每个坐标的依据。</string>
     <string name="prefs_notice_liberation_sans_what">播放列表的字体，与 PLEDIT.TXT 指定的 Arial 度量兼容。</string>
     <string name="prefs_notice_liberation_sans_obligation">未经修改地打包，使用许可证允许的名称。</string>
+    <string name="prefs_notice_dejavu_what">代替 Winamp 现代皮肤指定但未附带的 Windows 字体。</string>
+    <string name="prefs_notice_dejavu_obligation">未经修改地打包，并附带许可证文本。</string>
     <string name="prefs_notice_luaj_what">在沙箱中运行描述效果的 .lua 文件。</string>
     <string name="prefs_notice_androidx_what">界面工具包、导航、生命周期，以及用于本地播放的 Media3。</string>
     <string name="prefs_notice_kotlin_what">编程语言及其并发库。</string>

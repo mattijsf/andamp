@@ -83,4 +83,9 @@
     <!-- WinampViewModel.kt -->
     <string name="prompt_jump_to_time_title">跳转到时间</string>
     <string name="prompt_jump_to_time_confirm">跳转</string>
+
+    <string name="skin_modern_title">“%1$s”是现代皮肤</string>
+    <string name="skin_modern_body">Andamp 加载经典 Winamp 皮肤（.wsz）。此版本无法添加现代皮肤（.wal）。</string>
+    <string name="skin_too_large_title">“%1$s”太大</string>
+    <string name="skin_too_large_body">此文件太大，无法作为皮肤加载。</string>
 </resources>

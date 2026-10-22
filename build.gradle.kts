@@ -100,6 +100,7 @@ val gate =
             ":pack:common:testDebugUnitTest",
             ":visualizer:avs:testDebugUnitTest",
             ":visualizer:projectm:testDebugUnitTest",
+            ":modernskin:test",
         )
     }
 
