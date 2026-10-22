@@ -17,11 +17,16 @@ class Gradient(
     private var stops: List<Pair<Float, Int>> = emptyList()
     private var gammaGroup: String? = null
 
+    /** The picture last made, and the size and tint it was made for; any parameter change drops it. */
+    private var made: IntArray? = null
+    private var madeFor: Triple<Int, Int, Gamma?>? = null
+
     override fun setParam(
         key: String,
         value: String,
     ): Boolean {
         if (super.setParam(key, value)) return true
+        made = null
         when (key.lowercase()) {
             "gradient_x1" -> x1 = value.toFloatOrNull() ?: 0f
             "gradient_y1" -> y1 = value.toFloatOrNull() ?: 0f
@@ -66,6 +71,11 @@ class Gradient(
         val h = rect.height
         if (!visible || w <= 0 || h <= 0 || w.toLong() * h > ImageLimits.MAX_PIXELS) return
         val gamma = rt.gamma(gammaGroup)?.takeIf { !it.isIdentity }
+        val key = Triple(w, h, gamma)
+        made?.takeIf { madeFor == key }?.let {
+            out.add(DrawCmd.Pixels(rect, w, h, it, effectiveAlpha, stable = true))
+            return
+        }
         // no stops at all: Winamp's magenta
         val argb = IntArray(w * h) { NO_STOPS }
         if (stops.isNotEmpty()) {
@@ -83,7 +93,9 @@ class Gradient(
                 }
             }
         }
-        out.add(DrawCmd.Pixels(rect, w, h, argb, effectiveAlpha))
+        made = argb
+        madeFor = key
+        out.add(DrawCmd.Pixels(rect, w, h, argb, effectiveAlpha, stable = true))
     }
 
     override fun hitTest(

@@ -245,6 +245,9 @@ private const val CHECK_VIEWPORT_W = 1248
 /** Window shape masks kept at once. */
 private const val MAX_MASKS = 16
 
+/** Pictures from stable pixel arrays kept at once (one per gradient on screen). */
+private const val MAX_STABLE_PIXELS = 64
+
 /** Stretched pictures kept at once (a resized window makes new sizes). */
 private const val MAX_STRETCHED = 512
 private const val CHECK_VIEWPORT_H = 853
@@ -418,6 +421,20 @@ private class AndroidSkinHost(
     private val images = HashMap<String, ImageBitmap?>()
     private val typefaces = HashMap<String, Typeface?>()
     private val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+
+    /** Pictures made from stable pixel arrays (gradients), by array: the same array comes back each frame. */
+    private val stablePixels =
+        object : LinkedHashMap<IntArray, ImageBitmap>(8, 0.75f, true) {
+            override fun removeEldestEntry(eldest: MutableMap.MutableEntry<IntArray, ImageBitmap>?) = size > MAX_STABLE_PIXELS
+        }
+
+    fun pixels(cmd: DrawCmd.Pixels): ImageBitmap {
+        fun make() =
+            android.graphics.Bitmap
+                .createBitmap(cmd.argb, cmd.w, cmd.h, android.graphics.Bitmap.Config.ARGB_8888)
+                .asImageBitmap()
+        return if (cmd.stable) stablePixels.getOrPut(cmd.argb) { make() } else make()
+    }
 
     override fun imageSize(file: String): Pair<Int, Int>? =
         sizes.getOrPut(file.lowercase()) {
@@ -1317,14 +1334,7 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawCmd(
         }
 
         is DrawCmd.Pixels -> {
-            val bmp =
-                android.graphics.Bitmap
-                    .createBitmap(
-                        cmd.argb,
-                        cmd.w,
-                        cmd.h,
-                        android.graphics.Bitmap.Config.ARGB_8888,
-                    ).asImageBitmap()
+            val bmp = host.pixels(cmd)
             drawImage(
                 bmp,
                 srcOffset = androidx.compose.ui.unit.IntOffset.Zero,

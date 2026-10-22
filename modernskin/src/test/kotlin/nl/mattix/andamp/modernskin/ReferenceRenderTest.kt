@@ -443,18 +443,15 @@ class ReferenceRenderTest {
         val t0 = System.nanoTime()
         rt.load()
         if (System.getProperty("timing") != null) {
+            // -Dtiming.reps=n frames for each measure (default 50); -Djfr=<file> records a profile of the run
+            val reps = System.getProperty("timing.reps")?.toIntOrNull() ?: 50
             val t1 = System.nanoTime()
-            rt.mainLayout?.let { l -> repeat(50) { rt.draw(l) } }
+            repeat(reps) { rt.drawWindows() }
             val t2 = System.nanoTime()
-            rt.mainLayout?.let { l ->
-                repeat(50) {
-                    l.makiCall("getwidth", emptyList())
-                    rt.tick()
-                }
-            }
+            repeat(reps) { rt.tick() }
             println(
-                "TIMING ${sc.name} load=${(t1 - t0) / 1_000_000} ms draw=${(t2 - t1) / 50_000} us/frame " +
-                    "tick=${(System.nanoTime() - t2) / 50_000} us",
+                "TIMING ${sc.name} load=${(t1 - t0) / 1_000_000} ms drawWindows=${(t2 - t1) / 1000 / reps} us/frame " +
+                    "tick=${(System.nanoTime() - t2) / 1000 / reps} us, over $reps frames",
             )
         }
         sc.theme?.let { rt.selectGammaSet(it) }
