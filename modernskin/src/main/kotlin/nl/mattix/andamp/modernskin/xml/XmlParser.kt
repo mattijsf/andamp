@@ -21,7 +21,10 @@ class XmlNode(
  * close tag that matches nothing is dropped.
  */
 object XmlParser {
-    fun parse(text: String): List<XmlNode> = Reader(text.removePrefix("")).parseAll()
+    fun parse(text: String): List<XmlNode> = Reader(text.removePrefix(BYTE_ORDER_MARK)).parseAll()
+
+    /** U+FEFF, which a UTF-8 file saved by some Windows editors starts with. */
+    private const val BYTE_ORDER_MARK = "\uFEFF"
 
     private class Open(
         val name: String,
