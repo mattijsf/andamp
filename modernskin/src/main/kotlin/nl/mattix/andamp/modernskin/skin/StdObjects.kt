@@ -3,6 +3,7 @@ package nl.mattix.andamp.modernskin.skin
 
 import nl.mattix.andamp.modernskin.maki.LenientObject
 import nl.mattix.andamp.modernskin.maki.MakiObject
+import nl.mattix.andamp.modernskin.maki.MakiRuntimeException
 import nl.mattix.andamp.modernskin.maki.StdApi
 import nl.mattix.andamp.modernskin.maki.Value
 
@@ -205,21 +206,63 @@ class MakiList : MakiObject {
     override val makiGuid: String get() = StdApi.guidOf("List") ?: ""
     private val items = ArrayList<Value>()
 
+    private companion object {
+        /** A list stops growing here: a script that adds without end is stopped. */
+        const val MAX_ITEMS = 100_000
+    }
+
     override fun makiCall(
         name: String,
         args: List<Value>,
     ): Value? =
         when (name) {
-            "getclassname" -> Value.Str("List")
-            "getid" -> Value.Str("")
-            "additem" -> Value.Null.also { items.add(args[0]) }
-            "removeitem" -> Value.Null.also { items.removeAt(args[0].asInt.coerceIn(0, items.size - 1)) }
-            "enumitem" -> items.getOrNull(args[0].asInt) ?: Value.Null
-            "finditem" -> Value.Int(items.indexOfFirst { it.asString.equals(args[0].asString, true) })
-            "finditem2" -> Value.Int(items.indexOfFirst { it.asObject === args[0].asObject })
-            "getnumitems" -> Value.Int(items.size)
-            "removeall" -> Value.Null.also { items.clear() }
-            else -> null
+            "getclassname" -> {
+                Value.Str("List")
+            }
+
+            "getid" -> {
+                Value.Str("")
+            }
+
+            "additem" -> {
+                Value.Null.also {
+                    if (items.size <
+                        MAX_ITEMS
+                    ) {
+                        items.add(args[0])
+                    } else {
+                        throw MakiRuntimeException("list longer than $MAX_ITEMS")
+                    }
+                }
+            }
+
+            "removeitem" -> {
+                Value.Null.also { args[0].asInt.takeIf { it in items.indices }?.let { items.removeAt(it) } }
+            }
+
+            "enumitem" -> {
+                items.getOrNull(args[0].asInt) ?: Value.Null
+            }
+
+            "finditem" -> {
+                Value.Int(items.indexOfFirst { it.asString.equals(args[0].asString, true) })
+            }
+
+            "finditem2" -> {
+                Value.Int(items.indexOfFirst { it.asObject === args[0].asObject })
+            }
+
+            "getnumitems" -> {
+                Value.Int(items.size)
+            }
+
+            "removeall" -> {
+                Value.Null.also { items.clear() }
+            }
+
+            else -> {
+                null
+            }
         }
 }
 

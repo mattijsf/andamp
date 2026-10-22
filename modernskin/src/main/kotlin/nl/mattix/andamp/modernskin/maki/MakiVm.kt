@@ -57,8 +57,23 @@ class Script(
                 classMembers[b.variable]?.any { cells[it].value.asObject === target } == true
         }
 
-    /** The events this script listens to, for a quick check before dispatching. */
-    val events: Set<String> get() = bindingsByEvent.keys
+    /** The events this script listens to, for a quick check before dispatching: none once it is [disabled]. */
+    val events: Set<String> get() = if (disabled) emptySet() else bindingsByEvent.keys
+
+    /**
+     * Steps the script may still run before the host's next [refill] (each frame): a script that
+     * keeps a frame busy is stopped there, not only per handler.
+     */
+    internal var budget = STEPS_PER_FRAME
+
+    fun refill() {
+        budget = STEPS_PER_FRAME
+    }
+
+    /** A script that failed [MAX_FAILURES] times is switched off: its handlers no longer run. */
+    var disabled = false
+        private set
+    private var failures = 0
 
     /**
      * Fires [event] on [target]: every binding whose variable holds the target runs. Returns the
@@ -106,13 +121,36 @@ class Script(
         start: Int,
         args: List<Value>,
         what: String,
-    ): Value =
-        try {
+    ): Value {
+        if (disabled) return Value.Null
+        return try {
             Interpreter(this, host).run(start, args)
         } catch (e: MakiRuntimeException) {
-            host.log("${program.id}: $what stopped: ${e.message}")
-            Value.Null
+            fail(what, e.message)
+        } catch (e: RuntimeException) {
+            // a native call given what it cannot use (a skin's mistake or a hostile file)
+            fail(what, e.toString())
+        } catch (e: StackOverflowError) {
+            fail(what, "too deep")
         }
+    }
+
+    private fun fail(
+        what: String,
+        why: String?,
+    ): Value {
+        host.log("${program.id}: $what stopped: $why")
+        if (++failures >= MAX_FAILURES) {
+            disabled = true
+            host.log("${program.id}: switched off after $failures failures")
+        }
+        return Value.Null
+    }
+
+    private companion object {
+        const val STEPS_PER_FRAME = 4_000_000
+        const val MAX_FAILURES = 20
+    }
 }
 
 class MakiRuntimeException(
@@ -130,11 +168,16 @@ private class Interpreter(
 
     private fun pop(): Cell = stack.removeLastOrNull() ?: throw MakiRuntimeException("stack underflow")
 
+    private fun push(c: Cell) {
+        if (stack.size >= MAX_STACK) throw MakiRuntimeException("stack overflow")
+        stack.addLast(c)
+    }
+
     private fun pushValue(
         v: Value,
         kind: Kind = kindOf(v),
     ) {
-        stack.addLast(Cell(kind, v))
+        push(Cell(kind, v))
     }
 
     private fun kindOf(v: Value) =
@@ -159,10 +202,11 @@ private class Interpreter(
         val code = program.code
         while (ip in code.indices) {
             if (++steps > STEP_LIMIT) throw MakiRuntimeException("step limit at ${code[ip].offset}")
+            if (--script.budget < 0) throw MakiRuntimeException("frame budget used up at ${code[ip].offset}")
             val op = code[ip]
             when (op.opcode) {
                 Opcodes.PUSH -> {
-                    stack.addLast(cells[op.arg])
+                    push(cells[op.arg])
                 }
 
                 Opcodes.POP -> {
@@ -214,6 +258,7 @@ private class Interpreter(
                 }
 
                 Opcodes.CALL_GLOBAL -> {
+                    if (callStack.size >= MAX_CALL_DEPTH) throw MakiRuntimeException("calls nested too deep at ${op.offset}")
                     callStack.addLast(ip)
                     ip = op.arg - 1
                 }
@@ -231,7 +276,7 @@ private class Interpreter(
                     val src = pop()
                     val dst = pop()
                     dst.assign(src.value)
-                    stack.addLast(src)
+                    push(src)
                 }
 
                 Opcodes.POST_INC -> {
@@ -371,6 +416,11 @@ private class Interpreter(
             pushValue(defaultFor(ret))
             return
         }
+        if (result is Value.Str &&
+            result.v.length > MAX_STRING
+        ) {
+            throw MakiRuntimeException("${method.name} gave a string longer than $MAX_STRING")
+        }
         pushValue(coerceReturn(result, ret))
     }
 
@@ -424,7 +474,7 @@ private class Interpreter(
         val old = cell.value
         val new = if (old is Value.Int) Value.Int(old.v + delta) else Value.Num(old.asDouble + delta)
         cell.assign(new)
-        if (post) pushValue(old) else stack.addLast(cell)
+        if (post) pushValue(old) else push(cell)
     }
 
     private inline fun arith(
@@ -435,7 +485,9 @@ private class Interpreter(
         val a = pop().value
         if (a is Value.Str || b is Value.Str) {
             if (op.opcode != Opcodes.ADD) throw MakiRuntimeException("string arithmetic at ${op.offset}")
-            pushValue(Value.Str(a.asString + b.asString))
+            val joined = a.asString + b.asString
+            if (joined.length > MAX_STRING) throw MakiRuntimeException("string longer than $MAX_STRING at ${op.offset}")
+            pushValue(Value.Str(joined))
             return
         }
         val r = f(a.asDouble, b.asDouble)
@@ -455,5 +507,8 @@ private class Interpreter(
 
     private companion object {
         const val STEP_LIMIT = 2_000_000
+        const val MAX_STACK = 65_536
+        const val MAX_CALL_DEPTH = 1_024
+        const val MAX_STRING = 1 shl 20
     }
 }

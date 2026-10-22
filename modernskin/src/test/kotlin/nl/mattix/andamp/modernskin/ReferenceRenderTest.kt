@@ -9,6 +9,7 @@ import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.FontDef
 import nl.mattix.andamp.modernskin.skin.Gamma
 import nl.mattix.andamp.modernskin.skin.GdiLineMetrics
+import nl.mattix.andamp.modernskin.skin.ImageLimits
 import nl.mattix.andamp.modernskin.skin.LayeredSkinFiles
 import nl.mattix.andamp.modernskin.skin.Rect
 import nl.mattix.andamp.modernskin.skin.Region
@@ -76,7 +77,11 @@ class ReferenceRenderTest {
 
         fun image(file: String): BufferedImage? =
             images.getOrPut(file.lowercase()) {
-                files.read(file)?.let { runCatching { ImageIO.read(ByteArrayInputStream(it)) }.getOrNull() }?.let { srgb(it) }
+                files
+                    .read(file)
+                    ?.takeUnless { ImageLimits.tooLarge(it) }
+                    ?.let { runCatching { ImageIO.read(ByteArrayInputStream(it)) }.getOrNull() }
+                    ?.let { srgb(it) }
             }
 
         /**

@@ -64,7 +64,7 @@ class Gradient(
     override fun draw(out: MutableList<DrawCmd>) {
         val w = rect.width
         val h = rect.height
-        if (!visible || w <= 0 || h <= 0) return
+        if (!visible || w <= 0 || h <= 0 || w.toLong() * h > ImageLimits.MAX_PIXELS) return
         val gamma = rt.gamma(gammaGroup)?.takeIf { !it.isIdentity }
         // no stops at all: Winamp's magenta
         val argb = IntArray(w * h) { NO_STOPS }

@@ -32,10 +32,19 @@ class ZipSkinFiles(
 ) : SkinFiles {
     private val entries: Map<String, ByteArray> =
         ZipFile(file).use { zip ->
-            val all =
-                zip.entries().asSequence().filter { !it.isDirectory && it.size < MAX_ENTRY }.associate { e ->
-                    SkinFiles.normalize(e.name) to zip.getInputStream(e).use { it.readBytes() }
-                }
+            // sizes the archive claims can lie (a zip bomb): count what actually comes out
+            var total = 0L
+            val all = LinkedHashMap<String, ByteArray>()
+            for (e in zip
+                .entries()
+                .asSequence()
+                .filter { !it.isDirectory }
+                .take(MAX_ENTRIES)) {
+                val bytes = zip.getInputStream(e).use { readAtMost(it, MAX_ENTRY) } ?: continue
+                total += bytes.size
+                if (total > MAX_TOTAL) break
+                all[SkinFiles.normalize(e.name)] = bytes
+            }
             // some archives hold the skin in one folder: strip it when skin.xml sits there
             val prefix = all.keys.firstOrNull { it.endsWith("/skin.xml") }?.removeSuffix("skin.xml")
             if ("skin.xml" !in all &&
@@ -52,7 +61,24 @@ class ZipSkinFiles(
     override fun names(): List<String> = entries.keys.toList()
 
     private companion object {
-        const val MAX_ENTRY = 32L * 1024 * 1024
+        const val MAX_ENTRY = 32 * 1024 * 1024
+        const val MAX_TOTAL = 128L * 1024 * 1024
+        const val MAX_ENTRIES = 8_192
+
+        /** The stream's bytes, or null when there are more than [limit]. */
+        fun readAtMost(
+            input: java.io.InputStream,
+            limit: Int,
+        ): ByteArray? {
+            val out = java.io.ByteArrayOutputStream()
+            val buf = ByteArray(64 * 1024)
+            while (true) {
+                val n = input.read(buf)
+                if (n < 0) return out.toByteArray()
+                if (out.size() + n > limit) return null
+                out.write(buf, 0, n)
+            }
+        }
     }
 }
 

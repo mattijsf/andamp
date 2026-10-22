@@ -314,8 +314,7 @@ class SystemObject(
 
             "setprivateint" -> {
                 Value.Null.also {
-                    rt.privateInts["${args[0].asString}/${args[1].asString}".lowercase()] =
-                        args[2].asInt
+                    rt.storePrivate(rt.privateInts, "${args[0].asString}/${args[1].asString}", args[2].asInt)
                 }
             }
 
@@ -325,8 +324,7 @@ class SystemObject(
 
             "setprivatestring" -> {
                 Value.Null.also {
-                    rt.privateStrings["${args[0].asString}/${args[1].asString}".lowercase()] =
-                        args[2].asString
+                    rt.storePrivate(rt.privateStrings, "${args[0].asString}/${args[1].asString}", args[2].asString)
                 }
             }
 
@@ -335,7 +333,7 @@ class SystemObject(
             }
 
             "setpublicint" -> {
-                Value.Null.also { rt.privateInts["public/${args[0].asString}".lowercase()] = args[1].asInt }
+                Value.Null.also { rt.storePrivate(rt.privateInts, "public/${args[0].asString}", args[1].asInt) }
             }
 
             "getpublicstring" -> {
@@ -343,7 +341,7 @@ class SystemObject(
             }
 
             "setpublicstring" -> {
-                Value.Null.also { rt.privateStrings["public/${args[0].asString}".lowercase()] = args[1].asString }
+                Value.Null.also { rt.storePrivate(rt.privateStrings, "public/${args[0].asString}", args[1].asString) }
             }
 
             "messagebox" -> {

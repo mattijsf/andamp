@@ -22,6 +22,19 @@ object MakiParser {
     fun parse(
         bytes: ByteArray,
         id: String,
+    ): MakiProgram =
+        try {
+            read(bytes, id)
+        } catch (e: MakiFormatException) {
+            throw e
+        } catch (e: RuntimeException) {
+            // a cut-off or damaged file reads past its end or out of its tables
+            throw MakiFormatException("$id: damaged (${e.javaClass.simpleName})")
+        }
+
+    private fun read(
+        bytes: ByteArray,
+        id: String,
     ): MakiProgram {
         val buf = ByteBuffer.wrap(bytes).order(ByteOrder.LITTLE_ENDIAN)
         val magic = String(ByteArray(2).also { buf.get(it) }, Charsets.ISO_8859_1)

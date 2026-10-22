@@ -1373,7 +1373,9 @@ class Layout(
             if (minH > 0) height = maxOf(height, minH)
             if (maxW > 0) width = minOf(width, maxW)
             if (maxH > 0) height = minOf(height, maxH)
-            return width to height
+            // a window no screen could show is cut to the largest picture size (its shape and
+            // drawing are made at this size)
+            return width.coerceIn(0, ImageLimits.MAX_SIDE) to height.coerceIn(0, ImageLimits.MAX_SIDE)
         }
 
     /**
