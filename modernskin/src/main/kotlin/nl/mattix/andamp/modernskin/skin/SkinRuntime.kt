@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package nl.mattix.andamp.modernskin.skin
 
+import nl.mattix.andamp.modernskin.maki.MakiFormatException
 import nl.mattix.andamp.modernskin.maki.MakiHost
 import nl.mattix.andamp.modernskin.maki.MakiObject
 import nl.mattix.andamp.modernskin.maki.MakiParser
@@ -15,7 +16,7 @@ import nl.mattix.andamp.modernskin.xml.XmlParser
  * and the objects. Everything runs on one thread; the app calls [tick] regularly and [draw] when
  * something changed.
  */
-@Suppress("TooManyFunctions", "LargeClass")
+@Suppress("TooManyFunctions", "LargeClass") // the one host every object and script of a skin calls into
 class SkinRuntime(
     val files: SkinFiles,
     val host: SkinHost,
@@ -167,24 +168,34 @@ class SkinRuntime(
     fun bitmap(id: String): BitmapDef? {
         var fromBase: BitmapDef? = null
         for (name in namesFor(id)) {
-            var key = name
-            var hops = 0
-            while (hops++ < 8) {
-                val def = bitmaps[key]
-                if (def != null) {
-                    if (key !in baseBitmaps) return def
-                    if (fromBase == null) fromBase = def
-                    break
-                }
-                key = aliases[key] ?: break
-            }
+            val (key, def) = aliasedBitmap(name) ?: continue
+            if (key !in baseBitmaps) return def
+            if (fromBase == null) fromBase = def
         }
         fromBase?.let {
             baseUsage.add("bitmap:${it.id}")
             return it
         }
         // a plain file name used as an image
-        if (files.exists(id)) return bitmaps.getOrPut(id.lowercase()) { BitmapDef(id.lowercase(), id, 0, 0, null, null) }
+        return if (files.exists(id)) {
+            bitmaps.getOrPut(id.lowercase()) { BitmapDef(id.lowercase(), id, 0, 0, null, null) }
+        } else {
+            null
+        }
+    }
+
+    /**
+     * The bitmap element [name] defines, or names through element aliases (at most 8 hops), with
+     * the id it is defined under; null when the chain ends without one.
+     */
+    private fun aliasedBitmap(name: String): Pair<String, BitmapDef>? {
+        var key = name
+        var hops = 0
+        while (hops++ < 8) {
+            val def = bitmaps[key]
+            if (def != null) return key to def
+            key = aliases[key] ?: return null
+        }
         return null
     }
 
@@ -281,8 +292,7 @@ class SkinRuntime(
         id: String,
         depth: Int = 0,
     ): Rgb? {
-        val names = namesFor(id).filter { it in colors || it in colorAliases }
-        val key = names.firstOrNull { it !in baseColors } ?: names.firstOrNull() ?: return null
+        val key = colorKey(id) ?: return null
         if (key in baseColors) baseUsage.add("color:$key")
         // an alias takes the other color's RGB, tinted by its own group (or the other's when it has none)
         val c =
@@ -297,9 +307,17 @@ class SkinRuntime(
         id: String,
         depth: Int,
     ): Rgb? {
-        val names = namesFor(id).filter { it in colors || it in colorAliases }
-        val key = names.firstOrNull { it !in baseColors } ?: names.firstOrNull() ?: return null
+        val key = colorKey(id) ?: return null
         return colors[key] ?: colorAliases[key]?.takeIf { depth < MAX_ALIAS_DEPTH }?.let { plainColor(it, depth + 1) }
+    }
+
+    /**
+     * The name a color is defined under, as an RGB or an alias: [id] or its old-style twin, a skin's
+     * definition before the default set's. Null when neither is defined.
+     */
+    private fun colorKey(id: String): String? {
+        val names = namesFor(id).filter { it in colors || it in colorAliases }
+        return names.firstOrNull { it !in baseColors } ?: names.firstOrNull()
     }
 
     fun container(id: String): Container? = containers.firstOrNull { it.id.equals(id, ignoreCase = true) }
@@ -500,6 +518,7 @@ class SkinRuntime(
             }
         }
 
+    @Suppress("CyclomaticComplexMethod") // one arm per definition tag
     private fun collectDefs(node: XmlNode) {
         when (node.name) {
             "bitmap" -> {
@@ -558,19 +577,7 @@ class SkinRuntime(
             "color" -> {
                 node["id"]?.let { id ->
                     if (collectingBase) baseColors.add(id.lowercase()) else baseColors.remove(id.lowercase())
-                    // a value that is no RGB names another color (Bento's wasabi.list.background = color.display.bg)
-                    // the later definition wins in either form (a skin's alias over the default set's RGB)
-                    node["value"]?.let { v ->
-                        val k = id.lowercase()
-                        val rgb = parseRgb(v)
-                        if (rgb != null) {
-                            colors[k] = rgb
-                            colorAliases.remove(k)
-                        } else {
-                            colorAliases[k] = v.lowercase()
-                            colors.remove(k)
-                        }
-                    }
+                    node["value"]?.let { v -> defineColor(id.lowercase(), v) }
                     node["gammagroup"]?.let { colorGroups[id.lowercase()] = it.lowercase() }
                 }
             }
@@ -616,6 +623,25 @@ class SkinRuntime(
             }
         }
         for (c in node.children) collectDefs(c)
+    }
+
+    /**
+     * A `<color>`'s value under the lowercase id [k]. A value that is no RGB names another color
+     * (Bento's wasabi.list.background = color.display.bg); the later definition wins in either form
+     * (a skin's alias over the default set's RGB).
+     */
+    private fun defineColor(
+        k: String,
+        v: String,
+    ) {
+        val rgb = parseRgb(v)
+        if (rgb != null) {
+            colors[k] = rgb
+            colorAliases.remove(k)
+        } else {
+            colorAliases[k] = v.lowercase()
+            colors.remove(k)
+        }
     }
 
     private fun buildTop(
@@ -755,7 +781,7 @@ class SkinRuntime(
     /** GUI objects built so far: a skin that makes them without end is cut off at [MAX_OBJECTS]. */
     private var built = 0
 
-    @Suppress("CyclomaticComplexMethod")
+    @Suppress("CyclomaticComplexMethod", "LongMethod", "ReturnCount") // one arm per XML tag; tags that place no object return
     private fun buildChild(
         node: XmlNode,
         parent: Group,
@@ -915,30 +941,7 @@ class SkinRuntime(
                 else -> {
                     val defId = xuiTags[node.name]
                     if (defId != null) {
-                        val g = buildXui(node, parent, defId)
-                        node["content"]?.let { content ->
-                            // the standard frame scripts build the content group themselves, but only when they run
-                            if (g.systemObjects.isEmpty()) {
-                                val inner = Group(this, "group")
-                                fillGroup(
-                                    inner,
-                                    XmlNode(
-                                        "group",
-                                        mapOf(
-                                            "id" to content,
-                                            "x" to "0",
-                                            "y" to "0",
-                                            "w" to "0",
-                                            "h" to "0",
-                                            "relatw" to "1",
-                                            "relath" to "1",
-                                        ),
-                                        emptyList(),
-                                    ),
-                                )
-                                g.addChild(inner)
-                            }
-                        }
+                        buildXuiWithContent(node, parent, defId)
                         return
                     }
                     val className = KNOWN_CLASSES[node.name] ?: "GuiObject"
@@ -954,6 +957,39 @@ class SkinRuntime(
             it.setParams(node.attrs)
             parent.addChild(it)
         }
+    }
+
+    /**
+     * A xui element (see [buildXui]) with the group its `content` attribute names inside it, when
+     * no script of the element runs: the standard frame scripts build the content group
+     * themselves, but only when they run.
+     */
+    private fun buildXuiWithContent(
+        node: XmlNode,
+        parent: Group,
+        defId: String,
+    ) {
+        val g = buildXui(node, parent, defId)
+        val content = node["content"] ?: return
+        if (g.systemObjects.isNotEmpty()) return
+        val inner = Group(this, "group")
+        fillGroup(
+            inner,
+            XmlNode(
+                "group",
+                mapOf(
+                    "id" to content,
+                    "x" to "0",
+                    "y" to "0",
+                    "w" to "0",
+                    "h" to "0",
+                    "relatw" to "1",
+                    "relath" to "1",
+                ),
+                emptyList(),
+            ),
+        )
+        g.addChild(inner)
     }
 
     /**
@@ -986,27 +1022,37 @@ class SkinRuntime(
         group: Group,
         meta: List<Pair<XmlNode, Int>>,
     ) {
-        fun find(
-            objs: List<GuiObject>,
-            id: String,
-        ): GuiObject? {
-            val lower = id.lowercase()
-            objs.firstOrNull { it.id == lower || (it is Group && it.instanceId == lower) }?.let { return it }
-            for (o in objs) if (o is Group) o.findObject(lower)?.let { return it }
-            return null
-        }
         for ((m, before) in meta) {
             val targets = m["target"]?.split(';')?.map { it.trim() }?.filter { it.isNotEmpty() } ?: continue
             val existing = group.children.take(before)
-            val scope = m["group"]?.let { find(existing, it) as? Group }
+            val scope = m["group"]?.let { findMetaTarget(existing, it) as? Group }
             for (t in targets) {
-                val target = (if (scope != null) scope.findObject(t) else find(existing, t)) ?: continue
-                when (m.name) {
-                    "hideobject" -> target.hide()
-                    "showobject" -> target.show()
-                    "sendparams" -> m.attrs.forEach { (k, v) -> if (k != "target" && k != "group") target.setParam(k, v) }
-                }
+                val target = (if (scope != null) scope.findObject(t) else findMetaTarget(existing, t)) ?: continue
+                applyMetaTo(m, target)
             }
+        }
+    }
+
+    /** The object [id] names among [objs], by id or instance id, else anywhere inside one of their groups. */
+    private fun findMetaTarget(
+        objs: List<GuiObject>,
+        id: String,
+    ): GuiObject? {
+        val lower = id.lowercase()
+        objs.firstOrNull { it.id == lower || (it is Group && it.instanceId == lower) }?.let { return it }
+        for (o in objs) if (o is Group) o.findObject(lower)?.let { return it }
+        return null
+    }
+
+    /** What one `<hideobject>`, `<showobject>` or `<sendparams>` [m] does to [target]. */
+    private fun applyMetaTo(
+        m: XmlNode,
+        target: GuiObject,
+    ) {
+        when (m.name) {
+            "hideobject" -> target.hide()
+            "showobject" -> target.show()
+            "sendparams" -> m.attrs.forEach { (k, v) -> if (k != "target" && k != "group") target.setParam(k, v) }
         }
     }
 
@@ -1028,9 +1074,10 @@ class SkinRuntime(
                     host.log("script not found: $file")
                     null
                 } else {
+                    // MakiParser.parse reports any damaged file as a MakiFormatException
                     try {
                         MakiParser.parse(bytes, file)
-                    } catch (e: Exception) {
+                    } catch (e: MakiFormatException) {
                         host.log("script $file: ${e.message}")
                         null
                     }
@@ -1099,9 +1146,7 @@ class SkinRuntime(
         var result: Value = Value.Null
         try {
             for (s in scripts.toList()) {
-                if (event in s.events) {
-                    if (s.dispatch(target, event, args) > 0) result = s.lastReturn
-                }
+                if (event in s.events && s.dispatch(target, event, args) > 0) result = s.lastReturn
             }
         } finally {
             eventDepth--
@@ -1276,6 +1321,26 @@ class SkinRuntime(
     /** Advances timers, tickers and player-driven objects. Returns true when a redraw is due. */
     fun tick(): Boolean {
         val t = now()
+        advanceClocks(t)
+        val status = player.status
+        announcePlayer(status)
+        if (needsLayout) doLayout()
+        for (o in objects) {
+            when (o) {
+                is Slider -> o.sync()
+
+                is Text -> if (o.tick(t)) dirty = true
+
+                // a status picture changes only with the player's status, which announcePlayer marks the frame for
+                is Vis, is ProgressGrid -> if (status == Player.Status.PLAYING) dirty = true
+            }
+        }
+        if (needsLayout) doLayout()
+        return dirty
+    }
+
+    /** Refills every script's step budget, then moves animations and target slides and fires due timers, at [t]. */
+    private fun advanceClocks(t: Long) {
         for (s in scripts) s.refill()
         for (a in animations.filter { it.playing && t >= it.nextAt }) a.advance()
         for (o in moving.toList()) o.stepTarget(t)
@@ -1285,7 +1350,13 @@ class SkinRuntime(
             timerFires++
             dispatch(timer, "ontimer", emptyList())
         }
-        val status = player.status
+    }
+
+    /**
+     * Tells the scripts what changed in the player since the last tick, as System events: its
+     * [status], the title, the equalizer and the volume.
+     */
+    private fun announcePlayer(status: Player.Status) {
         if (status != lastStatus) {
             when (status) {
                 Player.Status.PLAYING -> {
@@ -1331,19 +1402,6 @@ class SkinRuntime(
             lastVolume = player.volume
             dispatchSystem("onvolumechanged", Value.Int(lastVolume))
         }
-        if (needsLayout) doLayout()
-        for (o in objects) {
-            when (o) {
-                is Slider -> o.sync()
-
-                is Text -> if (o.tick(t)) dirty = true
-
-                // a status picture changes only with the player's status, which marks the frame above
-                is Vis, is ProgressGrid -> if (status == Player.Status.PLAYING) dirty = true
-            }
-        }
-        if (needsLayout) doLayout()
-        return dirty
     }
 
     /** The main window's drawing. */
@@ -1397,27 +1455,34 @@ class SkinRuntime(
      * outside the picture. Null when nothing is left.
      */
     private fun fitToSheet(cmd: DrawCmd.Image): DrawCmd.Image? {
+        val (sheetW, sheetH) = host.imageSize(cmd.bitmap.file) ?: return cmd
         val b = cmd.bitmap
-        val (sheetW, sheetH) = host.imageSize(b.file) ?: return cmd
         val sw = b.w ?: (sheetW - b.x)
         val sh = b.h ?: (sheetH - b.y)
         val fw = minOf(sw, sheetW - b.x)
         val fh = minOf(sh, sheetH - b.y)
-        if (fw <= 0 || fh <= 0 || sw <= 0 || sh <= 0) return null
-        if (fw == sw && fh == sh && b.w != null && b.h != null) return cmd
+        val empty = fw <= 0 || fh <= 0
+        val outside = sw <= 0 || sh <= 0
+        if (empty || outside) return null
+        val whole = fw == sw && fh == sh
+        val sized = b.w != null && b.h != null
+        if (whole && sized) return cmd
         // a stretched picture keeps its scale: the destination shrinks by the same share
         val dw = if (fw == sw) cmd.dst.width else cmd.dst.width * fw / sw
         val dh = if (fh == sh) cmd.dst.height else cmd.dst.height * fh / sh
-        if (dw <= 0 || dh <= 0) return null
-        return DrawCmd
-            .Image(
-                BitmapDef(b.id, b.file, b.x, b.y, fw, fh, b.gammaGroup),
-                Rect(cmd.dst.left, cmd.dst.top, dw, dh),
-                cmd.alpha,
-            ).also {
-                it.owner = cmd.owner
-                it.smooth = cmd.smooth
-            }
+        return if (dw <= 0 || dh <= 0) {
+            null
+        } else {
+            DrawCmd
+                .Image(
+                    BitmapDef(b.id, b.file, b.x, b.y, fw, fh, b.gammaGroup),
+                    Rect(cmd.dst.left, cmd.dst.top, dw, dh),
+                    cmd.alpha,
+                ).also {
+                    it.owner = cmd.owner
+                    it.smooth = cmd.smooth
+                }
+        }
     }
 
     // ---- pointer -----------------------------------------------------------------------------
@@ -1503,9 +1568,10 @@ class SkinRuntime(
                 .filter { it.second <= slop2 }
                 .minByOrNull { it.second }
                 ?.first
-        nearest(::isControl)?.let { return it }
-        if (hit != null && reacts(hit)) return hit
-        return nearest { o -> !isControl(o) && scripts.any { it.listensTo(o) } } ?: hit
+        return nearest(::isControl)
+            ?: hit?.takeIf { reacts(it) }
+            ?: nearest { o -> !isControl(o) && scripts.any { it.listensTo(o) } }
+            ?: hit
     }
 
     /** Where the captured object's window sits, to turn stack points into its own. */
@@ -1580,12 +1646,13 @@ class SkinRuntime(
         target.doubleTap(sx - origin.left, sy - origin.top)
     }
 
-    /** The user's pick from the last popup menu, by command id. The phone has no menu yet: nothing. */
+    /** The user's pick from the last popup menu, by command id: 0, as no menu shows on the phone. */
+    @Suppress("UNUSED_PARAMETER", "FunctionOnlyReturningConstant") // PopupMenu's call; no menu shows, so nothing is picked
     fun menuChoice(items: List<String>): Int = 0
 
     // ---- actions -----------------------------------------------------------------------------
 
-    @Suppress("CyclomaticComplexMethod")
+    @Suppress("CyclomaticComplexMethod") // one arm per Winamp action name
     fun action(
         source: GuiObject,
         action: String,
@@ -1629,21 +1696,7 @@ class SkinRuntime(
 
             "TOGGLE" -> {
                 val id = param?.lowercase()?.removePrefix("guid:") ?: return
-                val c = toggleTarget(id)
-                if (c != null) {
-                    if (c in opened) {
-                        closeWindow(c)
-                    } else {
-                        // a component opened by its GUID takes the focus (Winamp Modern's playlist
-                        // editor, autofocus); a container shown for the first time does not
-                        // (Winamp3's EQ), one shown again does
-                        val takesFocus = param.contains("guid:", ignoreCase = true) || c in shownBefore
-                        openWindow(c)
-                        if (takesFocus) focused = c.current
-                    }
-                } else {
-                    configFlags["window:$id"] = !(configFlags["window:$id"] ?: false)
-                }
+                toggleWindow(id, param)
                 invalidate()
             }
 
@@ -1718,6 +1771,31 @@ class SkinRuntime(
         invalidate()
     }
 
+    /**
+     * A TOGGLE action: opens or closes the window [id] names (see [toggleTarget]), or flips a flag
+     * of that name when there is no such window. [param] is the action's parameter as written.
+     */
+    private fun toggleWindow(
+        id: String,
+        param: String,
+    ) {
+        val c = toggleTarget(id)
+        if (c != null) {
+            if (c in opened) {
+                closeWindow(c)
+            } else {
+                // a component opened by its GUID takes the focus (Winamp Modern's playlist
+                // editor, autofocus); a container shown for the first time does not
+                // (Winamp3's EQ), one shown again does
+                val takesFocus = param.contains("guid:", ignoreCase = true) || c in shownBefore
+                openWindow(c)
+                if (takesFocus) focused = c.current
+            }
+        } else {
+            configFlags["window:$id"] = !(configFlags["window:$id"] ?: false)
+        }
+    }
+
     /** Whether the window or switch a button's action names is on, for its active image. */
     fun actionState(
         action: String?,
@@ -1769,13 +1847,14 @@ class SkinRuntime(
         guid: String?,
     ): ConfigItemObj? {
         val k = key.lowercase()
-        configItems[k]?.let { return it }
-        configItems.values.firstOrNull { it.guid?.lowercase() == k }?.let { return it }
-        if (guid == null) return null
-        return ConfigItemObj(this, key, guid).also {
-            configItems[k] = it
-            configItems[guid.lowercase()] = it
-        }
+        return configItems[k]
+            ?: configItems.values.firstOrNull { it.guid?.lowercase() == k }
+            ?: guid?.let { g ->
+                ConfigItemObj(this, key, g).also {
+                    configItems[k] = it
+                    configItems[g.lowercase()] = it
+                }
+            }
     }
 
     /** A numeric config attribute; repeat is 0 off, 1 the playlist, -1 the song. */

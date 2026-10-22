@@ -16,33 +16,47 @@ object ImageLimits {
     }
 
     /** Width and height from the header, or null when the format is not one of the four. */
-    fun size(b: ByteArray): Pair<Int, Int>? {
-        fun u8(i: Int) = if (i < b.size) b[i].toInt() and 0xff else -1
+    fun size(b: ByteArray): Pair<Int, Int>? =
+        when {
+            b.size >= 24 && b.u8(0) == 0x89 && b.u8(1) == 'P'.code && b.u8(2) == 'N'.code && b.u8(3) == 'G'.code -> {
+                b.be32(16) to b.be32(20)
+            }
 
-        fun be16(i: Int) = (u8(i) shl 8) or u8(i + 1)
+            b.size >= 26 && b.u8(0) == 'B'.code && b.u8(1) == 'M'.code -> {
+                b.le32(18) to kotlin.math.abs(b.le32(22))
+            }
 
-        fun be32(i: Int) = (be16(i) shl 16) or be16(i + 2)
+            b.size >= 10 && b.u8(0) == 'G'.code && b.u8(1) == 'I'.code && b.u8(2) == 'F'.code -> {
+                b.le16(6) to b.le16(8)
+            }
 
-        fun le16(i: Int) = u8(i) or (u8(i + 1) shl 8)
+            b.size >= 4 && b.u8(0) == 0xff && b.u8(1) == 0xd8 -> {
+                jpegSize(b)
+            }
 
-        fun le32(i: Int) = le16(i) or (le16(i + 2) shl 16)
-        return when {
-            b.size >= 24 && u8(0) == 0x89 && u8(1) == 'P'.code && u8(2) == 'N'.code && u8(3) == 'G'.code -> be32(16) to be32(20)
-            b.size >= 26 && u8(0) == 'B'.code && u8(1) == 'M'.code -> le32(18) to kotlin.math.abs(le32(22))
-            b.size >= 10 && u8(0) == 'G'.code && u8(1) == 'I'.code && u8(2) == 'F'.code -> le16(6) to le16(8)
-            b.size >= 4 && u8(0) == 0xff && u8(1) == 0xd8 -> jpegSize(b)
-            else -> null
+            else -> {
+                null
+            }
         }
-    }
 
-    /** A JPEG's size from its first start-of-frame marker. */
+    /** The byte at [i] as 0..255, or -1 past the end. */
+    private fun ByteArray.u8(i: Int) = if (i < size) this[i].toInt() and 0xff else -1
+
+    private fun ByteArray.be16(i: Int) = (u8(i) shl 8) or u8(i + 1)
+
+    private fun ByteArray.be32(i: Int) = (be16(i) shl 16) or be16(i + 2)
+
+    private fun ByteArray.le16(i: Int) = u8(i) or (u8(i + 1) shl 8)
+
+    private fun ByteArray.le32(i: Int) = le16(i) or (le16(i + 2) shl 16)
+
+    /** A JPEG's size from its first start-of-frame marker; null at the first byte that is not a marker. */
     private fun jpegSize(b: ByteArray): Pair<Int, Int>? {
         var i = 2
-        while (i + 9 < b.size) {
-            if (b[i].toInt() and 0xff != 0xff) return null
+        while (i + 9 < b.size && (b[i].toInt() and 0xff) == 0xff) {
             val marker = b[i + 1].toInt() and 0xff
             val len = ((b[i + 2].toInt() and 0xff) shl 8) or (b[i + 3].toInt() and 0xff)
-            if (marker in 0xc0..0xcf && marker != 0xc4 && marker != 0xc8 && marker != 0xcc) {
+            if (isStartOfFrame(marker)) {
                 val h = ((b[i + 5].toInt() and 0xff) shl 8) or (b[i + 6].toInt() and 0xff)
                 val w = ((b[i + 7].toInt() and 0xff) shl 8) or (b[i + 8].toInt() and 0xff)
                 return w to h
@@ -52,4 +66,7 @@ object ImageLimits {
         }
         return null
     }
+
+    /** SOF0 to SOF15, less DHT (C4), JPG (C8) and DAC (CC), which share the range. */
+    private fun isStartOfFrame(marker: Int) = marker in 0xc0..0xcf && marker != 0xc4 && marker != 0xc8 && marker != 0xcc
 }

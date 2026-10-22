@@ -23,8 +23,7 @@ class SkinCorpusTest {
             try {
                 rt.load()
             } catch (e: Exception) {
-                println("load failed: $e")
-                e.printStackTrace()
+                println("load failed: ${e.stackTraceToString().trimEnd()}")
             }
             println(
                 "load ${System.currentTimeMillis() - t0} ms; containers=" +

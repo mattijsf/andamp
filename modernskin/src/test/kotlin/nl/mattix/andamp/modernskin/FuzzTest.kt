@@ -67,7 +67,7 @@ class FuzzTest {
                 val rt = SkinRuntime(all, Host(all), player).apply { clock = { t } }
                 try {
                     rt.load()
-                } catch (e: Exception) {
+                } catch (_: Exception) {
                     // refusing a broken skin is fine
                     return@Thread
                 } catch (e: Throwable) {
@@ -191,7 +191,7 @@ class FuzzTest {
             val (name, bytes) = scripts[random.nextInt(scripts.size)]
             try {
                 MakiParser.parse(damage(bytes, random), name)
-            } catch (e: MakiFormatException) {
+            } catch (_: MakiFormatException) {
                 // refused cleanly
             } catch (e: Throwable) {
                 failures.add("$name: $e")

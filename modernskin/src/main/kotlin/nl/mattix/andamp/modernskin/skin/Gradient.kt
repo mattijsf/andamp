@@ -69,7 +69,8 @@ class Gradient(
     override fun draw(out: MutableList<DrawCmd>) {
         val w = rect.width
         val h = rect.height
-        if (!visible || w <= 0 || h <= 0 || w.toLong() * h > ImageLimits.MAX_PIXELS) return
+        if (!visible || w <= 0 || h <= 0) return
+        if (w.toLong() * h > ImageLimits.MAX_PIXELS) return
         val gamma = rt.gamma(gammaGroup)?.takeIf { !it.isIdentity }
         val key = Triple(w, h, gamma)
         made?.takeIf { madeFor == key }?.let {
@@ -78,24 +79,32 @@ class Gradient(
         }
         // no stops at all: Winamp's magenta
         val argb = IntArray(w * h) { NO_STOPS }
-        if (stops.isNotEmpty()) {
-            val ax = x1 * w
-            val ay = y1 * h
-            val dx = x2 * w - ax
-            val dy = y2 * h - ay
-            val len2 = dx * dx + dy * dy
-            for (y in 0 until h) {
-                for (x in 0 until w) {
-                    // where the pixel falls along the line, 0 at its start and 1 at its end
-                    val t = if (len2 > 0f) ((x - ax) * dx + (y - ay) * dy) / len2 else 0f
-                    val c = colorAt(t)
-                    argb[y * w + x] = gamma?.apply(c) ?: c
-                }
-            }
-        }
+        if (stops.isNotEmpty()) paint(argb, w, h, gamma)
         made = argb
         madeFor = key
         out.add(DrawCmd.Pixels(rect, w, h, argb, effectiveAlpha, stable = true))
+    }
+
+    /** Fills [argb] ([w] x [h]) with the stops blended along the line, tinted by [gamma]. */
+    private fun paint(
+        argb: IntArray,
+        w: Int,
+        h: Int,
+        gamma: Gamma?,
+    ) {
+        val ax = x1 * w
+        val ay = y1 * h
+        val dx = x2 * w - ax
+        val dy = y2 * h - ay
+        val len2 = dx * dx + dy * dy
+        for (y in 0 until h) {
+            for (x in 0 until w) {
+                // where the pixel falls along the line, 0 at its start and 1 at its end
+                val t = if (len2 > 0f) ((x - ax) * dx + (y - ay) * dy) / len2 else 0f
+                val c = colorAt(t)
+                argb[y * w + x] = gamma?.apply(c) ?: c
+            }
+        }
     }
 
     override fun hitTest(

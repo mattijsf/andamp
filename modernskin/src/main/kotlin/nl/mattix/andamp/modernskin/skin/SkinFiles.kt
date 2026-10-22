@@ -120,8 +120,7 @@ class SkinsFolderFiles(
                 else -> return null
             }
         val name = parts.getOrNull(start)?.replace(" ", "") ?: return null
-        val files = siblings[name] ?: return null
-        return files to parts.drop(start + 1).joinToString("/")
+        return siblings[name]?.let { files -> files to parts.drop(start + 1).joinToString("/") }
     }
 
     override fun read(path: String): ByteArray? = sibling(path)?.let { (f, p) -> f.read(p) } ?: skin.read(path)

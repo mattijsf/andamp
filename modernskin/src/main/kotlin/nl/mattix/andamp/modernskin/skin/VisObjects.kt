@@ -38,6 +38,7 @@ class Vis(
     private val speed = FloatArray(COLUMNS) { PEAK_START_SPEED }
     private var lastFrameAt = -1L
 
+    @Suppress("CyclomaticComplexMethod") // one flat branch per vis attribute a skin can set
     override fun setParam(
         key: String,
         value: String,
@@ -154,32 +155,37 @@ class Vis(
             val c = tint(scopeColor).value or OPAQUE
             for (x in 0 until WIDTH) px[ROWS / 2 * WIDTH + x] = c
         } else {
-            step(rt.player.spectrum())
-            val colors = IntArray(ROWS) { tint(rows[it]).value or OPAQUE }
-            val dot = tint(peakColor).value or OPAQUE
-
-            fun column(
-                x: Int,
-                h: Int,
-                p: Int,
-            ) {
-                for (r in 0 until h) px[(ROWS - 1 - r) * WIDTH + x] = colors[ROWS - 1 - r]
-                if (peaks) px[(MAX_BAR - p.coerceIn(0, MAX_BAR)) * WIDTH + x] = dot
-            }
-            if (thin) {
-                for (x in 0 until WIDTH) column(x, bars[x].toInt(), (peak[x] / 256).toInt())
-            } else {
-                for (b in 0 until WIDTH / 4) {
-                    // a bar is the mean of its four data columns; the fourth column stays empty
-                    val h = ((0 until 4).sumOf { bars[b * 4 + it].toDouble() } / 4).toInt()
-                    val p = ((0 until 4).sumOf { peak[b * 4 + it].toDouble() } / 4 / 256).toInt()
-                    for (x in b * 4 until b * 4 + 3) column(x, h, p)
-                }
-            }
+            paintSpectrum(px)
         }
         if (rect.width.toLong() * rect.height > ImageLimits.MAX_PIXELS) return
         val scaled = stretch(flip(px, WIDTH, ROWS, flipH, flipV), WIDTH, ROWS, rect.width, rect.height)
         out.add(DrawCmd.Pixels(rect, rect.width, rect.height, scaled, effectiveAlpha))
+    }
+
+    /** Steps the bars and peaks on and paints them into [px] ([WIDTH] x [ROWS]). */
+    private fun paintSpectrum(px: IntArray) {
+        step(rt.player.spectrum())
+        val colors = IntArray(ROWS) { tint(rows[it]).value or OPAQUE }
+        val dot = tint(peakColor).value or OPAQUE
+
+        fun column(
+            x: Int,
+            h: Int,
+            p: Int,
+        ) {
+            for (r in 0 until h) px[(ROWS - 1 - r) * WIDTH + x] = colors[ROWS - 1 - r]
+            if (peaks) px[(MAX_BAR - p.coerceIn(0, MAX_BAR)) * WIDTH + x] = dot
+        }
+        if (thin) {
+            for (x in 0 until WIDTH) column(x, bars[x].toInt(), (peak[x] / 256).toInt())
+        } else {
+            for (b in 0 until WIDTH / 4) {
+                // a bar is the mean of its four data columns; the fourth column stays empty
+                val h = ((0 until 4).sumOf { bars[b * 4 + it].toDouble() } / 4).toInt()
+                val p = ((0 until 4).sumOf { peak[b * 4 + it].toDouble() } / 4 / 256).toInt()
+                for (x in b * 4 until b * 4 + 3) column(x, h, p)
+            }
+        }
     }
 
     override fun makiCall(
@@ -340,7 +346,8 @@ class EqVis(
     }
 
     override fun draw(out: MutableList<DrawCmd>) {
-        if (!visible || rect.width <= 0 || rect.height <= 0 || rect.width.toLong() * rect.height > ImageLimits.MAX_PIXELS) return
+        if (!visible || rect.width <= 0 || rect.height <= 0) return
+        if (rect.width.toLong() * rect.height > ImageLimits.MAX_PIXELS) return
         val w = rect.width
         val h = rect.height
         val half = maxOf(1, h / 2)

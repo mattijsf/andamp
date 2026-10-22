@@ -11,14 +11,29 @@ internal fun String.toIntLenient(): Int? = trim().toIntOrNull() ?: trim().toDoub
 
 /** A color as Winamp writes it: "r,g,b", "#rrggbb", or "white" / "black". */
 internal fun parseRgb(v: String): Rgb? {
-    when (v.trim().lowercase()) {
-        "white" -> return Rgb(0xffffff)
-        "black" -> return Rgb(0)
-    }
+    val name = v.trim().lowercase()
     val parts = v.split(',').map { it.trim().toIntOrNull() }
-    if (parts.size >= 3 && parts.all { it != null }) return Rgb((parts[0]!! shl 16) or (parts[1]!! shl 8) or parts[2]!!)
-    val hex = v.trim().removePrefix("#")
-    return hex.toIntOrNull(16)?.let { Rgb(it and 0xffffff) }
+    return when {
+        name == "white" -> {
+            Rgb(0xffffff)
+        }
+
+        name == "black" -> {
+            Rgb(0)
+        }
+
+        parts.size >= 3 && parts.all { it != null } -> {
+            Rgb((parts[0]!! shl 16) or (parts[1]!! shl 8) or parts[2]!!)
+        }
+
+        else -> {
+            v
+                .trim()
+                .removePrefix("#")
+                .toIntOrNull(16)
+                ?.let { Rgb(it and 0xffffff) }
+        }
+    }
 }
 
 /**
@@ -26,7 +41,7 @@ internal fun parseRgb(v: String): Rgb? {
  * left out is the image's. Positions with `relatx="1"` and the like count from the parent's far
  * edge, so a negative value hugs the right or bottom.
  */
-@Suppress("TooManyFunctions")
+@Suppress("TooManyFunctions") // the methods every Wasabi GUI object answers to
 open class GuiObject(
     val rt: SkinRuntime,
     val tag: String,
@@ -106,7 +121,7 @@ open class GuiObject(
         for ((k, v) in map) if (!setParam(k, v)) rt.unhandledParams.merge("$tag ${k.lowercase()}", 1, Int::plus)
     }
 
-    @Suppress("CyclomaticComplexMethod")
+    @Suppress("CyclomaticComplexMethod") // one arm per XML attribute
     open fun setParam(
         key: String,
         value: String,
@@ -302,7 +317,13 @@ open class GuiObject(
     open fun hitTest(
         px: Int,
         py: Int,
-    ): GuiObject? = if (visible && !ghost && enabled && rect.width > 0 && rect.height > 0 && (px to py) in rect) this else null
+    ): GuiObject? = if (visible && takesTouchAt(px, py)) this else null
+
+    /** Whether a touch at the point lands on it: not a ghost, enabled, and inside its non-empty rectangle. */
+    protected fun takesTouchAt(
+        px: Int,
+        py: Int,
+    ): Boolean = !ghost && enabled && rect.width > 0 && rect.height > 0 && (px to py) in rect
 
     // ---- targets: a script moves, resizes or fades an object over time --------------------
 
@@ -486,7 +507,7 @@ open class GuiObject(
         setParam(key, value)
     }
 
-    @Suppress("CyclomaticComplexMethod", "LongMethod")
+    @Suppress("CyclomaticComplexMethod", "LongMethod") // one arm per script method of GuiObject
     override fun makiCall(
         name: String,
         args: List<Value>,
@@ -965,9 +986,10 @@ open class Group(
         if (!visible) return null
         for (c in children.asReversed()) c.hitTest(px, py)?.let { return it }
         // a group whose region is its rectangle takes what its children leave, and blocks what lies under it
-        return if (rectRgn && !ghost && enabled && rect.width > 0 && rect.height > 0 && (px to py) in rect) this else null
+        return if (rectRgn && takesTouchAt(px, py)) this else null
     }
 
+    @Suppress("CyclomaticComplexMethod") // one arm per script method a group answers
     override fun makiCall(
         name: String,
         args: List<Value>,
@@ -1065,6 +1087,7 @@ class FrameSplitter(
     private var resizable = true
     private var sizerRect = Rect.EMPTY
 
+    @Suppress("CyclomaticComplexMethod") // one arm per XML attribute a frame takes
     override fun setParam(
         key: String,
         value: String,
@@ -1115,44 +1138,28 @@ class FrameSplitter(
                 else -> total - p
             }
         val secondStart = firstLen + sizer
-        sizerRect =
-            if (vertical) {
-                Rect(
-                    rect.left + firstLen,
-                    rect.top,
-                    sizer,
-                    rect.height,
-                )
-            } else {
-                Rect(rect.left, rect.top + firstLen, rect.width, sizer)
-            }
+        sizerRect = span(firstLen, sizer)
         val secondLen = maxOf(0, total - secondStart)
-        val a =
-            if (vertical) {
-                Rect(
-                    rect.left,
-                    rect.top,
-                    firstLen,
-                    rect.height,
-                )
-            } else {
-                Rect(rect.left, rect.top, rect.width, firstLen)
-            }
-        val b =
-            if (vertical) {
-                Rect(rect.left + secondStart, rect.top, secondLen, rect.height)
-            } else {
-                Rect(
-                    rect.left,
-                    rect.top + secondStart,
-                    rect.width,
-                    secondLen,
-                )
-            }
+        val a = span(0, firstLen)
+        val b = span(secondStart, secondLen)
         first?.layoutIn(a, effectiveAlpha)
         second?.layoutIn(b, effectiveAlpha)
         for (c in children) if (c !== first && c !== second) c.layout(rect, effectiveAlpha)
     }
+
+    /**
+     * The strip of the frame that starts [start] pixels in along the split and is [len] pixels
+     * long, across the full height of a vertical frame or the full width of a horizontal one.
+     */
+    private fun span(
+        start: Int,
+        len: Int,
+    ): Rect =
+        if (vertical) {
+            Rect(rect.left + start, rect.top, len, rect.height)
+        } else {
+            Rect(rect.left, rect.top + start, rect.width, len)
+        }
 
     /**
      * The divider, stretched over the 8 px between the panes and 2 px past each end, its grabber
@@ -1160,7 +1167,8 @@ class FrameSplitter(
      */
     override fun draw(out: MutableList<DrawCmd>) {
         super.draw(out)
-        if (!visible || !resizable || sizerRect.width <= 0 || sizerRect.height <= 0) return
+        if (!visible || !resizable) return
+        if (sizerRect.width <= 0 || sizerRect.height <= 0) return
         val a0 = first
         val b0 = second
         if (a0 != null && b0 != null && a0.visible != b0.visible) return
@@ -1188,25 +1196,32 @@ class FrameSplitter(
                 )
             }
         }
-        if (grip.isNotEmpty()) {
-            val (gw, gh) = rt.bitmapSize(grip) ?: return
-            val len = if (vertical) long.height else long.width
-            val glen = if (vertical) gh else gw
-            if (len <= glen) return
-            val cut = (len - glen) / 2
-            val g =
-                if (vertical) {
-                    Rect(long.left, long.top + cut, long.width, len - 2 * cut)
-                } else {
-                    Rect(
-                        long.left + cut,
-                        long.top,
-                        len - 2 * cut,
-                        long.height,
-                    )
-                }
-            rt.bitmap(grip)?.let { out.add(DrawCmd.Image(it, g, effectiveAlpha).also { c -> c.owner = toString() }) }
-        }
+        if (grip.isNotEmpty()) drawGrabber(out, grip, long)
+    }
+
+    /** The grabber picture [grip] centered on the divider's rectangle [long], when the divider is longer. */
+    private fun drawGrabber(
+        out: MutableList<DrawCmd>,
+        grip: String,
+        long: Rect,
+    ) {
+        val (gw, gh) = rt.bitmapSize(grip) ?: return
+        val len = if (vertical) long.height else long.width
+        val glen = if (vertical) gh else gw
+        if (len <= glen) return
+        val cut = (len - glen) / 2
+        val g =
+            if (vertical) {
+                Rect(long.left, long.top + cut, long.width, len - 2 * cut)
+            } else {
+                Rect(
+                    long.left + cut,
+                    long.top,
+                    len - 2 * cut,
+                    long.height,
+                )
+            }
+        rt.bitmap(grip)?.let { out.add(DrawCmd.Image(it, g, effectiveAlpha).also { c -> c.owner = toString() }) }
     }
 
     override fun makiCall(
@@ -1589,6 +1604,7 @@ class Container(
         }
     }
 
+    @Suppress("CyclomaticComplexMethod") // one arm per script method a container answers
     override fun makiCall(
         name: String,
         args: List<Value>,
@@ -1748,8 +1764,8 @@ open class Layer(
         // a region picture draws too: the shape it cuts hides it
         val img = shownImage ?: return
         val bm = rt.bitmap(img) ?: return
-        val size = rt.bitmapSize(img)
-        if (!tile || size == null || size.first <= 0 || size.second <= 0) {
+        val size = rt.bitmapSize(img)?.takeIf { it.first > 0 && it.second > 0 }
+        if (!tile || size == null) {
             out.add(DrawCmd.Image(bm, rect, effectiveAlpha))
             return
         }
@@ -1964,6 +1980,7 @@ class AnimatedLayer(
         const val MAX_CATCH_UP = 8
     }
 
+    @Suppress("CyclomaticComplexMethod") // one arm per script method an animated layer answers
     override fun makiCall(
         name: String,
         args: List<Value>,
@@ -2464,7 +2481,7 @@ class ProgressGrid(
 }
 
 /**
- * A stretchable background: corners and edges at their own size, the middle stretched. A
+ * A stretchable background: corners and edges at their natural size, the middle stretched. A
  * one-row grid only has left, middle and right.
  */
 open class Grid(
@@ -2523,8 +2540,11 @@ open class Grid(
             if (w <= 0 || h <= 0) return
             parts[part]?.let { rt.bitmap(it) }?.let { out.add(DrawCmd.Image(it, Rect(x, y, w, h), effectiveAlpha)) }
         }
-        // corners at their size; each edge and the middle span between their own neighbours
-        val (l, t, r, b) = listOf(rect.left, rect.top, rect.right, rect.bottom)
+        // corners at their size; each edge and the middle span between their neighbors
+        val l = rect.left
+        val t = rect.top
+        val r = rect.right
+        val b = rect.bottom
         val tl = size("topleft")
         val tr = size("topright")
         val bl = size("bottomleft")

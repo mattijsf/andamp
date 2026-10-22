@@ -119,7 +119,8 @@ internal class TitleBar(
         relative: Boolean,
     ) {
         val rel = if (relative) 1 else 0
-        if (o.x == x && o.w == w && o.relatX == 0 && o.relatW == rel) return
+        val unchanged = o.x == x && o.w == w && o.relatX == 0 && o.relatW == rel
+        if (unchanged) return
         o.setParam("x", x.toString())
         o.setParam("relatx", "0")
         o.setParam("w", w.toString())

@@ -4,6 +4,7 @@
 // Android dependency so they run under plain JVM tests.
 plugins {
     alias(libs.plugins.kotlin.jvm)
+    alias(libs.plugins.detekt)
 }
 
 kotlin {

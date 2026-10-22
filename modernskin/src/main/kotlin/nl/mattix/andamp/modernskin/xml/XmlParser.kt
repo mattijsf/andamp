@@ -78,9 +78,12 @@ object XmlParser {
 
         private fun readName(): String {
             val start = i
-            while (i < s.length && !s[i].isWhitespace() && s[i] != '>' && s[i] != '/' && s[i] != '=') i++
+            while (i < s.length && !endsName(s[i])) i++
             return s.substring(start, i)
         }
+
+        /** Whether a tag or attribute name stops at [c]. */
+        private fun endsName(c: Char): Boolean = c.isWhitespace() || c == '>' || c == '/' || c == '='
 
         private fun skipSpace() {
             while (i < s.length && s[i].isWhitespace()) i++
@@ -93,45 +96,25 @@ object XmlParser {
             while (i < s.length) {
                 skipSpace()
                 if (i >= s.length) break
-                val c = s[i]
-                if (c == '>') {
-                    i++
-                    break
+                when (s[i]) {
+                    '>' -> {
+                        i++
+                        break
+                    }
+
+                    '/' -> {
+                        selfClose = true
+                        i++
+                    }
+
+                    '<' -> {
+                        break
+                    }
+
+                    else -> {
+                        readAttribute(attrs)
+                    }
                 }
-                if (c == '/') {
-                    selfClose = true
-                    i++
-                    continue
-                }
-                if (c == '<') break
-                val key = readName().lowercase()
-                if (key.isEmpty()) {
-                    i++
-                    continue
-                }
-                skipSpace()
-                var value = ""
-                if (i < s.length && s[i] == '=') {
-                    i++
-                    skipSpace()
-                    value =
-                        if (i < s.length && (s[i] == '"' || s[i] == '\'')) {
-                            val q = s[i]
-                            val end = s.indexOf(q, i + 1).let { if (it < 0) s.length else it }
-                            val v = s.substring(i + 1, end)
-                            i = minOf(end + 1, s.length)
-                            v
-                        } else {
-                            val start = i
-                            while (i < s.length && !s[i].isWhitespace() && s[i] != '>' &&
-                                !(s[i] == '/' && s.getOrNull(i + 1) == '>')
-                            ) {
-                                i++
-                            }
-                            s.substring(start, i)
-                        }
-                }
-                if (key !in attrs) attrs[key] = unescape(value)
             }
             val open = Open(name, attrs)
             if (selfClose) {
@@ -139,6 +122,43 @@ object XmlParser {
             } else {
                 stack.add(open)
             }
+        }
+
+        /** Reads one attribute into [attrs]; a key that is already there keeps its first value. */
+        private fun readAttribute(attrs: MutableMap<String, String>) {
+            val key = readName().lowercase()
+            if (key.isEmpty()) {
+                i++
+                return
+            }
+            skipSpace()
+            var value = ""
+            if (i < s.length && s[i] == '=') {
+                i++
+                skipSpace()
+                value = readValue()
+            }
+            if (key !in attrs) attrs[key] = unescape(value)
+        }
+
+        /** Reads an attribute value: quoted, or unquoted up to a space, `>` or `/>`. */
+        private fun readValue(): String =
+            if (i < s.length && (s[i] == '"' || s[i] == '\'')) {
+                val q = s[i]
+                val end = s.indexOf(q, i + 1).let { if (it < 0) s.length else it }
+                val v = s.substring(i + 1, end)
+                i = minOf(end + 1, s.length)
+                v
+            } else {
+                val start = i
+                while (i < s.length && !endsUnquotedValue(i)) i++
+                s.substring(start, i)
+            }
+
+        /** Whether an unquoted attribute value stops at [at]: at a space, at `>`, or at the `/` of `/>`. */
+        private fun endsUnquotedValue(at: Int): Boolean {
+            val c = s[at]
+            return c.isWhitespace() || c == '>' || (c == '/' && s.getOrNull(at + 1) == '>')
         }
 
         private fun close(name: String) {
