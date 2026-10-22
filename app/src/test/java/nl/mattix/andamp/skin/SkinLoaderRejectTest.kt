@@ -8,6 +8,7 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.ByteArrayOutputStream
+import java.io.IOException
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -47,6 +48,41 @@ class SkinLoaderRejectTest {
         // fails on the first required sheet
         assertThrows(IllegalStateException::class.java) {
             SkinLoader.load(zip.inputStream(), fallback = null, name = "readme-only")
+        }
+    }
+
+    @Test
+    fun `a zip bomb is refused before it fills memory`() {
+        // 64 MB of zeros as main.bmp, a few kB packed: the unpacked size is what counts
+        val bomb =
+            ByteArrayOutputStream()
+                .also { bos ->
+                    ZipOutputStream(bos).use { zos ->
+                        zos.putNextEntry(ZipEntry("main.bmp"))
+                        val zeros = ByteArray(1024 * 1024)
+                        repeat(64) { zos.write(zeros) }
+                        zos.closeEntry()
+                    }
+                }.toByteArray()
+        assertThrows(IOException::class.java) {
+            SkinLoader.load(bomb.inputStream(), fallback = null, name = "bomb")
+        }
+    }
+
+    @Test
+    fun `an archive with too many members is refused`() {
+        val many =
+            ByteArrayOutputStream()
+                .also { bos ->
+                    ZipOutputStream(bos).use { zos ->
+                        repeat(SkinLoader.MAX_MEMBERS + 1) { i ->
+                            zos.putNextEntry(ZipEntry("m$i.txt"))
+                            zos.closeEntry()
+                        }
+                    }
+                }.toByteArray()
+        assertThrows(IOException::class.java) {
+            SkinLoader.load(many.inputStream(), fallback = null, name = "many")
         }
     }
 }

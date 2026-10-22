@@ -8,6 +8,7 @@ import android.graphics.BitmapFactory
 import android.util.Log
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import nl.mattix.andamp.state.readAtMost
 import java.io.InputStream
 import java.util.zip.ZipInputStream
 
@@ -18,7 +19,9 @@ import java.util.zip.ZipInputStream
  * to the bundled base skin.
  *
  * A sheet of more than [MAX_SHEET_PIXELS] pixels is not decoded and counts as
- * corrupt, so one archive cannot ask for more memory than the phone has.
+ * corrupt, so one archive cannot ask for more memory than the phone has. Unpacking is bounded
+ * the same way: an archive that unpacks to more than [MAX_UNPACKED_BYTES], has a member over
+ * [MAX_MEMBER_BYTES] or more than [MAX_MEMBERS] members is refused, whatever sizes it claims.
  */
 object SkinLoader {
     private const val TAG = "SkinLoader"
@@ -28,6 +31,15 @@ object SkinLoader {
      * equalizer's 275 by 315. A decoded pixel takes four bytes, so a sheet takes 4 MB at most.
      */
     internal const val MAX_SHEET_PIXELS = 1024 * 1024
+
+    /** The most one member may unpack to: far above the largest sheet a skin holds. */
+    internal const val MAX_MEMBER_BYTES = 8 * 1024 * 1024
+
+    /** The most a whole archive may unpack to. */
+    internal const val MAX_UNPACKED_BYTES = 32 * 1024 * 1024
+
+    /** The most members an archive may hold; a skin has a few dozen. */
+    internal const val MAX_MEMBERS = 1024
 
     /** Loads the bundled base skin. */
     fun loadBase(context: Context): Skin = loadBundled(context, BundledSkins.BASE)
@@ -92,19 +104,31 @@ object SkinLoader {
         return String(bytes, Charsets.ISO_8859_1).replace("\r\n", "\n").trim().ifBlank { null }
     }
 
-    /** Zip members keyed by lowercased base name (directories stripped); last entry wins. */
+    /**
+     * Zip members keyed by lowercased base name (directories stripped); last entry wins.
+     * The sizes an archive claims can lie (a zip bomb), so what comes out is counted.
+     *
+     * @throws java.io.IOException for an archive past [MAX_MEMBERS], [MAX_MEMBER_BYTES] or
+     *     [MAX_UNPACKED_BYTES].
+     */
     private fun readZip(input: InputStream): Map<String, ByteArray> {
         val members = mutableMapOf<String, ByteArray>()
+        var count = 0
+        var unpacked = 0L
         ZipInputStream(input.buffered()).use { zip ->
             generateSequence { zip.nextEntry }
                 .filterNot { it.isDirectory }
                 .forEach { entry ->
+                    if (++count > MAX_MEMBERS) throw java.io.IOException("more than $MAX_MEMBERS members")
+                    val bytes = zip.readAtMost(MAX_MEMBER_BYTES)
+                    unpacked += bytes.size
+                    if (unpacked > MAX_UNPACKED_BYTES) throw java.io.IOException("unpacks past $MAX_UNPACKED_BYTES bytes")
                     val key =
                         entry.name
                             .substringAfterLast('/')
                             .substringAfterLast('\\')
                             .lowercase()
-                    if (key.isNotEmpty()) members[key] = zip.readBytes()
+                    if (key.isNotEmpty()) members[key] = bytes
                 }
         }
         return members
