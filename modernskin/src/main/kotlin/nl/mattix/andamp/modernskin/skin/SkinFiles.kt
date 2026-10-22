@@ -104,12 +104,16 @@ class LayeredSkinFiles(
 /**
  * A skin beside the other skins in a Skins folder: a path `../<name>/...` or `@SKINSPATH@/<name>/...`
  * reads from that sibling (Bento takes its scripts and most of its XML from "Big Bento").
- * Siblings are keyed by their folder name lowercased without spaces ("bigbento").
+ * Siblings are named by their folder name lowercased without spaces ("bigbento"); [siblings] gives
+ * the one by that name, or null, so a host can open a sibling only when a path names it.
  */
 class SkinsFolderFiles(
     private val skin: SkinFiles,
-    private val siblings: Map<String, SkinFiles>,
+    private val siblings: (String) -> SkinFiles?,
 ) : SkinFiles {
+    /** Siblings opened beforehand, by folder name. */
+    constructor(skin: SkinFiles, siblings: Map<String, SkinFiles>) : this(skin, siblings::get)
+
     private fun sibling(path: String): Pair<SkinFiles, String>? {
         val n = SkinFiles.normalize(path).removePrefix("@skinspath@/")
         val parts = n.split('/')
@@ -120,7 +124,7 @@ class SkinsFolderFiles(
                 else -> return null
             }
         val name = parts.getOrNull(start)?.replace(" ", "") ?: return null
-        return siblings[name]?.let { files -> files to parts.drop(start + 1).joinToString("/") }
+        return siblings(name)?.let { files -> files to parts.drop(start + 1).joinToString("/") }
     }
 
     override fun read(path: String): ByteArray? = sibling(path)?.let { (f, p) -> f.read(p) } ?: skin.read(path)
