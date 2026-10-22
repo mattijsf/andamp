@@ -23,7 +23,12 @@ object GeneratedImages {
     ): String {
         val c = parseRgb(color ?: "")?.value ?: 0
         val a = (alpha ?: 255).coerceIn(0, 255)
-        return "$SOLID%06x%02x/%dx%d.png".format(c and 0xffffff, a, (w ?: 1).coerceAtLeast(1), (h ?: 1).coerceAtLeast(1))
+        return "$SOLID%06x%02x/%dx%d.png".format(
+            c and 0xffffff,
+            a,
+            (w ?: 1).coerceIn(1, ImageLimits.MAX_SIDE),
+            (h ?: 1).coerceIn(1, ImageLimits.MAX_SIDE),
+        )
     }
 
     /** PNG bytes for a made-up name, or null for a real file. */
@@ -36,7 +41,8 @@ object GeneratedImages {
                 .split('/')
                 .takeIf { it.size == 2 } ?: return null
         val argb = spec.toLongOrNull(16)?.toInt() ?: return null
-        val (w, h) = size.split('x').map { it.toIntOrNull() ?: 1 }
+        val (w, h) = size.split('x').map { (it.toIntOrNull() ?: 1).coerceIn(1, ImageLimits.MAX_SIDE) }
+        if (w.toLong() * h > ImageLimits.MAX_PIXELS) return null
         val rgb = argb ushr 8
         val a = argb and 0xff
         return png(w, h, (a shl 24) or rgb)

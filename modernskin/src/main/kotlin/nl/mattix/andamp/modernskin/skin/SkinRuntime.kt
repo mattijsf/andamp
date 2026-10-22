@@ -43,6 +43,26 @@ class SkinRuntime(
     val moving = LinkedHashSet<GuiObject>()
     val privateInts = HashMap<String, Int>()
     val privateStrings = HashMap<String, String>()
+
+    /**
+     * Keeps a script's private setting, within bounds: at most [MAX_SETTINGS] names per kind and
+     * strings of [MAX_SETTING_LENGTH] characters, so a skin cannot fill memory or storage with them.
+     */
+    fun <T> storePrivate(
+        map: HashMap<String, T>,
+        key: String,
+        value: T,
+    ) {
+        val k = key.lowercase()
+        if (k.length > MAX_SETTING_LENGTH ||
+            (value is String && value.length > MAX_SETTING_LENGTH)
+        ) {
+            return host.log("setting $k too long, not kept")
+        }
+        if (k !in map && map.size >= MAX_SETTINGS) return host.log("too many settings, $k not kept")
+        map[k] = value
+    }
+
     private val configFlags = HashMap<String, Boolean>()
 
     /** What getSkinName() answers: the skin's folder name, set by the host before [load]. */
@@ -436,25 +456,47 @@ class SkinRuntime(
             attrs.mapValues { (_, v) -> v.replace("@HAVE_LIBRARY@", if (haveLibrary) "1" else "0").replace("@HAVE_VIDEO@", "1") }
         }
 
-    /** Replaces every `<include>` by the nodes of the file it names, relative to the including file. */
+    /** Nodes made by expanding includes so far: a skin that includes itself in circles stops here. */
+    private var expandedNodes = 0
+
+    /**
+     * Replaces every `<include>` by the nodes of the file it names, relative to the including file.
+     * A file that includes itself (directly or round about), includes nested past
+     * [MAX_INCLUDE_DEPTH] and anything past [MAX_NODES] nodes are left out.
+     */
     private fun expand(
         nodes: List<XmlNode>,
         dir: String,
+        chain: List<String> = emptyList(),
+        depth: Int = 0,
     ): List<XmlNode> =
         nodes.flatMap { n ->
+            if (++expandedNodes > MAX_NODES || depth > MAX_XML_DEPTH) {
+                if (expandedNodes == MAX_NODES + 1) host.log("skin too large: stopped at $MAX_NODES nodes")
+                return@flatMap emptyList()
+            }
             if (n.name == "include") {
                 val file = n["file"]?.replace('\\', '/')?.removePrefix("@DEFAULTSKINPATH@") ?: return@flatMap emptyList()
                 val candidates = listOf(if (dir.isEmpty()) file else "$dir/$file", file)
                 val path = candidates.firstOrNull { files.exists(it) }
-                if (path == null) {
-                    host.log("include not found: $file (from $dir)")
-                    emptyList()
-                } else {
-                    val text = files.read(path)!!.toString(Charsets.UTF_8)
-                    expand(XmlParser.parse(text), dirOf(path))
+                when {
+                    path == null -> {
+                        host.log("include not found: $file (from $dir)")
+                        emptyList()
+                    }
+
+                    path in chain || chain.size >= MAX_INCLUDE_DEPTH -> {
+                        host.log("include skipped: $file (includes itself or nests too deep)")
+                        emptyList()
+                    }
+
+                    else -> {
+                        val text = files.read(path)!!.toString(Charsets.UTF_8)
+                        expand(XmlParser.parse(text), dirOf(path), chain + path, depth + 1)
+                    }
                 }
             } else {
-                listOf(XmlNode(n.name, substituted(n.attrs), expand(n.children, dir)))
+                listOf(XmlNode(n.name, substituted(n.attrs), expand(n.children, dir, chain, depth + 1)))
             }
         }
 
@@ -710,12 +752,19 @@ class SkinRuntime(
             } == true
         }
 
+    /** GUI objects built so far: a skin that makes them without end is cut off at [MAX_OBJECTS]. */
+    private var built = 0
+
     @Suppress("CyclomaticComplexMethod")
     private fun buildChild(
         node: XmlNode,
         parent: Group,
         meta: MutableList<Pair<XmlNode, Int>>,
     ) {
+        if (++built > MAX_OBJECTS) {
+            if (built == MAX_OBJECTS + 1) host.log("skin too large: stopped at $MAX_OBJECTS objects")
+            return
+        }
         // Wasabi's own tags (Wasabi:Button, Wasabi:Text, ...) are xui groups of the default set when it
         // defines them: a framed button inside a group, and so on
         if (node.name.startsWith("wasabi:") && node.name in xuiTags) {
@@ -1009,8 +1058,15 @@ class SkinRuntime(
 
     // ---- MakiHost ----------------------------------------------------------------------------
 
+    /** Objects scripts made with `new` (timers, lists, ...), cut off at [MAX_CREATED]. */
+    private var created = 0
+
     override fun create(guid: String): MakiObject? {
         val cls = StdApi.byGuid[guid.lowercase()] ?: return null
+        if (++created > MAX_CREATED) {
+            if (created == MAX_CREATED + 1) host.log("scripts made more than $MAX_CREATED objects; no more")
+            return null
+        }
         return when (cls.name.lowercase()) {
             "timer" -> Timer(this)
             "popupmenu" -> PopupMenu(this)
@@ -1039,11 +1095,16 @@ class SkinRuntime(
         event: String,
         args: List<Value>,
     ): Value {
+        if (!enterEvent(event)) return Value.Null
         var result: Value = Value.Null
-        for (s in scripts.toList()) {
-            if (event in s.events) {
-                if (s.dispatch(target, event, args) > 0) result = s.lastReturn
+        try {
+            for (s in scripts.toList()) {
+                if (event in s.events) {
+                    if (s.dispatch(target, event, args) > 0) result = s.lastReturn
+                }
             }
+        } finally {
+            eventDepth--
         }
         if (target is GuiObject) {
             val p = target.parent
@@ -1149,15 +1210,36 @@ class SkinRuntime(
         for ((k, v) in params) for (s in g.systemObjects) dispatch(s, "onsetxuiparam", listOf(Value.Str(k), Value.Str(v)))
     }
 
+    /** How many events are firing inside each other right now. */
+    private var eventDepth = 0
+
+    /**
+     * Whether another event may fire inside the ones already firing: a handler that fires an event
+     * whose handler fires it back would otherwise never end.
+     */
+    private fun enterEvent(event: String): Boolean {
+        if (eventDepth >= MAX_EVENT_DEPTH) {
+            host.log("event $event not fired: events nested $eventDepth deep")
+            return false
+        }
+        eventDepth++
+        return true
+    }
+
     /** Fires [event] on [target] in every script. */
     fun dispatch(
         target: MakiObject,
         event: String,
         args: List<Value>,
     ): Int {
+        if (!enterEvent(event)) return 0
         var n = 0
-        // a copy: a handler may load another script
-        for (s in scripts.toList()) if (event in s.events) n += s.dispatch(target, event, args)
+        try {
+            // a copy: a handler may load another script
+            for (s in scripts.toList()) if (event in s.events) n += s.dispatch(target, event, args)
+        } finally {
+            eventDepth--
+        }
         // what happens to the child a xui group exposes happens to the group
         if (target is GuiObject) {
             val p = target.parent
@@ -1182,6 +1264,7 @@ class SkinRuntime(
     /** Advances timers, tickers and player-driven objects. Returns true when a redraw is due. */
     fun tick(): Boolean {
         val t = now()
+        for (s in scripts) s.refill()
         for (a in animations.filter { it.playing && t >= it.nextAt }) a.advance()
         for (o in moving.toList()) o.stepTarget(t)
         val due = timers.filter { it.running && t >= it.nextAt }
@@ -1831,6 +1914,14 @@ class SkinRuntime(
         val ALL_CONTENT = setOf("params", "xui", "scripts")
         val DEF_ATTRS = setOf("id", "xuitag", "inherit_group", "inherit_content", "inherit_params", "behavior", "contentrect")
         const val MAX_LAYOUT_PASSES = 4
+        const val MAX_EVENT_DEPTH = 48
+        const val MAX_INCLUDE_DEPTH = 32
+        const val MAX_XML_DEPTH = 256
+        const val MAX_NODES = 200_000
+        const val MAX_SETTINGS = 4_096
+        const val MAX_SETTING_LENGTH = 65_536
+        const val MAX_OBJECTS = 100_000
+        const val MAX_CREATED = 20_000
         val FILE_NODES = setOf("bitmap", "bitmapfont", "truetypefont", "script")
         const val MAX_ALIAS_DEPTH = 8
         const val EQ_FLAT = 128

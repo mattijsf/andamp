@@ -30,6 +30,7 @@ tasks.test {
         "probe.color",
         "trace.base",
         "defaults",
+        "fuzz.count",
         "sysfonts",
         "have.library",
         "private",

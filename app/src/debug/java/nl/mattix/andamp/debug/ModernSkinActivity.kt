@@ -397,12 +397,19 @@ private class AndroidSkinHost(
             val bytes = files.read(file) ?: return@getOrPut null
             val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
-            if (opts.outWidth > 0) opts.outWidth to opts.outHeight else null
+            val tooLarge = opts.outWidth.toLong() * opts.outHeight > nl.mattix.andamp.modernskin.skin.ImageLimits.MAX_PIXELS
+            if (opts.outWidth > 0 && !tooLarge) opts.outWidth to opts.outHeight else null
         }
 
     fun image(file: String): ImageBitmap? =
         images.getOrPut(file.lowercase()) {
             val bytes = files.read(file) ?: return@getOrPut null
+            // a picture claiming more pixels than a skin can need is not decoded
+            if (nl.mattix.andamp.modernskin.skin.ImageLimits
+                    .tooLarge(bytes)
+            ) {
+                return@getOrPut null
+            }
             val opts = BitmapFactory.Options().apply { inScaled = false }
             BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)?.asImageBitmap()
         }

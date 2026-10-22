@@ -177,6 +177,7 @@ class Vis(
                 }
             }
         }
+        if (rect.width.toLong() * rect.height > ImageLimits.MAX_PIXELS) return
         val scaled = stretch(flip(px, WIDTH, ROWS, flipH, flipV), WIDTH, ROWS, rect.width, rect.height)
         out.add(DrawCmd.Pixels(rect, rect.width, rect.height, scaled, effectiveAlpha))
     }
@@ -339,7 +340,7 @@ class EqVis(
     }
 
     override fun draw(out: MutableList<DrawCmd>) {
-        if (!visible || rect.width <= 0 || rect.height <= 0) return
+        if (!visible || rect.width <= 0 || rect.height <= 0 || rect.width.toLong() * rect.height > ImageLimits.MAX_PIXELS) return
         val w = rect.width
         val h = rect.height
         val half = maxOf(1, h / 2)
