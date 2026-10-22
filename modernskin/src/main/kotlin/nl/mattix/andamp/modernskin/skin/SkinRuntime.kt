@@ -1335,11 +1335,13 @@ class SkinRuntime(
         for (o in objects) {
             when (o) {
                 is Slider -> o.sync()
+
                 is Text -> if (o.tick(t)) dirty = true
-                is Vis, is Status, is ProgressGrid -> if (status == Player.Status.PLAYING || o is Status) dirty = true
+
+                // a status picture changes only with the player's status, which marks the frame above
+                is Vis, is ProgressGrid -> if (status == Player.Status.PLAYING) dirty = true
             }
         }
-        if (objects.any { it is Text && it.display == "time" } && status == Player.Status.PLAYING) dirty = true
         if (needsLayout) doLayout()
         return dirty
     }
