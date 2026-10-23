@@ -59,6 +59,9 @@ class RightClickTest {
 
     private val shown = ArrayList<SkinMenu>()
 
+    /** What the host answers for a menu; null is a menu closed without the listener. */
+    private var answer: Int? = PICK
+
     private val host =
         object : SkinHost {
             override fun imageSize(file: String): Pair<Int, Int>? = null
@@ -73,9 +76,9 @@ class RightClickTest {
 
             override fun invalidate() = Unit
 
-            override fun chooseFromMenu(menu: SkinMenu): Int {
+            override fun chooseFromMenu(menu: SkinMenu): Int? {
                 shown += menu
-                return PICK
+                return answer
             }
         }
 
@@ -218,6 +221,27 @@ class RightClickTest {
     }
 
     @Test
+    fun `a right click is a new touch, whatever menus the press showed`() {
+        // the menu the press opens closes without the listener: that touch shows no more
+        attach(layer, Handler("onleftbuttondown", listOf(pop)), Handler("onrightbuttonup", listOf(pop)))
+        answer = null
+        press(layer, seq = 1)
+        assertEquals(1, shown.size)
+        rt.pointerCancel()
+        answer = PICK
+        rt.rightClick(1)
+        assertEquals(2, shown.size)
+
+        // the press shows three menus, as many as one touch may
+        attach(button, Handler("onleftbuttondown", List(3) { pop }), Handler("onrightclick", listOf(pop)))
+        press(button, seq = 2)
+        assertEquals(5, shown.size)
+        rt.pointerCancel()
+        rt.rightClick(2)
+        assertEquals(6, shown.size)
+    }
+
+    @Test
     fun `three menus in a row show and a fourth answers 0`() {
         attach(button, Handler("onrightclick", List(4) { popAndAnswer }))
 
@@ -330,6 +354,7 @@ class RightClickTest {
                 MethodRef(2, "up"),
                 MethodRef(2, "click"),
                 MethodRef(2, "answer"),
+                MethodRef(0, "onleftbuttondown"),
             )
         const val POPATMOUSE = 0
         const val DOWN = 4

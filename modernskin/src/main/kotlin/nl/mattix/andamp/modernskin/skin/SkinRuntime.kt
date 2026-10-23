@@ -1855,8 +1855,9 @@ class SkinRuntime(
      * without running them (see [Script.rightClickMenu]). It counts the handlers a right click fires:
      * on [o] and, where [o] is the child a xui group exposes, on that group, in every script. It
      * follows one level further: an event such a handler fires by calling it (Bento's onRightClick
-     * calls onLeftClick) counts with its handlers on the same objects. A menu behind a condition
-     * counts; one a timer or another object's event opens does not.
+     * calls onLeftClick), or by calling a Button's leftClick(), counts with its handlers on the same
+     * objects. A menu behind a condition counts; one a timer or another object's event opens does
+     * not. Each script's bytecode is read up to a limit (see [Script.walkBudget]).
      */
     internal fun hasSkinMenu(o: GuiObject): Boolean {
         val chain = dispatchChain(o)

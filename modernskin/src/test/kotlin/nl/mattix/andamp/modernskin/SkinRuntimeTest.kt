@@ -62,8 +62,8 @@ class TestHost(
 }
 
 class SkinRuntimeTest {
-    // a main window with a 0..100 volume slider, a playlist window that can be made taller, and two
-    // color themes
+    // a main window with a 0..100 and a 0..200 volume slider, a playlist window that can be made
+    // taller, and two color themes
     private val small =
         object : SkinFiles {
             private val m =
@@ -75,6 +75,8 @@ class SkinRuntimeTest {
                         """<container id="main" name="t" default_visible="1"><layout id="normal" w="200" h="100">""" +
                         """<slider id="volume" action="volume" low="0" high="100" """ +
                         """x="0" y="0" w="100" h="10" orientation="h"/>""" +
+                        """<slider id="fine" action="volume" low="0" high="200" """ +
+                        """x="0" y="20" w="200" h="10" orientation="h"/>""" +
                         """</layout></container>""" +
                         """<container id="pl" name="Playlist" default_visible="0"><layout id="normal" w="200" h="80">""" +
                         """<layer id="sizer" resize="bottomright" x="190" y="70" w="10" h="10"/>""" +
@@ -174,7 +176,8 @@ class SkinRuntimeTest {
         settle(rt)
         assertFalse(rt.tick())
 
-        player.playlist = List(3) { Track("Same", 60_000) }
+        // three entries like the song playing: only the playlist changes
+        player.playlist = List(3) { Track(player.title, player.lengthMs) }
         assertTrue(rt.tick())
         rt.drawWindows()
         assertFalse(rt.tick())
@@ -204,6 +207,18 @@ class SkinRuntimeTest {
         repeat(10) {
             rt.tick()
             assertEquals(37, slider.position)
+        }
+
+        // 3 of 200 is 3.825 of 255: the player gets 4, which shows as 3 again (3 would show as 2)
+        val fine = checkNotNull(rt.mainLayout?.findObject("fine")) as Slider
+        rt.pointerDown(1, 25)
+        rt.pointerUp(1, 25)
+        assertEquals(3, fine.position)
+        assertEquals(4, player.volume)
+
+        repeat(10) {
+            rt.tick()
+            assertEquals(3, fine.position)
         }
     }
 

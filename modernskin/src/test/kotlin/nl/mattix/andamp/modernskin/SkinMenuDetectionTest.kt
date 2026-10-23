@@ -58,6 +58,7 @@ class SkinMenuDetectionTest {
         }
 
     private val shown = ArrayList<SkinMenu>()
+    private val logged = ArrayList<String>()
 
     private val host =
         object : SkinHost {
@@ -69,7 +70,9 @@ class SkinMenuDetectionTest {
                 size: Int,
             ) = text.length * 6
 
-            override fun log(message: String) = Unit
+            override fun log(message: String) {
+                logged += message
+            }
 
             override fun invalidate() = Unit
 
@@ -149,7 +152,14 @@ class SkinMenuDetectionTest {
             MakiProgram(
                 id = "detect",
                 version = 0,
-                classes = listOf(StdApi.guidOf("GuiObject")!!, StdApi.guidOf("PopupMenu")!!, StdApi.guidOf("Timer")!!, RECORDER),
+                classes =
+                    listOf(
+                        StdApi.guidOf("GuiObject")!!,
+                        StdApi.guidOf("PopupMenu")!!,
+                        StdApi.guidOf("Timer")!!,
+                        RECORDER,
+                        StdApi.guidOf("Button")!!,
+                    ),
                 methods = METHODS,
                 variables = variables,
                 bindings = handlers.map { h -> Binding(h.variable, METHODS.indexOfFirst { it.name == h.event }, h.start) },
@@ -248,6 +258,61 @@ class SkinMenuDetectionTest {
     }
 
     @Test
+    fun `onRightClick calling the Button's leftClick reaches the menu of onLeftClick, and the right click shows it`() {
+        val route =
+            listOf(
+                Opcodes.PUSH to A,
+                Opcodes.CALL to LEFTCLICK,
+                Opcodes.POP to 0,
+                Opcodes.PUSH to ZERO,
+                Opcodes.RETURN to 0,
+            )
+        val first = attach(listOf(Handler(A, "onrightclick", 0)), route, a = button)
+        attach(listOf(Handler(A, "onleftclick", 0)), POPS_AT_MOUSE, a = button)
+
+        assertFalse("the right click pops nothing itself", first.rightClickMenu(button, isButton = true))
+        assertTrue(rt.hasSkinMenu(button))
+
+        rt.pointerDown(button.rect.left + 2, button.rect.top + 2, seq = 3)
+        assertEquals(3, rt.menuTarget)
+        rt.pointerCancel()
+        rt.rightClick(3)
+        assertEquals("leftClick() ran onLeftClick, which popped the menu", 1, shown.size)
+    }
+
+    @Test
+    fun `the bytecode is read up to a limit, and a handler not read by then offers no menu`() {
+        // two handlers, each 20 instructions before its menu
+        val before = List(20) { Opcodes.POP to 0 }
+        val code = before + POPS_AT_MOUSE + before + POPS_AT_MOUSE
+        val s = attach(listOf(Handler(A, "onrightbuttonup", 0), Handler(B, "onrightbuttonup", 25)), code, a = layer, b = other)
+        s.walkBudget = 30
+
+        assertTrue("the first handler is read in full: 25 instructions", rt.hasSkinMenu(layer))
+        assertFalse("5 left: the second is cut short before its menu", rt.hasSkinMenu(other))
+        assertEquals(0, s.walkBudget)
+        assertTrue("what was read still counts", rt.hasSkinMenu(layer))
+        assertFalse(rt.hasSkinMenu(other))
+        assertEquals("said once: $logged", 1, logged.count { "right-click menus read up to the limit" in it })
+    }
+
+    @Test
+    fun `thousands of handlers over long code cost a touch no more than the limit`() {
+        // 2,000 right-click handlers on the layer, each starting one further into 100,000
+        // instructions with no menu and no RETURN: read in full, about 200 million instructions
+        val code = List(100_000) { Opcodes.POP to 0 }
+        val s = attach(List(2_000) { Handler(A, "onrightbuttonup", it) }, code, a = layer)
+        val limit = s.walkBudget
+        assertTrue(limit < 100_000 * 2_000)
+
+        rt.pointerDown(layer.rect.left + 2, layer.rect.top + 2, seq = 1)
+
+        assertNull(rt.menuTarget)
+        assertEquals("read up to the limit and no further", 0, s.walkBudget)
+        assertEquals(1, logged.count { "right-click menus read up to the limit" in it })
+    }
+
+    @Test
     fun `the menu of a xui group counts for the child it exposes, and so does a handler on the child`() {
         attach(listOf(Handler(A, "onrightbuttonup", 0)), POPS_AT_MOUSE, a = tab)
         assertTrue("a right click on the child fires on the group", rt.hasSkinMenu(trap))
@@ -338,12 +403,14 @@ class SkinMenuDetectionTest {
                 MethodRef(2, "start"),
                 MethodRef(2, "ontimer"),
                 MethodRef(3, "heard"),
+                MethodRef(4, "leftclick"),
             )
         const val POPATMOUSE = 0
         const val POPATXY = 1
         const val ONLEFTCLICK = 2
         const val START = 6
         const val HEARD = 8
+        const val LEFTCLICK = 9
 
         /** A handler that pops the menu at the mouse and returns. */
         val POPS_AT_MOUSE =

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package nl.mattix.andamp.modernskin.maki
 
+import java.util.BitSet
 import java.util.IdentityHashMap
 
 /** What the VM needs from the player: new objects and a log. */
@@ -82,23 +83,22 @@ class Script(
     fun reachesMenu(
         target: MakiObject,
         events: Set<String>,
-    ): Boolean = !disabled && boundHandlers(target, events).any { reach(it).popsMenu }
+    ): Boolean = !disabled && handlerStarts(target, events).any { reach(it).popsMenu }
 
-    /** The events the handlers here for [events] bound to [target] fire by calling them (`x.onLeftClick()`). */
+    /**
+     * The events the handlers here for [events] bound to [target] fire by calling them:
+     * `x.onLeftClick()`, or a Button's `x.leftClick()`.
+     */
     fun eventsCalled(
         target: MakiObject,
         events: Set<String>,
-    ): Set<String> = if (disabled) emptySet() else boundHandlers(target, events).flatMapTo(HashSet()) { reach(it).calls }
+    ): Set<String> = if (disabled) emptySet() else handlerStarts(target, events).flatMapTo(HashSet()) { reach(it).calls }
 
-    /** The indexes of the bindings for [events] that hold [target]. */
-    private fun boundHandlers(
+    /** Where the handlers here for [events] bound to [target] start in the code. */
+    private fun handlerStarts(
         target: MakiObject,
         events: Set<String>,
-    ): List<Int> =
-        program.bindings.indices.filter { i ->
-            val b = program.bindings[i]
-            program.methods[b.method].name in events && binds(b, target)
-        }
+    ): List<Int> = events.flatMap { e -> bindingsByEvent[e].orEmpty().filter { binds(it, target) }.map { it.codeIndex } }
 
     /** What a handler's code can reach: a popup menu, and the events it fires by calling them. */
     private class Reach(
@@ -106,33 +106,47 @@ class Script(
         val calls: Set<String>,
     )
 
-    /** The [Reach] of each binding, worked out the first time it is asked for. */
-    private val reaches = arrayOfNulls<Reach>(program.bindings.size)
+    /** The [Reach] from each handler start, worked out the first time it is asked for. */
+    private val reaches = HashMap<Int, Reach>()
 
-    private fun reach(binding: Int): Reach =
-        reaches[binding] ?: reachFrom(program.bindings[binding].codeIndex).also { reaches[binding] = it }
+    private fun reach(start: Int): Reach = reaches.getOrPut(start) { reachFrom(start) }
+
+    /**
+     * Instructions [reachFrom] may still read in this script: in all, no more than the script may
+     * run in one frame. Once they are used up, a handler not read yet offers no menu.
+     */
+    internal var walkBudget = STEPS_PER_FRAME
+
+    /** [walkBudget] ran out, and the log said so. */
+    private var walkCut = false
+
+    /** The instructions the walk running now has reached; each walk clears what it marked. */
+    private var reached: BitSet? = null
 
     /**
      * Walks every instruction a run from [start] could reach, without running any: the next one,
      * the targets of jumps, and a global call's function and the instruction it returns to, each
-     * path up to its RETURN. A popup menu counts wherever it is reached, under any condition.
+     * path up to its RETURN. A popup menu counts wherever it is reached, under any condition. A
+     * walk that [walkBudget] cuts short keeps what it found.
      */
     private fun reachFrom(start: Int): Reach {
         val code = program.code
-        val seen = BooleanArray(code.size)
-        val todo = ArrayDeque<Int>()
+        val seen = reached ?: BitSet(code.size).also { reached = it }
+        // every instruction reached, in the order it is read
+        val order = ArrayList<Int>()
         var popsMenu = false
         val calls = HashSet<String>()
 
         fun visit(ip: Int) {
             if (ip in code.indices && !seen[ip]) {
-                seen[ip] = true
-                todo.addLast(ip)
+                seen.set(ip)
+                order += ip
             }
         }
         visit(start)
-        while (todo.isNotEmpty()) {
-            val ip = todo.removeFirst()
+        var next = 0
+        while (next < order.size && spendWalk()) {
+            val ip = order[next++]
             val op = code[ip]
             when (op.opcode) {
                 Opcodes.RETURN -> {
@@ -151,7 +165,13 @@ class Script(
                 Opcodes.CALL, Opcodes.CALL2 -> {
                     val name = program.methods.getOrNull(op.arg)?.name ?: ""
                     if (name in MENU_CALLS) popsMenu = true
-                    if (name.startsWith("on")) calls += name
+                    when {
+                        name.startsWith("on") -> calls += name
+
+                        // a Button's leftClick() fires onLeftClick; its rightClick() fires
+                        // onRightClick, which a right click on a Button counts already
+                        name == "leftclick" -> calls += "onleftclick"
+                    }
                     visit(ip + 1)
                 }
 
@@ -160,7 +180,21 @@ class Script(
                 }
             }
         }
+        order.forEach(seen::clear)
         return Reach(popsMenu, calls)
+    }
+
+    /** Takes one instruction from [walkBudget]; false when none is left, which the log says once. */
+    private fun spendWalk(): Boolean {
+        if (walkBudget > 0) {
+            walkBudget--
+            return true
+        }
+        if (!walkCut) {
+            walkCut = true
+            host.log("${program.id}: right-click menus read up to the limit, the rest not offered")
+        }
+        return false
     }
 
     /** The events this script listens to, for a quick check before dispatching: none once it is [disabled]. */
