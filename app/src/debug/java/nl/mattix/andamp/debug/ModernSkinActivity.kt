@@ -38,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
@@ -714,6 +715,8 @@ private fun ModernSkinScreen(
         }
     }
     val slide = remember { SlideStats() }
+    // where a fractional scale draws the stack whole before it is shrunk (see drawWalStack)
+    val layer = rememberGraphicsLayer()
     // the frame the probe timed last, so a frame drawn again is not counted twice
     val probed = remember { arrayOfNulls<WalFrame>(1) }
     val shown = engine.frame.takeIf { frameCount >= 0 }
@@ -730,7 +733,7 @@ private fun ModernSkinScreen(
             val baseW = shown.baseW
             val fit = remember(engine, baseW) { { px: IntSize -> engine.post { rt -> fitToScreen(rt, px, baseW, check) } } }
             // magenta behind the skin in a check, as on the reference Windows desktop, so transparency
-            // shows; in use a dark gray, which also hides seams between region edges at fractional scales
+            // shows; in use a dark gray
             Box(
                 Modifier
                     .fillMaxWidth()
@@ -785,7 +788,7 @@ private fun ModernSkinScreen(
                     val scale = WalScale.fit(IntSize(size.width.toInt(), size.height.toInt()), size2, f.baseW)
                     // the stack centered across the screen, as the classic player places its windows
                     val left = if (check == null) WalScale.left(size.width, f.contentRight, scale) else 0f
-                    drawWalStack(f.stack, host, scale, left)
+                    drawWalStack(f.stack, host, scale, left, layer)
                     val drawn = System.nanoTime() - drawStart
                     if (f.animating && slide.startedAt == 0L) slide.startedAt = drawStart
                     if (slide.startedAt != 0L) slide.frame(drawn)
