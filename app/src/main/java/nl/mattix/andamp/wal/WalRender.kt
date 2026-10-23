@@ -88,6 +88,35 @@ internal fun DrawScope.drawWalWindow(
 
 /** How large a modern skin is drawn on the phone, and where. */
 internal object WalScale {
+    /**
+     * The most skin pixels the main window or the stack may measure either way. Skins are made for
+     * desktop screens, so a size past this is a broken skin, and drawing it whole off screen before
+     * it is shrunk would take more memory than a phone has.
+     */
+    const val MAX_PX = 4096
+
+    /** The smallest scale a skin is shown at: one that fits its box only smaller is not shown. */
+    const val MIN_SCALE = 0.25f
+
+    /**
+     * Why a skin cannot be shown, or null when it can: its main window of [mainSize] or its stack of
+     * [stack] measures past [MAX_PX] either way, or, when the [box] it goes in is known, it fits
+     * there only at a scale below [MIN_SCALE] ([baseW] as for [fit]). A box with no width or no
+     * height (not laid out yet) counts as unknown.
+     */
+    fun unfit(
+        mainSize: Pair<Int, Int>,
+        stack: Pair<Int, Int>,
+        baseW: Int,
+        box: IntSize?,
+    ): String? {
+        if (maxOf(mainSize.first, mainSize.second, maxOf(stack.first, stack.second)) > MAX_PX) {
+            return "too large: main window ${mainSize.first}x${mainSize.second}, stack ${stack.first}x${stack.second}"
+        }
+        val scale = box?.takeIf { it.width > 0 && it.height > 0 }?.let { fit(it, mainSize, baseW) } ?: return null
+        return if (scale < MIN_SCALE) "too large for ${box.width}x${box.height}: scale $scale" else null
+    }
+
     /** The scale for a main window of [mainSize] in [size]: from its visible width at the start ([baseW]) and its height. */
     fun fit(
         size: IntSize,

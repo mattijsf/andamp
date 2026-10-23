@@ -112,15 +112,12 @@ internal object WalCheck {
     ): String {
         val files = WalFiles.open(skin, siblings)
         // nobody is there to pick from a skin's menu
-        val host = WalHost(files, cacheDir).apply { menus.unattended = true }
+        val host = WalHost(files, cacheDir, WalPrepare.windowOpen()).apply { menus.unattended = true }
         var now = 0L
         val player = FakePlayer().apply { clock = { now } }
-        val rt =
-            SkinRuntime(files, host, player).apply {
-                clock = { now }
-                skinName = skin.nameWithoutExtension
-                haveLibrary = false
-            }
+        val rt = SkinRuntime(files, host, player).apply { clock = { now } }
+        // readied as the player readies a skin, named by its file
+        WalPrepare.prepare(rt, skin.nameWithoutExtension)
         val loadStart = System.nanoTime()
         rt.load()
         val loadMs = (System.nanoTime() - loadStart) / NANOS_PER_MS

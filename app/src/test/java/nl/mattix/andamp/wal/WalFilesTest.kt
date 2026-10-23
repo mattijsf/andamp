@@ -44,6 +44,49 @@ class WalFilesTest {
     }
 
     @Test
+    fun `a sibling named "Big Bento" resolves from a hash-named file`() {
+        // library files are named by their hash
+        val bento = wal("5f1c.wal", "skin.xml" to "<a/>")
+        val big = wal("9e07.wal", "skin.xml" to "<b/>", "xml/player.xml" to "<player/>")
+
+        val files = WalFiles.open(bento, mapOf("Bento" to bento, "Big Bento" to big))
+
+        assertEquals("<player/>", files.read("../Big Bento/xml/player.xml")?.decodeToString())
+        assertEquals("<player/>", files.read("@SKINSPATH@\\Big Bento\\xml\\player.xml")?.decodeToString())
+        assertNull("the file's name is not the skin's", files.read("../9e07/xml/player.xml"))
+        assertEquals("the skin's file", "<a/>", files.read("skin.xml")?.decodeToString())
+    }
+
+    @Test
+    fun `a skin known by two names opens once and reads the same under both`() {
+        val bento = wal("5f1c.wal", "skin.xml" to "<a/>")
+        val big = wal("9e07.wal", "xml/player.xml" to "<player/>")
+
+        // its name in the library, and the name its skininfo gives
+        val files = WalFiles.open(bento, mapOf("Big Bento" to big, "Big Bento Deluxe" to big))
+        assertEquals("<player/>", files.read("../Big Bento/xml/player.xml")?.decodeToString())
+        big.delete()
+
+        assertEquals("<player/>", files.read("../Big Bento Deluxe/xml/player.xml")?.decodeToString())
+    }
+
+    @Test
+    fun `a path into the skin's folder by name reads the skin`() {
+        // as Big Bento names its notifier script and its window pictures
+        val big = wal("Big Bento.wal", "skin.xml" to "<b/>", "scripts/notifier.maki" to "maki")
+        val bento = wal("Bento.wal", "skin.xml" to "<a/>")
+
+        val inFolder = WalFiles.open(big, listOf(bento, big))
+        assertEquals("maki", inFolder.read("@SKINSPATH@\\Big Bento\\scripts\\notifier.maki")?.decodeToString())
+        assertEquals("maki", inFolder.read("../Big Bento/scripts/notifier.maki")?.decodeToString())
+
+        // in the library, under its hash, by its name
+        val hashed = wal("9e07.wal", "scripts/notifier.maki" to "maki")
+        val inLibrary = WalFiles.open(hashed, mapOf("Big Bento" to hashed))
+        assertEquals("maki", inLibrary.read("@SKINSPATH@\\Big Bento\\scripts\\notifier.maki")?.decodeToString())
+    }
+
+    @Test
     fun `a sibling is opened when a path first names it, not before`() {
         val bento = wal("Bento.wal", "skin.xml" to "<a/>")
         // not a zip yet when the skin's files are made: opened then, it would read as missing
