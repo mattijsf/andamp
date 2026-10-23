@@ -8,6 +8,11 @@ import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import nl.mattix.andamp.modernskin.skin.FakePlayer
+import nl.mattix.andamp.modernskin.skin.Player
+import nl.mattix.andamp.wal.WalLook
+import nl.mattix.andamp.wal.WalSettings
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -22,7 +27,6 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.IOException
 import java.io.InputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -31,8 +35,9 @@ import kotlin.random.Random
 /**
  * Picked files that are not added: a modern skin (.wal) while modern skins are off and a zip too
  * large for a skin each end in a notice that says why, and leave the library and the skin on
- * screen as they were. While modern skins are on, a modern skin is added once it loads; a debug
- * build with them off offers to turn them on and add it.
+ * screen as they were. While modern skins are on, a modern skin is added once its look has
+ * started, and that look goes on screen; a debug build with them off offers to turn them on and
+ * add it.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE) // the base skin decodes through BitmapFactory
@@ -45,11 +50,20 @@ class SkinPickTest {
     /** Whether modern skins are on; taking the offer turns them on. */
     private var modernOn = false
 
-    /** The names the modern skins were loaded under, in order. */
+    /** The names the modern skins' looks were opened under, in order. */
     private val built = ArrayList<String>()
 
-    /** What loading a modern skin does: by default it loads under the name it is given. */
-    private var build: (File, String) -> String = { _, name -> name }
+    /** The looks opened, let go after each test. */
+    private val looks = ArrayList<WalLook>()
+
+    /** The player a look is opened with; a slow one makes its start run long. */
+    private var player: () -> Player = { FakePlayer() }
+
+    /** The time a look has to start. */
+    private var budgetMs = 5_000L
+
+    @After
+    fun releaseLooks() = looks.forEach { it.release(save = false) }
 
     private fun await(condition: () -> Boolean) {
         val deadline = System.currentTimeMillis() + 20_000
@@ -70,9 +84,10 @@ class SkinPickTest {
             modernOn = { modernOn },
             turnModernOn = { modernOn = true },
             offerModern = offers,
-            buildModern = { file, name ->
+            openModern = { id, file, name, siblings ->
                 built += name
-                build(file, name)
+                WalLook(id, file, name, siblings, app.cacheDir, WalSettings(app), player(), budgetMs = budgetMs)
+                    .also { looks += it }
             },
         ).also { ops ->
             ops.start()
@@ -93,6 +108,44 @@ class SkinPickTest {
     }
 
     private val skinXml = "<WinampAbstractionLayer version=\"0.8\"/>".toByteArray()
+
+    /** A modern skin that loads: one window with a play button, named by its skininfo when [info] is given. */
+    private fun loading(
+        info: String? = null,
+        folder: String = "",
+    ): ByteArray {
+        val named = info?.let { "<skininfo><name>$it</name></skininfo>" }.orEmpty()
+        return zip(
+            "${folder}skin.xml" to
+                "<WinampAbstractionLayer version=\"0.8\">$named<include file=\"player.xml\"/></WinampAbstractionLayer>"
+                    .toByteArray(),
+            "${folder}player.xml" to
+                (
+                    "<container id=\"main\" name=\"t\" default_visible=\"1\"><layout id=\"normal\" w=\"40\" h=\"20\">" +
+                        "<button id=\"play\" action=\"PLAY\" x=\"0\" y=\"0\" w=\"20\" h=\"20\"/></layout></container>"
+                ).toByteArray(),
+        )
+    }
+
+    /** A player whose first status read takes [ms], so a start runs that long. */
+    private fun slowPlayer(ms: Long): Player =
+        object : Player by FakePlayer() {
+            private var waited = false
+            override val status: Player.Status
+                get() {
+                    if (!waited) {
+                        waited = true
+                        Thread.sleep(ms)
+                    }
+                    return Player.Status.STOPPED
+                }
+        }
+
+    /** The engine threads of the looks opened that are still running. */
+    private fun engineThreads(): List<Thread> {
+        val names = looks.map { "wal-${it.id}" }.toSet()
+        return Thread.getAllStackTraces().keys.filter { it.name in names && it.isAlive }
+    }
 
     /** Bytes that do not compress, so a zip holding them is about as large. */
     private fun noise(size: Int) = Random(size).nextBytes(size)
@@ -278,7 +331,7 @@ class SkinPickTest {
     fun `with modern skins on a picked modern skin is added under its hash, named without wal, and ticked`() {
         modernOn = true
         val ops = started()
-        val bytes = zip("skin.xml" to skinXml, "player.xml" to skinXml)
+        val bytes = loading()
         val id = library.idFor(bytes)
 
         picked(ops, bytes, "Bento.WAL")
@@ -287,7 +340,10 @@ class SkinPickTest {
         assertEquals(id, library.currentId)
         assertTrue(File(app.filesDir, "skins/$id.wal").isFile)
         assertEquals("Bento", library.nameOf(id))
-        assertEquals("loaded under that name", listOf("Bento"), built)
+        assertEquals("opened once, under that name", listOf("Bento"), built)
+        assertSame("the look that started is the one on screen", looks.single(), ops.wal)
+        assertEquals(id, ops.wal!!.id)
+        assertEquals("it loaded with the player", "Bento", ops.wal!!.loadedName)
         assertEquals(SkinKind.MODERN, state.skinEntries.single { it.id == id }.kind)
         assertSame("the last classic choice is drawn", ops.baseSkin, ops.skin)
         assertNull(state.prompt)
@@ -295,11 +351,10 @@ class SkinPickTest {
     }
 
     @Test
-    fun `a picked file named only wal takes the name the skin loads under`() {
+    fun `a picked file named only wal takes the name the skin's skininfo gives`() {
         modernOn = true
-        build = { _, name -> name.ifEmpty { "Bento Pro" } }
         val ops = started()
-        val bytes = zip("skin.xml" to skinXml)
+        val bytes = loading(info = "Bento Pro")
 
         picked(ops, bytes, ".wal")
 
@@ -308,10 +363,25 @@ class SkinPickTest {
     }
 
     @Test
+    fun `picking the worn modern skin again opens nothing new`() {
+        modernOn = true
+        val ops = started()
+        val bytes = loading()
+        picked(ops, bytes, "Bento.wal")
+        val worn = ops.wal
+
+        picked(ops, bytes, "Bento.wal")
+
+        assertEquals(listOf("Bento"), built)
+        assertSame(worn, ops.wal)
+        assertFalse(worn!!.released)
+    }
+
+    @Test
     fun `a modern skin picked as a wsz is added as a wal under the same id`() {
         modernOn = true
         val ops = started()
-        val bytes = zip("Bento/skin.xml" to skinXml)
+        val bytes = loading(folder = "Bento/")
         val id = library.idFor(bytes)
 
         picked(ops, bytes, "Bento.wsz")
@@ -323,9 +393,8 @@ class SkinPickTest {
     }
 
     @Test
-    fun `a modern skin that does not load is deleted, changes no record, and says so`() {
+    fun `a modern skin that does not load is deleted, changes no record, sets no look, and says so`() {
         modernOn = true
-        build = { _, _ -> throw IOException("no skin.xml") }
         val ops = started()
         val before = records()
 
@@ -335,17 +404,37 @@ class SkinPickTest {
         assertEquals("the file goes and no record changes", before, records())
         assertEquals(SkinEntry.BASE_ID, ops.currentId)
         assertTrue(state.skinEntries.none { it.kind == SkinKind.MODERN })
+        assertNull(ops.wal)
+        assertTrue("its look is let go", looks.single().released)
+        await { engineThreads().isEmpty() }
+    }
+
+    @Test
+    fun `a modern skin whose start runs past its time is deleted, changes no record and leaves no engine thread`() {
+        modernOn = true
+        player = { slowPlayer(600) }
+        budgetMs = 100
+        val ops = started()
+        val before = records()
+
+        val title = pick(ops, loading().inputStream(), "Slow.wal")
+
+        assertEquals("“Slow.wal” couldn't be opened", title)
+        assertEquals(before, records())
+        assertNull(ops.wal)
+        await { engineThreads().isEmpty() }
     }
 
     @Test
     fun `a modern skin added before stays when it does not load again`() {
         modernOn = true
         val ops = started()
-        val bytes = zip("skin.xml" to skinXml)
+        val bytes = loading()
         picked(ops, bytes, "Bento.wal")
         ops.reset()
-        await { library.currentId == SkinEntry.BASE_ID }
-        build = { _, _ -> throw IOException("out of time") }
+        await { library.currentId == SkinEntry.BASE_ID && ops.wal == null }
+        player = { slowPlayer(600) }
+        budgetMs = 100
 
         pick(ops, bytes.inputStream(), "Bento.wal")
 
@@ -407,9 +496,9 @@ class SkinPickTest {
     }
 
     @Test
-    fun `taking the offer turns modern skins on and adds the skin`() {
+    fun `taking the offer turns modern skins on and adds the skin, opened once`() {
         val ops = started(offers = true)
-        val bytes = zip("skin.xml" to skinXml)
+        val bytes = loading()
         val id = library.idFor(bytes)
 
         offered(ops, bytes).accept()
@@ -419,12 +508,13 @@ class SkinPickTest {
         assertTrue(modernOn)
         assertNull(state.modernOffer)
         assertEquals("Bento", library.nameOf(id))
+        assertEquals(listOf("Bento"), built)
+        assertSame(looks.single(), ops.wal)
         assertNoCopyLeft()
     }
 
     @Test
     fun `an offer whose skin does not load leaves modern skins off and says so`() {
-        build = { _, _ -> throw IOException("no skin.xml") }
         val ops = started(offers = true)
         val before = records()
 

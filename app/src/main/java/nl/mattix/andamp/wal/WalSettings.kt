@@ -41,6 +41,17 @@ internal class WalSettings(
         id: String,
         rt: SkinRuntime,
     ) {
+        snapshot(id, rt)?.let { keep(id, it) }
+    }
+
+    /**
+     * What [rt], the runtime of skin [id], holds now, as [keep] writes it; null when it is too
+     * large to keep. Reads the runtime, so it runs on the engine thread.
+     */
+    fun snapshot(
+        id: String,
+        rt: SkinRuntime,
+    ): String? {
         val o =
             JSONObject()
                 .put(THEME, rt.currentGammaSet.orEmpty())
@@ -51,8 +62,16 @@ internal class WalSettings(
         // the preferences file holds every skin and is read whole: a skin keeps at most this much
         if (text.length > MAX_CHARS) {
             Log.w(TAG, "settings of $id too large to keep (${text.length} characters)")
-            return
+            return null
         }
+        return text
+    }
+
+    /** Keeps [text], a [snapshot] of skin [id]. */
+    fun keep(
+        id: String,
+        text: String,
+    ) {
         prefs.edit().putString(id, text).apply()
     }
 

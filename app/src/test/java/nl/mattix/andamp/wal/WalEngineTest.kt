@@ -31,7 +31,8 @@ import java.util.concurrent.atomic.AtomicInteger
 
 /**
  * The engine thread outlives whatever a skin does: a skin that does not load is reported, failures
- * in a row break it once, and while its menu is up it stands still.
+ * in a row break it once, and while its menu is up it stands still. A fit places the stack in the
+ * player's box.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -409,6 +410,80 @@ class WalEngineTest {
         assertEquals("none of the five ran in a burst after the menu", before, ticks.get())
         engine.requestTick()
         awaitThat("a tick asked for after the menu runs") { ticks.get() == before + 1 }
+    }
+
+    private val phone = WalFit(1080, 2000, 3f, sideways = false)
+
+    @Test(timeout = 20_000)
+    fun `a fit gives the skin the box, and the next frame a layout for it`() {
+        assertNull(main.failure())
+
+        engine.fit(phone)
+
+        awaitThat("a frame with a layout") { engine.frame?.layout != null }
+        val frame = engine.frame!!
+        val layout = frame.layout!!
+        val scale = WalScale.fit(IntSize(1080, 2000), frame.mainSize!!, frame.baseW)
+        assertEquals(phone, layout.fit)
+        assertEquals(scale, layout.scale)
+        assertEquals(WalScale.left(1080f, frame.contentRight, scale), layout.left)
+        assertEquals(0f, layout.top)
+        assertEquals(200 to 100, layout.stackW to layout.stackH)
+        assertEquals((1080 / scale).toInt() to (2000 / scale).toInt(), onEngine { it.viewSize })
+        assertEquals("24 dp at that scale", kotlin.math.ceil(24 * 3 / scale).toInt(), onEngine { it.touchSlop })
+    }
+
+    @Test(timeout = 20_000)
+    fun `a fit equal to the last one does nothing`() {
+        engine.fit(phone)
+        awaitThat("a frame with a layout") { engine.frame?.layout != null }
+        onEngine { }
+        val before = main.frames.get()
+
+        engine.fit(phone.copy())
+
+        onEngine { }
+        assertEquals("no new frame", before, main.frames.get())
+    }
+
+    @Test(timeout = 20_000)
+    fun `a box asked for before the skin loads is in its first frame`() {
+        val run = Run("early")
+        run.engine.fit(phone)
+
+        run.start()
+
+        assertNull(run.failure())
+        assertEquals(
+            phone,
+            run.engine.frame
+                ?.layout
+                ?.fit,
+        )
+        assertEquals("one frame, already fitted", 1, run.frames.get())
+    }
+
+    @Test(timeout = 20_000)
+    fun `failed draws break the skin at three in a row, counted apart from the tasks`() {
+        val broken = AtomicInteger()
+        engine.onBroken = { broken.incrementAndGet() }
+
+        fun drawFails() = engine.drawFailed(IllegalStateException("draw"))
+
+        drawFails()
+        drawFails()
+        engine.drawWorked()
+        drawFails()
+        drawFails()
+        assertEquals("a frame drawn in between starts the count over", 0, onEngine { broken.get() })
+
+        // a task that completes does not clear failed draws
+        engine.post { }
+        drawFails()
+        awaitThat("the third failed draw in a row breaks it") { broken.get() == 1 }
+        drawFails()
+        repeat(WalEngine.MAX_FAILURES) { engine.post { error("script error") } }
+        assertEquals("broken once", 1, onEngine { broken.get() })
     }
 
     @Test(timeout = 20_000)
