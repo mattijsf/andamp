@@ -26,6 +26,7 @@ import nl.mattix.andamp.modernskin.skin.ImageLimits
 import nl.mattix.andamp.modernskin.skin.Region
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinHost
+import nl.mattix.andamp.modernskin.skin.SkinMenu
 import nl.mattix.andamp.modernskin.skin.Text
 import nl.mattix.andamp.modernskin.skin.WithGeneratedImages
 import java.io.File
@@ -34,7 +35,12 @@ import java.security.MessageDigest
 /**
  * The phone's side of one loaded modern skin: decodes its pictures, measures its text and keeps
  * what it made from them (pieces of sheets, tinted and stretched copies, window shapes), so a
- * frame only draws. [drawWalStack] draws with it. Not thread-safe: one thread uses it.
+ * frame only draws. [drawWalStack] draws with it.
+ *
+ * Two threads use it: the engine thread, through [SkinHost] (sizes, text widths, pixels, the log,
+ * popup menus), and the main thread, which draws. The caches both read (sizes, decoded pictures, typefaces) are
+ * shared under a lock, with decoding done outside it; everything the drawing alone makes belongs
+ * to the main thread, and the measuring paint to the engine thread.
  *
  * [files] are the skin's files as [WalFiles.open] gives them; the pictures Wasabi generates
  * (`$solid`) are answered here.
@@ -45,22 +51,32 @@ internal class WalHost(
 ) : SkinHost {
     private val files = WithGeneratedImages(files)
 
-    /** The last log lines, newest last, for a screen that shows them. */
-    val recentLog = ArrayDeque<String>()
+    /** The last log lines, newest last. */
+    private val recentLog = ArrayDeque<String>()
 
-    /** Counts log lines and redraw requests, so a screen can tell it has something new to draw. */
+    /** The popup menu a script waits on, which the screen shows and answers. */
+    val menus = WalMenuWait()
+
+    /** Counts log lines and redraw requests, so the engine can tell it has something new to draw. */
+    @Volatile
     var version = 0
         private set
 
+    /** Guards [sizes], [images], [typefaces], [recentLog] and [version]'s increments. */
+    private val shared = Any()
+
+    // shared by both threads, under [shared]
     private val sizes = HashMap<String, Pair<Int, Int>?>()
     private val images = Lru<String, ImageBitmap?>(MAX_IMAGES)
+    private val typefaces = HashMap<String, Typeface?>()
+
+    // the main thread's
     private val tinted = Lru<Pair<String, Gamma>, ImageBitmap?>(MAX_TINTED)
     private val cutMasks = Lru<String, ImageBitmap?>(MAX_CUT_MASKS)
     private val pieces = Lru<String, ImageBitmap>(MAX_PIECES)
     private val stretchedPieces = Lru<String, ImageBitmap>(MAX_STRETCHED)
     private val stablePixels = Lru<IntArray, ImageBitmap>(MAX_STABLE_PIXELS)
     private val shapeMasks = Lru<String, ImageBitmap>(MAX_SHAPE_MASKS)
-    private val typefaces = HashMap<String, Typeface?>()
     private val gdiLines = HashMap<String, GdiLineMetrics?>()
 
     /** For the engine's text measuring. */
@@ -70,8 +86,8 @@ internal class WalHost(
     private val drawPaint = Paint(Paint.ANTI_ALIAS_FLAG)
 
     override fun imageSize(file: String): Pair<Int, Int>? =
-        sizes.getOrPut(file.lowercase()) {
-            val bytes = files.read(file) ?: return@getOrPut null
+        cached(sizes, file.lowercase()) {
+            val bytes = files.read(file) ?: return@cached null
             val opts = BitmapFactory.Options().apply { inJustDecodeBounds = true }
             BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)
             val tooLarge = opts.outWidth.toLong() * opts.outHeight > ImageLimits.MAX_PIXELS
@@ -79,13 +95,32 @@ internal class WalHost(
         }
 
     fun image(file: String): ImageBitmap? =
-        images.getOrPut(file.lowercase()) {
-            val bytes = files.read(file) ?: return@getOrPut null
+        cached(images, file.lowercase()) {
+            val bytes = files.read(file) ?: return@cached null
             // a picture claiming more pixels than a skin can need is not decoded
-            if (ImageLimits.tooLarge(bytes)) return@getOrPut null
+            if (ImageLimits.tooLarge(bytes)) return@cached null
             val opts = BitmapFactory.Options().apply { inScaled = false }
             BitmapFactory.decodeByteArray(bytes, 0, bytes.size, opts)?.asImageBitmap()
         }
+
+    /**
+     * [key]'s value in a shared [map], made with [make] outside the lock when missing, so neither
+     * thread waits while the other decodes. Two threads may make the same value once; the first
+     * kept wins.
+     */
+    private fun <K, V> cached(
+        map: MutableMap<K, V?>,
+        key: K,
+        make: () -> V?,
+    ): V? {
+        synchronized(shared) { if (key in map) return map[key] }
+        val made = make()
+        synchronized(shared) {
+            if (key in map) return map[key]
+            map[key] = made
+        }
+        return made
+    }
 
     /** The image with a color theme applied, made once per file and tint. */
     fun image(
@@ -240,12 +275,12 @@ internal class WalHost(
         bold: Boolean,
     ): Typeface? {
         val path = standInPath(font, bold) ?: return null
-        return typefaces.getOrPut(path) { AndampDefaultSet.read(path)?.let(::typefaceOf) }
+        return cached(typefaces, path) { AndampDefaultSet.read(path)?.let(::typefaceOf) }
     }
 
     private fun typeface(font: FontDef?): Typeface? {
         if (font == null) return null
-        return typefaces.getOrPut(font.id) { files.read(font.file)?.let(::typefaceOf) }
+        return cached(typefaces, font.id) { files.read(font.file)?.let(::typefaceOf) }
     }
 
     /**
@@ -256,9 +291,11 @@ internal class WalHost(
     private fun typefaceOf(bytes: ByteArray): Typeface? {
         val f = File(cacheDir, "wal-font-${sha1(bytes)}.ttf")
         if (!f.exists()) {
-            val tmp = File(cacheDir, f.name + ".tmp")
-            tmp.writeBytes(bytes)
-            tmp.renameTo(f)
+            // named per thread, so two threads writing the same font do not mix their bytes
+            val tmp = File(cacheDir, "${f.name}.${Thread.currentThread().id}.tmp")
+            // a write cut short (a full disk) is dropped, not renamed into place
+            val written = runCatching { tmp.writeBytes(bytes) }.isSuccess
+            if (!written || !tmp.renameTo(f)) tmp.delete()
         }
         return runCatching { Typeface.createFromFile(f) }.getOrNull()
     }
@@ -314,10 +351,15 @@ internal class WalHost(
 
     override fun log(message: String) {
         Log.i(TAG, message)
-        recentLog.addLast(message)
-        while (recentLog.size > MAX_LOG) recentLog.removeFirst()
-        version++
+        synchronized(shared) {
+            recentLog.addLast(message)
+            while (recentLog.size > MAX_LOG) recentLog.removeFirst()
+            version++
+        }
     }
+
+    /** The last log lines, newest last. */
+    fun logSnapshot(): List<String> = synchronized(shared) { recentLog.toList() }
 
     // the library is a separate Andamp screen, never open in a skin; every other window (the playlist
     // included) is the skin's, open when its docked window shows
@@ -330,8 +372,10 @@ internal class WalHost(
     ): Int? = image(file)?.asAndroidBitmap()?.takeIf { x >= 0 && y >= 0 && x < it.width && y < it.height }?.getPixel(x, y)
 
     override fun invalidate() {
-        version++
+        synchronized(shared) { version++ }
     }
+
+    override fun chooseFromMenu(menu: SkinMenu): Int? = menus.choose(menu)
 
     /** A map that keeps the [max] entries used last. */
     private class Lru<K, V>(

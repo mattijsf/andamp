@@ -79,7 +79,6 @@ class SkinRuntime(
     var viewportW = 1080
     var viewportH = 1920
     var lastPointer = 0 to 0
-    var popupMenu: List<String>? = null
     private var dirty = true
     private var needsLayout = true
     private var scriptsStarted = false
@@ -1581,6 +1580,11 @@ class SkinRuntime(
     fun pointerDown(
         sx: Int,
         sy: Int,
+    ) = gesture(fresh = true) { pointerDownAt(sx, sy) }
+
+    private fun pointerDownAt(
+        sx: Int,
+        sy: Int,
     ) {
         if (needsLayout) doLayout()
         val target = touchTarget(sx, sy) ?: return
@@ -1597,10 +1601,19 @@ class SkinRuntime(
         lastPointer = x to y
         captured = target
         target.pointerDown(x, y)
-        dispatch(target, "onenterarea", emptyList())
+        // a menu the press opened has let go of it already
+        if (captured === target) {
+            entered = true
+            dispatch(target, "onenterarea", emptyList())
+        }
     }
 
     fun pointerMove(
+        sx: Int,
+        sy: Int,
+    ) = gesture { pointerMoveAt(sx, sy) }
+
+    private fun pointerMoveAt(
         sx: Int,
         sy: Int,
     ) {
@@ -1613,6 +1626,11 @@ class SkinRuntime(
     fun pointerUp(
         sx: Int,
         sy: Int,
+    ) = gesture { pointerUpAt(sx, sy) }
+
+    private fun pointerUpAt(
+        sx: Int,
+        sy: Int,
     ) {
         val x = sx - capturedOrigin.left
         val y = sy - capturedOrigin.top
@@ -1623,20 +1641,35 @@ class SkinRuntime(
         val r = target.rect
         val inside = x >= r.left - touchSlop && x < r.right + touchSlop && y >= r.top - touchSlop && y < r.bottom + touchSlop
         target.pointerUp(x, y, inside)
-        dispatch(target, "onleavearea", emptyList())
+        leaveArea(target)
     }
 
     fun longPress(
         sx: Int,
         sy: Int,
+    ) = gesture { longPressAt(sx, sy) }
+
+    private fun longPressAt(
+        sx: Int,
+        sy: Int,
     ) {
-        val target = captured ?: hitTest(sx, sy) ?: return
+        if (pressEnded) return
+        val held = captured
+        val target = held ?: hitTest(sx, sy) ?: return
+        // the held object lets go first: a long press is no release, so no click and no drag left on
         captured = null
+        held?.pointerCancel()
         val origin = target.layoutObject?.let { windowRect(it) } ?: Rect(0, 0, 0, 0)
         target.longPress(sx - origin.left, sy - origin.top)
+        held?.let(::leaveArea)
     }
 
     fun doubleTap(
+        sx: Int,
+        sy: Int,
+    ) = gesture(fresh = true) { doubleTapAt(sx, sy) }
+
+    private fun doubleTapAt(
         sx: Int,
         sy: Int,
     ) {
@@ -1646,9 +1679,91 @@ class SkinRuntime(
         target.doubleTap(sx - origin.left, sy - origin.top)
     }
 
-    /** The user's pick from the last popup menu, by command id: 0, as no menu shows on the phone. */
-    @Suppress("UNUSED_PARAMETER", "FunctionOnlyReturningConstant") // PopupMenu's call; no menu shows, so nothing is picked
-    fun menuChoice(items: List<String>): Int = 0
+    /** Pointer calls running now; a skin may pop a menu only from one, as a reply to the listener's touch. */
+    private var gestureDepth = 0
+
+    /** Menus shown in this touch, counted from the last `gesture(fresh = true)`. */
+    private var menusThisGesture = 0
+
+    /** A menu in this touch closed without the listener: the touch shows no more. */
+    private var menusEnded = false
+
+    /**
+     * A menu ended this touch's press: its moves, release and long press go nowhere, and the
+     * control that was pressed gives no click or final position for it.
+     */
+    internal var pressEnded = false
+        private set
+
+    /** The pressed object was told the finger came in, and is owed `onLeaveArea`. */
+    private var entered = false
+
+    /** Why menus were refused, each logged once: a timer may try every tick. */
+    private val menuRefusalsLogged = HashSet<String>()
+
+    /**
+     * Runs [block] as a touch the listener made, from which a script may pop a menu. The pointer
+     * calls run in it; a host that opens the skin's menu itself wraps that call in it too. [fresh]
+     * starts a new touch, whose menu count starts over.
+     */
+    fun <T> gesture(
+        fresh: Boolean = false,
+        block: () -> T,
+    ): T {
+        if (fresh) {
+            menusThisGesture = 0
+            menusEnded = false
+            pressEnded = false
+        }
+        gestureDepth++
+        try {
+            return block()
+        } finally {
+            gestureDepth--
+        }
+    }
+
+    /**
+     * The listener's pick from a menu a script popped, by command id, or 0. A menu is shown only in
+     * reply to a touch (a timer cannot pop one), at most [MAX_MENUS_PER_GESTURE] times per touch,
+     * and not after one closed without the listener. It first ends the press under the finger, as
+     * Windows hands the mouse to the menu: the control is let go without a release, and gives no
+     * click or final position for this touch, even when its release handler opened the menu.
+     */
+    fun menuChoice(menu: SkinMenu): Int {
+        val refusal =
+            when {
+                gestureDepth == 0 -> "outside a touch"
+                menusEnded -> "after one closed without the listener"
+                menusThisGesture >= MAX_MENUS_PER_GESTURE -> "more than $MAX_MENUS_PER_GESTURE in one touch"
+                else -> null
+            }
+        if (refusal != null) {
+            if (menuRefusalsLogged.add(refusal)) host.log("popup menu $refusal: not shown")
+            return 0
+        }
+        menusThisGesture++
+        endPress()
+        val picked = host.chooseFromMenu(menu)
+        if (picked == null) menusEnded = true
+        return picked ?: 0
+    }
+
+    /** Lets go of the pressed object without a release, and tells it the finger left. */
+    private fun endPress() {
+        pressEnded = true
+        val held = captured ?: return
+        captured = null
+        held.pointerCancel()
+        leaveArea(held)
+    }
+
+    /** `onLeaveArea` for [o], once per press that sent it `onEnterArea`. */
+    private fun leaveArea(o: GuiObject) {
+        if (!entered) return
+        entered = false
+        dispatch(o, "onleavearea", emptyList())
+    }
 
     // ---- actions -----------------------------------------------------------------------------
 
@@ -2013,6 +2128,9 @@ class SkinRuntime(
         const val MAX_XML_DEPTH = 256
         const val MAX_NODES = 200_000
         const val MAX_SETTINGS = 4_096
+
+        /** Menus a script may pop in reply to one touch; more answer 0 without showing. */
+        const val MAX_MENUS_PER_GESTURE = 3
         const val MAX_SETTING_LENGTH = 65_536
         const val MAX_OBJECTS = 100_000
         const val MAX_CREATED = 20_000

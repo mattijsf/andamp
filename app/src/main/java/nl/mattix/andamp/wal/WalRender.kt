@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import nl.mattix.andamp.modernskin.skin.Align
 import nl.mattix.andamp.modernskin.skin.DrawCmd
-import nl.mattix.andamp.modernskin.skin.Layout
 import nl.mattix.andamp.modernskin.skin.Rect
 import nl.mattix.andamp.modernskin.skin.VAlign
 
@@ -56,12 +55,12 @@ internal fun DrawScope.drawWalWindow(
 
 /** How large a modern skin is drawn on the phone, and where. */
 internal object WalScale {
-    /** The scale for [layout] in [size]: from its visible width at the start ([baseW]) and its height. */
+    /** The scale for a main window of [mainSize] in [size]: from its visible width at the start ([baseW]) and its height. */
     fun fit(
         size: IntSize,
-        layout: Layout,
+        mainSize: Pair<Int, Int>,
         baseW: Int,
-    ): Float = of(size, baseW.takeIf { it > 0 } ?: layout.size.first, layout.size.second)
+    ): Float = of(size, baseW.takeIf { it > 0 } ?: mainSize.first, mainSize.second)
 
     /** Where a stack [stackW] layout pixels wide starts so it sits centered in [width] at [scale]. */
     fun left(
