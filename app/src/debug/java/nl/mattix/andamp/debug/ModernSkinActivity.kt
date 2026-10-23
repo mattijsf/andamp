@@ -10,13 +10,18 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -25,6 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
@@ -32,6 +38,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.positionChanged
@@ -44,15 +51,21 @@ import kotlinx.coroutines.delay
 import nl.mattix.andamp.modernskin.maki.Value
 import nl.mattix.andamp.modernskin.skin.AndampDefaultSet
 import nl.mattix.andamp.modernskin.skin.FakePlayer
+import nl.mattix.andamp.modernskin.skin.SkinFiles
+import nl.mattix.andamp.modernskin.skin.SkinMenu
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.modernskin.skin.ZipSkinFiles
+import nl.mattix.andamp.wal.WalEngine
 import nl.mattix.andamp.wal.WalFiles
+import nl.mattix.andamp.wal.WalFrame
 import nl.mattix.andamp.wal.WalHost
 import nl.mattix.andamp.wal.WalScale
 import nl.mattix.andamp.wal.WalSettings
 import nl.mattix.andamp.wal.drawWalStack
 import nl.mattix.andamp.wal.drawWalWindow
 import java.io.File
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * Proof of concept: shows the main window of a modern (.wal) skin and runs its scripts.
@@ -95,11 +108,14 @@ class ModernSkinActivity : ComponentActivity() {
                 ?: emptyList()
     }
 
-    /** Saves the settings of the skin on screen; set by the screen while it shows. */
-    private var saveCurrent: (() -> Unit)? = null
+    /** Saves the settings of the skin on screen, on its engine thread; set by the screen while it shows. */
+    private var saveCurrent: (() -> CountDownLatch)? = null
+
+    /** The last save asked for, which the next screen waits for before it restores. */
+    private var lastSave: CountDownLatch? = null
 
     private fun openFrom(intent: android.content.Intent) {
-        saveCurrent?.invoke()
+        lastSave = saveCurrent?.invoke()
         check = Check.from(intent)
         probe = intent.getBooleanExtra("probe", false)
         intent.getStringExtra("wal")?.let { name ->
@@ -156,7 +172,9 @@ class ModernSkinActivity : ComponentActivity() {
                     check,
                     probe,
                     launches,
-                ) { ModernSkinScreen(file, check, if (probe) Probe(file.name) else null) { saveCurrent = it } }
+                ) {
+                    ModernSkinScreen(file, check, if (probe) Probe(file.name) else null, lastSave) { saveCurrent = it }
+                }
             }
         }
     }
@@ -236,13 +254,13 @@ private const val CHECK_VIEWPORT_H = 853
  * and window<n>-notext.png without the TrueType text, so score.py can tell text pixels from the rest.
  */
 private fun writeCheckImages(
-    rt: SkinRuntime,
+    stack: List<Pair<nl.mattix.andamp.modernskin.skin.Rect, List<nl.mattix.andamp.modernskin.skin.DrawCmd>>>,
     host: WalHost,
     dir: File,
 ) {
     dir.mkdirs()
     dir.listFiles()?.forEach { it.delete() }
-    rt.drawWindows().forEachIndexed { i, (r, cmds) ->
+    stack.forEachIndexed { i, (r, cmds) ->
         for (noText in listOf(false, true)) {
             val bmp = ImageBitmap(r.width, r.height)
             val canvas =
@@ -296,46 +314,71 @@ private fun SkinList(
 }
 
 /**
- * Times a skin on the phone: opening its archive, loading (cold,
- * then again warm with fresh caches), and then each frame of a fixed run on the display clock:
- * settle 2 s (the first draws after the warm load), stopped 10 s, playing 10 s, stopped 10 s. Per
- * frame it keeps the tick, drawWindows and drawing times, their sum, script steps and timer
- * events. Writes files/probe/<skin>.json and logs "probe done".
+ * Times a skin on the phone: opening its archive, loading (cold, then again warm with fresh
+ * caches), and then a fixed run on the display clock once both loads are done: settle 2 s (the
+ * first draws), stopped 10 s, playing 10 s, stopped 10 s. The engine thread records each tick's
+ * time, the draw list's time when one was made, the tick's script steps and timer events; the main
+ * thread records the time to draw each new frame, and that frame's whole cost (the engine's build
+ * plus the drawing). Writes files/probe/<skin>.json and logs "probe done".
  */
 private class Probe(
     val skin: String,
 ) {
-    var openMs = 0.0
-    var loadMs = 0.0
-    var loadSteps = 0L
-    var warmLoadMs = 0.0
-    var phase = "idle"
+    @Volatile var openMs = 0.0
 
-    /** The last tick's time, added to the draw that follows it. */
-    var lastTickUs = 0L
+    @Volatile var loadMs = 0.0
 
-    class Frame(
+    @Volatile var loadSteps = 0L
+
+    @Volatile var warmLoadMs = 0.0
+
+    @Volatile var phase = "idle"
+
+    private class Tick(
         val phase: String,
         val tickUs: Long,
+        val drawWindowsUs: Long,
         val steps: Long,
         val timers: Long,
-        val changed: Boolean,
+        val drew: Boolean,
     )
 
-    val frames = ArrayList<Frame>()
-    private val drawWindowsUs = HashMap<String, MutableList<Long>>()
+    private val ticks = ArrayList<Tick>()
     private val renderUs = HashMap<String, MutableList<Long>>()
     private val frameUs = HashMap<String, MutableList<Long>>()
-    val phaseMs = LinkedHashMap<String, Long>()
+    private val phaseMs = LinkedHashMap<String, Long>()
+    private var lastTimers = -1L
 
-    fun drew(
-        windowsNanos: Long,
-        renderNanos: Long,
+    /** On the engine thread, after each tick. */
+    @Synchronized
+    fun ticked(
+        rt: SkinRuntime,
+        tickNanos: Long,
+        drawNanos: Long,
+        drew: Boolean,
+        steps: Long,
     ) {
-        drawWindowsUs.getOrPut(phase) { ArrayList() } += windowsNanos / 1000
+        val timers = if (lastTimers < 0) 0 else rt.timerFires - lastTimers
+        lastTimers = rt.timerFires
+        ticks += Tick(phase, tickNanos / 1000, drawNanos / 1000, steps, timers, drew)
+    }
+
+    /** On the main thread, after drawing a new frame that took [buildNanos] on the engine thread. */
+    @Synchronized
+    fun drew(
+        renderNanos: Long,
+        buildNanos: Long,
+    ) {
         renderUs.getOrPut(phase) { ArrayList() } += renderNanos / 1000
-        frameUs.getOrPut(phase) { ArrayList() } += lastTickUs + (windowsNanos + renderNanos) / 1000
-        lastTickUs = 0
+        frameUs.getOrPut(phase) { ArrayList() } += (buildNanos + renderNanos) / 1000
+    }
+
+    @Synchronized
+    fun ended(
+        name: String,
+        ms: Long,
+    ) {
+        phaseMs[name] = ms
     }
 
     private fun stats(v: List<Long>): org.json.JSONObject {
@@ -351,23 +394,26 @@ private class Probe(
             .put("mean", s.sum() / s.size)
     }
 
+    @Synchronized
     fun json(): String {
         val phases = org.json.JSONObject()
         for ((ph, ms) in phaseMs) {
-            val f = frames.filter { it.phase == ph }
-            val timers = f.sumOf { it.timers }
+            val t = ticks.filter { it.phase == ph }
+            val drawn = t.filter { it.drew }
+            val timers = t.sumOf { it.timers }
             phases.put(
                 ph,
                 org.json
                     .JSONObject()
                     .put("ms", ms)
-                    .put("tickUs", stats(f.map { it.tickUs }))
-                    .put("drawWindowsUs", stats(drawWindowsUs[ph].orEmpty()))
+                    .put("tickUs", stats(t.map { it.tickUs }))
+                    .put("drawWindowsUs", stats(drawn.map { it.drawWindowsUs }))
+                    .put("engineUs", stats(t.map { it.tickUs + it.drawWindowsUs }))
                     .put("renderUs", stats(renderUs[ph].orEmpty()))
                     .put("frameUs", stats(frameUs[ph].orEmpty()))
-                    .put("redraws", f.count { it.changed })
-                    .put("worstSteps", f.maxOfOrNull { it.steps } ?: 0)
-                    .put("steps", f.sumOf { it.steps })
+                    .put("redraws", drawn.size)
+                    .put("worstSteps", t.maxOfOrNull { it.steps } ?: 0)
+                    .put("steps", t.sumOf { it.steps })
                     .put("timerFires", timers)
                     .put("timerPerSec", timers * 1000.0 / maxOf(1L, ms)),
             )
@@ -381,10 +427,6 @@ private class Probe(
             .put("warmLoadMs", warmLoadMs)
             .put("phases", phases)
             .toString()
-    }
-
-    fun mark(name: String) {
-        phase = name
     }
 }
 
@@ -405,7 +447,7 @@ private class SlideStats {
         val ms = (System.nanoTime() - startedAt) / 1_000_000
         if (frames > 0) {
             Log.i(
-                "ModernSkin",
+                WalHost.TAG,
                 "slide: $frames frames in $ms ms (${frames * 1000 / maxOf(1, ms)} fps), " +
                     "draw avg ${drawNanos / frames / 1000} us, worst ${worstNanos / 1000} us",
             )
@@ -417,16 +459,120 @@ private class SlideStats {
     }
 }
 
-// the debug screen: check mode, taps, windows and drawing in one place
-@Suppress("LongMethod", "CyclomaticComplexMethod", "ComplexCondition")
+/**
+ * Makes the runtime for [file] and loads it, on the engine thread: what it kept last time, the
+ * debug defaults, and in a check the reference setup.
+ */
+@Suppress("LongParameterList") // the skin, its files, what plays, what it kept, the check and the probe
+private fun loadRuntime(
+    file: File,
+    files: SkinFiles,
+    host: WalHost,
+    player: FakePlayer,
+    settings: WalSettings?,
+    check: Check?,
+    checkClock: LongArray,
+    probe: Probe?,
+): SkinRuntime =
+    SkinRuntime(files, host, player).also {
+        if (check != null) {
+            it.clock = { checkClock[0] }
+            player.clock = { checkClock[0] }
+            // the reference VM's screen: scripts that size a window from the viewport (Bento) then agree
+            it.viewportW = CHECK_VIEWPORT_W
+            it.viewportH = CHECK_VIEWPORT_H
+        }
+        settings?.restoreBeforeLoad(file.name, it)
+        prepare(it, file, check)
+        val loadStart = System.nanoTime()
+        runCatching { it.load() }.onFailure { e -> host.log("load failed: $e") }
+        probe?.loadMs = (System.nanoTime() - loadStart) / 1e6
+        probe?.loadSteps = it.scriptSteps
+        // the color theme picked last time for this skin, as Winamp keeps it per skin
+        settings?.restoreTheme(file.name, it)
+        check?.theme?.let { t -> it.selectGammaSet(t) }
+        check?.view?.let { v -> it.viewSize = v }
+        // a scenario's size for a resizable main window, as ReferenceRenderTest gives it
+        check?.mainSize?.let { (w, h) ->
+            it.mainLayout?.makiCall("resize", listOf(Value.Int(0), Value.Int(0), Value.Int(w), Value.Int(h)))
+        }
+        // windows the skin opens by itself at start in Winamp, as ReferenceRenderTest opens them
+        check?.show?.forEach { id -> it.container(id)?.let { c -> it.openWindow(c) } }
+    }
+
+/** The reference sequence, as ReferenceRenderTest runs it, on the check's stepped clock. */
+private fun runCheck(
+    rt: SkinRuntime,
+    player: FakePlayer,
+    check: Check,
+    checkClock: LongArray,
+) {
+    fun step(ms: Long) {
+        val until = checkClock[0] + ms
+        while (checkClock[0] < until) {
+            checkClock[0] = minOf(checkClock[0] + 16, until)
+            rt.tick()
+        }
+    }
+    step(3_000)
+    player.play()
+    step(1_000)
+    player.stop()
+    step(3_000)
+    for (id in check.taps) {
+        val target = rt.windows.asReversed().firstNotNullOfOrNull { it.findObject(id) }
+        if (target == null) {
+            rt.host.log("check: no object $id")
+            continue
+        }
+        val origin = target.layoutObject?.let { rt.windowRect(it) }
+        val cx = target.rect.left + target.rect.width / 2 + (origin?.left ?: 0)
+        val cy = target.rect.top + target.rect.height / 2 + (origin?.top ?: 0)
+        rt.pointerDown(cx, cy)
+        rt.pointerUp(cx, cy)
+        step(3_000)
+    }
+}
+
+/**
+ * The screen's size reaches the skin: a window the user can resize both ways (handles on its
+ * edges, Bento) fills the screen, as maximized, its scale from its minimum size and its size from
+ * what is left at that scale; the windows under the main one fill the height that is left.
+ */
+private fun fitToScreen(
+    rt: SkinRuntime,
+    px: IntSize,
+    baseW: Int,
+    check: Check?,
+) {
+    val layout = rt.mainLayout ?: return
+    val bothWays = layout.resizesHorizontally() && layout.resizesVertically()
+    val hasMinimum = layout.minW > 0 && layout.minH > 0
+    if (check == null && hasMinimum && bothWays) {
+        val fit = WalScale.of(px, layout.minW, layout.minH)
+        val w = maxOf(layout.minW, (px.width / fit).toInt())
+        val h = maxOf(layout.minH, (px.height / fit).toInt())
+        if (layout.size != w to h) layout.makiCall("resize", listOf(Value.Int(0), Value.Int(0), Value.Int(w), Value.Int(h)))
+    }
+    val (lw, lh) = baseW.takeIf { it > 0 }?.let { it to layout.size.second } ?: layout.size
+    val s = WalScale.of(px, lw, lh)
+    // a check keeps the size it asked for (or the size the windows open at, as the references)
+    if (check == null) rt.viewSize = (px.width / s).toInt() to (px.height / s).toInt()
+}
+
+// the debug screen: check mode, the probe, touches and drawing in one place
+@Suppress("LongMethod", "CyclomaticComplexMethod")
 @Composable
 private fun ModernSkinScreen(
     file: File,
     check: Check? = null,
     probe: Probe? = null,
+    /** The previous screen's save, which this skin waits for before it restores what it kept. */
+    previousSave: CountDownLatch? = null,
     /** Hands the activity a way to save this skin's settings, or null when the screen goes. */
-    onSaver: (((() -> Unit)?) -> Unit) = {},
+    onSaver: (((() -> CountDownLatch)?) -> Unit) = {},
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     // the default element set behind the skin: Andamp's, or Winamp's when files/wasabi-defaults.zip
     // is there (for comparing against Winamp only); a probe times what ships
     val base =
@@ -447,95 +593,73 @@ private fun ModernSkinScreen(
             val openStart = System.nanoTime()
             WalFiles.open(file, siblings, base).also { probe?.openMs = (System.nanoTime() - openStart) / 1e6 }
         }
-    val context = androidx.compose.ui.platform.LocalContext.current
-    val host = remember { WalHost(files, context.cacheDir) }
-    val player =
-        remember {
-            FakePlayer().apply {
-                if (check != null) {
-                    // what the Winamp references play: the scenario's titles as 10 min silent files
-                    title = check.playlist.first()
-                    lengthMs = 600_000
-                    playlist =
-                        check.playlist.map {
-                            nl.mattix.andamp.modernskin.skin
-                                .Track(it, 600_000)
-                        }
-                    decoderName = "Nullsoft Waveform Decoder v3.25"
-                    // 8 kHz 8-bit mono: 64 kbps
-                    bitrateKbps = 64
-                    sampleRateKhz = 8
-                    channels = 1
-                } else {
-                    // a few entries, so the playlist editor has rows to show and tap
-                    playlist =
-                        listOf(
-                            "Andamp - Modern skin demo" to 215_000,
-                            "Second Song" to 187_000,
-                            "Third" to 242_000,
-                            "Fourth Track" to 199_000,
-                        ).map { (t, ms) ->
-                            nl.mattix.andamp.modernskin.skin
-                                .Track(t, ms)
-                        }
-                }
-            }
-        }
+    // a check has nobody to pick from a menu: its menus answer 0 at once, as the JVM references do
+    val host = remember { WalHost(files, context.cacheDir).also { it.menus.unattended = check != null } }
+    val player = remember { demoPlayer(check) }
     // what the skin kept from last time, by file name; a check or a probe starts clean
     val settings = remember { WalSettings(context).takeIf { check == null && probe == null } }
     // the check's stepped clock, as ReferenceRenderTest uses: the same frames every run, and no waiting.
     // Set before the skin loads, so the timers its scripts start on loading run on it too.
     val checkClock = remember { longArrayOf(CHECK_CLOCK_START) }
-    val rt =
-        remember {
-            SkinRuntime(files, host, player).also {
-                if (check != null) {
-                    it.clock = { checkClock[0] }
-                    player.clock = { checkClock[0] }
-                    // the reference VM's screen: scripts that size a window from the viewport (Bento) then agree
-                    it.viewportW = CHECK_VIEWPORT_W
-                    it.viewportH = CHECK_VIEWPORT_H
-                }
-                settings?.restoreBeforeLoad(file.name, it)
-                prepare(it, file, check)
-                val loadStart = System.nanoTime()
-                runCatching { it.load() }.onFailure { e -> host.log("load failed: $e") }
-                probe?.loadMs = (System.nanoTime() - loadStart) / 1e6
-                probe?.loadSteps = it.scriptSteps
-                // the color theme picked last time for this skin, as Winamp keeps it per skin
-                settings?.restoreTheme(file.name, it)
-                check?.theme?.let { t -> it.selectGammaSet(t) }
-                check?.view?.let { v -> it.viewSize = v }
-                // a scenario's size for a resizable main window, as ReferenceRenderTest gives it
-                check?.mainSize?.let { (w, h) ->
-                    it.mainLayout?.makiCall("resize", listOf(Value.Int(0), Value.Int(0), Value.Int(w), Value.Int(h)))
-                }
-                // windows the skin opens by itself at start in Winamp, as ReferenceRenderTest opens them
-                check?.show?.forEach { id -> it.container(id)?.let { c -> it.openWindow(c) } }
+    var frameCount by remember { mutableIntStateOf(0) }
+    val main = remember { android.os.Handler(android.os.Looper.getMainLooper()) }
+    val engine = remember { WalEngine(file.nameWithoutExtension, host) { main.post { frameCount++ } } }
+    androidx.compose.runtime.DisposableEffect(engine) { onDispose { engine.close() } }
+    LaunchedEffect(engine) {
+        // the theme the skin wore when last kept, read and written on the engine thread only
+        val keptTheme = arrayOfNulls<String>(1)
+        engine.onTicked = { rt, tickNanos, drawNanos, drew, steps ->
+            probe?.ticked(rt, tickNanos, drawNanos, drew, steps)
+            // a theme the listener picked is kept at once, as Winamp keeps it per skin
+            if (settings != null && rt.currentGammaSet != keptTheme[0]) {
+                keptTheme[0] = rt.currentGammaSet
+                settings.save(file.name, rt)
             }
         }
-    var frame by remember { mutableIntStateOf(0) }
-    // the main window's visible width at the start sets the scale (MMD3 keeps room on its right
-    // for a panel that slides out); fixed, so the size does not jump when that panel opens
-    // (a window the user resizes, Bento, is sized to the screen instead and scales from its own size)
-    val baseW =
-        remember(rt) {
-            rt.mainLayout?.takeUnless { it.resizesHorizontally() && it.resizesVertically() }?.contentRight()
-                ?: 0
+        engine.start {
+            previousSave?.await(1, TimeUnit.SECONDS)
+            loadRuntime(file, files, host, player, settings, check, checkClock, probe).also { keptTheme[0] = it.currentGammaSet }
         }
-    var logText by remember { mutableStateOf("") }
-    var savedTheme by remember { mutableStateOf(rt.currentGammaSet) }
-    // kept when the screen goes away or the app leaves the screen
+        if (check != null) {
+            engine.post { rt ->
+                val stack =
+                    runCatching {
+                        runCheck(rt, player, check, checkClock)
+                        rt.drawWindows()
+                    }.getOrElse { e ->
+                        // said at once, with the trace, so a check run stops waiting
+                        Log.e(WalHost.TAG, "check failed", e)
+                        return@post
+                    }
+                val windows = rt.windows.size
+                main.post {
+                    writeCheckImages(stack, host, File(context.filesDir, "check"))
+                    Log.i(WalHost.TAG, "check done: $windows windows")
+                }
+            }
+        }
+    }
+    // kept when the screen goes away, when the app leaves the screen, and before another start replaces it
     if (settings != null) {
         val owner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-        androidx.compose.runtime.DisposableEffect(rt, owner) {
-            val save = { settings.save(file.name, rt) }
+        androidx.compose.runtime.DisposableEffect(engine, owner) {
+            val save = {
+                CountDownLatch(1).also { done ->
+                    engine.post { rt ->
+                        settings.save(file.name, rt)
+                        done.countDown()
+                    }
+                }
+            }
             val observer =
                 androidx.lifecycle.LifecycleEventObserver { _, event ->
-                    if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) save()
+                    if (event == androidx.lifecycle.Lifecycle.Event.ON_STOP) {
+                        // a menu left open would hold the engine, and the save behind it
+                        engine.dismissMenu()
+                        save()
+                    }
                 }
             owner.lifecycle.addObserver(observer)
-            // a start that replaces this screen saves first, so the next screen restores this one's state
             onSaver(save)
             onDispose {
                 owner.lifecycle.removeObserver(observer)
@@ -544,232 +668,249 @@ private fun ModernSkinScreen(
             }
         }
     }
-    val slide = remember { SlideStats() }
-    // Back puts another window away before it leaves the skin
-    var frontOpen by remember { mutableStateOf(false) }
-    androidx.activity.compose.BackHandler(enabled = frontOpen) {
-        rt.closeTopWindow()
-        frontOpen = false
-        frame++
-    }
-    if (check != null) {
-        // the reference sequence, as ReferenceRenderTest runs it
-        LaunchedEffect(check) {
-            fun step(ms: Long) {
-                val until = checkClock[0] + ms
-                while (checkClock[0] < until) {
-                    checkClock[0] = minOf(checkClock[0] + 16, until)
-                    rt.tick()
-                }
+    // the main thread asks for a tick each display frame while something slides or a probe runs,
+    // else every 16 ms: timers and the clock need no more; a check steps the check clock instead
+    if (check == null) {
+        LaunchedEffect(engine) {
+            while (true) {
+                if (probe != null || engine.frame?.animating == true) withFrameNanos { } else delay(16)
+                engine.requestTick()
             }
-            step(3_000)
-            player.play()
-            step(1_000)
-            player.stop()
-            step(3_000)
-            for (id in check.taps) {
-                val target = rt.windows.asReversed().firstNotNullOfOrNull { it.findObject(id) }
-                if (target == null) {
-                    host.log("check: no object $id")
-                    continue
-                }
-                val origin = target.layoutObject?.let { rt.windowRect(it) }
-                val cx = target.rect.left + target.rect.width / 2 + (origin?.left ?: 0)
-                val cy = target.rect.top + target.rect.height / 2 + (origin?.top ?: 0)
-                rt.pointerDown(cx, cy)
-                rt.pointerUp(cx, cy)
-                step(3_000)
-            }
-            writeCheckImages(rt, host, File(context.filesDir, "check"))
-            Log.i("ModernSkin", "check done: ${rt.windows.size} windows")
         }
     }
     if (probe != null) {
-        LaunchedEffect(probe) {
-            // the same skin loaded again in this process, with fresh caches: the load once the engine's code is warm
-            run {
+        LaunchedEffect(engine) {
+            // the same skin loaded again on the engine thread, with fresh files and caches: the load
+            // once the engine's code is warm. The phases start when both loads are done
+            val loaded = kotlinx.coroutines.CompletableDeferred<Unit>()
+            engine.post(publish = false) {
                 val warmFiles = WalFiles.open(file, siblings, base)
                 val again = SkinRuntime(warmFiles, WalHost(warmFiles, context.cacheDir), FakePlayer())
                 prepare(again, file, check)
                 val t0 = System.nanoTime()
                 runCatching { again.load() }
                 probe.warmLoadMs = (System.nanoTime() - t0) / 1e6
+                loaded.complete(Unit)
             }
-            var lastTimers = rt.timerFires
-            var seen = host.version
+            loaded.await()
 
             suspend fun runPhase(
                 name: String,
                 ms: Long,
             ) {
-                probe.mark(name)
+                probe.phase = name
                 val start = System.currentTimeMillis()
-                while (System.currentTimeMillis() - start < ms) {
-                    withFrameNanos { }
-                    val t0 = System.nanoTime()
-                    val changed = runCatching { rt.tick() }.getOrDefault(false)
-                    val tickUs = (System.nanoTime() - t0) / 1000
-                    probe.lastTickUs = tickUs
-                    val timers = rt.timerFires - lastTimers
-                    lastTimers = rt.timerFires
-                    probe.frames += Probe.Frame(name, tickUs, rt.scriptSteps, timers, changed)
-                    if (changed || host.version != seen) {
-                        seen = host.version
-                        frame++
-                    }
-                }
-                probe.phaseMs[name] = System.currentTimeMillis() - start
+                delay(ms)
+                probe.ended(name, System.currentTimeMillis() - start)
             }
             runPhase("settle", 2_000)
             runPhase("stopped", 10_000)
-            player.play()
+            engine.post { player.play() }
             runPhase("playing", 10_000)
-            player.stop()
+            engine.post { player.stop() }
             runPhase("stoppedAgain", 10_000)
             val out = File(context.filesDir, "probe").apply { mkdirs() }
             File(out, file.nameWithoutExtension + ".json").writeText(probe.json())
-            Log.i("ModernSkin", "probe done: ${file.name}")
+            Log.i(WalHost.TAG, "probe done: ${file.name}")
         }
     }
-    LaunchedEffect(Unit) {
-        var seen = -1
-        while (true) {
-            if (rt.animating && slide.startedAt == 0L) slide.startedAt = System.nanoTime()
-            if (!rt.animating && slide.startedAt != 0L) slide.report()
-            // during a check only its stepped loop ticks, so tickers advance the same number of times as in the JVM test
-            val changed =
-                if (check != null || probe != null) {
-                    false
-                } else {
-                    runCatching { rt.tick() }.getOrElse { e ->
-                        host.log("tick: $e")
-                        false
-                    }
-                }
-            frontOpen = rt.topWindow != null
-            // a theme the listener picked is kept at once, as Winamp keeps it per skin
-            if (settings != null && rt.currentGammaSet != savedTheme) {
-                savedTheme = rt.currentGammaSet
-                settings.save(file.name, rt)
-            }
-            if (changed || host.version != seen) {
-                seen = host.version
-                frame++
-                logText = host.recentLog.joinToString("\n")
-            }
-            // every display frame while something slides or plays; timers and the clock need no more than 60 Hz
-            if (rt.animating) withFrameNanos { } else delay(16)
-        }
-    }
+    val slide = remember { SlideStats() }
+    // where a fractional scale draws the stack whole before it is shrunk (see drawWalStack)
+    val layer = rememberGraphicsLayer()
+    // the frame the probe timed last, so a frame drawn again is not counted twice
+    val probed = remember { arrayOfNulls<WalFrame>(1) }
+    val shown = engine.frame.takeIf { frameCount >= 0 }
+    // Back puts another window away before it leaves the skin
+    androidx.activity.compose.BackHandler(enabled = shown?.windowOpen == true) { engine.post { it.closeTopWindow() } }
     Column(Modifier.fillMaxSize().background(Color(0xFF202020)).safeDrawingPadding()) {
-        val layout = rt.mainLayout
-        if (layout == null) {
+        val mainSize = shown?.mainSize
+        if (shown == null) {
+            BasicText("loading", style = TextStyle(color = Color.White))
+        } else if (mainSize == null) {
             BasicText("no main layout", style = TextStyle(color = Color.White))
         } else {
-            // the main window's width sets the scale; the windows under it fill the height that is left
-            val (lw, lh) = layout.size
+            // the size is posted when it changes; a lambda made per frame would post it every frame
+            val baseW = shown.baseW
+            val fit = remember(engine, baseW) { { px: IntSize -> engine.post { rt -> fitToScreen(rt, px, baseW, check) } } }
             // magenta behind the skin in a check, as on the reference Windows desktop, so transparency
-            // shows; in use the app's own dark gray, which also hides seams between region edges at
-            // fractional scales
+            // shows; in use a dark gray
             Box(
                 Modifier
                     .fillMaxWidth()
                     .weight(1f)
                     .background(if (check != null) Color(0xFFFF00FF) else Color(0xFF202020))
-                    .onSizeChanged { px ->
-                        // a window the user can resize both ways (handles on its edges, Bento) fills the
-                        // screen, as maximized: the scale comes from its minimum size, its size from what
-                        // is left at that scale
-                        if (check == null && layout.minW > 0 && layout.minH > 0 && layout.resizesHorizontally() &&
-                            layout.resizesVertically()
-                        ) {
-                            val fit = WalScale.of(px, layout.minW, layout.minH)
-                            val w = maxOf(layout.minW, (px.width / fit).toInt())
-                            val h = maxOf(layout.minH, (px.height / fit).toInt())
-                            if (layout.size != w to h) {
-                                layout.makiCall("resize", listOf(Value.Int(0), Value.Int(0), Value.Int(w), Value.Int(h)))
-                            }
-                        }
-                        val (lw, lh) = baseW.takeIf { it > 0 }?.let { it to layout.size.second } ?: layout.size
-                        val s = WalScale.of(px, lw, lh)
-                        // a check keeps the size it asked for (or the windows' own, as the references)
-                        if (check == null) rt.viewSize = (px.width / s).toInt() to (px.height / s).toInt()
-                        frame++
-                    },
+                    .onSizeChanged(fit),
             ) {
                 Canvas(
                     Modifier
                         .fillMaxSize()
-                        .pointerInput(rt) {
+                        .pointerInput(engine) {
                             awaitEachGesture {
-                                val scale = WalScale.fit(size, layout, baseW)
-                                // 24 dp beside a control still counts: every control answers across 48 dp
-                                rt.touchSlop = kotlin.math.ceil(24.dp.toPx() / scale).toInt()
                                 val down = awaitFirstDown()
+                                val f = engine.frame
+                                val size2 = f?.mainSize ?: return@awaitEachGesture
+                                val scale = WalScale.fit(size, size2, f.baseW)
+                                // 24 dp beside a control still counts: every control answers across 48 dp
+                                val slop = kotlin.math.ceil(24.dp.toPx() / scale).toInt()
+                                engine.post(publish = false) { it.touchSlop = slop }
                                 val downAt = System.currentTimeMillis()
                                 var moved = false
-                                val left =
-                                    if (check ==
-                                        null
-                                    ) {
-                                        WalScale.left(size.width.toFloat(), layout.contentRight(), scale)
-                                    } else {
-                                        0f
-                                    }
+                                val left = if (check == null) WalScale.left(size.width.toFloat(), f.contentRight, scale) else 0f
 
                                 fun toSkin(o: Offset) = ((o.x - left) / scale).toInt() to (o.y / scale).toInt()
                                 val (sx, sy) = toSkin(down.position)
-                                rt.pointerDown(sx, sy)
-                                frame++
-                                var longFired = false
+                                engine.pointerDown(sx, sy)
                                 while (true) {
                                     val event = awaitPointerEvent()
                                     val change = event.changes.firstOrNull { it.id == down.id } ?: break
                                     if (change.positionChanged()) {
                                         moved = true
                                         val (mx, my) = toSkin(change.position)
-                                        rt.pointerMove(mx, my)
-                                        frame++
+                                        engine.pointerMove(mx, my)
                                     }
                                     if (change.changedToUp()) {
                                         val (ux, uy) = toSkin(change.position)
-                                        if (!moved && !longFired && System.currentTimeMillis() - downAt > 600) {
-                                            longFired = true
-                                            rt.longPress(ux, uy)
+                                        if (!moved && System.currentTimeMillis() - downAt > LONG_PRESS_MS) {
+                                            engine.longPress(ux, uy)
                                         } else {
-                                            rt.pointerUp(ux, uy)
+                                            engine.pointerUp(ux, uy)
                                         }
-                                        frame++
                                         break
                                     }
                                 }
                             }
                         },
                 ) {
-                    frame // read so a new frame redraws
+                    frameCount // read so a new frame redraws
+                    val f = engine.frame ?: return@Canvas
+                    val size2 = f.mainSize ?: return@Canvas
                     val drawStart = System.nanoTime()
-                    val scale = WalScale.fit(IntSize(size.width.toInt(), size.height.toInt()), layout, baseW)
-                    val stack =
-                        runCatching { rt.drawWindows() }.getOrElse { e ->
-                            host.log("draw: $e")
-                            emptyList()
-                        }
-                    val windowsDone = System.nanoTime()
+                    val scale = WalScale.fit(IntSize(size.width.toInt(), size.height.toInt()), size2, f.baseW)
                     // the stack centered across the screen, as the classic player places its windows
-                    val left = if (check == null) WalScale.left(size.width, layout.contentRight(), scale) else 0f
-                    drawWalStack(stack, host, scale, left)
-                    if (slide.startedAt != 0L) slide.frame(System.nanoTime() - drawStart)
-                    probe?.drew(windowsDone - drawStart, System.nanoTime() - windowsDone)
+                    val left = if (check == null) WalScale.left(size.width, f.contentRight, scale) else 0f
+                    drawWalStack(f.stack, host, scale, left, layer)
+                    val drawn = System.nanoTime() - drawStart
+                    if (f.animating && slide.startedAt == 0L) slide.startedAt = drawStart
+                    if (slide.startedAt != 0L) slide.frame(drawn)
+                    if (!f.animating && slide.startedAt != 0L) slide.report()
+                    if (probe != null && f !== probed[0]) {
+                        probed[0] = f
+                        probe.drew(drawn, f.buildNanos)
+                    }
+                }
+                engine.menu.takeIf { frameCount >= 0 }?.let { menu ->
+                    SkinMenuOverlay(menu) { id -> engine.answerMenu(menu, id) }
                 }
             }
         }
         BasicText(
-            logText,
+            shown?.log?.joinToString("\n").orEmpty(),
             style = TextStyle(color = Color(0xFFB0FFB0), fontSize = 10.sp),
             modifier = Modifier.fillMaxWidth().padding(4.dp),
         )
     }
 }
+
+/**
+ * A skin's popup menu over the skin, while its script waits: a command answers its id; a tap
+ * outside, or Back from the top level, answers 0. Submenus open in place, and Back goes up one.
+ */
+@Composable
+private fun SkinMenuOverlay(
+    menu: SkinMenu,
+    onPick: (Int) -> Unit,
+) {
+    // the submenus opened, innermost last
+    var path by remember(menu) { mutableStateOf(listOf(menu)) }
+    androidx.activity.compose.BackHandler { if (path.size > 1) path = path.dropLast(1) else onPick(0) }
+    val row = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp)
+    Box(
+        Modifier
+            .fillMaxSize()
+            .background(Color(0x80000000))
+            .pointerInput(menu) { detectTapGestures { onPick(0) } },
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(
+            Modifier
+                .widthIn(max = 320.dp)
+                .background(Color(0xFF303030))
+                // a tap between rows stays in the menu
+                .pointerInput(Unit) { detectTapGestures { } }
+                .verticalScroll(rememberScrollState()),
+        ) {
+            for (item in path.last().items) {
+                when (item) {
+                    is SkinMenu.Command -> {
+                        MenuRow(
+                            if (item.checked) "\u2713" else "",
+                            item.text,
+                            if (item.disabled) Color.Gray else Color.White,
+                            Modifier.clickable(enabled = !item.disabled) { onPick(item.id) }.then(row),
+                        )
+                    }
+
+                    is SkinMenu.Submenu -> {
+                        MenuRow("", "${item.text}  \u25B8", Color.White, Modifier.clickable { path = path + item.menu }.then(row))
+                    }
+
+                    SkinMenu.Separator -> {
+                        Box(Modifier.fillMaxWidth().height(1.dp).background(Color.Gray))
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** One row of [SkinMenuOverlay]: a check mark in a column of its width, then the words. */
+@Composable
+private fun MenuRow(
+    mark: String,
+    text: String,
+    color: Color,
+    modifier: Modifier,
+) {
+    androidx.compose.foundation.layout.Row(modifier) {
+        BasicText(mark, style = TextStyle(color = color, fontSize = 16.sp), modifier = Modifier.widthIn(min = 24.dp))
+        BasicText(text, style = TextStyle(color = color, fontSize = 16.sp))
+    }
+}
+
+/** What plays in the preview: in a check the reference player's titles, else a few demo rows. */
+private fun demoPlayer(check: Check?): FakePlayer =
+    FakePlayer().apply {
+        if (check != null) {
+            // what the Winamp references play: the scenario's titles as 10 min silent files
+            title = check.playlist.first()
+            lengthMs = 600_000
+            playlist =
+                check.playlist.map {
+                    nl.mattix.andamp.modernskin.skin
+                        .Track(it, 600_000)
+                }
+            decoderName = "Nullsoft Waveform Decoder v3.25"
+            // 8 kHz 8-bit mono: 64 kbps
+            bitrateKbps = 64
+            sampleRateKhz = 8
+            channels = 1
+        } else {
+            // a few entries, so the playlist editor has rows to show and tap
+            playlist =
+                listOf(
+                    "Andamp - Modern skin demo" to 215_000,
+                    "Second Song" to 187_000,
+                    "Third" to 242_000,
+                    "Fourth Track" to 199_000,
+                ).map { (t, ms) ->
+                    nl.mattix.andamp.modernskin.skin
+                        .Track(t, ms)
+                }
+        }
+    }
+
+/** How long a press must last to count as a long press (Winamp's right click). */
+private const val LONG_PRESS_MS = 600
 
 /** What a runtime for [file] is given before it loads, the same for every load of it. */
 private fun prepare(

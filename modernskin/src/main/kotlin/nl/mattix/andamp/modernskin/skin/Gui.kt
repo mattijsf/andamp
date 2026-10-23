@@ -422,6 +422,9 @@ open class GuiObject(
         dispatch("onleftbuttonup", Value.Int(px), Value.Int(py))
     }
 
+    /** The press ends without a release (a menu took the touch): the object lets go, and scripts hear nothing. */
+    open fun pointerCancel() = Unit
+
     open fun longPress(
         px: Int,
         py: Int,
@@ -2203,7 +2206,13 @@ open class Button(
         pressed = false
         rt.invalidate()
         super.pointerUp(px, py, inside)
-        if (inside) click()
+        // a menu the release handler opened took the touch
+        if (inside && !rt.pressEnded) click()
+    }
+
+    override fun pointerCancel() {
+        pressed = false
+        rt.invalidate()
     }
 
     open fun click() {

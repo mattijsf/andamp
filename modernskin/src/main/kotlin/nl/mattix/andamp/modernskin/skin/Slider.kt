@@ -170,9 +170,19 @@ class Slider(
             dragging = false
             rt.invalidate()
             super.pointerUp(px, py, inside)
+            // a menu the release handler opened took the touch
+            if (rt.pressEnded) return
             dispatch("onsetfinalposition", Value.Int(position))
             dispatch("onpostedposition", Value.Int(position))
             rt.sliderMoved(this, final = true)
+        }
+    }
+
+    // the player hears no final position, and the thumb follows the player again
+    override fun pointerCancel() {
+        if (dragging) {
+            dragging = false
+            rt.invalidate()
         }
     }
 

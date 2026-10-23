@@ -98,6 +98,14 @@ interface SkinHost {
      * "video" or "vis". Null leaves it to the skin's container. Buttons that toggle these light up.
      */
     fun windowOpen(kind: String): Boolean? = null
+
+    /**
+     * Shows a skin's popup menu and returns the id of the command the listener picked, or 0 for
+     * none. The script waits for it, so a host that shows menus blocks here until the answer. Null
+     * means the menu closed without the listener (the app went away or the wait ran out): the
+     * script hears 0, and the touch shows no more menus.
+     */
+    fun chooseFromMenu(menu: SkinMenu): Int? = 0
 }
 
 /** A player that plays nothing, for tests and for a first look at a skin. */

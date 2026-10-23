@@ -76,12 +76,73 @@ class Timer(
         }
 }
 
-/** `new PopupMenu`: the commands are kept; popping it up is logged and answers "nothing chosen". */
+/**
+ * `new PopupMenu`: commands, separators and submenus the script adds. Popping it up asks the host
+ * through [SkinRuntime.menuChoice] and answers the picked command's id, or 0.
+ */
 class PopupMenu(
     private val rt: SkinRuntime,
 ) : MakiObject {
     override val makiGuid: String get() = StdApi.guidOf("PopupMenu") ?: ""
-    private val items = ArrayList<String>()
+
+    private sealed interface Entry
+
+    private class Command(
+        val id: Int,
+        val text: String,
+        var checked: Boolean,
+        var disabled: Boolean,
+    ) : Entry
+
+    private class Submenu(
+        val text: String,
+        val menu: PopupMenu?,
+    ) : Entry
+
+    private object Separator : Entry
+
+    /** What the script added, in order. */
+    private val entries = ArrayList<Entry>()
+
+    /**
+     * The menu as the host shows it, as it stands now. It holds at most [MAX_ITEMS] items in all and
+     * [MAX_DEPTH] levels of submenus, so a menu that holds itself ends.
+     */
+    fun toMenu(): SkinMenu = snapshot(0, intArrayOf(MAX_ITEMS))
+
+    /** This menu's items while [left] (the items still allowed in the whole tree) lasts. */
+    private fun snapshot(
+        depth: Int,
+        left: IntArray,
+    ): SkinMenu {
+        val items = ArrayList<SkinMenu.Item>()
+        for (e in entries) {
+            if (left[0] <= 0) break
+            val item =
+                when (e) {
+                    is Command -> {
+                        SkinMenu.Command(e.id, shownText(e.text), e.checked, e.disabled)
+                    }
+
+                    is Submenu -> {
+                        e.menu?.takeIf { depth < MAX_DEPTH }?.let { sub ->
+                            left[0]--
+                            SkinMenu.Submenu(shownText(e.text), sub.snapshot(depth + 1, left))
+                        }
+                    }
+
+                    Separator -> {
+                        SkinMenu.Separator
+                    }
+                }
+            // a submenu counted itself before its items
+            if (item != null && item !is SkinMenu.Submenu) left[0]--
+            item?.let(items::add)
+        }
+        return SkinMenu(items)
+    }
+
+    private fun command(id: Int) = entries.filterIsInstance<Command>().firstOrNull { it.id == id }
 
     override fun makiCall(
         name: String,
@@ -96,36 +157,75 @@ class PopupMenu(
                 Value.Str("")
             }
 
+            // addCommand(text, id, checked, disabled)
             "addcommand" -> {
-                Value.Null.also { items.add("${args[1].asInt}:${args[0].asString}") }
+                Value.Null.also {
+                    entries +=
+                        Command(
+                            args[1].asInt,
+                            args[0].asString,
+                            args.getOrNull(2)?.truthy == true,
+                            args.getOrNull(3)?.truthy == true,
+                        )
+                }
             }
 
+            // addSubMenu(menu, text)
             "addsubmenu" -> {
-                Value.Null.also { items.add("> ${args[1].asString}") }
+                Value.Null.also { entries += Submenu(args[1].asString, args[0].asObject as? PopupMenu) }
             }
 
             "addseparator" -> {
-                Value.Null.also { items.add("-") }
+                Value.Null.also { entries += Separator }
             }
 
-            "checkcommand", "disablecommand" -> {
-                Value.Null
+            "checkcommand" -> {
+                Value.Null.also { command(args[0].asInt)?.checked = args[1].truthy }
+            }
+
+            "disablecommand" -> {
+                Value.Null.also { command(args[0].asInt)?.disabled = args[1].truthy }
             }
 
             "popatmouse", "popatxy" -> {
-                rt.host.log("popup menu: $items")
-                rt.popupMenu = items.toList()
-                Value.Int(rt.menuChoice(items))
+                Value.Int(rt.menuChoice(toMenu()))
             }
 
             "getnumcommands" -> {
-                Value.Int(items.size)
+                Value.Int(entries.size)
             }
 
             else -> {
                 null
             }
         }
+
+    private companion object {
+        /** Submenu levels shown; deeper ones are left out. */
+        const val MAX_DEPTH = 8
+
+        /** Items shown in one menu and its submenus together; later ones are left out. */
+        const val MAX_ITEMS = 512
+
+        /** Characters shown of an item's words. */
+        const val MAX_TEXT = 128
+
+        /**
+         * A menu item's words for the phone: without the keyboard shortcut Windows shows after a
+         * tab, and without the `&` that marks the underlined letter (`&&` is a plain `&`).
+         */
+        fun shownText(text: String): String {
+            val words = text.substringBefore('\t')
+            return buildString {
+                var i = 0
+                while (i < words.length) {
+                    if (words[i] == '&') i++
+                    if (i < words.length) append(words[i])
+                    i++
+                }
+            }.trim().take(MAX_TEXT)
+        }
+    }
 }
 
 /** `new Map`: reads values from a greyscale bitmap, as knob skins use to turn a touch into a level. */
