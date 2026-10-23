@@ -9,6 +9,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -17,6 +20,9 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.core.app.ApplicationProvider
+import nl.mattix.andamp.R
+import nl.mattix.andamp.state.SkinEntry
+import nl.mattix.andamp.state.SkinKind
 import nl.mattix.andamp.state.VisMode
 import nl.mattix.andamp.widget.WidgetRefresh
 import nl.mattix.andamp.widget.WidgetSettings
@@ -125,5 +131,77 @@ class WidgetPrefsInteractionTest {
         compose.onNodeWithTag("prefs.widget.refresh.high").assertIsEnabled()
         assertEquals("High steps the clock at Medium's rate", WidgetRefresh.MEDIUM.windowMs, WidgetRefresh.HIGH.windowMs)
         assertEquals(WidgetRefresh.MEDIUM.timeOnly, WidgetRefresh.HIGH.timeOnly)
+    }
+
+    private val classic = listOf(SkinEntry("neon", "Neon Nights", 0), SkinEntry("wood", "Walnut", 0))
+    private val modern = SkinEntry("bento", "Bento", 0, SkinKind.MODERN)
+
+    /** Shows the page, taller than the window, with [skins] installed; returns the widget's skin as last reported. */
+    private fun showSkins(
+        skins: List<SkinEntry>,
+        start: String? = null,
+    ): () -> String? {
+        var chosen by mutableStateOf(start)
+        compose.setContent {
+            androidx.compose.foundation.layout.Column(
+                Modifier.verticalScroll(androidx.compose.foundation.rememberScrollState()),
+            ) {
+                WidgetRows(WidgetPrefs(skins = skins, skin = chosen, onSkin = { chosen = it }))
+            }
+        }
+        return { chosen }
+    }
+
+    /** The tags of the rows in the open skin list, top to bottom. */
+    private fun listed(): List<String> =
+        compose
+            .onAllNodes(
+                SemanticsMatcher("in the widget's skin list") { node ->
+                    val tag = node.config.getOrNull(SemanticsProperties.TestTag).orEmpty()
+                    tag.startsWith("prefs.widget.skin.") && tag != "prefs.widget.skin.row"
+                },
+            ).fetchSemanticsNodes()
+            .map { it.config[SemanticsProperties.TestTag].removePrefix("prefs.widget.skin.") }
+
+    @Test
+    fun `the skin row shows with modern skins off, when only classic skins are listed`() {
+        showSkins(classic)
+
+        compose.onNodeWithTag("prefs.widget.skin.row").performScrollTo().assertExists()
+        compose.onNodeWithText("Default").assertExists()
+    }
+
+    @Test
+    fun `the skin list has Default first, then the classic skins only`() {
+        showSkins(classic + modern)
+
+        compose.onNodeWithTag("prefs.widget.skin.row").performScrollTo().performClick()
+
+        assertEquals(listOf("default", "neon", "wood"), listed())
+    }
+
+    @Test
+    fun `picking a skin sets it for the widget`() {
+        val chosen = showSkins(classic)
+
+        compose.onNodeWithTag("prefs.widget.skin.row").performScrollTo().performClick()
+        compose.onNodeWithTag("prefs.widget.skin.wood").performClick()
+
+        assertEquals("wood", chosen())
+        compose.onNodeWithText("Walnut").assertExists()
+        compose.onNodeWithTag("prefs.widget.skin.row").performClick()
+        compose.onNodeWithTag("prefs.widget.skin.wood").assertIsSelected()
+    }
+
+    @Test
+    fun `picking Default has the widget follow the player`() {
+        val chosen = showSkins(classic, start = "neon")
+
+        compose.onNodeWithTag("prefs.widget.skin.row").performScrollTo().performClick()
+        compose.onNodeWithTag("prefs.widget.skin.default").performClick()
+
+        assertEquals(null, chosen())
+        val own = ApplicationProvider.getApplicationContext<Context>().getString(R.string.prefs_skin_own)
+        compose.onNodeWithText(own).assertExists()
     }
 }

@@ -359,6 +359,9 @@
     <string name="prefs_widget_logo_summary">点按播放器本身没有反应，这样没点准按钮时仍会留在主屏幕上。</string>
     <string name="prefs_widget_volume_title">音量控制</string>
     <string name="prefs_widget_volume_summary">允许点按音量滑块。它离进度条很近，容易误触。</string>
+    <string name="prefs_widget_skin_section">皮肤</string>
+    <string name="prefs_widget_skin_note">即使播放器正在使用某个音乐源的皮肤，小部件也使用这个皮肤。“默认”跟随播放器。</string>
+    <string name="prefs_widget_skin_heading">小部件的皮肤</string>
     <string name="prefs_widget_limits_title">须知</string>
     <string name="prefs_widget_limit_corners_title">边角会被裁切</string>
     <string name="prefs_widget_limit_corners_body">Android 会把所有应用的所有小部件的边角变成圆角，而且无法关闭。把播放器缩小可以留出余量，但按钮也会更难点中，所以它保持原来的大小。</string>

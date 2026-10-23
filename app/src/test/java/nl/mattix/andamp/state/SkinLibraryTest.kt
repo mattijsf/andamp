@@ -465,6 +465,29 @@ class SkinLibraryTest {
     }
 
     @Test
+    fun `a widget skin picked by hand stays when modern skins go off`() {
+        library.choose(BundledSkins.LIGHT.id)
+        library.choose(library.addModern(app, "Bento"))
+        library.chooseWidgetSkin(BundledSkins.SPOT.id)
+
+        assertTrue(library.dropModern())
+
+        assertEquals(BundledSkins.SPOT.id, library.widgetSkin)
+    }
+
+    @Test
+    fun `a widget skin picked by hand stays when the worn modern skin is deleted`() {
+        library.choose(BundledSkins.LIGHT.id)
+        val modern = library.addModern(app, "Bento")
+        library.choose(modern)
+        library.chooseWidgetSkin(BundledSkins.SPOT.id)
+
+        library.delete(modern)
+
+        assertEquals(BundledSkins.SPOT.id, library.widgetSkin)
+    }
+
+    @Test
     fun `a source's skin going on or off touches neither the last classic choice nor the widget`() {
         library.choose(BundledSkins.LIGHT.id)
         library.choose(library.addModern(app, "Bento"))

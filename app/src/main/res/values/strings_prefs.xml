@@ -401,6 +401,9 @@
     <string name="prefs_widget_logo_summary">Tapping the player does nothing, so a near miss on a button stays on the home screen.</string>
     <string name="prefs_widget_volume_title">Volume control</string>
     <string name="prefs_widget_volume_summary">Lets the volume slider be tapped. It sits close to the seek bar and is easy to hit by mistake.</string>
+    <string name="prefs_widget_skin_section">Skin</string>
+    <string name="prefs_widget_skin_note">The widget wears this skin, even while the player wears a music source\'s skin. Default follows the player.</string>
+    <string name="prefs_widget_skin_heading">Skin for the widget</string>
     <string name="prefs_widget_limits_title">Good to know</string>
     <string name="prefs_widget_limit_corners_title">The corners are trimmed</string>
     <string name="prefs_widget_limit_corners_body">Android rounds off the corners of every widget, from every app, and there is no way to turn that off. A smaller player would leave room to spare, but it would also make the buttons harder to hit, so it keeps its size.</string>

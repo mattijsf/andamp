@@ -366,6 +366,9 @@
     <string name="prefs_widget_logo_summary">Appuyer sur le lecteur ne fait rien : un appui juste à côté d’un bouton reste donc sur l’écran d’accueil.</string>
     <string name="prefs_widget_volume_title">Réglage du volume</string>
     <string name="prefs_widget_volume_summary">Rend le curseur de volume sensible à l’appui. Il est proche de la barre de position et se touche facilement par erreur.</string>
+    <string name="prefs_widget_skin_section">Skin</string>
+    <string name="prefs_widget_skin_note">Le widget porte ce skin, même quand le lecteur porte le skin d’une source de musique. « Par défaut » suit le lecteur.</string>
+    <string name="prefs_widget_skin_heading">Skin du widget</string>
     <string name="prefs_widget_limits_title">Bon à savoir</string>
     <string name="prefs_widget_limit_corners_title">Les coins sont rognés</string>
     <string name="prefs_widget_limit_corners_body">Android arrondit les coins de tous les widgets, de toutes les applis, et il n’existe aucun moyen de le désactiver. Un lecteur plus petit laisserait de la marge, mais rendrait aussi les boutons plus difficiles à toucher : il garde donc sa taille.</string>

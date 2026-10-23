@@ -366,6 +366,9 @@
     <string name="prefs_widget_logo_summary">Tikken op de speler doet niets, dus als je net naast een knop tikt, blijf je op het startscherm.</string>
     <string name="prefs_widget_volume_title">Volumeregeling</string>
     <string name="prefs_widget_volume_summary">Maakt de volumeschuif aantikbaar. Die zit dicht bij de zoekbalk en is makkelijk per ongeluk te raken.</string>
+    <string name="prefs_widget_skin_section">Skin</string>
+    <string name="prefs_widget_skin_note">De widget draagt deze skin, ook als de speler de skin van een muziekbron draagt. Met Standaard volgt de widget de speler.</string>
+    <string name="prefs_widget_skin_heading">Skin voor de widget</string>
     <string name="prefs_widget_limits_title">Goed om te weten</string>
     <string name="prefs_widget_limit_corners_title">De hoeken worden afgesneden</string>
     <string name="prefs_widget_limit_corners_body">Android rondt de hoeken af van elke widget, van elke app, en dat is niet uit te zetten. Een kleinere speler zou ruimte overhouden, maar dan zijn de knoppen ook lastiger te raken, dus hij houdt zijn grootte.</string>

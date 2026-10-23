@@ -207,13 +207,10 @@ fun PreferencesScreen(
                     ),
                 androidAuto = androidAutoPrefsOf(vm, offered = remember { AndroidAutoStore.companionInstalled(context) }),
                 widget =
-                    WidgetPrefs(
-                        settings = widgetSettings,
-                        onSettings = { chosen ->
-                            widgetSettings = chosen
-                            WidgetSettings.update(context, chosen)
-                        },
-                    ),
+                    widgetPrefsOf(vm, widgetSettings) { chosen ->
+                        widgetSettings = chosen
+                        WidgetSettings.update(context, chosen)
+                    },
                 support =
                     SupportPrefs(
                         shelf = vm.tipJar.shelf,
