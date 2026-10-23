@@ -235,13 +235,14 @@ class SystemObject(
                 num(args[0].asDouble)
             }
 
+            // milliseconds, as getPosition, getPlayItemLength and getTimeOfDay give them, in whole seconds
             "integertotime" -> {
-                str(formatTime(args[0].asInt))
+                str(formatTime(args[0].asInt / MS_PER_SECOND))
             }
 
-            // hours, minutes and seconds (Wasabi SDK std.mi)
+            // hours, minutes and seconds (Wasabi SDK std.mi), from milliseconds as above
             "integertolongtime" -> {
-                val t = args[0].asInt
+                val t = args[0].asInt / MS_PER_SECOND
                 val a = Math.abs(t)
                 str((if (t < 0) "-" else "") + "%d:%02d:%02d".format(a / 3600, a / 60 % 60, a % 60))
             }
@@ -395,8 +396,10 @@ class SystemObject(
                 int(rt.lastPointer.second)
             }
 
+            // milliseconds since local midnight, as Winamp gives it
             "gettimeofday" -> {
-                int((rt.now() % MS_PER_DAY).toInt())
+                val now = rt.now()
+                int(Math.floorMod(now + rt.zoneOffset(now), MS_PER_DAY).toInt())
             }
 
             "getdate" -> {
@@ -522,6 +525,7 @@ class SystemObject(
 
     private companion object {
         const val MS_PER_DAY = 24L * 60 * 60 * 1000
+        const val MS_PER_SECOND = 1000
         const val EQ_FLAT = 128
     }
 }
