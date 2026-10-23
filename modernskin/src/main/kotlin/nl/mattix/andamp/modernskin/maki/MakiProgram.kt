@@ -20,7 +20,28 @@ class MethodRef(
     val name: String,
 )
 
-enum class Kind { INT, FLOAT, DOUBLE, BOOLEAN, STRING, OBJECT }
+enum class Kind {
+    INT,
+    FLOAT,
+    DOUBLE,
+    BOOLEAN,
+    STRING,
+    OBJECT,
+    ;
+
+    companion object {
+        /** The primitive kind a type number stands for, as the variables table numbers types; null for any other. */
+        fun ofType(type: Int): Kind? =
+            when (type) {
+                2 -> INT
+                3 -> FLOAT
+                4 -> DOUBLE
+                5 -> BOOLEAN
+                6 -> STRING
+                else -> null
+            }
+    }
+}
 
 class VarDecl(
     val kind: Kind,
@@ -45,7 +66,10 @@ class Binding(
 
 class Op(
     val opcode: Int,
-    /** Variable, method or class index, or a code index for jumps (a byte offset while MakiParser reads the code). */
+    /**
+     * Variable, method or class index, a member's type, or a code index for jumps (a byte offset
+     * while MakiParser reads the code).
+     */
     val arg: Int,
     /** The argument count carried by a stack-protected call, or -1. */
     val argc: Int,
@@ -94,9 +118,14 @@ object Opcodes {
     const val SHR2 = 0x5b
     const val NEW = 0x60
     const val DELETE = 0x61
-    const val UNKNOWN_68 = 0x68
+
+    /**
+     * `object.name` for a variable a script keeps on each object of a class it declares: pops the
+     * name and the object, leaves the variable's slot. The immediate is the variable's type.
+     */
+    const val MEMBER = 0x68
     const val CALL2 = 0x70
 
     val jumpOps = setOf(JUMP_IF_NOT, JUMP_IF, JUMP, CALL_GLOBAL)
-    val indexOps = setOf(PUSH, POP_TO, CALL, CALL2, NEW)
+    val indexOps = setOf(PUSH, POP_TO, CALL, CALL2, NEW, MEMBER)
 }

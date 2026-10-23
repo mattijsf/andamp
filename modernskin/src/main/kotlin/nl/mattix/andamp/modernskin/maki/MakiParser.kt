@@ -207,7 +207,8 @@ object MakiParser {
 
     /**
      * Reads the instruction at the buffer's position in the code section that runs from [start] to
-     * [end]. A jump's argument is the byte offset it goes to, which [readCode] turns into a code index.
+     * [end]. A jump's argument is the byte offset it goes to, which [readCode] turns into a code index;
+     * a member access's is the member's type.
      */
     private fun readOp(
         buf: ByteBuffer,
@@ -252,15 +253,7 @@ private fun primitiveVar(
     u2: Int,
     global: Boolean,
 ): VarDecl {
-    val kind =
-        when (typeOffset) {
-            2 -> Kind.INT
-            3 -> Kind.FLOAT
-            4 -> Kind.DOUBLE
-            5 -> Kind.BOOLEAN
-            6 -> Kind.STRING
-            else -> throw MakiFormatException("$id: primitive type $typeOffset")
-        }
+    val kind = Kind.ofType(typeOffset) ?: throw MakiFormatException("$id: primitive type $typeOffset")
     val initial =
         when (kind) {
             Kind.INT -> {

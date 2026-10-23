@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package nl.mattix.andamp.modernskin.maki
 
+import java.util.IdentityHashMap
+
 /** What the VM needs from the player: new objects and a log. */
 interface MakiHost {
     /** `new Timer`, `new PopupMenu`, and so on. Null when the class cannot be made here. */
@@ -129,6 +131,34 @@ class Script(
     /** What the last handler this script ran returned. */
     var lastReturn: Value = Value.Null
 
+    /** The member variables this script keeps on objects (`EQ_p12.setTo`), by object and lowercase name. */
+    private val members = IdentityHashMap<MakiObject, HashMap<String, Cell>>()
+    private var memberCount = 0
+
+    /** The slot of member [name] on [owner], made the first time as a [kind] holding that kind's zero. */
+    internal fun member(
+        owner: MakiObject?,
+        name: String,
+        kind: Kind,
+    ): Cell {
+        // assigning null gives a cell its kind's zero: 0, 0.0, false, "" or null
+        fun fresh() = Cell(kind, Value.Null).apply { assign(Value.Null) }
+        if (owner == null) {
+            host.log("${program.id}: member $name on null")
+            return fresh()
+        }
+        val slots = members.getOrPut(owner) { HashMap() }
+        return slots.getOrPut(name.lowercase()) {
+            if (++memberCount > MAX_MEMBERS) throw MakiRuntimeException("more than $MAX_MEMBERS member variables")
+            fresh()
+        }
+    }
+
+    /** Drops the member variables kept on a deleted object. */
+    internal fun forget(owner: MakiObject) {
+        members.remove(owner)?.let { memberCount -= it.size }
+    }
+
     @Suppress("TooGenericExceptionCaught") // whatever a handler throws is logged and ends that run, not the player
     fun run(
         start: Int,
@@ -163,6 +193,7 @@ class Script(
     private companion object {
         const val STEPS_PER_FRAME = 4_000_000
         const val MAX_FAILURES = 20
+        const val MAX_MEMBERS = 65_536
     }
 }
 
@@ -289,8 +320,14 @@ private class Interpreter(
                     ip = back
                 }
 
-                Opcodes.COMPLETE, Opcodes.UNKNOWN_68 -> {
+                Opcodes.COMPLETE -> {
                     Unit
+                }
+
+                Opcodes.MEMBER -> {
+                    val name = pop().value.asString
+                    val owner = pop().value.asObject
+                    push(script.member(owner, name, Kind.ofType(op.arg) ?: Kind.OBJECT))
                 }
 
                 Opcodes.MOV -> {
@@ -391,7 +428,10 @@ private class Interpreter(
                 Opcodes.DELETE -> {
                     // `delete x` is an expression to the compiler, which drops its value with the POP
                     // that always follows: take the object, leave a value in its place
-                    pop().value.asObject?.delete()
+                    pop().value.asObject?.let {
+                        it.delete()
+                        script.forget(it)
+                    }
                     pushValue(Value.Null, Kind.OBJECT)
                 }
 
