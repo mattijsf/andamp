@@ -250,6 +250,30 @@ class SkinMenuTouchTest {
     }
 
     @Test
+    fun `a host's cancel ends the press quietly, with the area events paired`() {
+        script(button)
+        val x = button.rect.left + 2
+        val y = button.rect.top + 2
+        rt.pointerDown(x, y)
+
+        rt.pointerCancel()
+        rt.pointerUp(x, y)
+
+        assertFalse(button.pressed)
+        assertEquals(Player.Status.STOPPED, player.status)
+        assertEquals(listOf("enter", "leave"), heard)
+    }
+
+    @Test
+    fun `a host's cancel during a drag lets go of the slider`() {
+        rt.pointerDown(seek.rect.left + 100, seek.rect.top + 5)
+
+        rt.pointerCancel()
+
+        assertFalse(seek.dragging)
+    }
+
+    @Test
     fun `a menu during a drag lets go of the slider without a final position`() {
         player.play()
         val y = seek.rect.top + 5

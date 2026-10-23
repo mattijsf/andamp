@@ -76,8 +76,22 @@ class SkinRuntime(
      */
     var haveLibrary = true
 
+    /** The screen a skin may place windows on before the host sets [viewSize]: a Full HD portrait phone. */
     var viewportW = 1080
     var viewportH = 1920
+
+    /** The screen as scripts ask for it (`getViewportWidth`): the phone's view in layout pixels once known. */
+    val viewport: Pair<Int, Int> get() = viewSize ?: (viewportW to viewportH)
+
+    /**
+     * Called for a button action the app answers, as Winamp answered it outside the skin: MINIMIZE,
+     * SYSMENU, CONTROLMENU, MENU, the VIS_ actions and CLOSE on the main window, with the button's
+     * param; and TOGGLE of a window the app shows, with the window's name: "ml" (the library), "avs"
+     * (the visualizer) or "video", or the id or GUID of another window the skin does not have. With
+     * this set, the library, visualizer and video open in the app, not in a frame of the skin.
+     * Gets the action, uppercase, and the param or name.
+     */
+    var onHostAction: ((action: String, param: String?) -> Unit)? = null
     var lastPointer = 0 to 0
     private var dirty = true
     private var needsLayout = true
@@ -1792,6 +1806,14 @@ class SkinRuntime(
         return picked ?: 0
     }
 
+    /**
+     * Ends the press under the finger without a release: a button no longer shows pressed and gives
+     * no click, a slider stops dragging without a final position, and the object hears
+     * `onLeaveArea` to pair the `onEnterArea` of [pointerDown]. The rest of this touch goes nowhere.
+     * For a host that takes the touch, such as a long press that opens the app's menu.
+     */
+    fun pointerCancel() = gesture { endPress() }
+
     /** Lets go of the pressed object without a release, and tells it the finger left. */
     private fun endPress() {
         pressEnded = true
@@ -1854,6 +1876,16 @@ class SkinRuntime(
 
             "TOGGLE" -> {
                 val id = param?.lowercase()?.removePrefix("guid:") ?: return
+                val kind = windowKind(id)
+                val answer = onHostAction?.takeIf { kind in HOST_WINDOWS || toggleTarget(id) == null }
+                if (answer != null) {
+                    answer(a, kind)
+                    // the app shows it: the skin's frame for it (an empty library) stays shut
+                    if (kind in HOST_WINDOWS) {
+                        invalidate()
+                        return
+                    }
+                }
                 toggleWindow(id, param)
                 invalidate()
             }
@@ -1865,11 +1897,16 @@ class SkinRuntime(
             // a docked window's close button puts it away, unless canclose="0"; the main window stays
             // (the app has no desktop to close it to)
             "CLOSE" -> {
-                source.layoutObject?.container?.let { c -> if (c !== mainContainer && c.canClose) closeWindow(c) }
+                val c = source.layoutObject?.container
+                if (c === mainContainer) {
+                    onHostAction?.invoke(a, param)
+                } else if (c != null && c.canClose) {
+                    closeWindow(c)
+                }
             }
 
             "MINIMIZE", "SYSMENU", "CONTROLMENU", "MENU" -> {
-                Unit
+                onHostAction?.invoke(a, param)
             }
 
             "EQ_TOGGLE" -> {
@@ -1881,7 +1918,7 @@ class SkinRuntime(
             }
 
             "VIS_NEXT", "VIS_PREV", "VIS_MENU", "VIS_FS" -> {
-                Unit
+                onHostAction?.invoke(a, param)
             }
 
             "TEXT_LARGER", "TEXT_SMALLER" -> {
@@ -1981,7 +2018,9 @@ class SkinRuntime(
     /** The short name of a window a TOGGLE names by short name or component GUID. */
     private fun windowKind(id: String): String {
         val bare = id.trim('{', '}').lowercase()
-        return TOGGLE_GUIDS.entries.firstOrNull { it.value == bare }?.key ?: bare
+        // a GUID or an alias ("library") by its first alias ("ml")
+        val guid = TOGGLE_GUIDS[bare] ?: bare
+        return TOGGLE_GUIDS.entries.firstOrNull { it.value == guid }?.key ?: bare
     }
 
     /** The window a TOGGLE names: a container id, a GUID alias such as "pl", or a component GUID. */
@@ -2195,6 +2234,9 @@ class SkinRuntime(
         const val MAX_ALIAS_DEPTH = 8
         const val EQ_FLAT = 128
         const val PLAYLIST_GUID = "45f3f7c1-a6f3-4ee6-a15e-125e92fc3f8d"
+
+        /** The windows the app shows when a host answers [onHostAction], by [windowKind]. */
+        val HOST_WINDOWS = setOf("ml", "avs", "video")
 
         /** Winamp's GUID aliases, and the short names the host knows windows by. */
         val TOGGLE_GUIDS =

@@ -355,13 +355,13 @@ class SystemObject(
             "getviewportwidth", "getmonitorwidth", "getviewportwidthfromguiobject", "getviewportwidthfrompoint",
             "getmonitorwidthfromguiobject", "getmonitorwidthfrompoint",
             -> {
-                int(rt.viewportW)
+                int(rt.viewport.first)
             }
 
             "getviewportheight", "getmonitorheight", "getviewportheightfromguiobject", "getviewportheightfrompoint",
             "getmonitorheightfromguiobject", "getmonitorheightfrompoint",
             -> {
-                int(rt.viewportH)
+                int(rt.viewport.second)
             }
 
             "getviewportleft", "getviewporttop", "getmonitorleft", "getmonitortop", "getviewportleftfromguiobject",
@@ -459,7 +459,9 @@ class SystemObject(
                 num(Math.exp(args[0].asDouble))
             }
 
+            // links, downloads, the clipboard and files stay shut: a skin's script reaches only the skin
             "lockui", "unlockui", "ddesend", "setcurrenttrackrating", "navigateurl", "enqueuefile", "playfile",
+            "navigateurlbrowser", "popmainbrowser", "getmainbrowser", "downloadurl", "downloadmedia", "setdownloadpath",
             "showwindow", "hidewindow", "selectfile", "selectfolder", "selectfilestart", "selectfileend", "setplaylistindex",
             "setclipboardtext", "setmenutransparency", "systemmenu", "windowmenu", "triggeraction", "popupmenu",
             -> {
@@ -475,7 +477,7 @@ class SystemObject(
             }
 
             "isvideo", "isvideofullscreen", "iskeydown", "isminimized", "getcurrenttrackrating",
-            "isappactive", "isloadingskin", "getplaylistcount", "getdownloadpath", "getfilesize",
+            "isappactive", "isloadingskin", "getplaylistcount", "getfilesize",
             -> {
                 int(0)
             }
@@ -486,6 +488,10 @@ class SystemObject(
 
             "hasvideosupport" -> {
                 int(1)
+            }
+
+            "getdownloadpath" -> {
+                str("")
             }
 
             "getextfamily" -> {
