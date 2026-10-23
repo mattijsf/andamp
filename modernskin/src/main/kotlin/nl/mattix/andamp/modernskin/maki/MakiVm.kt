@@ -51,11 +51,20 @@ class Script(
         program.bindings.groupBy { program.methods[it.method].name }
 
     /** Whether a handler here is bound to [target]: a variable holding it, or a class it belongs to. */
-    fun listensTo(target: MakiObject): Boolean =
-        program.bindings.any { b ->
-            cells[b.variable].value.asObject === target ||
-                classMembers[b.variable]?.any { cells[it].value.asObject === target } == true
-        }
+    fun listensTo(target: MakiObject): Boolean = program.bindings.any { b -> binds(b, target) }
+
+    /** Whether a handler here is bound to [target] for one of [events]. */
+    fun listensTo(
+        target: MakiObject,
+        events: Set<String>,
+    ): Boolean = program.bindings.any { b -> program.methods[b.method].name in events && binds(b, target) }
+
+    private fun binds(
+        b: Binding,
+        target: MakiObject,
+    ): Boolean =
+        cells[b.variable].value.asObject === target ||
+            classMembers[b.variable]?.any { cells[it].value.asObject === target } == true
 
     /** The events this script listens to, for a quick check before dispatching: none once it is [disabled]. */
     val events: Set<String> get() = if (disabled) emptySet() else bindingsByEvent.keys

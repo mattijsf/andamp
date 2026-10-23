@@ -31,11 +31,14 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * Menus a script opens from its handlers, through the pointer calls a host makes: shown in reply to
- * a touch and never from a timer, and the press they interrupt gives nothing more.
+ * Which object a touch reaches, and menus a script opens from its handlers through the pointer
+ * calls a host makes: shown in reply to a touch and never from a timer, and the press they
+ * interrupt gives nothing more.
  */
 class SkinMenuTouchTest {
-    // a Play button and a seek bar
+    // a Play button with a label over its middle, a seek bar, a slider hidden under a layer, a
+    // trigger layer under a screen (as a vis trigger lies under the vis), a slider uncovered only
+    // along its left edge, a seek bar under a twin at alpha 1, and a layer a script only animates
     private val files =
         object : SkinFiles {
             private val m =
@@ -43,9 +46,21 @@ class SkinMenuTouchTest {
                     "skin.xml" to
                         """<WinampAbstractionLayer version="0.8"><include file="player.xml"/></WinampAbstractionLayer>""",
                     "player.xml" to
-                        """<container id="main" name="t" default_visible="1"><layout id="normal" w="200" h="100">""" +
+                        """<container id="main" name="t" default_visible="1"><layout id="normal" w="300" h="300">""" +
                         """<button id="play" action="PLAY" x="10" y="10" w="20" h="20"/>""" +
+                        """<text id="label" x="16" y="16" w="8" h="8" default="P"/>""" +
                         """<slider id="seek" action="seek" x="10" y="60" w="150" h="10" orientation="h"/>""" +
+                        """<slider id="hidden" action="eq_band" param="1" x="120" y="120" w="13" h="40" orientation="v"/>""" +
+                        """<layer id="cover" x="110" y="115" w="60" h="50"/>""" +
+                        """<layer id="trigger" x="10" y="120" w="60" h="30"/>""" +
+                        """<layer id="screen" x="10" y="120" w="60" h="30"/>""" +
+                        """<slider id="edge" action="eq_band" param="2" x="200" y="10" w="40" h="40" orientation="v"/>""" +
+                        """<layer id="edge.top" x="200" y="10" w="40" h="12"/>""" +
+                        """<layer id="edge.bottom" x="200" y="38" w="40" h="12"/>""" +
+                        """<layer id="edge.middle" x="204" y="22" w="36" h="16"/>""" +
+                        """<slider id="shown.seek" action="seek" x="200" y="200" w="80" h="10" orientation="h"/>""" +
+                        """<slider id="twin.seek" action="seek" x="200" y="200" w="80" h="10" orientation="h" alpha="1"/>""" +
+                        """<layer id="animated" x="200" y="250" w="40" h="30"/>""" +
                         """</layout></container>""",
                 ).mapValues { it.value.toByteArray() }
 
@@ -150,7 +165,7 @@ class SkinMenuTouchTest {
                 Opcodes.RETURN to 0,
             ).mapIndexed { i, (op, arg) -> Op(op, arg, if (op == Opcodes.CALL && arg != popAt) 0 else -1, i) }
         val bindings =
-            menuOn.map { event -> Binding(TARGET_VAR, method(TARGET_CLASS, event), if (event == "ontimer") 2 else 0) } +
+            menuOn.map { event -> Binding(TARGET_VAR, method(TARGET_CLASS, event), if (event in NO_ARGS) 2 else 0) } +
                 Binding(TARGET_VAR, method(TARGET_CLASS, "onenterarea"), 7) +
                 Binding(TARGET_VAR, method(TARGET_CLASS, "onleavearea"), 12)
         val program =
@@ -248,7 +263,77 @@ class SkinMenuTouchTest {
         assertTrue("no seek happened: ${player.positionMs}", player.positionMs < 1_000)
     }
 
+    @Test
+    fun `a slider hidden under a layer takes no touch, so the layer's menu opens`() {
+        val cover = checkNotNull(rt.mainLayout?.findObject("cover"))
+        val hidden = checkNotNull(rt.mainLayout?.findObject("hidden"))
+        script(cover, "onrightbuttonup")
+        rt.touchSlop = 24
+
+        for (y in hidden.rect.top until hidden.rect.bottom) {
+            for (x in hidden.rect.left until hidden.rect.right) assertEquals(cover, rt.touchTarget(x, y))
+        }
+        val x = hidden.rect.left + 5
+        val y = hidden.rect.top + 5
+        rt.pointerDown(x, y)
+        rt.longPress(x, y)
+        assertEquals(1, shown.size)
+    }
+
+    @Test
+    fun `a script's layer under another layer still takes the touch`() {
+        val trigger = checkNotNull(rt.mainLayout?.findObject("trigger"))
+        val screen = checkNotNull(rt.mainLayout?.findObject("screen"))
+        script(trigger, "onrightbuttonup")
+        rt.touchSlop = 24
+        assertEquals(screen, rt.hitTest(40, 135))
+
+        assertEquals(trigger, rt.touchTarget(40, 135))
+        rt.pointerDown(40, 135)
+        rt.longPress(40, 135)
+        assertEquals(1, shown.size)
+    }
+
+    @Test
+    fun `a slider uncovered only along the edge facing the finger still takes it`() {
+        val edge = checkNotNull(rt.mainLayout?.findObject("edge"))
+        rt.touchSlop = 24
+
+        assertEquals(edge, rt.touchTarget(195, 30))
+    }
+
+    @Test
+    fun `a seek bar's twin at alpha 1 takes touches beside the bar`() {
+        val twin = checkNotNull(rt.mainLayout?.findObject("twin.seek"))
+        rt.touchSlop = 24
+
+        assertEquals(twin, rt.touchTarget(240, 197))
+        assertEquals(twin, rt.touchTarget(240, 213))
+    }
+
+    @Test
+    fun `a layer a script only animates takes no touch beside it`() {
+        val animated = checkNotNull(rt.mainLayout?.findObject("animated"))
+        script(animated, "ontargetreached")
+        rt.touchSlop = 24
+
+        assertTrue(rt.touchTarget(195, 265) !== animated)
+    }
+
+    @Test
+    fun `a label over the middle of a button still lets the button take the tap`() {
+        val label = checkNotNull(rt.mainLayout?.findObject("label"))
+        assertEquals(label, rt.hitTest(20, 20))
+
+        assertEquals(button, rt.touchTarget(20, 20))
+        rt.pointerDown(20, 20)
+        rt.pointerUp(20, 20)
+        assertEquals(Player.Status.PLAYING, player.status)
+    }
+
     private companion object {
+        /** Events whose handlers take no x and y. */
+        val NO_ARGS = setOf("ontimer", "ontargetreached")
         const val RECORDER = "recorder"
         const val TARGET_CLASS = 0
         const val MENU_CLASS = 1
