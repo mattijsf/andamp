@@ -22,6 +22,8 @@ class MenuLabelConventionTest {
         val vm = testViewModel()
         return listOf(
             mainMenu(vm, {}, {}, {}, {}),
+            // led by a skin's menu, as a long press on a modern skin opens it
+            mainMenu(vm, {}, {}, {}, {}, onSkinMenu = {}),
             visualizationMenu(vm),
             vm.eqOps.presetsMenu(),
         )
@@ -37,6 +39,13 @@ class MenuLabelConventionTest {
                 assertTrue("submenu '$label' has no ellipsis", !label.endsWith("..."))
             }
         }
+    }
+
+    @Test
+    fun `the skin menu entry opens a menu, not a dialog, so it has no ellipsis`() {
+        val entry = mainMenu(testViewModel(), {}, {}, {}, {}, onSkinMenu = {}).items.first() as AmpMenuItem.Action
+
+        assertTrue("'${entry.label}' has no ellipsis", !entry.label.endsWith("..."))
     }
 
     @Test
