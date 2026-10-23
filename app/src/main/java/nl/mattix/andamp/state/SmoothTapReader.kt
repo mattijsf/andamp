@@ -28,14 +28,24 @@ class SmoothTapReader(
     private var lastWritten = -1L
     private var stalledMs = 0L
 
-    fun read(out: FloatArray): Boolean {
+    /** Reads the window one frame after the last read; see the other overload. */
+    fun read(out: FloatArray): Boolean = read(out, frameMs)
+
+    /**
+     * Fills [out] with the window heard [elapsedMs] after the last read. A reader stepped at an
+     * uneven pace passes the time that really went by, so its window stays on the audio.
+     */
+    fun read(
+        out: FloatArray,
+        elapsedMs: Long,
+    ): Boolean {
         val rate = tap.sampleRateHz
         if (rate <= 0) return false
         // a paused or stopped player stops writing; after STALL_SILENCE_MS without new samples
         // the read fails, so a visualizer is not fed the last buffered audio in a loop
         val written = tap.writtenSamples
         if (written == lastWritten) {
-            stalledMs += frameMs
+            stalledMs += elapsedMs
             if (stalledMs >= STALL_SILENCE_MS) return false
         } else {
             lastWritten = written
@@ -46,7 +56,7 @@ class SmoothTapReader(
         if (readPos < 0 || abs(target - readPos) > rate) {
             readPos = target // start or seek: snap
         } else {
-            readPos += rate * frameMs / 1000 // advance in real time
+            readPos += rate * elapsedMs / 1000 // advance in real time
             readPos += ((target - readPos) * DRIFT_CORRECTION).toLong() // rate-lock to the source
         }
         return when {
