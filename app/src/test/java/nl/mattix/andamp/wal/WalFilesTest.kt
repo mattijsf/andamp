@@ -71,6 +71,22 @@ class WalFilesTest {
     }
 
     @Test
+    fun `a path into the skin's folder by name reads the skin`() {
+        // as Big Bento names its notifier script and its window pictures
+        val big = wal("Big Bento.wal", "skin.xml" to "<b/>", "scripts/notifier.maki" to "maki")
+        val bento = wal("Bento.wal", "skin.xml" to "<a/>")
+
+        val inFolder = WalFiles.open(big, listOf(bento, big))
+        assertEquals("maki", inFolder.read("@SKINSPATH@\\Big Bento\\scripts\\notifier.maki")?.decodeToString())
+        assertEquals("maki", inFolder.read("../Big Bento/scripts/notifier.maki")?.decodeToString())
+
+        // in the library, under its hash, by its name
+        val hashed = wal("9e07.wal", "scripts/notifier.maki" to "maki")
+        val inLibrary = WalFiles.open(hashed, mapOf("Big Bento" to hashed))
+        assertEquals("maki", inLibrary.read("@SKINSPATH@\\Big Bento\\scripts\\notifier.maki")?.decodeToString())
+    }
+
+    @Test
     fun `a sibling is opened when a path first names it, not before`() {
         val bento = wal("Bento.wal", "skin.xml" to "<a/>")
         // not a zip yet when the skin's files are made: opened then, it would read as missing
