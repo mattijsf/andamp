@@ -91,6 +91,9 @@ internal class WalEngine(
     /** The start has been reported, or the engine closed before it was: nothing more is reported. */
     private val startDecided = AtomicBoolean(false)
 
+    /** [close] was called: a start report or a break still to come is not passed on. */
+    private val closed = AtomicBoolean(false)
+
     // what [start] was given, read on the engine thread and, for a load that runs too long, on main
     @Volatile
     private var onStart: (Throwable?) -> Unit = {}
@@ -139,7 +142,8 @@ internal class WalEngine(
      * made, and a load that takes longer than [budgetMs]. A load still running when that time is up
      * is reported from the main thread, and what it loads afterward is dropped; every other report
      * comes from the engine thread. After a failure the engine thread runs on with no skin and its
-     * tasks do nothing. A start still running at [close] reports nothing.
+     * tasks do nothing. A start that has not reported when [close] is called reports nothing, unless
+     * its report is already being made on the engine thread.
      */
     fun start(
         budgetMs: Long = WalBuild.BUDGET_MS,
@@ -155,7 +159,7 @@ internal class WalEngine(
             val made = runCatching { build().also { requireShowable(it, box) } }
             val overran = (System.nanoTime() - t0) / NANOS_PER_MS > budgetMs
             // the time ran out (and was reported) or the engine closed while it loaded
-            if (!decideStart()) return@post
+            if (!decideStart() || closed.get()) return@post
             val failure =
                 made.exceptionOrNull()
                     ?: overrunFailure().takeIf { overran }
@@ -194,6 +198,8 @@ internal class WalEngine(
             Log.w(WalHost.TAG, "start", failure)
             host.log("start failed: $failure")
         }
+        // closed while the first frame was made
+        if (closed.get()) return
         runCatching { onStart(failure) }.onFailure { e -> Log.w(WalHost.TAG, "start report", e) }
     }
 
@@ -214,6 +220,15 @@ internal class WalEngine(
                 if (publish) publish()
             }
         }
+    }
+
+    /**
+     * Runs [task] on the engine thread once the work posted before it is done, with the runtime, or
+     * with null when the skin is not on (it has not loaded yet, or did not start); publishes nothing.
+     * For work a caller waits on either way.
+     */
+    fun postAlways(task: (SkinRuntime?) -> Unit) {
+        handler.post { guarded("engine") { task(rt) } }
     }
 
     /**
@@ -300,10 +315,12 @@ internal class WalEngine(
     }
 
     /**
-     * Ends the engine thread once the work already posted is done; a menu waiting now closes first,
-     * and a start still running reports nothing.
+     * Ends the engine thread once the work already posted is done; a menu waiting now closes first.
+     * A start still running reports nothing (see [start]), and failures in that work call no
+     * [onBroken].
      */
     fun close() {
+        closed.set(true)
         if (startDecided.compareAndSet(false, true)) mainHandler.removeCallbacks(overrun)
         host.menus.close()
         thread.quitSafely()
@@ -334,7 +351,7 @@ internal class WalEngine(
             Log.w(WalHost.TAG, what, error)
             host.log("$what: $error")
         }
-        if (failures >= MAX_FAILURES && !broken) {
+        if (failures >= MAX_FAILURES && !broken && !closed.get()) {
             broken = true
             runCatching { onBroken?.invoke() }.onFailure { e -> Log.w(WalHost.TAG, "onBroken", e) }
         }

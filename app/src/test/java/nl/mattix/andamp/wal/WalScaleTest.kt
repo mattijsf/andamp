@@ -39,6 +39,15 @@ class WalScaleTest {
     }
 
     @Test
+    fun `a box not laid out yet turns no skin down`() {
+        // a Winamp-sized skin, before the player's box has a height or a width
+        assertNull(WalScale.unfit(275 to 116, 275 to 116, baseW = 275, box = IntSize(0, 480)))
+        assertNull(WalScale.unfit(275 to 116, 275 to 116, baseW = 275, box = IntSize(1080, 0)))
+        assertNull(WalScale.unfit(275 to 116, 275 to 116, baseW = 275, box = IntSize.Zero))
+        assertNotNull("still too large without a box", WalScale.unfit(5000 to 116, 5000 to 116, baseW = 0, box = IntSize.Zero))
+    }
+
+    @Test
     fun `a main window with no size yet shows`() {
         assertNull(WalScale.unfit(0 to 0, 0 to 0, baseW = 0, box = phone))
     }

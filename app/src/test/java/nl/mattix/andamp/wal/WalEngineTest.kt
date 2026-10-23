@@ -14,6 +14,7 @@ import nl.mattix.andamp.modernskin.skin.SkinMenu
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -73,12 +74,17 @@ class WalEngineTest {
     private inner class Run(
         label: String,
         val skin: SkinFiles = files,
+        onFrame: () -> Unit = {},
     ) {
         // a closed engine's thread may still be ending when the next test starts one
         val name = "$label-${runs.incrementAndGet()}"
         val host = WalHost(skin, app.cacheDir)
         val frames = AtomicInteger()
-        val engine = WalEngine(name, host) { frames.incrementAndGet() }.also { engines += it }
+        val engine =
+            WalEngine(name, host) {
+                frames.incrementAndGet()
+                onFrame()
+            }.also { engines += it }
         val report = CompletableFuture<Throwable?>()
 
         fun load() = SkinRuntime(skin, host, player).apply { load() }
@@ -137,9 +143,11 @@ class WalEngineTest {
         return got.get(5, TimeUnit.SECONDS)
     }
 
+    private fun threadOf(run: Run): Thread = Thread.getAllStackTraces().keys.single { it.name == "wal-${run.name}" }
+
     /** The engine thread of [run] is still there a moment after its failure. */
     private fun assertRunsOn(run: Run) {
-        val thread = Thread.getAllStackTraces().keys.single { it.name == "wal-${run.name}" }
+        val thread = threadOf(run)
         thread.join(200)
         assertTrue("the engine thread runs on", thread.isAlive)
     }
@@ -237,6 +245,63 @@ class WalEngineTest {
         assertTrue(run.failure() is TimeoutException)
         assertRunsOn(run)
         assertNull(run.engine.frame)
+    }
+
+    @Test(timeout = 20_000)
+    fun `a start that ends while the engine closes reports nothing`() {
+        val drawing = CountDownLatch(1)
+        val closedNow = CountDownLatch(1)
+        // the first frame is being handed over when the engine closes
+        val run =
+            Run("closing", onFrame = {
+                drawing.countDown()
+                closedNow.await()
+            })
+        run.start()
+        assertTrue(drawing.await(5, TimeUnit.SECONDS))
+        val thread = threadOf(run)
+
+        run.engine.close()
+        closedNow.countDown()
+
+        thread.join(5_000)
+        assertFalse("the engine thread ended", thread.isAlive)
+        assertFalse("no start report after close", run.report.isDone)
+    }
+
+    @Test(timeout = 20_000)
+    fun `work that fails after close breaks nothing`() {
+        val broken = AtomicInteger()
+        engine.onBroken = { broken.incrementAndGet() }
+        val holding = CountDownLatch(1)
+        engine.post { holding.await() }
+        repeat(WalEngine.MAX_FAILURES) { engine.post { error("script error") } }
+        val thread = threadOf(main)
+
+        engine.close()
+        holding.countDown()
+
+        thread.join(5_000)
+        assertFalse("the engine thread ended", thread.isAlive)
+        assertEquals(0, broken.get())
+    }
+
+    @Test(timeout = 20_000)
+    fun `postAlways runs also when the skin did not start`() {
+        val run = Run("unstarted")
+        run.start { error("not a skin") }
+        run.failure()
+
+        val skipped = CompletableFuture<Unit>()
+        run.engine.post { skipped.complete(Unit) }
+        val ran = CompletableFuture<SkinRuntime?>()
+        run.engine.postAlways { ran.complete(it) }
+
+        assertNull("it runs, with no skin", ran.get(5, TimeUnit.SECONDS))
+        assertFalse("post runs nothing with no skin", skipped.isDone)
+        val withSkin = CompletableFuture<SkinRuntime?>()
+        engine.postAlways { withSkin.complete(it) }
+        assertEquals("with a skin on, it gets that skin", 200 to 100, withSkin.get(5, TimeUnit.SECONDS)?.mainLayout?.size)
     }
 
     @Test(timeout = 20_000)

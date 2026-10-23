@@ -55,6 +55,7 @@ import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinMenu
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.modernskin.skin.ZipSkinFiles
+import nl.mattix.andamp.wal.WalBuild
 import nl.mattix.andamp.wal.WalEngine
 import nl.mattix.andamp.wal.WalFiles
 import nl.mattix.andamp.wal.WalFrame
@@ -320,7 +321,8 @@ private fun SkinList(
  * first draws), stopped 10 s, playing 10 s, stopped 10 s. The engine thread records each tick's
  * time, the draw list's time when one was made, the tick's script steps and timer events; the main
  * thread records the time to draw each new frame, and that frame's whole cost (the engine's build
- * plus the drawing). Writes files/probe/<skin>.json and logs "probe done".
+ * plus the drawing). Writes files/probe/<skin>.json and logs "probe done", or logs "probe failed"
+ * when the skin does not start.
  */
 private class Probe(
     val skin: String,
@@ -594,13 +596,11 @@ private fun ModernSkinScreen(
             val openStart = System.nanoTime()
             WalFiles.open(file, siblings, base).also { probe?.openMs = (System.nanoTime() - openStart) / 1e6 }
         }
-    // a check has nobody to pick from a menu: its menus answer 0 at once, as the JVM references do.
-    // Outside a check the library and the visualizer are closed, as in the player
-    val host =
-        remember {
-            val windowOpen = if (check == null) WalPrepare.windowOpen() else WalHost.LIBRARY_CLOSED
-            WalHost(files, context.cacheDir, windowOpen).also { it.menus.unattended = check != null }
-        }
+    // outside a check the library and the visualizer are closed, as in the player; the probe's warm
+    // load answers the same
+    val windowOpen = remember { if (check == null) WalPrepare.windowOpen() else WalHost.LIBRARY_CLOSED }
+    // a check has nobody to pick from a menu: its menus answer 0 at once, as the JVM references do
+    val host = remember { WalHost(files, context.cacheDir, windowOpen).also { it.menus.unattended = check != null } }
     val player = remember { demoPlayer(check) }
     // what the skin kept from last time, by file name; a check or a probe starts clean
     val settings = remember { WalSettings(context).takeIf { check == null && probe == null } }
@@ -610,6 +610,8 @@ private fun ModernSkinScreen(
     var frameCount by remember { mutableIntStateOf(0) }
     // why the skin is not on: it did not start, or it stopped working
     var failure by remember { mutableStateOf<String?>(null) }
+    // what the start reported: null when the skin is on, else why it is not
+    val started = remember { kotlinx.coroutines.CompletableDeferred<Throwable?>() }
     val main = remember { android.os.Handler(android.os.Looper.getMainLooper()) }
     val engine = remember { WalEngine(file.nameWithoutExtension, host) { main.post { frameCount++ } } }
     androidx.compose.runtime.DisposableEffect(engine) { onDispose { engine.close() } }
@@ -631,11 +633,15 @@ private fun ModernSkinScreen(
                 .let { IntSize(it.widthPixels, it.heightPixels) }
                 .takeIf { check == null }
         engine.start(
+            // a check or a probe measures the load, however long it takes
+            budgetMs = if (check != null || probe != null) MEASURE_BUDGET_MS else WalBuild.BUDGET_MS,
             box = screen,
             onStart = { e ->
+                started.complete(e)
                 if (e != null) {
-                    // said at once, so a check run stops waiting
+                    // said at once, so a check or a probe run stops waiting
                     if (check != null) Log.e(WalHost.TAG, "check failed", e)
+                    if (probe != null) Log.e(WalHost.TAG, "probe failed: ${file.name}", e)
                     main.post { failure = "did not open: ${e.message ?: e}" }
                 }
             },
@@ -668,9 +674,13 @@ private fun ModernSkinScreen(
         androidx.compose.runtime.DisposableEffect(engine, owner) {
             val save = {
                 CountDownLatch(1).also { done ->
-                    engine.post { rt ->
-                        settings.save(file.name, rt)
-                        done.countDown()
+                    // done also for a skin that did not start, which has nothing to keep
+                    engine.postAlways { rt ->
+                        try {
+                            rt?.let { settings.save(file.name, it) }
+                        } finally {
+                            done.countDown()
+                        }
                     }
                 }
             }
@@ -704,11 +714,13 @@ private fun ModernSkinScreen(
     if (probe != null) {
         LaunchedEffect(engine) {
             // the same skin loaded again on the engine thread, with fresh files and caches: the load
-            // once the engine's code is warm. The phases start when both loads are done
+            // once the engine's code is warm. The phases start when both loads are done; a skin that
+            // did not start has none (its failure is logged)
+            if (started.await() != null) return@LaunchedEffect
             val loaded = kotlinx.coroutines.CompletableDeferred<Unit>()
             engine.post(publish = false) {
                 val warmFiles = WalFiles.open(file, siblings, base)
-                val again = SkinRuntime(warmFiles, WalHost(warmFiles, context.cacheDir, WalPrepare.windowOpen()), FakePlayer())
+                val again = SkinRuntime(warmFiles, WalHost(warmFiles, context.cacheDir, windowOpen), FakePlayer())
                 prepare(again, file, check)
                 val t0 = System.nanoTime()
                 runCatching { again.load() }
@@ -935,6 +947,12 @@ private fun demoPlayer(check: Check?): FakePlayer =
 
 /** How long a press must last to count as a long press (Winamp's right click). */
 private const val LONG_PRESS_MS = 600
+
+/**
+ * How long a check or a probe lets a skin load. They measure, and a debug build can take several
+ * seconds over a large skin's first load, past the player's [WalBuild.BUDGET_MS].
+ */
+private const val MEASURE_BUDGET_MS = 60_000L
 
 /**
  * What a runtime for [file] is given before it loads, the same for every load of it: in use what the
