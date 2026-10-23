@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package nl.mattix.andamp.modernskin.maki
 
+import java.util.BitSet
 import java.util.IdentityHashMap
 
 /** What the VM needs from the player: new objects and a log. */
@@ -67,6 +68,134 @@ class Script(
     ): Boolean =
         cells[b.variable].value.asObject === target ||
             classMembers[b.variable]?.any { cells[it].value.asObject === target } == true
+
+    /**
+     * Whether a right-click handler here bound to [target] can reach a popup menu: one for
+     * onRightButtonDown or onRightButtonUp, and also onRightClick when [isButton]. Read from the
+     * bytecode (see [reachFrom]); no script runs.
+     */
+    fun rightClickMenu(
+        target: MakiObject,
+        isButton: Boolean,
+    ): Boolean = reachesMenu(target, rightClickEvents(isButton))
+
+    /** Whether a handler here for one of [events] bound to [target] can reach a popup menu, read from the bytecode. */
+    fun reachesMenu(
+        target: MakiObject,
+        events: Set<String>,
+    ): Boolean = !disabled && handlerStarts(target, events).any { reach(it).popsMenu }
+
+    /**
+     * The events the handlers here for [events] bound to [target] fire by calling them:
+     * `x.onLeftClick()`, or a Button's `x.leftClick()`.
+     */
+    fun eventsCalled(
+        target: MakiObject,
+        events: Set<String>,
+    ): Set<String> = if (disabled) emptySet() else handlerStarts(target, events).flatMapTo(HashSet()) { reach(it).calls }
+
+    /** Where the handlers here for [events] bound to [target] start in the code. */
+    private fun handlerStarts(
+        target: MakiObject,
+        events: Set<String>,
+    ): List<Int> = events.flatMap { e -> bindingsByEvent[e].orEmpty().filter { binds(it, target) }.map { it.codeIndex } }
+
+    /** What a handler's code can reach: a popup menu, and the events it fires by calling them. */
+    private class Reach(
+        val popsMenu: Boolean,
+        val calls: Set<String>,
+    )
+
+    /** The [Reach] from each handler start, worked out the first time it is asked for. */
+    private val reaches = HashMap<Int, Reach>()
+
+    private fun reach(start: Int): Reach = reaches.getOrPut(start) { reachFrom(start) }
+
+    /**
+     * Instructions [reachFrom] may still read in this script: in all, no more than the script may
+     * run in one frame. Once they are used up, a handler not read yet offers no menu.
+     */
+    internal var walkBudget = STEPS_PER_FRAME
+
+    /** [walkBudget] ran out, and the log said so. */
+    private var walkCut = false
+
+    /** The instructions the walk running now has reached; each walk clears what it marked. */
+    private var reached: BitSet? = null
+
+    /**
+     * Walks every instruction a run from [start] could reach, without running any: the next one,
+     * the targets of jumps, and a global call's function and the instruction it returns to, each
+     * path up to its RETURN. A popup menu counts wherever it is reached, under any condition. A
+     * walk that [walkBudget] cuts short keeps what it found.
+     */
+    private fun reachFrom(start: Int): Reach {
+        val code = program.code
+        val seen = reached ?: BitSet(code.size).also { reached = it }
+        // every instruction reached, in the order it is read
+        val order = ArrayList<Int>()
+        var popsMenu = false
+        val calls = HashSet<String>()
+
+        fun visit(ip: Int) {
+            if (ip in code.indices && !seen[ip]) {
+                seen.set(ip)
+                order += ip
+            }
+        }
+        visit(start)
+        var next = 0
+        while (next < order.size && spendWalk()) {
+            val ip = order[next++]
+            val op = code[ip]
+            when (op.opcode) {
+                Opcodes.RETURN -> {
+                    Unit
+                }
+
+                Opcodes.JUMP -> {
+                    visit(op.arg)
+                }
+
+                Opcodes.JUMP_IF, Opcodes.JUMP_IF_NOT, Opcodes.CALL_GLOBAL -> {
+                    visit(op.arg)
+                    visit(ip + 1)
+                }
+
+                Opcodes.CALL, Opcodes.CALL2 -> {
+                    val name = program.methods.getOrNull(op.arg)?.name ?: ""
+                    if (name in MENU_CALLS) popsMenu = true
+                    when {
+                        name.startsWith("on") -> calls += name
+
+                        // a Button's leftClick() fires onLeftClick; its rightClick() fires
+                        // onRightClick, which a right click on a Button counts already
+                        name == "leftclick" -> calls += "onleftclick"
+                    }
+                    visit(ip + 1)
+                }
+
+                else -> {
+                    visit(ip + 1)
+                }
+            }
+        }
+        order.forEach(seen::clear)
+        return Reach(popsMenu, calls)
+    }
+
+    /** Takes one instruction from [walkBudget]; false when none is left, which the log says once. */
+    private fun spendWalk(): Boolean {
+        if (walkBudget > 0) {
+            walkBudget--
+            return true
+        }
+        if (!walkCut) {
+            walkCut = true
+            host.log("${program.id}: right-click menus read up to the limit, the rest not offered")
+        }
+        return false
+    }
 
     /** The events this script listens to, for a quick check before dispatching: none once it is [disabled]. */
     val events: Set<String> get() = if (disabled) emptySet() else bindingsByEvent.keys
@@ -190,10 +319,18 @@ class Script(
         return Value.Null
     }
 
-    private companion object {
-        const val STEPS_PER_FRAME = 4_000_000
-        const val MAX_FAILURES = 20
-        const val MAX_MEMBERS = 65_536
+    companion object {
+        private const val STEPS_PER_FRAME = 4_000_000
+        private const val MAX_FAILURES = 20
+        private const val MAX_MEMBERS = 65_536
+
+        /** The PopupMenu calls that show a menu. */
+        private val MENU_CALLS = setOf("popatmouse", "popatxy")
+        private val RIGHT_BUTTON = setOf("onrightbuttondown", "onrightbuttonup")
+        private val RIGHT_BUTTON_AND_CLICK = RIGHT_BUTTON + "onrightclick"
+
+        /** The events a right click fires: the right button going down and up, and on a Button also onRightClick. */
+        fun rightClickEvents(isButton: Boolean): Set<String> = if (isButton) RIGHT_BUTTON_AND_CLICK else RIGHT_BUTTON
     }
 }
 

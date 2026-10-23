@@ -504,7 +504,7 @@ class ConfigAttributeObj(
             "setdata" -> {
                 Value.Null.also {
                     data = args[0].asString
-                    rt.storedSettings[this.name] = data
+                    if (rt.storedSettings.put(this.name, data) != data) rt.settingsChanged()
                     if (dispatching < MAX_NESTED) {
                         dispatching++
                         try {
