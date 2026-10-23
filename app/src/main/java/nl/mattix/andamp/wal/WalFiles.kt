@@ -15,25 +15,37 @@ internal object WalFiles {
      * The files of [skin]: the skin itself, the other skins in [siblings] it names by folder
      * (Bento reads "Big Bento"), each opened the first time a path names it, and [base], the
      * default element set, behind them.
+     *
+     * [siblings] maps the names a path may use for a skin to its file: in the library, each skin's
+     * name and its skininfo name, since the files there are named by hash. Names are compared as
+     * [folderName] gives them. A file under two names is opened once.
      */
     fun open(
         skin: File,
-        siblings: List<File>,
+        siblings: Map<String, File>,
         base: SkinFiles = AndampDefaultSet,
     ): SkinFiles {
-        val byName = siblings.filter { it != skin }.associateBy { folderName(it.nameWithoutExtension) }
-        val opened = HashMap<String, SkinFiles?>()
+        val byName = siblings.filterValues { it != skin }.mapKeys { folderName(it.key) }
+        val opened = HashMap<File, SkinFiles?>()
         // the engine and the screen both read files: the map is guarded, and an archive opens
         // outside the lock, so one thread never waits on the other's reading. Two that open the
         // same sibling at once keep the first.
         val sibling = sibling@{ name: String ->
-            synchronized(opened) { if (name in opened) return@sibling opened[name] }
+            val file = byName[name] ?: return@sibling null
+            synchronized(opened) { if (file in opened) return@sibling opened[file] }
             // a sibling that does not open is read as missing, and not tried again
-            val made = byName[name]?.let { runCatching { ZipSkinFiles(it) }.getOrNull() }
-            synchronized(opened) { if (name in opened) opened[name] else made.also { opened[name] = it } }
+            val made = runCatching { ZipSkinFiles(file) }.getOrNull()
+            synchronized(opened) { if (file in opened) opened[file] else made.also { opened[file] = it } }
         }
         return LayeredSkinFiles(SkinsFolderFiles(ZipSkinFiles(skin), sibling), base)
     }
+
+    /** The files of [skin], with the other skins of a folder, [siblings], each named by its file name. */
+    fun open(
+        skin: File,
+        siblings: List<File>,
+        base: SkinFiles = AndampDefaultSet,
+    ): SkinFiles = open(skin, siblings.associateBy { it.nameWithoutExtension }, base)
 
     /** How a path names a sibling: its folder name, lowercased, without spaces. */
     fun folderName(name: String): String = name.replace(" ", "").lowercase()

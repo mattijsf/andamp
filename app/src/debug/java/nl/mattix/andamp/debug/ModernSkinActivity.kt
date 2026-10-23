@@ -59,6 +59,7 @@ import nl.mattix.andamp.wal.WalEngine
 import nl.mattix.andamp.wal.WalFiles
 import nl.mattix.andamp.wal.WalFrame
 import nl.mattix.andamp.wal.WalHost
+import nl.mattix.andamp.wal.WalPrepare
 import nl.mattix.andamp.wal.WalScale
 import nl.mattix.andamp.wal.WalSettings
 import nl.mattix.andamp.wal.drawWalStack
@@ -460,8 +461,8 @@ private class SlideStats {
 }
 
 /**
- * Makes the runtime for [file] and loads it, on the engine thread: what it kept last time, the
- * debug defaults, and in a check the reference setup.
+ * Makes the runtime for [file] and loads it, on the engine thread: what it kept last time, and in a
+ * check the reference setup. A load that throws is the engine's start failure.
  */
 @Suppress("LongParameterList") // the skin, its files, what plays, what it kept, the check and the probe
 private fun loadRuntime(
@@ -482,10 +483,10 @@ private fun loadRuntime(
             it.viewportW = CHECK_VIEWPORT_W
             it.viewportH = CHECK_VIEWPORT_H
         }
-        settings?.restoreBeforeLoad(file.name, it)
         prepare(it, file, check)
+        settings?.restoreBeforeLoad(file.name, it)
         val loadStart = System.nanoTime()
-        runCatching { it.load() }.onFailure { e -> host.log("load failed: $e") }
+        it.load()
         probe?.loadMs = (System.nanoTime() - loadStart) / 1e6
         probe?.loadSteps = it.scriptSteps
         // the color theme picked last time for this skin, as Winamp keeps it per skin
@@ -593,8 +594,13 @@ private fun ModernSkinScreen(
             val openStart = System.nanoTime()
             WalFiles.open(file, siblings, base).also { probe?.openMs = (System.nanoTime() - openStart) / 1e6 }
         }
-    // a check has nobody to pick from a menu: its menus answer 0 at once, as the JVM references do
-    val host = remember { WalHost(files, context.cacheDir).also { it.menus.unattended = check != null } }
+    // a check has nobody to pick from a menu: its menus answer 0 at once, as the JVM references do.
+    // Outside a check the library and the visualizer are closed, as in the player
+    val host =
+        remember {
+            val windowOpen = if (check == null) WalPrepare.windowOpen() else WalHost.LIBRARY_CLOSED
+            WalHost(files, context.cacheDir, windowOpen).also { it.menus.unattended = check != null }
+        }
     val player = remember { demoPlayer(check) }
     // what the skin kept from last time, by file name; a check or a probe starts clean
     val settings = remember { WalSettings(context).takeIf { check == null && probe == null } }
@@ -602,6 +608,8 @@ private fun ModernSkinScreen(
     // Set before the skin loads, so the timers its scripts start on loading run on it too.
     val checkClock = remember { longArrayOf(CHECK_CLOCK_START) }
     var frameCount by remember { mutableIntStateOf(0) }
+    // why the skin is not on: it did not start, or it stopped working
+    var failure by remember { mutableStateOf<String?>(null) }
     val main = remember { android.os.Handler(android.os.Looper.getMainLooper()) }
     val engine = remember { WalEngine(file.nameWithoutExtension, host) { main.post { frameCount++ } } }
     androidx.compose.runtime.DisposableEffect(engine) { onDispose { engine.close() } }
@@ -616,7 +624,22 @@ private fun ModernSkinScreen(
                 settings.save(file.name, rt)
             }
         }
-        engine.start {
+        engine.onBroken = { main.post { failure = "stopped working" } }
+        // a check renders at 1x, whatever the screen; in use the skin must fit the screen
+        val screen =
+            context.resources.displayMetrics
+                .let { IntSize(it.widthPixels, it.heightPixels) }
+                .takeIf { check == null }
+        engine.start(
+            box = screen,
+            onStart = { e ->
+                if (e != null) {
+                    // said at once, so a check run stops waiting
+                    if (check != null) Log.e(WalHost.TAG, "check failed", e)
+                    main.post { failure = "did not open: ${e.message ?: e}" }
+                }
+            },
+        ) {
             previousSave?.await(1, TimeUnit.SECONDS)
             loadRuntime(file, files, host, player, settings, check, checkClock, probe).also { keptTheme[0] = it.currentGammaSet }
         }
@@ -685,7 +708,7 @@ private fun ModernSkinScreen(
             val loaded = kotlinx.coroutines.CompletableDeferred<Unit>()
             engine.post(publish = false) {
                 val warmFiles = WalFiles.open(file, siblings, base)
-                val again = SkinRuntime(warmFiles, WalHost(warmFiles, context.cacheDir), FakePlayer())
+                val again = SkinRuntime(warmFiles, WalHost(warmFiles, context.cacheDir, WalPrepare.windowOpen()), FakePlayer())
                 prepare(again, file, check)
                 val t0 = System.nanoTime()
                 runCatching { again.load() }
@@ -724,8 +747,9 @@ private fun ModernSkinScreen(
     androidx.activity.compose.BackHandler(enabled = shown?.windowOpen == true) { engine.post { it.closeTopWindow() } }
     Column(Modifier.fillMaxSize().background(Color(0xFF202020)).safeDrawingPadding()) {
         val mainSize = shown?.mainSize
+        failure?.let { BasicText(it, style = TextStyle(color = Color(0xFFFF8080))) }
         if (shown == null) {
-            BasicText("loading", style = TextStyle(color = Color.White))
+            if (failure == null) BasicText("loading", style = TextStyle(color = Color.White))
         } else if (mainSize == null) {
             BasicText("no main layout", style = TextStyle(color = Color.White))
         } else {
@@ -912,22 +936,21 @@ private fun demoPlayer(check: Check?): FakePlayer =
 /** How long a press must last to count as a long press (Winamp's right click). */
 private const val LONG_PRESS_MS = 600
 
-/** What a runtime for [file] is given before it loads, the same for every load of it. */
+/**
+ * What a runtime for [file] is given before it loads, the same for every load of it: in use what the
+ * player gives a skin ([WalPrepare]), named by its file; in a check the reference VM's setup.
+ */
 private fun prepare(
     rt: SkinRuntime,
     file: File,
     check: Check?,
 ) {
+    if (check == null) {
+        WalPrepare.prepare(rt, file.nameWithoutExtension)
+        return
+    }
     // Winamp's getSkinName() is the skin's folder name: here the file's
     rt.skinName = file.nameWithoutExtension
-    // the reference VM has Winamp's library inside the skin; the phone's library is a separate screen
-    rt.haveLibrary = check != null
-    // Winamp Modern ships its drawer animation off; start with it on, unless the skin kept a choice
-    rt.storedSettings.putIfAbsent("Animate Config Drawer", "1")
-    if (check == null) {
-        // Bento opens the component it remembers, "Media Library" at first; Andamp's library is
-        // a separate screen, so start Bento on its video tab instead (its playlist tab would
-        // pull the playlist out of the top-right pane and collapse that pane)
-        rt.privateStrings.putIfAbsent("${file.nameWithoutExtension.lowercase()}/component", "Video")
-    }
+    // the reference VM has Winamp's library inside the skin, and nothing outside it answers host actions
+    rt.haveLibrary = true
 }

@@ -43,13 +43,17 @@ import java.security.MessageDigest
  * to the main thread, and the measuring paint to the engine thread.
  *
  * [files] are the skin's files as [WalFiles.open] gives them; the pictures Wasabi generates
- * (`$solid`) are answered here.
+ * (`$solid`) are answered here. [windowOpen] answers whether a window the app shows in place of
+ * the skin's is open, by kind ("ml" the library, "avs" the visualizer); null leaves it to the skin.
  */
 internal class WalHost(
     files: SkinFiles,
     private val cacheDir: File,
+    windowOpen: (kind: String) -> Boolean? = LIBRARY_CLOSED,
 ) : SkinHost {
     private val files = WithGeneratedImages(files)
+
+    private val openAnswer = windowOpen
 
     /** The last log lines, newest last. */
     private val recentLog = ArrayDeque<String>()
@@ -361,9 +365,7 @@ internal class WalHost(
     /** The last log lines, newest last. */
     fun logSnapshot(): List<String> = synchronized(shared) { recentLog.toList() }
 
-    // the library is a separate Andamp screen, never open in a skin; every other window (the playlist
-    // included) is the skin's, open when its docked window shows
-    override fun windowOpen(kind: String): Boolean? = if (kind == "ml") false else null
+    override fun windowOpen(kind: String): Boolean? = openAnswer(kind)
 
     override fun pixel(
         file: String,
@@ -377,6 +379,22 @@ internal class WalHost(
 
     override fun chooseFromMenu(menu: SkinMenu): Int? = menus.choose(menu)
 
+    /**
+     * Lets go of what was made for drawing: the decoded pictures, their tinted, cut, stretched and
+     * shape copies, and the text line metrics, so a skin off screen holds less memory. The next
+     * frame makes again what it needs. On the main thread.
+     */
+    fun trimDrawing() {
+        tinted.clear()
+        cutMasks.clear()
+        pieces.clear()
+        stretchedPieces.clear()
+        stablePixels.clear()
+        shapeMasks.clear()
+        gdiLines.clear()
+        synchronized(shared) { images.clear() }
+    }
+
     /** A map that keeps the [max] entries used last. */
     private class Lru<K, V>(
         private val max: Int,
@@ -387,6 +405,12 @@ internal class WalHost(
     companion object {
         /** The log tag, also what the debug checks wait for. */
         const val TAG = "ModernSkin"
+
+        /**
+         * The library is a separate Andamp screen, never open in a skin; every other window (the
+         * playlist included) is the skin's, open when its docked window shows.
+         */
+        val LIBRARY_CLOSED: (String) -> Boolean? = { kind -> if (kind == "ml") false else null }
 
         /** Windows fonts skins name without a file, and the free font in Andamp's default set that stands in. */
         private val STAND_INS = mapOf("tahoma" to "DejaVuSansCondensed")
