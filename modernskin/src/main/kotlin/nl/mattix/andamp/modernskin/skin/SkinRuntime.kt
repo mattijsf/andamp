@@ -1525,9 +1525,44 @@ class SkinRuntime(
      */
     var touchSlop = 6
 
-    private fun touchable(o: GuiObject): Boolean =
-        o.visible && o.enabled && o.effectiveAlpha > 0 && o.rect.width > 0 && o.rect.height > 0 &&
+    /**
+     * Whether [o] can take a touch at all. [faded] also lets in one drawn fully transparent, which
+     * a mouse still clicks: a seek bar's twin slider at alpha 1 over the one that shows.
+     */
+    private fun touchable(
+        o: GuiObject,
+        faded: Boolean = false,
+    ): Boolean =
+        o.visible && o.enabled && (faded || o.effectiveAlpha > 0) && o.rect.width > 0 && o.rect.height > 0 &&
             generateSequence(o.parent) { it.parent }.all { it.visible }
+
+    /**
+     * Whether a mouse could click [o] in [window] at one of a few of its points: the one nearest the
+     * finger at [x], [y], its center and its corners. An object partly under a label counts while
+     * one of those points is uncovered; one wholly behind another does not.
+     */
+    private fun clickable(
+        o: GuiObject,
+        window: Layout,
+        x: Int,
+        y: Int,
+    ): Boolean {
+        val r = o.rect
+        val right = r.right - 1
+        val bottom = r.bottom - 1
+        val points =
+            listOf(
+                x.coerceIn(r.left, right) to y.coerceIn(r.top, bottom),
+                (r.left + right) / 2 to (r.top + bottom) / 2,
+                r.left to r.top,
+                right to r.top,
+                r.left to bottom,
+                right to bottom,
+            )
+        return points.any { (px, py) ->
+            generateSequence(window.hitTest(px, py)) { it.parent }.any { it === o }
+        }
+    }
 
     /** Squared distance from a point to [o]'s rectangle; 0 inside. */
     private fun distance2(
@@ -1545,6 +1580,10 @@ class SkinRuntime(
      * right under it; the nearest control within [touchSlop]; an object a script listens to right
      * under it; the nearest such object within [touchSlop]. Controls come first so a background a
      * script watches does not take a tap meant for the button beside it. The topmost wins a tie.
+     * A nearby control counts only if a mouse could click it at one of a few of its points (see
+     * [clickable]), so one hidden behind another, like a closed drawer's sliders behind the main
+     * window, takes no touch. A nearby script object counts if the script listens to it for
+     * presses or moves, even under another object: a vis trigger often lies under the vis.
      */
     fun touchTarget(
         sx: Int,
@@ -1558,18 +1597,22 @@ class SkinRuntime(
         if (hit != null && isControl(hit)) return hit
         val slop2 = touchSlop * touchSlop
 
-        fun nearest(pick: (GuiObject) -> Boolean): GuiObject? =
+        // the cheap tests first: a script's bindings are read only for objects within reach
+        fun nearest(
+            shown: Boolean,
+            pick: (GuiObject) -> Boolean,
+        ): GuiObject? =
             objects
                 .asReversed()
                 .asSequence()
-                .filter { pick(it) && touchable(it) && it.layoutObject === window }
+                .filter { it.layoutObject === window && touchable(it, faded = shown) }
                 .map { it to distance2(it, x, y) }
-                .filter { it.second <= slop2 }
+                .filter { (o, d) -> d <= slop2 && pick(o) && (!shown || clickable(o, window, x, y)) }
                 .minByOrNull { it.second }
                 ?.first
-        return nearest(::isControl)
+        return nearest(shown = true, ::isControl)
             ?: hit?.takeIf { reacts(it) }
-            ?: nearest { o -> !isControl(o) && scripts.any { it.listensTo(o) } }
+            ?: nearest(shown = false) { o -> !isControl(o) && scripts.any { it.listensTo(o, POINTER_EVENTS) } }
             ?: hit
     }
 
@@ -2128,6 +2171,20 @@ class SkinRuntime(
         const val MAX_XML_DEPTH = 256
         const val MAX_NODES = 200_000
         const val MAX_SETTINGS = 4_096
+
+        /** The events of a press or a move; an object a script watches only for others takes no touch beside it. */
+        val POINTER_EVENTS =
+            setOf(
+                "onleftbuttondown",
+                "onleftbuttonup",
+                "onrightbuttondown",
+                "onrightbuttonup",
+                "onleftbuttondblclk",
+                "onrightbuttondblclk",
+                "onmousemove",
+                "onleftclick",
+                "onrightclick",
+            )
 
         /** Menus a script may pop in reply to one touch; more answer 0 without showing. */
         const val MAX_MENUS_PER_GESTURE = 3
