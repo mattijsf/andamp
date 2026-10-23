@@ -33,8 +33,11 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -57,6 +60,7 @@ import kotlinx.coroutines.sync.withLock
 import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.skin.Skin
+import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.VisMode
 import nl.mattix.andamp.state.VisualizerFeed
 import nl.mattix.andamp.state.WinampState
@@ -110,6 +114,11 @@ import nl.mattix.andamp.ui.window.milkdropHeight
 import nl.mattix.andamp.ui.window.surfaceBottomInset
 import nl.mattix.andamp.ui.window.unshadeEverything
 import nl.mattix.andamp.ui.window.windowScreen
+import nl.mattix.andamp.wal.WAL_LAYER_Z
+import nl.mattix.andamp.wal.WalLayer
+import nl.mattix.andamp.wal.WalLayerParts
+import nl.mattix.andamp.wal.WalSurface
+import nl.mattix.andamp.wal.rememberWalLayerParts
 
 // 60fps target; the loop self-corrects for scheduling drift
 private const val VIS_FRAME_MS = 16L
@@ -156,12 +165,14 @@ internal fun InPlayerVisualizerDriver(vm: WinampViewModel) {
 }
 
 @Composable
-fun WinampScreen(
+internal fun WinampScreen(
     vm: WinampViewModel = viewModel(),
     /** How this surface hands the player over when Always On Top is switched. */
     onFloatingChanged: (Boolean) -> Unit = {},
     /** How this surface steps out of the app, for a visit that came from outside it. */
     onDone: () -> Unit = {},
+    /** The modern skin the player shows, or null for the classic skin; see [PlayerSurface]. */
+    wal: WalSurface? = null,
 ) {
     val skin = vm.skin
     val context = LocalContext.current
@@ -191,7 +202,14 @@ fun WinampScreen(
         vm.state.namePrompt = null
     }
 
-    BackCloses(vm.state, libraryBack = { vm.libraryOps.back() })
+    // read through a derived state, so this screen recomposes when a skin window opens or closes, not at every layout
+    val skinWindowOpen by remember(wal) { derivedStateOf { wal?.layout?.windowOpen == true } }
+    BackCloses(
+        vm.state,
+        libraryBack = { vm.libraryOps.back() },
+        skinWindowOpen = skinWindowOpen,
+        closeSkinWindow = { wal?.closeTopWindow() },
+    )
 
     // The player and the Material screens are destinations of one nav host.
     val nav = rememberNavController()
@@ -262,6 +280,7 @@ fun WinampScreen(
                     onMinimize = { (context as? Activity)?.moveTaskToBack(true) },
                     onOverlaySettings = { context.startActivity(overlaySettingsIntent(context)) },
                     onFloatingChanged = onFloatingChanged,
+                    wal = wal,
                 )
             }
         }
@@ -295,7 +314,7 @@ fun WinampScreen(
  */
 @Composable
 @Suppress("LongParameterList") // one parameter per place this player cannot reach itself
-fun PlayerSurface(
+internal fun PlayerSurface(
     vm: WinampViewModel,
     skin: Skin,
     playlistActions: PlaylistMenuActions,
@@ -315,9 +334,22 @@ fun PlayerSurface(
      * insets; see [LocalSurfaceScreen].
      */
     surfaceScreen: SurfaceScreen? = null,
+    /**
+     * The modern skin the player shows in place of the classic main window, equalizer and
+     * playlist, or null for the classic skin. The classic skin still draws the library, the skin
+     * manager and the visualizer window, and the main window while the modern one loads.
+     */
+    wal: WalSurface? = null,
+    /**
+     * Whether a screen of the app covers this surface, so a modern skin's clock rests. The floating
+     * player is never covered.
+     */
+    covered: () -> Boolean = { vm.state.playerCovered && !vm.state.screenPulled },
 ) {
     // filling the screen, the windows are one locked stack with black around it
     val locked = vm.state.doubleSize
+    // read when the menu is built: the widget lists keep the openMenu of the composition that built them
+    val walNow by rememberUpdatedState(wal)
     // The clutter bar's D and the Options menu share this switch. Switching Double Size on
     // switches Always On Top off, and the surface is told as when its own A did that.
     val doubleSize = {
@@ -369,22 +401,12 @@ fun PlayerSurface(
                         onChanged = onFloatingChanged,
                     )
                 }
-                val openMenu = {
-                    // built at tap time so the Skins submenu shows the current skin
-                    s.activeMenu =
-                        mainMenu(
-                            vm,
-                            // Play file... and Play directory... replace the queue and play
-                            onOpenFile = { playlistActions.playFile() },
-                            onOpenFolder = { playlistActions.playDir() },
-                            onPickSkin = onPickSkin,
-                            onExit = quit,
-                            onPreferences = onPreferences,
-                            onMuseum = onMuseum,
-                            onAlwaysOnTop = alwaysOnTop,
-                            onDoubleSize = doubleSize,
-                        )
-                }
+                val openMenu =
+                    mainMenuOpener(vm, playlistActions, onPickSkin, quit, onPreferences, onMuseum, alwaysOnTop, doubleSize) {
+                        walNow != null
+                    }
+                val walParts =
+                    wal?.let { surface -> rememberWalLayerParts(surface, vm, playlistActions, openMenu, onMinimize, covered) }
                 val mainWidgets =
                     remember(vm, s.mainShaded) {
                         if (s.mainShaded) {
@@ -393,7 +415,7 @@ fun PlayerSurface(
                                 onOpenFile = { toPlay ->
                                     if (toPlay) playlistActions.addFileThenPlay() else playlistActions.addFile()
                                 },
-                                onOptions = openMenu,
+                                onOptions = { openMenu(null, null) },
                                 onExit = quit,
                                 visualizerMenu = { anchor -> visualizationMenu(vm, anchor) },
                             )
@@ -420,7 +442,7 @@ fun PlayerSurface(
                                 // the clutter bar's I: the item playing, or the last one that played
                                 onFileInfo = { vm.trackInfoOps.show(s.lastPlayed) },
                             ) {
-                                openMenu()
+                                openMenu(null, null)
                             }
                         }
                     }
@@ -432,11 +454,12 @@ fun PlayerSurface(
                         vm,
                         skin,
                         scale,
-                        onLongPress = openMenu,
+                        onLongPress = { openMenu(null, null) },
                         playlistActions,
                         libraryAccess,
                         mainWidgets,
                         eqWidgets,
+                        walParts,
                     )
                 }
 
@@ -457,6 +480,42 @@ fun PlayerSurface(
 }
 
 /**
+ * What opens the main menu, built at tap time so the Skins submenu shows the current skin. A
+ * modern skin's long press opens it at the press, led by Skin menu when the skin has a menu under
+ * the finger; the classic windows open it at the options button, with no anchor and no Skin menu.
+ */
+private fun mainMenuOpener(
+    vm: WinampViewModel,
+    playlistActions: PlaylistMenuActions,
+    onPickSkin: () -> Unit,
+    onExit: () -> Unit,
+    onPreferences: () -> Unit,
+    onMuseum: () -> Unit,
+    onAlwaysOnTop: () -> Unit,
+    onDoubleSize: () -> Unit,
+    /** Whether a modern skin is worn, asked each time the menu opens. */
+    modernPlayer: () -> Boolean,
+): (onSkinMenu: (() -> Unit)?, anchor: MenuAnchor?) -> Unit =
+    { onSkinMenu, anchor ->
+        val menu =
+            mainMenu(
+                vm,
+                // Play file... and Play directory... replace the queue and play
+                onOpenFile = { playlistActions.playFile() },
+                onOpenFolder = { playlistActions.playDir() },
+                onPickSkin = onPickSkin,
+                onExit = onExit,
+                onPreferences = onPreferences,
+                onMuseum = onMuseum,
+                onAlwaysOnTop = onAlwaysOnTop,
+                onDoubleSize = onDoubleSize,
+                onSkinMenu = onSkinMenu,
+                modernPlayer = modernPlayer(),
+            )
+        vm.state.activeMenu = if (anchor == null) menu else menu.copy(anchor = anchor)
+    }
+
+/**
  * The windows on the surface they are laid out on, with what moves over them.
  *
  * The surface is this box, in its own pixels: [scale] of them to a virtual pixel.
@@ -472,6 +531,8 @@ private fun BoxWithConstraintsScope.PlayerWindows(
     libraryAccess: LibraryAccessHandle,
     mainWidgets: List<Widget>,
     eqWidgets: List<Widget>,
+    /** The modern skin shown in place of the main window, the equalizer and the playlist, or null. */
+    wal: WalLayerParts?,
 ) {
     val s = vm.state
     val screen = windowScreen(scale, s)
@@ -486,7 +547,8 @@ private fun BoxWithConstraintsScope.PlayerWindows(
                 screen,
                 s.sideways,
                 mainH,
-                eq = s.classicMember(WindowStore.EQ, eqH, s.eqVisible),
+                // a modern skin shows no equalizer, so the stack keeps no room for one
+                eq = s.classicMember(WindowStore.EQ, eqH, s.eqVisible).takeIf { wal == null },
                 vis = s.classicMember(WindowStore.MILKDROP, milkdropH, s.milkdropOn),
             ),
         )
@@ -519,7 +581,8 @@ private fun BoxWithConstraintsScope.PlayerWindows(
             null
         }
 
-    InPlayerVisualizerDriver(vm)
+    // a modern skin's visualizer is part of the skin
+    if (wal == null) InPlayerVisualizerDriver(vm)
     UiClocks(s)
 
     FloatingWindows(
@@ -535,6 +598,7 @@ private fun BoxWithConstraintsScope.PlayerWindows(
         eqH,
         docked,
         held,
+        wal,
     )
 
     // over every window: a lens clipped to its own window would be cut off by
@@ -566,6 +630,8 @@ private fun FloatingWindows(
     /** Where each window sits until it is moved. */
     docked: ClassicStack.Places,
     held: LockedStack.Places?,
+    /** The modern skin shown in place of the main window, the equalizer and the playlist, or null. */
+    wal: WalLayerParts?,
 ) {
     val s = vm.state
 
@@ -588,21 +654,29 @@ private fun FloatingWindows(
             val shown = held == null || pin != null
             when (id) {
                 WindowStore.MAIN -> {
-                    MainFloatWindow(
-                        vm,
-                        skin,
-                        scale,
-                        widgets = mainWidgets,
-                        height = mainH,
-                        docked = docked.main,
-                        modifier = Modifier.fillMaxSize().zIndex(z),
-                        onLongPress = onLongPress,
-                        pinned = pin,
-                    )
+                    val classic: @Composable () -> Unit = {
+                        MainFloatWindow(
+                            vm,
+                            skin,
+                            scale,
+                            widgets = mainWidgets,
+                            height = mainH,
+                            docked = docked.main,
+                            modifier = Modifier.fillMaxSize().zIndex(z),
+                            onLongPress = onLongPress,
+                            pinned = pin,
+                        )
+                    }
+                    // a modern skin shows the classic main window until its stack is laid out
+                    if (wal == null) {
+                        classic()
+                    } else {
+                        WalLayer(wal, s, scale, Modifier.fillMaxSize().zIndex(WAL_LAYER_Z), companion = classic)
+                    }
                 }
 
                 WindowStore.EQ -> {
-                    if (s.eqVisible && shown) {
+                    if (s.eqVisible && shown && wal == null) {
                         EqFloatWindow(
                             vm,
                             skin,
@@ -632,7 +706,7 @@ private fun FloatingWindows(
                 }
 
                 WindowStore.PLAYLIST -> {
-                    val open = s.plVisible && shown
+                    val open = s.plVisible && shown && wal == null
                     if (open && s.plShaded) {
                         PlaylistShadeFloatWindow(
                             vm,

@@ -1,0 +1,208 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package nl.mattix.andamp.wal
+
+import android.os.Looper
+import nl.mattix.andamp.R
+import nl.mattix.andamp.state.AmpMenuItem
+import nl.mattix.andamp.state.MenuAnchor
+import nl.mattix.andamp.state.VisualCommands
+import nl.mattix.andamp.state.WindowStore
+import nl.mattix.andamp.ui.window.testViewModel
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
+
+/** What the player does for a modern skin's buttons that reach outside the skin. */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35], qualifiers = "w900dp-h1600dp-mdpi")
+class WalHostActionsTest {
+    private val reached = mutableListOf<String>()
+
+    /** Where the menus asked for popped. */
+    private val anchors = mutableListOf<MenuAnchor?>()
+
+    private fun on(name: String) {
+        assertTrue("$name runs on the main thread", Looper.getMainLooper().isCurrentThread)
+        reached += name
+    }
+
+    private val actions =
+        WalHostActions(
+            openMenu = {
+                anchors += it
+                on("menu")
+            },
+            minimize = { on("minimize") },
+            toggleLibrary = { on("library") },
+            toggleVisualizer = { on("visualizer") },
+            visualizationMenu = {
+                anchors += it
+                on("visualization menu")
+            },
+            fullscreenVisualizer = { on("fullscreen") },
+            nextPreset = { on("next preset") },
+            previousPreset = { on("previous preset") },
+            pickFile = { andPlay -> on(if (andPlay) "file to play" else "file") },
+        )
+
+    private fun reaches(
+        action: String,
+        param: String? = null,
+    ): List<String> {
+        reached.clear()
+        actions.hostAction(action, param)
+        return reached.toList()
+    }
+
+    @Test
+    fun `each action reaches one thing the player does`() {
+        assertEquals(listOf("menu"), reaches("MENU"))
+        assertEquals(listOf("menu"), reaches("SYSMENU"))
+        assertEquals(listOf("menu"), reaches("CONTROLMENU"))
+        assertEquals(listOf("menu"), reaches("CLOSE"))
+        assertEquals(listOf("minimize"), reaches("MINIMIZE"))
+        assertEquals(listOf("library"), reaches("TOGGLE", "ml"))
+        assertEquals(listOf("visualizer"), reaches("TOGGLE", "avs"))
+        assertEquals(listOf("visualization menu"), reaches("VIS_MENU"))
+        assertEquals(listOf("fullscreen"), reaches("VIS_FS"))
+        assertEquals(listOf("next preset"), reaches("VIS_NEXT"))
+        assertEquals(listOf("previous preset"), reaches("VIS_PREV"))
+    }
+
+    @Test
+    fun `the eject button and Play on an empty playlist each open the file picker`() {
+        actions.openFile(andPlay = false)
+        actions.openFile(andPlay = true)
+
+        assertEquals(listOf("file", "file to play"), reached)
+    }
+
+    @Test
+    fun `a video window, another window and an unknown action reach nothing`() {
+        assertEquals(emptyList<String>(), reaches("TOGGLE", "video"))
+        assertEquals(emptyList<String>(), reaches("TOGGLE", "pl"))
+        assertEquals(emptyList<String>(), reaches("TOGGLE", "guid:something"))
+        assertEquals(emptyList<String>(), reaches("TOGGLE", null))
+        assertEquals(emptyList<String>(), reaches("SOMETHING_ELSE"))
+    }
+
+    @Test
+    fun `a menu the skin asks for pops at the last press`() {
+        val press = MenuAnchor(WindowStore.MAIN, 40, 12, 1, 1)
+        actions.hostAction("MENU", null)
+        actions.pressAt = { press }
+        actions.hostAction("SYSMENU", null)
+        actions.hostAction("VIS_MENU", null)
+
+        assertEquals(listOf(null, press, press), anchors)
+    }
+
+    @Test
+    fun `the library button opens and closes the library as the main menu does`() {
+        val vm = testViewModel()
+        val actions = WalHostActions.of(vm, openMenu = {}, onMinimize = {}, openFile = {})
+
+        actions.hostAction("TOGGLE", "ml")
+        assertTrue(vm.state.libraryOpen)
+        assertEquals("raised over the other windows", WindowStore.LIBRARY, vm.state.windowOrder.last())
+
+        actions.hostAction("TOGGLE", "ml")
+        assertFalse(vm.state.libraryOpen)
+    }
+
+    @Test
+    fun `the visualizer button opens and closes the visualizer window`() {
+        val vm = testViewModel()
+        val actions = WalHostActions.of(vm, openMenu = {}, onMinimize = {}, openFile = {})
+
+        actions.hostAction("TOGGLE", "avs")
+        assertTrue(vm.state.milkdropOn)
+
+        actions.hostAction("TOGGLE", "avs")
+        assertFalse(vm.state.milkdropOn)
+    }
+
+    @Test
+    fun `fullscreen opens the visualizer window and fills the screen with it`() {
+        val vm = testViewModel()
+        val actions = WalHostActions.of(vm, openMenu = {}, onMinimize = {}, openFile = {})
+
+        actions.hostAction("VIS_FS", null)
+
+        assertTrue(vm.state.milkdropOn)
+        assertTrue(vm.state.milkdropFullscreen)
+    }
+
+    @Test
+    fun `the preset buttons step the visualizer only while its window is open`() {
+        val vm = testViewModel()
+        val stepped = mutableListOf<String>()
+        vm.state.visualCommands =
+            object : VisualCommands {
+                override fun nextPreset() {
+                    stepped += "next"
+                }
+
+                override fun previousPreset() {
+                    stepped += "previous"
+                }
+
+                override fun goToPreset(index: Int) = Unit
+            }
+        val actions = WalHostActions.of(vm, openMenu = {}, onMinimize = {}, openFile = {})
+
+        actions.hostAction("VIS_NEXT", null)
+        assertEquals("closed, it is not stepped", emptyList<String>(), stepped)
+
+        vm.state.milkdropOn = true
+        actions.hostAction("VIS_NEXT", null)
+        actions.hostAction("VIS_PREV", null)
+        assertEquals(listOf("next", "previous"), stepped)
+    }
+
+    @Test
+    fun `the visualization menu pops at the press with the in-player modes grayed`() {
+        val vm = testViewModel()
+        val actions = WalHostActions.of(vm, openMenu = {}, onMinimize = {}, openFile = {})
+        val press = MenuAnchor(WindowStore.MAIN, 40, 12, 1, 1)
+        actions.pressAt = { press }
+
+        actions.hostAction("VIS_MENU", null)
+
+        val menu = vm.state.activeMenu!!
+        assertSame(press, menu.anchor)
+        val modes =
+            menu.items.filterIsInstance<AmpMenuItem.Submenu>().first {
+                it.label ==
+                    vm.words.get(R.string.menu_visualization_options)
+            }
+        assertFalse("a modern skin does not show the in-player modes", modes.enabled)
+    }
+
+    @Test
+    fun `the menu buttons, minimize and the file requests reach what the surface gave`() {
+        val vm = testViewModel()
+        val got = mutableListOf<String>()
+        val press = MenuAnchor(WindowStore.MAIN, 40, 12, 1, 1)
+        val actions =
+            WalHostActions.of(
+                vm,
+                openMenu = { got += "menu at ${it?.x},${it?.y}" },
+                onMinimize = { got += "minimize" },
+                openFile = { got += "file $it" },
+            )
+        actions.pressAt = { press }
+
+        actions.hostAction("CLOSE", null)
+        actions.hostAction("MINIMIZE", null)
+        actions.openFile(andPlay = true)
+
+        assertEquals(listOf("menu at 40,12", "minimize", "file true"), got)
+    }
+}
