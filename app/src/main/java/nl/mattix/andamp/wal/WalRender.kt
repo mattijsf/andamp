@@ -29,7 +29,8 @@ import nl.mattix.andamp.modernskin.skin.VAlign
  * window region did.
  *
  * A scale between whole numbers draws the stack at the next whole scale into [layer], off screen,
- * and shrinks that finished picture to fit, as the classic player does. Drawn piece by piece at the
+ * and shrinks that finished picture to fit, as the classic player does; without a layer it draws
+ * piece by piece. Drawn piece by piece at the
  * fractional scale, two pieces that meet inside a screen pixel would each cover it only partly and
  * leave a seam, and a picture could show a row of the one beneath it.
  */
@@ -38,14 +39,14 @@ internal fun DrawScope.drawWalStack(
     host: WalHost,
     scale: Float,
     left: Float,
-    layer: GraphicsLayer,
+    layer: GraphicsLayer?,
 ) {
     val whole =
         kotlin.math
             .ceil(scale)
             .toInt()
             .coerceAtLeast(1)
-    if (whole.toFloat() == scale || stack.isEmpty()) {
+    if (layer == null || whole.toFloat() == scale || stack.isEmpty()) {
         translate(left, 0f) { drawWindowsAt(stack, host, scale) }
         return
     }
