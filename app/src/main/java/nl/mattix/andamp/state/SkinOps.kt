@@ -27,7 +27,6 @@ import nl.mattix.andamp.widget.MainWindowWidget
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.InputStream
-import java.util.zip.ZipFile
 import java.util.zip.ZipInputStream
 
 /**
@@ -47,7 +46,16 @@ class SkinOps(
     private val live: LiveSkins = CurrentSkin.live,
     /** The words of the notices a pick can end in. */
     private val words: Words = Words.of(context),
+    /**
+     * Whether modern skins can be worn; read on IO. While they cannot, modern rows are not
+     * listed, and a modern choice gives way to the last classic one when it would go on.
+     */
+    private val modernOn: () -> Boolean = { false },
 ) {
+    /**
+     * The classic skin on screen and in the app's windows and menus. While a modern skin is
+     * worn, it is the listener's last classic choice; see [SkinLibrary.lastClassic].
+     */
     var skin by mutableStateOf<Skin?>(null)
         private set
 
@@ -57,6 +65,13 @@ class SkinOps(
      */
     var currentId by mutableStateOf(SkinEntry.BASE_ID)
         private set
+
+    /** The skin picked for the home screen widget, or null when it follows the player; see [SkinLibrary.widgetSkin]. */
+    var widgetSkin by mutableStateOf<String?>(null)
+        private set
+
+    /** The id of the classic skin in [skin]: [currentId] itself, or the last classic choice under a modern one. */
+    private var companionId = SkinEntry.BASE_ID
 
     /** The bundled skin, which a skin missing a sheet borrows from. */
     var baseSkin: Skin? = null
@@ -103,11 +118,16 @@ class SkinOps(
                 return@launch
             }
             baseSkin = base
-            val (worn, id) = withContext(Dispatchers.IO) { lock.withLock { loadWorn() } }
-            skin = worn ?: base
-            currentId = id
+            put(withContext(Dispatchers.IO) { lock.withLock { loadWorn() } })
             refreshEntries()
             started.complete(Unit)
+            // modern skins stored as classic files before the library told them apart get
+            // their own extension; one of them may be worn
+            val renamed = withContext(Dispatchers.IO) { lock.withLock { library.migrateModern() } }
+            if (renamed) {
+                refreshEntries()
+                wearWorn()
+            }
         }
     }
 
@@ -135,8 +155,7 @@ class SkinOps(
                         loadWorn()
                     }
                 } ?: return@launch
-            skin = worn.first
-            currentId = worn.second
+            put(worn)
             wornSkinChanged()
         }
     }
@@ -187,11 +206,11 @@ class SkinOps(
                 wearWorn()
                 return@launch
             }
-            skin = pick.skin
-            wornSkinChanged()
             // a skin that applied but could not be stored has no library row, so no row
             // is highlighted
-            currentId = pick.id ?: UNSTORED_ID
+            val id = pick.id ?: UNSTORED_ID
+            put(Worn(pick.skin, id, id))
+            wornSkinChanged()
             refreshEntries()
         }
     }
@@ -265,7 +284,7 @@ class SkinOps(
                     head.writeTo(out)
                     rest.copyAtMost(out, MAX_PICK_BYTES - head.size())
                 }
-            val names = if (whole) directoryNames(file) else null
+            val names = if (whole) SkinLibrary.directoryNames(file) else null
             return when {
                 names != null && WalArchive.isModern(names) -> Pick.Modern
                 zip -> Pick.TooLarge
@@ -306,39 +325,31 @@ class SkinOps(
     }
 
     /**
-     * Applies the skin at [index] of the listed entries.
+     * Applies the library skin [id].
      *
      * The skin already on screen is not loaded again, but it is still chosen: if it was
      * on only as a music source's skin, it becomes the listener's own.
      */
-    fun applyAt(index: Int) {
-        val entry = state.skinEntries.getOrNull(index) ?: return
-        if (entry.id == currentId) {
-            adopt(entry.id)
+    fun apply(id: String) {
+        if (id == currentId) {
+            adopt(id)
             return
         }
-        if (entry.id == SkinEntry.BASE_ID) {
+        if (id == SkinEntry.BASE_ID) {
             reset()
             return
         }
         choosing()
         scope.launch {
-            val loaded = withContext(Dispatchers.IO) { lock.withLock { loadStored(entry)?.also { library.choose(entry.id) } } }
-            if (loaded == null) {
+            val worn = withContext(Dispatchers.IO) { lock.withLock { loadAs(id)?.also { library.choose(id) } } }
+            if (worn == null) {
                 // a stored skin that does not load changes nothing
                 wearWorn()
                 return@launch
             }
-            skin = loaded
-            currentId = entry.id
+            put(worn)
             wornSkinChanged()
         }
-    }
-
-    /** Removes the skin at [index] from the library. */
-    fun removeAt(index: Int) {
-        val entry = state.skinEntries.getOrNull(index) ?: return
-        remove(entry.id)
     }
 
     /** Called with the id when a skin leaves the library, so the museum browser can drop its record. */
@@ -350,17 +361,26 @@ class SkinOps(
      * that case itself.
      */
     fun remove(id: String) {
-        val entry = SkinEntry(id, library.nameOf(id), 0)
-        if (BundledSkins.of(entry.id) != null) return // a skin that ships with the app cannot be removed
+        if (BundledSkins.of(id) != null) return // a skin that ships with the app cannot be removed
         scope.launch {
             // under the lock, so the delete runs after an apply in flight has written its
             // choice
-            withContext(Dispatchers.IO) { lock.withLock { library.delete(entry.id) } }
-            // the library has moved both records off the removed id; what it says is worn
+            val widgetDrew =
+                withContext(Dispatchers.IO) {
+                    lock.withLock {
+                        val drew = library.widgetSkin == id || library.lastClassic == id
+                        library.delete(id)
+                        drew
+                    }
+                }
+            widgetSkin = library.widgetSkin
+            // the library has moved every record off the removed id; what it says is worn
             // goes on if the removed skin was on screen. The widget is refreshed after the
             // delete, so it does not redraw the removed skin
             wearWorn()
-            onRemoved?.invoke(entry.id)
+            // the widget may have drawn the removed skin while the player shows another one
+            if (widgetDrew) wornSkinChanged()
+            onRemoved?.invoke(id)
             refreshEntries()
         }
     }
@@ -368,23 +388,40 @@ class SkinOps(
     /** Main menu > Skins > AndAmp Dark. The library keeps the files; only the choice changes. */
     fun reset() {
         choosing()
-        skin = baseSkin
-        currentId = SkinEntry.BASE_ID
+        put(Worn(baseSkin, SkinEntry.BASE_ID, SkinEntry.BASE_ID))
         // the widget reads the worn skin from the library, so it is refreshed after the
-        // write; applyAt awaits its write for the same reason
+        // write; apply awaits its write for the same reason
         scope.launch {
             withContext(Dispatchers.IO) { lock.withLock { library.choose(SkinEntry.BASE_ID) } }
+            widgetSkin = library.widgetSkin
             wornSkinChanged()
         }
     }
 
-    /** Chooses the skin already on screen; see [applyAt]. Nothing is loaded, only the record changes. */
+    /** Chooses the skin already on screen; see [apply]. Nothing is loaded, only the record changes. */
     private fun adopt(id: String) {
         choosing()
         scope.launch {
             // if a removal ran first, there is nothing to choose
             val chosen = withContext(Dispatchers.IO) { lock.withLock { library.has(id).also { if (it) library.choose(id) } } }
-            if (chosen) wornSkinChanged() else wearWorn()
+            if (chosen) {
+                widgetSkin = library.widgetSkin
+                wornSkinChanged()
+            } else {
+                wearWorn()
+            }
+        }
+    }
+
+    /**
+     * The listener picked [id], a classic skin, for the home screen widget, or null to have
+     * it follow the player.
+     */
+    fun chooseWidgetSkin(id: String?) {
+        scope.launch {
+            withContext(Dispatchers.IO) { lock.withLock { library.chooseWidgetSkin(id) } }
+            widgetSkin = library.widgetSkin
+            wornSkinChanged()
         }
     }
 
@@ -426,32 +463,71 @@ class SkinOps(
     }
 
     private suspend fun refreshEntries() {
-        state.skinEntries = withContext(Dispatchers.IO) { library.list() }
+        state.skinEntries =
+            withContext(Dispatchers.IO) {
+                val modern = modernOn()
+                library.list().filter { modern || it.kind == SkinKind.CLASSIC }
+            }
     }
 
-    // CurrentSkin holds the fallback order, shared with the home screen widget
-    private fun loadStored(entry: SkinEntry): Skin? = CurrentSkin.stored(context, library, entry.id, baseSkin, live)
+    /**
+     * What goes on screen: [skin], the classic skin drawn, [id], the library row ticked, and
+     * [companionId], the id of [skin]. For a classic skin the two ids are the same; for a
+     * modern one, [companionId] is the last classic choice.
+     */
+    private class Worn(
+        val skin: Skin?,
+        val id: String,
+        val companionId: String,
+    )
+
+    /** Puts [worn] on screen. Every change of the skin on screen goes through here. */
+    private fun put(worn: Worn) {
+        skin = worn.skin
+        currentId = worn.id
+        companionId = worn.companionId
+        widgetSkin = library.widgetSkin
+    }
 
     /**
-     * Loads what the library says is worn, and returns it with the id to highlight. Call
-     * under the lock: taking off a source's skin writes.
+     * The library skin [id] as it goes on screen: the skin itself when it is classic; for a
+     * modern one, the last classic choice, or the base when that does not load. Null when a
+     * classic skin does not load or is gone.
      */
-    private fun loadWorn(): Pair<Skin?, String> {
+    private fun loadAs(id: String): Worn? {
+        // CurrentSkin holds the fallback order, shared with the home screen widget
+        val companion = CurrentSkin.classicOf(library, id)
+        val drawn =
+            if (companion ==
+                SkinEntry.BASE_ID
+            ) {
+                baseSkin
+            } else {
+                CurrentSkin.stored(context, library, companion, baseSkin, live)
+            }
+        return when {
+            drawn != null -> Worn(drawn, id, companion)
+            companion == id -> null
+            else -> Worn(baseSkin, id, SkinEntry.BASE_ID)
+        }
+    }
+
+    /**
+     * Loads what the library says is worn, with the id to highlight. Call under the lock:
+     * taking off a source's skin writes, and so does a modern choice giving way while
+     * modern skins are off.
+     */
+    private fun loadWorn(): Worn {
+        if (!modernOn()) library.dropModern()
         // loops, because a source's skin that does not load is taken off and the
         // listener's own is tried next
         while (true) {
             val over = library.wearing
-            val id = over ?: library.currentId
-            val loaded = if (id == SkinEntry.BASE_ID) baseSkin else CurrentSkin.stored(context, library, id, baseSkin, live)
-            when {
-                loaded != null -> return loaded to id
-
-                // the listener's own does not load: the base is on screen and is highlighted
-                over == null -> return baseSkin to SkinEntry.BASE_ID
-
-                // a source's skin that does not load is taken off, and their own is tried
-                else -> library.unwear(over)
-            }
+            loadAs(over ?: library.currentId)?.let { return it }
+            // the listener's own does not load: the base is on screen and is highlighted
+            if (over == null) return Worn(baseSkin, SkinEntry.BASE_ID, SkinEntry.BASE_ID)
+            // a source's skin that does not load is taken off, and their own is tried
+            library.unwear(over)
         }
     }
 
@@ -461,7 +537,7 @@ class SkinOps(
      * for.
      *
      * The listener's choice is unchanged. The Skins menu ticks the skin on screen, and
-     * picking it there makes it their own; see [applyAt]. A skin that is gone is not
+     * picking it there makes it their own; see [apply]. A skin that is gone is not
      * worn: their own goes back on.
      *
      * The request is stored and loaded under the same lock as the listener's own actions,
@@ -485,8 +561,7 @@ class SkinOps(
                     } ?: return@launch
                 // a choice made while this loaded takes precedence
                 if (SkinLibrary.choices != asked) return@launch
-                skin = worn.first
-                currentId = worn.second
+                put(worn)
                 wornSkinChanged()
             }
     }
@@ -495,16 +570,23 @@ class SkinOps(
      * Puts on whatever the library says is worn, when that is not what is on screen: after
      * a removal, or a choice that failed. A skin that could not be stored is left on, as
      * the library has no record of it.
+     *
+     * The classic skin drawn counts too: removing the last classic choice under a modern
+     * skin changes only that.
      */
     private fun wearWorn() {
         scope.launch {
             val onScreen = currentId
+            val drawn = companionId
             if (onScreen == UNSTORED_ID) return@launch
             val worn =
-                withContext(Dispatchers.IO) { lock.withLock { if (library.worn == onScreen) null else loadWorn() } }
-                    ?: return@launch
-            skin = worn.first
-            currentId = worn.second
+                withContext(Dispatchers.IO) {
+                    lock.withLock {
+                        val id = library.worn
+                        if (id == onScreen && CurrentSkin.classicOf(library, id) == drawn) null else loadWorn()
+                    }
+                } ?: return@launch
+            put(worn)
             wornSkinChanged()
         }
     }
@@ -535,18 +617,6 @@ class SkinOps(
             }
             return names
         }
-
-        /** The names in [file]'s zip directory, or null when it has none that can be read. */
-        private fun directoryNames(file: File): List<String>? =
-            runCatching {
-                ZipFile(file, Charsets.ISO_8859_1).use { zip ->
-                    zip
-                        .entries()
-                        .asSequence()
-                        .map { it.name }
-                        .toList()
-                }
-            }.getOrNull()
 
         /** Whether [bytes] start the way a zip does. */
         private fun startsAsZip(bytes: ByteArray): Boolean =

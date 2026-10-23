@@ -74,6 +74,7 @@ import nl.mattix.andamp.state.DspOps
 import nl.mattix.andamp.state.LibraryAccess
 import nl.mattix.andamp.state.PackSources
 import nl.mattix.andamp.state.PluginOps
+import nl.mattix.andamp.state.SkinKind
 import nl.mattix.andamp.state.Store
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.sourceRoute
@@ -199,7 +200,8 @@ fun PreferencesScreen(
                         // a screen the source owns, started from here; what it does to the account
                         // is read back by the reconcile above
                         openSettings = { intent -> context.startActivity(intent) },
-                        skins = vm.state.skinEntries,
+                        // a source wears classic skins only
+                        skins = vm.state.skinEntries.filter { it.kind == SkinKind.CLASSIC },
                         skinOf = vm.sourceSkinOps.skins::of,
                         onSkin = vm.sourceSkinOps::choose,
                     ),

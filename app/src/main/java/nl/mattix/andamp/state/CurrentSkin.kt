@@ -17,6 +17,9 @@ import nl.mattix.andamp.skin.SystemPalette
  * launcher with no such state, so it loads the same skin from the same library through
  * this object. The order of fallbacks is here once, for both: a live skin from the phone's
  * palette, the stored skin, and the bundled one when either fails or none is stored.
+ *
+ * Everything here is a classic skin. A modern skin is drawn by its engine only, so where one
+ * is worn this draws the listener's last classic choice; see [classicOf].
  */
 object CurrentSkin {
     private const val TAG = "CurrentSkin"
@@ -38,6 +41,15 @@ object CurrentSkin {
     ): Skin = live.build(context, BundledSkins.BASE) ?: SkinLoader.loadBase(context)
 
     /**
+     * The classic skin drawn for [id]: [id] itself when it is classic, the listener's last
+     * classic choice when it is modern.
+     */
+    fun classicOf(
+        library: SkinLibrary,
+        id: String,
+    ): String = if (library.kindOf(id) == SkinKind.MODERN) library.lastClassic else id
+
+    /**
      * The base skin, or what is worn over it: the listener's own choice, or a music
      * source's skin while one is worn. Null only when the bundled skin does not decode.
      */
@@ -56,13 +68,22 @@ object CurrentSkin {
         return stored(context, library, id, base, live) ?: base
     }
 
-    @Volatile
-    private var cached: Pair<String, Skin>? = null
+    /** One cached skin, with the [cacheKey] it was loaded under. */
+    private class Slot {
+        @Volatile
+        var entry: Pair<String, Skin>? = null
+    }
+
+    /** The skin of [keyed], for the player's skin outside the player. */
+    private val worn = Slot()
+
+    /** The skin of [widgetKeyed], apart, so that opening the widget menu does not evict the widget's. */
+    private val widget = Slot()
 
     /**
-     * What a cached skin depends on: the worn id (a source's skin while one is on, the
-     * listener's own otherwise) and the palette stamps of the base and of the entry when
-     * they are live. Without a palette both stamps are null.
+     * What a cached skin depends on: the classic id drawn for the worn id (a source's skin
+     * while one is on, the listener's own otherwise) and the palette stamps of the base and
+     * of the entry when they are live. Without a palette both stamps are null.
      */
     fun cacheKey(
         context: Context,
@@ -71,9 +92,10 @@ object CurrentSkin {
         /** The worn skin's id; a caller that has already read it passes it on. */
         id: String = library.worn,
     ): String {
+        val drawn = classicOf(library, id)
         val base = live.stamp(context, BundledSkins.BASE)?.contentHashCode()
-        val entry = BundledSkins.of(id)?.let { live.stamp(context, it) }?.contentHashCode()
-        return "$id|$base|$entry"
+        val entry = BundledSkins.of(drawn)?.let { live.stamp(context, it) }?.contentHashCode()
+        return "$drawn|$base|$entry"
     }
 
     /**
@@ -88,26 +110,48 @@ object CurrentSkin {
     ): Skin? = keyed(context, library, live)?.second
 
     /**
-     * [cached], with the [cacheKey] it belongs to, for the widget, which keeps the key to
-     * decide whether to send the whole window again. The worn id is read once and both
-     * values come from that read, so the skin and the key always match.
+     * [cached], with the [cacheKey] it belongs to. The worn id is read once and both values
+     * come from that read, so the skin and the key always match.
      */
     fun keyed(
         context: Context,
         library: SkinLibrary = SkinLibrary(context),
         live: LiveSkins = this.live,
+    ): Pair<String, Skin>? = keyedIn(worn, context, library, live, classicOf(library, library.worn))
+
+    /**
+     * [keyed] for the home screen widget, which keeps the key to decide whether to send the
+     * whole window again. It wears the skin picked for it when that is an installed classic
+     * skin, whatever a source asks for. Otherwise it follows the player: the classic skin
+     * drawn for what is worn.
+     */
+    fun widgetKeyed(
+        context: Context,
+        library: SkinLibrary = SkinLibrary(context),
+        live: LiveSkins = this.live,
     ): Pair<String, Skin>? {
-        val id = library.worn
+        val id = library.widgetSkin?.takeIf(library::hasClassic) ?: classicOf(library, library.worn)
+        return keyedIn(widget, context, library, live, id)
+    }
+
+    private fun keyedIn(
+        slot: Slot,
+        context: Context,
+        library: SkinLibrary,
+        live: LiveSkins,
+        id: String,
+    ): Pair<String, Skin>? {
         val key = cacheKey(context, library, live, id)
-        cached?.let { if (it.first == key) return it }
+        slot.entry?.let { if (it.first == key) return it }
         val loaded = load(context, library, live, id) ?: return null
-        return (key to loaded).also { cached = it }
+        return (key to loaded).also { slot.entry = it }
     }
 
     /**
      * The stored skin [id], or null when there is none or it does not parse, in which case
      * the caller uses the bundled skin. A live entry is built from its template first and
-     * falls through to its file when the phone has no palette.
+     * falls through to its file when the phone has no palette. A modern [id] gives the last
+     * classic choice, so a modern skin's file never reaches the classic loader.
      */
     @Suppress("TooGenericExceptionCaught") // a corrupt skin file can throw any exception
     fun stored(
@@ -117,12 +161,13 @@ object CurrentSkin {
         fallback: Skin?,
         live: LiveSkins = this.live,
     ): Skin? {
-        if (id == SkinEntry.BASE_ID) return null
-        BundledSkins.of(id)?.let { bundled -> live.build(context, bundled)?.let { return it } }
+        val drawn = classicOf(library, id)
+        if (drawn == SkinEntry.BASE_ID) return null
+        BundledSkins.of(drawn)?.let { bundled -> live.build(context, bundled)?.let { return it } }
         return try {
-            library.open(id)?.use { SkinLoader.load(it, fallback = fallback, name = library.nameOf(id)) }
+            library.open(drawn)?.use { SkinLoader.load(it, fallback = fallback, name = library.nameOf(drawn)) }
         } catch (e: Exception) {
-            Log.w(TAG, "Stored skin '$id' failed to load", e)
+            Log.w(TAG, "Stored skin '$drawn' failed to load", e)
             null
         }
     }

@@ -127,7 +127,7 @@ internal object WidgetSender {
             // the skin and the key it was cached under, from one read of what
             // is worn: a source's skin going on between two reads would pair
             // this picture with the next one's key
-            val (skinKey, skin) = CurrentSkin.keyed(context) ?: return@execute
+            val (skinKey, skin) = CurrentSkin.widgetKeyed(context) ?: return@execute
             val layout = WidgetLayout.choose(width, height, fill = size == WidgetSize.FILL)
             // a snapshot that says it is playing may have been written by a process that has since
             // gone

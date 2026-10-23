@@ -146,8 +146,9 @@ private fun skinManagerWidgets(
                         downOnRemove = pos.x >= frame.leftW + listW - SkinManagerLayout.REMOVE_W
                     },
                     onRelease = { row, tapped ->
-                        if (tapped && row in s.skinEntries.indices) {
-                            if (downOnRemove) vm.skinOps.removeAt(row) else vm.skinOps.applyAt(row)
+                        val id = s.skinEntries.getOrNull(row)?.id
+                        if (tapped && id != null) {
+                            if (downOnRemove) vm.skinOps.remove(id) else vm.skinOps.apply(id)
                         }
                     },
                 ),

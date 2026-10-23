@@ -25,6 +25,7 @@ import androidx.lifecycle.compose.LifecycleEventEffect
 import nl.mattix.andamp.R
 import nl.mattix.andamp.state.ListFont
 import nl.mattix.andamp.state.SkinEntry
+import nl.mattix.andamp.state.SkinKind
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.Words
 import nl.mattix.andamp.ui.remote.CompanionCheck
@@ -56,7 +57,8 @@ fun androidAutoPrefsOf(
     offered: Boolean,
 ) = AndroidAutoPrefs(
     offered = offered,
-    skins = vm.state.skinEntries,
+    // Android Auto wears classic skins only
+    skins = vm.state.skinEntries.filter { it.kind == SkinKind.CLASSIC },
     skin = vm.androidAutoStore.skin,
     onSkin = { vm.androidAutoStore.skin = it },
     listFont = vm.androidAutoStore.listFont,
