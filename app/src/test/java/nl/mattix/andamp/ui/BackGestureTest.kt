@@ -188,9 +188,12 @@ class BackGestureTest {
         compose.waitForIdle()
 
         back()
-
         assertFalse(state.milkdropFullscreen)
-        assertEquals(0, closed)
+        assertFalse("nothing is left to take back", compose.activity.onBackPressedDispatcher.hasEnabledCallbacks())
+
+        back()
+        assertEquals("the skin never hears it", 0, closed)
+        assertTrue("the last back leaves the player", compose.activity.isFinishing)
     }
 
     /** A backend that runs effects, so the Effects page has its plug-ins door. */

@@ -66,7 +66,7 @@ class MainMenuTest {
     }
 
     @Test
-    fun `without a skin's menu the root is as it was, and with one the rest follows unchanged`() {
+    fun `without a skin's menu the root starts at Play, and with one the rest follows unchanged`() {
         val vm = testViewModel()
 
         val plain = shape(mainMenu(vm, {}, {}, {}, {}).items)
@@ -89,13 +89,42 @@ class MainMenuTest {
             setOf("Playlist Editor", "Equalizer", "Options › Double Size", "Visualization › Visualization options"),
             grayed(modern.items) - grayed(classic.items),
         )
-        assertTrue("nothing grayed before lights up", grayed(modern.items).containsAll(grayed(classic.items)))
+        assertTrue("every entry grayed in the classic menu stays grayed", grayed(modern.items).containsAll(grayed(classic.items)))
         assertEquals(
             "the Milkdrop entries stay",
             listOf("Start/Stop plug-in", "Configure plug-in", "Select plug-in"),
             submenu(modern, "Visualization").drop(2).filter { enabled(it) }.map { labelOf(it) },
         )
     }
+
+    @Test
+    fun `with a modern skin worn, the grayed windows and Double Size show no tick`() {
+        val vm = testViewModel()
+        vm.state.plVisible = true
+        vm.state.eqVisible = true
+        vm.state.doubleSize = true
+        val entries = listOf("Playlist Editor", "Equalizer", "Options › Double Size")
+
+        val classic = ticked(mainMenu(vm, {}, {}, {}, {}).items)
+        val modern = ticked(mainMenu(vm, {}, {}, {}, {}, modernPlayer = true).items)
+
+        assertTrue("the classic player ticks them: $classic", classic.containsAll(entries))
+        assertEquals("only those lose their tick", classic - entries.toSet(), modern)
+    }
+
+    /** The entries that are ticked, named as [shape] names them. */
+    private fun ticked(
+        items: List<AmpMenuItem>,
+        path: String = "",
+    ): Set<String> =
+        items
+            .flatMap { item ->
+                when (item) {
+                    is AmpMenuItem.Action -> listOfNotNull((path + item.label).takeIf { item.checked })
+                    is AmpMenuItem.Submenu -> ticked(item.items, "$path${item.label} › ")
+                    AmpMenuItem.Divider -> emptyList()
+                }
+            }.toSet()
 
     /** Every entry's label, a divider as "-", with submenus walked as "Parent › Entry". */
     private fun shape(

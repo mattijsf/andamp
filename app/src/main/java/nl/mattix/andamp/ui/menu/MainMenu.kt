@@ -39,7 +39,7 @@ fun mainMenu(
     /**
      * A modern skin is worn. The player shows none of the classic windows and settings behind
      * Playlist Editor, Equalizer, Double Size and the in-player visualizer modes, so those entries
-     * are grayed and none of them changes unseen. The Milkdrop entries stay.
+     * are grayed and unticked, and none of them changes unseen. The Milkdrop entries stay.
      */
     modernPlayer: Boolean = false,
 ): AmpMenu {
@@ -82,7 +82,7 @@ fun mainMenu(
             AmpMenuItem.Action(
                 vm.words.get(R.string.menu_playlist_editor),
                 enabled = !modernPlayer,
-                checked = vm.state.plVisible,
+                checked = vm.state.plVisible && !modernPlayer,
                 needsTheApp = true,
             ) {
                 vm.state.setWindowOpen(WindowStore.PLAYLIST, !vm.state.plVisible) { vm.state.plVisible = it }
@@ -90,7 +90,7 @@ fun mainMenu(
             AmpMenuItem.Action(
                 vm.words.get(R.string.menu_equalizer),
                 enabled = !modernPlayer,
-                checked = vm.state.eqVisible,
+                checked = vm.state.eqVisible && !modernPlayer,
                 needsTheApp = true,
             ) {
                 vm.state.setWindowOpen(WindowStore.EQ, !vm.state.eqVisible) { vm.state.eqVisible = it }
@@ -139,10 +139,11 @@ fun mainMenu(
 }
 
 /**
- * The Visualization branch. With a modern skin worn the in-player modes are grayed, because the
- * skin draws the player and a mode picked there would not show; the Milkdrop entries stay.
+ * The entries of [visualizationMenu]. With a modern skin worn ([modernPlayer]) the in-player modes
+ * are grayed, because the skin draws the player and a mode picked there would not show; the
+ * Milkdrop entries stay.
  */
-private fun visualizationItems(
+internal fun visualizationItems(
     vm: WinampViewModel,
     modernPlayer: Boolean,
 ): List<AmpMenuItem> {
@@ -364,7 +365,7 @@ private fun optionsItems(
         AmpMenuItem.Action(
             vm.words.get(R.string.menu_double_size),
             enabled = !modernPlayer,
-            checked = vm.state.doubleSize,
+            checked = vm.state.doubleSize && !modernPlayer,
             needsTheApp = true,
             onClick = onDoubleSize,
         ),

@@ -15,9 +15,11 @@ internal interface WalSink {
      * - MINIMIZE, SYSMENU, CONTROLMENU and MENU.
      * - CLOSE, from the main window only; a skin window's close button closes it inside the skin.
      * - VIS_NEXT, VIS_PREV, VIS_MENU and VIS_FS.
-     * - TOGGLE of a window the app shows, with the window's short name as [param]: "ml" (the
-     *   library), "avs" (the visualizer) or "video"; or of a window the skin does not have, with
-     *   its lowercased id or GUID.
+     * - TOGGLE, with the window as [param]. Always for "ml" (the library), "avs" (the visualizer)
+     *   and "video", which the app shows, by that short name however the skin names the window
+     *   ("library", "musiclibrary" and the library's GUID arrive as "ml"). For any other window only
+     *   when the skin does not have it: "pl" for the playlist (also "playlist" or its GUID), else
+     *   its id or GUID, lowercased, without braces or "guid:".
      */
     fun hostAction(
         action: String,
