@@ -206,11 +206,20 @@ class SystemObject(
             }
 
             "getplaylistlength" -> {
-                int(1)
+                int(player.tracks.size)
             }
 
             "getplaylistindex" -> {
-                int(0)
+                int(player.trackIndex)
+            }
+
+            // the player can only make an entry current by playing it: while it is stopped or
+            // paused, the current entry stays
+            "setplaylistindex" -> {
+                Value.Null.also {
+                    val index = args[0].asInt
+                    if (player.status == Player.Status.PLAYING && index in player.tracks.indices) player.playTrack(index)
+                }
             }
 
             // the current song's, stopped or not (Winamp3x shows 64 and 8 after Stop); nothing without one
@@ -465,7 +474,7 @@ class SystemObject(
             // links, downloads, the clipboard and files stay shut: a skin's script reaches only the skin
             "lockui", "unlockui", "ddesend", "setcurrenttrackrating", "navigateurl", "enqueuefile", "playfile",
             "navigateurlbrowser", "popmainbrowser", "getmainbrowser", "downloadurl", "downloadmedia", "setdownloadpath",
-            "showwindow", "hidewindow", "selectfile", "selectfolder", "selectfilestart", "selectfileend", "setplaylistindex",
+            "showwindow", "hidewindow", "selectfile", "selectfolder", "selectfilestart", "selectfileend",
             "setclipboardtext", "setmenutransparency", "systemmenu", "windowmenu", "triggeraction", "popupmenu",
             -> {
                 Value.Null

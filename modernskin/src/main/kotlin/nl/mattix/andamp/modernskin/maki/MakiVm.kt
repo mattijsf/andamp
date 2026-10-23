@@ -68,6 +68,101 @@ class Script(
         cells[b.variable].value.asObject === target ||
             classMembers[b.variable]?.any { cells[it].value.asObject === target } == true
 
+    /**
+     * Whether a right-click handler here bound to [target] can reach a popup menu: one for
+     * onRightButtonDown or onRightButtonUp, and also onRightClick when [isButton]. Read from the
+     * bytecode (see [reachFrom]); no script runs.
+     */
+    fun rightClickMenu(
+        target: MakiObject,
+        isButton: Boolean,
+    ): Boolean = reachesMenu(target, rightClickEvents(isButton))
+
+    /** Whether a handler here for one of [events] bound to [target] can reach a popup menu, read from the bytecode. */
+    fun reachesMenu(
+        target: MakiObject,
+        events: Set<String>,
+    ): Boolean = !disabled && boundHandlers(target, events).any { reach(it).popsMenu }
+
+    /** The events the handlers here for [events] bound to [target] fire by calling them (`x.onLeftClick()`). */
+    fun eventsCalled(
+        target: MakiObject,
+        events: Set<String>,
+    ): Set<String> = if (disabled) emptySet() else boundHandlers(target, events).flatMapTo(HashSet()) { reach(it).calls }
+
+    /** The indexes of the bindings for [events] that hold [target]. */
+    private fun boundHandlers(
+        target: MakiObject,
+        events: Set<String>,
+    ): List<Int> =
+        program.bindings.indices.filter { i ->
+            val b = program.bindings[i]
+            program.methods[b.method].name in events && binds(b, target)
+        }
+
+    /** What a handler's code can reach: a popup menu, and the events it fires by calling them. */
+    private class Reach(
+        val popsMenu: Boolean,
+        val calls: Set<String>,
+    )
+
+    /** The [Reach] of each binding, worked out the first time it is asked for. */
+    private val reaches = arrayOfNulls<Reach>(program.bindings.size)
+
+    private fun reach(binding: Int): Reach =
+        reaches[binding] ?: reachFrom(program.bindings[binding].codeIndex).also { reaches[binding] = it }
+
+    /**
+     * Walks every instruction a run from [start] could reach, without running any: the next one,
+     * the targets of jumps, and a global call's function and the instruction it returns to, each
+     * path up to its RETURN. A popup menu counts wherever it is reached, under any condition.
+     */
+    private fun reachFrom(start: Int): Reach {
+        val code = program.code
+        val seen = BooleanArray(code.size)
+        val todo = ArrayDeque<Int>()
+        var popsMenu = false
+        val calls = HashSet<String>()
+
+        fun visit(ip: Int) {
+            if (ip in code.indices && !seen[ip]) {
+                seen[ip] = true
+                todo.addLast(ip)
+            }
+        }
+        visit(start)
+        while (todo.isNotEmpty()) {
+            val ip = todo.removeFirst()
+            val op = code[ip]
+            when (op.opcode) {
+                Opcodes.RETURN -> {
+                    Unit
+                }
+
+                Opcodes.JUMP -> {
+                    visit(op.arg)
+                }
+
+                Opcodes.JUMP_IF, Opcodes.JUMP_IF_NOT, Opcodes.CALL_GLOBAL -> {
+                    visit(op.arg)
+                    visit(ip + 1)
+                }
+
+                Opcodes.CALL, Opcodes.CALL2 -> {
+                    val name = program.methods.getOrNull(op.arg)?.name ?: ""
+                    if (name in MENU_CALLS) popsMenu = true
+                    if (name.startsWith("on")) calls += name
+                    visit(ip + 1)
+                }
+
+                else -> {
+                    visit(ip + 1)
+                }
+            }
+        }
+        return Reach(popsMenu, calls)
+    }
+
     /** The events this script listens to, for a quick check before dispatching: none once it is [disabled]. */
     val events: Set<String> get() = if (disabled) emptySet() else bindingsByEvent.keys
 
@@ -190,10 +285,18 @@ class Script(
         return Value.Null
     }
 
-    private companion object {
-        const val STEPS_PER_FRAME = 4_000_000
-        const val MAX_FAILURES = 20
-        const val MAX_MEMBERS = 65_536
+    companion object {
+        private const val STEPS_PER_FRAME = 4_000_000
+        private const val MAX_FAILURES = 20
+        private const val MAX_MEMBERS = 65_536
+
+        /** The PopupMenu calls that show a menu. */
+        private val MENU_CALLS = setOf("popatmouse", "popatxy")
+        private val RIGHT_BUTTON = setOf("onrightbuttondown", "onrightbuttonup")
+        private val RIGHT_BUTTON_AND_CLICK = RIGHT_BUTTON + "onrightclick"
+
+        /** The events a right click fires: the right button going down and up, and on a Button also onRightClick. */
+        fun rightClickEvents(isButton: Boolean): Set<String> = if (isButton) RIGHT_BUTTON_AND_CLICK else RIGHT_BUTTON
     }
 }
 

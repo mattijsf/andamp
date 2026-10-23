@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package nl.mattix.andamp.modernskin
 
+import nl.mattix.andamp.modernskin.maki.Value
 import nl.mattix.andamp.modernskin.skin.Button
 import nl.mattix.andamp.modernskin.skin.DrawCmd
 import nl.mattix.andamp.modernskin.skin.FakePlayer
@@ -9,8 +10,12 @@ import nl.mattix.andamp.modernskin.skin.Player
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinHost
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
+import nl.mattix.andamp.modernskin.skin.Slider
+import nl.mattix.andamp.modernskin.skin.SystemObject
+import nl.mattix.andamp.modernskin.skin.Track
 import nl.mattix.andamp.modernskin.skin.ZipSkinFiles
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.ByteArrayInputStream
@@ -57,6 +62,151 @@ class TestHost(
 }
 
 class SkinRuntimeTest {
+    // a main window with a 0..100 volume slider, a playlist window that can be made taller, and two
+    // color themes
+    private val small =
+        object : SkinFiles {
+            private val m =
+                mapOf(
+                    "skin.xml" to
+                        """<WinampAbstractionLayer version="0.8"><include file="player.xml"/></WinampAbstractionLayer>""",
+                    "player.xml" to
+                        """<gammaset id="One"/><gammaset id="Two"/>""" +
+                        """<container id="main" name="t" default_visible="1"><layout id="normal" w="200" h="100">""" +
+                        """<slider id="volume" action="volume" low="0" high="100" """ +
+                        """x="0" y="0" w="100" h="10" orientation="h"/>""" +
+                        """</layout></container>""" +
+                        """<container id="pl" name="Playlist" default_visible="0"><layout id="normal" w="200" h="80">""" +
+                        """<layer id="sizer" resize="bottomright" x="190" y="70" w="10" h="10"/>""" +
+                        """</layout></container>""",
+                ).mapValues { it.value.toByteArray() }
+
+            override fun read(path: String): ByteArray? = m[SkinFiles.normalize(path)]
+
+            override fun names(): List<String> = m.keys.toList()
+        }
+
+    /** The small skin loaded, on a clock that stands still. */
+    private fun small(player: FakePlayer = FakePlayer()): SkinRuntime {
+        player.clock = { 0L }
+        return SkinRuntime(small, TestHost(small), player).apply {
+            clock = { 0L }
+            load()
+        }
+    }
+
+    /** Ticks and draws until nothing asks for a frame. */
+    private fun settle(rt: SkinRuntime) {
+        repeat(10) {
+            rt.tick()
+            rt.drawWindows()
+        }
+    }
+
+    @Test
+    fun `a private value, a config attribute and a color theme each count as a settings change, an idle tick not`() {
+        val rt = small()
+        val system = SystemObject(rt, null, "", "test")
+        val start = rt.settingsVersion
+
+        system.makiCall("setprivatestring", listOf(Value.Str("skin"), Value.Str("tab"), Value.Str("pl")))
+        assertEquals(start + 1, rt.settingsVersion)
+        system.makiCall("setprivatestring", listOf(Value.Str("skin"), Value.Str("tab"), Value.Str("pl")))
+        assertEquals("the same value again changes nothing", start + 1, rt.settingsVersion)
+
+        val item = checkNotNull(rt.configItem("options", "{guid}"))
+        val attribute = checkNotNull(item.makiCall("newattribute", listOf(Value.Str("drawer"), Value.Str("0")))?.asObject)
+        attribute.makiCall("setdata", listOf(Value.Str("1")))
+        assertEquals(start + 2, rt.settingsVersion)
+
+        rt.selectGammaSet("Two")
+        assertEquals(start + 3, rt.settingsVersion)
+        rt.selectGammaSet("two")
+        assertEquals("the theme already on changes nothing", start + 3, rt.settingsVersion)
+
+        settle(rt)
+        assertEquals(start + 3, rt.settingsVersion)
+    }
+
+    @Test
+    fun `with stretchLast off the last window keeps its height, on it fills the view`() {
+        val rt = small()
+        rt.viewSize = 200 to 400
+        rt.openWindow(checkNotNull(rt.container("pl")))
+        val pl = checkNotNull(rt.container("pl")?.current)
+
+        assertEquals(200 to 400, rt.stackSize)
+        assertEquals(300, rt.windowRect(pl).height)
+
+        rt.stretchLast = false
+        assertEquals(200 to 180, rt.stackSize)
+        assertEquals(80, rt.windowRect(pl).height)
+
+        rt.stretchLast = true
+        assertEquals(200 to 400, rt.stackSize)
+    }
+
+    @Test
+    fun `the playlist calls read the player's playlist, and an entry is set only while playing`() {
+        val player = FakePlayer().apply { playlist = listOf(Track("One", 1_000), Track("Two", 2_000), Track("Three", 3_000)) }
+        val rt = small(player)
+        val system = SystemObject(rt, null, "", "test")
+
+        assertEquals(3, system.makiCall("getplaylistlength", emptyList())?.asInt)
+        assertEquals(0, system.makiCall("getplaylistindex", emptyList())?.asInt)
+
+        system.makiCall("setplaylistindex", listOf(Value.Int(2)))
+        assertEquals("stopped, nothing starts", Player.Status.STOPPED, player.status)
+        assertEquals(0, player.trackIndex)
+
+        player.play()
+        system.makiCall("setplaylistindex", listOf(Value.Int(2)))
+        assertEquals(2, player.trackIndex)
+        assertEquals(2, system.makiCall("getplaylistindex", emptyList())?.asInt)
+        system.makiCall("setplaylistindex", listOf(Value.Int(9)))
+        assertEquals("past the end, nothing changes", 2, player.trackIndex)
+    }
+
+    @Test
+    fun `a changed playlist or current entry asks for one frame`() {
+        val player = FakePlayer()
+        val rt = small(player)
+        settle(rt)
+        assertFalse(rt.tick())
+
+        player.playlist = List(3) { Track("Same", 60_000) }
+        assertTrue(rt.tick())
+        rt.drawWindows()
+        assertFalse(rt.tick())
+
+        player.play()
+        settle(rt)
+        // the same title and length, so only the current entry changes
+        player.playTrack(1)
+        assertTrue(rt.tick())
+        rt.drawWindows()
+        assertFalse(rt.tick())
+    }
+
+    @Test
+    fun `a slider let go of stays where it was let go`() {
+        val player = FakePlayer()
+        val rt = small(player)
+        settle(rt)
+        val slider = checkNotNull(rt.mainLayout?.findObject("volume")) as Slider
+
+        // 35 px in, plus the 2 px a thumbless slider is held by: 37 of 100
+        rt.pointerDown(35, 5)
+        rt.pointerUp(35, 5)
+        assertEquals(37, slider.position)
+        assertEquals(94, player.volume)
+
+        repeat(10) {
+            rt.tick()
+            assertEquals(37, slider.position)
+        }
+    }
+
     private fun corner(): Triple<SkinRuntime, TestHost, FakePlayer> {
         val file = File(localResource("/CornerAmp_Redux.wal").toURI())
         val files = ZipSkinFiles(file)

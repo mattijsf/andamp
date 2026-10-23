@@ -425,7 +425,8 @@ open class GuiObject(
     /** The press ends without a release (a menu took the touch): the object lets go, and scripts hear nothing. */
     open fun pointerCancel() = Unit
 
-    open fun longPress(
+    /** A right click at a point of its window: the right button goes down and up. */
+    open fun rightClick(
         px: Int,
         py: Int,
     ) {

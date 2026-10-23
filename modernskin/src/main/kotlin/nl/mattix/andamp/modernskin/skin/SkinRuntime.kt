@@ -61,7 +61,19 @@ class SkinRuntime(
             return host.log("setting $k too long, not kept")
         }
         if (k !in map && map.size >= MAX_SETTINGS) return host.log("too many settings, $k not kept")
-        map[k] = value
+        if (map.put(k, value) != value) settingsChanged()
+    }
+
+    /**
+     * Counts changes to what a host keeps of the skin between runs: the scripts' private and public
+     * values, the config attributes ([storedSettings]) and the color theme. Writing a value that is
+     * already there changes nothing.
+     */
+    var settingsVersion = 0
+        private set
+
+    internal fun settingsChanged() {
+        settingsVersion++
     }
 
     private val configFlags = HashMap<String, Boolean>()
@@ -108,6 +120,10 @@ class SkinRuntime(
     val unhandledParams = sortedMapOf<String, Int>()
     private var lastTitle = player.title
     private var lastVolume = player.volume
+
+    // the playlist and its current entry at the last tick: a change asks for a frame
+    private var lastTracks = player.tracks
+    private var lastTrackIndex = player.trackIndex
 
     // the equalizer as scripts last heard it: changes made elsewhere reach them as System events
     private var lastEqOn = player.eqEnabled
@@ -292,6 +308,7 @@ class SkinRuntime(
 
     fun selectGammaSet(name: String) {
         val match = gammaSets.keys.firstOrNull { it.equals(name, ignoreCase = true) } ?: return
+        if (match != currentGammaSet) settingsChanged()
         currentGammaSet = match
         invalidate()
     }
@@ -341,7 +358,7 @@ class SkinRuntime(
     /**
      * Windows a skin button opened (playlist, color themes, ...), in the order they opened. A phone
      * shows them stacked under the main window, as Winamp's docked windows sit: each as wide as the
-     * main window, the last one filling the height that is left (see [viewSize]).
+     * main window, the last one filling the height that is left (see [viewSize] and [stretchLast]).
      */
     private val opened = ArrayList<Container>()
 
@@ -353,6 +370,19 @@ class SkinRuntime(
 
     /** The space the app has for the stack, in layout pixels; null leaves windows at their own size. */
     var viewSize: Pair<Int, Int>? = null
+        set(value) {
+            if (value != field) {
+                field = value
+                relayout()
+            }
+        }
+
+    /**
+     * Whether the last docked window takes the height [viewSize] leaves under the others, when it
+     * can be made taller. Off, every window keeps the height the skin gives it (a phone held
+     * sideways).
+     */
+    var stretchLast = true
         set(value) {
             if (value != field) {
                 field = value
@@ -432,12 +462,13 @@ class SkinRuntime(
             if (view != null) {
                 // as wide as what shows of the main window (MMD3 keeps room on its right for a panel)
                 l.w = main.contentRight()
-                // the skin's own height (or its minimum), unless it is the last, room is left and the
-                // window can be made taller
+                // the height the skin gives it (or its minimum), unless it is the last, room is
+                // left, the window can be made taller and stretchLast is on
                 l.h = l.attrs["h"]?.toIntLenient()
                 val natural = l.size.second
                 val left = view.second - y
-                if (i == others.lastIndex && left > natural && l.resizesVertically()) l.h = left
+                val stretches = stretchLast && i == others.lastIndex
+                if (stretches && left > natural && l.resizesVertically()) l.h = left
             }
             val (w, h) = l.size
             placed[l] = Rect(0, y, w, h)
@@ -1374,7 +1405,8 @@ class SkinRuntime(
 
     /**
      * Tells the scripts what changed in the player since the last tick, as System events: its
-     * [status], the title, the equalizer and the volume.
+     * [status], the title, the equalizer and the volume. A changed playlist or current entry asks
+     * for a frame.
      */
     private fun announcePlayer(status: Player.Status) {
         if (status != lastStatus) {
@@ -1421,6 +1453,16 @@ class SkinRuntime(
         if (player.volume != lastVolume) {
             lastVolume = player.volume
             dispatchSystem("onvolumechanged", Value.Int(lastVolume))
+        }
+        // another list with the same rows shows the same (a player may build the list on every read)
+        val tracks = player.tracks
+        if (tracks !== lastTracks) {
+            if (tracks != lastTracks) dirty = true
+            lastTracks = tracks
+        }
+        if (player.trackIndex != lastTrackIndex) {
+            lastTrackIndex = player.trackIndex
+            dirty = true
         }
     }
 
@@ -1640,11 +1682,18 @@ class SkinRuntime(
     /** Where the captured object's window sits, to turn stack points into its own. */
     private var capturedOrigin = Rect(0, 0, 0, 0)
 
-    /** Pointer events take points of the stack (see [windowRect]); objects hear points of their window. */
+    /**
+     * Pointer events take points of the stack (see [windowRect]); objects hear points of their
+     * window. [seq] names this touch for [menuTarget] and [rightClick].
+     */
     fun pointerDown(
         sx: Int,
         sy: Int,
-    ) = gesture(fresh = true) { pointerDownAt(sx, sy) }
+        seq: Int = 0,
+    ) = gesture(fresh = true) {
+        aimMenu(sx, sy, seq)
+        pointerDownAt(sx, sy)
+    }
 
     private fun pointerDownAt(
         sx: Int,
@@ -1724,14 +1773,19 @@ class SkinRuntime(
         captured = null
         held?.pointerCancel()
         val origin = target.layoutObject?.let { windowRect(it) } ?: Rect(0, 0, 0, 0)
-        target.longPress(sx - origin.left, sy - origin.top)
+        target.rightClick(sx - origin.left, sy - origin.top)
         held?.let(::leaveArea)
     }
 
+    /** A second tap of a double tap, at a point of the stack; [seq] names it as [pointerDown]'s does. */
     fun doubleTap(
         sx: Int,
         sy: Int,
-    ) = gesture(fresh = true) { doubleTapAt(sx, sy) }
+        seq: Int = 0,
+    ) = gesture(fresh = true) {
+        aimMenu(sx, sy, seq)
+        doubleTapAt(sx, sy)
+    }
 
     private fun doubleTapAt(
         sx: Int,
@@ -1742,6 +1796,107 @@ class SkinRuntime(
         val origin = target.layoutObject?.let { windowRect(it) } ?: Rect(0, 0, 0, 0)
         target.doubleTap(sx - origin.left, sy - origin.top)
     }
+
+    /** The object with a skin menu a touch landed on: the touch's seq, and the point in the object's window. */
+    private class MenuAim(
+        val seq: Int,
+        val target: GuiObject,
+        val x: Int,
+        val y: Int,
+    )
+
+    private var menuAim: MenuAim? = null
+
+    /**
+     * The seq of the last [pointerDown] or [doubleTap] when it landed on an object with a skin menu
+     * (see [hasSkinMenu]), else null: [rightClick] with that seq opens the menu.
+     */
+    val menuTarget: Int? get() = menuAim?.seq
+
+    /** Remembers the object with a skin menu under a touch at a point of the stack, or none. */
+    private fun aimMenu(
+        sx: Int,
+        sy: Int,
+        seq: Int,
+    ) {
+        menuAim = null
+        if (needsLayout) doLayout()
+        val window = windowAt(sx, sy) ?: return
+        val origin = windowRect(window)
+        val target = menuObjectAt(window, sx - origin.left, sy - origin.top) ?: return
+        menuAim = MenuAim(seq, target, sx - origin.left, sy - origin.top)
+    }
+
+    /**
+     * The object a right click at a point of [window] means, among objects with a skin menu only:
+     * the topmost under the finger, else the nearest within [touchSlop] (the topmost on a tie). A
+     * ghost takes no clicks; one drawn fully transparent does, as a mouse clicks it.
+     */
+    private fun menuObjectAt(
+        window: Layout,
+        x: Int,
+        y: Int,
+    ): GuiObject? {
+        val slop2 = touchSlop * touchSlop
+        // the cheap tests first: a script's bytecode is read only for objects within reach; those
+        // under the finger are at 0, and the first of the nearest is the topmost
+        return objects
+            .asReversed()
+            .asSequence()
+            .filter { it.layoutObject === window && !it.ghost && touchable(it, faded = true) }
+            .map { it to distance2(it, x, y) }
+            .filter { (o, d) -> d <= slop2 && hasSkinMenu(o) }
+            .minByOrNull { it.second }
+            ?.first
+    }
+
+    /**
+     * Whether a right click on [o] can open a menu of the skin's, read from the scripts' bytecode
+     * without running them (see [Script.rightClickMenu]). It counts the handlers a right click fires:
+     * on [o] and, where [o] is the child a xui group exposes, on that group, in every script. It
+     * follows one level further: an event such a handler fires by calling it (Bento's onRightClick
+     * calls onLeftClick) counts with its handlers on the same objects. A menu behind a condition
+     * counts; one a timer or another object's event opens does not.
+     */
+    internal fun hasSkinMenu(o: GuiObject): Boolean {
+        val chain = dispatchChain(o)
+        val events = Script.rightClickEvents(o is Button)
+        if (chain.any { c -> scripts.any { it.reachesMenu(c, events) } }) return true
+        val called = chain.flatMapTo(HashSet()) { c -> scripts.flatMap { it.eventsCalled(c, events) } }
+        return called.isNotEmpty() && chain.any { c -> scripts.any { it.reachesMenu(c, called) } }
+    }
+
+    /** The objects an event on [o] fires on: [o], then each group that exposes the one before as its xui child. */
+    private fun dispatchChain(o: GuiObject): List<GuiObject> {
+        val chain = arrayListOf(o)
+        var at = o
+        while (true) {
+            val p = at.parent
+            if (p !is Group || p.embedXui != at.id || p in chain) break
+            chain += p
+            at = p
+        }
+        return chain
+    }
+
+    /**
+     * A right click on the object the touch [seq] landed on, at the point it landed (see
+     * [menuTarget]), as a separate touch: onRightButtonDown and onRightButtonUp, and on a Button
+     * then onRightClick. A menu a handler pops shows, even after the host ended the press with
+     * [pointerCancel]. Nothing happens for an older touch's seq, or when the object is no longer on
+     * screen (its window closed or its layout switched away).
+     */
+    fun rightClick(seq: Int) =
+        gesture(fresh = true) {
+            val aim = menuAim?.takeIf { it.seq == seq } ?: return@gesture
+            if (needsLayout) doLayout()
+            if (aim.target !in objects) return@gesture
+            // a press still held lets go first, as a right click takes the mouse
+            if (captured != null) endPress()
+            lastPointer = aim.x to aim.y
+            aim.target.rightClick(aim.x, aim.y)
+            if (aim.target is Button) aim.target.dispatch("onrightclick")
+        }
 
     /** Pointer calls running now; a skin may pop a menu only from one, as a reply to the listener's touch. */
     private var gestureDepth = 0
@@ -2135,29 +2290,32 @@ class SkinRuntime(
         }
     }
 
-    /** Where the player says a slider should sit, or null for one the player does not drive. */
+    /**
+     * Where the player says a slider should sit, or null for one the player does not drive. It
+     * rounds, as [sliderMoved] does, so a thumb let go stays where it was let go.
+     */
     fun sliderTarget(s: Slider): Int? =
         when (s.action) {
             "seek" -> {
                 if (player.lengthMs >
                     0
                 ) {
-                    s.low + (player.positionMs.toLong() * (s.high - s.low) / player.lengthMs).toInt()
+                    s.low + scaled(player.positionMs, player.lengthMs, s.high - s.low)
                 } else {
                     s.low
                 }
             }
 
             "volume" -> {
-                s.low + player.volume * (s.high - s.low) / 255
+                s.low + scaled(player.volume, 255, s.high - s.low)
             }
 
             "eq_band" -> {
-                eqValue(s.param)?.let { s.low + it * (s.high - s.low) / 255 }
+                eqValue(s.param)?.let { s.low + scaled(it, 255, s.high - s.low) }
             }
 
             "eq_preamp" -> {
-                s.low + player.eqPreamp * (s.high - s.low) / 255
+                s.low + scaled(player.eqPreamp, 255, s.high - s.low)
             }
 
             // balance sits in the middle; the player has no pan yet
@@ -2177,32 +2335,41 @@ class SkinRuntime(
             else -> param?.toIntOrNull()?.let { player.eqBands.getOrNull(it - 1) }
         }
 
+    /** [value] out of [whole], as a share of [range], rounded to the nearest. */
+    private fun scaled(
+        value: Int,
+        whole: Int,
+        range: Int,
+    ): Int = Math.round(value.toDouble() * range / whole).toInt()
+
+    /** Drives the player from a slider the listener moved; the values round to the nearest. */
     fun sliderMoved(
         s: Slider,
         final: Boolean,
     ) {
         val frac = (s.position - s.low).toDouble() / maxOf(1, s.high - s.low)
+        val level = Math.round(frac * 255).toInt()
         when (s.action) {
             "seek" -> {
                 if (final) {
-                    player.seekTo((frac * player.lengthMs).toInt())
+                    player.seekTo(Math.round(frac * player.lengthMs).toInt())
                     dispatchSystem("onseek", Value.Int(player.positionMs))
                 }
             }
 
             "volume" -> {
-                player.volume = (frac * 255).toInt()
+                player.volume = level
             }
 
             "eq_band" -> {
                 when {
-                    s.param.equals("preamp", ignoreCase = true) -> player.eqPreamp = (frac * 255).toInt()
-                    else -> s.param?.toIntOrNull()?.let { player.setEqBand(it - 1, (frac * 255).toInt()) }
+                    s.param.equals("preamp", ignoreCase = true) -> player.eqPreamp = level
+                    else -> s.param?.toIntOrNull()?.let { player.setEqBand(it - 1, level) }
                 }
             }
 
             "eq_preamp" -> {
-                player.eqPreamp = (frac * 255).toInt()
+                player.eqPreamp = level
             }
         }
     }
