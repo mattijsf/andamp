@@ -74,7 +74,8 @@ fun AmpModals(
     val scheme = skin?.let { rememberSkinColorScheme(it) } ?: darkColorScheme()
     MaterialTheme(colorScheme = scheme) {
         s.activeMenu?.let { menu ->
-            AmpContextMenu(menu, anchorBounds(menu.anchor), modifier) { s.activeMenu = null }
+            // clear only the menu this popup showed: another may have been put up in its place
+            AmpContextMenu(menu, anchorBounds(menu.anchor), modifier) { if (s.activeMenu === menu) s.activeMenu = null }
         }
         s.presetPicker?.let { picker ->
             PresetPickerDialog(picker) { if (s.presetPicker === picker) s.presetPicker = null }
@@ -112,6 +113,10 @@ fun AmpModals(
     }
 }
 
+/**
+ * [menu] as a popup from [anchor]. [onDismiss] closes it after a pick, and after Back or a tap
+ * outside, which first call [AmpMenu.onDismiss].
+ */
 @Composable
 internal fun AmpContextMenu(
     menu: AmpMenu,
@@ -130,7 +135,13 @@ internal fun AmpContextMenu(
             .size(with(density) { anchor.width.toDp() }, with(density) { anchor.height.toDp() })
             .testTag("menu.anchor"),
     ) {
-        DropdownMenu(expanded = true, onDismissRequest = onDismiss) {
+        DropdownMenu(
+            expanded = true,
+            onDismissRequest = {
+                menu.onDismiss?.invoke()
+                onDismiss()
+            },
+        ) {
             val open = path.lastOrNull()
             if (open != null) {
                 MenuRow(open.label, leading = "‹", emphasized = true) { path = path.dropLast(1) }

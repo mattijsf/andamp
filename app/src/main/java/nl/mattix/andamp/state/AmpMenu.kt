@@ -12,6 +12,8 @@ data class AmpMenu(
     val title: String,
     val items: List<AmpMenuItem>,
     val anchor: MenuAnchor? = null,
+    /** Called when the menu closes with no pick, on Back or a tap outside it; a pick calls only its entry. */
+    val onDismiss: (() -> Unit)? = null,
 )
 
 /**

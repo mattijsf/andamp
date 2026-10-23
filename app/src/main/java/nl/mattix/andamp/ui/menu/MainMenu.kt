@@ -32,14 +32,28 @@ fun mainMenu(
     onAlwaysOnTop: () -> Unit = {},
     /** Winamp's Ctrl+D, Double Size, listed under Options after Always On Top. */
     onDoubleSize: () -> Unit = {},
+    /** Opens a modern skin's right-click menu at the press; when set, "Skin menu" comes first, then a divider. */
+    onSkinMenu: (() -> Unit)? = null,
+    /** Where the menu pops from: unless given, the options button in the titlebar, like Winamp's system-menu icon. */
+    anchor: MenuAnchor = MenuAnchor(WindowStore.MAIN, OPTIONS_X, OPTIONS_Y, OPTIONS_W, OPTIONS_H),
+    /**
+     * A modern skin is worn. The player shows none of the classic windows and settings behind
+     * Playlist Editor, Equalizer, Double Size and the in-player visualizer modes, so those entries
+     * are grayed and unticked, and none of them changes unseen. The Milkdrop entries stay.
+     */
+    modernPlayer: Boolean = false,
 ): AmpMenu {
     val skins = skinItems(vm, onPickSkin, onMuseum)
     val bookmarks = bookmarksMenu(vm)
-    val options = optionsItems(vm, onPreferences, skins, onAlwaysOnTop, onDoubleSize)
+    val options = optionsItems(vm, onPreferences, skins, onAlwaysOnTop, onDoubleSize, modernPlayer)
     val playback = playbackItems(vm)
     return AmpMenu(
         vm.words.get(R.string.menu_winamp),
-        listOf(
+        listOfNotNull(
+            // the skin's right-click menu, first and set apart; an action, not a submenu, because
+            // the skin's menu has no entries until its script builds them
+            onSkinMenu?.let { AmpMenuItem.Action(vm.words.get(R.string.menu_skin_menu), onClick = it) },
+            AmpMenuItem.Divider.takeIf { onSkinMenu != null },
             AmpMenuItem.Submenu(
                 vm.words.get(R.string.menu_play),
                 listOf(
@@ -65,10 +79,20 @@ fun mainMenu(
             AmpMenuItem.Divider,
             // Winamp ticks its open windows here. There is no Main Window entry because the player
             // cannot be closed, and no Minibrowser because there is none
-            AmpMenuItem.Action(vm.words.get(R.string.menu_playlist_editor), checked = vm.state.plVisible, needsTheApp = true) {
+            AmpMenuItem.Action(
+                vm.words.get(R.string.menu_playlist_editor),
+                enabled = !modernPlayer,
+                checked = vm.state.plVisible && !modernPlayer,
+                needsTheApp = true,
+            ) {
                 vm.state.setWindowOpen(WindowStore.PLAYLIST, !vm.state.plVisible) { vm.state.plVisible = it }
             },
-            AmpMenuItem.Action(vm.words.get(R.string.menu_equalizer), checked = vm.state.eqVisible, needsTheApp = true) {
+            AmpMenuItem.Action(
+                vm.words.get(R.string.menu_equalizer),
+                enabled = !modernPlayer,
+                checked = vm.state.eqVisible && !modernPlayer,
+                needsTheApp = true,
+            ) {
                 vm.state.setWindowOpen(WindowStore.EQ, !vm.state.eqVisible) { vm.state.eqVisible = it }
             },
             // a window, ticked while it is on screen like the others here
@@ -94,7 +118,11 @@ fun mainMenu(
             AmpMenuItem.Submenu(vm.words.get(R.string.menu_playback), playback),
             // every entry under it moves the player's own visualizer or opens the plug-in window,
             // so the whole branch is marked as needing the app
-            AmpMenuItem.Submenu(vm.words.get(R.string.menu_visualization), visualizationMenu(vm).items, needsTheApp = true),
+            AmpMenuItem.Submenu(
+                vm.words.get(R.string.menu_visualization),
+                visualizationItems(vm, modernPlayer),
+                needsTheApp = true,
+            ),
             AmpMenuItem.Submenu(vm.words.get(R.string.menu_skins), skins),
             AmpMenuItem.Divider,
             // Preferences, opened on the page with the tips; every host of the menu can open
@@ -106,9 +134,23 @@ fun mainMenu(
             AmpMenuItem.Divider,
             AmpMenuItem.Action(vm.words.get(R.string.menu_exit), onClick = onExit),
         ),
-        // the options button in the titlebar, like Winamp's system-menu icon
-        MenuAnchor(WindowStore.MAIN, OPTIONS_X, OPTIONS_Y, OPTIONS_W, OPTIONS_H),
+        anchor,
     )
+}
+
+/**
+ * The entries of [visualizationMenu]. With a modern skin worn ([modernPlayer]) the in-player modes
+ * are grayed, because the skin draws the player and a mode picked there would not show; the
+ * Milkdrop entries stay.
+ */
+internal fun visualizationItems(
+    vm: WinampViewModel,
+    modernPlayer: Boolean,
+): List<AmpMenuItem> {
+    val items = visualizationMenu(vm).items
+    if (!modernPlayer) return items
+    val modes = vm.words.get(R.string.menu_visualization_options)
+    return items.map { if (it is AmpMenuItem.Submenu && it.label == modes) it.copy(enabled = false) else it }
 }
 
 /**
@@ -297,6 +339,8 @@ private fun optionsItems(
     skins: List<AmpMenuItem>,
     onAlwaysOnTop: () -> Unit,
     onDoubleSize: () -> Unit,
+    /** Grays Double Size while a modern skin is worn; see [mainMenu]. */
+    modernPlayer: Boolean = false,
 ): List<AmpMenuItem> =
     listOf(
         AmpMenuItem.Action(vm.words.get(R.string.menu_preferences), onClick = onPreferences),
@@ -320,7 +364,8 @@ private fun optionsItems(
         ),
         AmpMenuItem.Action(
             vm.words.get(R.string.menu_double_size),
-            checked = vm.state.doubleSize,
+            enabled = !modernPlayer,
+            checked = vm.state.doubleSize && !modernPlayer,
             needsTheApp = true,
             onClick = onDoubleSize,
         ),

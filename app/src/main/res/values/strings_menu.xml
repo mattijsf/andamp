@@ -3,6 +3,8 @@
     <!-- MainMenu.kt -->
     <!-- The title of the player's main menu: the name Winamp gives it. -->
     <string name="menu_winamp" translatable="false">Winamp</string>
+    <!-- The main menu's first entry where a modern skin has a right-click menu at the long press; opens that menu. -->
+    <string name="menu_skin_menu">Skin menu</string>
     <string name="menu_play">Play</string>
     <string name="menu_play_file">Play file...</string>
     <string name="menu_play_directory">Play directory...</string>

@@ -21,6 +21,7 @@ import nl.mattix.andamp.state.LibraryAccess
 import nl.mattix.andamp.state.PluginOps
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.ui.prefs.PreferencesPage
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -30,8 +31,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 
 /**
- * What the back gesture closes: a preferences page, the skin manager and the visualizer's
- * full screen each take it before the player does.
+ * What the back gesture closes: a preferences page, the skin manager, the visualizer's full
+ * screen and a modern skin's window each take it before the player does.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h891dp-mdpi")
@@ -151,6 +152,48 @@ class BackGestureTest {
 
         assertFalse("back closes the skin manager first", vm.skinManagerOpen)
         assertTrue("the visualizer stays full screen", vm.milkdropFullscreen)
+    }
+
+    @Test
+    fun `a modern skin's window closes after the skin manager, the library and the visualizer's full screen`() {
+        val state = WinampState()
+        var closed = 0
+        compose.setContent { BackCloses(state, skinWindowOpen = true, closeSkinWindow = { closed++ }) }
+        compose.runOnUiThread {
+            state.skinManagerOpen = true
+            state.libraryOpen = true
+            state.milkdropFullscreen = true
+        }
+        compose.waitForIdle()
+
+        back()
+        assertFalse("the skin manager goes first", state.skinManagerOpen)
+        back()
+        assertFalse("then the library", state.libraryOpen)
+        back()
+        assertFalse("then the visualizer's full screen", state.milkdropFullscreen)
+        assertEquals("the skin's window waits for all of them", 0, closed)
+
+        back()
+        assertEquals("then the skin's window, once", 1, closed)
+        assertTrue("the player activity stays open", compose.activity.isFinishing.not())
+    }
+
+    @Test
+    fun `with no skin window open, back never reaches the skin`() {
+        val state = WinampState()
+        var closed = 0
+        compose.setContent { BackCloses(state, skinWindowOpen = false, closeSkinWindow = { closed++ }) }
+        compose.runOnUiThread { state.milkdropFullscreen = true }
+        compose.waitForIdle()
+
+        back()
+        assertFalse(state.milkdropFullscreen)
+        assertFalse("nothing is left to take back", compose.activity.onBackPressedDispatcher.hasEnabledCallbacks())
+
+        back()
+        assertEquals("the skin never hears it", 0, closed)
+        assertTrue("the last back leaves the player", compose.activity.isFinishing)
     }
 
     /** A backend that runs effects, so the Effects page has its plug-ins door. */

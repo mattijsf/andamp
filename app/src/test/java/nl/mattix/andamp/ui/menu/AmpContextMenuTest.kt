@@ -2,6 +2,9 @@
 
 package nl.mattix.andamp.ui.menu
 
+import android.view.KeyEvent
+import android.view.MotionEvent
+import android.view.View
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.junit4.v2.createComposeRule
@@ -18,6 +21,7 @@ import nl.mattix.andamp.state.NamePrompt
 import nl.mattix.andamp.state.WinampState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -96,6 +100,123 @@ class AmpContextMenuTest {
         compose.waitForIdle()
         assertTrue(fired)
         assertNull(state.activeMenu)
+    }
+
+    @Test
+    fun `a pick runs its entry and closes the menu without calling onDismiss`() {
+        var fired = 0
+        var dismissed = 0
+        show(AmpMenu("Root", listOf(AmpMenuItem.Action("Do it") { fired++ }), onDismiss = { dismissed++ }))
+
+        compose.onNodeWithText("Do it").performClick()
+        compose.waitForIdle()
+
+        assertEquals(1, fired)
+        assertEquals("a pick is not a dismissal", 0, dismissed)
+        assertNull(state.activeMenu)
+    }
+
+    @Test
+    fun `a tap outside closes the menu and calls onDismiss once`() {
+        var fired = 0
+        var dismissed = 0
+        show(AmpMenu("Root", listOf(AmpMenuItem.Action("Do it") { fired++ }), onDismiss = { dismissed++ }))
+
+        compose.runOnUiThread { tapOutside(popup()) }
+        compose.waitForIdle()
+
+        assertEquals(1, dismissed)
+        assertEquals("nothing was picked", 0, fired)
+        assertNull(state.activeMenu)
+        compose.onNodeWithText("Do it").assertDoesNotExist()
+    }
+
+    @Test
+    fun `back closes the menu and calls onDismiss once`() {
+        var fired = 0
+        var dismissed = 0
+        show(AmpMenu("Root", listOf(AmpMenuItem.Action("Do it") { fired++ }), onDismiss = { dismissed++ }))
+
+        compose.runOnUiThread { pressBack(popup()) }
+        compose.waitForIdle()
+
+        assertEquals(1, dismissed)
+        assertEquals("nothing was picked", 0, fired)
+        assertNull(state.activeMenu)
+        compose.onNodeWithText("Do it").assertDoesNotExist()
+    }
+
+    @Test
+    fun `opening a submenu and going back out of it neither picks nor dismisses`() {
+        var dismissed = 0
+        val menu =
+            AmpMenu(
+                "Root",
+                listOf(AmpMenuItem.Submenu("Load", listOf(AmpMenuItem.Action("Rock") {})), AmpMenuItem.Action("Top level") {}),
+                onDismiss = { dismissed++ },
+            )
+        show(menu)
+
+        compose.onNodeWithText("Load").performClick()
+        compose.onNodeWithText("Rock").assertIsDisplayed()
+        compose.onNodeWithText("Load").performClick() // "‹ Load" header goes back
+        compose.onNodeWithText("Top level").assertIsDisplayed()
+
+        assertEquals(0, dismissed)
+        assertSame(menu, state.activeMenu)
+    }
+
+    @Test
+    fun `a menu put up while another is open is not cleared when the first one is dismissed`() {
+        val second = AmpMenu("Second", listOf(AmpMenuItem.Action("Other") {}))
+        show(AmpMenu("First", listOf(AmpMenuItem.Action("Do it") {})))
+
+        compose.runOnUiThread {
+            val first = popup()
+            // the second menu replaces the first before the screen redraws, and the first
+            // popup's Back still arrives
+            state.activeMenu = second
+            pressBack(first)
+        }
+        compose.waitForIdle()
+
+        assertSame(second, state.activeMenu)
+        compose.onNodeWithText("Other").assertIsDisplayed()
+    }
+
+    @Test
+    fun `a pick that puts up another menu leaves that one open`() {
+        val second = AmpMenu("Second", listOf(AmpMenuItem.Action("Other") {}))
+        show(AmpMenu("First", listOf(AmpMenuItem.Action("Next") { state.activeMenu = second })))
+
+        compose.onNodeWithText("Next").performClick()
+        compose.waitForIdle()
+
+        assertSame(second, state.activeMenu)
+        compose.onNodeWithText("Other").assertIsDisplayed()
+    }
+
+    /** The newest popup window, as the window manager holds it. */
+    private fun popup(): View {
+        val global = Class.forName("android.view.WindowManagerGlobal")
+        val manager = global.getMethod("getInstance").invoke(null)
+        val views = global.getDeclaredField("mViews").apply { isAccessible = true }.get(manager) as List<*>
+        return views.filterIsInstance<View>().last { it.javaClass.name == "androidx.compose.ui.window.PopupLayout" }
+    }
+
+    /** A press above and left of the popup, as the window manager hands a focused popup a touch outside it. */
+    private fun tapOutside(popup: View) {
+        for (action in listOf(MotionEvent.ACTION_DOWN, MotionEvent.ACTION_UP)) {
+            val event = MotionEvent.obtain(0L, 0L, action, -10f, -10f, 0)
+            popup.dispatchTouchEvent(event)
+            event.recycle()
+        }
+    }
+
+    /** The Back key, as it reaches the focused popup. */
+    private fun pressBack(popup: View) {
+        popup.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_DOWN, KeyEvent.KEYCODE_BACK))
+        popup.dispatchKeyEvent(KeyEvent(KeyEvent.ACTION_UP, KeyEvent.KEYCODE_BACK))
     }
 
     @Test

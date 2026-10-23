@@ -46,6 +46,130 @@ class MainMenuTest {
     }
 
     @Test
+    fun `a menu opened at a press anchors there`() {
+        val press = MenuAnchor("main", 120, 40, 1, 1)
+
+        assertEquals(press, mainMenu(testViewModel(), {}, {}, {}, {}, anchor = press).anchor)
+    }
+
+    @Test
+    fun `a skin's menu comes first, set apart by a divider, and opens on a tap`() {
+        var asked = 0
+
+        val menu = mainMenu(testViewModel(), {}, {}, {}, {}, onSkinMenu = { asked++ })
+
+        val first = menu.items[0] as AmpMenuItem.Action
+        assertEquals("Skin menu", first.label)
+        assertEquals(AmpMenuItem.Divider, menu.items[1])
+        first.onClick()
+        assertEquals("the entry calls its callback once", 1, asked)
+    }
+
+    @Test
+    fun `without a skin's menu the root starts at Play, and with one the rest follows unchanged`() {
+        val vm = testViewModel()
+
+        val plain = shape(mainMenu(vm, {}, {}, {}, {}).items)
+        val led = shape(mainMenu(vm, {}, {}, {}, {}, onSkinMenu = {}).items)
+
+        assertEquals("Play", plain.first())
+        assertTrue(plain.toString(), "Skin menu" !in plain)
+        assertEquals(listOf("Skin menu", "-") + plain, led)
+    }
+
+    @Test
+    fun `with a modern skin worn, exactly the classic windows, Double Size and the in-player modes are grayed`() {
+        val vm = testViewModel()
+
+        val classic = mainMenu(vm, {}, {}, {}, {})
+        val modern = mainMenu(vm, {}, {}, {}, {}, modernPlayer = true)
+
+        assertEquals("the same entries in the same places", shape(classic.items), shape(modern.items))
+        assertEquals(
+            setOf("Playlist Editor", "Equalizer", "Options › Double Size", "Visualization › Visualization options"),
+            grayed(modern.items) - grayed(classic.items),
+        )
+        assertTrue("every entry grayed in the classic menu stays grayed", grayed(modern.items).containsAll(grayed(classic.items)))
+        assertEquals(
+            "the Milkdrop entries stay",
+            listOf("Start/Stop plug-in", "Configure plug-in", "Select plug-in"),
+            submenu(modern, "Visualization").drop(2).filter { enabled(it) }.map { labelOf(it) },
+        )
+    }
+
+    @Test
+    fun `with a modern skin worn, the grayed windows and Double Size show no tick`() {
+        val vm = testViewModel()
+        vm.state.plVisible = true
+        vm.state.eqVisible = true
+        vm.state.doubleSize = true
+        val entries = listOf("Playlist Editor", "Equalizer", "Options › Double Size")
+
+        val classic = ticked(mainMenu(vm, {}, {}, {}, {}).items)
+        val modern = ticked(mainMenu(vm, {}, {}, {}, {}, modernPlayer = true).items)
+
+        assertTrue("the classic player ticks them: $classic", classic.containsAll(entries))
+        assertEquals("only those lose their tick", classic - entries.toSet(), modern)
+    }
+
+    /** The entries that are ticked, named as [shape] names them. */
+    private fun ticked(
+        items: List<AmpMenuItem>,
+        path: String = "",
+    ): Set<String> =
+        items
+            .flatMap { item ->
+                when (item) {
+                    is AmpMenuItem.Action -> listOfNotNull((path + item.label).takeIf { item.checked })
+                    is AmpMenuItem.Submenu -> ticked(item.items, "$path${item.label} › ")
+                    AmpMenuItem.Divider -> emptyList()
+                }
+            }.toSet()
+
+    /** Every entry's label, a divider as "-", with submenus walked as "Parent › Entry". */
+    private fun shape(
+        items: List<AmpMenuItem>,
+        path: String = "",
+    ): List<String> =
+        items.flatMap { item ->
+            when (item) {
+                is AmpMenuItem.Action -> listOf(path + item.label)
+                is AmpMenuItem.Submenu -> listOf(path + item.label) + shape(item.items, "$path${item.label} › ")
+                AmpMenuItem.Divider -> listOf("$path-")
+            }
+        }
+
+    /** The entries that are grayed, named as [shape] names them. */
+    private fun grayed(
+        items: List<AmpMenuItem>,
+        path: String = "",
+    ): Set<String> =
+        items
+            .flatMap { item ->
+                when (item) {
+                    is AmpMenuItem.Action -> {
+                        listOfNotNull((path + item.label).takeUnless { item.enabled })
+                    }
+
+                    is AmpMenuItem.Submenu -> {
+                        listOfNotNull((path + item.label).takeUnless { item.enabled }) +
+                            grayed(item.items, "$path${item.label} › ")
+                    }
+
+                    AmpMenuItem.Divider -> {
+                        emptyList()
+                    }
+                }
+            }.toSet()
+
+    private fun enabled(item: AmpMenuItem) =
+        when (item) {
+            is AmpMenuItem.Action -> item.enabled
+            is AmpMenuItem.Submenu -> item.enabled
+            AmpMenuItem.Divider -> false
+        }
+
+    @Test
     fun `the root is Winamp's root, plus the windows this player has that Winamp did not`() {
         // Follows Winamp 2.9's main menu: submenus, the windows it can show,
         // and Exit. The media library is one of this player's windows, so it is
