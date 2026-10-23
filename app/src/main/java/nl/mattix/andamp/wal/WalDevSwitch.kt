@@ -7,16 +7,23 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import java.io.IOException
 import kotlin.concurrent.thread
 
 /**
  * The adb switch for modern skins while they are in development, in every build. `<package>` is
  * nl.mattix.andamp, plus the id suffix when the build has one (nl.mattix.andamp.dev):
  *
+ *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal on
+ *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal off
+ *
  *     adb push Bento.wal /sdcard/Android/data/<package>/files/wal-check/
  *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal check
  *     adb logcat -s ModernSkin
  *     adb pull /sdcard/Android/data/<package>/files/wal-check/
+ *
+ * `on` and `off` set [WalGate]: they write its file and its state, so a running app follows at
+ * once and the next start reads the same. The log says what the file holds.
  *
  * `check` runs every .wal in that folder through [WalCheck], which leaves a PNG beside each skin. A
  * run stops after [BUDGET_MS] and says how many skins are left; `check` again carries on, and
@@ -34,11 +41,36 @@ class WalDevSwitch : BroadcastReceiver() {
         context: Context,
         intent: Intent,
     ) {
-        val command = intent.getStringExtra("wal")
-        if (command != "check") {
-            Log.w(WalHost.TAG, "WalDevSwitch: say --es wal check (got $command)")
-            return
+        when (val command = intent.getStringExtra("wal")) {
+            "check" -> check(context, intent)
+            "on" -> gate(context, true)
+            "off" -> gate(context, false)
+            else -> Log.w(WalHost.TAG, "WalDevSwitch: say --es wal on, off or check (got $command)")
         }
+    }
+
+    private fun gate(
+        context: Context,
+        on: Boolean,
+    ) {
+        val pending = goAsync()
+        thread(name = "wal-gate") {
+            try {
+                WalGate.write(context, on)
+                val file = WalGate.file(context)
+                Log.i(WalHost.TAG, "modern skins ${if (WalGate.on) "on" else "off"}: ${file.path} holds ${file.readText()}")
+            } catch (e: IOException) {
+                Log.w(WalHost.TAG, "WalDevSwitch: could not write the switch", e)
+            } finally {
+                pending.finish()
+            }
+        }
+    }
+
+    private fun check(
+        context: Context,
+        intent: Intent,
+    ) {
         val dir = context.getExternalFilesDir("wal-check")
         if (dir == null) {
             Log.w(WalHost.TAG, "check: no external files folder")

@@ -165,9 +165,9 @@
         </activity>
 
         <!--
-          Modern skins in development: `adb shell am broadcast` runs a check of the skins in the
-          app's external wal-check folder (see WalDevSwitch). Exported so the shell can reach it,
-          and guarded by DUMP so nothing else can.
+          Modern skins in development: `adb shell am broadcast` turns them on or off, or runs a
+          check of the skins in the app's external wal-check folder (see WalDevSwitch). Exported so
+          the shell can reach it, and guarded by DUMP so nothing else can.
         -->
         <receiver
             android:name="nl.mattix.andamp.wal.WalDevSwitch"
