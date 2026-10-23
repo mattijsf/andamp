@@ -4,6 +4,7 @@ package nl.mattix.andamp.state
 
 import android.content.Context
 import android.content.SharedPreferences
+import nl.mattix.andamp.R
 import nl.mattix.andamp.modernskin.skin.WalArchive
 import nl.mattix.andamp.skin.BundledSkin
 import nl.mattix.andamp.skin.BundledSkins
@@ -24,6 +25,9 @@ data class SkinEntry(
     /** Every skin that ships with the app is classic. */
     val kind: SkinKind = SkinKind.CLASSIC,
 ) {
+    /** The row's words in the Skins menu and the Skin Browser: a modern skin says so after its name. */
+    fun label(words: Words): String = if (kind == SkinKind.MODERN) words.get(R.string.skin_row_modern, name) else name
+
     companion object {
         /** The skin the app falls back to; it cannot be deleted. */
         const val BASE_ID = BundledSkins.BASE_ID
