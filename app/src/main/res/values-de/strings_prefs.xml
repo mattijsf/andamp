@@ -366,6 +366,9 @@
     <string name="prefs_widget_logo_summary">Tippen auf den Player bewirkt nichts; wer eine Schaltfläche knapp verfehlt, bleibt auf dem Startbildschirm.</string>
     <string name="prefs_widget_volume_title">Lautstärkeregelung</string>
     <string name="prefs_widget_volume_summary">Macht den Lautstärkeregler antippbar. Er sitzt dicht an der Positionsleiste und wird leicht versehentlich getroffen.</string>
+    <string name="prefs_widget_skin_section">Skin</string>
+    <string name="prefs_widget_skin_note">Das Widget trägt diesen Skin, auch wenn der Player den Skin einer Musikquelle trägt. „Standard“ folgt dem Player.</string>
+    <string name="prefs_widget_skin_heading">Skin für das Widget</string>
     <string name="prefs_widget_limits_title">Gut zu wissen</string>
     <string name="prefs_widget_limit_corners_title">Die Ecken sind beschnitten</string>
     <string name="prefs_widget_limit_corners_body">Android rundet die Ecken jedes Widgets ab, bei jeder App, und das lässt sich nicht abschalten. Ein kleinerer Player hätte Platz übrig, aber seine Schaltflächen wären auch schwerer zu treffen, also behält er seine Größe.</string>

@@ -9,6 +9,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import nl.mattix.andamp.skin.BundledSkins
+import nl.mattix.andamp.skin.FakePalette
+import nl.mattix.andamp.skin.LiveSkins
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -282,6 +284,61 @@ class SkinOpsWearTest {
 
         ops.chooseWidgetSkin(null)
         await { ops.widgetSkin == null }
+    }
+
+    @Test
+    fun `a widget skin picked by hand stays through a modern skin and a classic one after it`() {
+        ops.chooseWidgetSkin(mine)
+        await { ops.widgetSkin == mine }
+        val modern = library.addModern(app, "Bento")
+
+        ops.apply(modern)
+        await { ops.currentId == modern }
+        assertEquals("not pinned over", mine, ops.widgetSkin)
+
+        ops.apply(BundledSkins.SPOT.id)
+        await { ops.currentId == BundledSkins.SPOT.id }
+        assertEquals("not let go", mine, ops.widgetSkin)
+        assertFalse(library.widgetSkinAutomatic)
+    }
+
+    @Test
+    fun `a widget skin picked by hand stays when the worn modern skin is removed`() {
+        ops.chooseWidgetSkin(mine)
+        await { ops.widgetSkin == mine }
+        val modern = library.addModern(app, "Bento")
+        ops.apply(modern)
+        await { ops.currentId == modern }
+
+        ops.remove(modern)
+
+        await { ops.currentId == BundledSkins.LIGHT.id }
+        assertEquals(mine, ops.widgetSkin)
+    }
+
+    @Test
+    fun `a widget skin picked by hand stays when modern skins are off at start`() {
+        val modern = library.addModern(app, "Bento")
+        library.choose(modern)
+        library.chooseWidgetSkin(mine)
+
+        val restarted = opsOn(WinampState(), modernOn = false)
+        restarted.start()
+
+        await { restarted.currentId == BundledSkins.LIGHT.id && restarted.skin != null }
+        assertEquals(mine, restarted.widgetSkin)
+    }
+
+    @Test
+    fun `a widget set to a classic skin keeps it while a source's skin is on the player`() {
+        ops.chooseWidgetSkin(mine)
+        await { ops.widgetSkin == mine }
+
+        ops.wear(BundledSkins.SPOT.id)
+        await { ops.currentId == BundledSkins.SPOT.id }
+
+        assertEquals(mine, ops.widgetSkin)
+        assertEquals("Mine.wsz", CurrentSkin.widgetKeyed(app, library, LiveSkins(FakePalette(null)))!!.second.name)
     }
 
     @Test

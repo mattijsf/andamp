@@ -29,7 +29,10 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import nl.mattix.andamp.R
+import nl.mattix.andamp.state.SkinEntry
+import nl.mattix.andamp.state.SkinKind
 import nl.mattix.andamp.state.VisMode
+import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.Words
 import nl.mattix.andamp.ui.menu.shortLabelRes
 import nl.mattix.andamp.widget.WidgetRefresh
@@ -38,14 +41,32 @@ import nl.mattix.andamp.widget.WidgetSize
 
 /**
  * The home screen widget's page: its visualizer and refresh rate, its size, what it takes presses
- * on, and what it cannot do.
+ * on, its skin, and what it cannot do.
  *
  * A widget cannot tell whether anyone is looking at it, so how much it spends on the visualizer and
  * the refresh is the listener's choice. The page ends with a list of limits that are Android's.
  */
 data class WidgetPrefs(
     val settings: WidgetSettings = WidgetSettings(),
+    /** The installed skins. The page offers the classic ones, the only kind a widget can draw. */
+    val skins: List<SkinEntry> = emptyList(),
+    /** The skin chosen for the widget, or null when it follows the player. */
+    val skin: String? = null,
+    val onSkin: (String?) -> Unit = {},
     val onSettings: (WidgetSettings) -> Unit = {},
+)
+
+/** The widget's [settings], with its skin read off the view model. */
+fun widgetPrefsOf(
+    vm: WinampViewModel,
+    settings: WidgetSettings,
+    onSettings: (WidgetSettings) -> Unit,
+) = WidgetPrefs(
+    settings = settings,
+    skins = vm.state.skinEntries,
+    skin = vm.skinOps.widgetSkin,
+    onSkin = vm.skinOps::chooseWidgetSkin,
+    onSettings = onSettings,
 )
 
 /** The summary on the row that opens the page. */
@@ -160,6 +181,19 @@ fun WidgetRows(prefs: WidgetPrefs) {
                 checked = prefs.settings.volumeControl,
                 tag = "prefs.widget.volume",
                 onChange = { prefs.onSettings(prefs.settings.copy(volumeControl = it)) },
+            )
+        }
+
+        // always shown: the widget can wear another classic skin than the player
+        Section(stringResource(R.string.prefs_widget_skin_section))
+        Note(stringResource(R.string.prefs_widget_skin_note))
+        Group {
+            SkinPickRow(
+                skins = prefs.skins.filter { it.kind == SkinKind.CLASSIC },
+                chosen = prefs.skin,
+                heading = stringResource(R.string.prefs_widget_skin_heading),
+                tag = "prefs.widget.skin",
+                onPick = prefs.onSkin,
             )
         }
 
