@@ -473,7 +473,7 @@ class SkinRuntime(
             } else {
                 node.attrs
             }
-        return XmlNode(node.name, attrs, node.children.map { prefixFiles(it, prefix) })
+        return XmlNode(node.name, attrs, node.children.map { prefixFiles(it, prefix) }, node.text)
     }
 
     /**
@@ -527,7 +527,7 @@ class SkinRuntime(
                     }
                 }
             } else {
-                listOf(XmlNode(n.name, substituted(n.attrs), expand(n.children, dir, chain, depth + 1)))
+                listOf(XmlNode(n.name, substituted(n.attrs), expand(n.children, dir, chain, depth + 1), n.text))
             }
         }
 
@@ -628,9 +628,9 @@ class SkinRuntime(
             // getSkinName() is the skin's folder name, which the host sets; <skininfo> names it only when it did not
             "skininfo" -> {
                 if (skinName.isEmpty()) {
+                    // the name is the element's text, <name>Bento</name>, or else a text attribute
                     node.children.firstOrNull { it.name == "name" }?.let {
-                        skinName =
-                            it["text"] ?: skinName
+                        skinName = it.text.ifEmpty { it["text"] ?: skinName }
                     }
                 }
             }
@@ -1017,7 +1017,7 @@ class SkinRuntime(
     ): Group {
         val g = Group(this, node.name)
         val gui = HashSet(GUI_ATTRS)
-        fillGroup(g, XmlNode(node.name, node.attrs.filterKeys { it in gui }, node.children), defId)
+        fillGroup(g, XmlNode(node.name, node.attrs.filterKeys { it in gui }, node.children, node.text), defId)
         val rest = node.attrs.filterKeys { it !in gui }
         rest.forEach { (k, v) -> g.xuiParams[k] = v }
         g.embedded?.setParams(rest)

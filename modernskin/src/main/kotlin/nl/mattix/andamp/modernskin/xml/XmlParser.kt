@@ -6,6 +6,8 @@ class XmlNode(
     val name: String,
     val attrs: Map<String, String>,
     val children: List<XmlNode>,
+    /** The element's own text, between its tags and outside its children, trimmed: `<name>Bento</name>`. */
+    val text: String = "",
 ) {
     operator fun get(key: String): String? = attrs[key]
 
@@ -31,6 +33,14 @@ object XmlParser {
         val attrs: Map<String, String>,
     ) {
         val children = ArrayList<XmlNode>()
+
+        /** Text met inside the element so far; most elements hold only whitespace, which is not kept. */
+        var text: StringBuilder? = null
+
+        fun addText(part: String) {
+            if (part.isBlank()) return
+            (text ?: StringBuilder().also { text = it }).append(part)
+        }
     }
 
     private class Reader(
@@ -43,6 +53,7 @@ object XmlParser {
         fun parseAll(): List<XmlNode> {
             while (i < s.length) {
                 val lt = s.indexOf('<', i)
+                stack.lastOrNull()?.addText(unescape(s.substring(i, if (lt < 0) s.length else lt)))
                 if (lt < 0) break
                 i = lt + 1
                 when {
@@ -51,7 +62,9 @@ object XmlParser {
                     }
 
                     s.startsWith("![CDATA[", i) -> {
+                        val start = i + "![CDATA[".length
                         skipPast("]]>")
+                        stack.lastOrNull()?.addText(s.substring(start, maxOf(start, i - "]]>".length)))
                     }
 
                     s.startsWith("!", i) || s.startsWith("?", i) -> {
@@ -171,7 +184,16 @@ object XmlParser {
         }
 
         private fun finish(open: Open) {
-            val node = XmlNode(open.name, open.attrs, open.children)
+            val node =
+                XmlNode(
+                    open.name,
+                    open.attrs,
+                    open.children,
+                    open.text
+                        ?.toString()
+                        ?.trim()
+                        .orEmpty(),
+                )
             if (stack.isEmpty()) roots.add(node) else stack.last().children.add(node)
         }
 
