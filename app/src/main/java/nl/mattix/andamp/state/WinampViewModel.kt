@@ -35,6 +35,7 @@ import nl.mattix.andamp.state.overlay.OverlayOps
 import nl.mattix.andamp.state.overlay.OverlayStore
 import nl.mattix.andamp.state.overlay.OverlaySupport
 import nl.mattix.andamp.ui.menu.promptFor
+import nl.mattix.andamp.wal.WalSettings
 import kotlin.math.roundToInt
 
 /**
@@ -159,12 +160,14 @@ class WinampViewModel
         init {
             // an install that was left with both starts floating, with Double Size off
             if (overlayOps.gate.wanted && doubleSize.on) doubleSize.on = false
-            // a skin removed in the Skin Manager also loses its museum record, and a source
-            // or Android Auto, if it asked for it, goes back to Default
+            // a skin removed in the Skin Manager also loses its museum record and, for a modern
+            // skin, what it remembered; a source or Android Auto, if it asked for it, goes back
+            // to Default
             skinOps.onRemoved = { id ->
                 onlineSkins.ops.forgetId(id)
                 sourceSkinOps.skins.forgetSkin(id)
                 androidAutoStore.forgetSkin(id)
+                WalSettings(app).forget(id)
             }
         }
 

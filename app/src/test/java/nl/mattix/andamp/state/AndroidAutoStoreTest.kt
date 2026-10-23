@@ -58,6 +58,21 @@ class AndroidAutoStoreTest {
         assertEquals("the choice itself is kept", "neon", store.skin)
     }
 
+    /** Through the library, as the app builds it: a modern skin is never worn in the car. */
+    @Test
+    fun `a modern skin chosen for the car is not worn and the car follows the player`() {
+        val library = SkinLibrary(app)
+        val modern = library.addModern(app, "Bento")
+        val classic = library.save(zipOf("main.bmp"), "Classic.wsz").id
+        val store = AndroidAutoStore(app)
+
+        store.skin = modern
+        assertNull(store.worn)
+
+        store.skin = classic
+        assertEquals(classic, store.worn)
+    }
+
     @Test
     fun `a skin that leaves the library is given up`() {
         val kept = prefs()

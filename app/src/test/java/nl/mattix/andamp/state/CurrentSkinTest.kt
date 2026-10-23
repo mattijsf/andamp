@@ -171,4 +171,109 @@ class CurrentSkinTest {
         assertNull(CurrentSkin.live.stamp(app, BundledSkins.BASE))
         assertNull(CurrentSkin.base(app).liveScheme)
     }
+
+    // modern skins: never parsed here; the last classic choice is drawn for them
+
+    @Test
+    fun `a classic id is its own classic skin and a modern one gives the last classic choice`() {
+        library.choose(BundledSkins.LIGHT.id)
+        val modern = library.addModern(app, "Bento")
+
+        assertEquals(BundledSkins.SPOT.id, CurrentSkin.classicOf(library, BundledSkins.SPOT.id))
+        assertEquals(BundledSkins.LIGHT.id, CurrentSkin.classicOf(library, modern))
+    }
+
+    /** The modern file is not a classic skin; had it reached the loader, the base would show. */
+    @Test
+    fun `a worn modern skin loads the last classic choice`() {
+        val live = LiveSkins(FakePalette(null))
+        library.choose(BundledSkins.LIGHT.id)
+        library.choose(library.addModern(app, "Bento"))
+
+        assertEquals(BundledSkins.LIGHT.name, CurrentSkin.load(app, library, live)!!.name)
+        assertEquals("the widget menu wears it too", BundledSkins.LIGHT.name, CurrentSkin.cached(app, library, live)!!.name)
+    }
+
+    @Test
+    fun `a modern skin under a base choice loads the base`() {
+        val live = LiveSkins(FakePalette(null))
+        library.choose(library.addModern(app, "Bento"))
+
+        assertNull(CurrentSkin.stored(app, library, library.currentId, fallback = null, live = live))
+        assertEquals("AndAmp Dark", CurrentSkin.load(app, library, live)!!.name)
+    }
+
+    @Test
+    fun `the key of a worn modern skin carries the classic skin drawn`() {
+        val live = LiveSkins(FakePalette(null))
+        library.choose(BundledSkins.LIGHT.id)
+        library.choose(library.addModern(app, "Bento"))
+
+        assertEquals("${BundledSkins.LIGHT.id}|null|null", CurrentSkin.cacheKey(app, library, live))
+    }
+
+    @Test
+    fun `a widget that follows the player wears the player's classic skin`() {
+        val live = LiveSkins(FakePalette(null))
+        library.choose(BundledSkins.LIGHT.id)
+        library.wearing = BundledSkins.SPOT.id
+
+        assertEquals(
+            "a source's skin included",
+            BundledSkins.SPOT.name,
+            CurrentSkin.widgetKeyed(app, library, live)!!.second.name,
+        )
+    }
+
+    @Test
+    fun `a widget following a modern skin wears the last classic choice`() {
+        val live = LiveSkins(FakePalette(null))
+        library.choose(BundledSkins.LIGHT.id)
+        library.choose(library.addModern(app, "Bento"))
+        library.chooseWidgetSkin(null)
+
+        assertEquals(BundledSkins.LIGHT.name, CurrentSkin.widgetKeyed(app, library, live)!!.second.name)
+    }
+
+    @Test
+    fun `a widget set to a classic skin wears it whatever a source asks for`() {
+        val live = LiveSkins(FakePalette(null))
+        val mine = library.save(app.assets.open("skins/AndAmp Spot.wsz").use { it.readBytes() }, "Mine.wsz")
+        library.choose(BundledSkins.LIGHT.id)
+        library.chooseWidgetSkin(mine.id)
+        library.wearing = BundledSkins.SPOT.id
+
+        val (key, skin) = CurrentSkin.widgetKeyed(app, library, live)!!
+
+        assertEquals("Mine.wsz", skin.name)
+        assertEquals("${mine.id}|null|null", key)
+    }
+
+    @Test
+    fun `a widget set to a skin that is not an installed classic one follows the player`() {
+        val live = LiveSkins(FakePalette(null))
+        library.choose(BundledSkins.LIGHT.id)
+        library.chooseWidgetSkin(library.addModern(app, "Bento"))
+
+        assertEquals(BundledSkins.LIGHT.name, CurrentSkin.widgetKeyed(app, library, live)!!.second.name)
+
+        library.chooseWidgetSkin("a-skin-from-a-build-that-no-longer-exists")
+
+        assertEquals(BundledSkins.LIGHT.name, CurrentSkin.widgetKeyed(app, library, live)!!.second.name)
+    }
+
+    /** The widget menu and the widget wear different skins here, and each keeps its own parse. */
+    @Test
+    fun `the widget and the player's skin are cached apart`() {
+        val live = LiveSkins(FakePalette(null))
+        library.choose(BundledSkins.LIGHT.id)
+        library.chooseWidgetSkin(BundledSkins.SPOT.id)
+        val widget = CurrentSkin.widgetKeyed(app, library, live)!!.second
+        val player = CurrentSkin.cached(app, library, live)
+
+        assertSame(widget, CurrentSkin.widgetKeyed(app, library, live)!!.second)
+        assertSame(player, CurrentSkin.cached(app, library, live))
+        assertEquals(BundledSkins.SPOT.name, widget.name)
+        assertEquals(BundledSkins.LIGHT.name, player!!.name)
+    }
 }

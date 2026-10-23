@@ -281,10 +281,10 @@ internal fun skinItems(
         // come back from, rather than something only the player can do
         add(AmpMenuItem.Action(vm.words.get(R.string.menu_get_more_skins), onClick = onMuseum))
         // the library survives restarts, so past skins stay one tap away
-        vm.state.skinEntries.withIndex().filterNot { it.value.id == SkinEntry.BASE_ID }.forEach { (index, entry) ->
+        vm.state.skinEntries.filterNot { it.id == SkinEntry.BASE_ID }.forEach { entry ->
             add(
                 AmpMenuItem.Action(entry.name, checked = entry.id == vm.skinOps.currentId) {
-                    vm.skinOps.applyAt(index)
+                    vm.skinOps.apply(entry.id)
                 },
             )
         }

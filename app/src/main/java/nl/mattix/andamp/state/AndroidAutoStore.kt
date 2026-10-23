@@ -23,12 +23,15 @@ import nl.mattix.andamp.core.remotewindow.RemoteWindowLink
  */
 class AndroidAutoStore(
     private val prefs: SharedPreferences,
-    /** Whether a skin is still in the library; a choice of one that is not counts as none. */
+    /**
+     * Whether a skin is still in the library as a classic skin; a choice of one that is not
+     * counts as none.
+     */
     private val installed: (String) -> Boolean = { true },
 ) {
     constructor(context: Context) : this(
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE),
-        SkinLibrary(context)::has,
+        SkinLibrary(context)::hasClassic,
     )
 
     private var chosen: String? by mutableStateOf(prefs.getString(SKIN, null))

@@ -10,7 +10,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import nl.mattix.andamp.skin.BundledSkins
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
@@ -51,12 +53,16 @@ class SkinOpsWearTest {
         // the listener's own choice, made before this launch
         library.currentId = BundledSkins.LIGHT.id
         mine = library.save(app.assets.open(BundledSkins.SPOT.asset).use { it.readBytes() }, "Mine.wsz").id
-        ops = SkinOps(app, state, CoroutineScope(SupervisorJob() + Dispatchers.Main), library)
+        ops = opsOn(state)
         ops.start()
-        // the rows too: a pick is made by row, and they are listed a hop after
-        // the skin itself goes on
+        // the rows too, listed a hop after the skin itself goes on
         await { ops.skin != null && ops.currentId == BundledSkins.LIGHT.id && state.skinEntries.isNotEmpty() }
     }
+
+    private fun opsOn(
+        state: WinampState,
+        modernOn: Boolean = true,
+    ) = SkinOps(app, state, CoroutineScope(SupervisorJob() + Dispatchers.Main), library, modernOn = { modernOn })
 
     /**
      * Idles the looper before each look at the condition, so a condition the setup already
@@ -79,9 +85,6 @@ class SkinOpsWearTest {
             Thread.sleep(10)
         }
     }
-
-    private fun rowOf(id: String): Int =
-        state.skinEntries.indexOfFirst { it.id == id }.also { assertTrue("$id has a row", it >= 0) }
 
     @Test
     fun `a source's skin goes on without changing what the listener chose`() {
@@ -149,7 +152,7 @@ class SkinOpsWearTest {
         ops.wear(BundledSkins.SPOT.id)
         await { ops.currentId == BundledSkins.SPOT.id }
 
-        ops.applyAt(rowOf(BundledSkins.SPOT.id))
+        ops.apply(BundledSkins.SPOT.id)
         await { library.currentId == BundledSkins.SPOT.id }
 
         // and the next track from the phone's own files leaves the pick alone
@@ -163,7 +166,7 @@ class SkinOpsWearTest {
     @Test
     fun `a skin the listener picks beats a source's skin that was already on its way`() {
         ops.wear(BundledSkins.SPOT.id)
-        ops.applyAt(rowOf(mine))
+        ops.apply(mine)
 
         await { ops.currentId == mine }
         settle()
@@ -171,6 +174,179 @@ class SkinOpsWearTest {
         assertNull("the source's skin is not worn over the pick", library.wearing)
         assertEquals(mine, library.currentId)
         assertEquals("the home screen records the picked skin", mine, library.worn)
+    }
+
+    @Test
+    fun `a pick by id wears that skin whatever the order of the rows`() {
+        state.skinEntries = state.skinEntries.reversed()
+
+        ops.apply(mine)
+
+        await { ops.currentId == mine }
+        assertEquals("Mine.wsz", ops.skin!!.name)
+    }
+
+    // modern skins: their engine draws them, and the classic skin on screen is the last
+    // classic choice
+
+    @Test
+    fun `a modern skin chosen shows the last classic choice and pins a following widget to it`() {
+        val modern = library.addModern(app, "Bento")
+
+        ops.apply(modern)
+
+        await { ops.currentId == modern }
+        assertEquals(BundledSkins.LIGHT.name, ops.skin!!.name)
+        assertEquals(modern, library.currentId)
+        assertEquals(BundledSkins.LIGHT.id, ops.widgetSkin)
+        assertTrue(library.widgetSkinAutomatic)
+    }
+
+    @Test
+    fun `picking AndAmp Dark while a modern skin is worn shows the base and lets go of the pin`() {
+        val modern = library.addModern(app, "Bento")
+        ops.apply(modern)
+        await { ops.currentId == modern }
+
+        ops.reset()
+
+        await { library.currentId == SkinEntry.BASE_ID && ops.widgetSkin == null }
+        assertEquals(SkinEntry.BASE_ID, ops.currentId)
+        assertSame(ops.baseSkin, ops.skin)
+    }
+
+    @Test
+    fun `a classic skin chosen over a modern one lets go of the pin`() {
+        val modern = library.addModern(app, "Bento")
+        ops.apply(modern)
+        await { ops.currentId == modern }
+
+        ops.apply(mine)
+
+        await { ops.currentId == mine }
+        assertNull(ops.widgetSkin)
+        assertEquals(mine, library.lastClassic)
+    }
+
+    @Test
+    fun `removing the worn modern skin puts the last classic choice on`() {
+        val modern = library.addModern(app, "Bento")
+        ops.apply(modern)
+        await { ops.currentId == modern }
+
+        ops.remove(modern)
+
+        await { ops.currentId == BundledSkins.LIGHT.id }
+        assertEquals(BundledSkins.LIGHT.name, ops.skin!!.name)
+        assertEquals(BundledSkins.LIGHT.id, library.currentId)
+        assertNull("the automatic pin goes with it", ops.widgetSkin)
+    }
+
+    @Test
+    fun `removing the last classic choice under a modern skin changes the classic skin on screen`() {
+        ops.apply(mine)
+        await { ops.currentId == mine }
+        val modern = library.addModern(app, "Bento")
+        ops.apply(modern)
+        await { ops.currentId == modern }
+        assertEquals("Mine.wsz", ops.skin!!.name)
+
+        ops.remove(mine)
+
+        await { ops.skin === ops.baseSkin }
+        assertEquals("the modern choice stays", modern, ops.currentId)
+    }
+
+    @Test
+    fun `a source's skin goes on over a modern choice and the widget keeps its pin`() {
+        val modern = library.addModern(app, "Bento")
+        ops.apply(modern)
+        await { ops.currentId == modern }
+
+        ops.wear(BundledSkins.SPOT.id)
+        await { ops.currentId == BundledSkins.SPOT.id }
+        assertEquals(BundledSkins.LIGHT.id, ops.widgetSkin)
+        assertTrue(library.widgetSkinAutomatic)
+
+        ops.wear(null)
+        await { ops.currentId == modern }
+        assertEquals(BundledSkins.LIGHT.name, ops.skin!!.name)
+    }
+
+    @Test
+    fun `a widget skin picked by hand is kept and not marked automatic`() {
+        ops.chooseWidgetSkin(BundledSkins.SPOT.id)
+
+        await { ops.widgetSkin == BundledSkins.SPOT.id }
+        assertFalse(library.widgetSkinAutomatic)
+
+        ops.chooseWidgetSkin(null)
+        await { ops.widgetSkin == null }
+    }
+
+    @Test
+    fun `modern rows are listed only while modern skins are on`() {
+        val modern = library.addModern(app, "Bento")
+
+        val on = WinampState()
+        opsOn(on).start()
+        val off = WinampState()
+        opsOn(off, modernOn = false).start()
+
+        await { on.skinEntries.isNotEmpty() && off.skinEntries.isNotEmpty() }
+        assertTrue(on.skinEntries.any { it.id == modern })
+        assertTrue(off.skinEntries.none { it.id == modern })
+        assertTrue("classic rows are listed either way", off.skinEntries.any { it.id == mine })
+    }
+
+    @Test
+    fun `with modern skins off a modern choice gives way to the last classic choice at start`() {
+        val modern = library.addModern(app, "Bento")
+        library.choose(BundledSkins.LIGHT.id)
+        library.choose(modern)
+
+        val restarted = opsOn(WinampState(), modernOn = false)
+        restarted.start()
+
+        await { restarted.currentId == BundledSkins.LIGHT.id && restarted.skin != null }
+        assertEquals(BundledSkins.LIGHT.id, library.currentId)
+        assertNull("the automatic pin goes", restarted.widgetSkin)
+    }
+
+    @Test
+    fun `with modern skins on a modern choice stays on at start with the last classic choice on screen`() {
+        val modern = library.addModern(app, "Bento")
+        library.choose(BundledSkins.LIGHT.id)
+        library.choose(modern)
+
+        val restarted = opsOn(WinampState())
+        restarted.start()
+
+        await { restarted.currentId == modern && restarted.skin != null }
+        assertEquals(BundledSkins.LIGHT.name, restarted.skin!!.name)
+        assertEquals(BundledSkins.LIGHT.id, restarted.widgetSkin)
+    }
+
+    /** The setup's start already ran the move to the modern extension; this lets the next start run it again. */
+    private fun clearMoveFlag() {
+        app
+            .getSharedPreferences("skins", 0)
+            .edit()
+            .remove("modern_migrated")
+            .commit()
+    }
+
+    @Test
+    fun `a worn classic file that holds a modern skin is moved at start and gives way`() {
+        val junk = library.save(zipOf("skin.xml", "xml/player.xml"), "Bento.wal").id
+        library.currentId = junk
+        clearMoveFlag()
+
+        val restarted = opsOn(WinampState(), modernOn = false)
+        restarted.start()
+
+        await { library.kindOf(junk) == SkinKind.MODERN && library.currentId == SkinEntry.BASE_ID }
+        await { restarted.currentId == SkinEntry.BASE_ID && restarted.skin === restarted.baseSkin }
     }
 
     private companion object {

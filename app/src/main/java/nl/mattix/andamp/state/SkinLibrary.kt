@@ -4,11 +4,16 @@ package nl.mattix.andamp.state
 
 import android.content.Context
 import android.content.SharedPreferences
+import nl.mattix.andamp.modernskin.skin.WalArchive
 import nl.mattix.andamp.skin.BundledSkin
 import nl.mattix.andamp.skin.BundledSkins
 import java.io.File
 import java.io.InputStream
 import java.security.MessageDigest
+import java.util.zip.ZipFile
+
+/** What a library skin is: a classic Winamp skin (.wsz), or a modern one (.wal). */
+enum class SkinKind { CLASSIC, MODERN }
 
 /** A skin in the library: one the listener loaded, or one that ships with the app. */
 data class SkinEntry(
@@ -16,6 +21,8 @@ data class SkinEntry(
     val id: String,
     val name: String,
     val sizeBytes: Long,
+    /** Every skin that ships with the app is classic. */
+    val kind: SkinKind = SkinKind.CLASSIC,
 ) {
     companion object {
         /** The skin the app falls back to; it cannot be deleted. */
@@ -29,9 +36,14 @@ data class SkinEntry(
 }
 
 /**
- * Every .wsz the listener has loaded, kept so the menu can offer them again after a
- * restart. Files are named by content hash, so loading the same skin twice replaces it,
- * and loading a renamed copy only updates its display name.
+ * Every skin the listener has loaded, kept so the menu can offer them again after a
+ * restart: classic skins as `<id>.wsz`, modern skins as `<id>.wal`. Files are named by
+ * content hash, so loading the same skin twice replaces it, and loading a renamed copy only
+ * updates its display name.
+ *
+ * Besides the listener's choice and a source's skin, the "skins" file keeps the last
+ * classic choice, which is drawn wherever a modern skin cannot be (see [lastClassic]), and
+ * the widget's skin (see [widgetSkin]).
  */
 class SkinLibrary(
     context: Context,
@@ -64,14 +76,19 @@ class SkinLibrary(
         }
     }
 
-    /** The skins that ship with the app first, then the user's, name-sorted. */
+    /** The skins that ship with the app first, then the user's of both kinds, name-sorted. */
     fun list(): List<SkinEntry> =
         BundledSkins.all.map { SkinEntry.of(it) } +
             (dir.listFiles()?.toList() ?: emptyList())
-                .filter { it.isFile && it.name.endsWith(SKIN_EXT) }
-                .map { file ->
-                    val id = file.name.removeSuffix(SKIN_EXT)
-                    SkinEntry(id, prefs.getString(nameKey(id), null) ?: id, file.length())
+                .filter { it.isFile }
+                .mapNotNull { file ->
+                    val (id, kind) =
+                        when {
+                            file.name.endsWith(CLASSIC_EXT) -> file.name.removeSuffix(CLASSIC_EXT) to SkinKind.CLASSIC
+                            file.name.endsWith(MODERN_EXT) -> file.name.removeSuffix(MODERN_EXT) to SkinKind.MODERN
+                            else -> return@mapNotNull null
+                        }
+                    SkinEntry(id, prefs.getString(nameKey(id), null) ?: id, file.length(), kind)
                 }.sortedBy { it.name.lowercase() }
 
     /** The id [bytes] would be stored under; the browser records it against a museum hash. */
@@ -95,9 +112,9 @@ class SkinLibrary(
     ): SkinEntry {
         val id = hash(bytes)
         dir.mkdirs()
-        val file = fileFor(id)
+        val file = File(dir, "$id$CLASSIC_EXT")
         // write-then-rename, so a crash mid-write cannot leave a partial skin
-        val tmp = File(dir, "$id$SKIN_EXT.tmp")
+        val tmp = File(dir, "$id$CLASSIC_EXT.tmp")
         tmp.writeBytes(bytes)
         if (!tmp.renameTo(file)) {
             file.delete()
@@ -107,15 +124,60 @@ class SkinLibrary(
         return SkinEntry(id, name, file.length())
     }
 
+    /**
+     * Moves [tmp], a modern skin streamed to a temporary file, into the library under [id],
+     * the content hash taken while it streamed, and returns the stored file. The display
+     * name is written apart, with [setName], once the skin has been built.
+     */
+    fun storeModern(
+        tmp: File,
+        id: String,
+    ): File {
+        dir.mkdirs()
+        val file = File(dir, "$id$MODERN_EXT")
+        if (!tmp.renameTo(file)) {
+            // the temporary file is on another file system: copied next to the store first,
+            // so a crash mid-copy cannot leave a partial skin
+            val part = File(dir, "$id$MODERN_EXT.tmp")
+            tmp.copyTo(part, overwrite = true)
+            tmp.delete()
+            if (!part.renameTo(file)) {
+                file.delete()
+                check(part.renameTo(file)) { "could not store modern skin '$id'" }
+            }
+        }
+        return file
+    }
+
+    /** Sets the display name of the stored skin [id]. */
+    fun setName(
+        id: String,
+        name: String,
+    ) {
+        prefs.edit().putString(nameKey(id), name).apply()
+    }
+
     fun delete(id: String) {
         if (BundledSkins.of(id) != null) return // a skin that ships with the app cannot be removed
+        // read while the file is there: a missing id reads classic
+        val modern = kindOf(id) == SkinKind.MODERN
         fileFor(id).delete()
         prefs.edit().remove(nameKey(id)).apply()
         synchronized(guard) {
             // deleting the skin that is on counts as a choice, so a source's skin requested
             // before it is turned down by [wear]
             val moved = currentId == id || wearing == id
-            if (currentId == id) currentId = SkinEntry.BASE_ID
+            if (prefs.getString(CLASSIC_KEY, null) == id) prefs.edit().putString(CLASSIC_KEY, SkinEntry.BASE_ID).apply()
+            if (widgetSkin == id) forgetWidgetSkin()
+            if (currentId == id) {
+                if (modern) {
+                    // a classic skin goes on in place of the modern one
+                    currentId = lastClassic
+                    clearAutomaticWidgetSkin()
+                } else {
+                    currentId = SkinEntry.BASE_ID
+                }
+            }
             if (wearing == id) wearing = null
             if (moved) chosen++
         }
@@ -123,6 +185,53 @@ class SkinLibrary(
 
     /** Whether [id] is a skin this install can wear: one that ships with the app, or one on disk. */
     fun has(id: String): Boolean = BundledSkins.of(id) != null || fileFor(id).isFile
+
+    /** Whether [id] is installed and classic: what a widget, Android Auto or a source can wear. */
+    fun hasClassic(id: String): Boolean = has(id) && kindOf(id) == SkinKind.CLASSIC
+
+    /** MODERN when [id] is stored as a modern skin; CLASSIC otherwise, also for an id that is not installed. */
+    fun kindOf(id: String): SkinKind = if (File(dir, "$id$MODERN_EXT").isFile) SkinKind.MODERN else SkinKind.CLASSIC
+
+    /** The stored file of [id], or null for a skin that ships with the app or is not installed. */
+    fun fileOf(id: String): File? = fileFor(id).takeIf { BundledSkins.of(id) == null && it.isFile }
+
+    /**
+     * Renames, once, every stored classic file that is really a modern skin to `<id>.wal`, and
+     * drops ".wal" from its display name. The id is the hash of the bytes, so every record
+     * that names it still names the same file. A modern skin is never a source's skin, the
+     * last classic choice or the widget's skin, so those records let go of a renamed id.
+     *
+     * Returns whether anything was renamed. Each file is read for its zip directory only.
+     */
+    fun migrateModern(): Boolean {
+        if (prefs.getBoolean(MODERN_MIGRATED_KEY, false)) return false
+        val renamed =
+            (dir.listFiles()?.toList() ?: emptyList())
+                .filter { file ->
+                    file.isFile && file.name.endsWith(CLASSIC_EXT) &&
+                        directoryNames(file)?.let(WalArchive::isModern) == true
+                }.mapNotNull { file ->
+                    val id = file.name.removeSuffix(CLASSIC_EXT)
+                    val target = File(dir, "$id$MODERN_EXT")
+                    // the same bytes stored under both names: the modern copy stays
+                    val moved = if (target.isFile) file.delete() else file.renameTo(target)
+                    id.takeIf { moved }
+                }.toSet()
+        prefs
+            .edit()
+            .apply {
+                renamed.forEach { id ->
+                    prefs.getString(nameKey(id), null)?.let { putString(nameKey(id), modernName(it).ifEmpty { it }) }
+                }
+            }.apply()
+        synchronized(guard) {
+            if (wearing in renamed) wearing = null
+            if (prefs.getString(CLASSIC_KEY, null) in renamed) prefs.edit().remove(CLASSIC_KEY).apply()
+            if (widgetSkin in renamed) forgetWidgetSkin()
+            prefs.edit().putBoolean(MODERN_MIGRATED_KEY, true).apply()
+        }
+        return renamed.isNotEmpty()
+    }
 
     /** The listener's own choice of skin, from the Skins menu or the manager. */
     var currentId: String
@@ -132,15 +241,102 @@ class SkinLibrary(
         }
 
     /**
+     * The listener's last classic choice: the classic skin drawn while their choice is a
+     * modern one, by the menus, the windows, the widget and Android Auto. The stored value
+     * when it names an installed classic skin; otherwise [currentId] when that is one, and
+     * the base skin when neither is.
+     */
+    val lastClassic: String
+        get() =
+            prefs.getString(CLASSIC_KEY, null)?.takeIf(::hasClassic)
+                ?: currentId.takeIf(::hasClassic)
+                ?: SkinEntry.BASE_ID
+
+    /**
      * The listener chose [id] themselves (the Skins menu, the manager, a picked file): it
      * becomes their own skin, and a source's skin is taken off.
+     *
+     * A classic [id] becomes the last classic choice. A modern [id] over a classic choice
+     * keeps that classic choice as the last one, and a widget that follows the player is
+     * set to it, marked as set automatically. A classic [id] over a modern choice lets go of
+     * such an automatic widget skin, so the widget follows the player again.
      */
     fun choose(id: String) {
         synchronized(guard) {
+            // the order matters: the last classic choice is read before the modern id is
+            // stored, or it would fall back past that id to the base
+            val previous = currentId
+            val wasClassic = kindOf(previous) == SkinKind.CLASSIC
+            if (kindOf(id) == SkinKind.CLASSIC) {
+                prefs.edit().putString(CLASSIC_KEY, id).apply()
+                if (!wasClassic) clearAutomaticWidgetSkin()
+            } else if (wasClassic) {
+                if (!prefs.contains(CLASSIC_KEY) && hasClassic(previous)) {
+                    prefs.edit().putString(CLASSIC_KEY, previous).apply()
+                }
+                if (widgetSkin == null) {
+                    prefs
+                        .edit()
+                        .putString(WIDGET_KEY, lastClassic)
+                        .putBoolean(WIDGET_AUTO_KEY, true)
+                        .apply()
+                }
+            }
             currentId = id
             wearing = null
             chosen++
         }
+    }
+
+    /**
+     * When the listener's choice is a modern skin, the last classic choice takes its place,
+     * and a widget skin set automatically is let go. It is not counted as a choice, and a
+     * source's skin worn over it stays on. Returns whether the choice changed.
+     */
+    fun dropModern(): Boolean =
+        synchronized(guard) {
+            if (kindOf(currentId) != SkinKind.MODERN) return@synchronized false
+            currentId = lastClassic
+            clearAutomaticWidgetSkin()
+            true
+        }
+
+    /**
+     * The skin the home screen widget wears, or null when it follows the player. It is set
+     * on the widget's settings page, or automatically when a modern skin goes on; see
+     * [choose].
+     */
+    val widgetSkin: String? get() = prefs.getString(WIDGET_KEY, null)
+
+    /** Whether [widgetSkin] was set automatically, and so goes when a classic skin goes on again. */
+    val widgetSkinAutomatic: Boolean get() = prefs.contains(WIDGET_AUTO_KEY)
+
+    /**
+     * The listener picked [id] for the widget, or null to have it follow the player. A skin
+     * picked here stays when the player's skin changes.
+     */
+    fun chooseWidgetSkin(id: String?) {
+        synchronized(guard) {
+            prefs
+                .edit()
+                .apply { if (id == null) remove(WIDGET_KEY) else putString(WIDGET_KEY, id) }
+                .remove(WIDGET_AUTO_KEY)
+                .apply()
+        }
+    }
+
+    /** Lets go of a widget skin that was set automatically. Call under the guard. */
+    private fun clearAutomaticWidgetSkin() {
+        if (widgetSkinAutomatic) forgetWidgetSkin()
+    }
+
+    /** The widget follows the player again. Call under the guard. */
+    private fun forgetWidgetSkin() {
+        prefs
+            .edit()
+            .remove(WIDGET_KEY)
+            .remove(WIDGET_AUTO_KEY)
+            .apply()
     }
 
     /**
@@ -187,7 +383,8 @@ class SkinLibrary(
 
     fun nameOf(id: String): String = BundledSkins.of(id)?.name ?: prefs.getString(nameKey(id), null) ?: id
 
-    private fun fileFor(id: String) = File(dir, "$id$SKIN_EXT")
+    /** The stored file of [id]: the modern one when there is one, the classic one otherwise. */
+    private fun fileFor(id: String): File = File(dir, "$id$MODERN_EXT").takeIf { it.isFile } ?: File(dir, "$id$CLASSIC_EXT")
 
     private fun nameKey(id: String) = "name:$id"
 
@@ -199,16 +396,23 @@ class SkinLibrary(
             .take(HASH_CHARS)
 
     companion object {
-        private const val SKIN_EXT = ".wsz"
+        private const val CLASSIC_EXT = ".wsz"
+        private const val MODERN_EXT = ".wal"
         private const val CURRENT_KEY = "current"
         private const val WEARING_KEY = "wearing"
+        private const val CLASSIC_KEY = "classic"
+        private const val WIDGET_KEY = "widget"
+        private const val WIDGET_AUTO_KEY = "widget_auto"
+        private const val MODERN_MIGRATED_KEY = "modern_migrated"
 
         /** Hex characters of the SHA-256 kept as the id. */
         private const val HASH_CHARS = 32
 
         /**
-         * Guards the two records and [choices]. It is process-wide, like the preferences
-         * file, because the player and the widget each make their own [SkinLibrary].
+         * Guards the records of what is worn (the choice, a source's skin, the last classic
+         * choice and the widget's skin) and [choices]. It is process-wide, like the
+         * preferences file, because the player and the widget each make their own
+         * [SkinLibrary].
          */
         private val guard = Any()
 
@@ -229,5 +433,27 @@ class SkinLibrary(
         fun choosing() {
             synchronized(guard) { chosen++ }
         }
+
+        /**
+         * The display name of a modern skin picked as [fileName]: the name without a trailing
+         * ".wal", in any case. Empty when nothing is left.
+         */
+        fun modernName(fileName: String): String =
+            if (fileName.endsWith(MODERN_EXT, ignoreCase = true)) fileName.dropLast(MODERN_EXT.length) else fileName
+
+        /**
+         * The names in [file]'s zip directory, or null when it has none that can be read. ISO
+         * 8859-1 reads every name, whatever the archiver wrote; only skin.xml matters.
+         */
+        internal fun directoryNames(file: File): List<String>? =
+            runCatching {
+                ZipFile(file, Charsets.ISO_8859_1).use { zip ->
+                    zip
+                        .entries()
+                        .asSequence()
+                        .map { it.name }
+                        .toList()
+                }
+            }.getOrNull()
     }
 }

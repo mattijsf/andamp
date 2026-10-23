@@ -20,12 +20,15 @@ import androidx.compose.runtime.setValue
  */
 class SourceSkins(
     private val prefs: SharedPreferences,
-    /** Whether a skin is still in the library; a choice of one that is not counts as Default. */
+    /**
+     * Whether a skin is still in the library as a classic skin; a choice of one that is not
+     * counts as Default.
+     */
     private val installed: (String) -> Boolean = { true },
 ) {
     constructor(context: Context) : this(
         context.getSharedPreferences(PREFS, Context.MODE_PRIVATE),
-        SkinLibrary(context)::has,
+        SkinLibrary(context)::hasClassic,
     )
 
     private var chosen: Map<String, String> by mutableStateOf(read())

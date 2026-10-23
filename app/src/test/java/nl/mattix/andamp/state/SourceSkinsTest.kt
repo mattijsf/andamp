@@ -87,6 +87,21 @@ class SourceSkinsTest {
         assertEquals("the stored choice is kept", "gone", skins.of(example))
     }
 
+    /** Through the library, as the app builds it: a modern skin is never a source's skin. */
+    @Test
+    fun `a modern skin chosen for a source is not worn`() {
+        val library = SkinLibrary(app)
+        val modern = library.addModern(app, "Bento")
+        val classic = library.save(zipOf("main.bmp"), "Classic.wsz").id
+        val skins = SourceSkins(app)
+
+        skins.choose(example, modern)
+        assertNull(skins.wornFor(example, supports = { it == example }))
+
+        skins.choose(example, classic)
+        assertEquals(classic, skins.wornFor(example, supports = { it == example }))
+    }
+
     @Test
     fun `a new choice for the source that is playing shows at once, and for another one it waits`() {
         val ops = ops()
