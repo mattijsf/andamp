@@ -125,9 +125,12 @@ class SkinLibrary(
     }
 
     /**
-     * Moves [tmp], a modern skin streamed to a temporary file, into the library under [id],
-     * the content hash taken while it streamed, and returns the stored file. The display
-     * name is written apart, with [setName], once the skin has been built.
+     * Stores [tmp], a modern skin streamed to a temporary file, in the library under [id],
+     * the content hash taken while it streamed, deletes [tmp] and returns the stored file. The
+     * display name is written apart, with [setName], once the skin has been built.
+     *
+     * [tmp] is copied, not moved: a file made in the cache folder keeps counting as the app's
+     * cache wherever it is moved, and clearing the cache would not free it.
      */
     fun storeModern(
         tmp: File,
@@ -135,18 +138,30 @@ class SkinLibrary(
     ): File {
         dir.mkdirs()
         val file = File(dir, "$id$MODERN_EXT")
-        if (!tmp.renameTo(file)) {
-            // the temporary file is on another file system: copied next to the store first,
-            // so a crash mid-copy cannot leave a partial skin
-            val part = File(dir, "$id$MODERN_EXT.tmp")
-            tmp.copyTo(part, overwrite = true)
-            tmp.delete()
-            if (!part.renameTo(file)) {
-                file.delete()
-                check(part.renameTo(file)) { "could not store modern skin '$id'" }
-            }
+        // copied next to the store first, so a crash mid-copy cannot leave a partial skin
+        val part = File(dir, "$id$MODERN_EXT.tmp")
+        tmp.copyTo(part, overwrite = true)
+        tmp.delete()
+        if (!part.renameTo(file)) {
+            file.delete()
+            check(part.renameTo(file)) { "could not store modern skin '$id'" }
         }
         return file
+    }
+
+    /**
+     * Deletes what storing a modern skin leaves when the process ends partway: a part copied
+     * before it was renamed, and a skin with no display name, stored but not yet loaded, as
+     * the name is written once the skin has loaded. Run at start, before anything is stored.
+     */
+    fun dropUnfinished() {
+        val named = { file: File -> prefs.contains(nameKey(file.name.removeSuffix(MODERN_EXT))) }
+        dir
+            .listFiles { file -> file.isFile && file.name.endsWith("$MODERN_EXT.tmp") }
+            ?.forEach { it.delete() }
+        dir
+            .listFiles { file -> file.isFile && file.name.endsWith(MODERN_EXT) && !named(file) }
+            ?.forEach { it.delete() }
     }
 
     /** Sets the display name of the stored skin [id]. */
@@ -388,12 +403,7 @@ class SkinLibrary(
 
     private fun nameKey(id: String) = "name:$id"
 
-    private fun hash(bytes: ByteArray): String =
-        MessageDigest
-            .getInstance("SHA-256")
-            .digest(bytes)
-            .joinToString("") { "%02x".format(it) }
-            .take(HASH_CHARS)
+    private fun hash(bytes: ByteArray): String = idOf(MessageDigest.getInstance("SHA-256").digest(bytes))
 
     companion object {
         private const val CLASSIC_EXT = ".wsz"
@@ -433,6 +443,9 @@ class SkinLibrary(
         fun choosing() {
             synchronized(guard) { chosen++ }
         }
+
+        /** The id of a skin whose bytes have the SHA-256 [digest], as [idFor] gives it. */
+        fun idOf(digest: ByteArray): String = digest.joinToString("") { "%02x".format(it) }.take(HASH_CHARS)
 
         /**
          * The display name of a modern skin picked as [fileName]: the name without a trailing

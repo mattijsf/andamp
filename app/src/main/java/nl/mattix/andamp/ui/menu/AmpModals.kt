@@ -46,6 +46,7 @@ import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.AmpPrompt
 import nl.mattix.andamp.state.MenuAnchor
+import nl.mattix.andamp.state.ModernSkinOffer
 import nl.mattix.andamp.state.NamePrompt
 import nl.mattix.andamp.state.SourceMark
 import nl.mattix.andamp.state.WinampState
@@ -67,6 +68,8 @@ fun AmpModals(
     modifier: Modifier = Modifier,
     /** Colors the Material theme after the skin on screen; null uses Material's dark scheme. */
     skin: nl.mattix.andamp.skin.Skin? = null,
+    /** Called after the listener took the offer to add a modern skin; see [WinampState.modernOffer]. */
+    onModernOfferTaken: () -> Unit = {},
 ) {
     val scheme = skin?.let { rememberSkinColorScheme(it) } ?: darkColorScheme()
     MaterialTheme(colorScheme = scheme) {
@@ -90,6 +93,16 @@ fun AmpModals(
         // a permission prompt raised from the player (the clutter bar's A) and a backend's notice
         // are drawn here
         AmpPromptHost(s)
+        // the offer waits while a prompt shows
+        s.modernOffer?.takeIf { s.prompt == null }?.let { offer ->
+            ModernSkinOfferDialog(
+                offer,
+                onAccept = {
+                    offer.accept()
+                    onModernOfferTaken()
+                },
+            ) { if (s.modernOffer === offer) offer.decline() }
+        }
         s.namePrompt?.let { prompt ->
             // clear only the prompt this dialog showed: an onSubmit may chain a
             // follow-up prompt (radio's url-then-name), and the dialog's own
@@ -214,6 +227,23 @@ private fun AmpPromptDialog(
         dismissLabel = prompt.dismissLabel,
         confirmTag = "prompt.confirm",
     ) { Text(prompt.body) }
+}
+
+/** Turn on and add, or Not now; Back and a tap outside count as Not now. */
+@Composable
+private fun ModernSkinOfferDialog(
+    offer: ModernSkinOffer,
+    onAccept: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AmpAlert(
+        title = stringResource(R.string.skin_modern_offer_title),
+        onDismiss = onDismiss,
+        confirmLabel = stringResource(R.string.skin_modern_offer_accept),
+        onConfirm = onAccept,
+        dismissLabel = stringResource(R.string.prompt_not_now),
+        confirmTag = "modern.offer.accept",
+    ) { Text(stringResource(R.string.skin_modern_offer_body, offer.name)) }
 }
 
 @Composable

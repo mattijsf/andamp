@@ -285,6 +285,38 @@ class SkinLibraryTest {
     }
 
     @Test
+    fun `a stored modern skin is a copy, and the temporary file goes`() {
+        val tmp =
+            java.io.File
+                .createTempFile("pick", ".tmp", app.cacheDir)
+                .apply { writeBytes(zipOf("skin.xml")) }
+        val id = library.idFor(tmp.readBytes())
+
+        val stored = library.storeModern(tmp, id)
+
+        assertEquals("$id.wal", stored.name)
+        assertTrue(stored.readBytes().contentEquals(zipOf("skin.xml")))
+        assertFalse(tmp.exists())
+        assertFalse("no part is left", java.io.File(app.filesDir, "skins/$id.wal.tmp").exists())
+    }
+
+    @Test
+    fun `what a store cut short leaves is dropped, and finished skins stay`() {
+        val classic = library.save(bytes(1), "A.wsz").id
+        val modern = library.addModern(app, "Bento")
+        val skins = java.io.File(app.filesDir, "skins")
+        val unnamed = java.io.File(skins, "0123456789abcdef0123456789abcdef.wal").apply { writeBytes(zipOf("skin.xml")) }
+        val part = java.io.File(skins, "$modern.wal.tmp").apply { writeBytes(bytes(2)) }
+
+        library.dropUnfinished()
+
+        assertFalse(unnamed.exists())
+        assertFalse(part.exists())
+        assertTrue(library.has(classic))
+        assertTrue(library.has(modern))
+    }
+
+    @Test
     fun `a modern name drops a trailing wal in any case and keeps anything else`() {
         assertEquals("Bento", SkinLibrary.modernName("Bento.wal"))
         assertEquals("Bento", SkinLibrary.modernName("Bento.WAL"))

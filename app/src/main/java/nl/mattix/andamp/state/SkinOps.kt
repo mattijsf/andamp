@@ -17,16 +17,20 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
+import nl.mattix.andamp.BuildConfig
 import nl.mattix.andamp.R
 import nl.mattix.andamp.modernskin.skin.WalArchive
 import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.skin.LiveSkins
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SkinLoader
+import nl.mattix.andamp.wal.WalBuild
 import nl.mattix.andamp.widget.MainWindowWidget
-import java.io.ByteArrayOutputStream
+import java.io.DataInputStream
 import java.io.File
 import java.io.InputStream
+import java.security.DigestInputStream
+import java.security.MessageDigest
 import java.util.zip.ZipInputStream
 
 /**
@@ -34,8 +38,9 @@ import java.util.zip.ZipInputStream
  * between stored skins.
  *
  * A skin that parses is applied even if it cannot be stored, and a stored skin that does
- * not parse falls back to the bundled one. A picked modern skin (.wal) is not added, and
- * the listener is told why.
+ * not parse falls back to the bundled one. A picked modern skin (.wal) is added while modern
+ * skins are on, once it has loaded. While they are off the listener is told why it was not
+ * added, or, in a debug build, offered to turn them on and add it.
  */
 class SkinOps(
     private val context: Context,
@@ -51,6 +56,18 @@ class SkinOps(
      * listed, and a modern choice gives way to the last classic one when it would go on.
      */
     private val modernOn: () -> Boolean = { false },
+    /** Turns modern skins on, for the offer to add a modern skin picked while they are off. Called on IO. */
+    private val turnModernOn: () -> Unit = {},
+    /**
+     * Whether a modern skin picked while modern skins are off is offered to be added with them
+     * turned on (debug builds), rather than refused with a notice.
+     */
+    private val offerModern: Boolean = BuildConfig.DEBUG,
+    /**
+     * Loads the stored modern skin file under a name, as [WalBuild.load] does, and returns the
+     * name it loaded under; throws when it does not load in time. Called on IO.
+     */
+    private val buildModern: (File, String) -> String = { file, name -> WalBuild.load(file, name, context.cacheDir) },
 ) {
     /**
      * The classic skin on screen and in the app's windows and menus. While a modern skin is
@@ -106,10 +123,13 @@ class SkinOps(
         scope.launch {
             val base =
                 withContext(Dispatchers.IO) {
-                    // a pick cut short by the process ending leaves its copy behind
+                    // a pick cut short by the process ending leaves its copy behind, and an
+                    // import of a modern skin its unloaded file
                     context.cacheDir
                         .listFiles { f -> f.name.startsWith(TEMP_PREFIX) && f.name.endsWith(".tmp") }
                         ?.forEach { it.delete() }
+                    // under the lock, so a pick made meanwhile is not taken for one
+                    lock.withLock { library.dropUnfinished() }
                     lastStamp = live.stamp(context, BundledSkins.BASE)
                     runCatching { CurrentSkin.base(context, live) }.getOrNull()
                 }
@@ -180,15 +200,21 @@ class SkinOps(
      * Loads a picked skin file and makes it the listener's choice.
      *
      * A file that is not a skin changes nothing and says nothing: the picker offers every
-     * file, so a mispick is common. A modern skin, or a skin file too large to load, changes
-     * nothing either, and a notice says why, unless [onStored] is given: a caller that takes
-     * the result words it.
+     * file, so a mispick is common. A skin file too large to load changes nothing either, and
+     * a notice says why, unless [onStored] is given: a caller that takes the result words it.
      *
-     * @return the load, which is complete once any notice is set.
+     * A modern skin is added only while modern skins are on, and only once it has loaded in
+     * time; otherwise nothing changes and a notice says so. While they are off, it is refused
+     * with a notice, or in a debug build offered through [WinampState.modernOffer]; see
+     * [acceptOffer].
+     *
+     * @return the load, which is complete once any notice or offer is set.
      */
     fun load(
         input: InputStream,
         name: String,
+        /** Whether a modern skin may be added; the museum, which offers classic skins, says no. */
+        allowModern: Boolean = true,
         /**
          * Called with the library id the bytes were stored under, or null when they were
          * not a skin or could not be stored.
@@ -197,29 +223,45 @@ class SkinOps(
     ): Job {
         choosing()
         return scope.launch {
-            val pick = withContext(Dispatchers.IO) { lock.withLock { readPick(input, name) } }
+            val pick = withContext(Dispatchers.IO) { lock.withLock { readPick(input, name, allowModern) } }
             onStored?.invoke((pick as? Pick.Stored)?.id)
-            if (pick !is Pick.Stored) {
-                if (onStored == null) noticeFor(pick, name)?.let { notify(it) }
-                // nothing was chosen: what the library says is worn stays on, including a
-                // source's skin that went on meanwhile
-                wearWorn()
-                return@launch
-            }
-            // a skin that applied but could not be stored has no library row, so no row
-            // is highlighted
-            val id = pick.id ?: UNSTORED_ID
-            put(Worn(pick.skin, id, id))
+            settle(pick, name, worded = onStored != null)
+        }
+    }
+
+    /**
+     * Puts on what a pick added, or shows why nothing was added, unless the caller [worded]
+     * it. A modern skin to offer waits in [WinampState.modernOffer].
+     */
+    private suspend fun settle(
+        pick: Pick,
+        name: String,
+        worded: Boolean,
+    ) {
+        if (pick is Pick.Stored) {
+            put(pick.worn)
             wornSkinChanged()
             refreshEntries()
+            return
         }
+        if (pick is Pick.ModernOffer) {
+            offer(pick)
+        } else if (!worded) {
+            noticeFor(pick, name)?.let { notify(it) }
+        }
+        // nothing was chosen: what the library says is worn stays on, including a source's
+        // skin that went on meanwhile
+        wearWorn()
     }
 
     /** What came of a picked file. */
     private sealed interface Pick {
-        /** A classic skin, applied, with the library id it was stored under (null when it was not). */
+        /**
+         * A skin, chosen, with what goes on screen, and the library id it was stored under:
+         * null for a classic skin that applied but could not be stored.
+         */
         class Stored(
-            val skin: Skin,
+            val worn: Worn,
             val id: String?,
         ) : Pick
 
@@ -228,70 +270,179 @@ class SkinOps(
         /** A zip larger than a skin file may be. */
         data object TooLarge : Pick
 
-        /** A modern skin (.wal), which cannot be added. */
-        data object Modern : Pick
+        /** A modern skin that did not load, or not in time; it was not added. */
+        data object Failed : Pick
+
+        /** A modern skin, which cannot be added here or while modern skins are off. */
+        data object ModernRefused : Pick
+
+        /** A modern skin picked while modern skins are off, kept in [file] until the offer is answered. */
+        class ModernOffer(
+            val file: File,
+            val id: String,
+            val name: String,
+        ) : Pick
     }
 
     /**
-     * Reads the picked file and, if it is a classic skin, parses and stores it. Call under
-     * the lock.
+     * Reads the picked file, then adds it as a classic or a modern skin. Call under the lock.
      *
-     * Up to [MAX_SKIN_BYTES] the file is read into memory, as a classic skin always was, and
-     * told apart by the entries a zip stream finds, the same way the classic loader reads
-     * them. A larger file is never added. It is read on into a temporary file, up to
-     * [MAX_PICK_BYTES], so that a large modern skin is still named as one; otherwise a zip
-     * is too large and anything else is not a skin.
+     * The file is first copied to a temporary file, up to [MAX_PICK_BYTES], with its hash taken
+     * as it streams, which is a modern skin's id. A copy of at most [MAX_SKIN_BYTES] is told
+     * apart by the entries a zip stream finds, the same way the classic loader reads them; a
+     * larger one by its zip directory. A classic skin larger than that is never added: a zip is
+     * too large, and anything else is not a skin.
      */
     @Suppress("TooGenericExceptionCaught") // a broken skin file can throw anything; the current skin stays
     private fun readPick(
         input: InputStream,
         name: String,
-    ): Pick =
+        allowModern: Boolean,
+    ): Pick {
+        var copy: File? = null
+        var pick: Pick = Pick.NotASkin
         try {
-            input.use { stream ->
-                val head = ByteArrayOutputStream()
-                if (stream.copyAtMost(head, MAX_SKIN_BYTES.toLong())) {
-                    readSmall(head.toByteArray(), name)
-                } else {
-                    readLarge(head, stream)
+            val file = File.createTempFile(TEMP_PREFIX, ".tmp", context.cacheDir).also { copy = it }
+            val digest = MessageDigest.getInstance("SHA-256")
+            val whole =
+                input.use { stream ->
+                    file.outputStream().use { DigestInputStream(stream, digest).copyAtMost(it, MAX_PICK_BYTES) }
                 }
-            }
+            val small = whole && file.length() <= MAX_SKIN_BYTES
+            pick =
+                when {
+                    !isModern(file, whole, small) -> readClassic(file, small, name)
+                    !allowModern -> Pick.ModernRefused
+                    modernOn() -> addModern(file, SkinLibrary.idOf(digest.digest()), name)
+                    offerModern -> Pick.ModernOffer(file, SkinLibrary.idOf(digest.digest()), name)
+                    else -> Pick.ModernRefused
+                }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to load skin $name", e)
-            Pick.NotASkin
+        } finally {
+            // the offer keeps the copy until it is answered
+            if (pick !is Pick.ModernOffer) copy?.delete()
         }
-
-    /** A file of at most [MAX_SKIN_BYTES]: a modern skin, or parsed and stored as a classic one. */
-    private fun readSmall(
-        bytes: ByteArray,
-        name: String,
-    ): Pick {
-        if (WalArchive.isModern(streamedNames(bytes))) return Pick.Modern
-        val parsed = SkinLoader.load(bytes.inputStream(), fallback = baseSkin, name = name)
-        return Pick.Stored(parsed, store(bytes, name))
+        return pick
     }
 
-    /** A file past [MAX_SKIN_BYTES], whose first bytes are [head] and the rest still in [rest]. */
-    private fun readLarge(
-        head: ByteArrayOutputStream,
-        rest: InputStream,
+    /** The picked [copy] as a classic skin: parsed and stored when it is [small] enough. */
+    private fun readClassic(
+        copy: File,
+        small: Boolean,
+        name: String,
     ): Pick {
-        val zip = startsAsZip(head.toByteArray())
-        val file = File.createTempFile(TEMP_PREFIX, ".tmp", context.cacheDir)
+        if (!small) return if (startsAsZip(copy)) Pick.TooLarge else Pick.NotASkin
+        val bytes = copy.readBytes()
+        val parsed = SkinLoader.load(bytes.inputStream(), fallback = baseSkin, name = name)
+        val id = store(bytes, name)
+        // a skin that applied but could not be stored has no library row, so no row is
+        // highlighted
+        return Pick.Stored(Worn(parsed, id ?: UNSTORED_ID, id ?: UNSTORED_ID), id)
+    }
+
+    /**
+     * Adds the modern skin in [copy] to the library as [id] and chooses it, once it has loaded
+     * from the stored file within the time it may take. [turnOn] runs between the two. Call
+     * under the lock.
+     *
+     * A skin that does not load is deleted again, and no record changes; the outcome is
+     * [Pick.Failed]. The same skin added before stays in the library.
+     */
+    @Suppress("TooGenericExceptionCaught") // a broken skin, or the engine running out of time, can throw anything
+    private fun addModern(
+        copy: File,
+        id: String,
+        name: String,
+        turnOn: () -> Unit = {},
+    ): Pick {
+        val before = library.kindOf(id) == SkinKind.MODERN
+        var stored: File? = null
         try {
-            val whole =
-                file.outputStream().use { out ->
-                    head.writeTo(out)
-                    rest.copyAtMost(out, MAX_PICK_BYTES - head.size())
+            stored = library.storeModern(copy, id)
+            val loaded = buildModern(stored, SkinLibrary.modernName(name))
+            turnOn()
+            // named once loaded: a file named ".wal" alone takes the name the skin gives itself
+            library.setName(id, loaded.ifEmpty { name })
+            library.choose(id)
+        } catch (e: Exception) {
+            Log.w(TAG, "Modern skin $name did not load", e)
+            if (!before) stored?.delete()
+            return Pick.Failed
+        }
+        return Pick.Stored(loadAs(id) ?: Worn(baseSkin, id, SkinEntry.BASE_ID), id)
+    }
+
+    /** Offers [offered] to the listener; an earlier offer still waiting gives way to it. */
+    private fun offer(offered: Pick.ModernOffer) {
+        declineOffer()
+        pending = offered
+        // an answer to an offer that has given way answers nothing
+        state.modernOffer =
+            ModernSkinOffer(
+                offered.name,
+                accept = { if (pending === offered) acceptOffer() },
+                decline = { if (pending === offered) declineOffer() },
+            )
+    }
+
+    /** The modern skin [WinampState.modernOffer] offers, with its picked copy. */
+    private var pending: Pick.ModernOffer? = null
+
+    /**
+     * Turn on and add, on the offer: the offered skin is added as a pick is while modern
+     * skins are on. Only once it has loaded are modern skins turned on and the skin chosen;
+     * when it does not load they stay off, and a notice says so.
+     */
+    fun acceptOffer() {
+        val offered = pending ?: return
+        pending = null
+        state.modernOffer = null
+        // a source's skin may have gone on since the pick
+        choosing()
+        scope.launch {
+            val pick =
+                withContext(Dispatchers.IO) {
+                    lock.withLock {
+                        try {
+                            addModern(offered.file, offered.id, offered.name, turnOn = turnModernOn)
+                        } finally {
+                            offered.file.delete()
+                        }
+                    }
                 }
-            val names = if (whole) SkinLibrary.directoryNames(file) else null
-            return when {
-                names != null && WalArchive.isModern(names) -> Pick.Modern
-                zip -> Pick.TooLarge
-                else -> Pick.NotASkin
+            settle(pick, offered.name, worded = false)
+        }
+    }
+
+    /** Not now, on the offer, or the offer closed another way: the picked copy is deleted. */
+    fun declineOffer() {
+        val offered = pending ?: return
+        pending = null
+        state.modernOffer = null
+        scope.launch(Dispatchers.IO) { offered.file.delete() }
+    }
+
+    /**
+     * Modern skins were turned on or off while the app runs. On lists the modern rows again.
+     * Off takes them out of the lists, and a modern choice gives way to the last classic one,
+     * which goes on screen in its place; a source's skin on screen stays on.
+     */
+    fun betaChanged(on: Boolean) {
+        scope.launch {
+            started.await()
+            val dropped = !on && withContext(Dispatchers.IO) { lock.withLock { library.dropModern() } }
+            refreshEntries()
+            if (!dropped) return@launch
+            widgetSkin = library.widgetSkin
+            if (library.worn == companionId && currentId != companionId) {
+                // the classic skin drawn under the modern one is the one that goes on
+                put(Worn(skin, companionId, companionId))
+            } else {
+                wearWorn()
             }
-        } finally {
-            file.delete()
+            // an automatic widget skin may have gone
+            wornSkinChanged()
         }
     }
 
@@ -302,7 +453,8 @@ class SkinOps(
     ): AmpPrompt? {
         val (title, body) =
             when (pick) {
-                Pick.Modern -> R.string.skin_modern_title to R.string.skin_modern_body
+                Pick.ModernRefused -> R.string.skin_modern_title to R.string.skin_modern_body
+                Pick.Failed -> R.string.skin_modern_failed_title to R.string.skin_modern_failed_body
                 Pick.TooLarge -> R.string.skin_too_large_title to R.string.skin_too_large_body
                 else -> return null
             }
@@ -604,23 +756,45 @@ class SkinOps(
         private const val TEMP_PREFIX = "pick"
 
         /**
-         * The names a zip stream finds in [bytes], up to the first entry it cannot read; empty
+         * The names a zip stream finds in [input], up to the first entry it cannot read; empty
          * for bytes that are not a zip. ISO 8859-1 reads every name, whatever the archiver
          * wrote; only skin.xml matters.
          */
-        private fun streamedNames(bytes: ByteArray): List<String> {
+        private fun streamedNames(input: InputStream): List<String> {
             val names = ArrayList<String>()
             runCatching {
-                ZipInputStream(bytes.inputStream(), Charsets.ISO_8859_1).use { zip ->
+                ZipInputStream(input, Charsets.ISO_8859_1).use { zip ->
                     while (true) names += (zip.nextEntry ?: break).name
                 }
             }
             return names
         }
 
-        /** Whether [bytes] start the way a zip does. */
-        private fun startsAsZip(bytes: ByteArray): Boolean =
-            bytes.size >= ZIP_MAGIC.size && bytes.copyOf(ZIP_MAGIC.size).contentEquals(ZIP_MAGIC)
+        /** Whether the picked [copy] is a modern skin; see [readPick]. */
+        private fun isModern(
+            copy: File,
+            whole: Boolean,
+            small: Boolean,
+        ): Boolean {
+            val names =
+                when {
+                    small -> copy.inputStream().use { streamedNames(it) }
+
+                    whole -> SkinLibrary.directoryNames(copy) ?: return false
+
+                    // the zip directory, which sits at the end, was not read
+                    else -> return false
+                }
+            return WalArchive.isModern(names)
+        }
+
+        /** Whether [file] starts the way a zip does. */
+        private fun startsAsZip(file: File): Boolean {
+            val head = ByteArray(ZIP_MAGIC.size)
+            // a file shorter than the header throws
+            val read = runCatching { DataInputStream(file.inputStream()).use { it.readFully(head) } }.isSuccess
+            return read && head.contentEquals(ZIP_MAGIC)
+        }
 
         private val ZIP_MAGIC = byteArrayOf(0x50, 0x4b, 0x03, 0x04)
 

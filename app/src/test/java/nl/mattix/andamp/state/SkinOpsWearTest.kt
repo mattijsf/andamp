@@ -59,10 +59,13 @@ class SkinOpsWearTest {
         await { ops.skin != null && ops.currentId == BundledSkins.LIGHT.id && state.skinEntries.isNotEmpty() }
     }
 
+    /** Whether modern skins are on now, as the switch has them; [SkinOps.betaChanged] is told of a change. */
+    private var gate = true
+
     private fun opsOn(
         state: WinampState,
         modernOn: Boolean = true,
-    ) = SkinOps(app, state, CoroutineScope(SupervisorJob() + Dispatchers.Main), library, modernOn = { modernOn })
+    ) = SkinOps(app, state, CoroutineScope(SupervisorJob() + Dispatchers.Main), library, modernOn = { modernOn && gate })
 
     /**
      * Idles the looper before each look at the condition, so a condition the setup already
@@ -325,6 +328,60 @@ class SkinOpsWearTest {
         await { restarted.currentId == modern && restarted.skin != null }
         assertEquals(BundledSkins.LIGHT.name, restarted.skin!!.name)
         assertEquals(BundledSkins.LIGHT.id, restarted.widgetSkin)
+    }
+
+    @Test
+    fun `turning modern skins off puts the last classic choice back on and takes the modern rows out`() {
+        val modern = library.addModern(app, "Bento")
+        ops.apply(mine)
+        await { ops.currentId == mine }
+        ops.apply(modern)
+        ops.betaChanged(true)
+        await { ops.currentId == modern && state.skinEntries.any { it.id == modern } }
+
+        gate = false
+        ops.betaChanged(false)
+
+        await { ops.currentId == mine && state.skinEntries.none { it.id == modern } }
+        assertEquals("Mine.wsz", ops.skin!!.name)
+        assertEquals(mine, library.currentId)
+        assertNull("the automatic pin goes", ops.widgetSkin)
+        assertTrue("the file stays", library.has(modern))
+    }
+
+    @Test
+    fun `turning modern skins off leaves a source's skin on screen and takes the modern choice off`() {
+        val modern = library.addModern(app, "Bento")
+        ops.apply(modern)
+        await { ops.currentId == modern }
+        ops.wear(BundledSkins.SPOT.id)
+        await { ops.currentId == BundledSkins.SPOT.id }
+        val drawn = ops.skin
+
+        gate = false
+        ops.betaChanged(false)
+
+        await { library.currentId == BundledSkins.LIGHT.id && state.skinEntries.none { it.id == modern } }
+        settle()
+        assertEquals(BundledSkins.SPOT.id, ops.currentId)
+        assertSame("the source's skin is not loaded again", drawn, ops.skin)
+        ops.wear(null)
+        await { ops.currentId == BundledSkins.LIGHT.id }
+    }
+
+    @Test
+    fun `turning modern skins on lists their rows again and changes nothing worn`() {
+        val modern = library.addModern(app, "Bento")
+        gate = false
+        ops.betaChanged(false)
+        await { state.skinEntries.none { it.id == modern } }
+
+        gate = true
+        ops.betaChanged(true)
+
+        await { state.skinEntries.any { it.id == modern } }
+        assertEquals(BundledSkins.LIGHT.id, ops.currentId)
+        assertEquals(BundledSkins.LIGHT.id, library.currentId)
     }
 
     /** The setup's start already ran the move to the modern extension; this lets the next start run it again. */

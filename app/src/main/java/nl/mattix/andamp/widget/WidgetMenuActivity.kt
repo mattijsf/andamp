@@ -117,6 +117,8 @@ class WidgetMenuActivity : ComponentActivity() {
                 player.state,
                 anchorBounds = { IntRect(ANCHOR_X, ANCHOR_Y, ANCHOR_X, ANCHOR_Y) },
                 skin = skin,
+                // an added modern skin shows in the player, not in this window, so the player opens
+                onModernOfferTaken = { open(null) },
             )
         }
     }
@@ -169,6 +171,12 @@ class WidgetMenuActivity : ComponentActivity() {
         super.onPause()
         // closed here, so it is not still open when the listener returns to the home screen
         menu = null
+    }
+
+    override fun onStop() {
+        super.onStop()
+        // leaving the window answers an offer to add a modern skin with Not now
+        if (!isChangingConfigurations) player.skinOps.declineOffer()
     }
 }
 
