@@ -12,6 +12,9 @@ import androidx.compose.ui.graphics.drawscope.clipRect
 import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
+import androidx.compose.ui.graphics.layer.CompositingStrategy
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
@@ -24,19 +27,48 @@ import nl.mattix.andamp.modernskin.skin.VAlign
  * Draws a modern skin's windows ([stack], as `SkinRuntime.drawWindows` gives them) at [scale], the
  * stack starting [left] px from the left. Each window's edge clips what sticks out, as its desktop
  * window region did.
+ *
+ * A scale between whole numbers draws the stack at the next whole scale into [layer], off screen,
+ * and shrinks that finished picture to fit, as the classic player does. Drawn piece by piece at the
+ * fractional scale, two pieces that meet inside a screen pixel would each cover it only partly and
+ * leave a seam, and a picture could show a row of the one beneath it.
  */
 internal fun DrawScope.drawWalStack(
     stack: List<Pair<Rect, List<DrawCmd>>>,
     host: WalHost,
     scale: Float,
     left: Float,
+    layer: GraphicsLayer,
 ) {
-    translate(left, 0f) {
-        scale(scale, scale, pivot = Offset.Zero) {
-            for ((r, cmds) in stack) {
-                translate(r.left.toFloat(), r.top.toFloat()) {
-                    clipRect(0f, 0f, r.width.toFloat(), r.height.toFloat()) { drawWalWindow(cmds, host) }
-                }
+    val whole =
+        kotlin.math
+            .ceil(scale)
+            .toInt()
+            .coerceAtLeast(1)
+    if (whole.toFloat() == scale || stack.isEmpty()) {
+        translate(left, 0f) { drawWindowsAt(stack, host, scale) }
+        return
+    }
+    val size = IntSize(stack.maxOf { it.first.right } * whole, stack.maxOf { it.first.bottom } * whole)
+    if (size.width <= 0 || size.height <= 0) return
+    layer.compositingStrategy = CompositingStrategy.Offscreen
+    layer.pivotOffset = Offset.Zero
+    layer.scaleX = scale / whole
+    layer.scaleY = scale / whole
+    layer.record(this, layoutDirection, size) { drawWindowsAt(stack, host, whole.toFloat()) }
+    translate(left, 0f) { drawLayer(layer) }
+}
+
+/** The windows of [stack] at [scale], from the stack's corner. */
+private fun DrawScope.drawWindowsAt(
+    stack: List<Pair<Rect, List<DrawCmd>>>,
+    host: WalHost,
+    scale: Float,
+) {
+    scale(scale, scale, pivot = Offset.Zero) {
+        for ((r, cmds) in stack) {
+            translate(r.left.toFloat(), r.top.toFloat()) {
+                clipRect(0f, 0f, r.width.toFloat(), r.height.toFloat()) { drawWalWindow(cmds, host) }
             }
         }
     }
