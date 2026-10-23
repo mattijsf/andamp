@@ -1183,6 +1183,13 @@ class SkinRuntime(
 
     fun now(): Long = clock()
 
+    /** How far the phone's local time is from UTC at a moment of [clock], in ms: the time of day scripts read is local. */
+    var zoneOffset: (Long) -> Int = {
+        java.util.TimeZone
+            .getDefault()
+            .getOffset(it)
+    }
+
     fun invalidate() {
         dirty = true
     }
