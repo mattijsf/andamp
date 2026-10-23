@@ -8,6 +8,7 @@ import android.content.Context
 import android.os.Looper
 import androidx.compose.ui.graphics.Color
 import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -18,6 +19,7 @@ import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.skin.FakePalette
 import nl.mattix.andamp.skin.LiveSkins
 import nl.mattix.andamp.skin.SkinDist
+import nl.mattix.andamp.wal.WalEngine
 import nl.mattix.andamp.wal.WalFit
 import nl.mattix.andamp.wal.WalLook
 import nl.mattix.andamp.wal.WalSettings
@@ -97,10 +99,11 @@ class SkinOpsWearTest {
         state: WinampState,
         modernOn: Boolean = true,
         live: LiveSkins = CurrentSkin.live,
+        main: CoroutineDispatcher = Dispatchers.Main,
     ) = SkinOps(
         app,
         state,
-        CoroutineScope(SupervisorJob() + Dispatchers.Main),
+        CoroutineScope(SupervisorJob() + main),
         library,
         live = live,
         modernOn = { modernOn && gate },
@@ -493,6 +496,13 @@ class SkinOpsWearTest {
 
     // the modern skin's look
 
+    /** Chooses a new modern skin, one that [loads] when asked, and waits for its look to go on. */
+    private fun wornModern(loads: Boolean = false): WalLook {
+        ops.apply(library.addModern(app, "Bento", loads = loads))
+        await { ops.wal != null }
+        return ops.wal!!
+    }
+
     @Test
     fun `a modern skin chosen goes on with its look, which waits for a player surface to start`() {
         val modern = library.addModern(app, "Bento")
@@ -507,10 +517,7 @@ class SkinOpsWearTest {
 
     @Test
     fun `a source's skin parks the modern look, and the same look comes back when the source stops`() {
-        val modern = library.addModern(app, "Bento")
-        ops.apply(modern)
-        await { ops.wal != null }
-        val look = ops.wal!!
+        val look = wornModern()
 
         ops.wear(BundledSkins.SPOT.id)
         await { ops.currentId == BundledSkins.SPOT.id }
@@ -518,7 +525,7 @@ class SkinOpsWearTest {
         assertFalse("parked, not let go", look.released)
 
         ops.wear(null)
-        await { ops.currentId == modern }
+        await { ops.currentId == look.id }
         assertSame(look, ops.wal)
         assertEquals("opened once", 1, opened.size)
     }
@@ -545,10 +552,7 @@ class SkinOpsWearTest {
 
     @Test
     fun `turning modern skins off lets go of the look on screen`() {
-        val modern = library.addModern(app, "Bento")
-        ops.apply(modern)
-        await { ops.wal != null }
-        val look = ops.wal!!
+        val look = wornModern()
 
         gate = false
         ops.betaChanged(false)
@@ -558,10 +562,7 @@ class SkinOpsWearTest {
 
     @Test
     fun `turning modern skins off lets go of a parked look`() {
-        val modern = library.addModern(app, "Bento")
-        ops.apply(modern)
-        await { ops.wal != null }
-        val look = ops.wal!!
+        val look = wornModern()
         ops.wear(BundledSkins.SPOT.id)
         await { ops.currentId == BundledSkins.SPOT.id }
 
@@ -577,10 +578,8 @@ class SkinOpsWearTest {
 
     @Test
     fun `removing the worn modern skin lets it go without writing its settings`() {
-        val modern = library.addModern(app, "Bento", loads = true)
-        ops.apply(modern)
-        await { ops.wal != null }
-        val look = fitted(ops.wal!!)
+        val look = fitted(wornModern(loads = true))
+        val modern = look.id
         val thread = Thread.getAllStackTraces().keys.single { it.name == "wal-$modern" }
 
         ops.remove(modern)
@@ -597,10 +596,7 @@ class SkinOpsWearTest {
 
     @Test
     fun `picking AndAmp Dark lets go of the modern look`() {
-        val modern = library.addModern(app, "Bento")
-        ops.apply(modern)
-        await { ops.wal != null }
-        val look = ops.wal!!
+        val look = wornModern()
 
         ops.reset()
 
@@ -609,12 +605,10 @@ class SkinOpsWearTest {
 
     /** Chooses a modern skin whose look does not start, fits it, and waits for the classic skin under it. */
     private fun failedModern(): String {
-        val modern = library.addModern(app, "Bento")
-        ops.apply(modern)
-        await { ops.wal != null }
-        ops.wal!!.fit(phone)
+        val look = wornModern()
+        look.fit(phone)
         await { ops.wal == null && ops.currentId == BundledSkins.LIGHT.id }
-        return modern
+        return look.id
     }
 
     @Test
@@ -666,18 +660,75 @@ class SkinOpsWearTest {
 
     @Test
     fun `a modern skin that stops working says so and shows the classic skin`() {
-        val modern = library.addModern(app, "Bento", loads = true)
-        ops.apply(modern)
-        await { ops.wal != null }
-        val look = fitted(ops.wal!!)
+        val look = fitted(wornModern(loads = true))
 
         repeat(3) { look.drawFailed(IllegalStateException("draw")) }
 
         await { ops.wal == null && state.prompt != null }
         assertEquals("“Bento” stopped working", state.prompt!!.title)
         assertEquals(BundledSkins.LIGHT.id, ops.currentId)
-        assertEquals(modern, library.currentId)
+        assertEquals(look.id, library.currentId)
         assertTrue(look.released)
+    }
+
+    @Test
+    fun `picking the source's skin on screen lets go of the modern look parked under it`() {
+        val look = wornModern()
+        ops.wear(BundledSkins.SPOT.id)
+        await { ops.currentId == BundledSkins.SPOT.id }
+        assertFalse(look.released)
+
+        // the Skins menu ticks the source's skin; tapping it makes it the listener's choice
+        ops.apply(BundledSkins.SPOT.id)
+
+        await { library.currentId == BundledSkins.SPOT.id && look.released }
+        ops.wear(null)
+        settle()
+        assertEquals(BundledSkins.SPOT.id, ops.currentId)
+        assertNull(ops.wal)
+        assertEquals("nothing opened again", 1, opened.size)
+    }
+
+    @Test
+    fun `a look that fails while a load holding it is on its way shows the classic skin ticked, and a pick opens it again`() {
+        val dark = SkinDist.baselineScheme("dark")
+        val palette = FakePalette(dark)
+        // holds a palette change's load before it picks up the look on screen
+        val held = HeldPalette(palette)
+        val main = CountingMain()
+        val modern = library.addModern(app, "Bento", loads = true)
+        library.choose(modern)
+        val prompted = WinampState()
+        val live = opsOn(prompted, live = LiveSkins(held), main = main)
+        live.start()
+        await { live.wal != null }
+        val look = fitted(live.wal!!)
+
+        held.arm()
+        palette.scheme = dark.copy(primary = Color(0xFF00E250))
+        live.paletteChanged()
+        await { held.holding.count == 0L }
+        // the look stops working while the load waits: the news is on its way to main
+        repeat(WalEngine.MAX_FAILURES) { look.drawFailed(IllegalStateException("draw")) }
+        val broken = java.util.concurrent.CompletableFuture<Unit>()
+        look.engine!!.postAlways { broken.complete(Unit) }
+        broken.get(5, TimeUnit.SECONDS)
+        // the load picks up the look, which has not failed yet as main sees it, and comes back to main
+        assertTrue("the load came back", main.awaitDispatch { held.release() })
+
+        // main hears of the failure first, then puts what the load gave
+        settle()
+
+        assertEquals("the classic skin under it is ticked", BundledSkins.LIGHT.id, live.currentId)
+        assertNull(live.wal)
+        assertTrue(look.released)
+        assertEquals("“Bento” stopped working", prompted.prompt?.title)
+        assertEquals("the choice stays", modern, library.currentId)
+
+        live.apply(modern)
+
+        await { live.currentId == modern && live.wal != null }
+        assertEquals(2, opened.size)
     }
 
     @Test
@@ -710,10 +761,7 @@ class SkinOpsWearTest {
 
     @Test
     fun `a trim lets go of a parked look's drawing and leaves the menu of the look on screen open`() {
-        val modern = library.addModern(app, "Bento", loads = true)
-        ops.apply(modern)
-        await { ops.wal != null }
-        val look = fitted(ops.wal!!)
+        val look = fitted(wornModern(loads = true))
         ops.wear(BundledSkins.SPOT.id)
         await { ops.currentId == BundledSkins.SPOT.id }
 

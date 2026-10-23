@@ -3,10 +3,19 @@
 package nl.mattix.andamp.state
 
 import android.content.Context
+import android.os.Looper
+import androidx.compose.material3.ColorScheme
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
+import kotlin.coroutines.CoroutineContext
 
 /** A zip holding [names], each with a few bytes. With a skin.xml among them it reads as a modern skin. */
 internal fun zipOf(vararg names: String): ByteArray = zipWith(*names.map { it to it }.toTypedArray())
@@ -53,4 +62,56 @@ internal fun SkinLibrary.addModern(
     storeModern(tmp, id)
     setName(id, name)
     return id
+}
+
+/** The main dispatcher, counting what it is handed, so a test can tell a coroutine has come back from IO. */
+internal class CountingMain : CoroutineDispatcher() {
+    private val dispatched = AtomicInteger()
+
+    override fun dispatch(
+        context: CoroutineContext,
+        block: Runnable,
+    ) {
+        dispatched.incrementAndGet()
+        Dispatchers.Main.dispatch(context, block)
+    }
+
+    /**
+     * Runs [action], then waits up to 10 s, without running main, until something is handed to
+     * main; whether it was.
+     */
+    fun awaitDispatch(action: () -> Unit): Boolean {
+        val before = dispatched.get()
+        action()
+        val deadline = System.currentTimeMillis() + 10_000
+        while (dispatched.get() == before && System.currentTimeMillis() < deadline) Thread.sleep(10)
+        return dispatched.get() > before
+    }
+}
+
+/**
+ * A palette that, once [arm]ed, holds the first read made off the main thread until [release]:
+ * a load that reads it waits there. [holding] opens when a read is held.
+ */
+internal class HeldPalette(
+    private val palette: (Context, Boolean) -> ColorScheme?,
+) : (Context, Boolean) -> ColorScheme? {
+    private val armed = AtomicBoolean(false)
+    private val go = CountDownLatch(1)
+    val holding = CountDownLatch(1)
+
+    fun arm() = armed.set(true)
+
+    fun release() = go.countDown()
+
+    override fun invoke(
+        context: Context,
+        dark: Boolean,
+    ): ColorScheme? {
+        if (Looper.myLooper() != Looper.getMainLooper() && armed.compareAndSet(true, false)) {
+            holding.countDown()
+            go.await(10, TimeUnit.SECONDS)
+        }
+        return palette(context, dark)
+    }
 }

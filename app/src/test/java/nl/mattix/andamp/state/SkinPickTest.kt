@@ -378,6 +378,23 @@ class SkinPickTest {
     }
 
     @Test
+    fun `picking the worn modern skin again from a file named only wal keeps its name`() {
+        modernOn = true
+        val bytes = loading()
+        picked(started(), bytes, "Bento.wal")
+        // the next start opens its look, which no player surface has started yet
+        val ops = started()
+        await { ops.wal != null }
+        assertEquals("", ops.wal!!.loadedName)
+
+        picked(ops, bytes, ".wal")
+
+        assertEquals("Bento", library.nameOf(library.idFor(bytes)))
+        assertEquals("the pick kept the look the start opened", 2, looks.size)
+        assertSame(looks.last(), ops.wal)
+    }
+
+    @Test
     fun `a modern skin picked as a wsz is added as a wal under the same id`() {
         modernOn = true
         val ops = started()

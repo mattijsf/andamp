@@ -99,6 +99,60 @@ class WalFilesTest {
         assertEquals("<later/>", files.read("../Later/skin.xml")?.decodeToString())
     }
 
+    /** A skin.xml whose skininfo gives [name]. */
+    private fun named(name: String) =
+        """<WinampAbstractionLayer version="0.8"><skininfo><name>$name</name></skininfo></WinampAbstractionLayer>"""
+
+    @Test
+    fun `a library skin is known by its name in the library and by the name its skininfo gives`() {
+        val big = wal("9e07.wal", "skin.xml" to named("Big Bento Deluxe"), "xml/player.xml" to "<player/>")
+
+        val siblings = WalFiles.siblings(listOf("Big Bento" to big))
+
+        assertEquals(mapOf("bigbento" to big, "bigbentodeluxe" to big), siblings)
+        val files = WalFiles.open(wal("5f1c.wal", "skin.xml" to "<a/>"), siblings)
+        assertEquals("<player/>", files.read("../Big Bento Deluxe/xml/player.xml")?.decodeToString())
+        assertEquals("<player/>", files.read("../Big Bento/xml/player.xml")?.decodeToString())
+    }
+
+    @Test
+    fun `a skin just stored, not named yet in the library, is known by its skininfo name`() {
+        // an import names its row only once the skin has loaded: until then its name is its hash
+        val big = wal("9e07.wal", "skin.xml" to named("Big Bento"), "scripts/notifier.maki" to "maki")
+
+        val files = WalFiles.open(big, WalFiles.siblings(listOf("9e07" to big)))
+
+        assertEquals("maki", files.read("@SKINSPATH@\\Big Bento\\scripts\\notifier.maki")?.decodeToString())
+    }
+
+    @Test
+    fun `a name in the library wins over another skin's skininfo name`() {
+        val mine = wal("aaaa.wal", "skin.xml" to named("Bento"))
+        val bento = wal("bbbb.wal", "skin.xml" to named("Something else"))
+
+        val siblings = WalFiles.siblings(listOf("Other" to mine, "Bento" to bento))
+
+        assertEquals(bento, siblings["bento"])
+        assertEquals(mine, siblings["other"])
+    }
+
+    @Test
+    fun `the skininfo name is read from a skin xml in a folder, and a file without one gives none`() {
+        val inFolder = wal("folder.wal", "Bento/skin.xml" to named("Bento Pro"), "Bento/xml/player.xml" to "<player/>")
+        val unnamed = wal("unnamed.wal", "skin.xml" to """<WinampAbstractionLayer version="0.8"/>""")
+        val blankName = wal("blank.wal", "skin.xml" to named(" "))
+        val notAZip = dir.newFile("broken.wal").apply { writeText("not a zip") }
+        val noSkinXml = wal("other.wal", "readme.txt" to named("Readme"))
+
+        assertEquals("Bento Pro", WalFiles.infoName(inFolder))
+        for (f in listOf(unnamed, blankName, notAZip, noSkinXml)) assertNull(f.name, WalFiles.infoName(f))
+        assertEquals(
+            "only the library names",
+            setOf("unnamed", "broken", "other"),
+            WalFiles.siblings(listOf("Unnamed" to unnamed, "Broken" to notAZip, "Other" to noSkinXml)).keys,
+        )
+    }
+
     @Test
     fun `a sibling that does not open reads as missing`() {
         val bento = wal("Bento.wal", "skin.xml" to "<a/>")

@@ -9,6 +9,7 @@ import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.Player
+import nl.mattix.andamp.modernskin.skin.SkinMenu
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -30,6 +31,7 @@ import org.robolectric.shadows.ShadowLooper
 import java.io.File
 import java.io.IOException
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
@@ -287,21 +289,85 @@ class WalLookTest {
         assertFalse(prefs.contains(dropped.id))
     }
 
+    /** Holds [look]'s engine thread in a task until the returned latch opens. */
+    private fun holdEngine(look: WalLook): CountDownLatch {
+        val held = CountDownLatch(1)
+        val open = CountDownLatch(1)
+        look.engine!!.postAlways {
+            held.countDown()
+            open.await(10, TimeUnit.SECONDS)
+        }
+        assertTrue(held.await(5, TimeUnit.SECONDS))
+        return open
+    }
+
     @Test(timeout = 20_000)
-    fun `a save still due when the skin is let go without one lands nowhere, so its settings can be forgotten`() {
+    fun `a save already due when the skin is let go without one lands nowhere, so its settings can be forgotten`() {
         val look = look()
         look.fit(phone)
         await("the first frame arrives") { look.layout != null }
         onEngine(look) { it!!.selectGammaSet("Two") }
+        // the task after it, so the save it scheduled is in the queue
+        onEngine(look) { }
+        val open = holdEngine(look)
+        // past the time the save waited for: it is due, behind the task holding the engine thread
+        ShadowLooper.idleMainLooper(WalLook.SAVE_DELAY_MS * 2, TimeUnit.MILLISECONDS)
         val thread = engineThread(look)!!
 
         look.release(save = false)
         WalSettings(app).forget(look.id)
-        // past the time the save waited for
-        ShadowLooper.idleMainLooper(WalLook.SAVE_DELAY_MS * 2, TimeUnit.MILLISECONDS)
+        open.countDown()
 
         thread.join(5_000)
+        assertFalse(thread.isAlive)
         assertFalse(prefs.contains(look.id))
+    }
+
+    @Test(timeout = 20_000)
+    fun `a save asked for just before the skin is let go without one lands nowhere`() {
+        val look = look()
+        look.fit(phone)
+        await("the first frame arrives") { look.layout != null }
+        onEngine(look) { it!!.selectGammaSet("Two") }
+        val open = holdEngine(look)
+        // as a player surface saves when it goes, or a source's skin parks the look
+        look.park()
+        val thread = engineThread(look)!!
+
+        look.release(save = false)
+        WalSettings(app).forget(look.id)
+        open.countDown()
+
+        thread.join(5_000)
+        assertFalse(thread.isAlive)
+        assertFalse(prefs.contains(look.id))
+    }
+
+    @Test(timeout = 20_000)
+    fun `a menu the skin opens while an import starts it is answered at once, and later ones wait for the player`() {
+        val menu = SkinMenu(listOf(SkinMenu.Command(1, "Item", checked = false, disabled = false)))
+        val asLoaded = CompletableFuture<Int?>()
+        lateinit var look: WalLook
+        // the runtime reads the player's status as it loads: the skin opens its menu then
+        val opensMenu =
+            object : Player by FakePlayer() {
+                override val status: Player.Status
+                    get() {
+                        if (!asLoaded.isDone) asLoaded.complete(look.host!!.chooseFromMenu(menu))
+                        return Player.Status.STOPPED
+                    }
+            }
+        look = look(player = opensMenu)
+
+        assertEquals("Test", look.startAndAwait())
+        assertEquals("answered with nothing picked", 0, asLoaded.get(1, TimeUnit.SECONDS))
+
+        val later = CompletableFuture<Int?>()
+        look.engine!!.postAlways { later.complete(look.host!!.chooseFromMenu(menu)) }
+        await("the menu waits for the player") { look.menu === menu }
+        assertFalse(later.isDone)
+        look.answerMenu(menu, 1)
+        assertEquals(1, later.get(5, TimeUnit.SECONDS))
     }
 
     @Test(timeout = 20_000)

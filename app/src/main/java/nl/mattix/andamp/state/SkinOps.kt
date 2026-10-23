@@ -114,7 +114,7 @@ class SkinOps internal constructor(
     @Volatile
     private var parked: WalLook? = null
 
-    /** The modern skins whose engine failed in this process; see [fallBack]. Written on main, read on IO too. */
+    /** The modern skins whose engine failed in this process; see [fallBack]. Read and written on main and on IO. */
     private val failed: MutableSet<String> = ConcurrentHashMap.newKeySet()
 
     /** The bundled skin, which a skin missing a sheet borrows from. */
@@ -400,7 +400,8 @@ class SkinOps internal constructor(
             stored = library.storeModern(copy, id)
             val loaded =
                 if (kept != null) {
-                    SkinLibrary.modernName(name).ifEmpty { kept.loadedName }
+                    // a look no player surface has started yet has loaded no name: the stored one stays
+                    SkinLibrary.modernName(name).ifEmpty { kept.loadedName }.ifEmpty { library.nameOf(id) }
                 } else {
                     openLook(id, stored, SkinLibrary.modernName(name)).also { opened = it }.startAndAwait()
                 }
@@ -609,13 +610,19 @@ class SkinOps internal constructor(
         }
     }
 
-    /** Chooses the skin already on screen; see [apply]. Nothing is loaded, only the record changes. */
+    /**
+     * Chooses the skin already on screen; see [apply]. Nothing is loaded, only the record changes.
+     * A modern look parked under a music source's skin chosen this way is let go, as the modern
+     * skin is no longer the choice.
+     */
     private fun adopt(id: String) {
         choosing()
         scope.launch {
             // if a removal ran first, there is nothing to choose
             val chosen = withContext(Dispatchers.IO) { lock.withLock { library.has(id).also { if (it) library.choose(id) } } }
             if (chosen) {
+                parked?.release(save = true)
+                parked = null
                 widgetSkin = library.widgetSkin
                 wornSkinChanged()
             } else {
@@ -686,7 +693,7 @@ class SkinOps internal constructor(
      * [companionId], the id of [skin]. For a classic skin the two ids are the same; for a
      * modern one, [companionId] is the last classic choice, and [wal] the modern skin's look
      * drawn over it. [source] says a music source's classic skin is worn over the listener's
-     * own choice.
+     * choice.
      */
     private class Worn(
         val skin: Skin?,
@@ -700,14 +707,15 @@ class SkinOps internal constructor(
      * Puts [worn] on screen. Every change of the skin on screen goes through here. A look that
      * leaves the screen is parked when a source's classic skin goes on over it, in place of one
      * parked before, and let go otherwise; a parked look is let go once the listener's choice
-     * is back on screen. A look let go while [worn] was loading is not shown.
+     * is back on screen. A look let go while [worn] was loading is not shown, and the classic
+     * skin under it is ticked, as [fallBack] ticks it.
      */
     private fun put(worn: Worn) {
+        val next = worn.wal?.takeUnless { it.released }
         skin = worn.skin
-        currentId = worn.id
+        currentId = if (worn.wal != null && next == null) worn.companionId else worn.id
         companionId = worn.companionId
         widgetSkin = library.widgetSkin
-        val next = worn.wal?.takeUnless { it.released }
         val off = wal?.takeIf { it !== next }
         wal = next
         if (parked === next) parked = null

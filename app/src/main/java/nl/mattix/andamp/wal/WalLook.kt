@@ -101,8 +101,10 @@ internal class WalLook(
     internal var trims = 0
         private set
 
+    /** The engine's host once started, null before that and after [release]; tests open menus through it. */
     @Volatile
-    private var host: WalHost? = null
+    internal var host: WalHost? = null
+        private set
 
     /** Guards the start against a release on another thread. */
     private val startLock = Any()
@@ -227,9 +229,10 @@ internal class WalLook(
 
     /**
      * Starts the skin with no box yet and waits for it to load, for an import: called off the main
-     * thread, and waits at most the start's time. Returns [loadedName]. Throws why it did not start:
-     * what its load threw, or a [TimeoutException]. [onFailed] is not told; the caller lets the look
-     * go.
+     * thread, and waits at most the start's time. A menu its scripts open while it loads is answered
+     * at once with nothing picked; once it is on, the player surface answers them. Returns
+     * [loadedName]. Throws why it did not start: what its load threw, or a [TimeoutException].
+     * [onFailed] is not told; the caller lets the look go.
      */
     fun startAndAwait(): String {
         check(!released) { "$id was let go" }
@@ -308,14 +311,16 @@ internal class WalLook(
                 return
             }
             val files = OpenedOnRead { WalFiles.open(file, siblings) }
-            val host = WalHost(files, cacheDir, windowOpen)
+            // an import has no player surface to show a menu its scripts open as the skin loads:
+            // such a menu is answered at once with nothing picked
+            val host = WalHost(files, cacheDir, windowOpen).apply { menus.unattended = awaited }
             val engine = WalEngine(id, host, ::frameChanged)
             engine.onBroken = { toMain(Runnable { failed(stoppedWorking = true) }) }
             engine.onTask = ::keepLater
             this.host = host
             this.engine = engine
             fit?.let(engine::fit)
-            engine.start(budgetMs, box, onStart = ::startReported) { build(files, host) }
+            engine.start(budgetMs, box, onStart = { failure -> startReported(failure, host) }) { build(files, host) }
         }
     }
 
@@ -334,7 +339,12 @@ internal class WalLook(
             loadedName = skinName
         }
 
-    private fun startReported(failure: Throwable?) {
+    private fun startReported(
+        failure: Throwable?,
+        host: WalHost,
+    ) {
+        // from here on the player surface shows the skin's menus and answers them
+        if (failure == null) host.menus.unattended = false
         started.complete(failure)
         if (failure != null && !awaited) toMain(Runnable { failed(stoppedWorking = false) })
     }
