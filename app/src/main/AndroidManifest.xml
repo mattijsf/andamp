@@ -85,6 +85,45 @@
         </activity>
 
         <!--
+          A Winamp skin opened or shared from another app: classic (.wsz) or modern (.wal).
+          Some apps name a skin's type (the types Winamp registered); most hand a skin over as
+          application/octet-stream or a zip type, so the second filter takes those only on a path
+          ending in .wsz or .wal, and only to open, so Andamp stays out of the share sheet of
+          every zip. See SkinImportActivity for why this is not MainActivity.
+        -->
+        <activity
+            android:name=".SkinImportActivity"
+            android:exported="true"
+            android:excludeFromRecents="true"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.NoDisplay">
+            <intent-filter android:label="Add to Andamp">
+                <action android:name="android.intent.action.VIEW" />
+                <action android:name="android.intent.action.SEND" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="interface/x-winamp-skin" />
+                <data android:mimeType="interface/x-winamp3-skin" />
+                <data android:mimeType="application/x-winamp-skin" />
+            </intent-filter>
+            <intent-filter android:label="Add to Andamp">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:scheme="file" />
+                <data android:host="*" />
+                <data android:mimeType="application/octet-stream" />
+                <data android:mimeType="application/zip" />
+                <data android:mimeType="application/x-zip-compressed" />
+                <data android:pathPattern=".*\\.wsz" />
+                <data android:pathPattern=".*\\..*\\.wsz" />
+                <data android:pathPattern=".*\\..*\\..*\\.wsz" />
+                <data android:pathPattern=".*\\.wal" />
+                <data android:pathPattern=".*\\..*\\.wal" />
+                <data android:pathPattern=".*\\..*\\..*\\.wal" />
+            </intent-filter>
+        </activity>
+
+        <!--
           A .lua plug-in opened or shared from another app. Android has no type
           for .lua: MediaStore files one as application/octet-stream, and a file
           manager passes that on, so the second filter matches that type (and
