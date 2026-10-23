@@ -34,6 +34,8 @@
     <string name="menu_load_skin">Load skin...</string>
     <!-- Winamp's entry, angle brackets and all; opens the skin museum. -->
     <string name="menu_get_more_skins">&lt;&lt; Get more skins! &gt;&gt;</string>
+    <!-- a modern skin's row in the Skins menu and the Skin Browser; %1$s is the skin's name -->
+    <string name="skin_row_modern">%1$s · Modern skin</string>
     <string name="menu_preferences">Preferences...</string>
     <string name="menu_time_elapsed">Time elapsed</string>
     <string name="menu_time_remaining">Time remaining</string>

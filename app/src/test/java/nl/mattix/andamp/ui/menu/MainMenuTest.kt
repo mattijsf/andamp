@@ -9,6 +9,7 @@ import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.MusicSource
 import nl.mattix.andamp.state.SkinEntry
+import nl.mattix.andamp.state.SkinKind
 import nl.mattix.andamp.state.SkinLibrary
 import nl.mattix.andamp.state.SourceMark
 import nl.mattix.andamp.ui.window.testViewModel
@@ -310,6 +311,16 @@ class MainMenuTest {
             listOf("Skin Browser...", "Load skin...", SkinEntry.BASE_NAME, "<< Get more skins! >>"),
             actions(skins).map { it.label },
         )
+    }
+
+    @Test
+    fun `a modern skin's row in the skins submenu says it is one`() {
+        val vm = testViewModel()
+        vm.state.skinEntries = listOf(SkinEntry.BASE, SkinEntry("bento", "Bento", 0, SkinKind.MODERN))
+
+        val skins = actions(submenu(mainMenu(vm, {}, {}, {}, {}), "Skins")).map { it.label }
+
+        assertTrue(skins.toString(), "Bento · Modern skin" in skins)
     }
 
     @Test

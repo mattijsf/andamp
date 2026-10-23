@@ -107,7 +107,17 @@ fun SkinManagerWindow(
             widgets = widgets,
             modifier = Modifier.matchParentSize(),
         ) {
-            drawSkinList(rasterizer, entries, s.skinScroll, vm.skinOps.currentId, skin.pledit, scale, frame, layout)
+            drawSkinList(
+                rasterizer,
+                entries,
+                s.skinScroll,
+                vm.skinOps.currentId,
+                skin.pledit,
+                scale,
+                frame,
+                layout,
+                labels = entries.map { it.label(vm.words) },
+            )
         }
     }
 }
@@ -166,11 +176,13 @@ internal fun DrawScope.drawSkinList(
     scale: Int,
     frame: WindowFrame,
     layout: SkinManagerLayout = SkinManagerLayout(),
+    /** What each row says, in the order of [entries]. */
+    labels: List<String> = entries.map { it.name },
 ) {
     val width = layout.listWidth(frame)
     val height = layout.listHeight()
     drawRect(style.normalBg, Offset.Zero, Size(width.toFloat(), height.toFloat()))
-    val layer = rasterizer.layer(entries, scroll, currentId, style, width, height, scale, layout.visibleRows, layout.rowH)
+    val layer = rasterizer.layer(entries, scroll, currentId, style, width, height, scale, layout.visibleRows, layout.rowH, labels)
     drawImage(
         layer,
         dstOffset = IntOffset.Zero,
@@ -202,15 +214,16 @@ internal class SkinListRasterizer(
         scale: Int,
         visibleRows: Int = SkinManagerLayout.DEFAULT_ROWS,
         rowH: Int = SkinManagerLayout.ROW_H,
+        labels: List<String> = entries.map { it.name },
     ): ImageBitmap {
-        val key = listOf(entries, scroll, currentId, style, width, height, scale, visibleRows, rowH)
+        val key = listOf(entries, scroll, currentId, style, width, height, scale, visibleRows, rowH, labels)
         cache?.let { if (key == cacheKey) return it }
 
         val bitmap = Bitmap.createBitmap(width * scale, height * scale, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
         canvas.scale(scale.toFloat(), scale.toFloat())
         val paint = ListText.paint(ListText.typefaceFor(style.fontName, arialLike))
-        entries.drop(scroll).take(visibleRows).forEachIndexed { row, entry ->
+        entries.withIndex().drop(scroll).take(visibleRows).forEachIndexed { row, (index, entry) ->
             val top = SkinManagerLayout.rowY(row, rowH).toFloat()
             val baseline = ListText.baseline(paint, top, rowH)
             val active = entry.id == currentId
@@ -229,7 +242,7 @@ internal class SkinListRasterizer(
             }
             canvas.save()
             canvas.clipRect(0f, top, nameRight, top + rowH)
-            canvas.drawText(entry.name, ListText.LEFT_INSET, baseline, paint)
+            canvas.drawText(labels.getOrElse(index) { entry.name }, ListText.LEFT_INSET, baseline, paint)
             canvas.restore()
         }
         val image = bitmap.asImageBitmap()

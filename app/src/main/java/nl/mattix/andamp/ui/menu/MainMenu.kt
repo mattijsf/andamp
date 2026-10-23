@@ -283,7 +283,7 @@ internal fun skinItems(
         // the library survives restarts, so past skins stay one tap away
         vm.state.skinEntries.filterNot { it.id == SkinEntry.BASE_ID }.forEach { entry ->
             add(
-                AmpMenuItem.Action(entry.name, checked = entry.id == vm.skinOps.currentId) {
+                AmpMenuItem.Action(entry.label(vm.words), checked = entry.id == vm.skinOps.currentId) {
                     vm.skinOps.apply(entry.id)
                 },
             )
