@@ -79,3 +79,14 @@ data class AmpPrompt(
     val dismissLabel: String?,
     val onConfirm: () -> Unit,
 )
+
+/**
+ * A modern skin picked while modern skins are off, offered to be added with them turned on.
+ * [accept] and [decline] each close it; the picked file waits until one of them runs.
+ */
+class ModernSkinOffer(
+    /** The picked file's name. */
+    val name: String,
+    val accept: () -> Unit,
+    val decline: () -> Unit,
+)

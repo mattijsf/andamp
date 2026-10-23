@@ -329,6 +329,7 @@ class WinampState {
             bookmarkSheet != null ||
             namePrompt != null ||
             prompt != null ||
+            modernOffer != null ||
             aboutOpen
 
     /**
@@ -620,6 +621,12 @@ class WinampState {
      * is set only while a prompt shows, and [prompt] going to null shows it.
      */
     var waitingNotice by mutableStateOf<AmpPrompt?>(null)
+
+    /**
+     * A picked modern skin offered to be added with modern skins turned on; null while there
+     * is none. It shows while no [prompt] does, so a notice that comes meanwhile goes first.
+     */
+    var modernOffer by mutableStateOf<ModernSkinOffer?>(null)
 
     /** A request for music access, waiting for the screen to ask; see [LibraryPrompt]. */
     var libraryAsk by mutableStateOf<LibraryAsk?>(null)

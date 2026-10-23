@@ -110,9 +110,10 @@ class OnlineSkinOps(
                 return@launch
             }
             // the install is recorded only when load reports an id: a file that does not
-            // parse gives none. The row stays busy until then, so it does not offer
-            // Install again while the parse is running
-            skinOps.load(bytes.inputStream(), skin.filename) { id ->
+            // parse gives none, and nor does a modern skin, which the museum does not add.
+            // The row stays busy until then, so it does not offer Install again while the
+            // parse is running
+            skinOps.load(bytes.inputStream(), skin.filename, allowModern = false) { id ->
                 busy.remove(skin.md5)
                 if (id == null) {
                     message = words.get(R.string.museum_could_not_read, skin.filename)

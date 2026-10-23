@@ -35,6 +35,7 @@ import nl.mattix.andamp.state.overlay.OverlayOps
 import nl.mattix.andamp.state.overlay.OverlayStore
 import nl.mattix.andamp.state.overlay.OverlaySupport
 import nl.mattix.andamp.ui.menu.promptFor
+import nl.mattix.andamp.wal.WalGate
 import nl.mattix.andamp.wal.WalSettings
 import kotlin.math.roundToInt
 
@@ -120,7 +121,17 @@ class WinampViewModel
         /** Non-null when the backend can feed real PCM to the visualizer. */
         val audioTap get() = facade.audioTap
 
-        val skinOps = SkinOps(app, state, viewModelScope, skinLibrary, words = words)
+        val skinOps =
+            SkinOps(
+                app,
+                state,
+                viewModelScope,
+                skinLibrary,
+                words = words,
+                // the file, not WalGate.on, which reads off until the file has been read
+                modernOn = { WalGate.read(app) },
+                turnModernOn = { WalGate.write(app, true) },
+            )
 
         /** The skin each music source asks for, worn while its tracks play; see [SourceSkins]. */
         val sourceSkinOps = SourceSkinOps(SourceSkins(app), skinOps::wear)
@@ -447,6 +458,9 @@ class WinampViewModel
             persistence.start()
             PlaybackRoot.follow(state)
             skinOps.start()
+            // modern skins turned on or off while the app runs; the first value is skipped,
+            // as start reads the switch itself
+            viewModelScope.launch { snapshotFlow { WalGate.on }.drop(1).collect(skinOps::betaChanged) }
             presetOps.start()
             dspOps.start() // pushes the stored rack
             // the installed plug-ins reach the backend, and the rack is then decoded again;
