@@ -121,6 +121,19 @@ class WalPlacementTest {
         assertPopsAtPress(placed, published = null)
     }
 
+    @Test
+    fun `the classic stack holds the main window down to the skin's stack, leaving room for the plug-in window`() {
+        val placed = WalPlacement.of(box, layout(3f, left = 9f, top = 0f, stackW = 354, stackH = 280), SCALE)
+
+        assertEquals("no rect, no height", null, WalPlacement.dockedMainH(null, screen, visH = 120))
+        assertEquals("to the stack's bottom", 288 - 8, WalPlacement.dockedMainH(placed.window, screen, visH = 120))
+        assertEquals(
+            "a stack that fills the band leaves the plug-in window room above the safe bottom",
+            758 - 120 - 8,
+            WalPlacement.dockedMainH(IntRect(0, 8, 360, 758), screen, visH = 120),
+        )
+    }
+
     /** Presses across [placed]'s stack each pop a menu at the press, with [published] in `windowRects[MAIN]`. */
     private fun assertPopsAtPress(
         placed: WalPlacement,
