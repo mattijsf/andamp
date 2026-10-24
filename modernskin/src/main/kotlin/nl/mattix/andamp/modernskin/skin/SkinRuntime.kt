@@ -1792,8 +1792,9 @@ class SkinRuntime(
         aimMenu(sx, sy, seq)
         moveSeq = null
         pointerDownAt(sx, sy)
-        // a press that opened a menu has been let go of, and moves nothing
-        if (captured?.let(::movesWindow) == true) moveSeq = seq
+        // a press that opened a menu has been let go of, and moves nothing; a press held back from
+        // an object with a skin menu still moves the window when that object is a move area
+        if ((captured ?: deferred?.target)?.let(::movesWindow) == true) moveSeq = seq
     }
 
     private fun pointerDownAt(

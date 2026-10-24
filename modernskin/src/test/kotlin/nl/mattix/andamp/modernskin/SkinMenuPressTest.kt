@@ -38,7 +38,7 @@ import java.io.File
  */
 class SkinMenuPressTest {
     // a layer and a Play button with menus, a seek bar with a menu, a plain layer and a plain Play
-    // button, and a shade layout to switch to
+    // button, an album art layer that moves the window, and a shade layout to switch to
     private val files =
         object : SkinFiles {
             private val m =
@@ -52,6 +52,7 @@ class SkinMenuPressTest {
                         """<slider id="seek" action="seek" x="10" y="100" w="150" h="10" orientation="h"/>""" +
                         """<layer id="plain" x="50" y="150" w="40" h="20"/>""" +
                         """<button id="play" action="PLAY" x="150" y="150" w="20" h="20"/>""" +
+                        """<layer id="art" x="220" y="60" w="40" h="40" move="1"/>""" +
                         """</layout><layout id="shade" w="300" h="20"/></container>""",
                 ).mapValues { it.value.toByteArray() }
 
@@ -103,6 +104,7 @@ class SkinMenuPressTest {
     private lateinit var seek: Slider
     private lateinit var plain: GuiObject
     private lateinit var play: Button
+    private lateinit var art: GuiObject
     private lateinit var menu: PopupMenu
 
     @Before
@@ -114,6 +116,7 @@ class SkinMenuPressTest {
         seek = checkNotNull(main.findObject("seek")) as Slider
         plain = checkNotNull(main.findObject("plain"))
         play = checkNotNull(main.findObject("play")) as Button
+        art = checkNotNull(main.findObject("art"))
         menu = PopupMenu(rt).apply { makiCall("addcommand", listOf(Value.Str("Item"), Value.Int(1))) }
     }
 
@@ -355,6 +358,19 @@ class SkinMenuPressTest {
         rt.pointerUp(x, y)
 
         assertTrue("nothing of the press: $heard", heard.isEmpty())
+    }
+
+    @Test
+    fun `an object with a menu that moves the window is a move target while its press is held back`() {
+        script(art)
+        val x = art.rect.left + 5
+        val y = art.rect.top + 5
+
+        rt.pointerDown(x, y, seq = 1)
+
+        assertEquals("the album art has a menu", 1, rt.menuTarget)
+        assertEquals("and moves the window", 1, rt.moveTarget)
+        assertTrue("held until the touch is a tap or a drag: $heard", heard.isEmpty())
     }
 
     @Test
