@@ -21,6 +21,7 @@ import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.skin.BundledSkins
+import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SkinLoader
 import nl.mattix.andamp.state.AmpMenuItem
@@ -308,6 +309,47 @@ class ModernPlayerSurfaceTest {
         val stack = WalPlacement.of(box, waiting.layout!!, 3).window
         assertTrue("the stack's rect is not the classic one", stack != classic)
         assertEquals(stack, vm.state.windowRects[WindowStore.MAIN])
+    }
+
+    @Test
+    fun `while the skin loads, the classic main window's D, O and V leave Double Size and the in-player modes alone`() {
+        show(FakeWalSurface())
+        val main = vm.state.windowRects[WindowStore.MAIN]!!
+
+        fun tap(button: IntRect) {
+            val at = Offset((main.left + button.center.x) * 3 + 1f, (main.top + button.center.y) * 3 + 1f)
+            screen().performTouchInput {
+                down(at)
+                up()
+            }
+            frames()
+        }
+
+        tap(Dest.CLUTTER_D)
+        assertFalse("the stored Double Size stays off", vm.doubleSize.on)
+
+        tap(Dest.CLUTTER_O)
+        val options = vm.state.activeMenu!!
+        val doubleSize =
+            options.items.filterIsInstance<AmpMenuItem.Action>().first {
+                it.label ==
+                    vm.words.get(R.string.menu_double_size)
+            }
+        assertFalse("Options grays Double Size", doubleSize.enabled || doubleSize.checked)
+        vm.state.activeMenu = null
+        frames()
+
+        tap(Dest.CLUTTER_V)
+        val visualization = vm.state.activeMenu!!
+        val modes =
+            visualization.items
+                .filterIsInstance<AmpMenuItem.Submenu>()
+                .first { it.label == vm.words.get(R.string.menu_visualization_options) }
+        assertFalse("V grays the in-player modes", modes.enabled)
+        assertTrue(
+            "the plug-in's entries stay",
+            visualization.items.filterIsInstance<AmpMenuItem.Action>().all { it.enabled },
+        )
     }
 
     @Test
