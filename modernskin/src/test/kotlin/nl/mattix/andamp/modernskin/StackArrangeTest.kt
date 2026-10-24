@@ -14,8 +14,8 @@ import org.junit.Test
 
 /**
  * How a phone sets out a skin's windows as one stack ([StackArrange]): each window docked under
- * what shows of the main one, the last list window filling the height upright, and a touch beside
- * the stack meaning the nearest window.
+ * what shows of the main one at its natural height, the last list window filling the height
+ * upright, and a touch beside the stack meaning the nearest window.
  */
 class StackArrangeTest {
     // a main window 300x200 whose shaped body shows 200x120 of it, an equalizer and a playlist,
@@ -87,6 +87,25 @@ class StackArrangeTest {
         open("eq")
         assertEquals(Rect(0, 120, 200, 80), rectOf("pl"))
         assertEquals(Rect(0, 200, 200, 60), rectOf("eq"))
+    }
+
+    @Test
+    fun `a docked window's natural height is the one the skin gives it, also while it is stretched`() {
+        rt.viewSize = 200 to 1000
+        open("eq", "pl")
+        assertEquals(Rect(0, 180, 200, 820), rectOf("pl"))
+
+        assertEquals(80, StackArrange.naturalHeight(window("pl")))
+        assertEquals(60, StackArrange.naturalHeight(window("eq")))
+        assertEquals("asking leaves the window as it was", 820, window("pl").size.second)
+        assertEquals(Rect(0, 180, 200, 820), rectOf("pl"))
+    }
+
+    @Test
+    fun `the playlist shows a list, the main window and the equalizer do not`() {
+        open("eq", "pl")
+
+        assertEquals(listOf(false, false, true), rt.windows.map(rt::showsList))
     }
 
     @Test

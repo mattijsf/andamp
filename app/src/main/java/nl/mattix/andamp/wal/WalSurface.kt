@@ -60,9 +60,10 @@ internal data class WalLayout(
     val wantsFrames: Boolean = true,
     /**
      * The left column of a stack set out in two columns, in skin px from the stack's top-left
-     * corner: the plug-in window docks under it, as wide as it (see [WalPlacement.dockedStack]).
-     * Null for a stack in one column, which every layout is: the plug-in window docks against the
-     * whole stack.
+     * corner. The plug-in window docks against it as it does against a whole stack (see
+     * [WalPlacement.dockedStack]): under it, or over it when there is no room below; its x and
+     * width stay the classic stack's. Null for a stack in one column, which every layout is: the
+     * plug-in window docks against the whole stack.
      */
     val dock: IntRect? = null,
 )

@@ -45,10 +45,10 @@ internal class WalFitting {
     }
 
     /**
-     * Fits [runtime] to [fit] again, before a frame is drawn, when the windows on screen are not
-     * the ones the last [apply] or [refit] saw, one by one: one opened or closed, or a window
-     * switched layout (a shade). It notes the windows and leaves the runtime as [apply] set it: the
-     * view and the single column stay as they are whichever windows are open.
+     * Notes the windows on screen before a frame is drawn, when they are not the ones the last
+     * [apply] or [refit] saw, compared one by one by identity: one opened or closed, or a window
+     * switched layout (a shade). It changes nothing in the runtime: the view and the single column
+     * stay as [apply] set them, whichever windows are open.
      */
     @Suppress("UnusedParameter") // what [apply] takes, as the engine passes it before every frame
     fun refit(

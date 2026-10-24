@@ -193,8 +193,9 @@ internal data class WalPlacement(
          * Where the classic windows sit until they are moved while a modern skin is worn, from
          * [ask], the classic stack as the classic skin would have it: the skin's [stack]
          * (`windowRects[MAIN]`, virtual px, null while it has none) takes the main window's place,
-         * so the plug-in window of [visH] docks against it ([dockedMainH]), or against its left
+         * so the plug-in window of [visH] docks under or over it ([dockedMainH]), or its left
          * column when [dock] gives one; and no room is kept for the equalizer, which the skin shows.
+         * Only the main window's height changes: the plug-in window keeps the classic x and width.
          */
         fun dockedStack(
             ask: ClassicStack.Ask,

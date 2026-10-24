@@ -186,7 +186,9 @@ class WalPlacementTest {
         val dock = WalDock.of(layout(2f, left = 0f, top = 0f, stackW = 400, stackH = 300).copy(dock = IntRect(0, 0, 177, 200)))
 
         assertEquals(IntRect(10, 8, 99, 108), dock!!.within(stack))
-        assertEquals(108, WalPlacement.dockedStack(ask, stack, dock, visH = 120).vis.y)
+        val docked = WalPlacement.dockedStack(ask, stack, dock, visH = 120)
+        assertEquals(108, docked.vis.y)
+        assertEquals("the classic x, not the column's", ClassicStack.layout(ask).vis.x, docked.vis.x)
         assertEquals("one column has nothing to dock against but the stack", null, WalDock.of(layout(2f, 0f, 0f, 400, 300)))
     }
 

@@ -506,9 +506,10 @@ class SkinRuntime(
      * Whether [l] shows a list, which shows more rows when the window is taller: Winamp's playlist
      * editor or media library, named by the window's container (`component="guid:..."`, or `hold`
      * or `param`) or held by a component or window holder anywhere in the window, or a color theme
-     * list. Equalizers, visualizer frames and windows of fixed controls show none.
+     * list. Equalizers, visualizer frames and windows of fixed controls show none. [StackArrange]
+     * stretches only such a window.
      */
-    private fun showsList(l: Layout): Boolean {
+    fun showsList(l: Layout): Boolean {
         fun holdsList(attrs: Map<String, String>) = LIST_GUIDS.any { holds(attrs, it) }
 
         fun walk(o: GuiObject): Boolean =

@@ -2,12 +2,13 @@
 package nl.mattix.andamp.modernskin.skin
 
 /**
- * How a phone sets out a skin's windows as one stack: where each window sits ([arrange]), and which
- * window a point of the stack means ([windowAt]). [SkinRuntime] keeps the windows and calls in here.
+ * How a phone sets out a skin's windows as one stack: where each window sits ([arrange]), how tall
+ * a docked window is before any stretch ([naturalHeight]), and which window a point of the stack
+ * means ([windowAt]). [SkinRuntime] keeps the windows and calls in here.
  */
-internal object StackArrange {
+object StackArrange {
     /** What [arrange] sets out. */
-    class Ask(
+    internal class Ask(
         /** The main window, which sits at the stack's corner at the size it has. */
         val main: Layout,
         /** The windows opened over the main one, in the order they opened. */
@@ -27,11 +28,11 @@ internal object StackArrange {
      * each other window under it in the order they opened, the first docked under what is visible
      * of the main one ([Layout.contentBottom]), so it follows a drawer. With a view each docked
      * window is as wide as what shows of the main one ([Layout.contentRight]; MMD3 keeps room on
-     * its right for a panel) and as tall as the skin makes it, or its minimum; the last one takes
-     * the height left when [Ask.stretchLast] is on, room is left, it can be made taller and it shows
-     * a list. Without a view (the reference tests) every window keeps the size it has.
+     * its right for a panel) and as tall as [naturalHeight] says; the last one takes the height
+     * left when [Ask.stretchLast] is on, room is left, it can be made taller and it shows a list.
+     * Without a view (the reference tests) every window keeps the size it has.
      */
-    fun arrange(ask: Ask): Map<Layout, Rect> {
+    internal fun arrange(ask: Ask): Map<Layout, Rect> {
         val placed = LinkedHashMap<Layout, Rect>()
         val main = ask.main
         val (mw, mh) = main.size
@@ -46,14 +47,13 @@ internal object StackArrange {
             if (view != null) {
                 // as wide as what shows of the main window (MMD3 keeps room on its right for a panel)
                 l.w = main.contentRight()
+                val natural = naturalHeight(l)
+                val left = view.second - y
                 // the height the skin gives it (or its minimum), unless it is the last, room is
                 // left, the window can be made taller, it shows a list and stretchLast is on
-                l.h = l.attrs["h"]?.toIntLenient()
-                val natural = l.size.second
-                val left = view.second - y
                 val stretches =
                     ask.stretchLast && i == others.lastIndex && left > natural && l.resizesVertically() && ask.showsList(l)
-                if (stretches) l.h = left
+                l.h = if (stretches) left else skinHeight(l)
             }
             val (w, h) = l.size
             placed[l] = Rect(0, y, w, h)
@@ -63,12 +63,31 @@ internal object StackArrange {
     }
 
     /**
+     * How tall [arrange] makes [window] when it docks it with a view, unless it is the last list
+     * window and takes the height left: the height the skin gives it (its `h`), else the one its
+     * size falls back on, within its minimum and maximum ([Layout.size]), in layout pixels. It
+     * leaves [window] the height it has, and sends it no events.
+     */
+    fun naturalHeight(window: Layout): Int {
+        val kept = window.h
+        window.h = skinHeight(window)
+        try {
+            return window.size.second
+        } finally {
+            window.h = kept
+        }
+    }
+
+    /** The height the skin's XML gives [window], or null when it gives none. */
+    private fun skinHeight(window: Layout): Int? = window.attrs["h"]?.toIntLenient()
+
+    /**
      * The window of [windows] (top to bottom, the main one first) under [at], a point of the stack,
      * where [rectOf] says each sits: the one drawn last when several are, as a docked window covers
      * the main window's empty drawer space. Off every window, the nearest by height within [slop]
      * layout pixels above or below it, or null.
      */
-    fun windowAt(
+    internal fun windowAt(
         windows: List<Layout>,
         rectOf: (Layout) -> Rect,
         at: Pair<Int, Int>,

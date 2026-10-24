@@ -722,6 +722,22 @@ class WalEngineTest {
     }
 
     @Test(timeout = 20_000)
+    fun `the frame after a skin menu does not count the wait for the listener as its work`() {
+        assertNull(main.failure())
+        val heard = openMenu()
+        val menu = awaitMenu()
+
+        Thread.sleep(MENU_HELD_MS)
+        engine.answerMenu(menu, 1)
+        assertEquals(1, heard.get(5, TimeUnit.SECONDS))
+        // the task's frame is published before this runs
+        onEngine { }
+
+        val build = checkNotNull(engine.frame).buildNanos
+        assertTrue("built in $build ns", build < MENU_HELD_MS * NANOS_PER_MS / 2)
+    }
+
+    @Test(timeout = 20_000)
     fun `closing the engine frees a menu that waits`() {
         val heard = openMenu()
         awaitMenu()
@@ -733,5 +749,9 @@ class WalEngineTest {
 
     private companion object {
         val runs = AtomicInteger()
+
+        /** How long a test leaves a skin menu up before it answers. */
+        const val MENU_HELD_MS = 600L
+        const val NANOS_PER_MS = 1_000_000L
     }
 }

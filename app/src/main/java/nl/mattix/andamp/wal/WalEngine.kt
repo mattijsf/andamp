@@ -36,7 +36,10 @@ internal class WalFrame(
     val animating: Boolean,
     /** The engine's last log lines, newest last. */
     val log: List<String>,
-    /** What making this frame took on the engine thread, in ns: the tick, touch or task that changed it, and the draw list. */
+    /**
+     * What making this frame took on the engine thread, in ns: the tick, touch or task that changed
+     * it, and the draw list; a popup menu it waited on is left out ([WalMenuWait.workClock]).
+     */
     val buildNanos: Long = 0,
     /** Where the stack sits in the box of the last [WalEngine.fit], or null before the first one. */
     val layout: WalLayout? = null,
@@ -76,8 +79,8 @@ internal data class WalIdle(
  * the screen fails to draw are counted the same way, apart from the tasks (see [drawFailed]).
  *
  * While [WalTiming] is on, the engine logs each tick and each frame it publishes, with what caused
- * it, the engine thread's name and the time each took; how long each touch waited for the engine
- * thread; and the load.
+ * it, the engine thread's name and the time each took, less any popup menu it waited on
+ * ([WalMenuWait.workClock]); how long each touch waited for the engine thread; and the load.
  *
  * [idle] says, each time a frame is published, whether the skin wants frames and when it is next
  * due; the frame carries the first ([WalFrame.wantsFrames]).
@@ -267,9 +270,9 @@ internal class WalEngine(
         handler.post {
             guarded("engine") {
                 val runtime = rt ?: return@guarded
-                val t0 = System.nanoTime()
+                val t0 = host.menus.workClock
                 task(runtime)
-                if (publish) publish(cause, System.nanoTime() - t0)
+                if (publish) publish(cause, host.menus.workClock - t0)
             }
         }
     }
@@ -350,15 +353,15 @@ internal class WalEngine(
 
     private fun tick(cause: WalCause) {
         val runtime = rt ?: return
-        val t0 = System.nanoTime()
+        val t0 = host.menus.workClock
         val changed = runtime.tick()
-        val tickNanos = System.nanoTime() - t0
+        val tickNanos = host.menus.workClock - t0
         val steps = runtime.scriptSteps
         // an animation that ends on a step that moves nothing still changes what the screen paces by
         val due = changed || host.version != seenVersion || runtime.animating != published.get()?.animating
-        val t1 = System.nanoTime()
+        val t1 = host.menus.workClock
         val drew = due && publish(cause, tickNanos)
-        val drawNanos = if (drew) System.nanoTime() - t1 else 0L
+        val drawNanos = if (drew) host.menus.workClock - t1 else 0L
         // publish logs the line of a frame it published
         if (!drew && WalTiming.on) Log.d(WalTiming.TAG, WalTiming.line(thread.name, tickNanos, 0, cause))
         onTicked?.invoke(runtime, tickNanos, drawNanos, drew, steps)
@@ -382,10 +385,10 @@ internal class WalEngine(
             guarded("move") {
                 val runtime = rt ?: return@guarded
                 val (mx, my) = moveWaiting.getAndSet(null) ?: return@guarded
-                val t0 = System.nanoTime()
-                if (WalTiming.on) Log.d(WalTiming.TAG, "move waited ${t0 - at} ns")
+                if (WalTiming.on) Log.d(WalTiming.TAG, "move waited ${System.nanoTime() - at} ns")
+                val t0 = host.menus.workClock
                 runtime.pointerMove(mx, my)
-                publish(WalCause.TOUCH, System.nanoTime() - t0)
+                publish(WalCause.TOUCH, host.menus.workClock - t0)
             }
         }
     }
@@ -512,7 +515,7 @@ internal class WalEngine(
 
     /**
      * Builds a new frame from the runtime and hands it to the screen; true when one was published.
-     * First the box is fitted again to the windows now open ([WalFitting.refit]). [workNanos] is
+     * Once the skin has a box, [WalFitting.refit] first notes the windows now open. [workNanos] is
      * the work that changed the frame (a tick, a touch, a task), for the frame's build time; the
      * timing log names the frame by [cause]. A draw list that fails, or a stack grown too large to
      * draw (see [WalScale.unfit]), throws: the screen keeps the last picture, and the task counts a
@@ -524,7 +527,7 @@ internal class WalEngine(
     ): Boolean {
         val runtime = rt ?: return false
         seenVersion = host.version
-        val t0 = System.nanoTime()
+        val t0 = host.menus.workClock
         appliedFit?.let { fitting.refit(runtime, it, baseW) }
         publishing = true
         val stack =
@@ -548,7 +551,7 @@ internal class WalEngine(
                 windowOpen = windowOpen,
                 animating = runtime.animating,
                 log = host.logSnapshot(),
-                buildNanos = workNanos + System.nanoTime() - t0,
+                buildNanos = workNanos + host.menus.workClock - t0,
                 layout =
                     appliedFit?.takeIf { mainSize != null }?.let {
                         fitting.layout(runtime, it, baseW, size, runtime.drawnSize, windowOpen, wantsFrames)
@@ -558,7 +561,7 @@ internal class WalEngine(
                 themeKey = runtime.currentGammaSet,
             ),
         )
-        if (WalTiming.on) Log.d(WalTiming.TAG, WalTiming.line(thread.name, workNanos, System.nanoTime() - t0, cause))
+        if (WalTiming.on) Log.d(WalTiming.TAG, WalTiming.line(thread.name, workNanos, host.menus.workClock - t0, cause))
         onFrame()
         return true
     }
