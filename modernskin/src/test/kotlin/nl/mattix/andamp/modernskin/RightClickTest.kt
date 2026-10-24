@@ -222,10 +222,12 @@ class RightClickTest {
 
     @Test
     fun `a right click is a new touch, whatever menus the press showed`() {
-        // the menu the press opens closes without the listener: that touch shows no more
+        // the menu the press opens closes without the listener: that touch shows no more (an
+        // object with a menu hears the press once the finger moves beyond reach)
         attach(layer, Handler("onleftbuttondown", listOf(pop)), Handler("onrightbuttonup", listOf(pop)))
         answer = null
         press(layer, seq = 1)
+        rt.pointerMove(layer.rect.left + 12, layer.rect.top + 2)
         assertEquals(1, shown.size)
         rt.pointerCancel()
         answer = PICK
@@ -235,6 +237,7 @@ class RightClickTest {
         // the press shows three menus, as many as one touch may
         attach(button, Handler("onleftbuttondown", List(3) { pop }), Handler("onrightclick", listOf(pop)))
         press(button, seq = 2)
+        rt.pointerMove(button.rect.left + 12, button.rect.top + 2)
         assertEquals(5, shown.size)
         rt.pointerCancel()
         rt.rightClick(2)
