@@ -91,4 +91,16 @@ class WalScaleTest {
         assertEquals((2400 - 400 * 1.5f) / 2f, place.left)
         assertEquals(0f, place.top)
     }
+
+    @Test
+    fun `a stack that shows only part of its height keeps the scale of the whole and is centered by what shows`() {
+        // Winamp Modern: a 280 px main window of which 164 px show while its drawer is closed
+        val sideways = WalScale.place(WalFit(2400, 1080, 3f, true), 354 to 280, 354, 354, 354 to 280, drawn = 354 to 164)
+        assertEquals(3f, sideways.scale)
+        assertEquals((1080 - 164 * 3) / 2f, sideways.top)
+
+        val shrunk = WalScale.place(WalFit(1080, 1000, 3f, false), 275 to 116, 275, 275, 275 to 600, drawn = 275 to 500)
+        assertEquals(1000f / 600, shrunk.scale)
+        assertEquals(kotlin.math.floor((1000 - 500 * shrunk.scale) / 2), shrunk.top)
+    }
 }

@@ -505,6 +505,25 @@ class SkinRuntime(
             return (rects.maxOfOrNull { it.right } ?: 0) to (rects.maxOfOrNull { it.bottom } ?: 0)
         }
 
+    /**
+     * The part of the stack its windows show, in layout pixels: [stackSize] with each window cut on
+     * its right and bottom to the part Winamp docks and snaps to ([Layout.snappedSize]), as Winamp
+     * Modern's main window without the room its closed drawer keeps.
+     */
+    val drawnSize: Pair<Int, Int>
+        get() {
+            if (needsLayout) doLayout()
+            var right = 0
+            var bottom = 0
+            for (l in windows) {
+                val r = windowRect(l)
+                val (w, h) = l.snappedSize()
+                right = maxOf(right, r.left + w)
+                bottom = maxOf(bottom, r.top + h)
+            }
+            return right to bottom
+        }
+
     /** Total length of the playlist entries selected in the playlist editor, for `display="pe_info"`. */
     var playlistSelectedMs = 0
 

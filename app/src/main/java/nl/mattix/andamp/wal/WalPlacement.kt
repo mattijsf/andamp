@@ -21,7 +21,7 @@ import kotlin.math.roundToInt
  * virtual pixel of the classic windows.
  */
 internal data class WalPlacement(
-    /** The stack in the surface's pixels; it covers every pixel the stack draws. */
+    /** The stack in the surface's pixels; it covers every pixel the stack shows. */
     val stack: IntRect,
     /**
      * The stack in virtual pixels, left and top rounded down and right and bottom up, as
