@@ -3,6 +3,7 @@
 package nl.mattix.andamp.wal
 
 import android.content.Context
+import android.util.Log
 import android.view.ViewConfiguration
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -43,6 +44,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
+import nl.mattix.andamp.BuildConfig
 import nl.mattix.andamp.R
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WinampState
@@ -51,6 +53,7 @@ import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.ui.window.PlaylistMenuActions
 import nl.mattix.andamp.ui.window.windowScreen
 import nl.mattix.andamp.widget.WidgetSignals
+import java.util.Locale
 import java.util.WeakHashMap
 
 /** The z-index of [WalLayer]: below every classic window, whose z-indexes run up from 0. */
@@ -246,6 +249,33 @@ private fun CoroutineScope.holdTurn(
     // a change the skin shows, such as the volume or the track, earns it a tick
     launch { snapshotFlow { if (awake()) surface.wakeKey() else null }.filterNotNull().collect { surface.requestTick() } }
     launch { showSkinMenus(surface, state, parts.menuTitle) { parts.actions.pressAt?.invoke() } }
+    // a debug build logs each place the stack is drawn at, so a skin's scale reads off a device
+    if (BuildConfig.DEBUG) {
+        launch {
+            snapshotFlow(ready).filterNotNull().collect { Log.d(WalEngine.TIMING_TAG, placedLine(it, fit())) }
+        }
+    }
+}
+
+/** [placed] in [fit]'s box, as the timing log says it: the scale, the box and the stack's rect in pixels. */
+internal fun placedLine(
+    placed: WalPlacement,
+    fit: WalFit,
+): String {
+    val stack = placed.stack
+    val way = if (fit.sideways) "sideways" else "upright"
+    return String.format(
+        Locale.US,
+        "placed at %.3fx in %dx%d %s: stack %dx%d at %d,%d",
+        placed.skinScale,
+        fit.widthPx,
+        fit.heightPx,
+        way,
+        stack.width,
+        stack.height,
+        stack.left,
+        stack.top,
+    )
 }
 
 /**

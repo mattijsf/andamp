@@ -172,7 +172,7 @@ internal fun WinampScreen(
     onFloatingChanged: (Boolean) -> Unit = {},
     /** How this surface steps out of the app, for a visit that came from outside it. */
     onDone: () -> Unit = {},
-    /** The modern skin the player shows, or null for the classic skin: the worn one; see [PlayerSurface]. */
+    /** The modern skin the player shows, the worn one unless told, or null for the classic skin; see [PlayerSurface]. */
     wal: WalSurface? = vm.skinOps.wal,
 ) {
     val skin = vm.skin
