@@ -358,7 +358,8 @@ class SkinRuntime(
     /**
      * Windows a skin button opened (playlist, color themes, ...), in the order they opened. A phone
      * shows them stacked under the main window, as Winamp's docked windows sit: each as wide as the
-     * main window, the last one filling the height that is left (see [viewSize] and [stretchLast]).
+     * main window, the last one filling the height that is left when it shows a list (see
+     * [viewSize] and [stretchLast]).
      */
     private val opened = ArrayList<Container>()
 
@@ -379,8 +380,9 @@ class SkinRuntime(
 
     /**
      * Whether the last docked window takes the height [viewSize] leaves under the others, when it
-     * can be made taller. Off, every window keeps the height the skin gives it (a phone held
-     * sideways).
+     * can be made taller and shows a list, which then shows more rows (see [showsList]); an
+     * equalizer or a visualizer frame keeps the height the skin gives it. Off, every window keeps
+     * the height the skin gives it (a phone held sideways).
      */
     var stretchLast = true
         set(value) {
@@ -463,17 +465,36 @@ class SkinRuntime(
                 // as wide as what shows of the main window (MMD3 keeps room on its right for a panel)
                 l.w = main.contentRight()
                 // the height the skin gives it (or its minimum), unless it is the last, room is
-                // left, the window can be made taller and stretchLast is on
+                // left, the window can be made taller, it shows a list and stretchLast is on
                 l.h = l.attrs["h"]?.toIntLenient()
                 val natural = l.size.second
                 val left = view.second - y
-                val stretches = stretchLast && i == others.lastIndex
-                if (stretches && left > natural && l.resizesVertically()) l.h = left
+                val stretches =
+                    stretchLast && i == others.lastIndex && left > natural && l.resizesVertically() && showsList(l)
+                if (stretches) l.h = left
             }
             val (w, h) = l.size
             placed[l] = Rect(0, y, w, h)
             y += h
         }
+    }
+
+    /**
+     * Whether [l] shows a list, which shows more rows when the window is taller: Winamp's playlist
+     * editor or media library, named by the window's container (`component="guid:..."`, or `hold`
+     * or `param`) or held by a component or window holder anywhere in the window, or a color theme
+     * list. Equalizers, visualizer frames and windows of fixed controls show none.
+     */
+    private fun showsList(l: Layout): Boolean {
+        fun holdsList(attrs: Map<String, String>) = LIST_GUIDS.any { holds(attrs, it) }
+
+        fun walk(o: GuiObject): Boolean =
+            when (o) {
+                is PlaylistView, is ColorThemeList -> true
+                is Group -> (o.tag in HOLDER_TAGS && holdsList(o.attrs)) || o.children.any { walk(it) }
+                else -> false
+            }
+        return l.container?.let { holdsList(it.attrs) } == true || l.children.any { walk(it) }
     }
 
     /** The stack's size, in layout pixels. */
@@ -805,13 +826,16 @@ class SkinRuntime(
         for (c in def.children) if ((if (c.name == "script") "scripts" else "xui") in want) buildChild(c, group, meta)
     }
 
-    /** Whether a component or window holder shows the component [guid]: by GUID or its alias. */
+    /**
+     * Whether a component, a window holder or a container with the attributes [attrs] shows the
+     * component [guid], named by its `hold`, `param` or `component` attribute: by GUID or its alias.
+     */
     private fun holds(
-        node: XmlNode,
+        attrs: Map<String, String>,
         guid: String,
     ): Boolean =
         listOf("hold", "param", "component").any { k ->
-            node[k]?.split(';')?.any { v ->
+            attrs[k]?.split(';')?.any { v ->
                 val id =
                     v
                         .trim()
@@ -926,7 +950,7 @@ class SkinRuntime(
                 // Winamp's own playlist editor, which a skin embeds as a component
                 // hold, param and component name what the holder shows, all the same
                 "component", "windowholder" -> {
-                    if (holds(node, PLAYLIST_GUID)) {
+                    if (holds(node.attrs, PLAYLIST_GUID)) {
                         PlaylistView(this)
                     } else {
                         val g = Group(this, node.name)
@@ -2409,6 +2433,13 @@ class SkinRuntime(
         const val MAX_ALIAS_DEPTH = 8
         const val EQ_FLAT = 128
         const val PLAYLIST_GUID = "45f3f7c1-a6f3-4ee6-a15e-125e92fc3f8d"
+        const val LIBRARY_GUID = "6b0edf80-c9a5-11d3-9f26-00c04f39ffc6"
+
+        /** Winamp's windows that show a list: the playlist editor and the media library. */
+        val LIST_GUIDS = listOf(PLAYLIST_GUID, LIBRARY_GUID)
+
+        /** The tags that embed one of Winamp's built-in windows in a skin window. */
+        val HOLDER_TAGS = setOf("component", "windowholder")
 
         /** The windows the app shows when a host answers [onHostAction], by [windowKind]. */
         val HOST_WINDOWS = setOf("ml", "avs", "video")
@@ -2416,11 +2447,11 @@ class SkinRuntime(
         /** Winamp's GUID aliases, and the short names the host knows windows by. */
         val TOGGLE_GUIDS =
             mapOf(
-                "pl" to "45f3f7c1-a6f3-4ee6-a15e-125e92fc3f8d",
-                "playlist" to "45f3f7c1-a6f3-4ee6-a15e-125e92fc3f8d",
-                "ml" to "6b0edf80-c9a5-11d3-9f26-00c04f39ffc6",
-                "musiclibrary" to "6b0edf80-c9a5-11d3-9f26-00c04f39ffc6",
-                "library" to "6b0edf80-c9a5-11d3-9f26-00c04f39ffc6",
+                "pl" to PLAYLIST_GUID,
+                "playlist" to PLAYLIST_GUID,
+                "ml" to LIBRARY_GUID,
+                "musiclibrary" to LIBRARY_GUID,
+                "library" to LIBRARY_GUID,
                 "avs" to "0000000a-000c-0010-ff7b-01014263450c",
                 "video" to "f0816d7b-fffc-4343-80f2-e8199aa15cc3",
             )

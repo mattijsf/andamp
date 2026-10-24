@@ -7,6 +7,7 @@ import nl.mattix.andamp.modernskin.skin.DrawCmd
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.FontDef
 import nl.mattix.andamp.modernskin.skin.Player
+import nl.mattix.andamp.modernskin.skin.Rect
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinHost
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
@@ -62,8 +63,10 @@ class TestHost(
 }
 
 class SkinRuntimeTest {
-    // a main window with a 0..100 and a 0..200 volume slider, a playlist window that can be made
-    // taller, and two color themes
+    // a main window with a 0..100 and a 0..200 volume slider; windows that can each be made taller:
+    // a playlist, an equalizer, two frames for Winamp's library (named by component= and by hold=),
+    // a library holder and a playlist inside a group, a color theme list, and a visualizer frame
+    // holding a video window; and two color themes
     private val small =
         object : SkinFiles {
             private val m =
@@ -79,7 +82,42 @@ class SkinRuntimeTest {
                         """x="0" y="20" w="200" h="10" orientation="h"/>""" +
                         """</layout></container>""" +
                         """<container id="pl" name="Playlist" default_visible="0"><layout id="normal" w="200" h="80">""" +
+                        """<component id="list" param="guid:{45F3F7C1-A6F3-4ee6-A15E-125E92FC3F8D}" """ +
+                        """x="0" y="0" w="190" h="70"/>""" +
                         """<layer id="sizer" resize="bottomright" x="190" y="70" w="10" h="10"/>""" +
+                        """</layout></container>""" +
+                        """<container id="eq" name="Equalizer" default_visible="0"><layout id="normal" w="200" h="60">""" +
+                        """<slider id="band1" action="eq_band" param="1" x="10" y="5" w="13" h="40" orientation="v"/>""" +
+                        """<layer id="eq.sizer" resize="bottomright" x="190" y="50" w="10" h="10"/>""" +
+                        """</layout></container>""" +
+                        """<container id="library" name="Library" default_visible="0" """ +
+                        """component="guid:{6B0EDF80-C9A5-11D3-9F26-00C04F39FFC6}"><layout id="normal" w="200" h="50">""" +
+                        """<layer id="library.sizer" resize="bottom" x="0" y="45" w="200" h="5"/>""" +
+                        """</layout></container>""" +
+                        """<container id="mlhold" name="Library frame" default_visible="0" """ +
+                        """hold="guid:{6B0EDF80-C9A5-11D3-9F26-00C04F39FFC6}"><layout id="normal" w="200" h="40">""" +
+                        """<layer id="mlhold.sizer" resize="bottom" x="0" y="35" w="200" h="5"/>""" +
+                        """</layout></container>""" +
+                        """<container id="mlnested" name="Nested library" default_visible="0">""" +
+                        """<layout id="normal" w="200" h="40">""" +
+                        """<group id="mlnested.frame" x="0" y="0" w="200" h="35">""" +
+                        """<windowholder id="mlnested.holder" hold="guid:ml" x="0" y="0" w="200" h="35"/></group>""" +
+                        """<layer id="mlnested.sizer" resize="bottom" x="0" y="35" w="200" h="5"/>""" +
+                        """</layout></container>""" +
+                        """<container id="plnested" name="Nested playlist" default_visible="0">""" +
+                        """<layout id="normal" w="200" h="40">""" +
+                        """<group id="plnested.frame" x="0" y="0" w="200" h="35">""" +
+                        """<component id="plnested.list" param="guid:pl" x="0" y="0" w="200" h="35"/></group>""" +
+                        """<layer id="plnested.sizer" resize="bottom" x="0" y="35" w="200" h="5"/>""" +
+                        """</layout></container>""" +
+                        """<container id="themes" name="Themes" default_visible="0"><layout id="normal" w="200" h="40">""" +
+                        """<colorthemes:list id="themes.list" x="0" y="0" w="200" h="35"/>""" +
+                        """<layer id="themes.sizer" resize="bottom" x="0" y="35" w="200" h="5"/>""" +
+                        """</layout></container>""" +
+                        """<container id="vis" name="Visualizer" default_visible="0" component="guid:avs">""" +
+                        """<layout id="normal" w="200" h="40">""" +
+                        """<windowholder id="vis.holder" hold="guid:video" x="0" y="0" w="200" h="35"/>""" +
+                        """<layer id="vis.sizer" resize="bottom" x="0" y="35" w="200" h="5"/>""" +
                         """</layout></container>""",
                 ).mapValues { it.value.toByteArray() }
 
@@ -131,7 +169,7 @@ class SkinRuntimeTest {
     }
 
     @Test
-    fun `with stretchLast off the last window keeps its height, on it fills the view`() {
+    fun `with stretchLast off the last window keeps its height, on a playlist window fills the view`() {
         val rt = small()
         rt.viewSize = 200 to 400
         rt.openWindow(checkNotNull(rt.container("pl")))
@@ -146,6 +184,77 @@ class SkinRuntimeTest {
 
         rt.stretchLast = true
         assertEquals(200 to 400, rt.stackSize)
+    }
+
+    @Test
+    fun `an equalizer docked last keeps its height though it can be made taller, a playlist under it fills the view`() {
+        val rt = small()
+        rt.viewSize = 200 to 400
+        val plWindow = checkNotNull(rt.container("pl"))
+        val eqWindow = checkNotNull(rt.container("eq"))
+        rt.openWindow(plWindow)
+        rt.openWindow(eqWindow)
+        val pl = checkNotNull(plWindow.current)
+        val eq = checkNotNull(eqWindow.current)
+        assertTrue(eq.resizesVertically())
+
+        // the playlist above the equalizer: the stack ends under the equalizer, every window at the
+        // height the skin gives it
+        assertEquals(200 to 240, rt.stackSize)
+        assertEquals(80, rt.windowRect(pl).height)
+        assertEquals(60, rt.windowRect(eq).height)
+
+        rt.stretchLast = false
+        assertEquals(200 to 240, rt.stackSize)
+        rt.stretchLast = true
+
+        // the playlist opened again docks under the equalizer and takes what is left
+        rt.closeWindow(plWindow)
+        rt.openWindow(plWindow)
+        assertEquals(200 to 400, rt.stackSize)
+        assertEquals(Rect(0, 100, 200, 60), rt.windowRect(eq))
+        assertEquals(Rect(0, 160, 200, 240), rt.windowRect(pl))
+
+        rt.stretchLast = false
+        assertEquals(200 to 240, rt.stackSize)
+        assertEquals(80, rt.windowRect(pl).height)
+    }
+
+    @Test
+    fun `a window docked last fills the view when it shows a list however the skin names it, a visualizer frame not`() {
+        val rt = small()
+        rt.viewSize = 200 to 400
+        // a library frame named by the container's hold (Winamp3x), a library holder and a playlist
+        // inside a group, both by alias, and a color theme list
+        for (id in listOf("mlhold", "mlnested", "plnested", "themes")) {
+            val window = checkNotNull(rt.container(id))
+            rt.openWindow(window)
+            assertEquals(id, 200 to 400, rt.stackSize)
+            assertEquals(id, 300, rt.windowRect(checkNotNull(window.current)).height)
+            rt.closeWindow(window)
+        }
+
+        // a visualizer frame holding a video window
+        val vis = checkNotNull(rt.container("vis"))
+        rt.openWindow(vis)
+        val layout = checkNotNull(vis.current)
+        assertTrue(layout.resizesVertically())
+        assertEquals(200 to 140, rt.stackSize)
+        assertEquals(Rect(0, 100, 200, 40), rt.windowRect(layout))
+    }
+
+    @Test
+    fun `a window whose container is the frame for Winamp's library fills the view when docked last, though empty`() {
+        val rt = small()
+        rt.viewSize = 200 to 400
+        rt.openWindow(checkNotNull(rt.container("library")))
+        val library = checkNotNull(rt.container("library")?.current)
+
+        assertEquals(200 to 400, rt.stackSize)
+        assertEquals(300, rt.windowRect(library).height)
+
+        rt.stretchLast = false
+        assertEquals(200 to 150, rt.stackSize)
     }
 
     @Test
