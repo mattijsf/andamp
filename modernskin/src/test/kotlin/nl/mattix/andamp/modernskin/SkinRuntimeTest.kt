@@ -301,6 +301,16 @@ class SkinRuntimeTest {
     }
 
     @Test
+    fun `the player's sliders start where the player is, before the first tick`() {
+        val player = FakePlayer().apply { volume = 51 }
+        val rt = small(player)
+        val layout = checkNotNull(rt.mainLayout)
+
+        assertEquals("51 of 255 on 0..100", 20, (layout.findObject("volume") as Slider).position)
+        assertEquals("51 of 255 on 0..200", 40, (layout.findObject("fine") as Slider).position)
+    }
+
+    @Test
     fun `a slider let go of stays where it was let go`() {
         val player = FakePlayer()
         val rt = small(player)

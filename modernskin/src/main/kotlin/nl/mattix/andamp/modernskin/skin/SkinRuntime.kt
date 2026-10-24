@@ -176,6 +176,8 @@ class SkinRuntime(
         for (c in containers) if (c.visible) c.current?.announceVisible(true)
         ensureLayout()
         objects.filterIsInstance<AnimatedLayer>().forEach { it.startIfAuto() }
+        // the player's sliders start where the player is, so the first frame already shows them there
+        for (o in objects) if (o is Slider) o.placeAtStart()
         relayout()
     }
 
