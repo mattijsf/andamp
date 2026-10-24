@@ -1760,6 +1760,23 @@ class SkinRuntime(
     /** Where the captured object's window sits, to turn stack points into its own. */
     private var capturedOrigin = Rect(0, 0, 0, 0)
 
+    /** A press its object has not heard yet: the object, and the point of the stack the finger went down on. */
+    private class DeferredPress(
+        val target: GuiObject,
+        val sx: Int,
+        val sy: Int,
+    )
+
+    /**
+     * The press [pointerDown] keeps from its object until the touch shows what it is. A press on an
+     * object with a skin menu (see [menuTarget]), other than a slider, reaches it only once the
+     * touch can no longer be a long press: the release sends the press and then the release, a move
+     * beyond [touchSlop] sends the press and then the move, and [pointerCancel] or [rightClick] drop
+     * it. A long press then opens the menu without what the object does on a press, such as a
+     * visualizer switching its mode. A button shows pressed meanwhile; its scripts hear nothing.
+     */
+    private var deferred: DeferredPress? = null
+
     /**
      * Pointer events take points of the stack (see [windowRect]); objects hear points of their
      * window. [seq] names this touch for [menuTarget] and [rightClick].
@@ -1777,15 +1794,40 @@ class SkinRuntime(
         sx: Int,
         sy: Int,
     ) {
+        dropDeferred()
         if (needsLayout) doLayout()
         val target = touchTarget(sx, sy) ?: return
-        // the touched window takes the focus
+        // the touched window takes the focus, as a press of either mouse button gives it
         target.layoutObject?.let { l ->
             if (l !== focused) {
                 focused = l
                 relayout()
             }
         }
+        if (target === menuAim?.target && target !is Slider) {
+            deferred = DeferredPress(target, sx, sy)
+            showPressed(target, true)
+            return
+        }
+        press(target, sx, sy)
+    }
+
+    /** Shows a held press's button pressed, or no longer; its scripts hear nothing of it. */
+    private fun showPressed(
+        target: GuiObject,
+        pressed: Boolean,
+    ) {
+        if (target !is Button) return
+        target.pressed = pressed
+        invalidate()
+    }
+
+    /** The object hears the button go down at a point of the stack, and the finger come in. */
+    private fun press(
+        target: GuiObject,
+        sx: Int,
+        sy: Int,
+    ) {
         capturedOrigin = target.layoutObject?.let { windowRect(it) } ?: Rect(0, 0, 0, 0)
         val x = sx - capturedOrigin.left
         val y = sy - capturedOrigin.top
@@ -1804,10 +1846,32 @@ class SkinRuntime(
         sy: Int,
     ) = gesture { pointerMoveAt(sx, sy) }
 
+    /** Sends the deferred press where the finger went down, unless its object has gone from the skin. */
+    private fun sendDeferred() {
+        val d = deferred ?: return
+        dropDeferred()
+        if (needsLayout) doLayout()
+        if (d.target in objects) press(d.target, d.sx, d.sy)
+    }
+
+    /** Lets the deferred press go unsent: its object hears nothing of it. */
+    private fun dropDeferred() {
+        val d = deferred ?: return
+        deferred = null
+        showPressed(d.target, false)
+    }
+
     private fun pointerMoveAt(
         sx: Int,
         sy: Int,
     ) {
+        deferred?.let { d ->
+            val dx = sx - d.sx
+            val dy = sy - d.sy
+            // still a tap or a long press
+            if (dx * dx + dy * dy <= touchSlop * touchSlop) return
+            sendDeferred()
+        }
         val x = sx - capturedOrigin.left
         val y = sy - capturedOrigin.top
         lastPointer = x to y
@@ -1823,6 +1887,7 @@ class SkinRuntime(
         sx: Int,
         sy: Int,
     ) {
+        sendDeferred()
         val x = sx - capturedOrigin.left
         val y = sy - capturedOrigin.top
         lastPointer = x to y
@@ -1845,8 +1910,10 @@ class SkinRuntime(
         sy: Int,
     ) {
         if (pressEnded) return
+        val unsent = deferred?.target
+        dropDeferred()
         val held = captured
-        val target = held ?: hitTest(sx, sy) ?: return
+        val target = held ?: unsent ?: hitTest(sx, sy) ?: return
         // the held object lets go first: a long press is no release, so no click and no drag left on
         captured = null
         held?.let(::cancelPress)
@@ -1869,6 +1936,7 @@ class SkinRuntime(
         sx: Int,
         sy: Int,
     ) {
+        dropDeferred()
         val target = hitTest(sx, sy) ?: return
         // objects hear points of their window, as with every other pointer event
         val origin = target.layoutObject?.let { windowRect(it) } ?: Rect(0, 0, 0, 0)
@@ -1968,6 +2036,8 @@ class SkinRuntime(
     fun rightClick(seq: Int) =
         gesture(fresh = true) {
             val aim = menuAim?.takeIf { it.seq == seq } ?: return@gesture
+            // the touch was a long press: a deferred press goes nowhere
+            dropDeferred()
             if (needsLayout) doLayout()
             if (aim.target !in objects) return@gesture
             // a press still held lets go first, as a right click takes the mouse
@@ -2061,6 +2131,7 @@ class SkinRuntime(
     /** Lets go of the pressed object without a release, and tells it the finger left. */
     private fun endPress() {
         pressEnded = true
+        dropDeferred()
         val held = captured ?: return
         captured = null
         cancelPress(held)
