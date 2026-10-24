@@ -3,6 +3,7 @@
 package nl.mattix.andamp.ui
 
 import android.app.Application
+import android.os.Looper
 import androidx.activity.ComponentActivity
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,38 +20,49 @@ import androidx.compose.ui.unit.IntRect
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.Transport
+import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SkinLoader
 import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.LibraryAccess
 import nl.mattix.andamp.state.MenuAnchor
+import nl.mattix.andamp.state.SkinLibrary
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
+import nl.mattix.andamp.state.addModern
 import nl.mattix.andamp.ui.menu.menuAnchorBounds
+import nl.mattix.andamp.ui.menu.widgetMenu
 import nl.mattix.andamp.ui.window.BIG_WINDOW
+import nl.mattix.andamp.ui.window.MAIN_H
 import nl.mattix.andamp.ui.window.PlaylistMenuActions
 import nl.mattix.andamp.ui.window.testViewModel
 import nl.mattix.andamp.wal.FakeWalSurface
+import nl.mattix.andamp.wal.WalGate
 import nl.mattix.andamp.wal.WalPlacement
 import nl.mattix.andamp.wal.WalSurface
 import nl.mattix.andamp.wal.stackOf
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import java.io.File
 
 /**
- * The player with a modern skin worn, against a skin with no engine behind it: the skin stands in
- * for the main window, the equalizer and the playlist, and the classic skin still draws the rest.
+ * The player with a modern skin worn: the skin stands in for the main window, the equalizer and the
+ * playlist, and the classic skin still draws the rest. Most cases use a skin with no engine behind
+ * it; the app's screen and the widget menu cases wear a modern skin that loads.
  *
  * The screen is 900 by 1600 pixels at three to a virtual pixel, with no insets, so the skin is
  * fitted into 900 by 1599 from the top. The clock is driven by hand, because the skin's clock asks
@@ -64,18 +76,72 @@ class ModernPlayerSurfaceTest {
     val compose = createAndroidComposeRule<ComponentActivity>()
 
     private lateinit var skin: Skin
-    private lateinit var vm: WinampViewModel
+
+    /**
+     * The player's view model, wearing the classic skin. Made at first use, so a test that makes one
+     * wearing a modern skin has the only view model listening to the modern skins switch.
+     */
+    private val vm by lazy { testViewModel().apply { welcome.seen = true } }
     private val surface = FakeWalSurface().apply { layoutFor = stackOf(300, 100, 2f) }
     private val box = IntRect(0, 0, 900, 1599)
 
     /** What the playlist's pickers were asked for. */
     private val picked = mutableListOf<String>()
 
+    /** View models made with a modern skin worn, whose looks are let go after the test. */
+    private val wearing = mutableListOf<WinampViewModel>()
+
     @Before
     fun setUp() {
         skin = SkinLoader.loadBase(ApplicationProvider.getApplicationContext<Application>())
-        vm = testViewModel()
-        vm.welcome.seen = true
+    }
+
+    @After
+    fun tearDown() {
+        wearing.forEach { it.skinOps.wal?.release(save = false) }
+        if (wearing.isNotEmpty()) WalGate.forget()
+    }
+
+    /**
+     * A view model wearing a modern skin that loads (one window with a play button), chosen before
+     * the view model is made, as at a start with that skin worn. Modern skins are on, as a debug
+     * build reads them with no switch written.
+     */
+    private fun wearingModern(): WinampViewModel {
+        val app = ApplicationProvider.getApplicationContext<Application>()
+        WalGate.forget()
+        WalGate.file(app).delete()
+        app
+            .getSharedPreferences("skins", 0)
+            .edit()
+            .clear()
+            .commit()
+        File(app.filesDir, "skins").deleteRecursively()
+        val library = SkinLibrary(app)
+        library.choose(library.addModern(app, "Loads", loads = true))
+        val made = testViewModel().also { wearing += it }
+        made.welcome.seen = true
+        until("the modern skin is worn") { made.skinOps.wal != null && made.skin != null }
+        return made
+    }
+
+    /**
+     * Runs the main looper, which the skin's engine posts its frames to, and the frame clock, until
+     * [condition] holds, for up to 10 s.
+     */
+    private fun until(
+        what: String,
+        condition: () -> Boolean,
+    ) {
+        val deadline = System.currentTimeMillis() + 10_000
+        do {
+            Snapshot.sendApplyNotifications()
+            shadowOf(Looper.getMainLooper()).idle()
+            if (compose.mainClock.autoAdvance.not()) compose.mainClock.advanceTimeByFrame()
+            if (condition()) return
+            Thread.sleep(10)
+        } while (System.currentTimeMillis() < deadline)
+        fail(what)
     }
 
     private fun frames(n: Int = FRAMES) =
@@ -287,6 +353,94 @@ class ModernPlayerSurfaceTest {
         frames()
 
         assertEquals(0, surface.closedWindows)
+    }
+
+    @Test
+    fun `the plug-in window docks under a skin's stack taller than the classic main window`() {
+        surface.layoutFor = stackOf(300, 300, 2f)
+        vm.state.milkdropOn = true
+
+        show()
+
+        val stack = vm.state.windowRects[WindowStore.MAIN]!!
+        val plugin = vm.state.windowRects[WindowStore.MILKDROP]!!
+        assertTrue("the stack is taller than the classic main window: $stack", stack.height > MAIN_H)
+        assertEquals("it docks under the stack", stack.bottom, plugin.top)
+    }
+
+    @Test
+    fun `under a stack that fills the screen the plug-in window docks as low as it fits`() {
+        surface.layoutFor = stackOf(450, 799, 2f)
+        vm.state.milkdropOn = true
+
+        show()
+
+        val plugin = vm.state.windowRects[WindowStore.MILKDROP]!!
+        assertEquals("its bottom is the screen's safe bottom", vm.state.safeBottom, plugin.bottom)
+    }
+
+    @Test
+    fun `the app's screen shows the worn modern skin, and a classic skin brings the classic windows back`() {
+        val vm = wearingModern()
+        val look = vm.skinOps.wal!!
+        vm.state.eqVisible = true
+        vm.state.plVisible = true
+        compose.mainClock.autoAdvance = false
+        compose.setContent { WinampScreen(vm) }
+
+        until("the skin's stack takes the main window's place") {
+            val layout = look.layout
+            layout != null && vm.state.windowRects[WindowStore.MAIN] == WalPlacement.of(box, layout, 3).window
+        }
+        assertTrue("its engine runs", Thread.getAllStackTraces().keys.any { it.name == "wal-${look.id}" })
+        assertNull(vm.state.windowRects[WindowStore.EQ])
+        assertNull(vm.state.windowRects[WindowStore.PLAYLIST])
+
+        vm.skinOps.apply(BundledSkins.LIGHT.id)
+
+        until("the classic windows are back") {
+            vm.skinOps.wal == null && vm.state.windowRects[WindowStore.EQ] != null &&
+                vm.state.windowRects[WindowStore.PLAYLIST] != null
+        }
+        assertTrue("the skin was let go", look.released)
+        assertEquals("the classic main window", 275, vm.state.windowRects[WindowStore.MAIN]!!.width)
+    }
+
+    @Test
+    fun `the widget menu leaves the classic windows unticked while a modern skin is worn`() {
+        fun ticked(
+            vm: WinampViewModel,
+            label: Int,
+        ): Boolean {
+            val menu =
+                widgetMenu(
+                    vm,
+                    onWidgetSettings = {},
+                    onPickSkin = {},
+                    onOpenFile = {},
+                    onOpenFolder = {},
+                    onOpen = {},
+                    onExit = {},
+                )
+            return menu.items
+                .filterIsInstance<AmpMenuItem.Action>()
+                .first { it.label == vm.words.get(label) }
+                .checked
+        }
+        val vm = wearingModern()
+        vm.state.plVisible = true
+        vm.state.eqVisible = true
+
+        assertFalse(ticked(vm, R.string.menu_playlist_editor))
+        assertFalse(ticked(vm, R.string.menu_equalizer))
+
+        vm.skinOps.apply(BundledSkins.LIGHT.id)
+        until("the classic skin is worn") { vm.skinOps.wal == null }
+
+        assertTrue(
+            "with the classic skin they are ticked",
+            ticked(vm, R.string.menu_playlist_editor) && ticked(vm, R.string.menu_equalizer),
+        )
     }
 
     private companion object {

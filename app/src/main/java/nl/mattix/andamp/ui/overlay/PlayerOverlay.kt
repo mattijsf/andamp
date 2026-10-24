@@ -418,6 +418,7 @@ private fun Player(
         // opened
         onFloatingChanged = { on -> if (!on) onOpenApp() },
         surfaceScreen = display,
+        wal = vm.skinOps.wal,
         // over other apps no screen of the app covers it
         covered = { false },
     )
