@@ -3,6 +3,7 @@
 package nl.mattix.andamp.wal
 
 import android.app.Application
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.modernskin.maki.Value
@@ -12,6 +13,7 @@ import nl.mattix.andamp.modernskin.skin.PopupMenu
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinMenu
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
+import nl.mattix.andamp.ui.overlay.OverlayBounds
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -533,6 +535,66 @@ class WalEngineTest {
         assertEquals("the scale keeps room for the whole window", 10f, layout.scale)
         assertEquals("centered by the 60 px that show", 200f, layout.top)
         assertEquals(200 to 60, layout.stackW to layout.stackH)
+    }
+
+    @Test(timeout = 20_000)
+    fun `a window's room on its right that shows nothing is left out of the stack, its window rect and touch window`() {
+        // a main window 300 px wide whose shaped body ends at 200: the 100 px beside it keep room for a drawer
+        val run =
+            Run(
+                "room",
+                skin(
+                    *skinXml(
+                        """<container id="main" name="t" default_visible="1"><layout id="normal" w="300" h="100">""" +
+                            """<group id="body" x="0" y="0" w="200" h="100" sysregion="1" rectrgn="1"/>""" +
+                            """</layout></container>""",
+                    ),
+                ),
+            )
+        run.start()
+        assertNull(run.failure())
+
+        // the floating player's box
+        val floating = phone.copy(compact = true)
+        run.engine.fit(floating)
+        awaitThat("a frame for the floating box") {
+            run.engine.frame
+                ?.layout
+                ?.fit == floating
+        }
+        val frame = run.engine.frame!!
+        assertEquals(
+            "the window is drawn whole",
+            300,
+            frame.stack
+                .single()
+                .first.width,
+        )
+        val layout = frame.layout!!
+        assertEquals("a whole scale from the 200 px that show", 5f, layout.scale)
+        assertEquals(200 to 100, layout.stackW to layout.stackH)
+        assertEquals("centered by the 200 px that show", 40f, layout.left)
+
+        val placed = WalPlacement.of(IntRect(0, 0, 1080, 2000), layout, scale = 3)
+        assertEquals(IntRect(40, 0, 1040, 500), placed.stack)
+        assertEquals(IntRect(13, 0, 347, 167), placed.window)
+        assertEquals(
+            "the touch window ends where the skin does, inside the screen",
+            IntRect(39, 0, 1041, 501),
+            OverlayBounds.windowFor(listOf(placed.window), scale = 3, originX = 0, originY = 0),
+        )
+
+        val sideways = WalFit(2000, 1000, 3f, sideways = true)
+        run.engine.fit(sideways)
+        awaitThat("a frame for the sideways box") {
+            run.engine.frame
+                ?.layout
+                ?.fit == sideways
+        }
+        val turned = run.engine.frame!!.layout!!
+        assertEquals("the scale keeps room for the whole window", 6f, turned.scale)
+        assertEquals("centered by the 200 px that show", 400f, turned.left)
+        assertEquals(200 to 100, turned.stackW to turned.stackH)
     }
 
     @Test(timeout = 20_000)

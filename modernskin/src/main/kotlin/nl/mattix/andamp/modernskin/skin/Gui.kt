@@ -1370,8 +1370,8 @@ class Layout(
     /**
      * `snapadjustleft`, `top`, `right` and `bottom`: how far in from each edge Winamp docks and
      * snaps the window, past a part that shows nothing (Winamp Modern's closed drawer under its
-     * main window); a script changes them with snapAdjust. The right and bottom ones trim the
-     * drawn size ([snappedSize]); the left and top ones are kept for scripts to read.
+     * main window); a script changes them with snapAdjust. The right and bottom ones trim
+     * [snappedSize]; the left and top ones are kept for scripts to read.
      */
     var snapLeft = 0
     var snapTop = 0
@@ -1481,14 +1481,22 @@ class Layout(
 
     /**
      * Where the window visibly ends on the right: the right edge of the parts its children add to
-     * its shape, at most its width. MMD3's window is 583 px wide with room on the right for a panel
-     * that slides out; its body ends at about 380.
+     * its shape, or of its background where that shows further, at most its width. MMD3's window is
+     * 583 px wide with room on the right for a panel that slides out; its body ends at about 380.
+     * Its shade bar is 800 px wide, and only its background reaches past the drawers ending at 677.
      */
     fun contentRight(): Int {
         if (desktopAlpha) return size.first
-        val own = (composedRegion(ArrayList()) as? Region.Op)?.add.orEmpty()
-        val right = own.mapNotNull { it.bounds()?.right }.maxOrNull() ?: return size.first
-        return right.coerceIn(1, size.first)
+        val shape = composedRegion(ArrayList()) as? Region.Op ?: return size.first
+        val right = shape.add.mapNotNull { it.bounds()?.right }.maxOrNull() ?: return size.first
+        if (right >= size.first) return size.first
+        val background =
+            when (val base = shape.base) {
+                is Region.Box -> base.rect.right
+                is Region.Pic -> rt.opaqueRight(base.image.bitmap, base.image.dst)
+                else -> 0
+            }
+        return maxOf(right, background).coerceIn(1, size.first)
     }
 
     /**

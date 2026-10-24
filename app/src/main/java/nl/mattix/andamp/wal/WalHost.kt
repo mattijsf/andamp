@@ -373,6 +373,19 @@ internal class WalHost(
         y: Int,
     ): Int? = image(file)?.asAndroidBitmap()?.takeIf { x >= 0 && y >= 0 && x < it.width && y < it.height }?.getPixel(x, y)
 
+    override fun pixels(
+        file: String,
+        x: Int,
+        y: Int,
+        w: Int,
+        h: Int,
+    ): IntArray? {
+        if (minOf(x, y) < 0 || minOf(w, h) <= 0) return null
+        val bitmap = image(file)?.asAndroidBitmap() ?: return null
+        if (x + w > bitmap.width || y + h > bitmap.height) return null
+        return IntArray(w * h).also { bitmap.getPixels(it, 0, w, x, y, w, h) }
+    }
+
     override fun invalidate() {
         synchronized(shared) { version++ }
     }

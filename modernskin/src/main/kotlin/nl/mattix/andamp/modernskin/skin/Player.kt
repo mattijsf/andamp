@@ -94,6 +94,18 @@ interface SkinHost {
     ): Int? = null
 
     /**
+     * ARGB of the [w] x [h] block of a skin image at [x], [y], row by row, or null when a pixel of
+     * it cannot be read; one [pixel] at a time unless the host reads a block at once.
+     */
+    fun pixels(
+        file: String,
+        x: Int,
+        y: Int,
+        w: Int,
+        h: Int,
+    ): IntArray? = IntArray(w * h) { i -> pixel(file, x + i % w, y + i / w) ?: return null }
+
+    /**
      * Whether one of the app's own windows is open: "pl" (playlist), "ml" (library), "eq",
      * "video" or "vis". Null leaves it to the skin's container. Buttons that toggle these light up.
      */
