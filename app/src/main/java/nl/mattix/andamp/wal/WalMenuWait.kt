@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.wal
 
+import android.util.Log
 import nl.mattix.andamp.modernskin.skin.SkinMenu
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -17,6 +18,8 @@ import java.util.concurrent.TimeUnit
  */
 internal class WalMenuWait(
     private val timeoutMs: Long = TIMEOUT_MS,
+    /** Where a menu that ran out its wait is noted, one line each, so a run can count them. */
+    private val log: (String) -> Unit = { Log.i(WalHost.TAG, it) },
 ) {
     @Volatile
     var onChange: (() -> Unit)? = null
@@ -62,7 +65,9 @@ internal class WalMenuWait(
         onChange?.invoke()
         val id =
             try {
-                answers.poll(timeoutMs, TimeUnit.MILLISECONDS)?.id
+                val answer = answers.poll(timeoutMs, TimeUnit.MILLISECONDS)
+                if (answer == null) log("menu closed after $timeoutMs ms without an answer")
+                answer?.id
             } catch (_: InterruptedException) {
                 Thread.currentThread().interrupt()
                 null

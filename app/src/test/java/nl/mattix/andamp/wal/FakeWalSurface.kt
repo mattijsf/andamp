@@ -209,6 +209,7 @@ internal fun partsFor(
             nextPreset = { asked += "next preset" },
             previousPreset = { asked += "previous preset" },
             pickFile = { andPlay -> asked += if (andPlay) "file to play" else "file" },
+            fileInfo = { asked += "file info" },
         ),
         covered = covered,
         openMenu = { onSkinMenu: (() -> Unit)?, anchor: MenuAnchor? ->

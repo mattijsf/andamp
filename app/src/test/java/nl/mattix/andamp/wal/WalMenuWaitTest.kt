@@ -74,11 +74,28 @@ class WalMenuWaitTest {
     }
 
     @Test(timeout = 10_000)
-    fun `a menu left open closes without an answer when the wait runs out`() {
-        val wait = WalMenuWait(timeoutMs = 50)
+    fun `a menu left open closes without an answer when the wait runs out, and says so in the log`() {
+        val logged = mutableListOf<String>()
+        val wait = WalMenuWait(timeoutMs = 50) { logged += it }
 
         assertNull(wait.choose(menu))
         assertNull(wait.menu)
+        assertEquals(listOf("menu closed after 50 ms without an answer"), logged)
+    }
+
+    @Test(timeout = 10_000)
+    fun `a menu answered or dismissed logs nothing`() {
+        val logged = mutableListOf<String>()
+        val wait = WalMenuWait { logged += it }
+
+        val answered = wait.chooseAside(menu)
+        wait.answer(menu, 5)
+        assertEquals(5, answered.answer())
+        val dismissed = wait.chooseAside(menu)
+        wait.dismiss()
+        assertNull(dismissed.answer())
+
+        assertEquals(emptyList<String>(), logged)
     }
 
     @Test(timeout = 10_000)

@@ -285,10 +285,12 @@ fun optionsMenu(
     onAlwaysOnTop: () -> Unit = {},
     /** Winamp's Ctrl+D; the same switch the clutter bar's D throws. */
     onDoubleSize: () -> Unit = {},
+    /** Grays Double Size while a modern skin is worn; see [mainMenu]. */
+    modernPlayer: Boolean = false,
 ): AmpMenu =
     AmpMenu(
         vm.words.get(R.string.menu_options),
-        optionsItems(vm, onPreferences, skinItems(vm, onPickSkin, onMuseum), onAlwaysOnTop, onDoubleSize),
+        optionsItems(vm, onPreferences, skinItems(vm, onPickSkin, onMuseum), onAlwaysOnTop, onDoubleSize, modernPlayer),
         anchor,
     )
 

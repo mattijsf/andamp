@@ -508,7 +508,10 @@ internal class WalEngine(
                 animating = runtime.animating,
                 log = host.logSnapshot(),
                 buildNanos = tickNanos + System.nanoTime() - t0,
-                layout = appliedFit?.takeIf { mainSize != null }?.let { Fitting.layout(runtime, it, baseW, size, windowOpen) },
+                layout =
+                    appliedFit?.takeIf { mainSize != null }?.let {
+                        Fitting.layout(runtime, it, baseW, size, runtime.drawnSize, windowOpen)
+                    },
                 menuTarget = runtime.menuTarget,
             ),
         )
@@ -588,38 +591,43 @@ private object Fitting {
 
     /**
      * Where a stack of [size] sits in [fit]'s box, worked out again for each frame, since a window
-     * opening changes the stack. A touch 24 dp beside an object still means it at that scale.
+     * opening changes the stack. The layout's stack is the part of it the windows show ([drawn],
+     * see [SkinRuntime.drawnSize]), so the window rect, the touch area and the visualizer window
+     * docked under the skin go by where the skin ends. A touch 24 dp beside an object still means
+     * it at that scale.
      */
     fun layout(
         runtime: SkinRuntime,
         fit: WalFit,
         baseW: Int,
         size: Pair<Int, Int>,
+        drawn: Pair<Int, Int>,
         windowOpen: Boolean,
     ): WalLayout {
-        val place = place(runtime, fit, baseW, size)
+        val place = place(runtime, fit, baseW, size, drawn)
         runtime.touchSlop = kotlin.math.ceil(TOUCH_SLOP_DP * fit.density / place.scale).toInt()
         return WalLayout(
             fit = fit,
             scale = place.scale,
             left = place.left,
             top = place.top,
-            stackW = size.first,
-            stackH = size.second,
+            stackW = drawn.first,
+            stackH = drawn.second,
             windowOpen = windowOpen,
             animating = runtime.animating,
             menuTarget = runtime.menuTarget,
         )
     }
 
-    /** Where a stack of [size] goes in [fit]'s box; see [WalScale.place]. */
+    /** Where a stack of [size], showing [drawn] of it, goes in [fit]'s box; see [WalScale.place]. */
     private fun place(
         runtime: SkinRuntime,
         fit: WalFit,
         baseW: Int,
         size: Pair<Int, Int>,
+        drawn: Pair<Int, Int> = size,
     ): WalScale.Place {
         val layout = runtime.mainLayout
-        return WalScale.place(fit, layout?.size ?: size, baseW, layout?.contentRight() ?: size.first, size)
+        return WalScale.place(fit, layout?.size ?: size, baseW, layout?.contentRight() ?: size.first, size, drawn)
     }
 }

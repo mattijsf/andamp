@@ -13,6 +13,8 @@ internal interface WalSink {
      * uppercase, with the button's [param].
      *
      * - MINIMIZE, SYSMENU, CONTROLMENU and MENU.
+     * - TRACKINFO, file info for the song playing: a clutter bar's I (DeClassified, Winamp2000SP4),
+     *   or a double tap on a song ticker whose double click action it is (Winamp Modern, Bento).
      * - CLOSE, from the main window only; a skin window's close button closes it inside the skin.
      * - VIS_NEXT, VIS_PREV, VIS_MENU and VIS_FS.
      * - TOGGLE, with the window as [param]. Always for "ml" (the library), "avs" (the visualizer)

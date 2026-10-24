@@ -100,6 +100,12 @@ class WidgetMenuActivity : ComponentActivity() {
             LaunchedEffect(heard) {
                 if (heard != null && menu != null) menu = build()
             }
+            // a worn modern skin's look can also be set after onCreate, on a cold start: the classic
+            // windows it does not show read unticked once it is, and as they are when it goes
+            val modern = player.skinOps.wal != null
+            LaunchedEffect(modern) {
+                if (menu != null) menu = build()
+            }
             // closes when nothing is showing: the menu, a modal it opened, a picker in front, or
             // a picked skin still loading
             val showing = picking || importing || menu != null || player.state.showingAModal()
@@ -165,7 +171,8 @@ class WidgetMenuActivity : ComponentActivity() {
     private var importing by mutableStateOf(false)
 
     /** This window's own menu, kept out of the state every other host draws. */
-    private var menu by mutableStateOf<nl.mattix.andamp.state.AmpMenu?>(null)
+    internal var menu by mutableStateOf<nl.mattix.andamp.state.AmpMenu?>(null)
+        private set
 
     override fun onPause() {
         super.onPause()

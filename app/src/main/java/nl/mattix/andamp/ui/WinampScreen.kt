@@ -120,7 +120,6 @@ import nl.mattix.andamp.wal.WalLayer
 import nl.mattix.andamp.wal.WalLayerParts
 import nl.mattix.andamp.wal.WalPlacement
 import nl.mattix.andamp.wal.WalSurface
-import nl.mattix.andamp.wal.grayedAt
 import nl.mattix.andamp.wal.rememberWalLayerParts
 
 // 60fps target; the loop self-corrects for scheduling drift
@@ -441,15 +440,14 @@ internal fun PlayerSurface(
                                 onMinimize = onMinimize,
                                 visualizerMenu = visualizerMenu,
                                 optionsMenu = { anchor ->
-                                    val options =
-                                        optionsMenu(
-                                            vm,
-                                            anchor,
-                                            onPreferences,
-                                            onAlwaysOnTop = alwaysOnTop,
-                                            onDoubleSize = doubleSize,
-                                        )
-                                    if (walNow == null) options else options.grayedAt(vm.words.get(R.string.menu_double_size))
+                                    optionsMenu(
+                                        vm,
+                                        anchor,
+                                        onPreferences,
+                                        onAlwaysOnTop = alwaysOnTop,
+                                        onDoubleSize = doubleSize,
+                                        modernPlayer = walNow != null,
+                                    )
                                 },
                                 onAlwaysOnTop = alwaysOnTop,
                                 onDoubleSize = doubleSize,

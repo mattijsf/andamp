@@ -11,6 +11,7 @@ import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.ui.window.testViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -49,6 +50,7 @@ class WalHostActionsTest {
             nextPreset = { on("next preset") },
             previousPreset = { on("previous preset") },
             pickFile = { andPlay -> on(if (andPlay) "file to play" else "file") },
+            fileInfo = { on("file info") },
         )
 
     private fun reaches(
@@ -73,6 +75,7 @@ class WalHostActionsTest {
         assertEquals(listOf("fullscreen"), reaches("VIS_FS"))
         assertEquals(listOf("next preset"), reaches("VIS_NEXT"))
         assertEquals(listOf("previous preset"), reaches("VIS_PREV"))
+        assertEquals(listOf("file info"), reaches("TRACKINFO"))
     }
 
     @Test
@@ -183,6 +186,24 @@ class WalHostActionsTest {
                     vm.words.get(R.string.menu_visualization_options)
             }
         assertFalse("a modern skin does not show the in-player modes", modes.enabled)
+    }
+
+    @Test
+    fun `the file info button shows the song playing, and nothing before a song has played`() {
+        val vm = testViewModel()
+        val actions = WalHostActions.of(vm, openMenu = {}, onMinimize = {}, openFile = {})
+
+        actions.hostAction("TRACKINFO", null)
+        assertNull("nothing has played", vm.state.trackInfo)
+
+        vm.playTrack(0)
+        actions.hostAction("TRACKINFO", null)
+        assertEquals(
+            vm.state.playlist
+                .first()
+                .title,
+            vm.state.trackInfo?.heading,
+        )
     }
 
     @Test

@@ -422,7 +422,10 @@ open class GuiObject(
         dispatch("onleftbuttonup", Value.Int(px), Value.Int(py))
     }
 
-    /** The press ends without a release (a menu took the touch): the object lets go, and scripts hear nothing. */
+    /**
+     * The press ends without a release (a menu or the host took the touch): the object lets go
+     * with no click or final position, and scripts hear nothing; a Slider's hear the button go up.
+     */
     open fun pointerCancel() = Unit
 
     /** A right click at a point of its window: the right button goes down and up. */
@@ -1364,6 +1367,17 @@ class Layout(
     /** `desktopalpha="1"`: Winamp draws the window with per-pixel transparency and no region (CornerAmp). */
     var desktopAlpha = false
 
+    /**
+     * `snapadjustleft`, `top`, `right` and `bottom`: how far in from each edge Winamp docks and
+     * snaps the window, past a part that shows nothing (Winamp Modern's closed drawer under its
+     * main window); a script changes them with snapAdjust. The right and bottom ones trim the
+     * drawn size ([snappedSize]); the left and top ones are kept for scripts to read.
+     */
+    var snapLeft = 0
+    var snapTop = 0
+    var snapRight = 0
+    var snapBottom = 0
+
     override fun setParam(
         key: String,
         value: String,
@@ -1377,7 +1391,23 @@ class Layout(
             "desktopalpha" -> desktopAlpha = value == "1"
             "linkwidth" -> linkWidth = value.lowercase()
             "linkheight" -> linkHeight = value.lowercase()
-            "snapadjust", "nofocusapponclick", "owner", "nodock", "lockminmax", "scalable", "alphabackground" -> Unit
+            "nofocusapponclick", "owner", "nodock", "lockminmax", "scalable", "alphabackground" -> Unit
+            else -> return setSnapParam(key, value)
+        }
+        return true
+    }
+
+    /** A `snapadjust*` attribute; false for any other. */
+    private fun setSnapParam(
+        key: String,
+        value: String,
+    ): Boolean {
+        val px = value.toIntLenient() ?: 0
+        when (key.lowercase()) {
+            "snapadjustleft" -> snapLeft = px
+            "snapadjusttop" -> snapTop = px
+            "snapadjustright" -> snapRight = px
+            "snapadjustbottom" -> snapBottom = px
             else -> return false
         }
         return true
@@ -1461,6 +1491,36 @@ class Layout(
         return right.coerceIn(1, size.first)
     }
 
+    /**
+     * The part of the window Winamp docks and snaps to: its size less [snapRight] and [snapBottom],
+     * but never less than what it shows now ([contentRight], [contentBottom]), so a drawer sliding
+     * out over that margin still counts. Winamp Modern's main window is 280 px high and 164 px of it
+     * shows while its drawer is closed. The window keeps its top left corner: [snapLeft] and
+     * [snapTop] trim nothing.
+     */
+    fun snappedSize(): Pair<Int, Int> {
+        val (width, height) = size
+        val right = if (snapRight > 0) maxOf(width - snapRight, contentRight()) else width
+        val bottom = if (snapBottom > 0) maxOf(height - snapBottom, contentBottom()) else height
+        return right.coerceIn(0, width) to bottom.coerceIn(0, height)
+    }
+
+    /** A script's snapAdjust: new margins, then onSnapAdjustChanged when they changed. */
+    private fun snapAdjust(
+        left: Int,
+        top: Int,
+        right: Int,
+        bottom: Int,
+    ) {
+        if (listOf(snapLeft, snapTop, snapRight, snapBottom) == listOf(left, top, right, bottom)) return
+        snapLeft = left
+        snapTop = top
+        snapRight = right
+        snapBottom = bottom
+        rt.invalidate()
+        rt.dispatch(this, "onsnapadjustchanged", emptyList())
+    }
+
     override fun draw(out: MutableList<DrawCmd>) {
         if (!visible) return
         val shape = if (desktopAlpha) null else windowShape()
@@ -1517,7 +1577,12 @@ class Layout(
                 Value.Num(1.0)
             }
 
-            "setscale", "snapadjust", "beforeredock", "redock", "setdesktopalpha", "center" -> {
+            "setscale", "beforeredock", "redock", "setdesktopalpha", "center" -> {
+                Value.Null
+            }
+
+            "snapadjust" -> {
+                snapAdjust(args[0].asInt, args[1].asInt, args[2].asInt, args[3].asInt)
                 Value.Null
             }
 
@@ -1545,8 +1610,20 @@ class Layout(
                 Value.Int(container?.y ?: 0)
             }
 
-            "getsnapadjusttop", "getsnapadjustleft", "getsnapadjustright", "getsnapadjustbottom" -> {
-                Value.Int(0)
+            "getsnapadjustleft" -> {
+                Value.Int(snapLeft)
+            }
+
+            "getsnapadjusttop" -> {
+                Value.Int(snapTop)
+            }
+
+            "getsnapadjustright" -> {
+                Value.Int(snapRight)
+            }
+
+            "getsnapadjustbottom" -> {
+                Value.Int(snapBottom)
             }
 
             else -> {

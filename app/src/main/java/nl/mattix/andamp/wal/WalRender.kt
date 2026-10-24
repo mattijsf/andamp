@@ -143,7 +143,9 @@ internal object WalScale {
      * sets the scale (see [fit], with [baseW]) and the stack hangs from the top, centered by how
      * far right the main window's content reaches ([contentRight]); a stack taller than the box at
      * that scale is shrunk to the box's height and centered both ways. Sideways, the whole stack
-     * fits the box both ways and is centered both ways.
+     * fits the box both ways and is centered both ways. The scale keeps room for the whole stack,
+     * so a drawer opening inside it leaves the scale as it is; the centering goes by the part of
+     * it the windows show ([drawn]), from its top-left corner.
      */
     fun place(
         fit: WalFit,
@@ -151,19 +153,21 @@ internal object WalScale {
         baseW: Int,
         contentRight: Int,
         stack: Pair<Int, Int>,
+        drawn: Pair<Int, Int> = stack,
     ): Place {
         val box = IntSize(fit.widthPx, fit.heightPx)
         val (stackW, stackH) = stack
+        val (drawnW, drawnH) = drawn
         val width = box.width.toFloat()
         val height = box.height.toFloat()
         if (fit.sideways) {
             val s = of(box, stackW, stackH)
-            return Place(s, left(width, stackW, s), left(height, stackH, s))
+            return Place(s, left(width, drawnW, s), left(height, drawnH, s))
         }
         val s = fit(box, mainSize, baseW)
         if (stackH <= 0 || stackH * s <= height) return Place(s, left(width, contentRight, s), 0f)
         val shrunk = height / stackH
-        return Place(shrunk, left(width, contentRight, shrunk), left(height, stackH, shrunk))
+        return Place(shrunk, left(width, contentRight, shrunk), left(height, drawnH, shrunk))
     }
 
     /** The scale that fits [lw] x [lh] in [size]: whole numbers from 2x up, so the pixels stay crisp. */

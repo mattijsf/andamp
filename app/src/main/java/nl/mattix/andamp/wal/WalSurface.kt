@@ -40,9 +40,12 @@ internal data class WalLayout(
     val left: Float,
     /** The stack's top edge inside the fit box, in device px. */
     val top: Float,
-    /** The stack's width in skin px. */
+    /**
+     * The stack's width in skin px: the part its windows show, without margins that show nothing
+     * (`SkinRuntime.drawnSize`).
+     */
     val stackW: Int,
-    /** The stack's height in skin px. */
+    /** The stack's height in skin px, as [stackW] measures it: Winamp Modern's closed drawer is left out. */
     val stackH: Int,
     /** Whether a skin window is open over the main one; Back closes it. */
     val windowOpen: Boolean,

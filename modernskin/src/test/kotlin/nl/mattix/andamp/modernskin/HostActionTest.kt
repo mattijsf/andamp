@@ -14,8 +14,9 @@ import org.junit.Test
 
 /** Button actions the app answers reach it; what the skin does itself stays inside. */
 class HostActionTest {
-    // a main window with buttons for each kind of action, a playlist window with a close button, and
-    // a frame the skin keeps for Winamp's library
+    // a main window with buttons for each kind of action, a file info button among them, and a song
+    // ticker a double tap asks file info from; a playlist window with a close button, and a frame the
+    // skin keeps for Winamp's library
     private val files =
         object : SkinFiles {
             private val m =
@@ -32,6 +33,8 @@ class HostActionTest {
                         """<button id="library.alias" action="TOGGLE" param="library" x="200" y="0" w="20" h="20"/>""" +
                         """<button id="visualizer" action="TOGGLE" param="guid:{0000000A-000C-0010-FF7B-01014263450C}" """ +
                         """x="240" y="0" w="20" h="20"/>""" +
+                        """<button id="info" action="trackinfo" x="270" y="0" w="20" h="20"/>""" +
+                        """<text id="ticker" display="songtitle" dblclickaction="trackinfo" x="0" y="25" w="200" h="10"/>""" +
                         """</layout></container>""" +
                         """<container id="pl" name="Playlist" default_visible="0"><layout id="normal" w="300" h="40">""" +
                         """<button id="pl.close" action="CLOSE" x="0" y="0" w="20" h="20"/>""" +
@@ -75,11 +78,11 @@ class HostActionTest {
     }
 
     @Test
-    fun `minimize, vis buttons, closing the main window and the app's windows go to the app by name`() {
+    fun `minimize, vis buttons, file info, closing the main window and the app's windows go to the app by name`() {
         rt.load()
         rt.onHostAction = { a, p -> asked += a to p }
 
-        listOf("min", "vis", "close", "library", "library.alias", "visualizer").forEach(::tap)
+        listOf("min", "vis", "close", "library", "library.alias", "visualizer", "info").forEach(::tap)
 
         assertEquals(
             listOf(
@@ -89,9 +92,22 @@ class HostActionTest {
                 "TOGGLE" to "ml",
                 "TOGGLE" to "ml",
                 "TOGGLE" to "avs",
+                "TRACKINFO" to null,
             ),
             asked,
         )
+    }
+
+    @Test
+    fun `a double tap on a song ticker whose double click action is trackinfo asks the app for file info`() {
+        rt.load()
+        rt.onHostAction = { a, p -> asked += a to p }
+        rt.ensureLayout()
+        val ticker = checkNotNull(rt.mainLayout?.findObject("ticker"))
+
+        rt.doubleTap(ticker.rect.left + 20, ticker.rect.top + 5)
+
+        assertEquals(listOf("TRACKINFO" to null), asked)
     }
 
     @Test

@@ -243,6 +243,24 @@ class MainMenuTest {
         assertEquals("the entry calls its callback once", 1, asked)
     }
 
+    @Test
+    fun `with a modern skin worn, Options grays Double Size and leaves it unticked, and the rest as it was`() {
+        val vm = testViewModel()
+        vm.doubleSize.on = true
+
+        val classic = actions(optionsMenu(vm).items)
+        val modern = actions(optionsMenu(vm, modernPlayer = true).items)
+
+        val doubleSize = modern.first { it.label == "Double Size" }
+        assertEquals(false, doubleSize.enabled)
+        assertEquals(false, doubleSize.checked)
+        assertEquals(
+            "every other entry reads the same",
+            classic.filter { it.label != "Double Size" }.map { Triple(it.label, it.enabled, it.checked) },
+            modern.filter { it.label != "Double Size" }.map { Triple(it.label, it.enabled, it.checked) },
+        )
+    }
+
     /**
      * Winamp's View file info describes what has been heard this session, not
      * what is queued: disabled on a fresh launch, and still enabled after the

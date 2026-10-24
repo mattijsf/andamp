@@ -97,8 +97,9 @@ class SkinRuntime(
 
     /**
      * Called for a button action the app answers, as Winamp answered it outside the skin: MINIMIZE,
-     * SYSMENU, CONTROLMENU, MENU, the VIS_ actions and CLOSE on the main window, with the button's
-     * param; and TOGGLE of a window the app shows, with the window's name: "ml" (the library), "avs"
+     * SYSMENU, CONTROLMENU, MENU, TRACKINFO (file info), the VIS_ actions and CLOSE on the main
+     * window, with the button's param; and TOGGLE of a window the app shows, with the window's
+     * name: "ml" (the library), "avs"
      * (the visualizer) or "video", or the id or GUID of another window the skin does not have. With
      * this set, the library, visualizer and video open in the app, not in a frame of the skin.
      * Gets the action, uppercase, and the param or name.
@@ -503,6 +504,25 @@ class SkinRuntime(
             if (needsLayout) doLayout()
             val rects = windows.map { windowRect(it) }
             return (rects.maxOfOrNull { it.right } ?: 0) to (rects.maxOfOrNull { it.bottom } ?: 0)
+        }
+
+    /**
+     * The part of the stack its windows show, in layout pixels: [stackSize] with each window cut on
+     * its right and bottom to the part Winamp docks and snaps to ([Layout.snappedSize]), as Winamp
+     * Modern's main window without the room its closed drawer keeps.
+     */
+    val drawnSize: Pair<Int, Int>
+        get() {
+            if (needsLayout) doLayout()
+            var right = 0
+            var bottom = 0
+            for (l in windows) {
+                val r = windowRect(l)
+                val (w, h) = l.snappedSize()
+                right = maxOf(right, r.left + w)
+                bottom = maxOf(bottom, r.top + h)
+            }
+            return right to bottom
         }
 
     /** Total length of the playlist entries selected in the playlist editor, for `display="pe_info"`. */
@@ -1795,7 +1815,7 @@ class SkinRuntime(
         val target = held ?: hitTest(sx, sy) ?: return
         // the held object lets go first: a long press is no release, so no click and no drag left on
         captured = null
-        held?.pointerCancel()
+        held?.let(::cancelPress)
         val origin = target.layoutObject?.let { windowRect(it) } ?: Rect(0, 0, 0, 0)
         target.rightClick(sx - origin.left, sy - origin.top)
         held?.let(::leaveArea)
@@ -1970,7 +1990,8 @@ class SkinRuntime(
     /**
      * The listener's pick from a menu a script popped, by command id, or 0. A menu is shown only in
      * reply to a touch (a timer cannot pop one), at most [MAX_MENUS_PER_GESTURE] times per touch,
-     * and not after one closed without the listener. It first ends the press under the finger, as
+     * not after one closed without the listener, and not from what a press ending without a
+     * release tells its scripts (see [cancelPress]). It first ends the press under the finger, as
      * Windows hands the mouse to the menu: the control is let go without a release, and gives no
      * click or final position for this touch, even when its release handler opened the menu.
      */
@@ -1979,6 +2000,7 @@ class SkinRuntime(
             when {
                 gestureDepth == 0 -> "outside a touch"
                 menusEnded -> "after one closed without the listener"
+                cancelling -> "while a press ends without a release"
                 menusThisGesture >= MAX_MENUS_PER_GESTURE -> "more than $MAX_MENUS_PER_GESTURE in one touch"
                 else -> null
             }
@@ -1995,8 +2017,9 @@ class SkinRuntime(
 
     /**
      * Ends the press under the finger without a release: a button no longer shows pressed and gives
-     * no click, a slider stops dragging without a final position, and the object hears
-     * `onLeaveArea` to pair the `onEnterArea` of [pointerDown]. The rest of this touch goes nowhere.
+     * no click, a slider stops dragging without a final position (its scripts hear the button go
+     * up, and a menu they pop then is not shown), and the object hears `onLeaveArea` to pair the
+     * `onEnterArea` of [pointerDown]. The rest of this touch goes nowhere.
      * For a host that takes the touch, such as a long press that opens the app's menu.
      */
     fun pointerCancel() = gesture { endPress() }
@@ -2006,8 +2029,21 @@ class SkinRuntime(
         pressEnded = true
         val held = captured ?: return
         captured = null
-        held.pointerCancel()
+        cancelPress(held)
         leaveArea(held)
+    }
+
+    /** A press is ending without a release: [menuChoice] shows nothing its scripts pop meanwhile. */
+    private var cancelling = false
+
+    /** Lets go of [held] without a release (see [GuiObject.pointerCancel]); its scripts pop no menu meanwhile. */
+    private fun cancelPress(held: GuiObject) {
+        cancelling = true
+        try {
+            held.pointerCancel()
+        } finally {
+            cancelling = false
+        }
     }
 
     /** `onLeaveArea` for [o], once per press that sent it `onEnterArea`. */
@@ -2092,7 +2128,7 @@ class SkinRuntime(
                 }
             }
 
-            "MINIMIZE", "SYSMENU", "CONTROLMENU", "MENU" -> {
+            "MINIMIZE", "SYSMENU", "CONTROLMENU", "MENU", "TRACKINFO" -> {
                 onHostAction?.invoke(a, param)
             }
 

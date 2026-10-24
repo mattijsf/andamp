@@ -488,6 +488,54 @@ class WalEngineTest {
     }
 
     @Test(timeout = 20_000)
+    fun `a window's snap margin is left out of the layout's stack, which sideways is centered by what shows`() {
+        // a main window 100 px high that shows 60 px: the 40 px under its shaped body is a snap margin
+        val run =
+            Run(
+                "snap",
+                skin(
+                    *skinXml(
+                        """<container id="main" name="t" default_visible="1">""" +
+                            """<layout id="normal" w="200" h="100" snapadjustbottom="40">""" +
+                            """<group id="body" x="0" y="0" w="200" h="60" sysregion="1"/>""" +
+                            """</layout></container>""",
+                    ),
+                ),
+            )
+        run.start()
+        assertNull(run.failure())
+
+        run.engine.fit(phone)
+        awaitThat("a frame for the phone") {
+            run.engine.frame
+                ?.layout
+                ?.fit == phone
+        }
+        val upright = run.engine.frame!!
+        assertEquals(
+            "the window is drawn whole",
+            100,
+            upright.stack
+                .single()
+                .first.height,
+        )
+        assertEquals(200 to 60, upright.layout!!.stackW to upright.layout!!.stackH)
+        assertEquals(0f, upright.layout!!.top)
+
+        val sideways = WalFit(2000, 1000, 3f, sideways = true)
+        run.engine.fit(sideways)
+        awaitThat("a frame for the sideways box") {
+            run.engine.frame
+                ?.layout
+                ?.fit == sideways
+        }
+        val layout = run.engine.frame!!.layout!!
+        assertEquals("the scale keeps room for the whole window", 10f, layout.scale)
+        assertEquals("centered by the 60 px that show", 200f, layout.top)
+        assertEquals(200 to 60, layout.stackW to layout.stackH)
+    }
+
+    @Test(timeout = 20_000)
     fun `a fit equal to the last one does nothing`() {
         engine.fit(phone)
         awaitThat("a frame with a layout") { engine.frame?.layout != null }
