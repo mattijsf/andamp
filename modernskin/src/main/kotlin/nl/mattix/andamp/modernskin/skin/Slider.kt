@@ -178,11 +178,15 @@ class Slider(
         }
     }
 
-    // the player hears no final position, and the thumb follows the player again
+    // the player hears no final position, and the thumb follows the player again; scripts hear
+    // the button go up, so what they show while the thumb is held (Winamp Modern's "SEEK:" in its
+    // ticker) gives way
     override fun pointerCancel() {
         if (dragging) {
             dragging = false
             rt.invalidate()
+            val (px, py) = rt.lastPointer
+            dispatch("onleftbuttonup", Value.Int(px), Value.Int(py))
         }
     }
 

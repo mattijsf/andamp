@@ -422,7 +422,10 @@ open class GuiObject(
         dispatch("onleftbuttonup", Value.Int(px), Value.Int(py))
     }
 
-    /** The press ends without a release (a menu took the touch): the object lets go, and scripts hear nothing. */
+    /**
+     * The press ends without a release (a menu or the host took the touch): the object lets go
+     * with no click or final position, and scripts hear nothing; a Slider's hear the button go up.
+     */
     open fun pointerCancel() = Unit
 
     /** A right click at a point of its window: the right button goes down and up. */

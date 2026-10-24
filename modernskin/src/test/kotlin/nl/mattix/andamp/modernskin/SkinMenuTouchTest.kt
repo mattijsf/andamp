@@ -274,6 +274,23 @@ class SkinMenuTouchTest {
     }
 
     @Test
+    fun `a menu the slider's release handler pops while the host cancels the drag is not shown, and the next touch's is`() {
+        script(seek, "onleftbuttonup")
+        val x = seek.rect.left + 100
+        val y = seek.rect.top + 5
+        rt.pointerDown(x, y)
+
+        rt.pointerCancel()
+        assertFalse(seek.dragging)
+        assertTrue("no menu over the host's long press: $shown", shown.isEmpty())
+        assertTrue(logs.toString(), logs.any { "while a press ends without a release" in it })
+
+        rt.pointerDown(x, y)
+        rt.pointerUp(x, y)
+        assertEquals(1, shown.size)
+    }
+
+    @Test
     fun `a menu during a drag lets go of the slider without a final position`() {
         player.play()
         val y = seek.rect.top + 5
