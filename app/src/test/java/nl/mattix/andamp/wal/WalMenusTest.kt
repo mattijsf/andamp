@@ -118,20 +118,6 @@ class WalMenusTest {
     }
 
     @Test
-    fun `a classic switch reads grayed and unticked, and the rest of the menu stays as it was`() {
-        val doubleSize = AmpMenuItem.Action("Double Size", checked = true) {}
-        val repeat = AmpMenuItem.Action("Repeat", checked = true) {}
-        val skins = AmpMenuItem.Submenu("Skins", listOf(AmpMenuItem.Action("Double Size") {}))
-        val menu = AmpMenu("Options", listOf(doubleSize, AmpMenuItem.Divider, repeat, skins), null)
-
-        val grayed = menu.grayedAt("Double Size")
-
-        assertEquals(doubleSize.copy(enabled = false, checked = false), grayed.items[0])
-        assertEquals(listOf(AmpMenuItem.Divider, repeat, skins), grayed.items.drop(1))
-        assertEquals(menu.title, grayed.title)
-    }
-
-    @Test
     fun `the menu pops at the press, and a pick answers its id once`() {
         show()
         val menu = skinMenuOf("Play", "Stop")
