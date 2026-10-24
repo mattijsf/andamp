@@ -26,6 +26,8 @@ internal class WalHostActions(
     private val previousPreset: () -> Unit,
     /** The file picker; true to play what is picked, for Play on an empty playlist. */
     private val pickFile: (andPlay: Boolean) -> Unit,
+    /** View file info for the song playing, as the classic clutter bar's I opens it. */
+    private val fileInfo: () -> Unit,
 ) : WalSink {
     /**
      * Where the last press on the skin went down: it makes the menu anchor there when a menu
@@ -62,6 +64,10 @@ internal class WalHostActions(
                 previousPreset()
             }
 
+            "TRACKINFO" -> {
+                fileInfo()
+            }
+
             // the windows the app shows; video and any other window are not there to show
             "TOGGLE" -> {
                 when (param) {
@@ -83,7 +89,8 @@ internal class WalHostActions(
         /**
          * The actions for [vm]'s player: the library and the visualizer window open and close as the
          * main menu opens them, the visualization menu grays the in-player modes a modern skin does
-         * not show, and the preset buttons step Milkdrop only while its window is open.
+         * not show, the preset buttons step Milkdrop only while its window is open, and file info
+         * shows the song playing, or the last one that played.
          */
         fun of(
             vm: WinampViewModel,
@@ -112,6 +119,7 @@ internal class WalHostActions(
                 nextPreset = { if (s.milkdropOn) s.visualCommands?.nextPreset() },
                 previousPreset = { if (s.milkdropOn) s.visualCommands?.previousPreset() },
                 pickFile = openFile,
+                fileInfo = { vm.trackInfoOps.show(s.lastPlayed) },
             )
         }
     }

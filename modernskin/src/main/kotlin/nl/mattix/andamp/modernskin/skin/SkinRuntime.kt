@@ -97,8 +97,9 @@ class SkinRuntime(
 
     /**
      * Called for a button action the app answers, as Winamp answered it outside the skin: MINIMIZE,
-     * SYSMENU, CONTROLMENU, MENU, the VIS_ actions and CLOSE on the main window, with the button's
-     * param; and TOGGLE of a window the app shows, with the window's name: "ml" (the library), "avs"
+     * SYSMENU, CONTROLMENU, MENU, TRACKINFO (file info), the VIS_ actions and CLOSE on the main
+     * window, with the button's param; and TOGGLE of a window the app shows, with the window's
+     * name: "ml" (the library), "avs"
      * (the visualizer) or "video", or the id or GUID of another window the skin does not have. With
      * this set, the library, visualizer and video open in the app, not in a frame of the skin.
      * Gets the action, uppercase, and the param or name.
@@ -2127,7 +2128,7 @@ class SkinRuntime(
                 }
             }
 
-            "MINIMIZE", "SYSMENU", "CONTROLMENU", "MENU" -> {
+            "MINIMIZE", "SYSMENU", "CONTROLMENU", "MENU", "TRACKINFO" -> {
                 onHostAction?.invoke(a, param)
             }
 
