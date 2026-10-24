@@ -4,6 +4,8 @@ package nl.mattix.andamp.state
 
 import android.app.Application
 import android.net.Uri
+import android.os.Handler
+import android.os.Looper
 import android.provider.Settings
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
@@ -36,6 +38,9 @@ import nl.mattix.andamp.state.overlay.OverlayStore
 import nl.mattix.andamp.state.overlay.OverlaySupport
 import nl.mattix.andamp.ui.menu.promptFor
 import nl.mattix.andamp.wal.WalGate
+import nl.mattix.andamp.wal.WalLook
+import nl.mattix.andamp.wal.WalPlayer
+import nl.mattix.andamp.wal.WalPrepare
 import nl.mattix.andamp.wal.WalSettings
 import kotlin.math.roundToInt
 
@@ -103,14 +108,21 @@ class WinampViewModel
         val welcome = WelcomeStore(app)
 
         /**
+         * Whether a modern skin is on screen ([SkinOps.wal]), kept by a collector in init. A plain
+         * field, because the Double Size store reads it while it is made, before [skinOps] is.
+         */
+        private var modernShown = false
+
+        /**
          * Whether the player fills the screen; see [DoubleSizeStore]. Double Size and Always
          * On Top are on one at a time: switching this on switches [overlayOps] off, and the
-         * other way round there.
+         * other way round there. A modern skin on screen has no Double Size: the player shows
+         * it off while the skin lasts, and the stored setting stays.
          */
         val doubleSize: DoubleSizeStore =
             DoubleSizeStore(
                 app,
-                mirror = { state.doubleSize = it },
+                mirror = { state.doubleSize = it && !modernShown },
                 onSwitchedOn = { if (overlayOps.gate.wanted) overlayOps.want(false) },
             )
         val eqOps = EqOps(state, facade, presetStore, words)
@@ -131,6 +143,35 @@ class WinampViewModel
                 // the file, not WalGate.on, which reads off until the file has been read
                 modernOn = { WalGate.read(app) },
                 turnModernOn = { WalGate.write(app, true) },
+                openModern = { id, file, name, siblings ->
+                    // the player is made before its look, and its file picker is the look's sink
+                    val opened = arrayOfNulls<WalLook>(1)
+                    val main = Handler(Looper.getMainLooper())
+                    val player =
+                        WalPlayer(
+                            this,
+                            state,
+                            tapOf = { audioTap },
+                            positionMs = { facade.state.value.positionMs },
+                            openFile = { andPlay -> opened[0]?.sink?.openFile(andPlay) },
+                            post = { main.post(it) },
+                        )
+                    WalLook(
+                        id,
+                        file,
+                        name,
+                        siblings,
+                        app.cacheDir,
+                        WalSettings(app),
+                        player,
+                        windowOpen =
+                            WalPrepare.windowOpen(
+                                libraryOpen = { state.libraryOpen },
+                                visualizerOn = { state.milkdropOn },
+                            ),
+                        wake = { Triple(player.watched(), state.libraryOpen, state.milkdropOn) },
+                    ).also { opened[0] = it }
+                },
             )
 
         /** The skin each music source asks for, worn while its tracks play; see [SourceSkins]. */
@@ -461,6 +502,13 @@ class WinampViewModel
             // modern skins turned on or off while the app runs; the first value is skipped,
             // as start reads the switch itself
             viewModelScope.launch { snapshotFlow { WalGate.on }.drop(1).collect(skinOps::betaChanged) }
+            // Double Size goes off while a modern skin is on screen and comes back with a classic one
+            viewModelScope.launch {
+                snapshotFlow { skinOps.wal != null }.collect { shown ->
+                    modernShown = shown
+                    state.doubleSize = doubleSize.on && !shown
+                }
+            }
             presetOps.start()
             dspOps.start() // pushes the stored rack
             // the installed plug-ins reach the backend, and the rack is then decoded again;

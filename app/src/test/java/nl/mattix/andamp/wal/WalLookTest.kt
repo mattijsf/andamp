@@ -1,0 +1,516 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+
+package nl.mattix.andamp.wal
+
+import android.app.Application
+import android.content.Context
+import android.os.Handler
+import android.os.Looper
+import androidx.test.core.app.ApplicationProvider
+import nl.mattix.andamp.modernskin.skin.FakePlayer
+import nl.mattix.andamp.modernskin.skin.Player
+import nl.mattix.andamp.modernskin.skin.SkinMenu
+import nl.mattix.andamp.modernskin.skin.SkinRuntime
+import org.junit.After
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
+import org.junit.Before
+import org.junit.Rule
+import org.junit.Test
+import org.junit.rules.TemporaryFolder
+import org.junit.runner.RunWith
+import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
+import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
+import org.robolectric.shadows.ShadowLooper
+import java.io.File
+import java.io.IOException
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicInteger
+import java.util.zip.ZipEntry
+import java.util.zip.ZipOutputStream
+
+/**
+ * A worn modern skin's look: it starts on its first fit or on an import's wait, hands the screen
+ * its frames through one main post, keeps its settings, and lets go of its engine without a save
+ * landing afterward.
+ */
+@RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
+class WalLookTest {
+    @get:Rule
+    val dir = TemporaryFolder()
+
+    private val app = ApplicationProvider.getApplicationContext<Application>()
+    private val prefs = app.getSharedPreferences("wal_skins", Context.MODE_PRIVATE)
+    private val main = Handler(Looper.getMainLooper())
+    private val looks = ArrayList<WalLook>()
+
+    @Before
+    fun clearSettings() {
+        prefs.edit().clear().commit()
+    }
+
+    @After
+    fun releaseAll() = looks.forEach { it.release(save = false) }
+
+    /** A play button, a minimize button the app answers, and two color themes. */
+    private val player =
+        """<gammaset id="One"/><gammaset id="Two"/>""" +
+            """<container id="main" name="t" default_visible="1"><layout id="normal" w="200" h="100">""" +
+            """<button id="play" action="PLAY" x="10" y="10" w="20" h="20"/>""" +
+            """<button id="min" action="MINIMIZE" x="100" y="10" w="20" h="20"/>""" +
+            """</layout></container>"""
+
+    private fun wal(
+        skinXml: String = """<WinampAbstractionLayer version="0.8"><include file="player.xml"/></WinampAbstractionLayer>""",
+        playerXml: String = player,
+    ): File =
+        dir.newFile().apply {
+            ZipOutputStream(outputStream()).use { zip ->
+                for ((path, text) in mapOf("skin.xml" to skinXml, "player.xml" to playerXml)) {
+                    zip.putNextEntry(ZipEntry(path))
+                    zip.write(text.toByteArray())
+                    zip.closeEntry()
+                }
+            }
+        }
+
+    /** Counts the main posts the look makes. */
+    private val posts = AtomicInteger()
+
+    private fun look(
+        file: File = wal(),
+        name: String = "Test",
+        player: Player = FakePlayer(),
+        budgetMs: Long = 5_000,
+    ): WalLook =
+        WalLook(
+            id = "id${runs.incrementAndGet()}",
+            file = file,
+            name = name,
+            siblings = emptyMap(),
+            cacheDir = app.cacheDir,
+            settings = WalSettings(app),
+            player = player,
+            budgetMs = budgetMs,
+            toMain = { r ->
+                posts.incrementAndGet()
+                main.post(r)
+            },
+        ).also { looks += it }
+
+    private val phone = WalFit(1080, 2000, 3f, sideways = false)
+
+    /** Idles the main looper until [condition] holds, for up to 10 s. */
+    private fun await(
+        what: String,
+        condition: () -> Boolean,
+    ) {
+        val deadline = System.currentTimeMillis() + 10_000
+        do {
+            shadowOf(Looper.getMainLooper()).idle()
+            if (condition()) return
+            Thread.sleep(10)
+        } while (System.currentTimeMillis() < deadline)
+        fail(what)
+    }
+
+    /** What [read] gives on [look]'s engine thread, once the work posted before it is done. */
+    private fun <T> onEngine(
+        look: WalLook,
+        read: (SkinRuntime?) -> T,
+    ): T {
+        val got = CompletableFuture<T>()
+        look.engine!!.postAlways { got.complete(read(it)) }
+        return got.get(5, TimeUnit.SECONDS)
+    }
+
+    private fun engineThread(look: WalLook): Thread? = Thread.getAllStackTraces().keys.firstOrNull { it.name == "wal-${look.id}" }
+
+    /** A player whose first status read takes [ms], as a load that runs long. */
+    private fun slowPlayer(ms: Long): Player =
+        object : Player by FakePlayer() {
+            private var waited = false
+            override val status: Player.Status
+                get() {
+                    if (!waited) {
+                        waited = true
+                        Thread.sleep(ms)
+                    }
+                    return Player.Status.STOPPED
+                }
+        }
+
+    @Test(timeout = 20_000)
+    fun `no engine thread exists before the first fit`() {
+        val look = look()
+
+        assertNull(engineThread(look))
+        look.fit(phone)
+
+        await("the engine thread starts") { engineThread(look) != null }
+    }
+
+    @Test(timeout = 20_000)
+    fun `a fit starts the skin, and its first frame has a layout for that fit`() {
+        val look = look()
+
+        look.fit(phone)
+
+        await("the first frame arrives") { look.layout != null }
+        assertEquals(phone, look.layout!!.fit)
+        assertTrue(look.frames.intValue > 0)
+        assertEquals("Test", look.loadedName)
+    }
+
+    @Test(timeout = 20_000)
+    fun `an import's start returns the name the skin loaded under`() {
+        assertEquals("Bento", look(name = "Bento").startAndAwait())
+    }
+
+    @Test(timeout = 20_000)
+    fun `an import with no name takes the name the skin's skininfo gives`() {
+        val named =
+            """<WinampAbstractionLayer version="0.8"><skininfo><name>Bento Pro</name></skininfo>""" +
+                """<include file="player.xml"/></WinampAbstractionLayer>"""
+
+        assertEquals("Bento Pro", look(wal(named), name = "").startAndAwait())
+    }
+
+    @Test(timeout = 20_000)
+    fun `an import whose zip cannot be opened throws what opening it threw`() {
+        val whole = wal()
+        // without its directory, at the end, the file does not open as a zip
+        whole.writeBytes(whole.readBytes().let { it.copyOf(it.size - 30) })
+
+        assertThrows(IOException::class.java) { look(whole).startAndAwait() }
+    }
+
+    @Test(timeout = 20_000)
+    fun `an import that takes longer than its time throws a timeout`() {
+        assertThrows(TimeoutException::class.java) { look(player = slowPlayer(1_500), budgetMs = 100).startAndAwait() }
+    }
+
+    @Test(timeout = 20_000)
+    fun `a blank or throwing skin fails an import without crashing, and does not tell onFailed`() {
+        val told = AtomicInteger()
+        val blank = look(wal(playerXml = "")).apply { onFailed = { told.incrementAndGet() } }
+        val throwing =
+            look(
+                player =
+                    object : Player by FakePlayer() {
+                        override val status: Player.Status get() = error("the player is gone")
+                    },
+            ).apply { onFailed = { told.incrementAndGet() } }
+
+        assertEquals("no main layout", assertThrows(IllegalStateException::class.java) { blank.startAndAwait() }.message)
+        assertEquals("the player is gone", assertThrows(IllegalStateException::class.java) { throwing.startAndAwait() }.message)
+        repeat(20) { shadowOf(Looper.getMainLooper()).idle() }
+        assertEquals(0, told.get())
+        assertTrue("its engine thread runs on until it is let go", engineThread(blank)!!.isAlive)
+    }
+
+    @Test(timeout = 20_000)
+    fun `a blank skin started by a fit tells onFailed it did not start`() {
+        val told = ArrayList<Boolean>()
+        val look = look(wal(playerXml = "")).apply { onFailed = { told += it } }
+
+        look.fit(phone)
+
+        await("onFailed is told") { told.isNotEmpty() }
+        assertEquals(listOf(false), told)
+        assertNull(look.layout)
+    }
+
+    @Test(timeout = 20_000)
+    fun `a start that runs past its time after the first fit falls back`() {
+        val told = ArrayList<Boolean>()
+        val look = look(player = slowPlayer(300), budgetMs = 100).apply { onFailed = { told += it } }
+
+        look.fit(phone)
+
+        // the main thread notices the time is up, or the engine thread once the load is done
+        ShadowLooper.idleMainLooper(150, TimeUnit.MILLISECONDS)
+        await("onFailed is told") { told.isNotEmpty() }
+        assertEquals("a start failure, not a skin that stopped working", listOf(false), told)
+        assertNull("the late skin is not shown", look.layout)
+    }
+
+    @Test(timeout = 20_000)
+    fun `three draws that fail tell onFailed the skin stopped working`() {
+        val told = ArrayList<Boolean>()
+        val look = look().apply { onFailed = { told += it } }
+        look.fit(phone)
+        await("the first frame arrives") { look.layout != null }
+
+        repeat(WalEngine.MAX_FAILURES) { look.drawFailed(IllegalStateException("draw")) }
+
+        await("onFailed is told") { told.isNotEmpty() }
+        assertEquals(listOf(true), told)
+    }
+
+    @Test(timeout = 20_000)
+    fun `release ends the engine thread`() {
+        val look = look()
+        look.fit(phone)
+        await("the first frame arrives") { look.layout != null }
+        val thread = engineThread(look)!!
+
+        look.release(save = false)
+
+        thread.join(5_000)
+        assertFalse(thread.isAlive)
+        assertNull("nothing is drawn after", look.layout)
+    }
+
+    @Test(timeout = 20_000)
+    fun `a release with a save writes the skin's settings, and one without writes nothing`() {
+        val saved = look()
+        val dropped = look()
+        for (l in listOf(saved, dropped)) l.fit(phone)
+        await("both skins are on") { saved.layout != null && dropped.layout != null }
+        val threads = listOf(engineThread(saved)!!, engineThread(dropped)!!)
+
+        saved.release(save = true)
+        dropped.release(save = false)
+
+        threads.forEach { it.join(5_000) }
+        assertTrue(prefs.contains(saved.id))
+        assertFalse(prefs.contains(dropped.id))
+    }
+
+    /** Holds [look]'s engine thread in a task until the returned latch opens. */
+    private fun holdEngine(look: WalLook): CountDownLatch {
+        val held = CountDownLatch(1)
+        val open = CountDownLatch(1)
+        look.engine!!.postAlways {
+            held.countDown()
+            open.await(10, TimeUnit.SECONDS)
+        }
+        assertTrue(held.await(5, TimeUnit.SECONDS))
+        return open
+    }
+
+    @Test(timeout = 20_000)
+    fun `a save already due when the skin is let go without one lands nowhere, so its settings can be forgotten`() {
+        val look = look()
+        look.fit(phone)
+        await("the first frame arrives") { look.layout != null }
+        onEngine(look) { it!!.selectGammaSet("Two") }
+        // the task after it, so the save it scheduled is in the queue
+        onEngine(look) { }
+        val open = holdEngine(look)
+        // past the time the save waited for: it is due, behind the task holding the engine thread
+        ShadowLooper.idleMainLooper(WalLook.SAVE_DELAY_MS * 2, TimeUnit.MILLISECONDS)
+        val thread = engineThread(look)!!
+
+        look.release(save = false)
+        WalSettings(app).forget(look.id)
+        open.countDown()
+
+        thread.join(5_000)
+        assertFalse(thread.isAlive)
+        assertFalse(prefs.contains(look.id))
+    }
+
+    @Test(timeout = 20_000)
+    fun `a save asked for just before the skin is let go without one lands nowhere`() {
+        val look = look()
+        look.fit(phone)
+        await("the first frame arrives") { look.layout != null }
+        onEngine(look) { it!!.selectGammaSet("Two") }
+        val open = holdEngine(look)
+        // as a player surface saves when it goes, or a source's skin parks the look
+        look.park()
+        val thread = engineThread(look)!!
+
+        look.release(save = false)
+        WalSettings(app).forget(look.id)
+        open.countDown()
+
+        thread.join(5_000)
+        assertFalse(thread.isAlive)
+        assertFalse(prefs.contains(look.id))
+    }
+
+    @Test(timeout = 20_000)
+    fun `a menu the skin opens while an import starts it is answered at once, and later ones wait for the player`() {
+        val menu = SkinMenu(listOf(SkinMenu.Command(1, "Item", checked = false, disabled = false)))
+        val asLoaded = CompletableFuture<Int?>()
+        lateinit var look: WalLook
+        // the runtime reads the player's status as it loads: the skin opens its menu then
+        val opensMenu =
+            object : Player by FakePlayer() {
+                override val status: Player.Status
+                    get() {
+                        if (!asLoaded.isDone) asLoaded.complete(look.host!!.chooseFromMenu(menu))
+                        return Player.Status.STOPPED
+                    }
+            }
+        look = look(player = opensMenu)
+
+        assertEquals("Test", look.startAndAwait())
+        assertEquals("answered with nothing picked", 0, asLoaded.get(1, TimeUnit.SECONDS))
+
+        val later = CompletableFuture<Int?>()
+        look.engine!!.postAlways { later.complete(look.host!!.chooseFromMenu(menu)) }
+        await("the menu waits for the player") { look.menu === menu }
+        assertFalse(later.isDone)
+        look.answerMenu(menu, 1)
+        assertEquals(1, later.get(5, TimeUnit.SECONDS))
+    }
+
+    @Test(timeout = 20_000)
+    fun `a theme change is saved once, after the changes rest`() {
+        val writes = AtomicInteger()
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> writes.incrementAndGet() }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        val look = look()
+        look.fit(phone)
+        await("the first frame arrives") { look.layout != null }
+
+        onEngine(look) { it!!.selectGammaSet("Two") }
+        onEngine(look) { it!!.selectGammaSet("One") }
+        onEngine(look) { it!!.selectGammaSet("Two") }
+        repeat(20) { shadowOf(Looper.getMainLooper()).idle() }
+        assertEquals("nothing is saved while changes come", 0, writes.get())
+
+        ShadowLooper.idleMainLooper(WalLook.SAVE_DELAY_MS + 100, TimeUnit.MILLISECONDS)
+        await("the theme is saved") { writes.get() > 0 }
+        repeat(20) {
+            shadowOf(Looper.getMainLooper()).idle()
+            Thread.sleep(10)
+        }
+        assertEquals("saved once", 1, writes.get())
+        assertTrue(prefs.getString(look.id, null)!!.contains("\"theme\":\"Two\""))
+        prefs.unregisterOnSharedPreferenceChangeListener(listener)
+    }
+
+    @Test(timeout = 20_000)
+    fun `the theme put back as the skin loads is no change to save`() {
+        val first = look()
+        first.fit(phone)
+        await("the first frame arrives") { first.layout != null }
+        onEngine(first) { it!!.selectGammaSet("Two") }
+        first.release(save = true)
+        await("the theme is kept") { prefs.getString(first.id, null)?.contains("Two") == true }
+        val writes = AtomicInteger()
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> writes.incrementAndGet() }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+
+        val again =
+            WalLook(first.id, wal(), "Test", emptyMap(), app.cacheDir, WalSettings(app), FakePlayer())
+                .also { looks += it }
+        again.fit(phone)
+        await("the skin is on again") { again.layout != null }
+        ShadowLooper.idleMainLooper(WalLook.SAVE_DELAY_MS * 2, TimeUnit.MILLISECONDS)
+        repeat(20) {
+            shadowOf(Looper.getMainLooper()).idle()
+            Thread.sleep(10)
+        }
+
+        assertEquals("Two", onEngine(again) { it!!.currentGammaSet })
+        assertEquals(0, writes.get())
+        prefs.unregisterOnSharedPreferenceChangeListener(listener)
+    }
+
+    @Test(timeout = 20_000)
+    fun `a host action with no sink is dropped, and with one it arrives on main`() {
+        val look = look()
+        look.fit(phone)
+        await("the first frame arrives") { look.layout != null }
+        val heard = ArrayList<String>()
+        val sink =
+            object : WalSink {
+                override fun hostAction(
+                    action: String,
+                    param: String?,
+                ) {
+                    heard += "$action on ${if (Looper.myLooper() == Looper.getMainLooper()) "main" else "another thread"}"
+                }
+
+                override fun openFile(andPlay: Boolean) = Unit
+            }
+
+        look.pointerDown(110, 20)
+        look.pointerUp(110, 20)
+        onEngine(look) { }
+        repeat(5) { shadowOf(Looper.getMainLooper()).idle() }
+        look.sink = sink
+        assertTrue("dropped with no sink", heard.isEmpty())
+
+        look.pointerDown(110, 20)
+        look.pointerUp(110, 20)
+        onEngine(look) { }
+        await("the action arrives") { heard.isNotEmpty() }
+        assertEquals(listOf("MINIMIZE on main"), heard)
+    }
+
+    @Test(timeout = 20_000)
+    fun `fifty quick moves cost the main thread one post or a few`() {
+        val look = look()
+        look.fit(phone)
+        await("the first frame arrives") { look.layout != null }
+        repeat(5) { shadowOf(Looper.getMainLooper()).idle() }
+        val before = posts.get()
+
+        look.pointerDown(15, 15)
+        repeat(50) { look.pointerMove(15 + it, 15) }
+        onEngine(look) { }
+
+        val made = posts.get() - before
+        assertTrue("$made main posts", made in 1..3)
+    }
+
+    @Test(timeout = 20_000)
+    fun `seqs increase across downs and double taps, also before the skin starts`() {
+        val look = look()
+        val early = look.pointerDown(1, 1)
+        look.fit(phone)
+        await("the first frame arrives") { look.layout != null }
+
+        val seqs = listOf(early, look.doubleTap(1, 1), look.pointerDown(1, 1), look.doubleTap(1, 1))
+
+        assertEquals(seqs.sorted().distinct(), seqs)
+    }
+
+    @Test(timeout = 20_000)
+    fun `a look a player surface holds keeps its drawing caches, an idle one lets them go`() {
+        val look = look()
+        look.fit(phone)
+        await("the first frame arrives") { look.layout != null }
+
+        assertTrue(look.turn.tryLock())
+        look.trimDrawing()
+        assertEquals("the surface holding its turn keeps them", 0, look.trims)
+        look.turn.unlock()
+        look.trimDrawing()
+        assertEquals(1, look.trims)
+    }
+
+    @Test(timeout = 20_000)
+    fun `a released look starts nothing on a later fit`() {
+        val look = look()
+        look.release(save = true)
+
+        look.fit(phone)
+
+        assertTrue(look.released)
+        assertNull(look.engine)
+        assertNull(engineThread(look))
+    }
+
+    private companion object {
+        val runs = AtomicInteger()
+    }
+}
