@@ -59,6 +59,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import org.robolectric.shadows.ShadowLog
 
 /**
  * A modern skin's layer on a player surface, against a skin with no engine behind it.
@@ -512,6 +513,40 @@ class WalLayerTest {
         assertEquals(listOf(WalFit(600, 1599, 1f, false), WalFit(900, 1599, 1f, false)), surface.fits)
         // and from x = 150 in a box 900 wide
         assertEquals(IntRect(50, 0, 250, 67), state.windowRects[WindowStore.MAIN])
+    }
+
+    @Test
+    fun `a debug build logs each place the stack is drawn at, once`() {
+        ShadowLog.clear()
+        var width by mutableStateOf(600)
+        val parts = partsFor(surface, state)
+        compose.mainClock.autoAdvance = false
+        compose.setContent {
+            CompositionLocalProvider(LocalLifecycleOwner provides owner) {
+                Box(Modifier.size(width.dp, 1600.dp)) {
+                    WalLayer(parts, state, SCALE, Modifier.fillMaxSize()) {}
+                }
+            }
+        }
+        frames()
+        width = 900
+        frames()
+        frames()
+
+        assertEquals(
+            listOf(
+                "placed at 2.000x in 600x1599 upright: stack 600x200 at 0,0",
+                "placed at 2.000x in 900x1599 upright: stack 600x200 at 150,0",
+            ),
+            ShadowLog.getLogsForTag(WalEngine.TIMING_TAG).map { it.msg },
+        )
+        assertEquals(
+            "placed at 2.500x in 2000x900 sideways: stack 100x50 at 10,20",
+            placedLine(
+                WalPlacement(IntRect(10, 20, 110, 70), IntRect(3, 6, 37, 24), 2.5f, SCALE),
+                WalFit(2000, 900, 2.625f, true),
+            ),
+        )
     }
 
     @Test

@@ -65,12 +65,13 @@ internal data class WalPlacement(
             scale: Int,
         ): IntRect = IntRect(0, screen.safeTop * scale, widthPx, screen.safeBottom * scale)
 
-        /** [box] as the engine is told it. */
+        /** [box] as the engine is told it; [compact] for the floating player (see [WalFit.compact]). */
         fun fit(
             box: IntRect,
             density: Float,
             sideways: Boolean,
-        ): WalFit = WalFit(box.width, box.height, density, sideways)
+            compact: Boolean = false,
+        ): WalFit = WalFit(box.width, box.height, density, sideways, compact)
 
         /** Where [layout], worked out for [box], puts the stack on a surface of [scale] pixels per virtual pixel. */
         fun of(
@@ -95,6 +96,21 @@ internal data class WalPlacement(
                     -Math.floorDiv(-stack.bottom, scale),
                 )
             return WalPlacement(stack, window, layout.scale, scale)
+        }
+
+        /**
+         * How tall the classic stack holds the main window while a modern skin is worn: down to the
+         * bottom of the skin's [stack] (`windowRects[MAIN]`, virtual px), so the plug-in window docks
+         * under the skin, but no lower than leaves [visH] above [screen]'s safe bottom for it. Null
+         * while the stack has no rect.
+         */
+        fun dockedMainH(
+            stack: IntRect?,
+            screen: WindowScreen,
+            visH: Int,
+        ): Int? {
+            stack ?: return null
+            return (minOf(stack.bottom, screen.safeBottom - visH) - screen.safeTop).coerceAtLeast(0)
         }
     }
 }
