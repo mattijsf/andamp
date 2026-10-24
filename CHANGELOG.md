@@ -4,6 +4,19 @@ What changed for somebody who uses Andamp, newest first. It is written from the 
 messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `docs:` and
 `chore:` commits do not appear here.
 
+## [0.17.0](https://github.com/mattijsf/andamp/compare/v0.16.0...v0.17.0) (2026-10-24)
+
+
+### New
+
+* open Winamp skins from a file manager or a download ([#115](https://github.com/mattijsf/andamp/issues/115)) ([18f5bb9](https://github.com/mattijsf/andamp/commit/18f5bb953e54cfe5e41811d0772bb647a74a2c60))
+
+
+### Fixed
+
+* pick a skin for the home screen widget in Preferences ([#113](https://github.com/mattijsf/andamp/issues/113)) ([3dfe252](https://github.com/mattijsf/andamp/commit/3dfe252a582ce493d3fdbb1d53000c69e82e3747))
+* picking a Winamp modern skin now says why it can't be added ([#96](https://github.com/mattijsf/andamp/issues/96)) ([ae71efa](https://github.com/mattijsf/andamp/commit/ae71efaa110723a464602c05d74eb4b693360a0d))
+
 ## [0.16.0](https://github.com/mattijsf/andamp/compare/v0.15.0...v0.16.0) (2026-10-21)
 
 
