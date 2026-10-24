@@ -434,6 +434,60 @@ class WalEngineTest {
     }
 
     @Test(timeout = 20_000)
+    fun `a compact fit keeps every window at its natural height, and a full one stretches the last again`() {
+        engine.fit(phone.copy(compact = true))
+        awaitThat("a frame for the compact box") {
+            engine.frame
+                ?.layout
+                ?.fit
+                ?.compact == true
+        }
+        assertFalse(onEngine { it.stretchLast })
+
+        engine.fit(phone)
+        awaitThat("a frame for the full box") { engine.frame?.layout?.fit == phone }
+        assertTrue(onEngine { it.stretchLast })
+    }
+
+    @Test(timeout = 20_000)
+    fun `a window that resizes both ways fills the box, and in a compact box keeps its smallest height`() {
+        val run =
+            Run(
+                "resizes",
+                skin(
+                    *skinXml(
+                        """<container id="main" name="t" default_visible="1">""" +
+                            """<layout id="normal" w="400" h="300" minimum_w="200" minimum_h="100">""" +
+                            """<layer id="grip" x="380" y="280" w="20" h="20" resize="bottomright"/>""" +
+                            """</layout></container>""",
+                    ),
+                ),
+            )
+        run.start()
+        assertNull(run.failure())
+        val scale = WalScale.of(IntSize(1080, 2000), 200, 100)
+
+        run.engine.fit(phone)
+        awaitThat("a frame for the full box") {
+            run.engine.frame
+                ?.layout
+                ?.fit == phone
+        }
+        val full = run.engine.frame!!.layout!!
+        assertEquals((1080 / scale).toInt() to (2000 / scale).toInt(), full.stackW to full.stackH)
+
+        run.engine.fit(phone.copy(compact = true))
+        awaitThat("a frame for the compact box") {
+            run.engine.frame
+                ?.layout
+                ?.fit
+                ?.compact == true
+        }
+        val compact = run.engine.frame!!.layout!!
+        assertEquals("as wide, no taller than its minimum", full.stackW to 100, compact.stackW to compact.stackH)
+    }
+
+    @Test(timeout = 20_000)
     fun `a fit equal to the last one does nothing`() {
         engine.fit(phone)
         awaitThat("a frame with a layout") { engine.frame?.layout != null }

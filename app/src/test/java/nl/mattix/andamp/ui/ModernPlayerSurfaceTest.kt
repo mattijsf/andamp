@@ -151,7 +151,10 @@ class ModernPlayerSurfaceTest {
             compose.mainClock.advanceTimeByFrame()
         }
 
-    private fun show(wal: WalSurface? = surface) {
+    private fun show(
+        wal: WalSurface? = surface,
+        compact: Boolean = false,
+    ) {
         compose.mainClock.autoAdvance = false
         compose.setContent {
             Box(Modifier.fillMaxSize().testTag(SCREEN)) {
@@ -167,6 +170,7 @@ class ModernPlayerSurfaceTest {
                     onMinimize = {},
                     onOverlaySettings = {},
                     wal = wal,
+                    compact = compact,
                 )
             }
         }
@@ -350,6 +354,20 @@ class ModernPlayerSurfaceTest {
             "the plug-in's entries stay",
             visualization.items.filterIsInstance<AmpMenuItem.Action>().all { it.enabled },
         )
+    }
+
+    @Test
+    fun `the floating player fits the skin compact`() {
+        show(compact = true)
+
+        assertTrue(surface.fits.isNotEmpty() && surface.fits.all { it.compact })
+    }
+
+    @Test
+    fun `the app's screen fits the skin to the band`() {
+        show()
+
+        assertTrue(surface.fits.isNotEmpty() && surface.fits.none { it.compact })
     }
 
     @Test
