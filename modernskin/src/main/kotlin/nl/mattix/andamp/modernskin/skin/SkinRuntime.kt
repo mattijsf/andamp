@@ -271,6 +271,39 @@ class SkinRuntime(
         return (p ushr 24) != 0
     }
 
+    /** Per bitmap part, its last column with a pixel that shows, or -1 when none does; see [opaqueRight]. */
+    private val opaqueColumns = HashMap<String, Int>()
+
+    /**
+     * Where [image] drawn into [dst] stops showing on the right: the right edge of its last column
+     * with a pixel that is not fully transparent, in layout pixels, or [dst]'s left edge when none
+     * shows. A picture whose pixels cannot be read counts as showing to [dst]'s right edge, as
+     * unknown pixels count as opaque in [opaqueAt]. The column is looked up once per bitmap part.
+     */
+    fun opaqueRight(
+        image: BitmapDef,
+        dst: Rect,
+    ): Int {
+        if (dst.width <= 0) return dst.left
+        val full = host.imageSize(image.file) ?: return dst.right
+        val sw = image.w ?: (full.first - image.x)
+        val sh = image.h ?: (full.second - image.y)
+        // only the part the sheet holds is drawn
+        val cw = minOf(sw, full.first - image.x)
+        val ch = minOf(sh, full.second - image.y)
+        val noSource = cw <= 0 || ch <= 0
+        if (image.x < 0 || image.y < 0 || noSource) return dst.left
+        val column =
+            opaqueColumns.getOrPut("${image.file.lowercase()}|${image.x}|${image.y}|$sw|$sh") {
+                if (cw.toLong() * ch > MAX_OPAQUE_SCAN) return@getOrPut sw - 1
+                val px = host.pixels(image.file, image.x, image.y, cw, ch) ?: return@getOrPut sw - 1
+                (cw - 1 downTo 0).firstOrNull { c -> (0 until ch).any { r -> (px[r * cw + c] ushr 24) != 0 } } ?: -1
+            }
+        if (column < 0) return dst.left
+        // stretched to dst, source column c covers dst pixels up to (c + 1) * dst / source, rounded up
+        return minOf(dst.right, dst.left + ((column + 1) * dst.width + sw - 1) / sw)
+    }
+
     /** A bitmap font; its `file` may name a bitmap element, which then gives the file and the offset. */
     fun bitmapFont(id: String): BitmapFontDef? =
         resolvedFonts.getOrPut(id.lowercase()) {
@@ -2463,6 +2496,10 @@ class SkinRuntime(
 
         /** Menus a script may pop in reply to one touch; more answer 0 without showing. */
         const val MAX_MENUS_PER_GESTURE = 3
+
+        /** The most pixels [opaqueRight] reads of one picture; a larger one counts as showing to its right edge. */
+        const val MAX_OPAQUE_SCAN = 512 * 512
+
         const val MAX_SETTING_LENGTH = 65_536
         const val MAX_OBJECTS = 100_000
         const val MAX_CREATED = 20_000
