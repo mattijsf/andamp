@@ -79,6 +79,9 @@ open class GuiObject(
     var tooltip: String? = null
     var dblClickAction: String? = null
 
+    /** `move`: whether a drag that starts on it moves the window; null when not written (see [SkinRuntime.movesWindow]). */
+    var move: Boolean? = null
+
     /** A title bar's insets from the frame's `padtitleleft`/`padtitleright`. */
     var padLeft = 0
     var padRight = 0
@@ -243,7 +246,11 @@ open class GuiObject(
                 padRight = value.toIntLenient() ?: 0
             }
 
-            "name", "move", "renderbasetexture", "cursor", "dropdownlist", "droptarget", "notify", "focusonclick" -> {
+            "move" -> {
+                move = value.toBool()
+            }
+
+            "name", "renderbasetexture", "cursor", "dropdownlist", "droptarget", "notify", "focusonclick" -> {
                 Unit
             }
 

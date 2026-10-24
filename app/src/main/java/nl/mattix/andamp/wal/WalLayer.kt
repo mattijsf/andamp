@@ -51,6 +51,7 @@ import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.ui.window.PlaylistMenuActions
+import nl.mattix.andamp.ui.window.WindowSnap
 import nl.mattix.andamp.ui.window.windowScreen
 import nl.mattix.andamp.widget.WidgetSignals
 import java.util.Locale
@@ -131,8 +132,13 @@ internal fun rememberWalLayerParts(
  * layout worked out for another box (the phone was turned) leaves the stack where it was last
  * placed, or the companion when it never was.
  *
+ * A drag from one of the skin's move areas moves the stack inside the box ([WalDrag]); the skin
+ * keeps where it was moved to, upright and sideways apart ([WalSurface.places]). A stack that has
+ * grown past the box's edge from there is held inside it ([WalPlacement.held]).
+ *
  * The layer fills the surface, but only the stack takes touches: a touch beside it reaches what is
- * under it, which over the floating player is the app behind.
+ * under it, which over the floating player is the app behind. There the touch window follows the
+ * stack once the finger lifts, as it follows a classic window.
  */
 @Composable
 internal fun WalLayer(
@@ -147,15 +153,25 @@ internal fun WalLayer(
     BoxWithConstraints(modifier) {
         val box = WalPlacement.box(constraints.maxWidth, windowScreen(scale, state), scale)
         val fit = WalPlacement.fit(box, LocalDensity.current.density, state.sideways, parts.compact)
+        val drag = remember(surface) { WalDrag { sideways, move -> surface.places[sideways] = move } }
         val layout = surface.layout
-        val ready = layout?.takeIf { it.fit == fit }?.let { WalPlacement.of(box, it, scale) }
+        val fitted = layout?.takeIf { it.fit == fit }
+        // where the engine puts the stack, and where the listener moved it from there
+        val home = fitted?.let { WalPlacement.of(box, it, scale) }
+        val move = drag.shift ?: surface.places[fit.sideways]
+        val shift = if (home == null || move == null) null else WalPlacement.held(move, home.stack, box)
+        val ready = if (fitted == null || shift == null) home else WalPlacement.of(box, fitted, scale, shift)
         val last = remember(surface) { mutableStateOf<WalPlacement?>(null) }
         SideEffect { if (ready != null) last.value = ready }
         val fitNow by rememberUpdatedState(fit)
         val readyNow by rememberUpdatedState(ready)
-        WalTurn(parts, state, fit = { fitNow }, ready = { readyNow })
+        // as composed, with the placement it goes with
+        val draggingNow by rememberUpdatedState(drag.shift != null)
+        WalTurn(parts, state, fit = { fitNow }, ready = { readyNow }, dragging = { draggingNow })
         val placed = if (layout == null) null else ready ?: last.value
-        if (placed == null) companion() else WalCanvas(parts, state, placed)
+        // the stack snaps as near as a classic window does
+        SideEffect { drag.placedAt(fit, box, home?.stack, placed?.stack?.topLeft, WindowSnap.SNAP_DISTANCE * scale) }
+        if (placed == null) companion() else WalCanvas(parts, state, placed, drag)
     }
 }
 
@@ -171,6 +187,7 @@ private fun WalTurn(
     state: WinampState,
     fit: () -> WalFit,
     ready: () -> WalPlacement?,
+    dragging: () -> Boolean,
 ) {
     val surface = parts.surface
     val owner = LocalLifecycleOwner.current
@@ -183,7 +200,7 @@ private fun WalTurn(
                 surface.sink = parts.actions
                 try {
                     coroutineScope {
-                        holdTurn(parts, state, context, fit, ready) { rect ->
+                        holdTurn(parts, state, context, fit, ready, dragging) { rect ->
                             state.windowRects[WindowStore.MAIN] = rect
                             published.rect = rect
                             mainRectOwners[state] = published
@@ -225,6 +242,7 @@ private fun CoroutineScope.holdTurn(
     context: Context,
     fit: () -> WalFit,
     ready: () -> WalPlacement?,
+    dragging: () -> Boolean,
     publish: (IntRect) -> Unit,
 ) {
     val surface = parts.surface
@@ -253,10 +271,13 @@ private fun CoroutineScope.holdTurn(
     // a change the skin shows, such as the volume or the track, earns it a tick
     launch { snapshotFlow { if (awake()) surface.wakeKey() else null }.filterNotNull().collect { surface.requestTick() } }
     launch { showSkinMenus(surface, state, parts.menuTitle) { parts.actions.pressAt?.invoke() } }
-    // a debug build logs each place the stack is drawn at, so a skin's scale reads off a device
+    // a debug build logs each place the stack is drawn at, so a skin's scale reads off a device;
+    // a stack the finger drags is logged where it lands
     if (BuildConfig.DEBUG) {
         launch {
-            snapshotFlow(ready).filterNotNull().collect { Log.d(WalEngine.TIMING_TAG, placedLine(it, fit())) }
+            snapshotFlow { ready()?.takeUnless { dragging() } }.filterNotNull().collect {
+                Log.d(WalEngine.TIMING_TAG, placedLine(it, fit()))
+            }
         }
     }
 }
@@ -303,13 +324,15 @@ private class FailedFrame {
 /**
  * The stack where [placed] puts it: the skin's latest frame, and the touches on it. A long press
  * opens the main menu at the press, led by "Skin menu" when the engine found a skin menu under the
- * finger. A draw that throws draws nothing more of that frame and is reported once.
+ * finger; a drag from one of the skin's move areas moves the stack with [drag]. A draw that throws
+ * draws nothing more of that frame and is reported once.
  */
 @Composable
 private fun WalCanvas(
     parts: WalLayerParts,
     state: WinampState,
     placed: WalPlacement,
+    drag: WalDrag,
 ) {
     val surface = parts.surface
     val density = LocalDensity.current
@@ -326,7 +349,7 @@ private fun WalCanvas(
             .offset { IntOffset(stack.left, stack.top) }
             .size(with(density) { stack.width.toDp() }, with(density) { stack.height.toDp() })
             .clipToBounds()
-            .pointerInput(surface, parts) {
+            .pointerInput(surface, parts, drag) {
                 val touch =
                     WalTouch(
                         surface,
@@ -348,6 +371,7 @@ private fun WalCanvas(
                             val skinMenu = if (surface.layout?.menuTarget == seq) ({ surface.rightClick(seq) }) else null
                             parts.openMenu(skinMenu, parts.actions.pressAt?.invoke())
                         },
+                        drag = drag,
                     )
                 awaitEachGesture { walGesture(touch) { surface.menu != null } }
             }.drawBehind {

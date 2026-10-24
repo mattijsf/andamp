@@ -53,6 +53,8 @@ internal data class WalLayout(
     val animating: Boolean,
     /** The seq of the down whose object has a skin menu, or null; see [WalSurface.pointerDown]. */
     val menuTarget: Int?,
+    /** The seq of the down that landed on one of the skin's move areas, or null; a drag from it moves the stack. */
+    val moveTarget: Int? = null,
 )
 
 /**
@@ -77,6 +79,9 @@ internal interface WalSurface {
 
     /** Held by the one player surface that owns [sink], [fit], ticks, menus and the window rect. */
     val turn: Mutex
+
+    /** Where the listener moved the stack, upright and sideways, kept between runs. */
+    val places: WalPlaces
 
     /** Where host actions and file requests go, or null to drop them; read and written on main only. */
     var sink: WalSink?

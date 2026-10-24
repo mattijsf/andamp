@@ -8,6 +8,7 @@ import androidx.compose.ui.unit.IntRect
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.ui.menu.menuAnchorBounds
 import nl.mattix.andamp.ui.window.WindowScreen
+import nl.mattix.andamp.ui.window.WindowSnap
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -134,6 +135,111 @@ class WalPlacementTest {
         )
     }
 
+    @Test
+    fun `a stack moved too low for the plug-in window under it has it docked over it`() {
+        assertEquals(
+            "moved down, still room under it",
+            410 - 8,
+            WalPlacement.dockedMainH(IntRect(0, 300, 360, 410), screen, visH = 120),
+        )
+        assertEquals(
+            "against the bottom edge: over it",
+            648 - 120 - 8,
+            WalPlacement.dockedMainH(IntRect(0, 648, 360, 758), screen, visH = 120),
+        )
+        assertEquals(
+            "no room over it either: as low as leaves the plug-in window its height",
+            758 - 120 - 8,
+            WalPlacement.dockedMainH(IntRect(0, 100, 360, 700), screen, visH = 120),
+        )
+    }
+
+    @Test
+    fun `a moved stack is drawn that far from where the engine put it, and its rect goes with it`() {
+        val layout = layout(2f, left = 186f, top = 0f, stackW = 354, stackH = 164)
+
+        val placed = WalPlacement.of(box, layout, SCALE, shift = IntOffset(-186, 900))
+
+        assertEquals(IntRect(0, 924, 708, 1252), placed.stack)
+        assertEquals(IntRect(0, 308, 236, 418), placed.window)
+        assertEquals("touches count from the moved stack", IntOffset(100, 50), placed.toSkin(Offset(200f, 100f)))
+    }
+
+    @Test
+    fun `a moved stack stays wholly in the box, and keeps the engine's place on an axis it fills`() {
+        val home = IntRect(186, 24, 894, 352)
+
+        assertEquals(IntOffset(0, 24), WalPlacement.clamp(IntOffset(-50, -10), home, box))
+        assertEquals(IntOffset(372, 2274 - 328), WalPlacement.clamp(IntOffset(500, 3000), home, box))
+        assertEquals(IntOffset(100, 500), WalPlacement.clamp(IntOffset(100, 500), home, box))
+
+        // wider than the box: it stays where the engine put it across, and moves up and down
+        val wide = IntRect(-43, 24, 1123, 456)
+        assertEquals(IntOffset(-43, 800), WalPlacement.clamp(IntOffset(0, 800), wide, box))
+    }
+
+    @Test
+    fun `a stack snaps to the box's edges and back to its place when less than the distance away, as a classic window snaps`() {
+        val home = IntRect(186, 24, 894, 352)
+
+        assertEquals("to the left and bottom edges", IntOffset(0, 1946), WalPlacement.snap(IntOffset(17, 1930), home, box, SNAP))
+        assertEquals("to the right edge", IntOffset(372, 600), WalPlacement.snap(IntOffset(360, 600), home, box, SNAP))
+        assertEquals(
+            "back to its place across, wherever it is up and down",
+            IntOffset(186, 600),
+            WalPlacement.snap(IntOffset(195, 600), home, box, SNAP),
+        )
+        assertEquals("and to its place at the top", IntOffset(186, 24), WalPlacement.snap(IntOffset(170, 40), home, box, SNAP))
+        assertEquals(
+            "exactly the distance away does not snap",
+            IntOffset(30, 54),
+            WalPlacement.snap(IntOffset(30, 54), home, box, SNAP),
+        )
+    }
+
+    @Test
+    fun `the nearest snap wins, and the stack's place wins a tie with an edge`() {
+        // a stack whose place is 20 px from the left edge
+        val home = IntRect(20, 24, 1060, 352)
+
+        assertEquals("nearer to the edge", IntOffset(0, 300), WalPlacement.snap(IntOffset(8, 300), home, box, SNAP))
+        assertEquals("nearer to its place", IntOffset(20, 300), WalPlacement.snap(IntOffset(12, 300), home, box, SNAP))
+        assertEquals("as near to both", IntOffset(20, 300), WalPlacement.snap(IntOffset(10, 300), home, box, SNAP))
+    }
+
+    @Test
+    fun `a kept move comes back as it was, held in a box drawn a little smaller`() {
+        val home = IntRect(186, 24, 894, 352)
+        val atBottom = IntOffset(-186, 1946 - 24)
+
+        assertEquals(IntOffset(-186, 1922), WalPlacement.held(atBottom, home, box))
+        // the same stack where another surface's box ends 9 px higher
+        val smaller = IntRect(0, 24, 1080, 2265)
+        assertEquals(IntOffset(-186, 1913), WalPlacement.held(atBottom, home, smaller))
+    }
+
+    @Test
+    fun `a stack that grew past the box's edge is held inside it, and goes back where it was moved once it shrinks`() {
+        val home = IntRect(186, 24, 894, 352)
+        val atMiddle = IntOffset(-186, 600)
+        val atBottom = IntOffset(-186, 1922)
+        // a drawer slid out under the main window
+        val grown = IntRect(186, 24, 894, 680)
+
+        assertEquals("it still fits where it was moved", atMiddle, WalPlacement.held(atMiddle, grown, box))
+        assertEquals("its bottom held at the box's", IntOffset(-186, 2274 - 656 - 24), WalPlacement.held(atBottom, grown, box))
+        assertEquals("the drawer closed", atBottom, WalPlacement.held(atBottom, home, box))
+    }
+
+    @Test
+    fun `on an axis the stack fills, a kept move gives way to where the engine puts it`() {
+        // moved down on the floating player, where the stack is compact; the activity fills the box with it
+        val compactMove = IntOffset(0, 900)
+        val filling = IntRect(0, 24, 1081, 2274)
+
+        assertEquals(IntOffset(0, 0), WalPlacement.held(compactMove, filling, box))
+    }
+
     /** Presses across [placed]'s stack each pop a menu at the press, with [published] in `windowRects[MAIN]`. */
     private fun assertPopsAtPress(
         placed: WalPlacement,
@@ -156,5 +262,8 @@ class WalPlacementTest {
     private companion object {
         const val SCALE = 3
         const val DENSITY = 2.625f
+
+        /** The classic windows' snap distance at [SCALE]. */
+        const val SNAP = WindowSnap.SNAP_DISTANCE * SCALE
     }
 }

@@ -3,6 +3,7 @@
 package nl.mattix.andamp.wal
 
 import android.app.Application
+import androidx.compose.ui.unit.IntOffset
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.FontDef
@@ -10,6 +11,7 @@ import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinHost
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -95,5 +97,33 @@ class WalSettingsTest {
         val forgotten = runtime()
         settings.restoreBeforeLoad("one", forgotten)
         assertTrue(forgotten.privateStrings.isEmpty())
+    }
+
+    @Test
+    fun `where a skin was moved comes back after a restart, upright and sideways apart, until it is forgotten`() {
+        WalSettings(app).keepPlace("bento", sideways = false, move = IntOffset(-150, 300))
+        WalSettings(app).keepPlace("bento", sideways = true, move = IntOffset(40, -12))
+
+        val again = WalSettings(app)
+        assertEquals(IntOffset(-150, 300), again.place("bento", sideways = false))
+        assertEquals(IntOffset(40, -12), again.place("bento", sideways = true))
+        assertNull("another skin sits where the engine puts it", again.place("mmd3", sideways = false))
+
+        again.keepPlace("bento", sideways = true, move = null)
+        assertNull(again.place("bento", sideways = true))
+        assertEquals(IntOffset(-150, 300), again.place("bento", sideways = false))
+
+        again.forget("bento")
+        assertNull(WalSettings(app).place("bento", sideways = false))
+    }
+
+    @Test
+    fun `a skin's settings saved after it was moved leave the place as it was`() {
+        val settings = WalSettings(app)
+        settings.keepPlace("bento", sideways = false, move = IntOffset(0, 500))
+
+        settings.save("bento", runtime().apply { load() })
+
+        assertEquals(IntOffset(0, 500), settings.place("bento", sideways = false))
     }
 }

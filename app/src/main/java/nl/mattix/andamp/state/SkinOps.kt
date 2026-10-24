@@ -534,11 +534,15 @@ class SkinOps internal constructor(
      *
      * The skin already on screen is not loaded again, but it is still chosen: if it was
      * on only as a music source's skin, it becomes the listener's own.
+     *
+     * Picking the modern skin on screen again puts it back where the engine places it, if the
+     * listener moved it; picked from another skin, it comes back where it was moved to.
      */
     fun apply(id: String) {
         // a modern skin whose engine failed is tried again when the listener picks it again
         failed.remove(id)
         if (id == currentId) {
+            wal?.takeIf { it.id == id }?.places?.clear()
             adopt(id)
             return
         }

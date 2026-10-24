@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -51,6 +52,14 @@ internal class FakeWalSurface : WalSurface {
 
     /** Names each press as one whose object has a skin menu, as the engine's lookup does. */
     var menuUnderEveryPress = false
+
+    /** Names each press, though no double tap, as one on a move area, as the engine's lookup does. */
+    var moveAreaUnderEveryPress = false
+
+    /** Each place kept, with whether it was sideways, in order. */
+    val kept = mutableListOf<Pair<Boolean, IntOffset?>>()
+
+    override val places = WalPlaces { sideways, move -> kept += sideways to move }
 
     /** What the skin does once a menu is answered, such as pop another in the same touch. */
     var afterAnswer: ((SkinMenu, Int) -> Unit)? = null
@@ -123,6 +132,8 @@ internal class FakeWalSurface : WalSurface {
         calls += call
         seq++
         if (menuUnderEveryPress) layout = layout?.copy(menuTarget = seq)
+        // the engine names no double tap as a move
+        if (moveAreaUnderEveryPress) layout = layout?.copy(moveTarget = seq.takeIf { call.startsWith("down") })
         return seq
     }
 

@@ -1782,7 +1782,7 @@ class SkinRuntime(
 
     /**
      * Pointer events take points of the stack (see [windowRect]); objects hear points of their
-     * window. [seq] names this touch for [menuTarget] and [rightClick].
+     * window. [seq] names this touch for [menuTarget], [moveTarget] and [rightClick].
      */
     fun pointerDown(
         sx: Int,
@@ -1790,7 +1790,11 @@ class SkinRuntime(
         seq: Int = 0,
     ) = gesture(fresh = true) {
         aimMenu(sx, sy, seq)
+        moveSeq = null
         pointerDownAt(sx, sy)
+        // a press that opened a menu has been let go of, and moves nothing; a press held back from
+        // an object with a skin menu still moves the window when that object is a move area
+        if ((captured ?: deferred?.target)?.let(::movesWindow) == true) moveSeq = seq
     }
 
     private fun pointerDownAt(
@@ -1932,6 +1936,7 @@ class SkinRuntime(
         seq: Int = 0,
     ) = gesture(fresh = true) {
         aimMenu(sx, sy, seq)
+        moveSeq = null
         doubleTapAt(sx, sy)
     }
 
@@ -1961,6 +1966,27 @@ class SkinRuntime(
      * (see [hasSkinMenu]), else null: [rightClick] with that seq opens the menu.
      */
     val menuTarget: Int? get() = menuAim?.seq
+
+    private var moveSeq: Int? = null
+
+    /**
+     * The seq of the last [pointerDown] when the object it pressed moves the window (see
+     * [movesWindow]), else null; a [doubleTap] clears it. The host moves the skin when such a press
+     * turns into a drag.
+     */
+    val moveTarget: Int? get() = moveSeq
+
+    /**
+     * Whether a drag that starts on [o] moves the window, as Winamp moves one by its move areas:
+     * what [o] writes in `move`, else what the nearest group around it writes. A wasabi title bar's
+     * mousetrap moves it unless it says otherwise; a control never does, as a drag works the control.
+     */
+    internal fun movesWindow(o: GuiObject): Boolean {
+        if (isControl(o)) return false
+        o.move?.let { return it }
+        if (o.id == TITLE_BAR_TRAP && o.parent?.id == TITLE_BAR) return true
+        return generateSequence(o.parent) { it.parent }.firstNotNullOfOrNull { it.move } ?: false
+    }
 
     /** Remembers the object with a skin menu under a touch at a point of the stack, or none. */
     private fun aimMenu(
@@ -2578,6 +2604,11 @@ class SkinRuntime(
         const val MAX_OBJECTS = 100_000
         const val MAX_CREATED = 20_000
         val FILE_NODES = setOf("bitmap", "bitmapfont", "truetypefont", "script")
+
+        /** The id of a wasabi title bar's group, and of the layer over the whole bar that takes its drags. */
+        const val TITLE_BAR = "wasabi.titlebar"
+        const val TITLE_BAR_TRAP = "mousetrap"
+
         const val MAX_ALIAS_DEPTH = 8
         const val EQ_FLAT = 128
         const val PLAYLIST_GUID = "45f3f7c1-a6f3-4ee6-a15e-125e92fc3f8d"
