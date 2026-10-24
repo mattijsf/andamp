@@ -6,6 +6,7 @@ import androidx.compose.ui.unit.IntSize
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** How large a modern skin is drawn, and which skins are too large to show at all. */
@@ -50,5 +51,44 @@ class WalScaleTest {
     @Test
     fun `a main window with no size yet shows`() {
         assertNull(WalScale.unfit(0 to 0, 0 to 0, baseW = 0, box = phone))
+    }
+
+    @Test
+    fun `upright, the main window sets a whole scale and the stack hangs from the top, centered by its content`() {
+        val place = WalScale.place(WalFit(1080, 2000, 3f, false), 275 to 116, 275, 275, 275 to 400)
+
+        assertEquals(3f, place.scale)
+        // whole device pixels: 127.5 floors to 127
+        assertEquals(127f, place.left)
+        assertEquals(0f, place.top)
+    }
+
+    @Test
+    fun `an upright stack taller than the box is shrunk to its height and centered`() {
+        val place = WalScale.place(WalFit(1080, 1000, 3f, false), 275 to 116, 275, 275, 275 to 600)
+
+        assertEquals(1000f / 600, place.scale)
+        assertEquals(kotlin.math.floor((1080 - 275 * place.scale) / 2), place.left)
+        assertEquals(0f, place.top)
+        assertTrue("the whole stack is in the box", 600 * place.scale <= 1000f)
+    }
+
+    @Test
+    fun `sideways, the whole stack fits both ways and is centered both ways`() {
+        val place = WalScale.place(WalFit(2400, 1080, 3f, true), 400 to 100, 400, 400, 400 to 300)
+
+        // 1080 / 300 is 3.6: whole from 2x up
+        assertEquals(3f, place.scale)
+        assertEquals((2400 - 400 * 3) / 2f, place.left)
+        assertEquals((1080 - 300 * 3) / 2f, place.top)
+    }
+
+    @Test
+    fun `sideways, a stack the box holds only below 2x keeps the fractional scale, centered both ways`() {
+        val place = WalScale.place(WalFit(2400, 1080, 3f, true), 400 to 100, 400, 400, 400 to 720)
+
+        assertEquals(1.5f, place.scale)
+        assertEquals((2400 - 400 * 1.5f) / 2f, place.left)
+        assertEquals(0f, place.top)
     }
 }

@@ -131,6 +131,41 @@ internal object WalScale {
         scale: Float,
     ): Float = maxOf(0f, kotlin.math.floor((width - stackW * scale) / 2f))
 
+    /** A stack's scale in a box, and where its top-left corner sits there, in device px. */
+    data class Place(
+        val scale: Float,
+        val left: Float,
+        val top: Float,
+    )
+
+    /**
+     * Where a stack of [stack] skin px goes in [fit]'s box. Upright, the main window of [mainSize]
+     * sets the scale (see [fit], with [baseW]) and the stack hangs from the top, centered by how
+     * far right the main window's content reaches ([contentRight]); a stack taller than the box at
+     * that scale is shrunk to the box's height and centered both ways. Sideways, the whole stack
+     * fits the box both ways and is centered both ways.
+     */
+    fun place(
+        fit: WalFit,
+        mainSize: Pair<Int, Int>,
+        baseW: Int,
+        contentRight: Int,
+        stack: Pair<Int, Int>,
+    ): Place {
+        val box = IntSize(fit.widthPx, fit.heightPx)
+        val (stackW, stackH) = stack
+        val width = box.width.toFloat()
+        val height = box.height.toFloat()
+        if (fit.sideways) {
+            val s = of(box, stackW, stackH)
+            return Place(s, left(width, stackW, s), left(height, stackH, s))
+        }
+        val s = fit(box, mainSize, baseW)
+        if (stackH <= 0 || stackH * s <= height) return Place(s, left(width, contentRight, s), 0f)
+        val shrunk = height / stackH
+        return Place(shrunk, left(width, contentRight, shrunk), left(height, stackH, shrunk))
+    }
+
     /** The scale that fits [lw] x [lh] in [size]: whole numbers from 2x up, so the pixels stay crisp. */
     fun of(
         size: IntSize,

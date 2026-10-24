@@ -22,9 +22,10 @@ import java.io.File
  * p95 of a tick plus its draw list and the drawing time, or its failure, go to the log under
  * [WalHost.TAG].
  *
- * A run that runs out of time stops between skins. A file in the folder keeps which skins the run has
- * finished, for the installed build and each skin's size and date, so the next run carries on; a new
- * build, a replaced skin or `fresh` starts over, and a finished run's next check does every skin again.
+ * A run that runs out of time stops between skins, after one skin at least. A file in the folder
+ * keeps which skins the run has finished, for the installed build and each skin's size and date, so
+ * the next run carries on; a new build, a replaced skin or `fresh` starts over, and a finished run's
+ * next check does every skin again.
  *
  * It touches nothing of the player: not the skin library, the settings or the screen. One thread
  * does all of it, so the host's caches meant for the engine thread and for drawing share that thread.
@@ -68,7 +69,8 @@ internal object WalCheck {
                 .map { it.substringBefore('\t') }
                 .toMutableList()
         for ((i, skin) in due.withIndex()) {
-            if (System.currentTimeMillis() - start > budgetMs) {
+            // each run gets through one skin at least, so a check sent again always carries on
+            if (i > 0 && System.currentTimeMillis() - start > budgetMs) {
                 Log.i(WalHost.TAG, "check paused: ${due.size - i} skins left, send check again to carry on")
                 return false
             }

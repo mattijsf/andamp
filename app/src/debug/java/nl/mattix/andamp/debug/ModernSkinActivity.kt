@@ -37,7 +37,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.input.pointer.changedToUp
 import androidx.compose.ui.input.pointer.pointerInput
@@ -58,6 +58,7 @@ import nl.mattix.andamp.modernskin.skin.ZipSkinFiles
 import nl.mattix.andamp.wal.WalBuild
 import nl.mattix.andamp.wal.WalEngine
 import nl.mattix.andamp.wal.WalFiles
+import nl.mattix.andamp.wal.WalFit
 import nl.mattix.andamp.wal.WalFrame
 import nl.mattix.andamp.wal.WalHost
 import nl.mattix.andamp.wal.WalPrepare
@@ -537,32 +538,6 @@ private fun runCheck(
     }
 }
 
-/**
- * The screen's size reaches the skin: a window the user can resize both ways (handles on its
- * edges, Bento) fills the screen, as maximized, its scale from its minimum size and its size from
- * what is left at that scale; the windows under the main one fill the height that is left.
- */
-private fun fitToScreen(
-    rt: SkinRuntime,
-    px: IntSize,
-    baseW: Int,
-    check: Check?,
-) {
-    val layout = rt.mainLayout ?: return
-    val bothWays = layout.resizesHorizontally() && layout.resizesVertically()
-    val hasMinimum = layout.minW > 0 && layout.minH > 0
-    if (check == null && hasMinimum && bothWays) {
-        val fit = WalScale.of(px, layout.minW, layout.minH)
-        val w = maxOf(layout.minW, (px.width / fit).toInt())
-        val h = maxOf(layout.minH, (px.height / fit).toInt())
-        if (layout.size != w to h) layout.makiCall("resize", listOf(Value.Int(0), Value.Int(0), Value.Int(w), Value.Int(h)))
-    }
-    val (lw, lh) = baseW.takeIf { it > 0 }?.let { it to layout.size.second } ?: layout.size
-    val s = WalScale.of(px, lw, lh)
-    // a check keeps the size it asked for (or the size the windows open at, as the references)
-    if (check == null) rt.viewSize = (px.width / s).toInt() to (px.height / s).toInt()
-}
-
 // the debug screen: check mode, the probe, touches and drawing in one place
 @Suppress("LongMethod", "CyclomaticComplexMethod")
 @Composable
@@ -634,7 +609,7 @@ private fun ModernSkinScreen(
                 .takeIf { check == null }
         engine.start(
             // a check or a probe measures the load, however long it takes
-            budgetMs = if (check != null || probe != null) MEASURE_BUDGET_MS else WalBuild.BUDGET_MS,
+            budgetMs = if (check != null || probe != null) MEASURE_BUDGET_MS else WalBuild.START_BUDGET_MS,
             box = screen,
             onStart = { e ->
                 started.complete(e)
@@ -750,6 +725,12 @@ private fun ModernSkinScreen(
         }
     }
     val slide = remember { SlideStats() }
+    // each touch's seq, so a long press right-clicks only what that touch went down on
+    val touches = remember { intArrayOf(0) }
+    val density = androidx.compose.ui.platform.LocalDensity.current.density
+    val sideways =
+        androidx.compose.ui.platform.LocalConfiguration.current.orientation ==
+            android.content.res.Configuration.ORIENTATION_LANDSCAPE
     // where a fractional scale draws the stack whole before it is shrunk (see drawWalStack)
     val layer = rememberGraphicsLayer()
     // the frame the probe timed last, so a frame drawn again is not counted twice
@@ -765,9 +746,13 @@ private fun ModernSkinScreen(
         } else if (mainSize == null) {
             BasicText("no main layout", style = TextStyle(color = Color.White))
         } else {
-            // the size is posted when it changes; a lambda made per frame would post it every frame
-            val baseW = shown.baseW
-            val fit = remember(engine, baseW) { { px: IntSize -> engine.post { rt -> fitToScreen(rt, px, baseW, check) } } }
+            // in use the box goes to the engine, which fits the skin as the player does (WalEngine.fit);
+            // a check keeps the size it asked for, or the size the windows open at, as the references.
+            // A lambda made per frame would post the box every frame
+            val fit =
+                remember(engine, density, sideways) {
+                    { px: IntSize -> if (check == null) engine.fit(WalFit(px.width, px.height, density, sideways)) }
+                }
             // magenta behind the skin in a check, as on the reference Windows desktop, so transparency
             // shows; in use a dark gray
             Box(
@@ -785,17 +770,23 @@ private fun ModernSkinScreen(
                                 val down = awaitFirstDown()
                                 val f = engine.frame
                                 val size2 = f?.mainSize ?: return@awaitEachGesture
-                                val scale = WalScale.fit(size, size2, f.baseW)
-                                // 24 dp beside a control still counts: every control answers across 48 dp
-                                val slop = kotlin.math.ceil(24.dp.toPx() / scale).toInt()
-                                engine.post(publish = false) { it.touchSlop = slop }
+                                // in use the frame says where the stack sits; a check draws it from its corner
+                                val at = f.layout
+                                val scale = at?.scale ?: WalScale.fit(size, size2, f.baseW)
+                                if (at == null) {
+                                    // 24 dp beside a control still counts: every control answers across 48 dp
+                                    val slop = kotlin.math.ceil(24.dp.toPx() / scale).toInt()
+                                    engine.post(publish = false) { it.touchSlop = slop }
+                                }
                                 val downAt = System.currentTimeMillis()
                                 var moved = false
-                                val left = if (check == null) WalScale.left(size.width.toFloat(), f.contentRight, scale) else 0f
+                                val left = at?.left ?: 0f
+                                val top = at?.top ?: 0f
 
-                                fun toSkin(o: Offset) = ((o.x - left) / scale).toInt() to (o.y / scale).toInt()
+                                fun toSkin(o: Offset) = ((o.x - left) / scale).toInt() to ((o.y - top) / scale).toInt()
                                 val (sx, sy) = toSkin(down.position)
-                                engine.pointerDown(sx, sy)
+                                val seq = ++touches[0]
+                                engine.pointerDown(sx, sy, seq)
                                 while (true) {
                                     val event = awaitPointerEvent()
                                     val change = event.changes.firstOrNull { it.id == down.id } ?: break
@@ -807,7 +798,10 @@ private fun ModernSkinScreen(
                                     if (change.changedToUp()) {
                                         val (ux, uy) = toSkin(change.position)
                                         if (!moved && System.currentTimeMillis() - downAt > LONG_PRESS_MS) {
-                                            engine.longPress(ux, uy)
+                                            // a long press is Winamp's right click: the press ends with no click,
+                                            // and an object with a skin menu under the finger is right-clicked
+                                            engine.pointerCancel()
+                                            if (engine.frame?.menuTarget == seq) engine.rightClick(seq)
                                         } else {
                                             engine.pointerUp(ux, uy)
                                         }
@@ -821,10 +815,14 @@ private fun ModernSkinScreen(
                     val f = engine.frame ?: return@Canvas
                     val size2 = f.mainSize ?: return@Canvas
                     val drawStart = System.nanoTime()
-                    val scale = WalScale.fit(IntSize(size.width.toInt(), size.height.toInt()), size2, f.baseW)
-                    // the stack centered across the screen, as the classic player places its windows
-                    val left = if (check == null) WalScale.left(size.width, f.contentRight, scale) else 0f
-                    drawWalStack(f.stack, host, scale, left, layer)
+                    if (check != null) {
+                        val scale = WalScale.fit(IntSize(size.width.toInt(), size.height.toInt()), size2, f.baseW)
+                        drawWalStack(f.stack, host, scale, 0f, layer)
+                    } else {
+                        // where the engine placed the stack for this box, as the player places it
+                        val at = f.layout ?: return@Canvas
+                        translate(at.left, at.top) { drawWalStack(f.stack, host, at.scale, 0f, layer) }
+                    }
                     val drawn = System.nanoTime() - drawStart
                     if (f.animating && slide.startedAt == 0L) slide.startedAt = drawStart
                     if (slide.startedAt != 0L) slide.frame(drawn)
@@ -950,7 +948,7 @@ private const val LONG_PRESS_MS = 600
 
 /**
  * How long a check or a probe lets a skin load. They measure, and a debug build can take several
- * seconds over a large skin's first load, past the player's [WalBuild.BUDGET_MS].
+ * seconds over a large skin's first load, past the player's [WalBuild.START_BUDGET_MS].
  */
 private const val MEASURE_BUDGET_MS = 60_000L
 
