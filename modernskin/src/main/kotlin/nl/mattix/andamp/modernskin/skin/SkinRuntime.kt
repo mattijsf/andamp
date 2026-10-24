@@ -1341,6 +1341,9 @@ class SkinRuntime(
         }
         for (l in windows) walk(l)
         objects = all
+        // the player's sliders show where the player is from their first frame: at the load, and in
+        // a window or layout shown for the first time, which no tick has synced yet
+        for (o in all) if (o is Slider) o.placeIfUnsynced()
         if (pendingStarts.isNotEmpty()) {
             val starting = pendingStarts.toList()
             pendingStarts.clear()

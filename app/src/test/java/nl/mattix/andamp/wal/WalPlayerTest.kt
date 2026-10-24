@@ -20,7 +20,7 @@ import kotlin.math.sin
 /**
  * What a modern skin reads from the app's player and what its writes do: the place in the song,
  * the unit maps, the held writes that keep a slider from jumping back while the backend catches
- * up, the spectrum and the wake.
+ * up, the spectrum, the waveform and the wake.
  */
 class WalPlayerTest {
     private val songs = List(3) { song(it) }
@@ -655,6 +655,75 @@ class WalPlayerTest {
 
         assertTrue(player.spectrum().all { it == 0f })
         assertEquals(0 to 0, player.vu())
+        assertEquals(List(576) { 0f }, player.waveform().toList())
+    }
+
+    // ---- the waveform ----------------------------------------------------------------------------
+
+    @Test
+    fun `the waveform is the newest 576 samples of the window heard`() {
+        tap = RampTap()
+
+        val wave = player.waveform()
+
+        assertEquals(576, wave.size)
+        // the window read is 1024 samples long, so the waveform starts at its sample 448
+        for (i in wave.indices) assertEquals("sample $i", RampTap.sample(448 + i), wave[i], 0f)
+    }
+
+    @Test
+    fun `the waveform is read with the spectrum, once in 16 ms`() {
+        val sine = SineTap(1_000.0)
+        tap = sine
+        val first = player.waveform()
+        player.spectrum()
+        player.vu()
+        assertEquals(1, sine.reads)
+
+        controls.advance(10)
+        assertSame(first, player.waveform())
+        assertEquals(1, sine.reads)
+
+        controls.advance(6)
+        player.waveform()
+        assertEquals(2, sine.reads)
+    }
+
+    @Test
+    fun `nothing playing or no tap gives an empty waveform`() {
+        assertEquals("no tap", 0, player.waveform().size)
+
+        tap = SineTap(1_000.0)
+        assertEquals("a tap that comes later is taken", 576, player.waveform().size)
+
+        state.transport = Transport.Paused
+        assertEquals(0, player.waveform().size)
+        state.transport = Transport.Stopped
+        assertEquals(0, player.waveform().size)
+    }
+
+    @Test
+    fun `a sample past full scale is clipped to it`() {
+        tap = SineTap(1_000.0, amplitude = 1.5)
+
+        val wave = player.waveform()
+
+        assertEquals(1f, wave.max())
+        assertEquals(-1f, wave.min())
+    }
+
+    @Test
+    fun `while the tap has nothing to give the waveform is silence`() {
+        val ramp = RampTap()
+        tap = ramp
+        assertTrue(player.waveform().any { it != 0f })
+
+        ramp.empty = true
+        controls.advance(16)
+        val wave = player.waveform()
+
+        assertEquals(576, wave.size)
+        assertTrue(wave.all { it == 0f })
     }
 
     // ---- the wake --------------------------------------------------------------------------------
@@ -711,6 +780,26 @@ class WalPlayerTest {
             ends += endSample
             out.fill(0.1f)
             return true
+        }
+    }
+
+    /** A tap whose every window holds the same ramp, [sample] at each place; [empty] makes it give nothing. */
+    private class RampTap : AudioTap {
+        override val sampleRateHz = RATE
+        override val writtenSamples = 10_000_000L
+        var empty = false
+
+        override fun readAt(
+            endSample: Long,
+            out: FloatArray,
+        ): Boolean {
+            if (empty) return false
+            for (i in out.indices) out[i] = sample(i)
+            return true
+        }
+
+        companion object {
+            fun sample(i: Int) = (i % 100 - 50) / 100f
         }
     }
 

@@ -15,12 +15,14 @@ import kotlin.math.log10
  * so a reader clamps.
  *
  * The classic window averages 76 columns into its 19 bars ([RealSpectrum]); a modern skin
- * takes 75 as they are.
+ * takes 75 as they are, and the newest [wavePoints] samples of each window as they are for its
+ * oscilloscope ([wave]).
  */
 class SpectrumColumns(
     tap: AudioTap,
     private val frameMs: Long,
     val points: Int,
+    wavePoints: Int = 0,
 ) {
     private val reader = SmoothTapReader(tap, frameMs)
     private val fft = Fft(WINDOW)
@@ -34,6 +36,14 @@ class SpectrumColumns(
     /** The loudest sample of the last window read, 0..1, or 0 when the read failed. */
     var peak = 0f
         private set
+
+    init {
+        require(wavePoints in 0..WINDOW) { "wavePoints $wavePoints outside 0..$WINDOW" }
+    }
+
+    /** The newest samples of the last window read that succeeded, -1..1, oldest first: the waveform being heard. */
+    val wave = FloatArray(wavePoints)
+    private val waveFrom = WINDOW - wavePoints
 
     /**
      * Winamp's per-bin tilt: `log10(1 + bias + (i + 1) * (9 - bias) / bins)`, with the bias
@@ -54,7 +64,7 @@ class SpectrumColumns(
 
     /**
      * Reads the window heard [elapsedMs] after the last read and resamples it into [values].
-     * False when the tap has nothing to give; [values] then keep the last read.
+     * False when the tap has nothing to give; [values] and [wave] then keep the last read.
      */
     fun read(elapsedMs: Long): Boolean {
         if (!reader.read(window, elapsedMs)) {
@@ -62,10 +72,12 @@ class SpectrumColumns(
             return false
         }
         var loudest = 0f
-        // a Hann window before the transform; a sample that is not a number reads as silence
+        // a Hann window before the transform, the waveform taken before it; a sample that is not a
+        // number reads as silence
         for (i in window.indices) {
             if (!window[i].isFinite()) window[i] = 0f
             loudest = maxOf(loudest, abs(window[i]))
+            if (i >= waveFrom) wave[i - waveFrom] = window[i].coerceIn(-1f, 1f)
             window[i] *= hann[i]
         }
         peak = loudest.coerceAtMost(1f)

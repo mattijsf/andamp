@@ -61,6 +61,12 @@ interface Player {
     /** Spectrum levels 0..1, 75 bands like Winamp's vis, or empty when nothing plays. */
     fun spectrum(): FloatArray
 
+    /**
+     * The waveform being heard: samples -1..1, oldest first, 576 of them as Winamp hands a
+     * visualizer, or empty when nothing plays.
+     */
+    fun waveform(): FloatArray = FloatArray(0)
+
     /** Left and right VU 0..255. */
     fun vu(): Pair<Int, Int>
 }
@@ -122,7 +128,7 @@ interface SkinHost {
 
 /** A player that plays nothing, for tests and for a first look at a skin. */
 class FakePlayer : Player {
-    /** The clock positions and the demo spectrum follow; a test gives it the runtime's. */
+    /** The clock positions, the demo spectrum and the demo wave follow; a test gives it the runtime's. */
     var clock: () -> Long = System::currentTimeMillis
 
     override var status = Player.Status.STOPPED
@@ -220,6 +226,13 @@ class FakePlayer : Player {
         if (status != Player.Status.PLAYING) return FloatArray(0)
         val t = clock() / 60.0
         return FloatArray(75) { i -> (0.5 + 0.5 * Math.sin(t + i * 0.3)).toFloat() * (1f - i / 90f) }
+    }
+
+    /** Two tones drifting with the clock, a slow one and one three times as fast, while playing. */
+    override fun waveform(): FloatArray {
+        if (status != Player.Status.PLAYING) return FloatArray(0)
+        val t = clock() / 60.0
+        return FloatArray(576) { i -> (0.35 * Math.sin(t + i * 0.05) + 0.15 * Math.sin(3 * t + i * 0.27)).toFloat() }
     }
 
     override fun vu(): Pair<Int, Int> = if (status == Player.Status.PLAYING) 160 to 150 else 0 to 0

@@ -301,6 +301,65 @@ class SkinRuntimeTest {
     }
 
     @Test
+    fun `the player's sliders start where the player is, before the first tick`() {
+        val player = FakePlayer().apply { volume = 51 }
+        val rt = small(player)
+        val layout = checkNotNull(rt.mainLayout)
+
+        assertEquals("51 of 255 on 0..100", 20, (layout.findObject("volume") as Slider).position)
+        assertEquals("51 of 255 on 0..200", 40, (layout.findObject("fine") as Slider).position)
+    }
+
+    @Test
+    fun `a window opened later shows the player's equalizer in its first frame, before any tick`() {
+        val player = FakePlayer().apply { setEqBand(0, 204) }
+        val rt = small(player)
+        settle(rt)
+        val eq = checkNotNull(rt.container("eq"))
+
+        rt.openWindow(eq)
+        rt.drawWindows()
+
+        assertEquals(204, (checkNotNull(eq.current?.findObject("band1")) as Slider).position)
+    }
+
+    @Test
+    fun `a layout switched to for the first time shows the player's volume in its first frame, before any tick`() {
+        val files =
+            object : SkinFiles {
+                private val m =
+                    mapOf(
+                        "skin.xml" to
+                            """<WinampAbstractionLayer version="0.8"><include file="player.xml"/></WinampAbstractionLayer>""",
+                        "player.xml" to
+                            """<container id="main" name="t" default_visible="1">""" +
+                            """<layout id="normal" w="200" h="100"/>""" +
+                            """<layout id="shade" w="200" h="14"><slider id="shade.volume" action="volume" """ +
+                            """low="0" high="100" x="0" y="0" w="100" h="10" orientation="h"/></layout>""" +
+                            """</container>""",
+                    ).mapValues { it.value.toByteArray() }
+
+                override fun read(path: String): ByteArray? = m[SkinFiles.normalize(path)]
+
+                override fun names(): List<String> = m.keys.toList()
+            }
+        val player = FakePlayer().apply { clock = { 0L } }
+        val rt =
+            SkinRuntime(files, TestHost(files), player).apply {
+                clock = { 0L }
+                load()
+            }
+        settle(rt)
+        player.volume = 102
+        rt.tick()
+
+        checkNotNull(rt.mainContainer).switchTo("shade")
+        rt.drawWindows()
+
+        assertEquals("102 of 255 on 0..100", 40, (checkNotNull(rt.mainLayout?.findObject("shade.volume")) as Slider).position)
+    }
+
+    @Test
     fun `a slider let go of stays where it was let go`() {
         val player = FakePlayer()
         val rt = small(player)

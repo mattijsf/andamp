@@ -116,7 +116,7 @@ class WalPlayerEchoTest {
         preamp = layout.findObject("preamp") as Slider
         seek = layout.findObject("seek") as Slider
         listen(layout.systemObjects.single())
-        // the first tick places the thumbs, which scripts do not hear
+        // the load placed the thumbs on the player's values, which scripts do not hear
         frame()
         heard.clear()
     }
@@ -251,6 +251,25 @@ class WalPlayerEchoTest {
         assertEquals(positions.map { listOf(it) }, heard("volume.position"))
         assertEquals(((202 / 255f * steps).roundToInt() * 100f / steps).roundToInt(), state.volume)
         assertEquals(202, player.volume)
+    }
+
+    @Test
+    fun `the thumbs show the player's values from the skin's first frame, before any tick`() {
+        state.volume = 20
+        state.eqBands[0] = 10
+        state.preamp = 50
+        val fresh = SkinRuntime(files, WalHost(files, app.cacheDir), player).apply { clock = { controls.now } }
+
+        // the engine publishes the skin's first frame right after the load
+        fresh.load()
+
+        val layout = checkNotNull(fresh.mainLayout)
+
+        fun thumbs() = SLIDERS.map { (layout.findObject(it) as Slider).position }
+        val first = thumbs()
+        assertEquals(listOf(WalPlayer.fromPercent(20), WalPlayer.fromEq(10), WalPlayer.fromEq(50), 50), first)
+        fresh.tick()
+        assertEquals("the first tick finds them in place", first, thumbs())
     }
 
     @Test
