@@ -34,8 +34,8 @@ import org.junit.Test
  * skin menu that touch landed on, at the point it landed, as a separate touch whose menus show.
  */
 class RightClickTest {
-    // a button and a layer with menus, a plain Play button, a vis with a button beside it, and a
-    // shade layout to switch to
+    // a button and a layer with menus, a plain Play button, a vis with a second Play button beside
+    // it, and a shade layout to switch to
     private val files =
         object : SkinFiles {
             private val m =
@@ -48,7 +48,7 @@ class RightClickTest {
                         """<layer id="layer" x="50" y="10" w="20" h="20"/>""" +
                         """<button id="play" action="PLAY" x="10" y="150" w="20" h="20"/>""" +
                         """<vis id="vis" x="100" y="100" w="60" h="30"/>""" +
-                        """<button id="near" x="165" y="100" w="20" h="20"/>""" +
+                        """<button id="near" action="PLAY" x="165" y="100" w="20" h="20"/>""" +
                         """</layout><layout id="shade" w="300" h="20"/></container>""",
                 ).mapValues { it.value.toByteArray() }
 
@@ -321,20 +321,26 @@ class RightClickTest {
 
     @Test
     fun `a right click lets go of a press still held, so its release gives no click`() {
-        // a menu behind a condition that does not hold: the button counts as having one, none pops
+        // a menu behind a condition that does not hold: the vis counts as having one, none pops
         // (the handler is the script's only one: 2 pops of x and y, 3 steps of record, then this,
         // and the jump lands on the closing PUSH at 10)
         val skipped = listOf(Opcodes.PUSH to ZERO, Opcodes.JUMP_IF_NOT to 10) + pop
-        attach(play, Handler("onrightbuttonup", listOf(record(UP), skipped)))
+        attach(vis, Handler("onrightbuttonup", listOf(record(UP), skipped)))
+        rt.touchSlop = 24
+        // inside the vis, 7 px from the Play button: the button has the press, the menu aims at the vis
+        val x = near.rect.left - 7
+        val y = vis.rect.top + 10
+        val button = near as Button
 
-        press(play, seq = 1)
+        rt.pointerDown(x, y, seq = 1)
+        assertTrue(button.pressed)
         rt.rightClick(1)
-        rt.pointerUp(play.rect.left + 2, play.rect.top + 2)
+        rt.pointerUp(x, y)
 
         assertEquals(listOf("up"), heard)
         assertTrue(shown.isEmpty())
         assertEquals(Player.Status.STOPPED, player.status)
-        assertFalse((play as Button).pressed)
+        assertFalse(button.pressed)
     }
 
     private companion object {

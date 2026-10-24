@@ -244,9 +244,20 @@ class SkinMenuTouchTest {
         assertEquals("the long press after the menu opened none", 1, shown.size)
 
         rt.pointerDown(x, y)
+        assertTrue("a press held back from the button shows it pressed", button.pressed)
         rt.longPress(x, y)
         assertEquals("a new touch's long press opens the skin's menu", 2, shown.size)
         assertFalse("a long press lets go of the button", button.pressed)
+        assertTrue("the button heard nothing of that press: $heard", heard.isEmpty())
+
+        // the button hears a press once the finger moves beyond reach
+        rt.pointerDown(x, y)
+        rt.pointerMove(x + 10, y)
+        assertEquals(listOf("enter"), heard)
+        rt.longPress(x + 10, y)
+        assertEquals(3, shown.size)
+        assertFalse("a long press lets go of the button it pressed", button.pressed)
+        assertEquals(listOf("enter", "leave"), heard)
     }
 
     @Test

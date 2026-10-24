@@ -269,17 +269,56 @@ class SkinMenuPressTest {
         val y = button.rect.top + 5
 
         rt.pointerDown(x, y, seq = 1)
-        assertFalse(button.pressed)
+        assertTrue("a held press shows the button pressed", button.pressed)
         rt.pointerCancel()
+        assertFalse(button.pressed)
         rt.rightClick(1)
         assertTrue("nothing of the press: $heard", heard.isEmpty())
         assertEquals(Player.Status.STOPPED, player.status)
 
         rt.pointerDown(x, y, seq = 2)
+        assertTrue(button.pressed)
         rt.pointerUp(x, y)
         assertEquals(listOf("down $x", "enter", "up $x", "leave"), heard)
         assertEquals(Player.Status.PLAYING, player.status)
         assertFalse(button.pressed)
+    }
+
+    @Test
+    fun `a held button no longer shows pressed however its touch ends without a release`() {
+        script(button)
+        val x = button.rect.left + 5
+        val y = button.rect.top + 5
+
+        fun hold(seq: Int) {
+            rt.pointerDown(x, y, seq)
+            assertTrue("held, the button shows pressed", button.pressed)
+        }
+
+        hold(seq = 1)
+        rt.rightClick(1)
+        assertFalse("a right click without the host's cancel", button.pressed)
+
+        hold(seq = 2)
+        rt.pointerDown(plain.rect.left + 5, plain.rect.top + 5, seq = 3)
+        assertFalse("a new touch", button.pressed)
+        rt.pointerCancel()
+
+        hold(seq = 4)
+        rt.doubleTap(x, y, seq = 5)
+        assertFalse("a double tap", button.pressed)
+
+        hold(seq = 6)
+        rt.longPress(x, y)
+        assertFalse("a long press", button.pressed)
+
+        hold(seq = 7)
+        checkNotNull(rt.mainContainer).switchTo("shade")
+        rt.pointerUp(x, y)
+        assertFalse("its layout switched away before the release", button.pressed)
+
+        assertTrue("nothing of any press: $heard", heard.isEmpty())
+        assertEquals(Player.Status.STOPPED, player.status)
     }
 
     @Test
