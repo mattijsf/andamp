@@ -191,10 +191,12 @@ class Slider(
     }
 
     /**
-     * Puts the thumb where the player is as the skin starts, before its first frame. Scripts hear
-     * nothing of it, nor of the first [sync] after it.
+     * Puts the thumb where the player is until its first [sync]: as the skin starts, and when its
+     * layout shows for the first time, so that frame already shows it there. Scripts hear nothing
+     * of it, nor of the first [sync] after it.
      */
-    fun placeAtStart() {
+    fun placeIfUnsynced() {
+        if (dragging || synced) return
         rt.sliderTarget(this)?.let { position = it.coerceIn(low, high) }
     }
 
