@@ -234,6 +234,46 @@ class WalLayerTest {
     }
 
     @Test
+    fun `a drag from one of the skin's move areas moves the stack and its rect, snaps to an edge, and keeps the place`() {
+        surface.moveAreaUnderEveryPress = true
+        layer()
+
+        screen().performTouchInput {
+            down(Offset(450f, 100f))
+            moveTo(Offset(450f, 130f))
+            // 5 px from the left edge: against it
+            moveTo(Offset(305f, 400f))
+            up()
+        }
+        frames()
+
+        assertEquals("the skin let go of the press", listOf("down 150,50", "cancel"), surface.pointerCalls)
+        assertEquals(listOf(false to WalMove(-150, 300, 600, 200)), surface.kept)
+        assertEquals(IntRect(0, 100, 200, 167), state.windowRects[WindowStore.MAIN])
+    }
+
+    @Test
+    fun `a kept place comes back with touches mapped there, and goes when the stack outgrows it`() {
+        surface.places[false] = WalMove(-150, 300, 600, 200)
+        layer()
+        assertEquals(IntRect(0, 100, 200, 167), state.windowRects[WindowStore.MAIN])
+
+        screen().performTouchInput {
+            down(Offset(300f, 400f))
+            up()
+        }
+        frames()
+        assertEquals(listOf("down 150,50", "up 150,50"), surface.pointerCalls)
+
+        // a window opens under the main one, and the stack would run off the bottom
+        surface.layout = surface.layout!!.copy(stackH = 700)
+        frames()
+
+        assertEquals(false to null, surface.kept.last())
+        assertEquals("back where the engine puts it", IntRect(50, 0, 250, 467), state.windowRects[WindowStore.MAIN])
+    }
+
+    @Test
     fun `a skin that animates on and on still publishes its rect`() {
         surface.layoutFor = { fit -> stackOf(300, 100, 2f)(fit).copy(animating = true) }
 

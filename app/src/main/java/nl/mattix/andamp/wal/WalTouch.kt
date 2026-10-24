@@ -14,7 +14,9 @@ import androidx.compose.ui.unit.IntOffset
 /**
  * One finger on a modern skin, as the skin hears it: a press, its moves and its release; a second
  * tap soon after a first one as a double tap; and a long press, which the skin does not hear as a
- * click but which opens the main menu.
+ * click but which opens the main menu. A press on one of the skin's move areas
+ * ([WalLayout.moveTarget]) that travels past the touch slop moves the whole stack through [drag]
+ * instead: the skin's press is cancelled and it hears nothing more of that finger.
  *
  * It keeps no clock and reads no events itself: [walGesture] hands it the first finger's events
  * with their times and asks it when the long press is due. Positions are surface pixels from the
@@ -28,7 +30,24 @@ internal class WalTouch(
     private val onPress: (Offset) -> Unit = {},
     /** The long press fired at the point the finger went down, in the gesture of this seq; the skin's press is cancelled. */
     private val onLongPress: (at: Offset, seq: Int) -> Unit,
+    /** What moves the stack, or null where it cannot be moved. */
+    private val drag: Drag? = null,
 ) {
+    /** Moving the whole stack with the finger; positions as [WalTouch] takes them. */
+    interface Drag {
+        /** The finger that went down at [from] traveled past the touch slop to [at]: the stack follows it from here. */
+        fun start(
+            from: Offset,
+            at: Offset,
+        )
+
+        /** The finger moved to [at]. */
+        fun move(at: Offset)
+
+        /** The finger lifted, or the gesture ended without a release: the stack stays where it is. */
+        fun end()
+    }
+
     /** Android's gesture thresholds: times in ms, distances in surface pixels. */
     data class Rules(
         val longPressMs: Long,
@@ -53,6 +72,9 @@ internal class WalTouch(
 
         /** The long press fired, so the rest of the finger goes nowhere. */
         var taken = false
+
+        /** It moves the stack, so the rest of the finger goes to [drag]. */
+        var dragging = false
     }
 
     /** A tap that ended at [upTime], which a second tap near [at] makes a double tap. */
@@ -83,7 +105,19 @@ internal class WalTouch(
     fun move(at: Offset) {
         val p = press ?: return
         if (p.taken) return
+        if (p.dragging) {
+            drag?.move(at)
+            return
+        }
         if ((at - p.at).getDistance() > rules.touchSlop) p.still = false
+        val d = drag
+        // the engine names the press on a move area once it has handled it: each move asks again
+        if (!p.still && d != null && surface.layout?.moveTarget == p.seq) {
+            p.dragging = true
+            surface.pointerCancel()
+            d.start(p.at, at)
+            return
+        }
         val s = toSkin(at)
         surface.pointerMove(s.x, s.y)
     }
@@ -99,6 +133,12 @@ internal class WalTouch(
         when {
             p.taken -> {
                 Unit
+            }
+
+            // the stack lands where the finger lifted, which can be past its last move
+            p.dragging -> {
+                if (!consumed) drag?.move(at)
+                drag?.end()
             }
 
             consumed -> {
@@ -123,7 +163,11 @@ internal class WalTouch(
         val p = press ?: return
         press = null
         lastTap = null
-        if (!p.taken) surface.pointerCancel()
+        if (p.dragging) {
+            drag?.end()
+        } else if (!p.taken) {
+            surface.pointerCancel()
+        }
     }
 
     /** A skin menu is up while the finger is down. */

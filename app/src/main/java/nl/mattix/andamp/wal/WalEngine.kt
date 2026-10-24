@@ -616,6 +616,7 @@ private object Fitting {
             windowOpen = windowOpen,
             animating = runtime.animating,
             menuTarget = runtime.menuTarget,
+            moveTarget = runtime.moveTarget,
         )
     }
 

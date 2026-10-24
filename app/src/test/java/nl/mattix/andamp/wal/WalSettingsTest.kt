@@ -10,6 +10,7 @@ import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinHost
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -95,5 +96,33 @@ class WalSettingsTest {
         val forgotten = runtime()
         settings.restoreBeforeLoad("one", forgotten)
         assertTrue(forgotten.privateStrings.isEmpty())
+    }
+
+    @Test
+    fun `where a skin was moved comes back after a restart, upright and sideways apart, until it is forgotten`() {
+        WalSettings(app).keepPlace("bento", sideways = false, move = WalMove(-150, 300, 600, 200))
+        WalSettings(app).keepPlace("bento", sideways = true, move = WalMove(40, -12, 900, 400))
+
+        val again = WalSettings(app)
+        assertEquals(WalMove(-150, 300, 600, 200), again.place("bento", sideways = false))
+        assertEquals(WalMove(40, -12, 900, 400), again.place("bento", sideways = true))
+        assertNull("another skin sits where the engine puts it", again.place("mmd3", sideways = false))
+
+        again.keepPlace("bento", sideways = true, move = null)
+        assertNull(again.place("bento", sideways = true))
+        assertEquals(WalMove(-150, 300, 600, 200), again.place("bento", sideways = false))
+
+        again.forget("bento")
+        assertNull(WalSettings(app).place("bento", sideways = false))
+    }
+
+    @Test
+    fun `a skin's settings saved after it was moved leave the place as it was`() {
+        val settings = WalSettings(app)
+        settings.keepPlace("bento", sideways = false, move = WalMove(0, 500, 600, 200))
+
+        settings.save("bento", runtime().apply { load() })
+
+        assertEquals(WalMove(0, 500, 600, 200), settings.place("bento", sideways = false))
     }
 }

@@ -8,6 +8,8 @@ import androidx.compose.ui.unit.IntRect
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.ui.window.WindowScreen
+import nl.mattix.andamp.ui.window.WindowSnap
+import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.floor
 import kotlin.math.roundToInt
@@ -15,7 +17,8 @@ import kotlin.math.roundToInt
 /**
  * Where a modern skin's stack sits on a player surface, from the box it is fitted into and the
  * engine's [WalLayout]: its rectangle in the surface's pixels, its rectangle as the classic windows
- * publish theirs, and the conversions a touch and a menu need.
+ * publish theirs, and the conversions a touch and a menu need. The listener can move the stack
+ * inside the box from where the engine puts it; the companion's functions say where it may go.
  *
  * The surface's pixels are those the player's windows are laid out in, [scale] of them to a
  * virtual pixel of the classic windows.
@@ -73,14 +76,18 @@ internal data class WalPlacement(
             compact: Boolean = false,
         ): WalFit = WalFit(box.width, box.height, density, sideways, compact)
 
-        /** Where [layout], worked out for [box], puts the stack on a surface of [scale] pixels per virtual pixel. */
+        /**
+         * Where [layout], worked out for [box], puts the stack on a surface of [scale] pixels per
+         * virtual pixel, moved [shift] surface pixels from there.
+         */
         fun of(
             box: IntRect,
             layout: WalLayout,
             scale: Int,
+            shift: IntOffset = IntOffset.Zero,
         ): WalPlacement {
-            val left = box.left + layout.left.roundToInt()
-            val top = box.top + layout.top.roundToInt()
+            val left = box.left + layout.left.roundToInt() + shift.x
+            val top = box.top + layout.top.roundToInt() + shift.y
             val stack =
                 IntRect(
                     left,
@@ -96,6 +103,69 @@ internal data class WalPlacement(
                     -Math.floorDiv(-stack.bottom, scale),
                 )
             return WalPlacement(stack, window, layout.scale, scale)
+        }
+
+        /**
+         * Where a stack whose unmoved rect is [home] may have its top-left corner, asked for [at]:
+         * wholly inside [box] on an axis it is smaller than the box on, and where [home] has it on
+         * an axis it fills.
+         */
+        fun clamp(
+            at: IntOffset,
+            home: IntRect,
+            box: IntRect,
+        ): IntOffset {
+            fun axis(
+                at: Int,
+                home: Int,
+                start: Int,
+                room: Int,
+            ) = if (room > 0) at.coerceIn(start, start + room) else home
+            return IntOffset(
+                axis(at.x, home.left, box.left, box.width - home.width),
+                axis(at.y, home.top, box.top, box.height - home.height),
+            )
+        }
+
+        /**
+         * Where a stack whose unmoved rect is [home] lands when asked to have its top-left corner at
+         * [at]: on each axis, against an edge of [box] or back where [home] has it, when one of
+         * those is less than [distance] pixels away; the nearest wins, and [home] a tie. Classic
+         * windows snap the same way ([WindowSnap]).
+         */
+        fun snap(
+            at: IntOffset,
+            home: IntRect,
+            box: IntRect,
+            distance: Int,
+        ): IntOffset {
+            fun axis(
+                at: Int,
+                vararg to: Int,
+            ) = to.filter { abs(it - at) < distance }.minByOrNull { abs(it - at) } ?: at
+            return IntOffset(
+                axis(at.x, home.left, box.left, box.right - home.width),
+                axis(at.y, home.top, box.top, box.bottom - home.height),
+            )
+        }
+
+        /**
+         * How far to move a stack whose unmoved rect is [home] in [box] to put back [move]. While
+         * the stack is the size it was moved at, the move is held inside the box, which another
+         * surface may draw a little smaller. A stack that has changed size since keeps the move
+         * while it still fits there; null when it does not, and the move is dropped. An axis the
+         * stack fills neither holds nor drops it.
+         */
+        fun shiftOf(
+            move: WalMove,
+            home: IntRect,
+            box: IntRect,
+        ): IntOffset? {
+            val asked = IntOffset(home.left + move.dx, home.top + move.dy)
+            val held = clamp(asked, home, box)
+            val resized = home.width != move.width || home.height != move.height
+            val outside = (box.width > home.width && held.x != asked.x) || (box.height > home.height && held.y != asked.y)
+            return if (resized && outside) null else held - home.topLeft
         }
 
         /**

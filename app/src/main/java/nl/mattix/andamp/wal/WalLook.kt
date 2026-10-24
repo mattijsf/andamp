@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * frame (see [WalEngine.fit]).
  *
  * What it keeps between runs is saved [SAVE_DELAY_MS] after a change, when [save] or [park] asks,
- * and when it is let go with a save.
+ * and when it is let go with a save. Where the listener moved its stack is kept as it is moved.
  *
  * A start that fails after a fit, and a skin that stops working, are told to [onFailed] on the main
  * thread.
@@ -133,6 +133,12 @@ internal class WalLook(
 
     /** What the delayed save waits under on the engine thread. */
     private val saveToken = Any()
+
+    /** Where the listener moved the stack, as [settings] kept it; after a release without a save, no place is kept either. */
+    override val places =
+        WalPlaces(settings?.place(id, sideways = false), settings?.place(id, sideways = true)) { sideways, move ->
+            synchronized(saveLock) { if (!savesClosed) settings?.keepPlace(id, sideways, move) }
+        }
 
     override fun draw(
         scope: DrawScope,

@@ -510,6 +510,66 @@ class WalLookTest {
         assertNull(engineThread(look))
     }
 
+    @Test(timeout = 20_000)
+    fun `a press on a move area comes back in the layout as the move target, and a press on a button does not`() {
+        val bar = """<layer id="bar" x="0" y="40" w="200" h="14" move="1"/>"""
+        val look = look(file = wal(playerXml = player.replace("</layout>", "$bar</layout>")))
+        look.fit(phone)
+        await("the first frame arrives") { look.layout != null }
+
+        val onBar = look.pointerDown(150, 45)
+        look.pointerUp(150, 45)
+        await("the press on the bar is named") { look.layout?.moveTarget == onBar }
+
+        look.pointerDown(15, 15)
+        await("the press on Play is not") { look.layout?.moveTarget == null }
+    }
+
+    @Test
+    fun `where the stack was moved is kept for the next look of the skin, upright and sideways apart`() {
+        val first = look()
+        first.places[false] = WalMove(-150, 300, 600, 200)
+
+        val again =
+            WalLook(
+                first.id,
+                wal(),
+                "Test",
+                emptyMap(),
+                app.cacheDir,
+                WalSettings(app),
+                FakePlayer(),
+            ).also { looks += it }
+
+        assertEquals(WalMove(-150, 300, 600, 200), again.places[false])
+        assertNull(again.places[true])
+    }
+
+    @Test
+    fun `a stack put back where the engine puts it keeps no place, upright or sideways`() {
+        val look = look()
+        look.places[false] = WalMove(-150, 300, 600, 200)
+        look.places[true] = WalMove(30, 0, 900, 400)
+
+        look.places.clear()
+
+        assertNull(look.places[false])
+        assertNull(look.places[true])
+        assertNull(WalSettings(app).place(look.id, sideways = false))
+        assertNull(WalSettings(app).place(look.id, sideways = true))
+    }
+
+    @Test
+    fun `a look let go without a save keeps no place, so a removed skin's settings stay forgotten`() {
+        val look = look()
+        look.release(save = false)
+        WalSettings(app).forget(look.id)
+
+        look.places[false] = WalMove(-150, 300, 600, 200)
+
+        assertNull(WalSettings(app).place(look.id, sideways = false))
+    }
+
     private companion object {
         val runs = AtomicInteger()
     }
