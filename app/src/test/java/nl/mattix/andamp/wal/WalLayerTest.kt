@@ -28,6 +28,7 @@ import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -241,20 +242,42 @@ class WalLayerTest {
         screen().performTouchInput {
             down(Offset(450f, 100f))
             moveTo(Offset(450f, 130f))
-            // 5 px from the left edge: against it
-            moveTo(Offset(305f, 400f))
+            // 20 px from the left edge, nearer than a classic window snaps: against it
+            moveTo(Offset(320f, 400f))
             up()
         }
         frames()
 
         assertEquals("the skin let go of the press", listOf("down 150,50", "cancel"), surface.pointerCalls)
-        assertEquals(listOf(false to WalMove(-150, 300, 600, 200)), surface.kept)
+        assertEquals(listOf(false to IntOffset(-150, 300)), surface.kept)
         assertEquals(IntRect(0, 100, 200, 167), state.windowRects[WindowStore.MAIN])
     }
 
     @Test
-    fun `a kept place comes back with touches mapped there, and goes when the stack outgrows it`() {
-        surface.places[false] = WalMove(-150, 300, 600, 200)
+    fun `a drag the phone is turned during keeps nothing, upright or sideways`() {
+        surface.moveAreaUnderEveryPress = true
+        layer()
+
+        screen().performTouchInput {
+            down(Offset(450f, 100f))
+            moveTo(Offset(450f, 400f))
+        }
+        frames()
+        state.sideways = true
+        frames()
+        screen().performTouchInput {
+            moveTo(Offset(450f, 700f))
+            up()
+        }
+        frames()
+
+        assertEquals(emptyList<Pair<Boolean, IntOffset?>>(), surface.kept)
+        assertNull(surface.places[true])
+    }
+
+    @Test
+    fun `a kept place comes back with touches mapped there, and holds the stack inside the box while it has grown`() {
+        surface.places[false] = IntOffset(-150, 300)
         layer()
         assertEquals(IntRect(0, 100, 200, 167), state.windowRects[WindowStore.MAIN])
 
@@ -268,9 +291,13 @@ class WalLayerTest {
         // a window opens under the main one, and the stack would run off the bottom
         surface.layout = surface.layout!!.copy(stackH = 700)
         frames()
+        assertEquals("its bottom at the box's", IntRect(0, 66, 200, 533), state.windowRects[WindowStore.MAIN])
 
-        assertEquals(false to null, surface.kept.last())
-        assertEquals("back where the engine puts it", IntRect(50, 0, 250, 467), state.windowRects[WindowStore.MAIN])
+        surface.layout = surface.layout!!.copy(stackH = 100)
+        frames()
+
+        assertEquals("back where it was moved", IntRect(0, 100, 200, 167), state.windowRects[WindowStore.MAIN])
+        assertEquals("the place stays kept", listOf(false to IntOffset(-150, 300)), surface.kept)
     }
 
     @Test

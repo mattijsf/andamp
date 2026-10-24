@@ -51,11 +51,11 @@ import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.ui.window.PlaylistMenuActions
+import nl.mattix.andamp.ui.window.WindowSnap
 import nl.mattix.andamp.ui.window.windowScreen
 import nl.mattix.andamp.widget.WidgetSignals
 import java.util.Locale
 import java.util.WeakHashMap
-import kotlin.math.roundToInt
 
 /** The z-index of [WalLayer]: below every classic window, whose z-indexes run up from 0. */
 internal const val WAL_LAYER_Z = -2f
@@ -134,7 +134,7 @@ internal fun rememberWalLayerParts(
  *
  * A drag from one of the skin's move areas moves the stack inside the box ([WalDrag]); the skin
  * keeps where it was moved to, upright and sideways apart ([WalSurface.places]). A stack that has
- * outgrown that place goes back where the engine puts it.
+ * grown past the box's edge from there is held inside it ([WalPlacement.held]).
  *
  * The layer fills the surface, but only the stack takes touches: a touch beside it reaches what is
  * under it, which over the floating player is the app behind. There the touch window follows the
@@ -152,36 +152,34 @@ internal fun WalLayer(
     val surface = parts.surface
     BoxWithConstraints(modifier) {
         val box = WalPlacement.box(constraints.maxWidth, windowScreen(scale, state), scale)
-        val density = LocalDensity.current.density
-        val fit = WalPlacement.fit(box, density, state.sideways, parts.compact)
-        val fitNow by rememberUpdatedState(fit)
-        val drag = remember(surface) { WalDrag { move -> surface.places[fitNow.sideways] = move } }
+        val fit = WalPlacement.fit(box, LocalDensity.current.density, state.sideways, parts.compact)
+        val drag = remember(surface) { WalDrag { sideways, move -> surface.places[sideways] = move } }
         val layout = surface.layout
+        val fitted = layout?.takeIf { it.fit == fit }
         // where the engine puts the stack, and where the listener moved it from there
-        val home = layout?.takeIf { it.fit == fit }?.let { WalPlacement.of(box, it, scale) }
-        val kept = surface.places[fit.sideways]
-        val keptShift = if (kept == null || home == null) null else WalPlacement.shiftOf(kept, home.stack, box)
-        val shift = drag.shift ?: keptShift
-        val ready = if (home == null || shift == null) home else WalPlacement.of(box, layout, scale, shift)
+        val home = fitted?.let { WalPlacement.of(box, it, scale) }
+        val move = drag.shift ?: surface.places[fit.sideways]
+        val shift = if (home == null || move == null) null else WalPlacement.held(move, home.stack, box)
+        val ready = if (fitted == null || shift == null) home else WalPlacement.of(box, fitted, scale, shift)
         val last = remember(surface) { mutableStateOf<WalPlacement?>(null) }
         SideEffect { if (ready != null) last.value = ready }
+        val fitNow by rememberUpdatedState(fit)
         val readyNow by rememberUpdatedState(ready)
-        val droppedNow by rememberUpdatedState(kept != null && home != null && drag.shift == null && keptShift == null)
         // as composed, with the placement it goes with
         val draggingNow by rememberUpdatedState(drag.shift != null)
-        WalTurn(parts, state, fit = { fitNow }, ready = { readyNow }, dropped = { droppedNow }, dragging = { draggingNow })
+        WalTurn(parts, state, fit = { fitNow }, ready = { readyNow }, dragging = { draggingNow })
         val placed = if (layout == null) null else ready ?: last.value
-        SideEffect { drag.placedAt(box, home?.stack, placed?.stack?.topLeft, (WAL_SNAP_DP * density).roundToInt()) }
+        // the stack snaps as near as a classic window does
+        SideEffect { drag.placedAt(fit, box, home?.stack, placed?.stack?.topLeft, WindowSnap.SNAP_DISTANCE * scale) }
         if (placed == null) companion() else WalCanvas(parts, state, placed, drag)
     }
 }
 
 /**
  * The skin's turn on this surface, held while its lifecycle is resumed: the sink, the fit, the
- * clock, the menus, the window rect, and dropping a place the listener moved the stack to once
- * it no longer fits ([dropped]). The rect is removed when the layer goes, unless another surface
- * has published a rect since; a menu left open is closed and the skin's settings saved when the
- * layer goes or the surface stops.
+ * clock, the menus and the window rect. The rect is removed when the layer goes, unless another
+ * surface has published a rect since; a menu left open is closed and the skin's settings saved
+ * when the layer goes or the surface stops.
  */
 @Composable
 private fun WalTurn(
@@ -189,7 +187,6 @@ private fun WalTurn(
     state: WinampState,
     fit: () -> WalFit,
     ready: () -> WalPlacement?,
-    dropped: () -> Boolean,
     dragging: () -> Boolean,
 ) {
     val surface = parts.surface
@@ -203,7 +200,7 @@ private fun WalTurn(
                 surface.sink = parts.actions
                 try {
                     coroutineScope {
-                        holdTurn(parts, state, context, fit, ready, dropped, dragging) { rect ->
+                        holdTurn(parts, state, context, fit, ready, dragging) { rect ->
                             state.windowRects[WindowStore.MAIN] = rect
                             published.rect = rect
                             mainRectOwners[state] = published
@@ -239,14 +236,12 @@ private fun WalTurn(
 }
 
 /** What the surface holding the turn does until it lets go; each part runs until the scope is cancelled. */
-@Suppress("LongParameterList") // the turn's parts, and what the layer works out for it to act on
 private fun CoroutineScope.holdTurn(
     parts: WalLayerParts,
     state: WinampState,
     context: Context,
     fit: () -> WalFit,
     ready: () -> WalPlacement?,
-    dropped: () -> Boolean,
     dragging: () -> Boolean,
     publish: (IntRect) -> Unit,
 ) {
@@ -276,8 +271,6 @@ private fun CoroutineScope.holdTurn(
     // a change the skin shows, such as the volume or the track, earns it a tick
     launch { snapshotFlow { if (awake()) surface.wakeKey() else null }.filterNotNull().collect { surface.requestTick() } }
     launch { showSkinMenus(surface, state, parts.menuTitle) { parts.actions.pressAt?.invoke() } }
-    // the stack outgrew the place it was moved to: back where the engine puts it
-    launch { snapshotFlow(dropped).collect { if (it) surface.places[fit().sideways] = null } }
     // a debug build logs each place the stack is drawn at, so a skin's scale reads off a device;
     // a stack the finger drags is logged where it lands
     if (BuildConfig.DEBUG) {

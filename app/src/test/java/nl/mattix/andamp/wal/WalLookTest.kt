@@ -6,6 +6,7 @@ import android.app.Application
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import androidx.compose.ui.unit.IntOffset
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.Player
@@ -528,7 +529,7 @@ class WalLookTest {
     @Test
     fun `where the stack was moved is kept for the next look of the skin, upright and sideways apart`() {
         val first = look()
-        first.places[false] = WalMove(-150, 300, 600, 200)
+        first.places[false] = IntOffset(-150, 300)
 
         val again =
             WalLook(
@@ -541,15 +542,15 @@ class WalLookTest {
                 FakePlayer(),
             ).also { looks += it }
 
-        assertEquals(WalMove(-150, 300, 600, 200), again.places[false])
+        assertEquals(IntOffset(-150, 300), again.places[false])
         assertNull(again.places[true])
     }
 
     @Test
     fun `a stack put back where the engine puts it keeps no place, upright or sideways`() {
         val look = look()
-        look.places[false] = WalMove(-150, 300, 600, 200)
-        look.places[true] = WalMove(30, 0, 900, 400)
+        look.places[false] = IntOffset(-150, 300)
+        look.places[true] = IntOffset(30, 0)
 
         look.places.clear()
 
@@ -565,7 +566,7 @@ class WalLookTest {
         look.release(save = false)
         WalSettings(app).forget(look.id)
 
-        look.places[false] = WalMove(-150, 300, 600, 200)
+        look.places[false] = IntOffset(-150, 300)
 
         assertNull(WalSettings(app).place(look.id, sideways = false))
     }

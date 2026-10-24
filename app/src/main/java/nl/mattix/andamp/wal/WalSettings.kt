@@ -4,6 +4,7 @@ package nl.mattix.andamp.wal
 
 import android.content.Context
 import android.util.Log
+import androidx.compose.ui.unit.IntOffset
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import org.json.JSONObject
 
@@ -86,32 +87,30 @@ internal class WalSettings(
             .apply()
     }
 
-    /** Where the listener moved skin [id]'s stack, upright or [sideways]; null while it sits where the engine put it. */
+    /**
+     * How far the listener moved skin [id]'s stack from where the engine puts it, upright or
+     * [sideways], in device px; null while it sits there.
+     */
     fun place(
         id: String,
         sideways: Boolean,
-    ): WalMove? {
+    ): IntOffset? {
         val o = prefs.getString(placeKey(id, sideways), null)?.let { runCatching { JSONObject(it) }.getOrNull() } ?: return null
-        return runCatching { WalMove(o.getInt(DX), o.getInt(DY), o.getInt(WIDTH), o.getInt(HEIGHT)) }.getOrNull()
+        return runCatching { IntOffset(o.getInt(DX), o.getInt(DY)) }.getOrNull()
     }
 
-    /** Keeps where the listener moved skin [id]'s stack, upright or [sideways]; null forgets it. */
+    /** Keeps where the listener moved skin [id]'s stack, upright or [sideways] (see [place]); null forgets it. */
     fun keepPlace(
         id: String,
         sideways: Boolean,
-        move: WalMove?,
+        move: IntOffset?,
     ) {
         val key = placeKey(id, sideways)
         if (move == null) {
             if (prefs.contains(key)) prefs.edit().remove(key).apply()
             return
         }
-        val o =
-            JSONObject()
-                .put(DX, move.dx)
-                .put(DY, move.dy)
-                .put(WIDTH, move.width)
-                .put(HEIGHT, move.height)
+        val o = JSONObject().put(DX, move.x).put(DY, move.y)
         prefs.edit().putString(key, o.toString()).apply()
     }
 
@@ -126,8 +125,6 @@ internal class WalSettings(
         const val TAG = "WalSettings"
         const val DX = "dx"
         const val DY = "dy"
-        const val WIDTH = "w"
-        const val HEIGHT = "h"
 
         /** Where a skin's place is kept, apart from the value the engine thread writes whole. */
         fun placeKey(

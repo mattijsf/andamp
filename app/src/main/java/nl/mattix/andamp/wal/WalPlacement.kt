@@ -150,29 +150,24 @@ internal data class WalPlacement(
         }
 
         /**
-         * How far to move a stack whose unmoved rect is [home] in [box] to put back [move]. While
-         * the stack is the size it was moved at, the move is held inside the box, which another
-         * surface may draw a little smaller. A stack that has changed size since keeps the move
-         * while it still fits there; null when it does not, and the move is dropped. An axis the
-         * stack fills neither holds nor drops it.
+         * How far a stack whose unmoved rect is [home] is drawn from there when it was moved
+         * [move]: as far, but held wholly inside [box] (see [clamp]). A stack that grew, as when a
+         * drawer slides out, stays inside the box this way and goes back to where it was moved
+         * once it shrinks again; a box drawn a little smaller on another surface holds it the
+         * same way.
          */
-        fun shiftOf(
-            move: WalMove,
+        fun held(
+            move: IntOffset,
             home: IntRect,
             box: IntRect,
-        ): IntOffset? {
-            val asked = IntOffset(home.left + move.dx, home.top + move.dy)
-            val held = clamp(asked, home, box)
-            val resized = home.width != move.width || home.height != move.height
-            val outside = (box.width > home.width && held.x != asked.x) || (box.height > home.height && held.y != asked.y)
-            return if (resized && outside) null else held - home.topLeft
-        }
+        ): IntOffset = clamp(home.topLeft + move, home, box) - home.topLeft
 
         /**
-         * How tall the classic stack holds the main window while a modern skin is worn: down to the
-         * bottom of the skin's [stack] (`windowRects[MAIN]`, virtual px), so the plug-in window docks
-         * under the skin, but no lower than leaves [visH] above [screen]'s safe bottom for it. Null
-         * while the stack has no rect.
+         * How tall the classic stack holds the main window while a modern skin is worn, so the
+         * plug-in window docks against the skin's [stack] (`windowRects[MAIN]`, virtual px): under
+         * it while [visH] fits between it and [screen]'s safe bottom, else over it while it fits
+         * above, else as low as leaves it [visH] above the safe bottom. Null while the stack has no
+         * rect.
          */
         fun dockedMainH(
             stack: IntRect?,
@@ -180,7 +175,13 @@ internal data class WalPlacement(
             visH: Int,
         ): Int? {
             stack ?: return null
-            return (minOf(stack.bottom, screen.safeBottom - visH) - screen.safeTop).coerceAtLeast(0)
+            val visTop =
+                when {
+                    stack.bottom + visH <= screen.safeBottom -> stack.bottom
+                    stack.top - visH >= screen.safeTop -> stack.top - visH
+                    else -> screen.safeBottom - visH
+                }
+            return (visTop - screen.safeTop).coerceAtLeast(0)
         }
     }
 }

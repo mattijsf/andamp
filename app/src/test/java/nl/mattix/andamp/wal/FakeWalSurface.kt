@@ -9,6 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
@@ -56,7 +57,7 @@ internal class FakeWalSurface : WalSurface {
     var moveAreaUnderEveryPress = false
 
     /** Each place kept, with whether it was sideways, in order. */
-    val kept = mutableListOf<Pair<Boolean, WalMove?>>()
+    val kept = mutableListOf<Pair<Boolean, IntOffset?>>()
 
     override val places = WalPlaces { sideways, move -> kept += sideways to move }
 

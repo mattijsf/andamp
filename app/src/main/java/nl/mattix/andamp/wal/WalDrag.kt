@@ -11,23 +11,21 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.round
 import kotlin.math.abs
 
-/** How close, in dp, the stack has to come to an edge of its box, or to its place there, to snap to it. */
-internal const val WAL_SNAP_DP = 8f
-
 /**
  * The listener moving a modern skin's stack by one of its move areas, once [WalTouch] hands the
  * finger over. The stack follows the finger inside its box and stays wholly in it; once the drag
  * has gone further than the snap distance, the stack snaps to the box's edges and back to the place
  * the engine gives it, as a classic window snaps ([WalPlacement.snap]). When the finger lifts, the
- * place goes to [keep]: how far the stack was moved from the engine's place, or null when it is
- * back there.
+ * place goes to [keep], upright or sideways as the stack was laid out when the drag began: how far
+ * the stack was moved from the engine's place, or null when it is back there. A drag the phone is
+ * turned during ends where the stack was, and keeps nothing.
  *
  * The finger's positions count from the stack's top-left corner, which moves with the stack, so
  * each one is turned into a point of the surface with the place the stack was last drawn at
  * ([placedAt]).
  */
 internal class WalDrag(
-    private val keep: (WalMove?) -> Unit,
+    private val keep: (sideways: Boolean, move: IntOffset?) -> Unit,
 ) : WalTouch.Drag {
     /** How far the stack is moved from the engine's place while the finger drags it, in surface pixels; null between drags. */
     var shift: IntOffset? by mutableStateOf(null)
@@ -43,6 +41,10 @@ internal class WalDrag(
 
     private var frame: Frame? = null
 
+    /** The fit the stack is laid out for now, and the one it was laid out for when the drag began. */
+    private var fit: WalFit? = null
+    private var began: WalFit? = null
+
     /** Where the finger pressed, as a point of the surface. */
     private var grab = Offset.Zero
 
@@ -54,15 +56,18 @@ internal class WalDrag(
 
     /**
      * Where the stack was last drawn: [drawn], its top-left corner on the surface; [home], its rect
-     * where the engine places it in [box]; and how close [snapPx] makes a snap. Null [home] while
-     * the stack has no place in the box, which leaves a drag where it is.
+     * where the engine places it for [fit] in [box]; and how close [snapPx] makes a snap. Null
+     * [home] while the stack has no place in the box, which leaves a drag where it is.
      */
     fun placedAt(
+        fit: WalFit,
         box: IntRect,
         home: IntRect?,
         drawn: IntOffset?,
         snapPx: Int,
     ) {
+        this.fit = fit
+        if (shift != null && fit != began) shift = null
         frame = if (home == null || drawn == null) null else Frame(box, home, drawn, snapPx)
     }
 
@@ -71,6 +76,7 @@ internal class WalDrag(
         at: Offset,
     ) {
         val f = frame ?: return
+        began = fit
         grab = Offset(f.drawn.x + from.x, f.drawn.y + from.y)
         this.from = f.drawn - f.home.topLeft
         escaped = false
@@ -94,7 +100,8 @@ internal class WalDrag(
         val moved = shift ?: return
         shift = null
         // a stack that lost its place in the box meanwhile keeps the place it had
-        val home = frame?.home ?: return
-        keep(if (moved == IntOffset.Zero) null else WalMove(moved.x, moved.y, home.width, home.height))
+        if (frame == null) return
+        val sideways = began?.sideways ?: return
+        keep(sideways, moved.takeUnless { it == IntOffset.Zero })
     }
 }

@@ -4,6 +4,7 @@ package nl.mattix.andamp.state
 
 import android.app.Application
 import android.os.Looper
+import androidx.compose.ui.unit.IntOffset
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -11,7 +12,6 @@ import kotlinx.coroutines.SupervisorJob
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.wal.WalLook
-import nl.mattix.andamp.wal.WalMove
 import nl.mattix.andamp.wal.WalSettings
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -28,8 +28,9 @@ import org.robolectric.annotation.GraphicsMode
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * Where the listener moved a modern skin stays with the skin: through the next start and a music
- * source's skin worn over it, until the listener picks the skin again from Skins.
+ * Where the listener moved a modern skin stays with the skin: through the next start, a switch to
+ * another skin and back, and a music source's skin worn over it, until the listener picks the skin
+ * on screen again from Skins.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -42,7 +43,7 @@ class SkinOpsPlaceTest {
     /** Every modern look opened, in order. */
     private val opened = CopyOnWriteArrayList<WalLook>()
 
-    private val moved = WalMove(-150, 300, 600, 200)
+    private val moved = IntOffset(-150, 300)
 
     @Before
     fun setUp() {
@@ -112,7 +113,7 @@ class SkinOpsPlaceTest {
     fun `picking the worn modern skin again from Skins puts it back where the engine places it`() {
         val look = wornModern()
         look.places[false] = moved
-        look.places[true] = WalMove(30, 0, 900, 400)
+        look.places[true] = IntOffset(30, 0)
 
         ops.apply(look.id)
 
@@ -122,15 +123,17 @@ class SkinOpsPlaceTest {
     }
 
     @Test
-    fun `picking a moved modern skin from another skin puts it on where the engine places it`() {
-        val modern = library.addModern(app, "Bento")
-        WalSettings(app).keepPlace(modern, sideways = false, move = moved)
+    fun `a moved modern skin picked from another skin comes back where it was moved to`() {
+        val look = wornModern()
+        look.places[false] = moved
 
-        ops.apply(modern)
+        ops.apply(BundledSkins.LIGHT.id)
+        await { ops.currentId == BundledSkins.LIGHT.id && ops.wal == null }
+        ops.apply(look.id)
+        await { ops.currentId == look.id && ops.wal != null }
 
-        await { ops.wal != null }
-        assertNull(ops.wal!!.places[false])
-        assertNull(WalSettings(app).place(modern, sideways = false))
+        assertEquals(moved, ops.wal!!.places[false])
+        assertEquals(moved, WalSettings(app).place(look.id, sideways = false))
     }
 
     @Test
