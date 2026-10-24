@@ -24,6 +24,21 @@ internal fun SkinMenu.toAmpMenu(
     onDismiss: () -> Unit,
 ): AmpMenu = AmpMenu(title, ampItems(onPick), anchor, onDismiss)
 
+/**
+ * This menu with the entry called [label] grayed and unticked: a classic switch, such as Double
+ * Size, that means nothing while a modern skin is worn.
+ */
+internal fun AmpMenu.grayedAt(label: String): AmpMenu =
+    copy(
+        items =
+            items.map { item ->
+                when {
+                    item is AmpMenuItem.Action && item.label == label -> item.copy(enabled = false, checked = false)
+                    else -> item
+                }
+            },
+    )
+
 private fun SkinMenu.ampItems(onPick: (Int) -> Unit): List<AmpMenuItem> =
     items.map { item ->
         when (item) {

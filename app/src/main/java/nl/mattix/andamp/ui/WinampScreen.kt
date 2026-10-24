@@ -72,6 +72,7 @@ import nl.mattix.andamp.ui.menu.AmpPromptHost
 import nl.mattix.andamp.ui.menu.mainMenu
 import nl.mattix.andamp.ui.menu.menuAnchorBounds
 import nl.mattix.andamp.ui.menu.optionsMenu
+import nl.mattix.andamp.ui.menu.visualizationItems
 import nl.mattix.andamp.ui.menu.visualizationMenu
 import nl.mattix.andamp.ui.online.OnlineSkinsScreen
 import nl.mattix.andamp.ui.prefs.MilkdropScreen
@@ -119,6 +120,7 @@ import nl.mattix.andamp.wal.WalLayer
 import nl.mattix.andamp.wal.WalLayerParts
 import nl.mattix.andamp.wal.WalPlacement
 import nl.mattix.andamp.wal.WalSurface
+import nl.mattix.andamp.wal.grayedAt
 import nl.mattix.andamp.wal.rememberWalLayerParts
 
 // 60fps target; the loop self-corrects for scheduling drift
@@ -352,11 +354,14 @@ internal fun PlayerSurface(
     // read when the menu is built: the widget lists keep the openMenu of the composition that built them
     val walNow by rememberUpdatedState(wal)
     // The clutter bar's D and the Options menu share this switch. Switching Double Size on
-    // switches Always On Top off, and the surface is told as when its own A did that.
+    // switches Always On Top off, and the surface is told as when its own A did that. A modern
+    // skin has no Double Size, so the classic main window standing in while it loads switches nothing.
     val doubleSize = {
-        val floating = vm.overlayOps.gate.wanted
-        vm.doubleSize.toggle()
-        if (floating && !vm.overlayOps.gate.wanted) onFloatingChanged(false)
+        if (walNow == null) {
+            val floating = vm.overlayOps.gate.wanted
+            vm.doubleSize.toggle()
+            if (floating && !vm.overlayOps.gate.wanted) onFloatingChanged(false)
+        }
     }
     Box(Modifier.fillMaxSize().then(if (locked) Modifier.background(Color.Black) else Modifier)) {
         // the fullscreen visualizer is drawn over every window and outside the insets the
@@ -408,6 +413,10 @@ internal fun PlayerSurface(
                     }
                 val walParts =
                     wal?.let { surface -> rememberWalLayerParts(surface, vm, playlistActions, openMenu, onMinimize, covered) }
+                // the classic main window's V and O, grayed as the main menu grays them while a modern skin is worn
+                val visualizerMenu = { anchor: MenuAnchor ->
+                    visualizationMenu(vm, anchor).copy(items = visualizationItems(vm, modernPlayer = walNow != null))
+                }
                 val mainWidgets =
                     remember(vm, s.mainShaded) {
                         if (s.mainShaded) {
@@ -418,7 +427,7 @@ internal fun PlayerSurface(
                                 },
                                 onOptions = { openMenu(null, null) },
                                 onExit = quit,
-                                visualizerMenu = { anchor -> visualizationMenu(vm, anchor) },
+                                visualizerMenu = visualizerMenu,
                             )
                         } else {
                             mainWindowWidgets(
@@ -428,15 +437,17 @@ internal fun PlayerSurface(
                                 },
                                 onExit = quit,
                                 onMinimize = onMinimize,
-                                visualizerMenu = { anchor -> visualizationMenu(vm, anchor) },
+                                visualizerMenu = visualizerMenu,
                                 optionsMenu = { anchor ->
-                                    optionsMenu(
-                                        vm,
-                                        anchor,
-                                        onPreferences,
-                                        onAlwaysOnTop = alwaysOnTop,
-                                        onDoubleSize = doubleSize,
-                                    )
+                                    val options =
+                                        optionsMenu(
+                                            vm,
+                                            anchor,
+                                            onPreferences,
+                                            onAlwaysOnTop = alwaysOnTop,
+                                            onDoubleSize = doubleSize,
+                                        )
+                                    if (walNow == null) options else options.grayedAt(vm.words.get(R.string.menu_double_size))
                                 },
                                 onAlwaysOnTop = alwaysOnTop,
                                 onDoubleSize = doubleSize,
