@@ -96,5 +96,20 @@ internal data class WalPlacement(
                 )
             return WalPlacement(stack, window, layout.scale, scale)
         }
+
+        /**
+         * How tall the classic stack holds the main window while a modern skin is worn: down to the
+         * bottom of the skin's [stack] (`windowRects[MAIN]`, virtual px), so the plug-in window docks
+         * under the skin, but no lower than leaves [visH] above [screen]'s safe bottom for it. Null
+         * while the stack has no rect.
+         */
+        fun dockedMainH(
+            stack: IntRect?,
+            screen: WindowScreen,
+            visH: Int,
+        ): Int? {
+            stack ?: return null
+            return (minOf(stack.bottom, screen.safeBottom - visH) - screen.safeTop).coerceAtLeast(0)
+        }
     }
 }

@@ -117,6 +117,7 @@ import nl.mattix.andamp.ui.window.windowScreen
 import nl.mattix.andamp.wal.WAL_LAYER_Z
 import nl.mattix.andamp.wal.WalLayer
 import nl.mattix.andamp.wal.WalLayerParts
+import nl.mattix.andamp.wal.WalPlacement
 import nl.mattix.andamp.wal.WalSurface
 import nl.mattix.andamp.wal.rememberWalLayerParts
 
@@ -171,8 +172,8 @@ internal fun WinampScreen(
     onFloatingChanged: (Boolean) -> Unit = {},
     /** How this surface steps out of the app, for a visit that came from outside it. */
     onDone: () -> Unit = {},
-    /** The modern skin the player shows, or null for the classic skin; see [PlayerSurface]. */
-    wal: WalSurface? = null,
+    /** The modern skin the player shows, or null for the classic skin: the worn one; see [PlayerSurface]. */
+    wal: WalSurface? = vm.skinOps.wal,
 ) {
     val skin = vm.skin
     val context = LocalContext.current
@@ -546,7 +547,8 @@ private fun BoxWithConstraintsScope.PlayerWindows(
             ClassicStack.Ask(
                 screen,
                 s.sideways,
-                mainH,
+                // a modern skin's stack takes the main window's place in the column
+                if (wal == null) mainH else WalPlacement.dockedMainH(s.windowRects[WindowStore.MAIN], screen, milkdropH) ?: mainH,
                 // a modern skin shows no equalizer, so the stack keeps no room for one
                 eq = s.classicMember(WindowStore.EQ, eqH, s.eqVisible).takeIf { wal == null },
                 vis = s.classicMember(WindowStore.MILKDROP, milkdropH, s.milkdropOn),

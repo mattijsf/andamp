@@ -40,6 +40,8 @@ fun widgetMenu(
             onMuseum = { onOpen(Screen.MUSEUM) },
             // grayed on the widget, so never called
             onAlwaysOnTop = {},
+            // with a modern skin worn, the classic windows and modes it does not show read unticked
+            modernPlayer = vm.skinOps.wal != null,
         )
     return AmpMenu(
         vm.words.get(R.string.app_name),
