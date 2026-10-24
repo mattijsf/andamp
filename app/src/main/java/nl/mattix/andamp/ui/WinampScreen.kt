@@ -348,6 +348,8 @@ internal fun PlayerSurface(
      * player is never covered.
      */
     covered: () -> Boolean = { vm.state.playerCovered && !vm.state.screenPulled },
+    /** Whether a modern skin keeps to its natural size instead of filling the screen, as over other apps. */
+    compact: Boolean = false,
 ) {
     // filling the screen, the windows are one locked stack with black around it
     val locked = vm.state.doubleSize
@@ -412,7 +414,7 @@ internal fun PlayerSurface(
                         walNow != null
                     }
                 val walParts =
-                    wal?.let { surface -> rememberWalLayerParts(surface, vm, playlistActions, openMenu, onMinimize, covered) }
+                    wal?.let { rememberWalLayerParts(it, vm, playlistActions, openMenu, onMinimize, covered, compact) }
                 // the classic main window's V and O, grayed as the main menu grays them while a modern skin is worn
                 val visualizerMenu = { anchor: MenuAnchor ->
                     visualizationMenu(vm, anchor).copy(items = visualizationItems(vm, modernPlayer = walNow != null))

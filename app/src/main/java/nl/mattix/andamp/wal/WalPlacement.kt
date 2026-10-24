@@ -65,12 +65,13 @@ internal data class WalPlacement(
             scale: Int,
         ): IntRect = IntRect(0, screen.safeTop * scale, widthPx, screen.safeBottom * scale)
 
-        /** [box] as the engine is told it. */
+        /** [box] as the engine is told it; [compact] for the floating player (see [WalFit.compact]). */
         fun fit(
             box: IntRect,
             density: Float,
             sideways: Boolean,
-        ): WalFit = WalFit(box.width, box.height, density, sideways)
+            compact: Boolean = false,
+        ): WalFit = WalFit(box.width, box.height, density, sideways, compact)
 
         /** Where [layout], worked out for [box], puts the stack on a surface of [scale] pixels per virtual pixel. */
         fun of(

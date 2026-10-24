@@ -18,6 +18,12 @@ internal data class WalFit(
     val density: Float,
     /** Whether the phone is held sideways. */
     val sideways: Boolean,
+    /**
+     * Whether the stack keeps every window at its natural height, and a window that resizes both
+     * ways at its smallest height, instead of filling the box: the floating player, which covers no
+     * more of the app behind it than it shows.
+     */
+    val compact: Boolean = false,
 )
 
 /**

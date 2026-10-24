@@ -85,6 +85,8 @@ internal class WalLayerParts(
     val openMenu: (onSkinMenu: (() -> Unit)?, anchor: MenuAnchor?) -> Unit,
     /** What a skin's popup menu is called as one of the app's menus. */
     val menuTitle: String,
+    /** Whether the stack keeps to its natural size, as over other apps; see [WalFit.compact]. */
+    val compact: Boolean = false,
 )
 
 /** [surface] as [vm]'s player surface hands it on, with the ways this surface opens menus and files. */
@@ -96,12 +98,13 @@ internal fun rememberWalLayerParts(
     openMenu: (onSkinMenu: (() -> Unit)?, anchor: MenuAnchor?) -> Unit,
     onMinimize: () -> Unit,
     covered: () -> Boolean,
+    compact: Boolean = false,
 ): WalLayerParts {
     val openMenuNow by rememberUpdatedState(openMenu)
     val minimizeNow by rememberUpdatedState(onMinimize)
     val playlistNow by rememberUpdatedState(playlistActions)
     val coveredNow by rememberUpdatedState(covered)
-    return remember(surface, vm) {
+    return remember(surface, vm, compact) {
         WalLayerParts(
             surface,
             WalHostActions.of(
@@ -113,6 +116,7 @@ internal fun rememberWalLayerParts(
             covered = { coveredNow() },
             openMenu = { onSkinMenu, anchor -> openMenuNow(onSkinMenu, anchor) },
             menuTitle = vm.words.get(R.string.menu_skin_menu),
+            compact = compact,
         )
     }
 }
@@ -142,7 +146,7 @@ internal fun WalLayer(
     val surface = parts.surface
     BoxWithConstraints(modifier) {
         val box = WalPlacement.box(constraints.maxWidth, windowScreen(scale, state), scale)
-        val fit = WalPlacement.fit(box, LocalDensity.current.density, state.sideways)
+        val fit = WalPlacement.fit(box, LocalDensity.current.density, state.sideways, parts.compact)
         val layout = surface.layout
         val ready = layout?.takeIf { it.fit == fit }?.let { WalPlacement.of(box, it, scale) }
         val last = remember(surface) { mutableStateOf<WalPlacement?>(null) }

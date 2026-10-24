@@ -272,10 +272,12 @@ internal class WalEngine(
      * The box the skin goes in, on the screen. On the engine thread it makes a window the listener
      * resizes both ways (Bento) fill the box, as maximized; gives the skin the box in skin pixels
      * ([SkinRuntime.viewSize]); while upright stretches the last window under the main one to the
-     * height left, and sideways keeps the height each window has; and lets a touch 24 dp beside an
-     * object still mean it ([SkinRuntime.touchSlop]). Each frame then carries a [WalLayout] for this
-     * box (see [WalScale.place]). A box asked for before the skin has loaded is applied before its
-     * first frame. A fit equal to the one applied, or a box with no area, does nothing.
+     * height left, and sideways keeps the height each window has; a compact box ([WalFit.compact])
+     * keeps every height, and the window that resizes both ways at its smallest height; and lets a
+     * touch 24 dp beside an object still mean it ([SkinRuntime.touchSlop]). Each frame then carries
+     * a [WalLayout] for this box (see [WalScale.place]). A box asked for before the skin has loaded
+     * is applied before its first frame. A fit equal to the one applied, or a box with no area, does
+     * nothing.
      */
     fun fit(fit: WalFit) {
         if (fit.widthPx <= 0 || fit.heightPx <= 0) return
@@ -564,13 +566,14 @@ private object Fitting {
     ) {
         val layout = runtime.mainLayout ?: return
         val box = IntSize(fit.widthPx, fit.heightPx)
-        runtime.stretchLast = !fit.sideways
+        runtime.stretchLast = !fit.sideways && !fit.compact
         val hasMinimum = layout.minW > 0 && layout.minH > 0
         if (hasMinimum && layout.resizesHorizontally() && layout.resizesVertically()) {
-            // its scale from its minimum size, its size from what the box holds at that scale
+            // its scale from its minimum size, its size from what the box holds at that scale; in a
+            // compact box no taller than its minimum
             val s = WalScale.of(box, layout.minW, layout.minH)
             val w = maxOf(layout.minW, (box.width / s).toInt())
-            val h = maxOf(layout.minH, (box.height / s).toInt())
+            val h = if (fit.compact) layout.minH else maxOf(layout.minH, (box.height / s).toInt())
             if (layout.size != w to h) {
                 layout.makiCall("resize", listOf(Value.Int(0), Value.Int(0), Value.Int(w), Value.Int(h)))
             }
