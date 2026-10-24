@@ -8,8 +8,6 @@ import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
 import androidx.compose.ui.unit.IntSize
-import nl.mattix.andamp.BuildConfig
-import nl.mattix.andamp.modernskin.maki.Value
 import nl.mattix.andamp.modernskin.skin.DrawCmd
 import nl.mattix.andamp.modernskin.skin.Rect
 import nl.mattix.andamp.modernskin.skin.SkinMenu
@@ -22,6 +20,7 @@ import java.util.concurrent.atomic.AtomicReference
  * What the screen draws of a modern skin, and what it needs to know to place it and route touches:
  * one immutable snapshot, made on the engine thread after each change.
  */
+@Suppress("LongParameterList") // one snapshot of all the screen reads of a frame
 internal class WalFrame(
     /** The windows and their commands, as `SkinRuntime.drawWindows` gives them. */
     val stack: List<Pair<Rect, List<DrawCmd>>>,
@@ -37,13 +36,33 @@ internal class WalFrame(
     val animating: Boolean,
     /** The engine's last log lines, newest last. */
     val log: List<String>,
-    /** What making this frame took on the engine thread, in ns: the tick that changed it, if any, and the draw list. */
+    /**
+     * What making this frame took on the engine thread, in ns: the tick, touch or task that changed
+     * it, and the draw list; a popup menu it waited on is left out ([WalMenuWait.workClock]).
+     */
     val buildNanos: Long = 0,
     /** Where the stack sits in the box of the last [WalEngine.fit], or null before the first one. */
     val layout: WalLayout? = null,
     /** The seq of the last touch when it landed on an object with a skin menu, else null; see [SkinRuntime.menuTarget]. */
     val menuTarget: Int? = null,
+    /** Whether the skin wants a frame on every display frame, as the engine's idle source says ([WalIdle.framesWanted]). */
+    val wantsFrames: Boolean = true,
+    /** The color theme the skin wears ([SkinRuntime.currentGammaSet]), or null when it has none. */
+    val themeKey: String? = null,
 )
+
+/** What a skin says about resting, as [WalEngine] reads it each time it publishes a frame. */
+internal data class WalIdle(
+    /** Whether something moves that wants a frame on every display frame; see [SkinRuntime.framesWanted]. */
+    val framesWanted: Boolean,
+    /** When, in the runtime's clock ms, something next changes by itself, or null; see [SkinRuntime.nextDueAt]. */
+    val nextDueAt: Long?,
+) {
+    companion object {
+        /** What [runtime] says. */
+        fun of(runtime: SkinRuntime): WalIdle = WalIdle(runtime.framesWanted, runtime.nextDueAt())
+    }
+}
 
 /**
  * Runs one modern skin's runtime on a dedicated thread. The runtime is made, ticked, touched and
@@ -59,12 +78,17 @@ internal class WalFrame(
  * count, and [MAX_FAILURES] failures in a row tell [onBroken] that the skin stopped working. Frames
  * the screen fails to draw are counted the same way, apart from the tasks (see [drawFailed]).
  *
- * A debug build logs timings under [TIMING_TAG]: each tick's time and its draw list's, with the
- * engine thread's name, how long each touch waited for the engine thread, and the load.
+ * While [WalTiming] is on, the engine logs each tick and each frame it publishes, with what caused
+ * it, the engine thread's name and the time each took, less any popup menu it waited on
+ * ([WalMenuWait.workClock]); how long each touch waited for the engine thread; and the load.
+ *
+ * [idle] says, each time a frame is published, whether the skin wants frames and when it is next
+ * due; the frame carries the first ([WalFrame.wantsFrames]).
  */
 internal class WalEngine(
     name: String,
     private val host: WalHost,
+    private val idle: (SkinRuntime) -> WalIdle = WalIdle::of,
     private val onFrame: () -> Unit,
 ) {
     private val thread = HandlerThread("wal-$name").apply { start() }
@@ -77,7 +101,7 @@ internal class WalEngine(
         host.menus.onChange = onFrame
         // the skin as it stands when its menu opens, as Windows paints under a menu; a failure here
         // counts against the task that opened the menu
-        host.menus.beforeShow = { if (!publishing) runCatching { publish() }.onFailure { taskFailure = it } }
+        host.menus.beforeShow = { if (!publishing) runCatching { publish(WalCause.MENU) }.onFailure { taskFailure = it } }
     }
 
     // touched only on the engine thread
@@ -85,6 +109,14 @@ internal class WalEngine(
     private var baseW = 0
     private var seenVersion = -1
     private var publishing = false
+    private val fitting = WalFitting()
+
+    /**
+     * Whether the screen shows the skin now, as its look hands it on ([WalSurface.awake]); false
+     * until it is set. Stored only: the engine runs the same either way.
+     */
+    @Volatile
+    var awake = false
 
     /** The box applied to the runtime last; see [fit]. */
     private var appliedFit: WalFit? = null
@@ -184,9 +216,9 @@ internal class WalEngine(
         mainHandler.postDelayed(overrun, budgetMs)
         handler.post {
             val t0 = System.nanoTime()
-            val made = runCatching { build().also { Fitting.requireShowable(it, box) } }
+            val made = runCatching { build().also { WalFitting.requireShowable(it, box) } }
             val loadMs = (System.nanoTime() - t0) / NANOS_PER_MS
-            if (TIMING) Log.d(TIMING_TAG, "load $loadMs ms on ${thread.name}")
+            if (WalTiming.on) Log.d(WalTiming.TAG, "load $loadMs ms on ${thread.name}")
             val overran = loadMs > budgetMs
             // the time ran out (and was reported) or the engine closed while it loaded
             if (!decideStart() || closed.get()) return@post
@@ -202,9 +234,9 @@ internal class WalEngine(
     private fun firstFrame(runtime: SkinRuntime): Throwable? {
         rt = runtime
         return runCatching {
-            baseW = Fitting.baseWOf(runtime)
+            baseW = WalFitting.baseWOf(runtime)
             applyFit(runtime)
-            publish()
+            publish(WalCause.FIT)
         }.exceptionOrNull()?.also { rt = null }
     }
 
@@ -227,17 +259,20 @@ internal class WalEngine(
 
     /**
      * Runs [task] with the runtime on the engine thread, then publishes a frame unless [publish] is
-     * false. Before the skin is on, or when it did not start, it does nothing.
+     * false; the timing log names that frame by [cause]. Before the skin is on, or when it did not
+     * start, it does nothing.
      */
     fun post(
         publish: Boolean = true,
+        cause: WalCause = WalCause.TASK,
         task: (SkinRuntime) -> Unit,
     ) {
         handler.post {
             guarded("engine") {
                 val runtime = rt ?: return@guarded
+                val t0 = host.menus.workClock
                 task(runtime)
-                if (publish) publish()
+                if (publish) publish(cause, host.menus.workClock - t0)
             }
         }
     }
@@ -285,7 +320,7 @@ internal class WalEngine(
         handler.post {
             guarded("fit") {
                 val runtime = rt ?: return@guarded
-                if (applyFit(runtime)) publish()
+                if (applyFit(runtime)) publish(WalCause.FIT)
             }
         }
     }
@@ -295,39 +330,40 @@ internal class WalEngine(
         val fit = wantedFit ?: return false
         if (fit == appliedFit) return false
         appliedFit = fit
-        Fitting.apply(runtime, fit, baseW)
+        fitting.apply(runtime, fit, baseW)
         return true
     }
 
     /**
-     * Asks for a tick. One running or waiting covers this request, so a slow tick has none queued
-     * behind it, and none is asked while a menu is up.
+     * Asks for a tick, which the timing log names by [cause]. One running or waiting covers this
+     * request, so a slow tick has none queued behind it, and none is asked while a menu is up.
      */
-    fun requestTick() {
+    fun requestTick(cause: WalCause = WalCause.TICK) {
         // the skin stands still under its menu, and no ticks wait to run in a burst after it
         if (host.menus.menu != null) return
         if (!tickWaiting.compareAndSet(false, true)) return
         handler.post {
             try {
-                guarded("tick", ::tick)
+                guarded("tick") { tick(cause) }
             } finally {
                 tickWaiting.set(false)
             }
         }
     }
 
-    private fun tick() {
+    private fun tick(cause: WalCause) {
         val runtime = rt ?: return
-        val t0 = System.nanoTime()
+        val t0 = host.menus.workClock
         val changed = runtime.tick()
-        val tickNanos = System.nanoTime() - t0
+        val tickNanos = host.menus.workClock - t0
         val steps = runtime.scriptSteps
         // an animation that ends on a step that moves nothing still changes what the screen paces by
         val due = changed || host.version != seenVersion || runtime.animating != published.get()?.animating
-        val t1 = System.nanoTime()
-        val drew = due && publish(tickNanos)
-        val drawNanos = if (drew) System.nanoTime() - t1 else 0L
-        if (TIMING) Log.d(TIMING_TAG, "tick ${thread.name}: tick $tickNanos ns, publish $drawNanos ns")
+        val t1 = host.menus.workClock
+        val drew = due && publish(cause, tickNanos)
+        val drawNanos = if (drew) host.menus.workClock - t1 else 0L
+        // publish logs the line of a frame it published
+        if (!drew && WalTiming.on) Log.d(WalTiming.TAG, WalTiming.line(thread.name, tickNanos, 0, cause))
         onTicked?.invoke(runtime, tickNanos, drawNanos, drew, steps)
     }
 
@@ -349,9 +385,10 @@ internal class WalEngine(
             guarded("move") {
                 val runtime = rt ?: return@guarded
                 val (mx, my) = moveWaiting.getAndSet(null) ?: return@guarded
-                if (TIMING) Log.d(TIMING_TAG, "move waited ${System.nanoTime() - at} ns")
+                if (WalTiming.on) Log.d(WalTiming.TAG, "move waited ${System.nanoTime() - at} ns")
+                val t0 = host.menus.workClock
                 runtime.pointerMove(mx, my)
-                publish()
+                publish(WalCause.TOUCH, host.menus.workClock - t0)
             }
         }
     }
@@ -391,14 +428,14 @@ internal class WalEngine(
             it.rightClick(seq)
         }
 
-    /** [post] for a touch; a debug build logs how long it waited for the engine thread. */
+    /** [post] for a touch; the timing log says how long it waited for the engine thread. */
     private fun postTouch(
         what: String,
         task: (SkinRuntime) -> Unit,
     ) {
         val at = System.nanoTime()
-        post { runtime ->
-            if (TIMING) Log.d(TIMING_TAG, "$what waited ${System.nanoTime() - at} ns")
+        post(cause = WalCause.TOUCH) { runtime ->
+            if (WalTiming.on) Log.d(WalTiming.TAG, "$what waited ${System.nanoTime() - at} ns")
             task(runtime)
         }
     }
@@ -478,14 +515,20 @@ internal class WalEngine(
 
     /**
      * Builds a new frame from the runtime and hands it to the screen; true when one was published.
-     * [tickNanos] is the tick that changed it, for the frame's build time. A draw list that fails,
-     * or a stack grown too large to draw (see [WalScale.unfit]), throws: the screen keeps the last
-     * picture, and the task counts a failure.
+     * Once the skin has a box, [WalFitting.refit] first notes the windows now open. [workNanos] is
+     * the work that changed the frame (a tick, a touch, a task), for the frame's build time; the
+     * timing log names the frame by [cause]. A draw list that fails, or a stack grown too large to
+     * draw (see [WalScale.unfit]), throws: the screen keeps the last picture, and the task counts a
+     * failure.
      */
-    private fun publish(tickNanos: Long = 0): Boolean {
+    private fun publish(
+        cause: WalCause,
+        workNanos: Long = 0,
+    ): Boolean {
         val runtime = rt ?: return false
         seenVersion = host.version
-        val t0 = System.nanoTime()
+        val t0 = host.menus.workClock
+        appliedFit?.let { fitting.refit(runtime, it, baseW) }
         publishing = true
         val stack =
             try {
@@ -498,6 +541,7 @@ internal class WalEngine(
         val size = sizeOf(stack)
         if (mainSize != null) WalScale.unfit(mainSize, size, baseW, box = null)?.let { error(it) }
         val windowOpen = runtime.topWindow != null
+        val wantsFrames = idle(runtime).framesWanted
         published.set(
             WalFrame(
                 stack = stack,
@@ -507,14 +551,17 @@ internal class WalEngine(
                 windowOpen = windowOpen,
                 animating = runtime.animating,
                 log = host.logSnapshot(),
-                buildNanos = tickNanos + System.nanoTime() - t0,
+                buildNanos = workNanos + host.menus.workClock - t0,
                 layout =
                     appliedFit?.takeIf { mainSize != null }?.let {
-                        Fitting.layout(runtime, it, baseW, size, runtime.drawnSize, windowOpen)
+                        fitting.layout(runtime, it, baseW, size, runtime.drawnSize, windowOpen, wantsFrames)
                     },
                 menuTarget = runtime.menuTarget,
+                wantsFrames = wantsFrames,
+                themeKey = runtime.currentGammaSet,
             ),
         )
+        if (WalTiming.on) Log.d(WalTiming.TAG, WalTiming.line(thread.name, workNanos, host.menus.workClock - t0, cause))
         onFrame()
         return true
     }
@@ -525,110 +572,10 @@ internal class WalEngine(
 
         private const val NANOS_PER_MS = 1_000_000L
 
-        /** The log tag of a debug build's timings. */
-        const val TIMING_TAG = "WalTiming"
-
-        /** Whether this build logs timings. */
-        private val TIMING = BuildConfig.DEBUG
-
         private fun overrunFailure(budgetMs: Long) = TimeoutException("took longer than $budgetMs ms to load")
 
         /** How far right and down the windows of [stack] reach. */
         private fun sizeOf(stack: List<Pair<Rect, List<DrawCmd>>>): Pair<Int, Int> =
             (stack.maxOfOrNull { it.first.right } ?: 0) to (stack.maxOfOrNull { it.first.bottom } ?: 0)
-    }
-}
-
-/** How the box a skin goes in on the screen reaches its runtime, and where its stack then sits; on the engine thread. */
-private object Fitting {
-    /** How far beside an object a finger may land and still mean it: every control then answers across Android's 48 dp. */
-    private const val TOUCH_SLOP_DP = 24f
-
-    /**
-     * The main window's visible width at the start, which sets the scale (MMD3 keeps room on its
-     * right for a panel that slides out); fixed, so the size does not jump when that panel opens.
-     * A window the user resizes both ways (Bento) is sized to the screen and scales from its size: 0.
-     */
-    fun baseWOf(runtime: SkinRuntime): Int =
-        runtime.mainLayout?.takeUnless { it.resizesHorizontally() && it.resizesVertically() }?.contentRight() ?: 0
-
-    /** Throws unless the screen can show [runtime]: it has a main window, and a stack a phone can draw. */
-    fun requireShowable(
-        runtime: SkinRuntime,
-        box: IntSize?,
-    ) {
-        val layout = runtime.mainLayout ?: error("no main layout")
-        WalScale.unfit(layout.size, runtime.stackSize, baseWOf(runtime), box)?.let { error(it) }
-    }
-
-    /** Gives [runtime] the box of [fit], as [WalEngine.fit] tells; [baseW] as [baseWOf] gives it. */
-    fun apply(
-        runtime: SkinRuntime,
-        fit: WalFit,
-        baseW: Int,
-    ) {
-        val layout = runtime.mainLayout ?: return
-        val box = IntSize(fit.widthPx, fit.heightPx)
-        runtime.stretchLast = !fit.sideways && !fit.compact
-        val hasMinimum = layout.minW > 0 && layout.minH > 0
-        if (hasMinimum && layout.resizesHorizontally() && layout.resizesVertically()) {
-            // its scale from its minimum size, its size from what the box holds at that scale; in a
-            // compact box no taller than its minimum
-            val s = WalScale.of(box, layout.minW, layout.minH)
-            val w = maxOf(layout.minW, (box.width / s).toInt())
-            val h = if (fit.compact) layout.minH else maxOf(layout.minH, (box.height / s).toInt())
-            if (layout.size != w to h) {
-                layout.makiCall("resize", listOf(Value.Int(0), Value.Int(0), Value.Int(w), Value.Int(h)))
-            }
-        }
-
-        fun view(s: Float) = (box.width / s).toInt() to (box.height / s).toInt()
-        runtime.viewSize = view(WalScale.fit(box, layout.size, baseW))
-        // sideways the whole stack sets the scale, and the windows docked under the main one are
-        // sized only once the skin has a view
-        if (fit.sideways) runtime.viewSize = view(place(runtime, fit, baseW, runtime.stackSize).scale)
-    }
-
-    /**
-     * Where a stack of [size] sits in [fit]'s box, worked out again for each frame, since a window
-     * opening changes the stack. The layout's stack is the part of it the windows show ([drawn],
-     * see [SkinRuntime.drawnSize]), so the window rect, the touch area and the visualizer window
-     * docked under the skin go by where the skin ends. A touch 24 dp beside an object still means
-     * it at that scale.
-     */
-    fun layout(
-        runtime: SkinRuntime,
-        fit: WalFit,
-        baseW: Int,
-        size: Pair<Int, Int>,
-        drawn: Pair<Int, Int>,
-        windowOpen: Boolean,
-    ): WalLayout {
-        val place = place(runtime, fit, baseW, size, drawn)
-        runtime.touchSlop = kotlin.math.ceil(TOUCH_SLOP_DP * fit.density / place.scale).toInt()
-        return WalLayout(
-            fit = fit,
-            scale = place.scale,
-            left = place.left,
-            top = place.top,
-            stackW = drawn.first,
-            stackH = drawn.second,
-            windowOpen = windowOpen,
-            animating = runtime.animating,
-            menuTarget = runtime.menuTarget,
-            moveTarget = runtime.moveTarget,
-        )
-    }
-
-    /** Where a stack of [size], showing [drawn] of it, goes in [fit]'s box; see [WalScale.place]. */
-    private fun place(
-        runtime: SkinRuntime,
-        fit: WalFit,
-        baseW: Int,
-        size: Pair<Int, Int>,
-        drawn: Pair<Int, Int> = size,
-    ): WalScale.Place {
-        val layout = runtime.mainLayout
-        return WalScale.place(fit, layout?.size ?: size, baseW, layout?.contentRight() ?: size.first, size, drawn)
     }
 }

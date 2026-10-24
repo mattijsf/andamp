@@ -2,11 +2,16 @@
 
 package nl.mattix.andamp.wal
 
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WindowStore
+import nl.mattix.andamp.ui.window.ClassicStack
 import nl.mattix.andamp.ui.window.WindowScreen
 import nl.mattix.andamp.ui.window.WindowSnap
 import kotlin.math.abs
@@ -183,5 +188,58 @@ internal data class WalPlacement(
                 }
             return (visTop - screen.safeTop).coerceAtLeast(0)
         }
+
+        /**
+         * Where the classic windows sit until they are moved while a modern skin is worn, from
+         * [ask], the classic stack as the classic skin would have it: the skin's [stack]
+         * (`windowRects[MAIN]`, virtual px, null while it has none) takes the main window's place,
+         * so the plug-in window of [visH] docks under or over it ([dockedMainH]), or its left
+         * column when [dock] gives one; and no room is kept for the equalizer, which the skin shows.
+         * Only the main window's height changes: the plug-in window keeps the classic x and width.
+         */
+        fun dockedStack(
+            ask: ClassicStack.Ask,
+            stack: IntRect?,
+            dock: WalDock?,
+            visH: Int,
+        ): ClassicStack.Places {
+            val against = stack?.let { dock?.within(it) ?: it }
+            return ClassicStack.layout(ask.copy(mainH = dockedMainH(against, ask.screen, visH) ?: ask.mainH, eq = null))
+        }
     }
 }
+
+/**
+ * What the classic windows dock against in a worn skin's [WalLayout]: the left column of a stack
+ * set out in two columns ([WalLayout.dock]), and the size of the stack it lies in, all in skin px.
+ */
+internal data class WalDock(
+    val column: IntRect,
+    val stackW: Int,
+    val stackH: Int,
+) {
+    /** [column] where the stack is drawn as [stack], in its pixels: rounded outward, as [WalPlacement.window] is. */
+    fun within(stack: IntRect): IntRect {
+        if (stackW <= 0 || stackH <= 0) return stack
+        return IntRect(
+            stack.left + Math.floorDiv(column.left * stack.width, stackW),
+            stack.top + Math.floorDiv(column.top * stack.height, stackH),
+            stack.left - Math.floorDiv(-column.right * stack.width, stackW),
+            stack.top - Math.floorDiv(-column.bottom * stack.height, stackH),
+        )
+    }
+
+    companion object {
+        /** What [layout] gives the classic windows to dock against, or null for a stack in one column. */
+        fun of(layout: WalLayout?): WalDock? = layout?.dock?.let { WalDock(it, layout.stackW, layout.stackH) }
+    }
+}
+
+/**
+ * What [surface]'s layout gives the classic windows to dock against ([WalDock.of]), read apart
+ * from the rest of the layout, so a frame that changes only the rest recomposes nothing here; null
+ * without a surface.
+ */
+@Composable
+internal fun rememberWalDock(surface: WalSurface?): State<WalDock?> =
+    remember(surface) { derivedStateOf { WalDock.of(surface?.layout) } }

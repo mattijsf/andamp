@@ -7,6 +7,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.ui.menu.menuAnchorBounds
+import nl.mattix.andamp.ui.window.ClassicStack
 import nl.mattix.andamp.ui.window.WindowScreen
 import nl.mattix.andamp.ui.window.WindowSnap
 import org.junit.Assert.assertEquals
@@ -152,6 +153,43 @@ class WalPlacementTest {
             758 - 120 - 8,
             WalPlacement.dockedMainH(IntRect(0, 100, 360, 700), screen, visH = 120),
         )
+    }
+
+    @Test
+    fun `with a modern skin worn the plug-in window docks under its stack, and no room is kept for the equalizer`() {
+        val stack = IntRect(3, 8, 357, 288)
+        val ask =
+            ClassicStack.Ask(
+                screen,
+                sideways = false,
+                mainH = 116,
+                eq = ClassicStack.Member(116, top = null, placed = false),
+                vis = ClassicStack.Member(120, top = null, placed = false),
+            )
+
+        val docked = WalPlacement.dockedStack(ask, stack, dock = null, visH = 120)
+
+        assertEquals(ClassicStack.layout(ask.copy(mainH = 288 - 8, eq = null)), docked)
+        assertEquals("the plug-in window under the stack", 288, docked.vis.y)
+        assertEquals(
+            "no rect yet: the classic stack's heights",
+            ClassicStack.layout(ask.copy(eq = null)),
+            WalPlacement.dockedStack(ask, null, null, 120),
+        )
+    }
+
+    @Test
+    fun `a stack in two columns has the plug-in window docked under its left column`() {
+        val ask = ClassicStack.Ask(screen, sideways = true, mainH = 116, eq = null, vis = ClassicStack.Member(120, null, false))
+        // a 400 by 300 stack drawn as 200 by 150 virtual pixels, whose left column ends 200 skin px down
+        val stack = IntRect(10, 8, 210, 158)
+        val dock = WalDock.of(layout(2f, left = 0f, top = 0f, stackW = 400, stackH = 300).copy(dock = IntRect(0, 0, 177, 200)))
+
+        assertEquals(IntRect(10, 8, 99, 108), dock!!.within(stack))
+        val docked = WalPlacement.dockedStack(ask, stack, dock, visH = 120)
+        assertEquals(108, docked.vis.y)
+        assertEquals("the classic x, not the column's", ClassicStack.layout(ask).vis.x, docked.vis.x)
+        assertEquals("one column has nothing to dock against but the stack", null, WalDock.of(layout(2f, 0f, 0f, 400, 300)))
     }
 
     @Test

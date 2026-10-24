@@ -5,6 +5,7 @@ package nl.mattix.andamp.wal
 import androidx.compose.runtime.IntState
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.sync.Mutex
 import nl.mattix.andamp.modernskin.skin.SkinMenu
 
@@ -55,6 +56,16 @@ internal data class WalLayout(
     val menuTarget: Int?,
     /** The seq of the down that landed on one of the skin's move areas, or null; a drag from it moves the stack. */
     val moveTarget: Int? = null,
+    /** Whether the skin wants a frame on every display frame, as its frame says ([WalFrame.wantsFrames]). */
+    val wantsFrames: Boolean = true,
+    /**
+     * The left column of a stack set out in two columns, in skin px from the stack's top-left
+     * corner. The plug-in window docks against it as it does against a whole stack (see
+     * [WalPlacement.dockedStack]): under it, or over it when there is no room below; its x and
+     * width stay the classic stack's. Null for a stack in one column, which every layout is: the
+     * plug-in window docks against the whole stack.
+     */
+    val dock: IntRect? = null,
 )
 
 /**
@@ -87,6 +98,22 @@ internal interface WalSurface {
     var sink: WalSink?
 
     /**
+     * Whether the screen shows the skin now, as the surface holding [turn] tells it: false while
+     * the player is covered or the screen is dark. The look keeps it and hands it to its engine,
+     * also when the engine starts after it was set. Written on main; false until a surface sets it,
+     * and no surface sets it yet.
+     */
+    var awake: Boolean
+
+    /**
+     * When the listener last touched the skin, answered its menu or closed one of its windows with
+     * Back, in [android.os.SystemClock.uptimeMillis]; 0 before any. Every pointer call,
+     * [doubleTap], [rightClick], [answerMenu] and [closeTopWindow] sets it. Snapshot state set on
+     * main.
+     */
+    val lastInputAt: Long
+
+    /**
      * Draws the latest frame with its top-left at [scope]'s origin, at [WalLayout.scale]. At a
      * scale between whole numbers the frame is drawn into [layer] off screen and shrunk to fit.
      */
@@ -101,8 +128,11 @@ internal interface WalSurface {
     /** The box the stack goes in. The first call starts the engine; a fit equal to the last does nothing. */
     fun fit(fit: WalFit)
 
-    /** Asks for one tick of the skin's timers and animations; at most one waits at a time. */
-    fun requestTick()
+    /**
+     * Asks for one tick of the skin's timers and animations; at most one waits at a time. [cause]
+     * is what the timing log names it by: a display frame, or a change the skin shows ([wakeKey]).
+     */
+    fun requestTick(cause: WalCause = WalCause.TICK)
 
     /**
      * A value that changes when app state the skin shows changes, such as the volume, the track or

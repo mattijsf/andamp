@@ -24,6 +24,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLog
 import org.robolectric.shadows.ShadowLooper
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
@@ -77,6 +78,7 @@ class WalEngineTest {
     private inner class Run(
         label: String,
         val skin: SkinFiles = files,
+        idle: (SkinRuntime) -> WalIdle = WalIdle::of,
         onFrame: () -> Unit = {},
     ) {
         // a closed engine's thread may still be ending when the next test starts one
@@ -84,7 +86,7 @@ class WalEngineTest {
         val host = WalHost(skin, app.cacheDir)
         val frames = AtomicInteger()
         val engine =
-            WalEngine(name, host) {
+            WalEngine(name, host, idle) {
                 frames.incrementAndGet()
                 onFrame()
             }.also { engines += it }
@@ -651,6 +653,91 @@ class WalEngineTest {
     }
 
     @Test(timeout = 20_000)
+    fun `a frame carries the color theme the skin wears`() {
+        val run =
+            Run(
+                "themes",
+                skin(
+                    *skinXml(
+                        """<gammaset id="One"/><gammaset id="Two"/>""" +
+                            """<container id="main" name="t" default_visible="1">""" +
+                            """<layout id="normal" w="200" h="100"/></container>""",
+                    ),
+                ),
+            )
+        run.start()
+        assertNull(run.failure())
+        assertEquals("One", run.engine.frame?.themeKey)
+
+        run.engine.post { it.selectGammaSet("two") }
+
+        awaitThat("a frame in the other theme") { run.engine.frame?.themeKey == "Two" }
+        val worn = CompletableFuture<String?>()
+        run.engine.post(publish = false) { worn.complete(it.currentGammaSet) }
+        assertEquals(worn.get(5, TimeUnit.SECONDS), run.engine.frame?.themeKey)
+    }
+
+    @Test(timeout = 20_000)
+    fun `a frame and its layout say whether the skin wants frames, as the idle source tells`() {
+        val asked = AtomicInteger()
+        val run =
+            Run("idle", idle = { rt ->
+                asked.incrementAndGet()
+                WalIdle(framesWanted = false, nextDueAt = rt.now() + 100)
+            })
+        run.engine.fit(phone)
+        run.start()
+        assertNull(run.failure())
+
+        assertEquals(false, run.engine.frame?.wantsFrames)
+        assertEquals(
+            false,
+            run.engine.frame
+                ?.layout
+                ?.wantsFrames,
+        )
+        assertTrue("asked as the frame was made", asked.get() > 0)
+        engine.fit(phone)
+        awaitThat("the runtime, as the source, says it wants frames") { engine.frame?.layout?.wantsFrames == true }
+        assertEquals(true, engine.frame?.wantsFrames)
+    }
+
+    @Test(timeout = 20_000)
+    fun `every frame published and every tick is logged with what caused it`() {
+        assertNull(main.failure())
+        WalTiming.on = true
+        ShadowLog.clear()
+
+        engine.pointerDown(15, 15)
+        engine.pointerUp(15, 15)
+        onEngine { }
+        engine.requestTick(WalCause.KEY)
+        onEngine { }
+        engine.fit(phone)
+        onEngine { }
+
+        val line = Regex("tick wal-${main.name}: tick \\d+ ns, publish \\d+ ns, (\\w+)")
+        val causes = ShadowLog.getLogsForTag(WalTiming.TAG).mapNotNull { line.matchEntire(it.msg)?.groupValues?.get(1) }
+        assertEquals(listOf("touch", "touch", "key", "fit"), causes)
+    }
+
+    @Test(timeout = 20_000)
+    fun `the frame after a skin menu does not count the wait for the listener as its work`() {
+        assertNull(main.failure())
+        val heard = openMenu()
+        val menu = awaitMenu()
+
+        Thread.sleep(MENU_HELD_MS)
+        engine.answerMenu(menu, 1)
+        assertEquals(1, heard.get(5, TimeUnit.SECONDS))
+        // the task's frame is published before this runs
+        onEngine { }
+
+        val build = checkNotNull(engine.frame).buildNanos
+        assertTrue("built in $build ns", build < MENU_HELD_MS * NANOS_PER_MS / 2)
+    }
+
+    @Test(timeout = 20_000)
     fun `closing the engine frees a menu that waits`() {
         val heard = openMenu()
         awaitMenu()
@@ -662,5 +749,9 @@ class WalEngineTest {
 
     private companion object {
         val runs = AtomicInteger()
+
+        /** How long a test leaves a skin menu up before it answers. */
+        const val MENU_HELD_MS = 600L
+        const val NANOS_PER_MS = 1_000_000L
     }
 }

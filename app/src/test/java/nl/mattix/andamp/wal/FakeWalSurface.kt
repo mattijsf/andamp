@@ -4,6 +4,7 @@ package nl.mattix.andamp.wal
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
@@ -32,12 +33,28 @@ internal class FakeWalSurface : WalSurface {
     override val turn = Mutex()
     override var sink: WalSink? = null
 
+    /** What the screen said last; every value it sets is in [awakes]. */
+    override var awake = false
+        set(value) {
+            field = value
+            awakes += value
+        }
+
+    /** Set by a test, as a look stamps it on the listener's calls. */
+    override var lastInputAt by mutableLongStateOf(0L)
+
     /** The pointer calls, the fits, the saves and the menu answers, in order, as short lines. */
     val calls = mutableListOf<String>()
     val fits = mutableListOf<WalFit>()
     val answers = mutableListOf<Pair<SkinMenu, Int>>()
     val rightClicks = mutableListOf<Int>()
     val drawFailures = mutableListOf<Throwable>()
+
+    /** Each value [awake] was set to, in order. */
+    val awakes = mutableListOf<Boolean>()
+
+    /** What each tick asked for was named by, in order. */
+    val tickCauses = mutableListOf<WalCause>()
     var ticks = 0
     var draws = 0
     var dismissals = 0
@@ -94,8 +111,9 @@ internal class FakeWalSurface : WalSurface {
         }
     }
 
-    override fun requestTick() {
+    override fun requestTick(cause: WalCause) {
         ticks++
+        tickCauses += cause
     }
 
     override fun wakeKey(): Any = shown

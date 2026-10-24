@@ -50,9 +50,28 @@ internal class WalMenuWait(
     /** The menu waiting for a pick, or null. */
     val menu: SkinMenu? get() = open
 
+    /** The time spent in [choose] so far, in ns; written and read on the engine thread. */
+    private var choosingNanos = 0L
+
+    /**
+     * A clock for the engine thread's own work, in ns: [System.nanoTime] less the time spent in
+     * [choose], so a span read off it leaves out a menu's redraw and the wait for its answer. Read
+     * on the engine thread.
+     */
+    val workClock: Long get() = System.nanoTime() - choosingNanos
+
     /** Shows [menu] and waits for the answer: a command id, 0, or null. Called on the engine thread. */
     fun choose(menu: SkinMenu): Int? {
         if (unattended) return 0
+        val t0 = System.nanoTime()
+        try {
+            return showAndWait(menu)
+        } finally {
+            choosingNanos += System.nanoTime() - t0
+        }
+    }
+
+    private fun showAndWait(menu: SkinMenu): Int? {
         // a menu opened while another waits (a script run by the redraw below) is not shown
         if (closed || open != null) return null
         beforeShow?.invoke()

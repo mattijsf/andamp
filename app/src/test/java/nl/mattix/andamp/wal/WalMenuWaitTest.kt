@@ -6,6 +6,7 @@ import nl.mattix.andamp.modernskin.skin.SkinMenu
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
@@ -143,6 +144,27 @@ class WalMenuWaitTest {
     }
 
     @Test(timeout = 10_000)
+    fun `the work clock stands still while a menu waits for its answer`() {
+        val wait = WalMenuWait()
+        val opened = CompletableFuture<Unit>()
+        wait.onChange = { if (wait.menu != null) opened.complete(Unit) }
+        // read on the thread that waits, as the engine reads it
+        val worked =
+            CompletableFuture.supplyAsync {
+                val t0 = wait.workClock
+                wait.choose(menu)
+                wait.workClock - t0
+            }
+        opened.get(5, TimeUnit.SECONDS)
+
+        Thread.sleep(HELD_MS)
+        wait.answer(menu, 5)
+
+        val nanos = worked.get(5, TimeUnit.SECONDS)
+        assertTrue("worked $nanos ns", nanos < TimeUnit.MILLISECONDS.toNanos(HELD_MS) / 2)
+    }
+
+    @Test(timeout = 10_000)
     fun `with nobody to pick every menu answers 0 at once, without showing`() {
         val wait = WalMenuWait().apply { unattended = true }
         var shown = false
@@ -150,5 +172,10 @@ class WalMenuWaitTest {
 
         assertEquals(0, wait.choose(menu))
         assertEquals(false, shown)
+    }
+
+    private companion object {
+        /** How long a test leaves a menu up before it answers. */
+        const val HELD_MS = 300L
     }
 }

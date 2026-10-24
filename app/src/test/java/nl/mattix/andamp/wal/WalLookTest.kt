@@ -6,6 +6,7 @@ import android.app.Application
 import android.content.Context
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import androidx.compose.ui.unit.IntOffset
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.modernskin.skin.FakePlayer
@@ -29,8 +30,10 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowLooper
+import org.robolectric.shadows.ShadowSystemClock
 import java.io.File
 import java.io.IOException
+import java.time.Duration
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -569,6 +572,64 @@ class WalLookTest {
         look.places[false] = IntOffset(-150, 300)
 
         assertNull(WalSettings(app).place(look.id, sideways = false))
+    }
+
+    @Test(timeout = 20_000)
+    fun `a look tells its engine when the screen rests and when it wakes`() {
+        val look = look()
+        look.fit(phone)
+        val engine = look.engine!!
+        assertFalse("resting until a surface says otherwise", engine.awake)
+
+        look.awake = true
+        assertTrue(engine.awake)
+        look.awake = false
+        assertFalse(engine.awake)
+    }
+
+    @Test(timeout = 20_000)
+    fun `awake set before the first fit reaches the engine`() {
+        val look = look()
+
+        look.awake = true
+        look.fit(phone)
+
+        assertTrue(look.engine!!.awake)
+        await("the first frame arrives") { look.layout != null }
+        assertTrue(look.engine!!.awake)
+    }
+
+    @Test(timeout = 20_000)
+    fun `each call the listener makes on the skin sets the time of the last input, and nothing else does`() {
+        val look = look()
+        val menu = skinMenuOf("One")
+        val calls =
+            listOf<Pair<String, () -> Unit>>(
+                "down" to { look.pointerDown(1, 1) },
+                "move" to { look.pointerMove(2, 2) },
+                "up" to { look.pointerUp(2, 2) },
+                "cancel" to { look.pointerCancel() },
+                "double tap" to { look.doubleTap(1, 1) },
+                "right click" to { look.rightClick(1) },
+                "menu answer" to { look.answerMenu(menu, 1) },
+                "Back" to { look.closeTopWindow() },
+            )
+        look.fit(phone)
+        await("the first frame arrives") { look.layout != null }
+
+        for ((what, call) in calls) {
+            ShadowSystemClock.advanceBy(Duration.ofMillis(100))
+            call()
+            assertEquals(what, SystemClock.uptimeMillis(), look.lastInputAt)
+        }
+        val last = look.lastInputAt
+        ShadowSystemClock.advanceBy(Duration.ofMillis(100))
+        look.requestTick()
+        look.dismissMenu()
+        look.save()
+        look.fit(phone.copy(widthPx = 1000))
+        look.awake = true
+        assertEquals("ticks, fits, saves and the screen go by unseen", last, look.lastInputAt)
     }
 
     private companion object {

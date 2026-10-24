@@ -583,7 +583,32 @@ class WalLayerTest {
     }
 
     @Test
-    fun `a debug build logs each place the stack is drawn at, once`() {
+    fun `a change the skin shows asks for a tick named by it, and display frames ask for theirs`() {
+        layer()
+        surface.tickCauses.clear()
+
+        surface.shown++
+        frames()
+
+        assertEquals(listOf(WalCause.KEY), surface.tickCauses.filter { it != WalCause.TICK })
+        assertTrue(WalCause.TICK in surface.tickCauses)
+    }
+
+    @Test
+    fun `with the timing log off no place is logged`() {
+        ShadowLog.clear()
+        WalTiming.on = false
+        try {
+            layer()
+        } finally {
+            WalTiming.on = true
+        }
+
+        assertEquals(emptyList<String>(), ShadowLog.getLogsForTag(WalTiming.TAG).map { it.msg })
+    }
+
+    @Test
+    fun `the timing log has each place the stack is drawn at, once`() {
         ShadowLog.clear()
         var width by mutableStateOf(600)
         val parts = partsFor(surface, state)
@@ -605,7 +630,7 @@ class WalLayerTest {
                 "placed at 2.000x in 600x1599 upright: stack 600x200 at 0,0",
                 "placed at 2.000x in 900x1599 upright: stack 600x200 at 150,0",
             ),
-            ShadowLog.getLogsForTag(WalEngine.TIMING_TAG).map { it.msg },
+            ShadowLog.getLogsForTag(WalTiming.TAG).map { it.msg },
         )
         assertEquals(
             "placed at 2.500x in 2000x900 sideways: stack 100x50 at 10,20",

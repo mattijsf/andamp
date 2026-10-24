@@ -33,6 +33,13 @@ import kotlin.concurrent.thread
  * Timings depend on how much CPU Android gives the app: more while it is on screen or playing.
  * The run's first log line says which; open Andamp first to compare runs.
  *
+ *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal timing
+ *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal timing --ez on false
+ *     adb logcat -s WalTiming
+ *
+ * `timing` turns the timing log ([WalTiming]) on, in a release build too, and `--ez on false`
+ * turns it off; either holds until the app's process ends. A debug build starts with it on.
+ *
  * Guarded by android.permission.DUMP in the manifest: only the shell, or an app granted DUMP over
  * adb, can send it.
  */
@@ -45,7 +52,8 @@ class WalDevSwitch : BroadcastReceiver() {
             "check" -> check(context, intent)
             "on" -> gate(context, true)
             "off" -> gate(context, false)
-            else -> Log.w(WalHost.TAG, "WalDevSwitch: say --es wal on, off or check (got $command)")
+            "timing" -> timing(intent.getBooleanExtra("on", true))
+            else -> Log.w(WalHost.TAG, "WalDevSwitch: say --es wal on, off, check or timing (got $command)")
         }
     }
 
@@ -65,6 +73,11 @@ class WalDevSwitch : BroadcastReceiver() {
                 pending.finish()
             }
         }
+    }
+
+    private fun timing(on: Boolean) {
+        WalTiming.on = on
+        Log.i(WalHost.TAG, "timing log ${if (on) "on" else "off"} under ${WalTiming.TAG}")
     }
 
     private fun check(
