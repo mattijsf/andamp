@@ -120,6 +120,7 @@ import nl.mattix.andamp.wal.WalLayer
 import nl.mattix.andamp.wal.WalLayerParts
 import nl.mattix.andamp.wal.WalPlacement
 import nl.mattix.andamp.wal.WalSurface
+import nl.mattix.andamp.wal.rememberWalDock
 import nl.mattix.andamp.wal.rememberWalLayerParts
 
 // 60fps target; the loop self-corrects for scheduling drift
@@ -552,19 +553,22 @@ private fun BoxWithConstraintsScope.PlayerWindows(
     val mainH = heightOf(MAIN_H, s.mainShaded)
     val eqH = heightOf(EQ_H, s.eqShaded)
     val milkdropH = milkdropHeight(frameFor(skin), milkdropContentH(s.milkdropSteps))
-    // where the windows sit until they are moved
-    val docked =
-        ClassicStack.layout(
-            ClassicStack.Ask(
-                screen,
-                s.sideways,
-                // a modern skin's stack takes the main window's place in the column
-                if (wal == null) mainH else WalPlacement.dockedMainH(s.windowRects[WindowStore.MAIN], screen, milkdropH) ?: mainH,
-                // a modern skin shows no equalizer, so the stack keeps no room for one
-                eq = s.classicMember(WindowStore.EQ, eqH, s.eqVisible).takeIf { wal == null },
-                vis = s.classicMember(WindowStore.MILKDROP, milkdropH, s.milkdropOn),
-            ),
+    // where the windows sit until they are moved; a modern skin's stack takes the main window's place
+    val walDock by rememberWalDock(wal?.surface)
+    val classic =
+        ClassicStack.Ask(
+            screen,
+            s.sideways,
+            mainH,
+            eq = s.classicMember(WindowStore.EQ, eqH, s.eqVisible),
+            vis = s.classicMember(WindowStore.MILKDROP, milkdropH, s.milkdropOn),
         )
+    val docked =
+        if (wal == null) {
+            ClassicStack.layout(classic)
+        } else {
+            WalPlacement.dockedStack(classic, s.windowRects[WindowStore.MAIN], walDock, milkdropH)
+        }
     // Double Size holds the windows in place instead; see [LockedStack]
     val held =
         if (s.doubleSize) {

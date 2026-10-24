@@ -44,7 +44,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
-import nl.mattix.andamp.BuildConfig
 import nl.mattix.andamp.R
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WinampState
@@ -269,15 +268,15 @@ private fun CoroutineScope.holdTurn(
         }
     }
     // a change the skin shows, such as the volume or the track, earns it a tick
-    launch { snapshotFlow { if (awake()) surface.wakeKey() else null }.filterNotNull().collect { surface.requestTick() } }
+    launch {
+        snapshotFlow { if (awake()) surface.wakeKey() else null }.filterNotNull().collect { surface.requestTick(WalCause.KEY) }
+    }
     launch { showSkinMenus(surface, state, parts.menuTitle) { parts.actions.pressAt?.invoke() } }
-    // a debug build logs each place the stack is drawn at, so a skin's scale reads off a device;
+    // the timing log has each place the stack is drawn at, so a skin's scale reads off a device;
     // a stack the finger drags is logged where it lands
-    if (BuildConfig.DEBUG) {
-        launch {
-            snapshotFlow { ready()?.takeUnless { dragging() } }.filterNotNull().collect {
-                Log.d(WalEngine.TIMING_TAG, placedLine(it, fit()))
-            }
+    launch {
+        snapshotFlow { ready()?.takeUnless { dragging() } }.filterNotNull().collect {
+            if (WalTiming.on) Log.d(WalTiming.TAG, placedLine(it, fit()))
         }
     }
 }

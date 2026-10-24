@@ -482,35 +482,24 @@ class SkinRuntime(
         topWindow?.let { closeWindow(it) }
     }
 
-    /** Stacks the windows: the main one at its size, the others at its width under it. */
+    /**
+     * How many columns the stack is set out in once the app gives it a [viewSize]; a change lays the
+     * windows out again. [StackArrange] sets out one column whatever it says: every window docks
+     * under the main one.
+     */
+    var columns = 1
+        set(value) {
+            if (value != field) {
+                field = value
+                relayout()
+            }
+        }
+
+    /** Stacks the windows as [StackArrange.arrange] sets them out: the main one at its size, the others under it. */
     private fun arrange() {
         placed.clear()
         val main = mainLayout ?: return
-        val (mw, mh) = main.size
-        placed[main] = Rect(0, 0, mw, mh)
-        // the next window docks under what is visible of the main one, so it follows the drawer
-        main.layoutRoot()
-        var y = main.contentBottom()
-        val others = windows.drop(1)
-        val view = viewSize
-        others.forEachIndexed { i, l ->
-            // without a screen size (the reference tests) every window keeps its own size
-            if (view != null) {
-                // as wide as what shows of the main window (MMD3 keeps room on its right for a panel)
-                l.w = main.contentRight()
-                // the height the skin gives it (or its minimum), unless it is the last, room is
-                // left, the window can be made taller, it shows a list and stretchLast is on
-                l.h = l.attrs["h"]?.toIntLenient()
-                val natural = l.size.second
-                val left = view.second - y
-                val stretches =
-                    stretchLast && i == others.lastIndex && left > natural && l.resizesVertically() && showsList(l)
-                if (stretches) l.h = left
-            }
-            val (w, h) = l.size
-            placed[l] = Rect(0, y, w, h)
-            y += h
-        }
+        placed.putAll(StackArrange.arrange(StackArrange.Ask(main, windows.drop(1), viewSize, stretchLast, columns, ::showsList)))
     }
 
     /**
@@ -1443,6 +1432,20 @@ class SkinRuntime(
     /** Whether something moves by itself right now (a target slide or a playing animation): tick every frame. */
     val animating: Boolean get() = moving.isNotEmpty() || animations.any { it.playing }
 
+    /**
+     * Whether something on the skin moves by itself now and wants a frame on every display frame.
+     * Always true: the app ticks the skin on every display frame while it shows it.
+     */
+    val framesWanted: Boolean get() = true
+
+    /**
+     * When, in [clock] milliseconds, something on the skin next changes by itself while it wants no
+     * frames, such as a timer firing; null when nothing will. Always null: nothing is worked out
+     * from timers, animations or tickers.
+     */
+    @Suppress("FunctionOnlyReturningConstant") // the call the app makes for when the skin is next due; see above
+    fun nextDueAt(): Long? = null
+
     /** Script steps run since the last [tick] began, across every script. */
     val scriptSteps: Long get() = scripts.sumOf { it.stepsSinceRefill.toLong() }
 
@@ -1630,22 +1633,13 @@ class SkinRuntime(
 
     // ---- pointer -----------------------------------------------------------------------------
 
-    /** The window under a point of the stack, or the nearest within [touchSlop] above or below. */
+    /** The window under a point of the stack, or the nearest within [touchSlop]; see [StackArrange.windowAt]. */
     private fun windowAt(
         x: Int,
         y: Int,
     ): Layout? {
         if (needsLayout) doLayout()
-        // the one drawn last is on top: a docked window covers the main layout's empty drawer space
-        return windows.lastOrNull { (x to y) in windowRect(it) }
-            ?: windows
-                .minByOrNull {
-                    val r = windowRect(it)
-                    maxOf(r.top - y, 0, y - (r.bottom - 1))
-                }?.takeIf {
-                    val r = windowRect(it)
-                    maxOf(r.top - y, 0, y - (r.bottom - 1)) <= touchSlop
-                }
+        return StackArrange.windowAt(windows, ::windowRect, x to y, touchSlop)
     }
 
     /** The topmost object at a point of the stack. */

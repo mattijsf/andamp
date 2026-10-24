@@ -4,9 +4,11 @@ package nl.mattix.andamp.wal
 
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import androidx.compose.runtime.IntState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -32,7 +34,8 @@ import java.util.concurrent.atomic.AtomicBoolean
  * surface, or [startAndAwait] for an import. The engine thread is named after [id]. Before the skin
  * loads it is readied as [WalPrepare] readies it, with what it kept last time ([WalSettings]); once
  * loaded it puts back the color theme it wore. The box of the first fit reaches it before its first
- * frame (see [WalEngine.fit]).
+ * frame (see [WalEngine.fit]), and so does [awake] when it was set before. Each call the listener
+ * makes on the skin sets [lastInputAt].
  *
  * What it keeps between runs is saved [SAVE_DELAY_MS] after a change, when [save] or [park] asks,
  * and when it is let go with a save. Where the listener moved its stack is kept as it is moved.
@@ -75,6 +78,19 @@ internal class WalLook(
     override val turn = Mutex()
 
     override var sink: WalSink? = null
+
+    /** Handed to the engine as it is set, and to an engine that starts later as it starts. */
+    @Volatile
+    override var awake = false
+        set(value) {
+            synchronized(startLock) {
+                field = value
+                engine?.awake = value
+            }
+        }
+
+    override var lastInputAt by mutableLongStateOf(0L)
+        private set
 
     /**
      * Told on the main thread when the skin did not start after a [fit] (false) or stopped working
@@ -168,8 +184,8 @@ internal class WalLook(
         start(IntSize(fit.widthPx, fit.heightPx), fit)
     }
 
-    override fun requestTick() {
-        engine?.requestTick()
+    override fun requestTick(cause: WalCause) {
+        engine?.requestTick(cause)
     }
 
     override fun wakeKey(): Any = wake()
@@ -178,6 +194,7 @@ internal class WalLook(
         x: Int,
         y: Int,
     ): Int {
+        lastInputAt = SystemClock.uptimeMillis()
         val seq = ++lastSeq
         engine?.pointerDown(x, y, seq)
         return seq
@@ -187,6 +204,7 @@ internal class WalLook(
         x: Int,
         y: Int,
     ) {
+        lastInputAt = SystemClock.uptimeMillis()
         engine?.pointerMove(x, y)
     }
 
@@ -194,10 +212,12 @@ internal class WalLook(
         x: Int,
         y: Int,
     ) {
+        lastInputAt = SystemClock.uptimeMillis()
         engine?.pointerUp(x, y)
     }
 
     override fun pointerCancel() {
+        lastInputAt = SystemClock.uptimeMillis()
         engine?.pointerCancel()
     }
 
@@ -205,23 +225,27 @@ internal class WalLook(
         x: Int,
         y: Int,
     ): Int {
+        lastInputAt = SystemClock.uptimeMillis()
         val seq = ++lastSeq
         engine?.doubleTap(x, y, seq)
         return seq
     }
 
     override fun rightClick(seq: Int) {
+        lastInputAt = SystemClock.uptimeMillis()
         engine?.rightClick(seq)
     }
 
     override fun closeTopWindow() {
-        engine?.post { it.closeTopWindow() }
+        lastInputAt = SystemClock.uptimeMillis()
+        engine?.post(cause = WalCause.TOUCH) { it.closeTopWindow() }
     }
 
     override fun answerMenu(
         menu: SkinMenu,
         id: Int,
     ) {
+        lastInputAt = SystemClock.uptimeMillis()
         engine?.answerMenu(menu, id)
     }
 
@@ -320,9 +344,11 @@ internal class WalLook(
             // an import has no player surface to show a menu its scripts open as the skin loads:
             // such a menu is answered at once with nothing picked
             val host = WalHost(files, cacheDir, windowOpen).apply { menus.unattended = awaited }
-            val engine = WalEngine(id, host, ::frameChanged)
+            val engine = WalEngine(id, host, onFrame = ::frameChanged)
             engine.onBroken = { toMain(Runnable { failed(stoppedWorking = true) }) }
             engine.onTask = ::keepLater
+            // what the screen said before the engine started reaches it before the first fit
+            engine.awake = awake
             this.host = host
             this.engine = engine
             fit?.let(engine::fit)
