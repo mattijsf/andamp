@@ -2,6 +2,7 @@
 package nl.mattix.andamp.modernskin.skin
 
 import nl.mattix.andamp.modernskin.maki.Value
+import kotlin.math.abs
 import kotlin.math.floor
 
 /**
@@ -10,21 +11,33 @@ import kotlin.math.floor
  * gets wider bars, never more. Rows have their own colors (colorband1 the bottom row, colorband16
  * the top), the classic Winamp table by default. A bar is at most 15 rows high; its peak dot sits
  * on the row above it, so a still bar leaves the dot on the bottom row. Bars fall back gradually
- * and peaks hang, then drop faster and faster, one step every 25 ms.
+ * and peaks hang, then drop faster and faster, one step every 25 ms. In mode 2 the same picture
+ * holds an oscilloscope of the waveform being heard (see [paintScope]).
  */
 class Vis(
     rt: SkinRuntime,
 ) : GuiObject(rt, "vis") {
     override val className: String get() = "Vis"
 
+    /** How the oscilloscope draws its points. */
+    private enum class ScopeStyle { DOTS, LINE, FILLED }
+
     /** Row colors, top row first. */
     private val rows = Array(ROWS) { Rgb(CLASSIC_BANDS[it]) }
     private var peakColor = Rgb(0x959596)
-    private var scopeColor = Rgb(0xffffff)
+
+    /** Oscilloscope colors, colorosc1 (the middle rows) to colorosc5 (the outer rows). */
+    private val scopeColors = Array(SCOPE_COLORS) { Rgb(CLASSIC_SCOPE[it]) }
     private var gammaGroup: String? = null
 
     /** 1 spectrum, 2 oscilloscope; any other value shows nothing (MMD3 sets 3 to hide it). */
     private var mode = 1
+
+    /**
+     * `oscstyle` as Winamp 5.666 reads it: "dots", "solid" joins the points into a line, and
+     * "lines" fills from each point to the middle. A line until a skin says otherwise.
+     */
+    private var scopeStyle = ScopeStyle.LINE
     private var peaks = true
     private var thin = false
     private var flipV = false
@@ -66,8 +79,22 @@ class Vis(
                 parseRgb(value)?.let { peakColor = it }
             }
 
-            k == "colorosc1" -> {
-                parseRgb(value)?.let { scopeColor = it }
+            k == "colorallosc" -> {
+                parseRgb(value)?.let { c -> scopeColors.fill(c) }
+            }
+
+            k.startsWith("colorosc") -> {
+                k.removePrefix("colorosc").toIntOrNull()?.takeIf { it in 1..SCOPE_COLORS }?.let { n ->
+                    parseRgb(value)?.let { scopeColors[n - 1] = it }
+                }
+            }
+
+            k == "oscstyle" -> {
+                when (value.trim().lowercase()) {
+                    "dots" -> scopeStyle = ScopeStyle.DOTS
+                    "solid" -> scopeStyle = ScopeStyle.LINE
+                    "lines" -> scopeStyle = ScopeStyle.FILLED
+                }
             }
 
             k == "gammagroup" -> {
@@ -102,7 +129,7 @@ class Vis(
                 peakFalloff = value.toIntLenient()?.coerceIn(0, 4) ?: 1
             }
 
-            k.startsWith("color") || k in setOf("coloring", "fps", "oscstyle") -> {
+            k.startsWith("color") || k in setOf("coloring", "fps") -> {
                 Unit
             }
 
@@ -150,13 +177,7 @@ class Vis(
         if (!visible || rect.width <= 0 || rect.height <= 0) return
         if (mode !in 1..2) return
         val px = IntArray(WIDTH * ROWS)
-        if (mode == 2) {
-            // the oscilloscope at rest is a flat line through the middle
-            val c = tint(scopeColor).value or OPAQUE
-            for (x in 0 until WIDTH) px[ROWS / 2 * WIDTH + x] = c
-        } else {
-            paintSpectrum(px)
-        }
+        if (mode == 2) paintScope(px) else paintSpectrum(px)
         if (rect.width.toLong() * rect.height > ImageLimits.MAX_PIXELS) return
         val scaled = stretch(flip(px, WIDTH, ROWS, flipH, flipV), WIDTH, ROWS, rect.width, rect.height)
         out.add(DrawCmd.Pixels(rect, rect.width, rect.height, scaled, effectiveAlpha))
@@ -185,6 +206,48 @@ class Vis(
                 val p = ((0 until 4).sumOf { peak[b * 4 + it].toDouble() } / 4 / 256).toInt()
                 for (x in b * 4 until b * 4 + 3) column(x, h, p)
             }
+        }
+    }
+
+    /**
+     * Paints the oscilloscope into [px] ([WIDTH] x [ROWS]): a point per column from every fourth of
+     * the 576 samples Winamp hands a visualizer (a waveform of another length is read at the same
+     * share of its length). A point is the sample as an 8-bit value over 8, counted down from
+     * [SCOPE_MIDDLE], so silence sits on that row and a positive sample draws below it; with no
+     * waveform every point is silence, the flat line of a player at rest. A column takes the color
+     * of its point's row: colorosc1 on the middle row and the one below it, the next color every
+     * two rows further out.
+     */
+    private fun paintScope(px: IntArray) {
+        val wave = rt.player.waveform()
+        val colors = IntArray(SCOPE_COLORS) { tint(scopeColors[it]).value or OPAQUE }
+        var last = -1
+        for (x in 0 until WIDTH) {
+            val sample = if (wave.isEmpty()) 0f else wave[(x.toLong() * wave.size / SCOPE_POINTS).toInt()]
+            val row = (floor(sample.coerceIn(-1f, 1f) * SCOPE_ROWS_PER_UNIT).toInt() + SCOPE_MIDDLE).coerceIn(0, ROWS - 1)
+            var from = row
+            var to = row
+            when (scopeStyle) {
+                ScopeStyle.DOTS -> {
+                    Unit
+                }
+
+                // from the last point down to this one; going up, from this one down to the row above the last
+                ScopeStyle.LINE -> {
+                    if (last in 0 until row) {
+                        from = last
+                    } else if (row < last) {
+                        to = last - 1
+                    }
+                }
+
+                ScopeStyle.FILLED -> {
+                    if (row < SCOPE_MIDDLE) to = SCOPE_MIDDLE - 1 else from = SCOPE_MIDDLE
+                }
+            }
+            val c = colors[abs(row / 2 - SCOPE_MIDDLE / 2)]
+            for (r in from..to) px[r * WIDTH + x] = c
+            last = row
         }
     }
 
@@ -224,6 +287,19 @@ class Vis(
         const val OPAQUE = 0xff000000.toInt()
         val FALLOFF_STEPS = intArrayOf(3, 6, 12, 16, 32)
         val PEAK_ACCEL = floatArrayOf(1.05f, 1.1f, 1.2f, 1.4f, 1.6f)
+
+        /** The oscilloscope's row for silence. */
+        const val SCOPE_MIDDLE = 8
+
+        /** Rows per unit of sample: an 8-bit sample (128 to the unit) over 8. */
+        const val SCOPE_ROWS_PER_UNIT = 16f
+
+        /** Points across the 576 samples at one per four; the picture shows the first [WIDTH]. */
+        const val SCOPE_POINTS = 144
+        const val SCOPE_COLORS = 5
+
+        /** Winamp's classic oscilloscope colors, colorosc1 (white) to colorosc5. */
+        val CLASSIC_SCOPE = intArrayOf(0xFFFFFF, 0xD6D6DE, 0xB5BDBD, 0xA0AAAF, 0x949CA5)
 
         /** Winamp's classic analyzer colors, top row (red) to bottom row (green). */
         val CLASSIC_BANDS =

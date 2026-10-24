@@ -464,15 +464,22 @@ internal class WalPlayer(
 
     private fun Track.isRow(track: Track) = id == track.id && uri == track.uri
 
-    // ---- the spectrum and the VU -------------------------------------------------------------
+    // ---- the spectrum, the waveform and the VU ------------------------------------------------
 
     private var columns: SpectrumColumns? = null
     private val levels = FloatArray(SPECTRUM_BANDS)
+    private val wave = FloatArray(WAVE_SAMPLES)
     private var meter = 0 to 0
     private var steppedAt = NEVER
 
     /** [SPECTRUM_BANDS] levels 0..1 from the audio being heard, or empty while nothing plays or there is no tap. */
     override fun spectrum(): FloatArray = if (step()) levels else EMPTY
+
+    /**
+     * The newest [WAVE_SAMPLES] samples of the audio being heard, -1..1, or empty while nothing
+     * plays or there is no tap; silence while the tap has nothing to give.
+     */
+    override fun waveform(): FloatArray = if (step()) wave else EMPTY
 
     /** The loudest sample of the window being heard, 0..255, the same for both sides. */
     override fun vu(): Pair<Int, Int> = if (step()) meter else SILENT
@@ -484,15 +491,19 @@ internal class WalPlayer(
      */
     private fun step(): Boolean {
         if (state.transport != Transport.Playing) return false
-        val c = columns ?: tapOf()?.let { SpectrumColumns(it, FRAME_MS, SPECTRUM_BANDS) }?.also { columns = it } ?: return false
+        val c =
+            columns ?: tapOf()?.let { SpectrumColumns(it, FRAME_MS, SPECTRUM_BANDS, WAVE_SAMPLES) }?.also { columns = it }
+                ?: return false
         val now = clock()
         val elapsed = if (steppedAt == NEVER) FRAME_MS else now - steppedAt
         if (elapsed >= FRAME_MS) {
             steppedAt = now
             if (c.read(elapsed)) {
                 for (i in levels.indices) levels[i] = (c.values[i] / SpectrumPhysics.MAX).coerceIn(0f, 1f)
+                c.wave.copyInto(wave)
             } else {
                 levels.fill(0f)
+                wave.fill(0f)
             }
             val level = (c.peak * SKIN_TOP).roundToInt().coerceIn(0, SKIN_TOP)
             if (level != meter.first) meter = level to level
@@ -550,11 +561,14 @@ internal class WalPlayer(
         /** How near the backend's place must come to a seek's target for the seek to count as done. */
         private const val SEEK_NEAR_MS = 1_000L
 
-        /** How often the spectrum is read at most. */
+        /** How often the spectrum and the waveform are read at most. */
         private const val FRAME_MS = 16L
 
         /** Winamp's vis has 75 bands. */
         private const val SPECTRUM_BANDS = 75
+
+        /** Winamp hands a visualizer 576 samples of the waveform. */
+        private const val WAVE_SAMPLES = 576
 
         /** The top of the skin's scale for the volume, the equalizer and the VU. */
         private const val SKIN_TOP = 255

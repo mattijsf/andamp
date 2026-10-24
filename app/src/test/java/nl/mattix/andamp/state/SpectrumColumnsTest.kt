@@ -11,7 +11,10 @@ import kotlin.math.PI
 import kotlin.math.pow
 import kotlin.math.sin
 
-/** The analyzer's columns before any bar is made of them, at the 75 a modern skin's vis takes. */
+/**
+ * The analyzer's columns before any bar is made of them, at the 75 a modern skin's vis takes, and
+ * the waveform kept beside them for its oscilloscope.
+ */
 class SpectrumColumnsTest {
     private class SineTap(
         override val sampleRateHz: Int,
@@ -94,12 +97,38 @@ class SpectrumColumnsTest {
                     return true
                 }
             }
-        val columns = SpectrumColumns(broken, 16, 75)
+        val columns = SpectrumColumns(broken, 16, 75, wavePoints = 576)
 
         assertTrue(columns.read())
 
         assertEquals(0.25f, columns.peak)
         assertTrue(columns.values.all { it.isFinite() })
+        assertTrue(columns.wave.all { it == 0f || it == 0.25f })
+    }
+
+    @Test
+    fun `the wave is the newest samples of the window as they are, clipped to full scale`() {
+        // sample i of the 1024-sample window is (i - 512) / 256: -2 at the oldest, almost 2 at the newest
+        val ramp =
+            object : AudioTap {
+                override val sampleRateHz = 44_100
+                override val writtenSamples = 10_000_000L
+
+                override fun readAt(
+                    endSample: Long,
+                    out: FloatArray,
+                ): Boolean {
+                    for (i in out.indices) out[i] = (i - 512) / 256f
+                    return true
+                }
+            }
+        val columns = SpectrumColumns(ramp, 16, 75, wavePoints = 576)
+
+        assertTrue(columns.read())
+
+        assertEquals(576, columns.wave.size)
+        for (j in columns.wave.indices) assertEquals("sample $j", ((448 + j - 512) / 256f).coerceIn(-1f, 1f), columns.wave[j], 0f)
+        assertEquals("the spectrum keeps none", 0, SpectrumColumns(ramp, 16, 75).wave.size)
     }
 
     @Test
@@ -114,10 +143,11 @@ class SpectrumColumnsTest {
                     out: FloatArray,
                 ) = false
             }
-        val columns = SpectrumColumns(silent, 16, 75)
+        val columns = SpectrumColumns(silent, 16, 75, wavePoints = 576)
 
         assertFalse(columns.read(40))
         assertEquals(0f, columns.peak)
         assertTrue(columns.values.all { it == 0f })
+        assertTrue(columns.wave.all { it == 0f })
     }
 }
