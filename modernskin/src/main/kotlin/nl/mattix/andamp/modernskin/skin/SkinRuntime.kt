@@ -508,8 +508,10 @@ class SkinRuntime(
 
     /**
      * The part of the stack its windows show, in layout pixels: [stackSize] with each window cut on
-     * its right and bottom to the part Winamp docks and snaps to ([Layout.snappedSize]), as Winamp
-     * Modern's main window without the room its closed drawer keeps.
+     * its right to where it shows ([Layout.contentRight]), as MMD3's main window without the room
+     * its closed drawers keep, and on its bottom to the part Winamp docks and snaps to
+     * ([Layout.snappedSize]), as Winamp Modern's without the room its closed drawer keeps. A drawer
+     * sliding out counts as far as it shows.
      */
     val drawnSize: Pair<Int, Int>
         get() {
@@ -518,9 +520,8 @@ class SkinRuntime(
             var bottom = 0
             for (l in windows) {
                 val r = windowRect(l)
-                val (w, h) = l.snappedSize()
-                right = maxOf(right, r.left + w)
-                bottom = maxOf(bottom, r.top + h)
+                right = maxOf(right, r.left + l.contentRight())
+                bottom = maxOf(bottom, r.top + l.snappedSize().second)
             }
             return right to bottom
         }

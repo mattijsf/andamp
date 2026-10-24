@@ -1370,8 +1370,8 @@ class Layout(
     /**
      * `snapadjustleft`, `top`, `right` and `bottom`: how far in from each edge Winamp docks and
      * snaps the window, past a part that shows nothing (Winamp Modern's closed drawer under its
-     * main window); a script changes them with snapAdjust. The right and bottom ones trim the
-     * drawn size ([snappedSize]); the left and top ones are kept for scripts to read.
+     * main window); a script changes them with snapAdjust. The right and bottom ones trim
+     * [snappedSize]; the left and top ones are kept for scripts to read.
      */
     var snapLeft = 0
     var snapTop = 0
