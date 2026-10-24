@@ -5,6 +5,7 @@ package nl.mattix.andamp.state
 import nl.mattix.andamp.core.playback.AudioTap
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import kotlin.math.PI
@@ -129,6 +130,15 @@ class SpectrumColumnsTest {
         assertEquals(576, columns.wave.size)
         for (j in columns.wave.indices) assertEquals("sample $j", ((448 + j - 512) / 256f).coerceIn(-1f, 1f), columns.wave[j], 0f)
         assertEquals("the spectrum keeps none", 0, SpectrumColumns(ramp, 16, 75).wave.size)
+    }
+
+    @Test
+    fun `a wave length below 0 or past the window is refused, saying why`() {
+        val tap = SineTap(44_100, 1_000.0)
+        for (n in listOf(-1, 1025)) {
+            val refused = assertThrows(IllegalArgumentException::class.java) { SpectrumColumns(tap, 16, 75, wavePoints = n) }
+            assertEquals("wavePoints $n outside 0..1024", refused.message)
+        }
     }
 
     @Test

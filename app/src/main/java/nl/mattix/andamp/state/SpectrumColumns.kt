@@ -37,13 +37,13 @@ class SpectrumColumns(
     var peak = 0f
         private set
 
-    /** The newest samples of the last window read that succeeded, -1..1, oldest first: the waveform being heard. */
-    val wave = FloatArray(wavePoints)
-    private val waveFrom = WINDOW - wavePoints
-
     init {
         require(wavePoints in 0..WINDOW) { "wavePoints $wavePoints outside 0..$WINDOW" }
     }
+
+    /** The newest samples of the last window read that succeeded, -1..1, oldest first: the waveform being heard. */
+    val wave = FloatArray(wavePoints)
+    private val waveFrom = WINDOW - wavePoints
 
     /**
      * Winamp's per-bin tilt: `log10(1 + bias + (i + 1) * (9 - bias) / bins)`, with the bias
