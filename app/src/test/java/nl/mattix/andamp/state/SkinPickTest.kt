@@ -141,10 +141,17 @@ class SkinPickTest {
                 }
         }
 
-    /** The engine threads of the looks opened that are still running. */
+    /** The threads running as this test begins. */
+    private val runningBefore: Set<Thread> = Thread.getAllStackTraces().keys
+
+    /**
+     * The engine threads of the looks opened that are still running. An engine thread is named by
+     * its look's id, the skin's hash, so a look of the same bytes opened earlier in this process
+     * has a thread of the same name; one that was running before this test began is not counted.
+     */
     private fun engineThreads(): List<Thread> {
         val names = looks.map { "wal-${it.id}" }.toSet()
-        return Thread.getAllStackTraces().keys.filter { it.name in names && it.isAlive }
+        return Thread.getAllStackTraces().keys.filter { it.name in names && it.isAlive && it !in runningBefore }
     }
 
     /** Bytes that do not compress, so a zip holding them is about as large. */
