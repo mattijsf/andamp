@@ -680,6 +680,8 @@ internal class WalEngine(
         val t0 = host.menus.workClock
         appliedFit?.let { fitting.refit(runtime, it, baseW) }
         publishing = true
+        val planned = planner.planNanos
+        val fullPlans = planner.fullPlans
         val (stack, plans) =
             try {
                 drawPlanned(runtime, planner, now)
@@ -714,7 +716,11 @@ internal class WalEngine(
                 plans = plans,
             ),
         )
-        if (WalTiming.on) Log.d(WalTiming.TAG, WalTiming.line(thread.name, work, host.menus.workClock - t0, named))
+        if (WalTiming.on) {
+            val plan = plans?.let { planner.planNanos - planned }
+            val fromStart = planner.fullPlans != fullPlans
+            Log.d(WalTiming.TAG, WalTiming.line(thread.name, work, host.menus.workClock - t0, named, plan, fromStart))
+        }
         onFrame()
         return true
     }

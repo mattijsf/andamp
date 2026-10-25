@@ -46,6 +46,32 @@ internal object WalRender {
     @Volatile
     var layers = true
 
+    /**
+     * With [layers] on, keeps drawings at a whole scale too, drawing the stack off screen as at a
+     * fractional one; off, a whole scale draws every command of every frame straight onto the
+     * screen, while fractional scales keep theirs. On unless switched off; it holds until the app's
+     * process ends.
+     */
+    @Volatile
+    var wholeOffscreen = true
+
+    /**
+     * With [layers] on, draws the stack's picture off screen again only where a kept drawing
+     * changed; off, it draws the whole picture again from the kept drawings every frame, which
+     * shows what drawing only the changed part saves. On unless switched off; it holds until the
+     * app's process ends.
+     */
+    @Volatile
+    var partial = true
+
+    /**
+     * Keeps drawing the frame drawn last before it was switched on, whatever the engine publishes
+     * after, until it is switched off; the other switches still change how that frame is drawn.
+     * Off unless switched on.
+     */
+    @Volatile
+    var hold = false
+
     /** Moves when a switch changes how frames are drawn, so the skin on screen is drawn again at once; read while drawing. */
     val redraws = mutableIntStateOf(0)
 }

@@ -51,11 +51,24 @@ import kotlin.concurrent.thread
  *
  *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal layers
  *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal layers --ez on false
+ *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal layers --ez whole false
+ *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal layers --ez partial false
  *
  * `layers` keeps each window's drawing between frames and draws again only what changed
- * ([WalRender.layers], on from the start); `--ez on false` draws every command of every frame, as
- * before, and stops the engine planning frames. It shows at once (frames the engine made while it
- * was off are drawn every command until the next one) and holds until the app's process ends.
+ * ([WalRender.layers], on from the start); `--ez on false` draws every command of every frame and
+ * stops the engine planning frames. `--ez whole false` keeps drawings at fractional scales only,
+ * and draws a whole scale every command straight onto the screen ([WalRender.wholeOffscreen]);
+ * `--ez partial false` keeps the drawings but draws the whole picture off screen again every frame
+ * ([WalRender.partial]). Each `layers` sets all three, so `layers` alone turns them all on. It
+ * shows at once (frames the engine made while it was off are drawn every command until the next
+ * one) and holds until the app's process ends.
+ *
+ *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal hold
+ *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal hold --ez on false
+ *
+ * `hold` keeps drawing the frame on screen while the skin plays on ([WalRender.hold]), so the
+ * other switches can draw that one frame each way and screenshots compare them; `--ez on false`
+ * goes back to the latest frame.
  *
  * Guarded by android.permission.DUMP in the manifest: only the shell, or an app granted DUMP over
  * adb, can send it.
@@ -72,8 +85,9 @@ class WalDevSwitch : BroadcastReceiver() {
             "timing" -> timing(intent.getBooleanExtra("on", true))
             "direct" -> direct(intent.getBooleanExtra("on", true))
             "draw" -> direct(intent.`package` == "direct")
-            "layers" -> layers(intent.getBooleanExtra("on", true))
-            else -> Log.w(WalHost.TAG, "WalDevSwitch: say --es wal on, off, check, timing, direct or layers (got $command)")
+            "layers" -> layers(intent)
+            "hold" -> hold(intent.getBooleanExtra("on", true))
+            else -> Log.w(WalHost.TAG, "WalDevSwitch: say --es wal on, off, check, timing, direct, layers or hold (got $command)")
         }
     }
 
@@ -106,10 +120,28 @@ class WalDevSwitch : BroadcastReceiver() {
         Log.i(WalHost.TAG, "fractional scales drawn ${if (on) "directly with hard edges" else "whole and shrunk"}")
     }
 
-    private fun layers(on: Boolean) {
+    private fun layers(intent: Intent) {
+        val on = intent.getBooleanExtra("on", true)
+        val whole = intent.getBooleanExtra("whole", true)
+        val partial = intent.getBooleanExtra("partial", true)
         WalRender.layers = on
+        WalRender.wholeOffscreen = whole
+        WalRender.partial = partial
         WalRender.redraws.intValue++
-        Log.i(WalHost.TAG, "frames drawn ${if (on) "keeping what did not change" else "with every command"}")
+        val how =
+            when {
+                !on -> "with every command"
+                !whole -> "keeping what did not change at fractional scales, with every command at whole scales"
+                !partial -> "keeping what did not change, the whole picture drawn again each frame"
+                else -> "keeping what did not change"
+            }
+        Log.i(WalHost.TAG, "frames drawn $how")
+    }
+
+    private fun hold(on: Boolean) {
+        WalRender.hold = on
+        WalRender.redraws.intValue++
+        Log.i(WalHost.TAG, if (on) "the frame on screen held" else "frames drawn as the engine publishes them")
     }
 
     private fun check(

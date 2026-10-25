@@ -64,12 +64,16 @@ internal fun DrawScope.drawWalStackLayered(
  *
  * The stack layer is as large as the stack at the whole scale at or above the one on screen, and
  * shrinks to fit at a fractional scale, as [drawWalStack] draws it; at a whole scale it is drawn as
- * it is, which gives the same pixels only where nothing is drawn under the stack ([clearBelow]).
+ * it is, which gives the same pixels only where nothing is drawn under the stack ([clearBelow]),
+ * and only while [WalRender.wholeOffscreen] is on.
+ *
  * Its content is recorded again only when the windows drawn change; a window's node when anything
  * of it outside its runs changed; a run's node when the run changed. Window and run nodes clip to
  * their bounds and keep no picture apart, so the screen draws the stack layer again only
- * inside the bounds of what was recorded again. Window and run nodes are the platform's render
- * nodes from Android 10 on ([nodes]); before that every frame is drawn by [drawWalStack].
+ * inside the bounds of what was recorded again. With [WalRender.partial] off the stack layer's
+ * content is recorded again every frame, so the screen draws all of it again. Window and run nodes
+ * are the platform's render nodes from Android 10 on ([nodes]); before that every frame is drawn
+ * by [drawWalStack].
  *
  * What the kept drawings show is held in the skin's drawing ([WalDrawing.retain]) for as long as
  * they show it. On the main thread.
@@ -129,7 +133,7 @@ internal class WalLayers(
         whole: Int,
         fractional: Boolean,
     ): Boolean {
-        val switched = keeps && WalRender.layers && !WalRender.direct
+        val switched = keeps && WalRender.layers && !WalRender.direct && (fractional || WalRender.wholeOffscreen)
         if (!switched || stack.isEmpty() || plans.size != stack.size) return false
         if (stack.any { (r, _) -> r.width <= 0 || r.height <= 0 }) return false
         val w = stack.maxOf { it.first.right }.toLong() * whole
@@ -181,7 +185,9 @@ internal class WalLayers(
         layer.pivotOffset = Offset.Zero
         layer.scaleX = layerScale
         layer.scaleY = layerScale
-        if (order != recorded || whole != recordedWhole || size != recordedSize) {
+        val placed = order == recorded && whole == recordedWhole && size == recordedSize
+        // with partial drawing off, the screen draws the whole stack layer again every frame
+        if (!placed || !WalRender.partial) {
             val drawn = order.toList()
             layer.record(scope, scope.layoutDirection, size) {
                 scale(whole.toFloat(), whole.toFloat(), pivot = Offset.Zero) { for (n in drawn) n.draw(this) }

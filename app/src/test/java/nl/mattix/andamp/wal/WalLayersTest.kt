@@ -51,6 +51,8 @@ class WalLayersTest {
     fun switchesBack() {
         WalRender.layers = true
         WalRender.direct = false
+        WalRender.wholeOffscreen = true
+        WalRender.partial = true
     }
 
     private fun layers(clearBelow: Boolean = true) =
@@ -263,6 +265,27 @@ class WalLayersTest {
         assertEquals(0, layers.keptWindows)
         secondRect = Rect(0, 30, 40, 0)
         assertEquals(emptyList<String>(), frame(layers, plans(1, 1)))
+    }
+
+    @Test
+    fun `with whole scales switched off, a whole scale is drawn the plain way and a fractional one keeps its parts`() {
+        val layers = layers()
+        WalRender.wholeOffscreen = false
+        assertEquals(emptyList<String>(), frame(layers, plans(1, 1)))
+        assertEquals(0, layers.keptWindows)
+        assertEquals(listOf("run 11", "window 1", "window 2", "stack 0"), frame(layers, plans(1, 1), scale = 1.5f))
+    }
+
+    @Test
+    fun `with partial drawing switched off, the stack layer is recorded again every frame`() {
+        val layers = layers()
+        WalRender.partial = false
+        assertEquals(listOf("run 11", "window 1", "window 2", "stack 0"), frame(layers, plans(1, 1)))
+        assertEquals(listOf("stack 0"), frame(layers, plans(1, 1)))
+        vis = 0x40
+        assertEquals(listOf("run 11", "stack 0"), frame(layers, plans(1, 2)))
+        WalRender.partial = true
+        assertEquals(emptyList<String>(), frame(layers, plans(1, 2)))
     }
 
     @Test
