@@ -2,6 +2,9 @@
 
 package nl.mattix.andamp.backend.media3
 
+import android.content.pm.ServiceInfo
+import android.os.Build
+import androidx.media3.common.util.UnstableApi
 import androidx.media3.session.MediaLibraryService
 import androidx.media3.session.MediaSession
 
@@ -28,6 +31,7 @@ class PlaybackService : MediaLibraryService() {
                     .apply { setSmallIcon(icon) },
             )
         }
+        Media3PlaybackHost.service = this
         // register the session eagerly: onGetSession only fires for connecting
         // controllers, and without registration the service posts no notification
         Media3PlaybackHost.session(this)?.let(::addSession)
@@ -39,5 +43,29 @@ class PlaybackService : MediaLibraryService() {
     override fun onDestroy() {
         Media3PlaybackHost.releaseFromService()
         super.onDestroy()
+    }
+
+    /**
+     * Puts this service in the foreground when it runs in the background, so
+     * that the play which follows may take the audio focus.
+     *
+     * From Android 15 the audio focus is refused to an app that is neither
+     * the app in front nor running a foreground service, and the player then
+     * stays paused. The floating player is neither: the app behind it is the
+     * one in front, and [Media3PlaybackHost.ensureService] starts this service
+     * in the background. Media3 puts the service in the foreground once the
+     * player plays, which is after the player has asked for the focus. Asked
+     * here, it does so for the player as it is, stopped or paused, with the
+     * media notification; called on the main thread, as the app's presses
+     * are, that is done before this returns.
+     *
+     * Before Android 15 the focus has no such rule, and nothing is done.
+     */
+    @androidx.annotation.OptIn(markerClass = [UnstableApi::class])
+    internal fun comeForward() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.VANILLA_ICE_CREAM) return
+        if (foregroundServiceType != ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE) return
+        val session = sessions.firstOrNull() ?: return
+        onUpdateNotificationAsync(session, true)
     }
 }

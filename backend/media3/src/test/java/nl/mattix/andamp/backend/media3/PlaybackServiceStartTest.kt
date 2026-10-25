@@ -10,6 +10,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 
 /**
  * Which way the session service is started, which decides whether playback
@@ -25,6 +26,7 @@ import org.robolectric.RobolectricTestRunner
  * startForeground within five seconds takes the process down.
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class PlaybackServiceStartTest {
     private val app: Context = ApplicationProvider.getApplicationContext()
     private val asked = mutableListOf<Boolean>()
