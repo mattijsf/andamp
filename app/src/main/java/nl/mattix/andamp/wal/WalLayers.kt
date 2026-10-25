@@ -52,7 +52,7 @@ internal fun DrawScope.drawWalStackLayered(
     }
     host.drawing.begin(themeKey)
     try {
-        layers.draw(this, stack, plans, host, if (fractional) scale / whole else 1f, whole, fractional)
+        layers.draw(this, stack, plans, host, if (fractional) scale / whole else 1f, whole)
     } finally {
         host.drawing.end()
     }
@@ -65,7 +65,8 @@ internal fun DrawScope.drawWalStackLayered(
  * The stack layer is as large as the stack at the whole scale at or above the one on screen, and
  * shrinks to fit at a fractional scale, as [drawWalStack] draws it; at a whole scale it is drawn as
  * it is, which gives the same pixels only where nothing is drawn under the stack ([clearBelow]),
- * and only while [WalRender.wholeOffscreen] is on.
+ * and only while [WalRender.wholeOffscreen] is on. It starts clear, so at either scale the first
+ * window draws straight into it and its shape masks it there, with no further layer.
  *
  * Its content is recorded again only when the windows drawn change; a window's node when anything
  * of it outside its runs changed; a run's node when the run changed. Window and run nodes clip to
@@ -167,16 +168,16 @@ internal class WalLayers(
         host: WalHost,
         layerScale: Float,
         whole: Int,
-        fractional: Boolean,
     ) {
         frame++
         order.clear()
         windowsAgain = 0
         runsAgain = 0
         runAreaAgain = 0L
+        // the stack layer starts clear: the first window's shape masks it in place, at any scale
         for (i in stack.indices) {
             val (r, cmds) = stack[i]
-            order.add(window(scope, plans[i], r, cmds, host, overClear = fractional && i == 0))
+            order.add(window(scope, plans[i], r, cmds, host, overClear = i == 0))
         }
         windows.values.removeIf { w -> (w.frame != frame).also { if (it) release(w) } }
         val size = IntSize(stack.maxOf { it.first.right } * whole, stack.maxOf { it.first.bottom } * whole)

@@ -121,7 +121,7 @@ class WalLayersCorpusTest {
                     bytes(w, h) {
                         assertTrue(layers.suits(stack, planned.plans, SCALE, fractional = true))
                         host.drawing.begin(rt.currentGammaSet)
-                        layers.draw(this, stack, planned.plans, host, 1f, SCALE, fractional = true)
+                        layers.draw(this, stack, planned.plans, host, 1f, SCALE)
                         host.drawing.end()
                     }
                 plain = bytes(w, h) { drawStackLayer(stack, host, SCALE) }

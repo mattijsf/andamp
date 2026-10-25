@@ -168,7 +168,7 @@ class WalLayersTest {
                         drawStackLayer(s, host, whole)
                     } else {
                         host.drawing.begin(null)
-                        layers.draw(this, s, plans, host, 1f, whole, fractional = true)
+                        layers.draw(this, s, plans, host, 1f, whole)
                         host.drawing.end()
                     }
                 }
@@ -314,10 +314,11 @@ class WalLayersTest {
     }
 
     @Test
-    fun `the first window drawn at another scale kind is recorded again`() {
+    fun `a whole scale after a fractional one records only the stack again, its first window masked in place`() {
         val layers = layers()
         frame(layers, plans(1, 1), scale = 1.5f)
-        // at a whole scale the first window draws its shape in a separate layer, as drawWalStack does
-        assertEquals(listOf("window 1", "stack 0"), frame(layers, plans(1, 1), scale = 3f))
+        assertEquals(listOf("stack 0"), frame(layers, plans(1, 1), scale = 3f))
+        vis = 0x55
+        assertEquals(listOf("run 11"), frame(layers, plans(1, 2), scale = 3f))
     }
 }
