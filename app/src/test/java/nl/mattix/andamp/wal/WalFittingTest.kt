@@ -3,8 +3,10 @@
 package nl.mattix.andamp.wal
 
 import android.app.Application
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.test.core.app.ApplicationProvider
+import nl.mattix.andamp.modernskin.maki.Value
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.Layout
 import nl.mattix.andamp.modernskin.skin.Player
@@ -24,12 +26,14 @@ import org.robolectric.annotation.Config
  * How a modern skin is fitted into the player's box: sideways in the app, two columns when they
  * show the skin larger than one, decided again when a window opens or closes, from the windows'
  * natural sizes, with the right column clear of the left one and as wide whatever a drawer does;
- * and upright, a drawer that runs past the screen shrinks the skin once its slide ends, and a
- * docked window wider than the main one shows whole.
+ * upright, a drawer that runs past the screen shrinks the skin once its slide ends, and a docked
+ * window wider than the main one shows whole; and a main window a script moved into a corner of
+ * the viewport puts the stack in that corner of the box.
  *
  * The skins are small stand-ins with the corpus skins' sizes. The boxes are the ones the `placed`
  * lines report: andamp-p4-small (720x1280 at 320 dpi) has 720x1066 upright and 1138x568 sideways;
- * 1184x672 is a small phone with a taller box; the Pixel 9 Pro has about 2142x870 sideways.
+ * 1184x672 is a small phone with a taller box; the Pixel 9 Pro has about 2142x870 sideways and
+ * 960x1900 upright.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -97,9 +101,20 @@ class WalFittingTest {
                 """</layout><layout id="shade" w="800" h="23"/></container>""" + playlist(381, 260, minW = 275),
         )
 
+    // Bento: a main window that resizes both ways, at least 633 by 492, which the box sizes, and a
+    // shade bar 633 by 20
+    private val bento =
+        skin(
+            """<container id="main" name="t" default_visible="1">""" +
+                """<layout id="normal" w="800" h="600" minimum_w="633" minimum_h="492">""" +
+                """<layer id="sizer" resize="bottomright" x="790" y="590" w="10" h="10"/>""" +
+                """</layout><layout id="shade" w="633" h="20" minimum_h="20" maximum_h="20"/></container>""",
+        )
+
     private val small = WalFit(1138, 568, 2f, sideways = true)
     private val taller = WalFit(1184, 672, 2f, sideways = true)
     private val pixel = WalFit(2142, 870, 2.25f, sideways = true)
+    private val upright = WalFit(960, 1900, 2.25f, sideways = false)
 
     /** A skin fitted as an engine fits it: loaded, given the box, and laid out once. */
     private inner class Fitted(
@@ -138,6 +153,26 @@ class WalFittingTest {
         fun window(id: String): Layout = checkNotNull(rt.container(id)?.current)
 
         fun layout(): WalLayout = fitting.layout(rt, fit, baseW, rt.stackSize, rt.drawnSize, rt.topWindow != null, true)
+
+        /** Moves the main window to [x], [y] at the size it has, as a script's resize does. */
+        fun moveMain(
+            x: Int,
+            y: Int,
+        ) {
+            val (w, h) = window("main").size
+            window("main").makiCall("resize", listOf(Value.Int(x), Value.Int(y), Value.Int(w), Value.Int(h)))
+            rt.ensureLayout()
+        }
+
+        /** Moves the main window into a corner of the viewport the box gave the skin: the right one or the left, down or up. */
+        fun moveMain(
+            right: Boolean,
+            down: Boolean,
+        ) {
+            val (w, h) = window("main").size
+            val (vw, vh) = rt.viewport
+            moveMain(if (right) vw - w else 0, if (down) vh - h else 0)
+        }
     }
 
     @Test
@@ -390,5 +425,136 @@ class WalFittingTest {
 
         corner.close("pl")
         assertEquals(4f, corner.layout().scale)
+    }
+
+    @Test
+    fun `a main window moved into a corner of the viewport puts the stack in that corner of the box`() {
+        // the Pixel upright and sideways, in the app and the floating player
+        val fits = listOf(upright, upright.copy(compact = true), pixel, pixel.copy(compact = true))
+        val corners = listOf(false to false, true to false, false to true, true to true)
+        for ((fit, corner) in fits.flatMap { fit -> corners.map { fit to it } }) {
+            val (right, down) = corner
+            val layout = Fitted(cornerAmp, fit).apply { moveMain(right, down) }.layout()
+            val name = "$fit, right $right, down $down"
+            assertEquals(name, 3f, layout.scale)
+            assertEquals(name, if (right) fit.widthPx - 246 * 3f else 0f, layout.left)
+            assertEquals(name, if (down) fit.heightPx - 228 * 3f else 0f, layout.top)
+        }
+    }
+
+    @Test
+    fun `a main window not moved, or moved against no edge, leaves the stack centered`() {
+        val unmoved = Fitted(cornerAmp, upright)
+        assertEquals(111f, unmoved.layout().left)
+        assertEquals(0f, unmoved.layout().top)
+
+        val moved = Fitted(cornerAmp, upright).apply { moveMain(right = true, down = true) }
+        moved.moveMain(10, 20)
+        assertEquals(unmoved.layout(), moved.layout())
+
+        val side = Fitted(cornerAmp, pixel)
+        assertEquals((2142 - 738) / 2f, side.layout().left)
+        assertEquals((870 - 684) / 2f, side.layout().top)
+    }
+
+    @Test
+    fun `the stack stays in its corner when the phone turns or the floating player takes over`() {
+        val corner = Fitted(cornerAmp, upright).apply { moveMain(right = true, down = true) }
+
+        corner.refit(pixel)
+        assertEquals(2142 - 738f, corner.layout().left)
+        assertEquals(870 - 684f, corner.layout().top)
+        val window = corner.window("main")
+        val (vw, vh) = corner.rt.viewport
+        assertEquals(
+            "a script finds the window in the corner of the new viewport",
+            vw - 246 to vh - 228,
+            window.viewX to window.viewY,
+        )
+
+        corner.refit(upright.copy(compact = true))
+        assertEquals(960 - 738f, corner.layout().left)
+        assertEquals(1900 - 684f, corner.layout().top)
+    }
+
+    @Test
+    fun `a stack the listener moved keeps the move from its corner, and takes it along to a new corner`() {
+        val box = IntRect(0, 100, 960, 2000)
+        val corner =
+            Fitted(
+                cornerAmp,
+                WalPlacement.fit(box, 2.25f, sideways = false),
+            ).apply { moveMain(right = true, down = true) }
+        val places = WalPlaces(upright = IntOffset(-60, -40))
+        val move = checkNotNull(places[false])
+
+        val home = WalPlacement.of(box, corner.layout(), 3).stack
+        assertEquals("right down", IntRect(222, 1316, 960, 2000), home)
+        val shift = WalPlacement.held(move, home, box)
+        assertEquals(
+            "moved up and left from there",
+            IntRect(162, 1276, 900, 1960),
+            WalPlacement.of(box, corner.layout(), 3, shift).stack,
+        )
+
+        corner.moveMain(right = true, down = false)
+        val up = WalPlacement.of(box, corner.layout(), 3).stack
+        assertEquals("right up", IntRect(222, 100, 960, 784), up)
+        assertEquals("the kept move stays as it was", IntOffset(-60, -40), places[false])
+        assertEquals("taken from the new corner, and held inside the box", IntOffset(-60, 0), WalPlacement.held(move, up, box))
+    }
+
+    @Test
+    fun `a main window a script moves back to the place it read stays centered`() {
+        // MMD3 reads where its main window is as it goes to its shade bar, puts the bar 16 px in at
+        // the top of the screen, and moves the main window back to the place it read as it comes back
+        for (fit in listOf(upright, upright.copy(compact = true), pixel, pixel.copy(compact = true))) {
+            val skin = Fitted(mmd3, fit)
+            val centered = skin.layout()
+            val normal = skin.window("main")
+            val left = checkNotNull(normal.makiCall("getleft", emptyList())).asInt
+            val top = checkNotNull(normal.makiCall("gettop", emptyList())).asInt
+            val main = checkNotNull(skin.rt.container("main"))
+
+            main.switchTo("shade")
+            skin.moveMain(16, 0)
+            skin.refit()
+            assertEquals("$fit: the bar against the top", 0f, skin.layout().top)
+            main.switchTo("normal")
+            skin.moveMain(left, top)
+            skin.refit()
+            assertEquals("$fit", centered, skin.layout())
+        }
+    }
+
+    @Test
+    fun `a main window the box sizes sits where the box puts it, wherever a script moved it, and so does its shade bar`() {
+        for (fit in listOf(upright, upright.copy(compact = true), pixel, pixel.copy(compact = true))) {
+            val unmoved = Fitted(bento, fit)
+            // BigBento's script moves its main window to the top left corner, at the size the box gives it
+            val moved = Fitted(bento, fit).apply { moveMain(0, 0) }
+            assertEquals("$fit", unmoved.layout(), moved.layout())
+            moved.moveMain(right = true, down = true)
+            assertEquals("$fit", unmoved.layout(), moved.layout())
+
+            for (skin in listOf(unmoved, moved)) {
+                checkNotNull(skin.rt.container("main")).switchTo("shade")
+                skin.refit()
+            }
+            val shade = moved.layout()
+            assertEquals("$fit: the shade bar", unmoved.layout(), shade)
+            if (fit.sideways) {
+                assertEquals(
+                    "$fit: centered across",
+                    kotlin.math.floor((fit.widthPx - shade.stackW * shade.scale) / 2),
+                    shade.left,
+                )
+                assertEquals(
+                    "$fit: and up and down",
+                    kotlin.math.floor((fit.heightPx - shade.stackH * shade.scale) / 2),
+                    shade.top,
+                )
+            }
+        }
     }
 }

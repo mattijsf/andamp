@@ -382,11 +382,11 @@ class SystemObject(
             }
 
             "getcurappleft" -> {
-                int(rt.mainContainer?.x ?: 0)
+                int(rt.mainLayout?.viewX ?: 0)
             }
 
             "getcurapptop" -> {
-                int(rt.mainContainer?.y ?: 0)
+                int(rt.mainLayout?.viewY ?: 0)
             }
 
             "getcurappwidth" -> {

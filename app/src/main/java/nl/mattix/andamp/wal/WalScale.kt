@@ -3,6 +3,7 @@
 package nl.mattix.andamp.wal
 
 import androidx.compose.ui.unit.IntSize
+import nl.mattix.andamp.modernskin.skin.Edge
 
 /** How large a modern skin is drawn on the phone, and where. */
 internal object WalScale {
@@ -49,6 +50,30 @@ internal object WalScale {
         scale: Float,
     ): Float = maxOf(0f, kotlin.math.floor((width - stackW * scale) / 2f))
 
+    /** Where a stack [stackW] layout pixels wide starts so it ends at [width] at [scale]: against the far edge. */
+    private fun end(
+        width: Float,
+        stackW: Int,
+        scale: Float,
+    ): Float = maxOf(0f, kotlin.math.floor(width - stackW * scale))
+
+    /**
+     * Where a stack [shown] layout pixels long starts on an axis [length] long at [scale]: against
+     * [edge], or at [otherwise] for none.
+     */
+    private fun along(
+        edge: Edge?,
+        length: Float,
+        shown: Int,
+        scale: Float,
+        otherwise: Float,
+    ): Float =
+        when (edge) {
+            Edge.START -> 0f
+            Edge.END -> end(length, shown, scale)
+            null -> otherwise
+        }
+
     /** A stack's scale in a box, and where its top-left corner sits there, in device px. */
     data class Place(
         val scale: Float,
@@ -67,6 +92,10 @@ internal object WalScale {
      * the box both ways and is centered both ways. The scale keeps room for the whole stack, so a
      * drawer opening inside it leaves the scale as it is; the centering goes by the part of it the
      * windows show ([drawn]), from its top-left corner.
+     *
+     * On an axis where the skin moved its main window against an edge of the viewport ([edgeX],
+     * [edgeY]), as into a corner of the screen, the part the windows show goes against that edge of
+     * the box instead, upright and sideways.
      */
     @Suppress("LongParameterList") // the stack's sizes as the engine has them, each needed apart
     fun place(
@@ -77,6 +106,8 @@ internal object WalScale {
         stack: Pair<Int, Int>,
         drawn: Pair<Int, Int> = stack,
         widest: Int = drawn.first,
+        edgeX: Edge? = null,
+        edgeY: Edge? = null,
     ): Place {
         val box = IntSize(fit.widthPx, fit.heightPx)
         val (stackW, stackH) = stack
@@ -85,14 +116,24 @@ internal object WalScale {
         val height = box.height.toFloat()
         if (fit.sideways) {
             val s = of(box, stackW, stackH)
-            return Place(s, left(width, drawnW, s), left(height, drawnH, s))
+            return Place(
+                s,
+                along(edgeX, width, drawnW, s, left(width, drawnW, s)),
+                along(edgeY, height, drawnH, s, left(height, drawnH, s)),
+            )
         }
         val s = across(box.width, widest, fit(box, mainSize, baseW))
 
-        fun across(scale: Float) = minOf(left(width, contentRight, scale), maxOf(0f, kotlin.math.floor(width - drawnW * scale)))
-        if (stackH <= 0 || stackH * s <= height) return Place(s, across(s), 0f)
+        fun across(scale: Float) =
+            along(edgeX, width, drawnW, scale, minOf(left(width, contentRight, scale), end(width, drawnW, scale)))
+
+        fun down(
+            scale: Float,
+            otherwise: Float,
+        ) = along(edgeY, height, drawnH, scale, otherwise)
+        if (stackH <= 0 || stackH * s <= height) return Place(s, across(s), down(s, 0f))
         val shrunk = height / stackH
-        return Place(shrunk, across(shrunk), left(height, drawnH, shrunk))
+        return Place(shrunk, across(shrunk), down(shrunk, left(height, drawnH, shrunk)))
     }
 
     /**
