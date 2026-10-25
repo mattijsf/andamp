@@ -123,9 +123,10 @@ class WalRenderTest {
     @Test
     fun `a shaped window at a fractional scale draws the same pixels with one offscreen layer fewer`() {
         val (host, stack) = shapedStack { WalHost(it, app.cacheDir) }
-        // drawn at the whole scale above the fractional one, as into the stack's layer
+        // at the whole scale above the fractional one: each window in a layer for its shape, and
+        // what the stack's layer records
         val (layered, layeredCount) = render(80, 80) { drawWindowsAt(stack, host, 2f) }
-        val (cut, cutCount) = render(80, 80) { drawWindowsAt(stack, host, 2f, overClear = true) }
+        val (cut, cutCount) = render(80, 80) { drawStackLayer(stack, host, 2) }
 
         assertEquals(1, layeredCount)
         assertEquals(0, cutCount)

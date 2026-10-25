@@ -46,7 +46,8 @@ import kotlin.concurrent.thread
  * `direct` draws skins at a fractional scale (Bento, Winamp3x) straight onto the screen with hard
  * edges ([WalRender.direct]), in place of drawing them at the next whole scale and shrinking the
  * picture; `--ez on false` goes back. It shows from the skin's next frame and holds until the app's
- * process ends.
+ * process ends. `--es wal draw direct` turns it on too and `--es wal draw whole` off: am takes the
+ * word after `draw` as the intent's package, and drops what follows it.
  *
  * Guarded by android.permission.DUMP in the manifest: only the shell, or an app granted DUMP over
  * adb, can send it.
@@ -62,6 +63,7 @@ class WalDevSwitch : BroadcastReceiver() {
             "off" -> gate(context, false)
             "timing" -> timing(intent.getBooleanExtra("on", true))
             "direct" -> direct(intent.getBooleanExtra("on", true))
+            "draw" -> direct(intent.`package` == "direct")
             else -> Log.w(WalHost.TAG, "WalDevSwitch: say --es wal on, off, check, timing or direct (got $command)")
         }
     }

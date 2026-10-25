@@ -32,6 +32,8 @@ import nl.mattix.andamp.modernskin.skin.Text
 import nl.mattix.andamp.modernskin.skin.WithGeneratedImages
 import java.io.File
 import java.security.MessageDigest
+import java.util.Collections
+import java.util.IdentityHashMap
 import java.util.WeakHashMap
 import java.util.concurrent.ConcurrentHashMap
 
@@ -48,8 +50,8 @@ import java.util.concurrent.ConcurrentHashMap
  * [files] are the skin's files as [WalFiles.open] gives them; the pictures Wasabi generates
  * (`$solid`) are answered here. [windowOpen] answers whether a window the app shows in place of
  * the skin's is open, by kind ("ml" the library, "avs" the visualizer); null leaves it to the skin.
- * What the drawing makes is kept as [drawing] says, within [drawingBudget] bytes beyond what the
- * last frame drew.
+ * What the drawing makes is kept as [drawing] says: what the last frame drew, and the rest up to
+ * [drawingBudget] bytes.
  */
 internal class WalHost(
     files: SkinFiles,
@@ -151,16 +153,20 @@ internal class WalHost(
     fun image(
         file: String,
         gamma: Gamma?,
-    ): ImageBitmap? {
-        if (gamma == null) return image(file)
-        return drawing.getOrPut(probe.of(WalDrawing.Key.TINTED, lower(file), gamma), themed = true) {
+    ): ImageBitmap? = if (gamma == null) image(file) else tinted(file, gamma).picture
+
+    /** [file] tinted by [gamma], as [drawing] keeps it. */
+    private fun tinted(
+        file: String,
+        gamma: Gamma,
+    ): WalDrawing.Entry =
+        drawing.entry(probe.of(WalDrawing.Key.TINTED, lower(file), gamma), themed = true) {
             image(file)?.asAndroidBitmap()?.let { src -> mapPixels(src) { gamma.apply(it) } }
         }
-    }
 
-    /** A region picture as a mask: opaque where it cuts, clear elsewhere. */
-    fun cutMask(file: String): ImageBitmap? =
-        drawing.getOrPut(probe.of(WalDrawing.Key.CUT, lower(file), null), themed = false) {
+    /** A region picture as a mask, as [drawing] keeps it: opaque where it cuts, clear elsewhere. */
+    private fun cutMask(file: String): WalDrawing.Entry =
+        drawing.entry(probe.of(WalDrawing.Key.CUT, lower(file), null)) {
             image(file)?.asAndroidBitmap()?.let { src -> mapPixels(src) { if (DrawCmd.isCutPixel(it)) OPAQUE_BLACK else 0 } }
         }
 
@@ -179,10 +185,17 @@ internal class WalHost(
         val key = probe.of(if (mask) WalDrawing.Key.MASK_PIECE else WalDrawing.Key.PIECE, lower(bitmap.file), tint, bitmap)
         drawing.find(key)?.let { return it.picture }
         val kept = key.copy()
-        val sheet = if (mask) cutMask(bitmap.file) else image(bitmap.file, tint)
+        // a tinted sheet or a cut mask stays in the drawing while pieces cut from it are drawn; an
+        // untinted sheet is the decoded picture, which [images] keeps
+        val source =
+            when {
+                mask -> cutMask(bitmap.file)
+                tint != null -> tinted(bitmap.file, tint)
+                else -> null
+            }
+        val sheet = if (source != null) source.picture else image(bitmap.file)
         val piece = sheet?.let { cut(it, bitmap) }
-        // a whole untinted sheet is the decoded picture itself, which is kept apart from the drawing's
-        return drawing.keep(kept, piece, themed = tint != null, owns = piece !== sheet || tint != null)
+        return drawing.keep(kept, piece, themed = tint != null, source = source).picture
     }
 
     /** [piece] ([bitmap]'s, as [piece] gave it) stretched to w x h with Winamp's floor mapping, made once per size. */
@@ -509,11 +522,14 @@ internal class WalHost(
 
 /**
  * The pictures [WalHost] made for drawing a skin, on the main thread, each by what it was made
- * from. Drawing goes in frames ([begin], [end]): what a frame draws is always kept, and the rest
- * is kept, the least recently drawn let go first, while everything kept takes up to [budget]
- * bytes. A frame in another color theme than the one before lets go of the tinted pictures it did
- * not draw. Window shapes are kept up to [MAX_SHAPES], the least recently drawn let go first: a
- * shape that moves (a sliding drawer, an animation in it) makes a new one each frame.
+ * from. Drawing goes in frames ([begin], [end]): what a frame draws is always kept, and so is the
+ * sheet a drawn piece was cut from, so a piece the next frame needs is cut without tinting the
+ * sheet again. The rest is kept, the least recently drawn let go first, while it takes up to
+ * [budget] bytes. A bitmap kept under two keys (a piece that is its whole sheet) counts once. A
+ * frame in another color theme than the one before lets go of the tinted pictures it did not
+ * draw. Window shapes are kept apart, up to [MAX_SHAPES] whatever their size, the least recently
+ * drawn let go first: a shape that moves (a sliding drawer, an animation in it) makes a new one
+ * each frame.
  *
  * A pixel picture that changes every frame (a visualizer) is filled into bitmaps kept by size and
  * by its place among the frame's pictures of that size, two for each, used in turn: a frame never
@@ -523,16 +539,35 @@ internal class WalHost(
 internal class WalDrawing(
     private val budget: Long,
 ) {
-    /** A kept picture, the bytes it takes, whether a color theme tinted it, and the last frame that drew it. */
-    internal class Entry(
-        val picture: ImageBitmap?,
+    /** A bitmap kept under one key or more: the bytes it takes, how many keys hold it, and the last frame that drew it. */
+    internal class Held(
         val bytes: Long,
-        val themed: Boolean,
-        var frame: Long,
-    )
+    ) {
+        var keys = 0
+        var frame = -1L
+    }
 
-    /** Kept pictures, the least recently drawn first. */
+    /**
+     * A kept picture (null once it was let go, so a piece kept longer than its sheet does not hold
+     * the sheet): whether a color theme tinted it, the kept picture it was cut from ([source]:
+     * drawing this one counts as drawing that one), its bitmap, and the last frame that drew it.
+     */
+    internal class Entry(
+        var picture: ImageBitmap?,
+        val themed: Boolean,
+        val source: Entry?,
+        val held: Held?,
+        var frame: Long,
+    ) {
+        /** False once it was let go. */
+        var kept = true
+    }
+
+    /** Kept pictures, the least recently looked up first. */
     private val entries = LinkedHashMap<Any, Entry>(INITIAL_CAPACITY, LOAD_FACTOR, true)
+
+    /** The bitmaps of [entries], each once. */
+    private val holders = IdentityHashMap<ImageBitmap, Held>()
 
     /** Kept window shapes ([ShapeKey]), the least recently drawn first. */
     private val shapes = LinkedHashMap<Any, Entry>(INITIAL_CAPACITY, LOAD_FACTOR, true)
@@ -540,8 +575,15 @@ internal class WalDrawing(
     /** Bitmaps for changing pixel pictures; see [changing]. */
     private val buffers = ArrayList<Buffers>()
 
-    /** The bytes the kept pictures take. */
+    /** The bytes the kept pictures take, each bitmap once; window shapes are not counted. */
     var bytes = 0L
+        private set
+
+    /** The bytes of the kept pictures the current frame drew, each bitmap once. */
+    private var frameBytes = 0L
+
+    /** The bytes the kept window shapes take. */
+    var shapeBytes = 0L
         private set
 
     /** How many pictures were kept, for tests: tints, cut masks, pieces, stretched pieces, gradients and shapes. */
@@ -556,6 +598,7 @@ internal class WalDrawing(
     /** A frame starts, worn in color theme [themeKey] (null when that is not known). */
     fun begin(themeKey: String?) {
         frame++
+        frameBytes = 0
         inFrame = true
         if (themeKey != null) {
             if (theme != null && themeKey != theme) themeChanged = true
@@ -571,72 +614,114 @@ internal class WalDrawing(
             val it = entries.values.iterator()
             while (it.hasNext()) {
                 val e = it.next()
-                if (e.themed && e.frame != frame) {
+                if (e.themed && !drawn(e)) {
                     it.remove()
-                    bytes -= e.bytes
+                    letGo(e)
                 }
             }
         }
-        trim(shapes) { shapes.size > MAX_SHAPES }
-        trim(entries) { bytes > budget }
+        val shape = shapes.values.iterator()
+        while (shapes.size > MAX_SHAPES && shape.hasNext()) {
+            val e = shape.next()
+            if (e.frame == frame) continue
+            shape.remove()
+            shapeBytes -= e.held?.bytes ?: 0L
+        }
+        val it = entries.values.iterator()
+        while (bytes - frameBytes > budget && it.hasNext()) {
+            val e = it.next()
+            if (drawn(e)) continue
+            it.remove()
+            letGo(e)
+        }
         for (i in buffers.indices.reversed()) if (buffers[i].frame != frame) buffers.removeAt(i)
     }
 
-    /**
-     * Lets go of [map]'s entries the least recently drawn first, while [over] and they were not
-     * drawn in this frame. What this frame drew comes last in the order, so the first such entry
-     * ends the search.
-     */
-    private inline fun trim(
-        map: LinkedHashMap<Any, Entry>,
-        over: () -> Boolean,
-    ) {
-        val it = map.values.iterator()
-        while (over() && it.hasNext()) {
-            val e = it.next()
-            if (e.frame == frame) break
-            it.remove()
-            bytes -= e.bytes
-        }
+    /** Whether this frame drew [e], or its bitmap under another key, or a piece cut from it. */
+    private fun drawn(e: Entry) = e.frame == frame || e.held?.frame == frame
+
+    /** [e] and the picture it was cut from, marked as drawn in this frame. */
+    private fun mark(e: Entry) {
+        e.frame = frame
+        e.held?.let(::mark)
+        val source = e.source ?: return
+        if (!source.kept) return
+        source.frame = frame
+        source.held?.let(::mark)
     }
 
-    private fun mapFor(key: Any) = if (key is ShapeKey) shapes else entries
+    private fun mark(held: Held) {
+        if (held.frame == frame) return
+        held.frame = frame
+        frameBytes += held.bytes
+    }
+
+    /** [e], taken out of [entries]: its bitmap's bytes no longer count once no other key holds it. */
+    private fun letGo(e: Entry) {
+        val picture = e.picture
+        e.kept = false
+        e.picture = null
+        val held = e.held ?: return
+        if (--held.keys > 0) return
+        holders.remove(picture)
+        bytes -= held.bytes
+        if (held.frame == frame) frameBytes -= held.bytes
+    }
 
     /** The picture kept under [key], marked as drawn in this frame, or null when none is kept. */
-    internal fun find(key: Any): Entry? = mapFor(key)[key]?.also { it.frame = frame }
+    internal fun find(key: Any): Entry? {
+        if (key is ShapeKey) return shapes[key]?.also { it.frame = frame }
+        return entries[key]?.also(::mark)
+    }
 
     /**
-     * Keeps [picture] under [key]; [themed] when a color theme tinted it. Its bytes count toward
-     * the budget when it [owns] them, not when it is a picture kept elsewhere as it is (a piece
-     * that is the whole sheet).
+     * Keeps [picture] under [key] as drawn in this frame; [themed] when a color theme tinted it,
+     * [source] the kept picture it was cut from, if any.
      */
-    internal fun <T : ImageBitmap?> keep(
+    internal fun keep(
         key: Any,
-        picture: T,
+        picture: ImageBitmap?,
         themed: Boolean,
-        owns: Boolean = true,
-    ): T {
-        val size = if (owns) picture?.asAndroidBitmap()?.allocationByteCount?.toLong() ?: 0L else 0L
-        mapFor(key).put(key, Entry(picture, size, themed, frame))?.let { bytes -= it.bytes }
-        bytes += size
+        source: Entry? = null,
+    ): Entry {
         made++
-        return picture
+        if (key is ShapeKey) {
+            val e = Entry(picture, themed, null, picture?.let { Held(sizeOf(it)) }, frame)
+            shapes.put(key, e)?.let { shapeBytes -= it.held?.bytes ?: 0L }
+            shapeBytes += e.held?.bytes ?: 0L
+            return e
+        }
+        val held =
+            picture?.let { p ->
+                holders.getOrPut(p) { Held(sizeOf(p)) }.also { if (it.keys++ == 0) bytes += it.bytes }
+            }
+        val e = Entry(picture, themed, source, held, frame)
+        entries.put(key, e)?.let(::letGo)
+        mark(e)
+        return e
     }
 
     /**
      * The picture kept under [key], or the one [make] makes, kept. A [Key] is copied before
      * [make] runs, so the probe it was filled into can be filled again inside.
      */
+    inline fun entry(
+        key: Any,
+        themed: Boolean = false,
+        make: () -> ImageBitmap?,
+    ): Entry {
+        find(key)?.let { return it }
+        val kept = if (key is Key) key.copy() else key
+        return keep(kept, make(), themed)
+    }
+
+    /** [entry]'s picture. */
     @Suppress("UNCHECKED_CAST")
     inline fun <T : ImageBitmap?> getOrPut(
         key: Any,
         themed: Boolean = false,
         make: () -> T,
-    ): T {
-        find(key)?.let { return it.picture as T }
-        val kept = if (key is Key) key.copy() else key
-        return keep(kept, make(), themed)
-    }
+    ): T = entry(key, themed, make).picture as T
 
     /** [cmd]'s pixels in a bitmap kept for its size and its place among this frame's pictures of that size. */
     fun changing(cmd: DrawCmd.Pixels): ImageBitmap {
@@ -659,14 +744,24 @@ internal class WalDrawing(
 
     /** Lets go of every picture and bitmap. */
     fun clear() {
+        for (e in entries.values) e.kept = false
         entries.clear()
+        holders.clear()
         shapes.clear()
         buffers.clear()
         bytes = 0
+        frameBytes = 0
+        shapeBytes = 0
     }
 
     /** How many window shapes are kept, for tests. */
     val shapesKept: Int get() = shapes.size
+
+    /** The bytes of the distinct bitmaps the kept pictures hold, counted again from them, for tests. */
+    fun keptBytes(): Long =
+        entries.values
+            .mapNotNullTo(Collections.newSetFromMap(IdentityHashMap())) { it.picture }
+            .sumOf { sizeOf(it) }
 
     /** The color theme tints of the kept pictures, for tests. */
     fun tints(): Set<Gamma> = entries.keys.mapNotNullTo(HashSet()) { (it as? Key)?.gamma }
@@ -786,7 +881,7 @@ internal class WalDrawing(
     )
 
     companion object {
-        /** The bytes of pictures kept beyond what the last frame drew. */
+        /** The bytes of the kept pictures that the last frame did not draw, window shapes not included. */
         const val BUDGET = 48L * 1024 * 1024
 
         /** Window shapes kept, unless the last frame drew more. */
@@ -794,5 +889,7 @@ internal class WalDrawing(
 
         private const val INITIAL_CAPACITY = 64
         private const val LOAD_FACTOR = 0.75f
+
+        private fun sizeOf(picture: ImageBitmap): Long = picture.asAndroidBitmap().allocationByteCount.toLong()
     }
 }

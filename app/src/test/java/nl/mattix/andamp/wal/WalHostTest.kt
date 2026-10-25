@@ -139,6 +139,75 @@ class WalHostTest {
     }
 
     @Test
+    fun `pictures the frame no longer draws stay within the budget, however much the frame draws`() {
+        // room for four untinted parts (1 KB), not for a tinted sheet (16 KB)
+        val host = host(budget = 2L * 1024)
+        val untinted = window(null, count = 4, from = 8)
+        host.frame(untinted)
+        host.frame(window(gamma(0)))
+        val made = host.drawing.made
+
+        host.frame(untinted)
+
+        assertEquals("the untinted parts were kept", made, host.drawing.made)
+    }
+
+    @Test
+    fun `the sheet of a piece the frame draws stays, so a new piece of it is cut without tinting again`() {
+        // less than the four untinted parts take
+        val host = host(budget = 512)
+        host.frame(window(gamma(0)) + window(null, count = 4, from = 8))
+        host.frame(window(gamma(0)))
+        val made = host.drawing.made
+
+        host.frame(window(gamma(0), count = 5))
+
+        assertEquals("the fifth part, cut from the tinted sheet kept", made + 1, host.drawing.made)
+    }
+
+    @Test
+    fun `a picture kept under two names counts once`() {
+        val sheet = SHEET * SHEET * 4L
+        // room for one sheet: the frame after lets go of what does not fit
+        val host = host(budget = sheet)
+        val whole = BitmapDef("whole", "sheet.png", 0, 0, SHEET, SHEET, "g")
+        val box = Rect(0, 0, SHEET, SHEET)
+        // a window that draws the whole sheet tinted, shaped by the whole sheet as a mask: each
+        // piece is its sheet, the tinted one and the cut mask
+        val shape = Region.Op(Region.Box(box), emptyList(), listOf(Region.Pic(DrawCmd.Image(whole, box, 255))), emptyList())
+        val image = DrawCmd.Image(whole, box, 255).also { it.gamma = gamma(0) }
+        host.frame(listOf(box to listOf(DrawCmd.WindowStart(shape), image, DrawCmd.WindowEnd)))
+
+        assertEquals("the tinted sheet and the cut mask", 2 * sheet, host.drawing.bytes)
+
+        host.frame(window(null, count = 1))
+
+        assertEquals("what is let go no longer counts, what is kept still does", host.drawing.keptBytes(), host.drawing.bytes)
+        assertTrue(host.drawing.bytes <= sheet + 8 * 8 * 4)
+    }
+
+    @Test
+    fun `window shapes take no room from the pictures`() {
+        // room for one theme's pictures (17 KB), not for a single shape
+        val budget = 20L * 1024
+        val host = host(budget)
+        val tinted = window(gamma(0))
+        host.frame(tinted)
+        for (i in 0 until 20) {
+            // a large shape that moves, about 40 KB each frame, over another part
+            val shape = Region.Box(Rect(0, 0, 100 + i, 100))
+            val cmds = listOf(DrawCmd.WindowStart(shape)) + window(null, count = 1, from = 8).single().second + DrawCmd.WindowEnd
+            host.frame(listOf(Rect(0, 0, 72, 8) to cmds))
+        }
+        assertTrue("${host.drawing.shapeBytes} in shapes", host.drawing.shapeBytes > budget)
+        val made = host.drawing.made
+
+        host.frame(tinted)
+
+        assertEquals("the tinted sheet and its parts were kept", made, host.drawing.made)
+    }
+
+    @Test
     fun `drawing the same frame twice decodes, tints and cuts nothing new`() {
         val host = host()
         val stack = window(gamma(0), count = 8) + window(null, count = 8, from = 8)

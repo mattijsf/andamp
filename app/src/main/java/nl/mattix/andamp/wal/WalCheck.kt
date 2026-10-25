@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import nl.mattix.andamp.modernskin.skin.FakePlayer
+import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import java.io.File
 
@@ -111,8 +112,14 @@ internal object WalCheck {
         skin: File,
         siblings: List<File>,
         cacheDir: File,
+    ): String = WalFiles.open(skin, siblings).use { files -> check(skin, files, cacheDir) }
+
+    /** [skin], read from [files]: loaded, ticked and drawn; what it took, for the log. */
+    private fun check(
+        skin: File,
+        files: SkinFiles,
+        cacheDir: File,
     ): String {
-        val files = WalFiles.open(skin, siblings)
         // nobody is there to pick from a skin's menu
         val host = WalHost(files, cacheDir, WalPrepare.windowOpen()).apply { menus.unattended = true }
         var now = 0L

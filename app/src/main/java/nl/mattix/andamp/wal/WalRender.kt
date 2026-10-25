@@ -79,13 +79,23 @@ internal fun DrawScope.drawWalStack(
         layer.pivotOffset = Offset.Zero
         layer.scaleX = scale / whole
         layer.scaleY = scale / whole
-        // the layer starts clear, so the first window draws straight into it
-        layer.record(this, layoutDirection, size) { drawWindowsAt(stack, host, whole.toFloat(), overClear = true) }
+        layer.record(this, layoutDirection, size) { drawStackLayer(stack, host, whole) }
         translate(left, 0f) { drawLayer(layer) }
     } finally {
         host.drawing.end()
     }
 }
+
+/**
+ * What the layer of a stack at a fractional scale holds (see [drawWalStack]): the windows of
+ * [stack] at the [whole] scale above it. The layer starts clear, so the first window draws straight
+ * into it and its shape masks it there, with no further layer.
+ */
+internal fun DrawScope.drawStackLayer(
+    stack: List<Pair<Rect, List<DrawCmd>>>,
+    host: WalHost,
+    whole: Int,
+) = drawWindowsAt(stack, host, whole.toFloat(), overClear = true)
 
 /**
  * The windows of [stack] at [scale], from the stack's corner, with [hard] edges when asked (see

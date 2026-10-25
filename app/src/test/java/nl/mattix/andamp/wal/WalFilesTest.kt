@@ -171,6 +171,7 @@ class WalFilesTest {
         assertEquals("<player/>", files.read("@SKINSPATH@\\Big Bento\\xml\\player.xml")?.decodeToString())
 
         assertEquals("opened once", 1, opened.size)
+        assertEquals("read from the archive once", 1, opened.single().archiveReads)
         assertEquals("<player/>".length.toLong(), opened.single().heldBytes)
         // read on from the archive as it was opened
         big.delete()
@@ -186,7 +187,24 @@ class WalFilesTest {
         val files = WalFiles.open(bento, listOf(bento, big))
 
         assertEquals("<player/>", files.read("../Big Bento/xml/player.xml")?.decodeToString())
-        assertEquals(ZipSkinFiles(big).names().sorted(), ZipSkinFiles.OnDemand(big).names().sorted())
+        assertEquals(ZipSkinFiles(big).names().sorted(), ZipSkinFiles.OnDemand(big).use { it.names() }.sorted())
+    }
+
+    @Test
+    fun `closed, a skin's files close the siblings opened and open no more`() {
+        val bento = wal("Bento.wal", "skin.xml" to "<a/>")
+        val big = wal("Big Bento.wal", "skin.xml" to "<b/>", "xml/player.xml" to "<player/>")
+        val other = wal("Other.wal", "skin.xml" to "<c/>")
+        val opened = mutableListOf<ZipSkinFiles.OnDemand>()
+        val files = WalFiles.open(bento, listOf(bento, big, other)) { file -> ZipSkinFiles.OnDemand(file).also { opened += it } }
+        assertEquals("<player/>", files.read("../Big Bento/xml/player.xml")?.decodeToString())
+
+        files.close()
+
+        assertNull("an entry not read before is not read from a closed archive", opened.single().read("skin.xml"))
+        assertNull(files.read("../Other/skin.xml"))
+        assertEquals("no sibling opened after", 1, opened.size)
+        assertEquals("the skin reads on", "<a/>", files.read("skin.xml")?.decodeToString())
     }
 
     @Test
