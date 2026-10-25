@@ -711,6 +711,7 @@ class WalEngineTest {
         ShadowLog.clear()
 
         engine.pointerDown(15, 15)
+        onEngine { }
         engine.pointerUp(15, 15)
         onEngine { }
         engine.requestTick(WalCause.KEY)

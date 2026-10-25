@@ -28,6 +28,7 @@ import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.LibraryAccess
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.SkinLibrary
+import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.state.addModern
@@ -41,6 +42,7 @@ import nl.mattix.andamp.wal.FakeWalSurface
 import nl.mattix.andamp.wal.WalGate
 import nl.mattix.andamp.wal.WalPlacement
 import nl.mattix.andamp.wal.WalSurface
+import nl.mattix.andamp.wal.hidesModernSkin
 import nl.mattix.andamp.wal.stackOf
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -437,6 +439,47 @@ class ModernPlayerSurfaceTest {
 
         val plugin = vm.state.windowRects[WindowStore.MILKDROP]!!
         assertEquals("its bottom is the screen's safe bottom", vm.state.safeBottom, plugin.bottom)
+    }
+
+    @Test
+    fun `a fullscreen Milkdrop over a modern skin rests it`() {
+        show()
+        assertTrue("shown, the skin is awake", surface.awake)
+
+        vm.state.milkdropOn = true
+        vm.state.milkdropFullscreen = true
+        frames()
+        val ticks = surface.ticks
+        frames()
+
+        assertFalse("under the fullscreen visualizer it rests", surface.awake)
+        assertEquals("and gets no ticks", ticks, surface.ticks)
+
+        vm.state.milkdropFullscreen = false
+        frames()
+        assertTrue("the visualizer in its window leaves it awake", surface.awake)
+    }
+
+    @Test
+    fun `the Library or the Skin Browser over the whole stack rests the skin, and one beside it does not`() {
+        val s = WinampState()
+        s.windowRects[WindowStore.MAIN] = IntRect(50, 0, 250, 67)
+        assertFalse("nothing over it", hidesModernSkin(s))
+
+        s.libraryOpen = true
+        s.windowRects[WindowStore.LIBRARY] = IntRect(40, 0, 260, 200)
+        assertTrue("the Library over all of it", hidesModernSkin(s))
+        s.windowRects[WindowStore.LIBRARY] = IntRect(60, 0, 260, 200)
+        assertFalse("the Library over part of it", hidesModernSkin(s))
+        s.libraryOpen = false
+        s.windowRects[WindowStore.LIBRARY] = IntRect(0, 0, 300, 300)
+        assertFalse("a closed Library's last rect counts for nothing", hidesModernSkin(s))
+
+        s.skinManagerOpen = true
+        s.windowRects[WindowStore.SKINS] = IntRect(50, 0, 250, 67)
+        assertTrue("the Skin Browser just as large", hidesModernSkin(s))
+        s.windowRects.remove(WindowStore.MAIN)
+        assertFalse("no stack placed yet", hidesModernSkin(s))
     }
 
     @Test

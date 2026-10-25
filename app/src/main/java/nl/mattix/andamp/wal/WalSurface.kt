@@ -50,13 +50,16 @@ internal data class WalLayout(
     val stackH: Int,
     /** Whether a skin window is open over the main one; Back closes it. */
     val windowOpen: Boolean,
-    /** Whether something slides or animates, so the screen asks for a tick every display frame. */
+    /** Whether something slides or animates, so a stack changing size may not have come to rest yet. */
     val animating: Boolean,
     /** The seq of the down whose object has a skin menu, or null; see [WalSurface.pointerDown]. */
     val menuTarget: Int?,
     /** The seq of the down that landed on one of the skin's move areas, or null; a drag from it moves the stack. */
     val moveTarget: Int? = null,
-    /** Whether the skin wants a frame on every display frame, as its frame says ([WalFrame.wantsFrames]). */
+    /**
+     * Whether the screen ticks the skin on every display frame, as its frame says
+     * ([WalFrame.wantsFrames]); while it does not, the engine wakes the skin itself when it is due.
+     */
     val wantsFrames: Boolean = true,
     /**
      * The left column of a stack set out in two columns, in skin px from the stack's top-left
@@ -99,9 +102,9 @@ internal interface WalSurface {
 
     /**
      * Whether the screen shows the skin now, as the surface holding [turn] tells it: false while
-     * the player is covered or the screen is dark. The look keeps it and hands it to its engine,
-     * also when the engine starts after it was set. Written on main; false until a surface sets it,
-     * and no surface sets it yet.
+     * the player is covered or the screen is dark, and once that surface lets go of the turn. The
+     * look keeps it and hands it to its engine, also when the engine starts after it was set; an
+     * engine that is not awake sets itself no wakes. Written on main; false until a surface sets it.
      */
     var awake: Boolean
 
@@ -109,7 +112,8 @@ internal interface WalSurface {
      * When the listener last touched the skin, answered its menu or closed one of its windows with
      * Back, in [android.os.SystemClock.uptimeMillis]; 0 before any. Every pointer call,
      * [doubleTap], [rightClick], [answerMenu] and [closeTopWindow] sets it. Snapshot state set on
-     * main.
+     * main; each change gives the skin ticks on every display frame for a while
+     * ([WAL_INPUT_FRAMES_MS]).
      */
     val lastInputAt: Long
 
@@ -131,6 +135,8 @@ internal interface WalSurface {
     /**
      * Asks for one tick of the skin's timers and animations; at most one waits at a time. [cause]
      * is what the timing log names it by: a display frame, or a change the skin shows ([wakeKey]).
+     * The surface holding [turn] asks on display frames only while [layout] wants frames
+     * ([WalLayout.wantsFrames]) or the listener's last input is recent, at most sixty a second.
      */
     fun requestTick(cause: WalCause = WalCause.TICK)
 

@@ -9,11 +9,13 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.compose.ui.unit.IntSize
 import nl.mattix.andamp.modernskin.skin.DrawCmd
+import nl.mattix.andamp.modernskin.skin.Player
 import nl.mattix.andamp.modernskin.skin.Rect
 import nl.mattix.andamp.modernskin.skin.SkinMenu
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -32,9 +34,9 @@ internal class WalFrame(
     val baseW: Int,
     /** Whether a skin window is open over the main one, for Back. */
     val windowOpen: Boolean,
-    /** Whether something slides or animates, so the screen asks for a tick every display frame. */
+    /** Whether something slides or animates, so a stack changing size may not have come to rest yet. */
     val animating: Boolean,
-    /** The engine's last log lines, newest last. */
+    /** The engine's last log lines, newest last, as of this frame: a log line alone publishes no frame. */
     val log: List<String>,
     /**
      * What making this frame took on the engine thread, in ns: the tick, touch or task that changed
@@ -45,7 +47,10 @@ internal class WalFrame(
     val layout: WalLayout? = null,
     /** The seq of the last touch when it landed on an object with a skin menu, else null; see [SkinRuntime.menuTarget]. */
     val menuTarget: Int? = null,
-    /** Whether the skin wants a frame on every display frame, as the engine's idle source says ([WalIdle.framesWanted]). */
+    /**
+     * Whether the screen should tick the skin on every display frame: the engine's idle source says
+     * something moves ([WalIdle.framesWanted]) and the skin has not gone static ([WalRest.wantsFrames]).
+     */
     val wantsFrames: Boolean = true,
     /** The color theme the skin wears ([SkinRuntime.currentGammaSet]), or null when it has none. */
     val themeKey: String? = null,
@@ -57,10 +62,13 @@ internal data class WalIdle(
     val framesWanted: Boolean,
     /** When, in the runtime's clock ms, something next changes by itself, or null; see [SkinRuntime.nextDueAt]. */
     val nextDueAt: Long?,
+    /** Whether the music is stopped, so the skin is woken at the resting rate; see [WalRest]. */
+    val stopped: Boolean = false,
 ) {
     companion object {
         /** What [runtime] says. */
-        fun of(runtime: SkinRuntime): WalIdle = WalIdle(runtime.framesWanted, runtime.nextDueAt())
+        fun of(runtime: SkinRuntime): WalIdle =
+            WalIdle(runtime.framesWanted, runtime.nextDueAt(), stopped = runtime.player.status == Player.Status.STOPPED)
     }
 }
 
@@ -70,8 +78,14 @@ internal data class WalIdle(
  * change, so the main thread only draws and never waits on the engine.
  *
  * Calls from the screen post work: at most one tick waits at a time, and pointer moves are merged
- * so only the latest waits. [onFrame] runs on the engine thread after each new frame, and when a
- * popup [menu] opens or closes.
+ * so only the latest waits. A touch or a tick publishes a frame when it is done, unless its change
+ * is the first waiting and another touch or tick waits behind it, which then publishes both in one
+ * frame: a press and its release, or a move and a tick. [onFrame] runs on the engine thread
+ * after each new frame, and when a popup [menu] opens or closes.
+ *
+ * While the screen shows the skin ([awake]) and its frames want no ticks from the screen
+ * ([WalFrame.wantsFrames]), the engine wakes the skin itself when it is next due, as [WalRest] sets
+ * out; resting, under a menu and once closed it sets no wake.
  *
  * Nothing a skin does ends the engine thread. [start] reports whether the skin loaded. After that
  * every task is guarded: what it throws is logged and counted, a task that completes clears the
@@ -82,8 +96,9 @@ internal data class WalIdle(
  * it, the engine thread's name and the time each took, less any popup menu it waited on
  * ([WalMenuWait.workClock]); how long each touch waited for the engine thread; and the load.
  *
- * [idle] says, each time a frame is published, whether the skin wants frames and when it is next
- * due; the frame carries the first ([WalFrame.wantsFrames]).
+ * [idle] says, after each tick and each frame published, whether the skin wants frames and when it
+ * is next due. The frame carries the first, less a skin gone static ([WalRest.wantsFrames]), and a
+ * tick that changes it publishes a frame for that alone.
  */
 internal class WalEngine(
     name: String,
@@ -97,26 +112,82 @@ internal class WalEngine(
     /** Where a load that runs too long is noticed while the engine thread is still in it. */
     private val mainHandler = Handler(Looper.getMainLooper())
 
+    /** A tick the engine set itself; one waiting from the screen covers it. */
+    private val wake =
+        Runnable {
+            if (!awake || host.menus.menu != null || !tickWaiting.compareAndSet(false, true)) return@Runnable
+            try {
+                wakes++
+                guarded("tick") { tick(WalCause.WAKE) }
+            } finally {
+                tickWaiting.set(false)
+            }
+        }
+
+    // the rule the wakes follow, and its clocks; touched on the engine thread, apart from cancel
+    private val rest = WalRest(handler, wake)
+
     init {
         host.menus.onChange = onFrame
         // the skin as it stands when its menu opens, as Windows paints under a menu; a failure here
-        // counts against the task that opened the menu
-        host.menus.beforeShow = { if (!publishing) runCatching { publish(WalCause.MENU) }.onFailure { taskFailure = it } }
+        // counts against the task that opened the menu. The skin stands still under it, so no wake
+        // waits for after it.
+        host.menus.beforeShow = {
+            rest.cancel()
+            if (!publishing) runCatching { publish(WalCause.MENU) }.onFailure { taskFailure = it }
+        }
     }
 
     // touched only on the engine thread
     private var rt: SkinRuntime? = null
     private var baseW = 0
-    private var seenVersion = -1
     private var publishing = false
     private val fitting = WalFitting()
 
+    /** What [idle] said last in the running task, or null when it has not been asked yet. */
+    private var lastIdle: WalIdle? = null
+
+    /** What first asked for a frame that waits for the task behind it, or null when none waits; see [publish]. */
+    private var pendingCause: WalCause? = null
+
+    /** The work of the changes waiting for that frame, in ns. */
+    private var pendingWork = 0L
+
+    /** Touches and ticks posted that have not started yet; a touch's frame can wait for one of them. */
+    private val publishersWaiting = AtomicInteger()
+
+    /**
+     * Sets the next wake, or drops the one set: one while the screen shows the skin, no menu is up
+     * and its last frame wants no ticks from the screen. On the engine thread.
+     */
+    private val planWake =
+        Runnable {
+            val runtime = rt
+            val idle =
+                runtime
+                    ?.takeIf { awake && !closed.get() && host.menus.menu == null && published.get()?.wantsFrames == false }
+                    ?.let { runCatching { lastIdle ?: idle(it) }.getOrNull() }
+            rest.plan(idle, SystemClock.uptimeMillis(), runtime?.now() ?: 0L)
+        }
+
+    /** Ticks the engine set itself so far; for the timing checks and tests. */
+    @Volatile
+    var wakes = 0
+        private set
+
+    /** Whether the engine has a wake set now; for tests. */
+    internal val wakeSet: Boolean get() = rest.waiting
+
     /**
      * Whether the screen shows the skin now, as its look hands it on ([WalSurface.awake]); false
-     * until it is set. Stored only: the engine runs the same either way.
+     * until it is set. While it is false the engine sets no wake, and drops the one it had.
      */
     @Volatile
     var awake = false
+        set(value) {
+            field = value
+            if (value) handler.post(planWake) else rest.cancel()
+        }
 
     /** The box applied to the runtime last; see [fit]. */
     private var appliedFit: WalFit? = null
@@ -230,13 +301,17 @@ internal class WalEngine(
         }
     }
 
-    /** Puts the loaded [runtime] on, fits it to the box asked for, and publishes its first frame; what that threw, or null. */
+    /**
+     * Puts the loaded [runtime] on, fits it to the box asked for, publishes its first frame and
+     * sets its first wake; what that threw, or null.
+     */
     private fun firstFrame(runtime: SkinRuntime): Throwable? {
         rt = runtime
         return runCatching {
             baseW = WalFitting.baseWOf(runtime)
             applyFit(runtime)
             publish(WalCause.FIT)
+            planWake.run()
         }.exceptionOrNull()?.also { rt = null }
     }
 
@@ -259,20 +334,24 @@ internal class WalEngine(
 
     /**
      * Runs [task] with the runtime on the engine thread, then publishes a frame unless [publish] is
-     * false; the timing log names that frame by [cause]. Before the skin is on, or when it did not
-     * start, it does nothing.
+     * false; the timing log names that frame by [cause]. A touch's frame can wait for a touch or a
+     * tick behind it, which publishes both (see [publish]). Before the skin is on, or when it did
+     * not start, it does nothing.
      */
     fun post(
         publish: Boolean = true,
         cause: WalCause = WalCause.TASK,
         task: (SkinRuntime) -> Unit,
     ) {
+        val merge = publish && cause == WalCause.TOUCH
+        if (merge) publishersWaiting.incrementAndGet()
         handler.post {
+            if (merge) publishersWaiting.decrementAndGet()
             guarded("engine") {
                 val runtime = rt ?: return@guarded
                 val t0 = host.menus.workClock
                 task(runtime)
-                if (publish) publish(cause, host.menus.workClock - t0)
+                if (publish) publish(cause, host.menus.workClock - t0, merge = merge)
             }
         }
     }
@@ -342,7 +421,9 @@ internal class WalEngine(
         // the skin stands still under its menu, and no ticks wait to run in a burst after it
         if (host.menus.menu != null) return
         if (!tickWaiting.compareAndSet(false, true)) return
+        publishersWaiting.incrementAndGet()
         handler.post {
+            publishersWaiting.decrementAndGet()
             try {
                 guarded("tick") { tick(cause) }
             } finally {
@@ -351,16 +432,29 @@ internal class WalEngine(
         }
     }
 
+    /**
+     * Ticks the skin, and publishes a frame when what it shows changed, when an animation started or
+     * ended, when a frame waits for this tick, or when whether the skin wants frames from the screen
+     * changed. A log line alone publishes nothing.
+     */
     private fun tick(cause: WalCause) {
         val runtime = rt ?: return
+        val now = SystemClock.uptimeMillis()
+        rest.ticked(now, fromScreen = cause == WalCause.TICK)
         val t0 = host.menus.workClock
         val changed = runtime.tick()
         val tickNanos = host.menus.workClock - t0
         val steps = runtime.scriptSteps
-        // an animation that ends on a step that moves nothing still changes what the screen paces by
-        val due = changed || host.version != seenVersion || runtime.animating != published.get()?.animating
+        if (changed) rest.changedAt = now
+        val idle = idle(runtime).also { lastIdle = it }
+        val shown = published.get()
+        // an animation that ends on a step that moves nothing still changes what the screen paces by,
+        // and so does a skin that starts or stops wanting frames, or goes static
+        val due =
+            changed || pendingCause != null || runtime.animating != shown?.animating ||
+                rest.wantsFrames(idle, now) != shown?.wantsFrames
         val t1 = host.menus.workClock
-        val drew = due && publish(cause, tickNanos)
+        val drew = due && publish(cause, tickNanos, merge = true, idleNow = idle)
         val drawNanos = if (drew) host.menus.workClock - t1 else 0L
         // publish logs the line of a frame it published
         if (!drew && WalTiming.on) Log.d(WalTiming.TAG, WalTiming.line(thread.name, tickNanos, 0, cause))
@@ -381,14 +475,16 @@ internal class WalEngine(
     ) {
         if (moveWaiting.getAndSet(x to y) != null) return
         val at = System.nanoTime()
+        publishersWaiting.incrementAndGet()
         handler.post {
+            publishersWaiting.decrementAndGet()
             guarded("move") {
                 val runtime = rt ?: return@guarded
                 val (mx, my) = moveWaiting.getAndSet(null) ?: return@guarded
                 if (WalTiming.on) Log.d(WalTiming.TAG, "move waited ${System.nanoTime() - at} ns")
                 val t0 = host.menus.workClock
                 runtime.pointerMove(mx, my)
-                publish(WalCause.TOUCH, host.menus.workClock - t0)
+                publish(WalCause.TOUCH, host.menus.workClock - t0, merge = true)
             }
         }
     }
@@ -469,6 +565,7 @@ internal class WalEngine(
      */
     fun close() {
         closed.set(true)
+        rest.cancel()
         if (startDecided.compareAndSet(false, true)) mainHandler.removeCallbacks(overrun)
         host.menus.close()
         thread.quitSafely()
@@ -481,21 +578,31 @@ internal class WalEngine(
 
     /**
      * Runs [body] as one engine task. What it throws, or caught on the way (see [taskFailure]),
-     * counts as a failure; a task that completes clears the count. The first [MAX_FAILURES] in a
+     * counts as a failure; a task that completes clears the count, unless its frame waits for the
+     * next task (see [publish]). The first [MAX_FAILURES] in a
      * row are logged and the rest are not, so a skin failing every frame does not fill the log.
+     * A frame left waiting for a task that published none is published once no such task waits,
+     * and the next wake is set after every task.
      */
     private fun guarded(
         what: String,
         body: () -> Unit,
     ) {
         taskFailure = null
+        lastIdle = null
         val error =
             runCatching {
-                body()
-                rt?.let { onTask?.invoke(it) }
+                try {
+                    body()
+                    pendingCause?.let { if (publishersWaiting.get() == 0) publish(it) }
+                    rt?.let { onTask?.invoke(it) }
+                } finally {
+                    planWake.run()
+                }
             }.exceptionOrNull() ?: taskFailure
         if (error == null) {
-            failures = 0
+            // a change still waiting for its frame has not been drawn yet
+            if (pendingCause == null) failures = 0
             return
         }
         failures++
@@ -520,13 +627,30 @@ internal class WalEngine(
      * timing log names the frame by [cause]. A draw list that fails, or a stack grown too large to
      * draw (see [WalScale.unfit]), throws: the screen keeps the last picture, and the task counts a
      * failure.
+     *
+     * With [merge], a change that is the first waiting publishes nothing while a touch or a tick
+     * waits to start: that one publishes both in one frame, named by the first.
+     * Every frame takes the changes waiting with it. [idleNow] is what [idle] said after the work,
+     * when it was asked already. A change other than a tick's counts as one for [WalRest.changedAt].
      */
     private fun publish(
         cause: WalCause,
         workNanos: Long = 0,
+        merge: Boolean = false,
+        idleNow: WalIdle? = null,
     ): Boolean {
         val runtime = rt ?: return false
-        seenVersion = host.version
+        val now = SystemClock.uptimeMillis()
+        // a tick says itself whether it changed anything
+        if (cause != WalCause.TICK && cause != WalCause.WAKE && cause != WalCause.KEY) rest.changedAt = now
+        val first = pendingCause == null
+        if (first) pendingCause = cause
+        pendingWork += workNanos
+        if (merge && first && publishersWaiting.get() > 0) return false
+        val named = if (merge) pendingCause ?: cause else cause
+        val work = pendingWork
+        pendingCause = null
+        pendingWork = 0
         val t0 = host.menus.workClock
         appliedFit?.let { fitting.refit(runtime, it, baseW) }
         publishing = true
@@ -541,7 +665,9 @@ internal class WalEngine(
         val size = sizeOf(stack)
         if (mainSize != null) WalScale.unfit(mainSize, size, baseW, box = null)?.let { error(it) }
         val windowOpen = runtime.topWindow != null
-        val wantsFrames = idle(runtime).framesWanted
+        val idle = idleNow ?: idle(runtime)
+        lastIdle = idle
+        val wantsFrames = rest.wantsFrames(idle, now)
         published.set(
             WalFrame(
                 stack = stack,
@@ -551,7 +677,7 @@ internal class WalEngine(
                 windowOpen = windowOpen,
                 animating = runtime.animating,
                 log = host.logSnapshot(),
-                buildNanos = workNanos + host.menus.workClock - t0,
+                buildNanos = work + host.menus.workClock - t0,
                 layout =
                     appliedFit?.takeIf { mainSize != null }?.let {
                         fitting.layout(runtime, it, baseW, size, runtime.drawnSize, windowOpen, wantsFrames)
@@ -561,7 +687,7 @@ internal class WalEngine(
                 themeKey = runtime.currentGammaSet,
             ),
         )
-        if (WalTiming.on) Log.d(WalTiming.TAG, WalTiming.line(thread.name, workNanos, host.menus.workClock - t0, cause))
+        if (WalTiming.on) Log.d(WalTiming.TAG, WalTiming.line(thread.name, work, host.menus.workClock - t0, named))
         onFrame()
         return true
     }

@@ -40,7 +40,10 @@ internal class FakeWalSurface : WalSurface {
             awakes += value
         }
 
-    /** Set by a test, as a look stamps it on the listener's calls. */
+    /**
+     * Stamped on each of the listener's calls, as a look stamps it, with a count rather than a time:
+     * a new value on every call. A test may set it too.
+     */
     override var lastInputAt by mutableLongStateOf(0L)
 
     /** The pointer calls, the fits, the saves and the menu answers, in order, as short lines. */
@@ -127,6 +130,7 @@ internal class FakeWalSurface : WalSurface {
         x: Int,
         y: Int,
     ) {
+        input()
         calls += "move $x,$y"
     }
 
@@ -134,10 +138,12 @@ internal class FakeWalSurface : WalSurface {
         x: Int,
         y: Int,
     ) {
+        input()
         calls += "up $x,$y"
     }
 
     override fun pointerCancel() {
+        input()
         calls += "cancel"
     }
 
@@ -147,6 +153,7 @@ internal class FakeWalSurface : WalSurface {
     ): Int = press("doubleTap $x,$y")
 
     private fun press(call: String): Int {
+        input()
         calls += call
         seq++
         if (menuUnderEveryPress) layout = layout?.copy(menuTarget = seq)
@@ -156,11 +163,13 @@ internal class FakeWalSurface : WalSurface {
     }
 
     override fun rightClick(seq: Int) {
+        input()
         calls += "rightClick $seq"
         rightClicks += seq
     }
 
     override fun closeTopWindow() {
+        input()
         closedWindows++
     }
 
@@ -168,6 +177,7 @@ internal class FakeWalSurface : WalSurface {
         menu: SkinMenu,
         id: Int,
     ) {
+        input()
         calls += "answer $id"
         answers += menu to id
         if (this.menu === menu) {
@@ -185,6 +195,10 @@ internal class FakeWalSurface : WalSurface {
     override fun save() {
         calls += "save"
         saves++
+    }
+
+    private fun input() {
+        lastInputAt++
     }
 
     private companion object {
