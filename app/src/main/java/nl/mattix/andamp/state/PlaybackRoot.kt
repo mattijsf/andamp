@@ -36,7 +36,9 @@ object PlaybackRoot {
      * the phone's rows is one run handed to ExoPlayer whole, which keeps its own advance,
      * gapless playback, shuffle and repeat.
      *
-     * The media session drives the composite, through [Media3PlaybackHost.host].
+     * The media session drives the composite, through [Media3PlaybackHost.host]. What is
+     * returned is the composite as the host hands it back, which puts the session service in
+     * the foreground before the music starts.
      *
      * Called again once built, it returns the same player and starts the widget's mirror
      * again, which [stopMirroring] may have stopped.
@@ -57,13 +59,14 @@ object PlaybackRoot {
         val player = mixed(app, restored)
         // the host owns the media session, and with it the notification, the lock screen,
         // the headset button and the foreground service. It is given the composite, so the
-        // session covers every source's rows and not only the phone's
-        Media3PlaybackHost.host(app, player)
-        built = player
-        resume(app, player)
-        startMirroring(app, player)
-        startCounting(app, player)
-        return player
+        // session covers every source's rows and not only the phone's. What it hands back
+        // is the player the windows and the widget drive
+        val driven = Media3PlaybackHost.host(app, player)
+        built = driven
+        resume(app, driven)
+        startMirroring(app, driven)
+        startCounting(app, driven)
+        return driven
     }
 
     /**

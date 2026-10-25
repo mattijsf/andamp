@@ -22,6 +22,13 @@ android {
             isMinifyEnabled = false
         }
     }
+
+    testOptions {
+        unitTests {
+            // Robolectric needs Media3's strings and icons to build the media notification
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 dependencies {

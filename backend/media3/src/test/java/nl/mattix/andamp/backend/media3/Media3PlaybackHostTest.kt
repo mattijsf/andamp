@@ -3,6 +3,7 @@
 package nl.mattix.andamp.backend.media3
 
 import android.content.Context
+import android.content.pm.ServiceInfo
 import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.CoroutineScope
@@ -11,6 +12,8 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import nl.mattix.andamp.backend.mock.MockBackend
 import nl.mattix.andamp.core.model.Track
+import nl.mattix.andamp.core.model.Transport
+import nl.mattix.andamp.core.playback.PlaybackBackend
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
@@ -20,8 +23,11 @@ import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
+import org.robolectric.android.controller.ServiceController
+import org.robolectric.annotation.Config
 
 /**
  * The player, the backend and the session are one per process.
@@ -32,11 +38,15 @@ import org.robolectric.Shadows.shadowOf
  * from inheriting each other's state.
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class Media3PlaybackHostTest {
     private val app: Context = ApplicationProvider.getApplicationContext()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private val asked = mutableListOf<Boolean>()
     private lateinit var real: (Context, Boolean) -> Unit
+
+    /** A session service built for the test, destroyed after it. */
+    private var running: ServiceController<PlaybackService>? = null
 
     private val tracks =
         listOf(
@@ -52,6 +62,7 @@ class Media3PlaybackHostTest {
 
     @After
     fun tearDown() {
+        running?.destroy()
         Media3PlaybackHost.reset(app)
         Media3PlaybackHost.start = real
         scope.cancel()
@@ -127,5 +138,77 @@ class Media3PlaybackHostTest {
         shadowOf(Looper.getMainLooper()).idle()
 
         assertEquals(listOf(true), asked)
+    }
+
+    /**
+     * The floating player keeps the service running in the background, and from Android 15 a
+     * play from there is refused the audio focus unless the service is in the foreground by
+     * then.
+     */
+    @Test
+    fun `a play while the service runs in the background puts it in the foreground first`() {
+        val heard = Heard(MockBackend(tracks, scope))
+        val driven = Media3PlaybackHost.host(app, heard)
+        val service = startService()
+        assertEquals(
+            "the service starts in the background",
+            ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE,
+            service.foregroundServiceType,
+        )
+
+        driven.play()
+
+        assertEquals(
+            "the service was in the foreground when the backend began to play",
+            listOf(ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK),
+            heard.inFrontAtPlay,
+        )
+    }
+
+    /** Before Android 15 the audio focus has no such rule, and the service is left as it is. */
+    @Test
+    @Config(sdk = [34])
+    fun `before Android 15 a play leaves a background service as it is`() {
+        val heard = Heard(MockBackend(tracks, scope))
+        val driven = Media3PlaybackHost.host(app, heard)
+        startService()
+
+        driven.play()
+
+        assertEquals(listOf(ServiceInfo.FOREGROUND_SERVICE_TYPE_NONE), heard.inFrontAtPlay)
+    }
+
+    /** With no service running, a play goes to the backend, and the service follows the music. */
+    @Test
+    fun `with no service running a play goes straight to the backend`() {
+        val hosted = MockBackend(tracks, scope)
+        val driven = Media3PlaybackHost.host(app, hosted)
+        shadowOf(Looper.getMainLooper()).idle()
+
+        driven.play()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertEquals(Transport.Playing, hosted.state.value.transport)
+        assertEquals("started in the foreground once playing", listOf(true), asked)
+    }
+
+    /** Creates the session service, as the floating player's background start does, and lets Media3 settle. */
+    private fun startService(): PlaybackService {
+        val controller = Robolectric.buildService(PlaybackService::class.java).create()
+        running = controller
+        shadowOf(Looper.getMainLooper()).idle()
+        return controller.get()
+    }
+
+    /** The backend, noting whether the service was in the foreground each time a play reached it. */
+    private inner class Heard(
+        private val backend: PlaybackBackend,
+    ) : PlaybackBackend by backend {
+        val inFrontAtPlay = mutableListOf<Int>()
+
+        override fun play() {
+            inFrontAtPlay += running?.get()?.foregroundServiceType ?: -1
+            backend.play()
+        }
     }
 }

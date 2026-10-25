@@ -31,6 +31,12 @@ object Media3PlaybackHost {
     private var serviceStarted = false
 
     /**
+     * The session service while it runs: set by [PlaybackService] as it is
+     * created, and cleared when it is destroyed.
+     */
+    internal var service: PlaybackService? = null
+
+    /**
      * The listener that keeps what the session shows current, and the player
      * it is on: the shuffle and repeat buttons, and the rows a browser lists.
      *
@@ -90,21 +96,29 @@ object Media3PlaybackHost {
 
     /**
      * Hosts a backend this module did not build, so it gets the same session,
-     * service and notification.
+     * service and notification, and returns it as the app is to drive it.
      *
      * A `MediaSession` needs a `Player`, and [BackendPlayer] adapts any
-     * [PlaybackBackend] to one.
+     * [PlaybackBackend] to one. The backend returned is [backend] with the
+     * presses that start the music asking the running service to come
+     * forward first; see [ForegroundFirst] and [PlaybackService.comeForward].
+     * The session drives [backend] as given: for a press the system hands on
+     * through the session, such as a headset's Play, the system lets the app
+     * take the audio focus.
      */
     fun host(
         context: Context,
-        backend: nl.mattix.andamp.core.playback.PlaybackBackend,
-    ) {
+        backend: PlaybackBackend,
+    ): PlaybackBackend {
         val app = context.applicationContext
         appContext = app
         val hostScope = scope ?: CoroutineScope(SupervisorJob() + Dispatchers.Main).also { scope = it }
         val player = BackendPlayer(backend, hostScope)
         playerInstance = player
         promoteWhenPlaying(app, player)
+        // with no service running there is nothing to bring forward:
+        // promoteWhenPlaying starts it in the foreground once the player plays
+        return ForegroundFirst(backend) { service?.comeForward() }
     }
 
     /**
@@ -283,6 +297,7 @@ object Media3PlaybackHost {
      */
     internal fun releaseFromService() {
         letSessionGo()
+        service = null
         serviceStarted = false // next play starts a fresh service
     }
 
@@ -305,6 +320,7 @@ object Media3PlaybackHost {
         scope?.cancel()
         scope = null
         appContext = null
+        service = null
         serviceStarted = false
     }
 }

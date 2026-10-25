@@ -14,6 +14,7 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.annotation.Config
 import java.util.concurrent.TimeUnit
 
 /**
@@ -24,6 +25,7 @@ import java.util.concurrent.TimeUnit
  * cover is decoded at.
  */
 @RunWith(RobolectricTestRunner::class)
+@Config(sdk = [35])
 class CoverArtTest {
     private val app = ApplicationProvider.getApplicationContext<android.content.Context>()
 
