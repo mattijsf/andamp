@@ -122,6 +122,9 @@ internal class WalLook(
     internal var host: WalHost? = null
         private set
 
+    /** The skin's files once started, null before that and after [release]; guarded by [startLock]. */
+    private var files: OpenedOnRead? = null
+
     /** Guards the start against a release on another thread. */
     private val startLock = Any()
 
@@ -164,7 +167,7 @@ internal class WalLook(
         val frame = engine.frame ?: return
         val at = frame.layout ?: return
         val host = host ?: return
-        scope.drawWalStack(frame.stack, host, at.scale, 0f, layer)
+        scope.drawWalStack(frame.stack, host, at.scale, 0f, layer, frame.themeKey)
         // only the first frame drawn after failed ones is reported, not every frame
         if (drawFailing) {
             drawFailing = false
@@ -286,18 +289,20 @@ internal class WalLook(
 
     /**
      * Lets the skin go: a menu waiting closes, what it keeps is saved when [save] says so, and the
-     * engine thread ends once the work before it is done. After a release without a save, no save
-     * lands, so the skin's settings can be forgotten at once. Later calls do nothing. Called on the
-     * main thread, or by an import whose skin did not start.
+     * engine thread ends once the work before it is done, closing the archives of the skins it read
+     * from last. After a release without a save, no save lands, so the skin's settings can be
+     * forgotten at once. Later calls do nothing. Called on the main thread, or by an import whose
+     * skin did not start.
      */
     fun release(save: Boolean) {
-        val stopping =
+        val (stopping, opened) =
             synchronized(startLock) {
                 if (released) return
                 released = true
-                engine.also {
+                (engine to files).also {
                     engine = null
                     host = null
+                    files = null
                 }
             }
         // nothing more to draw; an import that let its look go calls this off the main thread
@@ -312,6 +317,8 @@ internal class WalLook(
         stopping.cancel(saveToken)
         stopping.dismissMenu()
         if (save) stopping.post(publish = false, task = ::keep)
+        // the archives of the skins it read from close once the work before is done
+        if (opened != null) stopping.postAlways { opened.close() }
         stopping.close()
     }
 
@@ -351,6 +358,7 @@ internal class WalLook(
             engine.awake = awake
             this.host = host
             this.engine = engine
+            this.files = files
             fit?.let(engine::fit)
             engine.start(budgetMs, box, onStart = { failure -> startReported(failure, host) }) { build(files, host) }
         }
@@ -424,15 +432,21 @@ internal class WalLook(
 
     /** A skin's files, opened by [open] at the first read: on the engine thread, as the skin loads. */
     private class OpenedOnRead(
-        open: () -> SkinFiles,
+        open: () -> WalFiles.Opened,
     ) : SkinFiles {
-        private val files by lazy(open)
+        private val opening = lazy(open)
+        private val files by opening
 
         override fun read(path: String): ByteArray? = files.read(path)
 
         override fun exists(path: String): Boolean = files.exists(path)
 
         override fun names(): List<String> = files.names()
+
+        /** Closes the siblings opened, if the files were opened; see [WalFiles.Opened]. */
+        fun close() {
+            if (opening.isInitialized()) files.close()
+        }
     }
 
     companion object {

@@ -4,6 +4,7 @@ package nl.mattix.andamp.wal
 
 import android.app.Application
 import android.content.Context
+import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
@@ -31,6 +32,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowLooper
 import org.robolectric.shadows.ShadowSystemClock
+import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.IOException
 import java.time.Duration
@@ -97,12 +99,13 @@ class WalLookTest {
         name: String = "Test",
         player: Player = FakePlayer(),
         budgetMs: Long = 5_000,
+        siblings: Map<String, File> = emptyMap(),
     ): WalLook =
         WalLook(
             id = "id${runs.incrementAndGet()}",
             file = file,
             name = name,
-            siblings = emptyMap(),
+            siblings = siblings,
             cacheDir = app.cacheDir,
             settings = WalSettings(app),
             player = player,
@@ -275,6 +278,44 @@ class WalLookTest {
         thread.join(5_000)
         assertFalse(thread.isAlive)
         assertNull("nothing is drawn after", look.layout)
+    }
+
+    @Test(timeout = 20_000)
+    fun `a released look closes the archives of the skins it read from`() {
+        val png = ByteArrayOutputStream()
+        Bitmap.createBitmap(4, 2, Bitmap.Config.ARGB_8888).compress(Bitmap.CompressFormat.PNG, 100, png)
+        // a sibling the skin takes its player from, with two pictures
+        val big =
+            dir.newFile().apply {
+                ZipOutputStream(outputStream()).use { zip ->
+                    for ((path, bytes) in listOf(
+                        "player.xml" to player.toByteArray(),
+                        "one.png" to png.toByteArray(),
+                        "two.png" to png.toByteArray(),
+                    )) {
+                        zip.putNextEntry(ZipEntry(path))
+                        zip.write(bytes)
+                        zip.closeEntry()
+                    }
+                }
+            }
+        val include = """<include file="../Big/player.xml"/>"""
+        val look =
+            look(
+                wal(skinXml = """<WinampAbstractionLayer version="0.8">$include</WinampAbstractionLayer>"""),
+                siblings =
+                    mapOf("Big" to big),
+            )
+        look.fit(phone)
+        await("the first frame arrives") { look.layout != null }
+        val host = look.host!!
+        val thread = engineThread(look)!!
+        assertEquals(4 to 2, host.imageSize("../Big/one.png"))
+
+        look.release(save = false)
+
+        thread.join(5_000)
+        assertNull("the sibling reads as missing once closed", host.imageSize("../Big/two.png"))
     }
 
     @Test(timeout = 20_000)

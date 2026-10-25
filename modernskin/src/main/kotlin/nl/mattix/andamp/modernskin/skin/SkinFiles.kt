@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package nl.mattix.andamp.modernskin.skin
 
+import java.io.Closeable
 import java.io.File
 import java.util.zip.ZipFile
 
@@ -57,6 +58,85 @@ class ZipSkinFiles(
     override fun read(path: String): ByteArray? = entries[SkinFiles.normalize(path)]
 
     override fun names(): List<String> = entries.keys.toList()
+
+    /**
+     * A `.wal` read entry by entry as paths ask for it, for a skin another skin reads a few files
+     * from (Bento reads Big Bento's scripts and XML): the list of entries is read as it opens, and
+     * only the bytes of the entries read are kept, within the same limits as a whole archive. The
+     * archive stays open until [close], so a file deleted meanwhile reads on as it was; after it,
+     * an entry not read before reads as missing. Two threads may read at once.
+     */
+    class OnDemand(
+        file: File,
+    ) : SkinFiles,
+        Closeable {
+        private val zip = ZipFile(file)
+
+        /** Entry names by path, as [ZipSkinFiles] would name them. */
+        private val index: Map<String, String> = indexOf(zip)
+
+        /** The entries read so far, null for one that did not read; guarded by itself. */
+        private val kept = HashMap<String, ByteArray?>()
+
+        /** The bytes [kept] holds. */
+        var heldBytes = 0L
+            private set
+
+        /** How many reads went to the archive. */
+        var archiveReads = 0
+            private set
+
+        override fun read(path: String): ByteArray? {
+            val n = SkinFiles.normalize(path)
+            synchronized(kept) { if (n in kept) return kept[n] }
+            val name = index[n] ?: return null
+            // read outside the lock, so one thread does not wait on another's entry
+            val bytes =
+                runCatching {
+                    zip.getEntry(name)?.let { e -> zip.getInputStream(e).use { readAtMost(it, MAX_ENTRY) } }
+                }.getOrNull()
+            return synchronized(kept) {
+                archiveReads++
+                if (n !in kept) {
+                    val held = bytes?.takeIf { heldBytes + it.size <= MAX_TOTAL }
+                    kept[n] = held
+                    heldBytes += held?.size ?: 0
+                }
+                kept[n]
+            }
+        }
+
+        override fun names(): List<String> = index.keys.toList()
+
+        override fun close() = zip.close()
+
+        private companion object {
+            /** [zip]'s entry names by path, as [ZipSkinFiles] would name them; [zip] is closed when they do not read. */
+            fun indexOf(zip: ZipFile): Map<String, String> {
+                var index: Map<String, String>? = null
+                try {
+                    val all = LinkedHashMap<String, String>()
+                    for (e in zip
+                        .entries()
+                        .asSequence()
+                        .filter { !it.isDirectory }
+                        .take(MAX_ENTRIES)) {
+                        all[SkinFiles.normalize(e.name)] = e.name
+                    }
+                    val prefix = WalArchive.skinFolder(all.keys)
+                    index =
+                        if (prefix.isNullOrEmpty()) {
+                            all
+                        } else {
+                            all.filterKeys { it.startsWith(prefix) }.mapKeys { it.key.removePrefix(prefix) }
+                        }
+                    return index
+                } finally {
+                    if (index == null) zip.close()
+                }
+            }
+        }
+    }
 
     private companion object {
         const val MAX_ENTRY = 32 * 1024 * 1024

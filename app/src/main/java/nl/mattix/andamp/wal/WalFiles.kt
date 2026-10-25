@@ -10,6 +10,7 @@ import nl.mattix.andamp.modernskin.skin.WalArchive
 import nl.mattix.andamp.modernskin.skin.ZipSkinFiles
 import nl.mattix.andamp.modernskin.xml.XmlNode
 import nl.mattix.andamp.modernskin.xml.XmlParser
+import java.io.Closeable
 import java.io.File
 import java.util.zip.ZipFile
 
@@ -25,27 +26,52 @@ internal object WalFiles {
      * are compared as [folderName] gives them. A file under two names is opened once. A name of
      * [skin] itself reads the skin, as Winamp reads its folder (Big Bento names "Big Bento" for its
      * scroll bars and its notifier script).
+     *
+     * The skin is read whole; a sibling is opened with [openSibling], which by default reads only
+     * the files asked of it and keeps only those ([ZipSkinFiles.OnDemand]). [Opened.close] closes
+     * the siblings opened.
      */
     fun open(
         skin: File,
         siblings: Map<String, File>,
         base: SkinFiles = AndampDefaultSet,
-    ): SkinFiles {
+        openSibling: (File) -> SkinFiles = { ZipSkinFiles.OnDemand(it) },
+    ): Opened {
         val skinFiles = ZipSkinFiles(skin)
         val byName = siblings.mapKeys { folderName(it.key) }
         val opened = HashMap<File, SkinFiles?>()
+        var closed = false
         // the engine and the screen both read files: the map is guarded, and an archive opens
         // outside the lock, so one thread never waits on the other's reading. Two that open the
-        // same sibling at once keep the first.
+        // same sibling at once keep the first, and the second is closed.
         val sibling = sibling@{ name: String ->
             val file = byName[name] ?: return@sibling null
             if (file == skin) return@sibling skinFiles
-            synchronized(opened) { if (file in opened) return@sibling opened[file] }
+            synchronized(opened) {
+                if (closed) return@sibling null
+                if (file in opened) return@sibling opened[file]
+            }
             // a sibling that does not open is read as missing, and not tried again
-            val made = runCatching { ZipSkinFiles(file) }.getOrNull()
-            synchronized(opened) { if (file in opened) opened[file] else made.also { opened[file] = it } }
+            val made = runCatching { openSibling(file) }.getOrNull()
+            val kept =
+                synchronized(opened) {
+                    when {
+                        closed -> null
+                        file in opened -> opened[file]
+                        else -> made.also { opened[file] = it }
+                    }
+                }
+            if (kept !== made) (made as? Closeable)?.close()
+            kept
         }
-        return LayeredSkinFiles(SkinsFolderFiles(skinFiles, sibling), base)
+        return Opened(LayeredSkinFiles(SkinsFolderFiles(skinFiles, sibling), base)) {
+            val all =
+                synchronized(opened) {
+                    closed = true
+                    opened.values.toList().also { opened.clear() }
+                }
+            for (files in all) (files as? Closeable)?.close()
+        }
     }
 
     /** The files of [skin], with the other skins of a folder, [siblings], each named by its file name. */
@@ -53,7 +79,20 @@ internal object WalFiles {
         skin: File,
         siblings: List<File>,
         base: SkinFiles = AndampDefaultSet,
-    ): SkinFiles = open(skin, siblings.associateBy { it.nameWithoutExtension }, base)
+        openSibling: (File) -> SkinFiles = { ZipSkinFiles.OnDemand(it) },
+    ): Opened = open(skin, siblings.associateBy { it.nameWithoutExtension }, base, openSibling)
+
+    /**
+     * A skin's files as [open] gives them. [close] closes the siblings opened for them; from then
+     * on a sibling reads as missing, and the skin and the default set read on.
+     */
+    class Opened(
+        files: SkinFiles,
+        private val closeSiblings: () -> Unit,
+    ) : SkinFiles by files,
+        Closeable {
+        override fun close() = closeSiblings()
+    }
 
     /** How a path names a sibling: its folder name, lowercased, without spaces. */
     fun folderName(name: String): String = name.replace(" ", "").lowercase()

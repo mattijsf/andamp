@@ -40,6 +40,15 @@ import kotlin.concurrent.thread
  * `timing` turns the timing log ([WalTiming]) on, in a release build too, and `--ez on false`
  * turns it off; either holds until the app's process ends. A debug build starts with it on.
  *
+ *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal direct
+ *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal direct --ez on false
+ *
+ * `direct` draws skins at a fractional scale (Bento, Winamp3x) straight onto the screen with hard
+ * edges ([WalRender.direct]), in place of drawing them at the next whole scale and shrinking the
+ * picture; `--ez on false` goes back. It shows from the skin's next frame and holds until the app's
+ * process ends. `--es wal draw direct` turns it on too and `--es wal draw whole` off: am takes the
+ * word after `draw` as the intent's package, and drops what follows it.
+ *
  * Guarded by android.permission.DUMP in the manifest: only the shell, or an app granted DUMP over
  * adb, can send it.
  */
@@ -53,7 +62,9 @@ class WalDevSwitch : BroadcastReceiver() {
             "on" -> gate(context, true)
             "off" -> gate(context, false)
             "timing" -> timing(intent.getBooleanExtra("on", true))
-            else -> Log.w(WalHost.TAG, "WalDevSwitch: say --es wal on, off, check or timing (got $command)")
+            "direct" -> direct(intent.getBooleanExtra("on", true))
+            "draw" -> direct(intent.`package` == "direct")
+            else -> Log.w(WalHost.TAG, "WalDevSwitch: say --es wal on, off, check, timing or direct (got $command)")
         }
     }
 
@@ -78,6 +89,14 @@ class WalDevSwitch : BroadcastReceiver() {
     private fun timing(on: Boolean) {
         WalTiming.on = on
         Log.i(WalHost.TAG, "timing log ${if (on) "on" else "off"} under ${WalTiming.TAG}")
+    }
+
+    private fun direct(on: Boolean) {
+        WalRender.direct = on
+        Log.i(
+            WalHost.TAG,
+            "fractional scales drawn ${if (on) "directly with hard edges" else "whole and shrunk"} from the next frame",
+        )
     }
 
     private fun check(
