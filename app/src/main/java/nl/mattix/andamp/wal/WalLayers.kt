@@ -120,8 +120,8 @@ internal class WalLayers(
 
     /**
      * Whether a frame of [stack] with its [plans] can be drawn with kept drawings: the switches
-     * allow it, the plans match the windows, the stack layer would not be too large, and a whole
-     * scale has nothing drawn under it.
+     * allow it, the plans match the windows, every window has a width and a height, the stack
+     * layer would not be too large, and a whole scale has nothing drawn under it.
      */
     fun suits(
         stack: List<Pair<Rect, List<DrawCmd>>>,
@@ -131,6 +131,7 @@ internal class WalLayers(
     ): Boolean {
         val switched = keeps && WalRender.layers && !WalRender.direct
         if (!switched || stack.isEmpty() || plans.size != stack.size) return false
+        if (stack.any { (r, _) -> r.width <= 0 || r.height <= 0 }) return false
         val w = stack.maxOf { it.first.right }.toLong() * whole
         val h = stack.maxOf { it.first.bottom }.toLong() * whole
         val fits = w in 1..WalScale.MAX_PX && h in 1..WalScale.MAX_PX
@@ -171,7 +172,6 @@ internal class WalLayers(
         runAreaAgain = 0L
         for (i in stack.indices) {
             val (r, cmds) = stack[i]
-            if (r.width <= 0 || r.height <= 0) continue
             order.add(window(scope, plans[i], r, cmds, host, overClear = fractional && i == 0))
         }
         windows.values.removeIf { w -> (w.frame != frame).also { if (it) release(w) } }

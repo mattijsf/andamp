@@ -99,6 +99,7 @@ class WalLayersTest {
     private var label = 0xC0FFEE
     private var vis = 1
     private var second = true
+    private var secondRect = Rect(0, 30, 40, 10)
 
     /** The shaped main window: its live run is the visualizer, command 3. */
     private fun main(): List<DrawCmd> =
@@ -111,11 +112,12 @@ class WalLayersTest {
             DrawCmd.WindowEnd,
         )
 
+    /** The second window: a picture from its top, or above it, toward its bottom, when its height is negative. */
     private fun under(): List<DrawCmd> =
-        listOf(DrawCmd.Image(BitmapDef("bg2", "sheet.png", 5, 5, 20, 10), Rect(0, 0, 40, 10), 255))
+        listOf(DrawCmd.Image(BitmapDef("bg2", "sheet.png", 5, 5, 20, 10), Rect(0, minOf(0, secondRect.height), 40, 10), 255))
 
     private fun stack(): List<Pair<Rect, List<DrawCmd>>> =
-        listOf(Rect(0, 0, 40, 30) to main()) + if (second) listOf(Rect(0, 30, 40, 10) to under()) else emptyList()
+        listOf(Rect(0, 0, 40, 30) to main()) + if (second) listOf(secondRect to under()) else emptyList()
 
     /** Plans for [stack]: the main window at [mainVersion], its run at [runVersion] unless [run] is off. */
     private fun plans(
@@ -235,6 +237,18 @@ class WalLayersTest {
         assertEquals(0, layers.keptWindows)
         WalRender.layers = true
         assertEquals(listOf("run 11", "window 1", "window 2", "stack 0"), frame(layers, plans(1, 1)))
+    }
+
+    @Test
+    fun `a window without a positive height is drawn the plain way, where its clip reaches`() {
+        val layers = layers()
+        frame(layers, plans(1, 1))
+        // the canvas clips between the window's bottom and its top, over the main window
+        secondRect = Rect(0, 30, 40, -10)
+        assertEquals(emptyList<String>(), frame(layers, plans(1, 1)))
+        assertEquals(0, layers.keptWindows)
+        secondRect = Rect(0, 30, 40, 0)
+        assertEquals(emptyList<String>(), frame(layers, plans(1, 1)))
     }
 
     @Test

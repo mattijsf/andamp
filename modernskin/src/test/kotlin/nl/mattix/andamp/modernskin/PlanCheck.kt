@@ -11,7 +11,9 @@ import org.junit.Assert.assertTrue
 /**
  * What every plan must hold for a window of [rect]'s size drawing [cmds]: runs in order, apart and
  * inside the list; no window shape in a run and its clips paired inside it; bounds inside the window
- * that hold every pixel a run's commands can draw through the clips in force there.
+ * that hold every pixel a run's commands can draw through the clips in force there. Boxes and clips
+ * are taken as the platform's canvas takes them: with a right or bottom before the left or top, they
+ * cover what lies between; a picture or pixels with such a destination draw nothing.
  */
 internal fun checkPlan(
     cmds: List<DrawCmd>,
@@ -36,7 +38,7 @@ internal fun checkPlan(
     }
     // the clip in force at each command outside the runs, and each run's commands against its bounds
     val clips = ArrayDeque<IntArray>()
-    clips.addLast(intArrayOf(0, 0, rect.width, rect.height))
+    clips.addLast(sorted(0, 0, rect.width, rect.height))
     var i = 0
     var next = 0
     while (i < cmds.size) {
@@ -116,21 +118,33 @@ private fun checkBounds(
     }
 }
 
+/** The box from ([x0], [y0]) to ([x1], [y1]) as left, top, right, bottom, whichever corner comes first. */
+private fun sorted(
+    x0: Int,
+    y0: Int,
+    x1: Int,
+    y1: Int,
+) = intArrayOf(minOf(x0, x1), minOf(y0, y1), maxOf(x0, x1), maxOf(y0, y1))
+
+/** Clip [c] cut down by the box from ([x0], [y0]) to ([x1], [y1]), whichever corner comes first. */
 private fun intersect(
     c: IntArray,
-    l: Int,
-    t: Int,
-    r: Int,
-    b: Int,
-) = intArrayOf(maxOf(c[0], l), maxOf(c[1], t), minOf(c[2], r), minOf(c[3], b))
+    x0: Int,
+    y0: Int,
+    x1: Int,
+    y1: Int,
+): IntArray {
+    val s = sorted(x0, y0, x1, y1)
+    return intArrayOf(maxOf(c[0], s[0]), maxOf(c[1], s[1]), minOf(c[2], s[2]), minOf(c[3], s[3]))
+}
 
 private fun extentOf(c: DrawCmd): Rect? =
     when (c) {
-        is DrawCmd.Image -> c.dst
+        is DrawCmd.Image -> c.dst.takeIf { it.width > 0 && it.height > 0 }
+        is DrawCmd.Pixels -> c.rect.takeIf { it.width > 0 && it.height > 0 }
         is DrawCmd.Fill -> c.rect
         is DrawCmd.Text -> c.rect
         is DrawCmd.BitmapText -> c.rect
-        is DrawCmd.Pixels -> c.rect
         else -> null
     }
 

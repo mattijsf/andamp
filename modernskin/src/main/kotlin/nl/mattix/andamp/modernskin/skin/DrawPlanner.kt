@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicLong
  * A window is drawn in one piece (no runs) while its shape, the clips of its groups or its resting
  * objects keep changing ([FLAT_MOVES] of the last four frames), until they rest for
  * [FLAT_EXIT_MS]; also when it would have more than [MAX_RUNS] runs, or runs over more than half
- * of it, and when its shape opens anywhere but at its ends.
+ * of it, when its shape opens anywhere but at its ends, and while it has no width or height.
  *
  * A window laid out as in the frame before, with only its objects' drawing changed and no object
  * turning live or resting, is compared command by command with that frame and keeps its runs

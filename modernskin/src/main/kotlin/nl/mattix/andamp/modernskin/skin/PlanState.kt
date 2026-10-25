@@ -157,6 +157,8 @@ internal class Extent {
      * What commands [from] to [to] of [cmds] can draw on, through the clip held in [clip] at [at] and
      * the clips they open themselves. A picture is drawn at its destination or smaller: its piece is
      * never wider than the part it was cut for; text and bitmap text are drawn clipped to their box.
+     * A box or clip whose right or bottom lies before its left or top covers what lies between them,
+     * as the platform's canvas draws it; a picture or pixels with such a destination draw nothing.
      */
     fun of(
         cmds: List<DrawCmd>,
@@ -173,11 +175,11 @@ internal class Extent {
         b = 0
         for (k in from until to) {
             when (val c = cmds[k]) {
-                is DrawCmd.Image -> join(c.dst, depth)
-                is DrawCmd.Text -> join(c.rect, depth)
-                is DrawCmd.BitmapText -> join(c.rect, depth)
-                is DrawCmd.Pixels -> join(c.rect, depth)
-                is DrawCmd.Fill -> join(c.rect, depth)
+                is DrawCmd.Image -> join(c.dst, depth, sorted = false)
+                is DrawCmd.Text -> join(c.rect, depth, sorted = true)
+                is DrawCmd.BitmapText -> join(c.rect, depth, sorted = true)
+                is DrawCmd.Pixels -> join(c.rect, depth, sorted = false)
+                is DrawCmd.Fill -> join(c.rect, depth, sorted = true)
                 is DrawCmd.Clip -> open(c.rect, ++depth)
                 DrawCmd.Unclip -> depth = maxOf(0, depth - 1)
                 else -> Unit
@@ -191,29 +193,24 @@ internal class Extent {
     ) {
         val d = depth * 4
         if (d + 4 > clips.size) clips = clips.copyOf(clips.size * 2)
-        clips[d] = maxOf(rect.left, clips[d - 4])
-        clips[d + 1] = maxOf(rect.top, clips[d - 3])
-        clips[d + 2] = minOf(rect.right, clips[d - 2])
-        clips[d + 3] = minOf(rect.bottom, clips[d - 1])
+        clips[d] = maxOf(minOf(rect.left, rect.right), clips[d - 4])
+        clips[d + 1] = maxOf(minOf(rect.top, rect.bottom), clips[d - 3])
+        clips[d + 2] = minOf(maxOf(rect.left, rect.right), clips[d - 2])
+        clips[d + 3] = minOf(maxOf(rect.top, rect.bottom), clips[d - 1])
     }
 
+    /** Joins what [box] covers through the clip at [depth]; [sorted] when it covers between swapped corners too. */
     private fun join(
         box: Rect,
         depth: Int,
+        sorted: Boolean,
     ) {
         val d = depth * 4
-        join(
-            maxOf(box.left, clips[d]),
-            maxOf(box.top, clips[d + 1]),
-            minOf(box.right, clips[d + 2]),
-            minOf(
-                box.bottom,
-                clips[
-                    d +
-                        3,
-                ],
-            ),
-        )
+        val l = if (sorted) minOf(box.left, box.right) else box.left
+        val t = if (sorted) minOf(box.top, box.bottom) else box.top
+        val r = if (sorted) maxOf(box.left, box.right) else box.right
+        val b = if (sorted) maxOf(box.top, box.bottom) else box.bottom
+        join(maxOf(l, clips[d]), maxOf(t, clips[d + 1]), minOf(r, clips[d + 2]), minOf(b, clips[d + 3]))
     }
 
     /** Joins the box [bl], [bt], [br], [bb]; an empty one adds nothing. */

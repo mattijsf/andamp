@@ -275,6 +275,46 @@ class DrawPlannerTest {
     }
 
     @Test
+    fun `boxes and clips with swapped corners count where the canvas draws them`() {
+        var step = 0
+
+        // a group squeezed to a negative height clips from its bottom to its top, and its live
+        // children draw a box and text whose corners are swapped too
+        fun cmds() =
+            listOf(
+                image(Rect(0, 0, 200, 100)).by(layout),
+                DrawCmd.Clip(Rect(10, 80, 100, -40)).by(group),
+                image(Rect(120, 10, 20, 10)).by(button),
+                DrawCmd.Fill(Rect(10, 70, 50, -20), Rgb(step), 255).by(time),
+                text("$step", Rect(60, 70, -20, -10)).by(ticker),
+                DrawCmd.Unclip,
+            )
+        val other = Any()
+        var plan = planner.planWindow(other, window, cmds(), now)
+        repeat(3) {
+            step++
+            now += 16
+            val c = cmds()
+            plan = planner.planWindow(other, window, c, now, moving = listOf(time, ticker))
+            cache.frame(listOf(window to c), listOf(plan), "step $step")
+        }
+        assertEquals("the box and the text, inside the group's clip", Rect(10, 50, 50, 20), plan.runs.single().bounds)
+    }
+
+    @Test
+    fun `a window of negative size is drawn in one piece`() {
+        val flat = Rect(0, 0, -200, -100)
+        val other = Any()
+        repeat(4) {
+            tickerScroll++
+            now += 16
+            val c = cmds()
+            val plan = planner.planWindow(other, flat, c, now, moving = listOf(ticker))
+            assertTrue(plan.runs.isEmpty())
+        }
+    }
+
+    @Test
     fun `a window that changes size moves its version`() {
         val before = frame()
         val plan = planner.planWindow(key, Rect(0, 0, 200, 120), cmds(), now + 16)

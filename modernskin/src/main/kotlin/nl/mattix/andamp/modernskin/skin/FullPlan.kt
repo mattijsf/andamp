@@ -91,11 +91,10 @@ internal class FullPlan(
         buildCount = 0
         val parsed = scan(cmds)
         if (parsed) gather(cmds, rect.width, rect.height, now, frame)
-        val flat = ws.flatAt(now)
+        // a window with no width or height is drawn in one piece
+        val apart = parsed && !ws.flatAt(now) && rect.width > 0 && rect.height > 0
         val runs =
-            if (parsed && !flat &&
-                gatherRuns(rect.width, rect.height)
-            ) {
+            if (apart && gatherRuns(rect.width, rect.height)) {
                 finishRuns(ws, rect.width, rect.height)
             } else {
                 emptyList()
@@ -463,15 +462,22 @@ internal class FullPlan(
         }
     }
 
-    /** Opens a clip: the box given, inside the clip in force. */
+    /**
+     * Opens a clip: the box from ([x0], [y0]) to ([x1], [y1]), inside the clip in force. A corner given
+     * before the other clips between them, as the platform's canvas clips.
+     */
     private fun pushClip(
-        l: Int,
-        t: Int,
-        r: Int,
-        b: Int,
+        x0: Int,
+        y0: Int,
+        x1: Int,
+        y1: Int,
     ) {
         if ((clipDepth + 1) * 4 > clips.size) clips = clips.copyOf(clips.size * 2)
         val at = clipDepth * 4
+        val l = minOf(x0, x1)
+        val t = minOf(y0, y1)
+        val r = maxOf(x0, x1)
+        val b = maxOf(y0, y1)
         if (clipDepth == 0) {
             clips[0] = l
             clips[1] = t
