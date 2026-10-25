@@ -1639,18 +1639,30 @@ class SkinRuntime(
      */
     fun tick(): Boolean {
         val t = now()
+        tickChanged.clear()
         advanceClocks(t)
         val status = player.status
         announcePlayer(status)
         if (needsLayout) doLayout()
         for (o in sliders) o.sync()
         // a text out of sight still keeps its ticker and its message up to date
-        for (o in texts) if (o.tick(t) && shows(o)) dirty = true
-        for (o in visObjects) if (o.moving(status) && o.stepDue(t) && shows(o)) dirty = true
-        for (o in progressGrids) if (o.filledChanged() && shows(o)) dirty = true
+        for (o in texts) if (o.tick(t) && shows(o)) moved(o)
+        for (o in visObjects) if (o.moving(status) && o.stepDue(t) && shows(o)) moved(o)
+        for (o in progressGrids) if (o.filledChanged() && shows(o)) moved(o)
         for (o in buttons) if (o.stateChanged() && shows(o)) dirty = true
         if (needsLayout) doLayout()
         return dirty
+    }
+
+    /**
+     * The objects the last [tick] found moving by themselves: a ticker's step, the time, a moving
+     * visualizer, a progress grid. [DrawPlanner] reads them as a hint and clears them.
+     */
+    internal val tickChanged = ArrayList<GuiObject>()
+
+    private fun moved(o: GuiObject) {
+        dirty = true
+        tickChanged.add(o)
     }
 
     // what is due at a tick, gathered first: what it runs may start, stop or end others

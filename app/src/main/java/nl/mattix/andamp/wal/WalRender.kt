@@ -25,7 +25,7 @@ import nl.mattix.andamp.modernskin.skin.DrawCmd
 import nl.mattix.andamp.modernskin.skin.Rect
 import nl.mattix.andamp.modernskin.skin.VAlign
 
-/** How fractional scales are drawn; switched over adb ([WalDevSwitch]) to compare the two looks. */
+/** How skins are drawn; switched over adb ([WalDevSwitch]) to compare ways of drawing. */
 internal object WalRender {
     /**
      * Draws a stack at a fractional scale straight onto the screen with hard edges, in place of
@@ -34,6 +34,13 @@ internal object WalRender {
      */
     @Volatile
     var direct = false
+
+    /**
+     * Whether the engine works out, for each frame it publishes, which parts of each window changed
+     * ([WalFrame.plans]). On unless switched off; it holds until the app's process ends.
+     */
+    @Volatile
+    var layers = true
 }
 
 /**

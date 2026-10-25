@@ -3,6 +3,7 @@ package nl.mattix.andamp.modernskin
 
 import nl.mattix.andamp.modernskin.maki.Value
 import nl.mattix.andamp.modernskin.skin.DrawCmd
+import nl.mattix.andamp.modernskin.skin.DrawPlanner
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.FontDef
 import nl.mattix.andamp.modernskin.skin.SkinFiles
@@ -156,6 +157,15 @@ class PublishCostTest {
         val before = DrawCmd.ownerNamesBuilt
         val stack = rt.drawWindows()
         assertEquals(before, DrawCmd.ownerNamesBuilt)
+
+        val planner = DrawPlanner()
+        player.play()
+        repeat(60) {
+            t += 16
+            rt.tick()
+            planner.draw(rt, t)
+        }
+        assertEquals("planning builds none either", before, DrawCmd.ownerNamesBuilt)
 
         val face = stack.first().second.first { it.owner == "layer#face" }
         assertTrue(DrawCmd.ownerNamesBuilt > before)

@@ -9,10 +9,12 @@ import android.os.SystemClock
 import android.util.Log
 import androidx.compose.ui.unit.IntSize
 import nl.mattix.andamp.modernskin.skin.DrawCmd
+import nl.mattix.andamp.modernskin.skin.DrawPlanner
 import nl.mattix.andamp.modernskin.skin.Player
 import nl.mattix.andamp.modernskin.skin.Rect
 import nl.mattix.andamp.modernskin.skin.SkinMenu
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
+import nl.mattix.andamp.modernskin.skin.WindowPlan
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
@@ -54,6 +56,11 @@ internal class WalFrame(
     val wantsFrames: Boolean = true,
     /** The color theme the skin wears ([SkinRuntime.currentGammaSet]), or null when it has none. */
     val themeKey: String? = null,
+    /**
+     * What the screen may keep of each window of [stack] from earlier frames (see [WalLayers]), in
+     * the same order; null when the engine did not plan the frame ([WalRender.layers] off).
+     */
+    val plans: List<WindowPlan>? = null,
 )
 
 /** What a skin says about resting, as [WalEngine] reads it each time it publishes a frame. */
@@ -139,6 +146,9 @@ internal class WalEngine(
     private var baseW = 0
     private var publishing = false
     private val fitting = WalFitting()
+
+    /** Works out what the screen may keep of each frame; the engine thread's. */
+    private val planner = DrawPlanner()
 
     /** What [idle] said last in the running task, or null when it has not been asked yet. */
     private var lastIdle: WalIdle? = null
@@ -670,9 +680,9 @@ internal class WalEngine(
         val t0 = host.menus.workClock
         appliedFit?.let { fitting.refit(runtime, it, baseW) }
         publishing = true
-        val stack =
+        val (stack, plans) =
             try {
-                runtime.drawWindows()
+                drawPlanned(runtime, planner, now)
             } finally {
                 publishing = false
             }
@@ -701,6 +711,7 @@ internal class WalEngine(
                 menuTarget = runtime.menuTarget,
                 wantsFrames = wantsFrames,
                 themeKey = runtime.currentGammaSet,
+                plans = plans,
             ),
         )
         if (WalTiming.on) Log.d(WalTiming.TAG, WalTiming.line(thread.name, work, host.menus.workClock - t0, named))
@@ -721,3 +732,14 @@ internal class WalEngine(
             (stack.maxOfOrNull { it.first.right } ?: 0) to (stack.maxOfOrNull { it.first.bottom } ?: 0)
     }
 }
+
+/**
+ * [runtime]'s windows as drawWindows gives them, with a plan of each by [planner] at [now] while
+ * [WalRender.layers] is on, so the screen draws again only what changed (see [WalLayers]).
+ */
+private fun drawPlanned(
+    runtime: SkinRuntime,
+    planner: DrawPlanner,
+    now: Long,
+): Pair<List<Pair<Rect, List<DrawCmd>>>, List<WindowPlan>?> =
+    if (WalRender.layers) planner.draw(runtime, now).let { it.stack to it.plans } else runtime.drawWindows() to null

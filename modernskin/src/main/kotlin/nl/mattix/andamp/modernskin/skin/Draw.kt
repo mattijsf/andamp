@@ -187,6 +187,26 @@ sealed class DrawCmd {
             set(value) = Unit
     }
 
+    /**
+     * Whether [other] draws exactly what this draws: the same kind of command with the same values,
+     * the same part of the same picture in the same tint, the same font, and pixels with the same
+     * content. A renderer may then keep what it drew for one and show it for the other. A window's
+     * shape is the same when it is made of the same pictures, boxes and operations, whether or not
+     * the runtime worked it out again.
+     */
+    internal fun drawsSameAs(other: DrawCmd): Boolean =
+        when (this) {
+            is Image -> other is Image && sameAs(other)
+            is Fill -> other is Fill && rect == other.rect && color == other.color && alpha == other.alpha
+            is WindowStart -> other is WindowStart && region.sameShapeAs(other.region)
+            WindowEnd -> other === WindowEnd
+            is Text -> other is Text && sameAs(other)
+            is BitmapText -> other is BitmapText && sameAs(other)
+            is Clip -> other is Clip && rect == other.rect
+            Unclip -> other === Unclip
+            is Pixels -> other is Pixels && sameAs(other)
+        }
+
     companion object {
         /** Owner names made so far, by reading [owner]. */
         @Volatile
@@ -392,3 +412,51 @@ sealed class Region {
         )
     }
 }
+
+private fun DrawCmd.Image.sameAs(o: DrawCmd.Image) =
+    dst == o.dst && alpha == o.alpha && smooth == o.smooth && gamma == o.gamma && bitmap.sameAs(o.bitmap)
+
+private fun DrawCmd.Text.sameAs(o: DrawCmd.Text) =
+    text == o.text && size == o.size && color == o.color && rect == o.rect && align == o.align && scroll == o.scroll &&
+        alpha == o.alpha && valign == o.valign && bold == o.bold && shadow == o.shadow && shadowDx == o.shadowDx &&
+        shadowDy == o.shadowDy && font.sameAs(o.font)
+
+private fun DrawCmd.BitmapText.sameAs(o: DrawCmd.BitmapText) =
+    text == o.text && rect == o.rect && align == o.align && alpha == o.alpha && valign == o.valign &&
+        colonWidth == o.colonWidth && scroll == o.scroll && gamma == o.gamma && font.sameAs(o.font)
+
+private fun DrawCmd.Pixels.sameAs(o: DrawCmd.Pixels) =
+    rect == o.rect && w == o.w && h == o.h && alpha == o.alpha && stable == o.stable &&
+        (argb === o.argb || argb.contentEquals(o.argb))
+
+/** The same part of the same file: a part made again each frame (an animation's frame) draws the same. */
+private fun BitmapDef.sameAs(o: BitmapDef) =
+    this === o || (x == o.x && y == o.y && w == o.w && h == o.h && id == o.id && file == o.file && gammaGroup == o.gammaGroup)
+
+/** The same font: a system font a text names is made again each frame. */
+private fun FontDef?.sameAs(o: FontDef?) = this === o || (this != null && o != null && id == o.id && file == o.file)
+
+private fun BitmapFontDef.sameAs(o: BitmapFontDef) =
+    this === o ||
+        (
+            charWidth == o.charWidth && charHeight == o.charHeight && hSpacing == o.hSpacing && vSpacing == o.vSpacing &&
+                ox == o.ox && oy == o.oy && id == o.id && file == o.file && gammaGroup == o.gammaGroup
+        )
+
+/** The same shape: the same pictures in the same places, the same boxes, combined the same way. */
+private fun Region.sameShapeAs(o: Region): Boolean =
+    this === o ||
+        when (this) {
+            is Region.Pic -> o is Region.Pic && image.drawsSameAs(o.image)
+            is Region.Box -> o is Region.Box && rect == o.rect
+            is Region.Op -> o is Region.Op && sameShapeAs(o)
+        }
+
+private fun Region.Op.sameShapeAs(o: Region.Op): Boolean {
+    val b = base
+    val ob = o.base
+    val sameBase = if (b == null || ob == null) b === ob else b.sameShapeAs(ob)
+    return sameBase && add.sameShapesAs(o.add) && keep.sameShapesAs(o.keep) && cut.sameShapesAs(o.cut)
+}
+
+private fun List<Region>.sameShapesAs(o: List<Region>) = size == o.size && indices.all { this[it].sameShapeAs(o[it]) }
