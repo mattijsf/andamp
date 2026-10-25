@@ -38,7 +38,7 @@ internal enum class WalCause(
     /** A tick the screen asked for on a display frame. */
     TICK("tick"),
 
-    /** A tick the engine sets itself for when something on the skin is due; it sets none yet. */
+    /** A tick the engine sets itself for when something on the skin is due, while the screen does not tick it ([WalRest]). */
     WAKE("wake"),
 
     /** A tick for a change the skin shows, such as the volume or the track ([WalSurface.wakeKey]). */

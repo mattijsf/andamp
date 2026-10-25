@@ -600,7 +600,9 @@ private fun BoxWithConstraintsScope.PlayerWindows(
 
     // a modern skin's visualizer is part of the skin
     if (wal == null) InPlayerVisualizerDriver(vm)
-    UiClocks(s)
+    // the clocks drive only classic windows: the main window's title and paused time (shown also
+    // while a modern skin loads), the Library's caret, and a list thrown there or in the Skin Browser
+    UiClocks(s, followsScreen = true) { wal == null || wal.surface.layout == null || s.libraryOpen || s.skinManagerOpen }
 
     FloatingWindows(
         vm,

@@ -66,6 +66,14 @@ internal const val WAL_LAYER_Z = -2f
 internal const val WAL_RECT_SETTLE_MS = 200L
 
 /**
+ * How long after the listener's last input the skin is ticked on every display frame, whether its
+ * frames want that or not: a drawer a tap opens slides smoothly while the music is stopped.
+ */
+internal const val WAL_INPUT_FRAMES_MS = 2_000L
+
+private const val NANOS_PER_MS = 1_000_000L
+
+/**
  * For each player state, the layer whose rect `windowRects[MAIN]` holds; read and written on the
  * main thread only. `windowRects` keeps the rect it has when an equal one is put, so the rect alone
  * cannot say which of two surfaces of the same size put it there.
@@ -79,7 +87,10 @@ private val mainRectOwners = WeakHashMap<WinampState, PublishedRect>()
 internal class WalLayerParts(
     val surface: WalSurface,
     val actions: WalHostActions,
-    /** Whether a screen of the app covers the player, so the skin rests; read in a snapshot. */
+    /**
+     * Whether nobody sees the skin though the screen is on, so it rests: a screen of the app covers
+     * it, or a window of the app hides it whole ([hidesModernSkin]). Read in a snapshot.
+     */
     val covered: () -> Boolean,
     /** Opens the main menu at an anchor, with "Skin menu" first when it is given that entry's action. */
     val openMenu: (onSkinMenu: (() -> Unit)?, anchor: MenuAnchor?) -> Unit,
@@ -89,7 +100,10 @@ internal class WalLayerParts(
     val compact: Boolean = false,
 )
 
-/** [surface] as [vm]'s player surface hands it on, with the ways this surface opens menus and files. */
+/**
+ * [surface] as [vm]'s player surface hands it on, with the ways this surface opens menus and files;
+ * it counts as [covered] also while a window of the app hides it whole ([hidesModernSkin]).
+ */
 @Composable
 internal fun rememberWalLayerParts(
     surface: WalSurface,
@@ -113,12 +127,33 @@ internal fun rememberWalLayerParts(
                 onMinimize = { minimizeNow() },
                 openFile = { andPlay -> if (andPlay) playlistNow.addFileThenPlay() else playlistNow.addFile() },
             ),
-            covered = { coveredNow() },
+            // a window of the app over the whole skin hides it as well as a screen does
+            covered = { coveredNow() || hidesModernSkin(vm.state) },
             openMenu = { onSkinMenu, anchor -> openMenuNow(onSkinMenu, anchor) },
             menuTitle = vm.words.get(R.string.menu_skin_menu),
             compact = compact,
         )
     }
+}
+
+/**
+ * Whether a window of the app hides the whole of a worn modern skin's stack (`windowRects[MAIN]`),
+ * so the skin rests as under a covering screen: the fullscreen visualizer, or the Library or the
+ * Skin Browser window over all of the stack. Read in a snapshot.
+ */
+internal fun hidesModernSkin(s: WinampState): Boolean {
+    if (s.milkdropOn && s.milkdropFullscreen) return true
+    val stack = s.windowRects[WindowStore.MAIN] ?: return false
+
+    fun over(
+        id: String,
+        open: Boolean,
+    ): Boolean {
+        val window = s.windowRects[id] ?: return false
+        return open && window.left <= stack.left && window.top <= stack.top && window.right >= stack.right &&
+            window.bottom >= stack.bottom
+    }
+    return over(WindowStore.LIBRARY, s.libraryOpen) || over(WindowStore.SKINS, s.skinManagerOpen)
 }
 
 /**
@@ -249,6 +284,14 @@ private fun CoroutineScope.holdTurn(
     launch { WidgetSignals.screenOn(context).collect { screenOn = it } }
     // a covered player and a dark screen show nothing, so the skin's clock rests
     val awake = { screenOn && !parts.covered() }
+    // the skin hears whether it shows, and rests once this surface lets go of the turn
+    launch {
+        try {
+            snapshotFlow(awake).collect { surface.awake = it }
+        } finally {
+            surface.awake = false
+        }
+    }
     launch { snapshotFlow(fit).collect { surface.fit(it) } }
     // the rect goes out as the turn is taken; a drawer sliding open moves it once more, when it stops
     launch {
@@ -259,15 +302,8 @@ private fun CoroutineScope.holdTurn(
             publish(window)
         }
     }
-    launch {
-        snapshotFlow(awake).collectLatest { on ->
-            while (on) {
-                withFrameNanos {}
-                surface.requestTick()
-            }
-        }
-    }
-    // a change the skin shows, such as the volume or the track, earns it a tick
+    launch { frameLoop(surface, awake) }
+    // a change the skin shows, such as the volume or the track, earns it a tick at once
     launch {
         snapshotFlow { if (awake()) surface.wakeKey() else null }.filterNotNull().collect { surface.requestTick(WalCause.KEY) }
     }
@@ -278,6 +314,73 @@ private fun CoroutineScope.holdTurn(
         snapshotFlow { ready()?.takeUnless { dragging() } }.filterNotNull().collect {
             if (WalTiming.on) Log.d(WalTiming.TAG, placedLine(it, fit()))
         }
+    }
+}
+
+/** What the frame loop goes by: whether the skin shows, whether its frames want ticks, and the listener's last input. */
+private data class FrameAsk(
+    val awake: Boolean,
+    val wantsFrames: Boolean,
+    val inputAt: Long,
+)
+
+/**
+ * Asks [surface] for a tick on display frames, as [WalTickPace] paces them, while it shows ([awake])
+ * and its frames want them ([WalLayout.wantsFrames]), and for [WAL_INPUT_FRAMES_MS] after each of
+ * the listener's inputs ([WalSurface.lastInputAt]), so what a touch sets moving runs smoothly. Else
+ * it asks for none: the engine wakes the skin itself when something is due.
+ */
+private suspend fun frameLoop(
+    surface: WalSurface,
+    awake: () -> Boolean,
+) {
+    val pace = WalTickPace()
+    var seenInput = surface.lastInputAt
+    // the display frame time, in ns, until which the last input keeps the loop running
+    var inputUntil = Long.MIN_VALUE
+    snapshotFlow { FrameAsk(awake(), surface.layout?.wantsFrames == true, surface.lastInputAt) }.collectLatest { ask ->
+        var input = ask.inputAt != seenInput
+        seenInput = ask.inputAt
+        if (!ask.awake) return@collectLatest
+        while (true) {
+            val now = withFrameNanos { it }
+            if (input) {
+                inputUntil = now + WAL_INPUT_FRAMES_MS * NANOS_PER_MS
+                input = false
+            }
+            if (!ask.wantsFrames && now >= inputUntil) break
+            if (pace.due(now)) surface.requestTick()
+        }
+    }
+}
+
+/**
+ * Paces the frame loop at no more than sixty ticks a second, however fast the display runs. A
+ * display frame ticks once it is no more than half a display frame before the next deadline, and
+ * each tick moves the deadline on by [periodNanos], so a 90 Hz or 120 Hz display ticks as near
+ * sixty times a second as its frames fall, and a 60 Hz one on every frame. After a pause the
+ * deadlines start over from the next frame.
+ */
+internal class WalTickPace(
+    private val periodNanos: Long = TICK_PERIOD_NANOS,
+) {
+    private var next = NONE
+    private var lastFrame = NONE
+
+    /** Whether the display frame at [frameNanos] ticks; asked once for every display frame, in order. */
+    fun due(frameNanos: Long): Boolean {
+        val frame = if (lastFrame == NONE) 0L else (frameNanos - lastFrame).coerceIn(0L, periodNanos)
+        lastFrame = frameNanos
+        if (next != NONE && frameNanos < next - frame / 2) return false
+        next = if (next == NONE || frameNanos - next >= periodNanos) frameNanos + periodNanos else next + periodNanos
+        return true
+    }
+
+    companion object {
+        /** A sixtieth of a second, in ns. */
+        const val TICK_PERIOD_NANOS = 16_666_667L
+
+        private const val NONE = Long.MIN_VALUE
     }
 }
 

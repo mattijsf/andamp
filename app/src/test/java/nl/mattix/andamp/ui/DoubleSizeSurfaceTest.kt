@@ -3,6 +3,7 @@
 package nl.mattix.andamp.ui
 
 import android.app.Application
+import androidx.compose.runtime.snapshots.Snapshot
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
@@ -91,7 +92,12 @@ class DoubleSizeSurfaceTest {
         settle()
     }
 
-    private fun settle() = repeat(FRAMES) { compose.mainClock.advanceTimeByFrame() }
+    /** [FRAMES] frames; a write the test made is seen first, as the app's snapshot manager makes it seen. */
+    private fun settle() =
+        repeat(FRAMES) {
+            Snapshot.sendApplyNotifications()
+            compose.mainClock.advanceTimeByFrame()
+        }
 
     private fun rect(id: String): IntRect? = vm.state.windowRects[id]
 

@@ -736,6 +736,19 @@ private fun ModernSkinScreen(
     // the frame the probe timed last, so a frame drawn again is not counted twice
     val probed = remember { arrayOfNulls<WalFrame>(1) }
     val shown = engine.frame.takeIf { frameCount >= 0 }
+    // the skin's log, read as lines come in: a log line alone publishes no frame
+    var logLines by remember { mutableStateOf(emptyList<String>()) }
+    LaunchedEffect(host) {
+        var seen = -1
+        while (true) {
+            val version = host.version
+            if (version != seen) {
+                seen = version
+                logLines = host.logSnapshot()
+            }
+            delay(LOG_POLL_MS)
+        }
+    }
     // Back puts another window away before it leaves the skin
     androidx.activity.compose.BackHandler(enabled = shown?.windowOpen == true) { engine.post { it.closeTopWindow() } }
     Column(Modifier.fillMaxSize().background(Color(0xFF202020)).safeDrawingPadding()) {
@@ -838,7 +851,7 @@ private fun ModernSkinScreen(
             }
         }
         BasicText(
-            shown?.log?.joinToString("\n").orEmpty(),
+            logLines.joinToString("\n"),
             style = TextStyle(color = Color(0xFFB0FFB0), fontSize = 10.sp),
             modifier = Modifier.fillMaxWidth().padding(4.dp),
         )
@@ -945,6 +958,9 @@ private fun demoPlayer(check: Check?): FakePlayer =
 
 /** How long a press must last to count as a long press (Winamp's right click). */
 private const val LONG_PRESS_MS = 600
+
+/** How often the log panel looks for new log lines. */
+private const val LOG_POLL_MS = 100L
 
 /**
  * How long a check or a probe lets a skin load. They measure, and a debug build can take several
