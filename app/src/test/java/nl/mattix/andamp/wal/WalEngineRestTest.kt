@@ -3,6 +3,7 @@
 package nl.mattix.andamp.wal
 
 import android.app.Application
+import android.os.Looper
 import android.os.SystemClock
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.modernskin.maki.Value
@@ -21,7 +22,9 @@ import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.shadows.ShadowLooper
 import org.robolectric.shadows.ShadowSystemClock
 import java.time.Duration
 import java.util.concurrent.CompletableFuture
@@ -74,6 +77,9 @@ class WalEngineRestTest {
         val frames = AtomicInteger()
         val engine = WalEngine(name, host, idle) { frames.incrementAndGet() }.also { engines += it }
         val report = CompletableFuture<Throwable?>()
+
+        /** The engine thread's looper, found by the thread's name. */
+        val looper: Looper by lazy { ShadowLooper.getAllLoopers().single { it.thread.name == "wal-$name" } }
 
         fun load() = SkinRuntime(files, host, player).apply { load() }
 
@@ -179,15 +185,12 @@ class WalEngineRestTest {
     ): Run = resting(label, timer::startOn, timer::idle)
 
     /**
-     * Waits until [run]'s engine thread has done what was posted and fell due before now. Twice: a
-     * task sets the wake again behind itself, so a wake due now runs before the second.
+     * Waits until [run]'s engine thread has done what was posted and fell due before now, and the
+     * wakes that work set for now: Robolectric runs the messages due on that thread until none is
+     * left. A task the test posts cannot tell this, as each task sets the wake again after its body
+     * has run.
      */
-    private fun settle(run: Run) =
-        repeat(2) {
-            val done = CompletableFuture<Unit>()
-            run.engine.postAlways { done.complete(Unit) }
-            done.get(5, TimeUnit.SECONDS)
-        }
+    private fun settle(run: Run) = shadowOf(run.looper).idle()
 
     /**
      * Whether [run]'s engine has a wake set, read on its thread between two tasks: each task sets

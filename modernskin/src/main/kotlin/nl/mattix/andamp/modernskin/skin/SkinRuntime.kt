@@ -2600,6 +2600,9 @@ class SkinRuntime(
             }
         }
 
+    /** Whether [actionState] reads the state of [action]: a window, EQ on, EQ auto. */
+    internal fun hasActionState(action: String?): Boolean = action?.uppercase() in STATE_ACTIONS
+
     /** The short name of a window a TOGGLE names by short name or component GUID. */
     private fun windowKind(id: String): String {
         val bare = id.trim('{', '}').lowercase()
@@ -2850,6 +2853,9 @@ class SkinRuntime(
 
         /** The windows the app shows when a host answers [onHostAction], by [windowKind]. */
         val HOST_WINDOWS = setOf("ml", "avs", "video")
+
+        /** The actions whose state [actionState] reads. */
+        val STATE_ACTIONS = setOf("TOGGLE", "EQ_TOGGLE", "EQ_AUTO")
 
         /** Winamp's GUID aliases, and the short names the host knows windows by. */
         val TOGGLE_GUIDS =
