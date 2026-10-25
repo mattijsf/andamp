@@ -2547,8 +2547,12 @@ class ToggleButton(
         if (!autoToggle) return
         val attrib = cfgAttrib
         when {
-            attrib == null -> activated = !activated
+            // a TOGGLE without a config attribute lights while its window is open (see isActive),
+            // whatever opens or closes the window
+            attrib == null -> if (!followsHost) activated = !activated
+
             cfgVal == 1 -> rt.setConfigFlag(attrib, !rt.configFlag(attrib))
+
             else -> rt.setConfigValue(attrib, if (isActive) 0 else cfgVal)
         }
         rt.invalidate()
@@ -2569,7 +2573,8 @@ class ToggleButton(
 /**
  * A button that steps through `nstates` states, such as repeat off, all, one. Its pictures are
  * the named images with the state number appended, where the skin has them. With a config
- * attribute, `cfgvals` lists the config value of each state.
+ * attribute, `cfgvals` lists the config value of each state. Without one, a TOGGLE takes its state
+ * from its window (Winamp3x's playlist and equalizer lights): on while the window is open.
  */
 class NStatesButton(
     rt: SkinRuntime,
@@ -2619,12 +2624,20 @@ class NStatesButton(
 
     private fun valueOf(state: Int) = values?.getOrNull(state) ?: state
 
-    /** The current state, from the config value when the button has one. */
+    /**
+     * The current state: from the config value when the button has one; for a TOGGLE, the first
+     * state that means on while its window is open and the first that means off while it is not.
+     */
     val state: Int
         get() {
-            val attrib = cfgAttrib ?: return localState
-            val v = rt.configValue(attrib)
-            return (0 until states).firstOrNull { valueOf(it) == v } ?: 0
+            val attrib = cfgAttrib
+            if (attrib != null) {
+                val v = rt.configValue(attrib)
+                return (0 until states).firstOrNull { valueOf(it) == v } ?: 0
+            }
+            if (!followsHost) return localState
+            val open = rt.actionState(action, param)
+            return (0 until states).firstOrNull { (valueOf(it) != 0) == open } ?: 0
         }
 
     override val isActive: Boolean get() = valueOf(state) != 0
