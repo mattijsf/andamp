@@ -2547,9 +2547,9 @@ class ToggleButton(
         if (!autoToggle) return
         val attrib = cfgAttrib
         when {
-            // a TOGGLE without a config attribute lights while its window is open (see isActive),
-            // whatever opens or closes the window
-            attrib == null -> if (!followsHost) activated = !activated
+            // without a config attribute, a button for a window, EQ on or EQ auto lights from that
+            // state (see isActive), whatever changes it
+            attrib == null -> if (!rt.hasActionState(action)) activated = !activated
 
             cfgVal == 1 -> rt.setConfigFlag(attrib, !rt.configFlag(attrib))
 
@@ -2573,8 +2573,9 @@ class ToggleButton(
 /**
  * A button that steps through `nstates` states, such as repeat off, all, one. Its pictures are
  * the named images with the state number appended, where the skin has them. With a config
- * attribute, `cfgvals` lists the config value of each state. Without one, a TOGGLE takes its state
- * from its window (Winamp3x's playlist and equalizer lights): on while the window is open.
+ * attribute, `cfgvals` lists the config value of each state. Without one, a button for a window
+ * (Winamp3x's playlist and equalizer lights), EQ on or EQ auto takes its state from that: on while
+ * the window is open or the switch is on.
  */
 class NStatesButton(
     rt: SkinRuntime,
@@ -2625,8 +2626,8 @@ class NStatesButton(
     private fun valueOf(state: Int) = values?.getOrNull(state) ?: state
 
     /**
-     * The current state: from the config value when the button has one; for a TOGGLE, the first
-     * state that means on while its window is open and the first that means off while it is not.
+     * The current state: from the config value when the button has one; for a window, EQ on or EQ
+     * auto, the first state that means on while that is on and the first that means off while not.
      */
     val state: Int
         get() {
@@ -2635,7 +2636,7 @@ class NStatesButton(
                 val v = rt.configValue(attrib)
                 return (0 until states).firstOrNull { valueOf(it) == v } ?: 0
             }
-            if (!followsHost) return localState
+            if (!rt.hasActionState(action)) return localState
             val open = rt.actionState(action, param)
             return (0 until states).firstOrNull { (valueOf(it) != 0) == open } ?: 0
         }

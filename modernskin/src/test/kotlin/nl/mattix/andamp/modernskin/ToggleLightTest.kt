@@ -22,7 +22,8 @@ import java.io.File
  * A button that opens and closes a window (a TOGGLE) lights while that window is open, however it
  * opened or closed: by the button, by another button, or by Back on the phone
  * ([SkinRuntime.closeTopWindow]). Winamp3x's playlist and equalizer lights are two-state buttons,
- * Winamp Modern's playlist button a plain one.
+ * Winamp Modern's playlist button a plain one. A button for EQ on or EQ auto shows that switch as
+ * it is, wherever it was changed.
  */
 class ToggleLightTest {
     private val files =
@@ -34,6 +35,9 @@ class ToggleLightTest {
                         """<bitmap id="light.0" file="l0.png"/><bitmap id="light.1" file="l1.png"/>""" +
                         """<bitmap id="eq.off" file="e0.png"/><bitmap id="eq.on" file="e1.png"/>""" +
                         """<bitmap id="pl.off" file="p0.png"/><bitmap id="pl.on" file="p1.png"/>""" +
+                        """<bitmap id="sw.off" file="s0.png"/><bitmap id="sw.on" file="s1.png"/>""" +
+                        """<bitmap id="eqlight.0" file="q0.png"/><bitmap id="eqlight.1" file="q1.png"/>""" +
+                        """<bitmap id="auto.off" file="a0.png"/><bitmap id="auto.on" file="a1.png"/>""" +
                         """</elements><include file="player.xml"/></WinampAbstractionLayer>""",
                     "player.xml" to
                         """<container id="main" name="t" default_visible="1"><layout id="normal" w="200" h="100">""" +
@@ -43,6 +47,14 @@ class ToggleLightTest {
                         """x="40" y="0" w="20" h="20"/>""" +
                         """<button id="pl.button" action="TOGGLE" param="guid:pl" image="pl.off" activeimage="pl.on" """ +
                         """x="80" y="0" w="20" h="20"/>""" +
+                        """<togglebutton id="eq.switch" action="EQ_TOGGLE" image="sw.off" activeimage="sw.on" """ +
+                        """x="120" y="0" w="20" h="20"/>""" +
+                        """<nstatesbutton id="eq.light" action="EQ_TOGGLE" nstates="2" image="eqlight." """ +
+                        """x="160" y="0" w="20" h="20"/>""" +
+                        """<togglebutton id="auto.a" action="EQ_AUTO" image="auto.off" activeimage="auto.on" """ +
+                        """x="0" y="40" w="20" h="20"/>""" +
+                        """<togglebutton id="auto.b" action="EQ_AUTO" image="auto.off" activeimage="auto.on" """ +
+                        """x="40" y="40" w="20" h="20"/>""" +
                         """</layout></container>""" +
                         """<container id="pl" name="Playlist" default_visible="1"><layout id="normal" w="200" h="80"/>""" +
                         """</container>""" +
@@ -70,8 +82,10 @@ class ToggleLightTest {
             override fun invalidate() = Unit
         }
 
+    private val player = FakePlayer()
+
     private val rt =
-        SkinRuntime(files, host, FakePlayer()).apply {
+        SkinRuntime(files, host, player).apply {
             load()
             viewSize = 200 to 400
         }
@@ -150,6 +164,58 @@ class ToggleLightTest {
         rt.closeTopWindow()
         rt.tick()
         assertEquals("pl.off", drawn(plain))
+    }
+
+    @Test
+    fun `a toggle button for EQ on goes dark when its first tap turns the EQ off`() {
+        val toggle = button("eq.switch")
+        player.eqEnabled = true
+        rt.tick()
+        assertEquals("sw.on", drawn(toggle))
+
+        toggle.click()
+        assertFalse(player.eqEnabled)
+        assertEquals("sw.off", drawn(toggle))
+
+        toggle.click()
+        assertTrue(player.eqEnabled)
+        assertEquals("sw.on", drawn(toggle))
+
+        // the EQ switched off in the app
+        player.eqEnabled = false
+        rt.tick()
+        assertEquals("sw.off", drawn(toggle))
+    }
+
+    @Test
+    fun `a two-state light for EQ on shows the EQ as it is`() {
+        val light = button("eq.light")
+        player.eqEnabled = true
+        rt.tick()
+        assertEquals("eqlight.1", drawn(light))
+
+        light.click()
+        assertFalse(player.eqEnabled)
+        assertEquals("eqlight.0", drawn(light))
+
+        // the EQ switched on in the app
+        player.eqEnabled = true
+        rt.tick()
+        assertEquals("eqlight.1", drawn(light))
+    }
+
+    @Test
+    fun `two EQ auto switches light together`() {
+        val a = button("auto.a")
+        val b = button("auto.b")
+
+        a.click()
+        assertEquals("auto.on", drawn(a))
+        assertEquals("auto.on", drawn(b))
+
+        b.click()
+        assertEquals("auto.off", drawn(a))
+        assertEquals("auto.off", drawn(b))
     }
 
     /** The buttons in [g], and in the groups inside it, that open and close a window. */
