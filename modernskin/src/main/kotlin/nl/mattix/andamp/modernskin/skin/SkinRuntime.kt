@@ -176,6 +176,8 @@ class SkinRuntime(
         for (node in expanded) collectDefs(node)
         for (node in expanded) buildTop(node, null)
         doLayout()
+        // the main window where the phone draws it, before a script reads its place
+        for (c in containers) c.fitViewport()
         scriptsStarted = true
         for (s in systems.toList()) startScript(s)
         for (c in containers) c.current?.let { dispatch(it, "onstartup", emptyList()) }
@@ -430,11 +432,16 @@ class SkinRuntime(
     /** The window opened last, which Back puts away; null when only the main window is open. */
     val topWindow: Container? get() = opened.lastOrNull()
 
-    /** The space the app has for the stack, in layout pixels; null leaves windows at their own size. */
+    /**
+     * The space the app has for the stack, in layout pixels; null leaves each window at the size it
+     * has. A new one puts each window where the phone draws it in the new viewport
+     * ([Container.fitViewport]): against the edges a script moved it to, or in the middle.
+     */
     var viewSize: Pair<Int, Int>? = null
         set(value) {
             if (value != field) {
                 field = value
+                for (c in containers) c.fitViewport()
                 relayout()
             }
         }
@@ -862,6 +869,7 @@ class SkinRuntime(
                 "layout" -> {
                     val layout = Layout(this)
                     layout.container = container
+                    layout.placeAt(container.defaultX, container.defaultY)
                     fillGroup(layout, c)
                     container.layouts.add(layout)
                 }

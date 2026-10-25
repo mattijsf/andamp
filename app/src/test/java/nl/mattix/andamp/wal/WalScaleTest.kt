@@ -3,6 +3,7 @@
 package nl.mattix.andamp.wal
 
 import androidx.compose.ui.unit.IntSize
+import nl.mattix.andamp.modernskin.skin.Edge
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -151,6 +152,49 @@ class WalScaleTest {
         val bento = WalScale.place(small, w to h, 0, w, w to h)
         assertEquals("its size fills the box, and a rounding does not shrink it", s, bento.scale)
         assertEquals(0f, bento.left)
+    }
+
+    @Test
+    fun `upright, a stack whose main window was moved into a corner of the viewport sits in that corner of the box`() {
+        // CornerAmp's 246 by 228 player at 3x in the Pixel's 960 px box, which centers it at 111
+        val pixel = WalFit(960, 1900, 2.25f, false)
+
+        fun at(
+            edgeX: Edge?,
+            edgeY: Edge?,
+        ) = WalScale.place(pixel, 246 to 228, 246, 246, 246 to 228, edgeX = edgeX, edgeY = edgeY).let { it.left to it.top }
+
+        assertEquals("left up", 0f to 0f, at(Edge.START, Edge.START))
+        assertEquals("right up", 960f - 738 to 0f, at(Edge.END, Edge.START))
+        assertEquals("left down", 0f to 1900f - 684, at(Edge.START, Edge.END))
+        assertEquals("right down", 960f - 738 to 1900f - 684, at(Edge.END, Edge.END))
+        assertEquals("against no edge: centered, from the top", 111f to 0f, at(null, null))
+        assertEquals("against the bottom edge only: centered across", 111f to 1900f - 684, at(null, Edge.END))
+    }
+
+    @Test
+    fun `sideways, a stack moved into a corner sits in that corner, and centered on an axis it touches no edge on`() {
+        val pixel = WalFit(2142, 870, 2.25f, true)
+
+        fun at(
+            edgeX: Edge?,
+            edgeY: Edge?,
+        ) = WalScale.place(pixel, 246 to 228, 246, 246, 246 to 228, edgeX = edgeX, edgeY = edgeY).let { it.left to it.top }
+
+        assertEquals("left up", 0f to 0f, at(Edge.START, Edge.START))
+        assertEquals("right down", 2142f - 738 to 870f - 684, at(Edge.END, Edge.END))
+        assertEquals("against the right edge only", 2142f - 738 to 93f, at(Edge.END, null))
+        assertEquals("against no edge", 702f to 93f, at(null, null))
+    }
+
+    @Test
+    fun `a stack shrunk to the box goes against the edge it was moved to by what its windows show`() {
+        val box = WalFit(1080, 1000, 3f, false)
+        val place = WalScale.place(box, 275 to 116, 275, 275, 275 to 600, drawn = 275 to 500, edgeX = Edge.END, edgeY = Edge.END)
+
+        assertEquals(1000f / 600, place.scale)
+        assertEquals(kotlin.math.floor(1080 - 275 * place.scale), place.left)
+        assertEquals(kotlin.math.floor(1000 - 500 * place.scale), place.top)
     }
 
     @Test

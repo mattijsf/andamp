@@ -1424,6 +1424,81 @@ class Layout(
     var snapRight = 0
     var snapBottom = 0
 
+    /**
+     * Where the window sits in the viewport ([SkinRuntime.viewport]) while it shows this layout, as
+     * scripts read it (getLeft, getTop) and move it ([moveTo]). Each layout keeps a separate place,
+     * as each layout is a separate window in Winamp: MMD3 keeps one place for its main window and
+     * one for each of its shade bars.
+     */
+    var viewX = 0
+        private set
+    var viewY = 0
+        private set
+
+    /**
+     * Which side edge of the viewport a script last moved the window against in this layout
+     * ([moveTo]): the left one at x 0, the right one with its right side at the viewport's width;
+     * null when that move put it against neither, or no script moved it. A phone puts the stack
+     * against the same edge of its box as the main window's.
+     */
+    var edgeX: Edge? = null
+        private set
+
+    /** As [edgeX], up and down: the top edge at y 0, the bottom one with its bottom at the viewport's height. */
+    var edgeY: Edge? = null
+        private set
+
+    /** Puts the window at [x], [y] in this layout with no script moving it: no edges are noted. */
+    internal fun placeAt(
+        x: Int,
+        y: Int,
+    ) {
+        viewX = x
+        viewY = y
+    }
+
+    /**
+     * Moves the window to [x], [y] in this layout as a script does, by a resize to [width] by
+     * [height] or through the container at the size the layout has, and notes the edges of the
+     * viewport it then sits against ([edgeX], [edgeY]).
+     */
+    internal fun moveTo(
+        x: Int,
+        y: Int,
+        width: Int = size.first,
+        height: Int = size.second,
+    ) {
+        placeAt(x, y)
+        val (vw, vh) = rt.viewport
+        edgeX = edgeAt(x, width, vw)
+        edgeY = edgeAt(y, height, vh)
+    }
+
+    /**
+     * Puts the window where a phone draws it in a new viewport: against the edges [moveTo] noted,
+     * and on an axis with none, in the middle ([clearOf]) for a [middle] window, the main one, or
+     * where it was for another. A script that reads the place of a main window against no edge and
+     * moves the window back there (MMD3 does as it leaves a shade bar) then moves it against none.
+     */
+    internal fun fitViewport(middle: Boolean) {
+        val (w, h) = size
+        val (vw, vh) = rt.viewport
+        placeAt(
+            startAt(edgeX, w, vw) ?: if (middle) clearOf(w, vw) else viewX,
+            startAt(edgeY, h, vh) ?: if (middle) clearOf(h, vh) else viewY,
+        )
+    }
+
+    /** Sizes the window to [width] by [height] where it is, as the phone sizes a window to its box. */
+    fun resizeTo(
+        width: Int,
+        height: Int,
+    ) {
+        w = width
+        h = height
+        rt.relayout()
+    }
+
     override fun setParam(
         key: String,
         value: String,
@@ -1704,23 +1779,17 @@ class Layout(
             }
 
             "resize" -> {
-                // moving the window is the container's business; the size is the layout's
-                container?.let {
-                    it.x = args[0].asInt
-                    it.y = args[1].asInt
-                }
-                w = args[2].asInt
-                h = args[3].asInt
-                rt.relayout()
+                moveTo(args[0].asInt, args[1].asInt, args[2].asInt, args[3].asInt)
+                resizeTo(args[2].asInt, args[3].asInt)
                 Value.Null
             }
 
             "getleft" -> {
-                Value.Int(container?.x ?: 0)
+                Value.Int(viewX)
             }
 
             "gettop" -> {
-                Value.Int(container?.y ?: 0)
+                Value.Int(viewY)
             }
 
             "getsnapadjustleft" -> {
@@ -1745,6 +1814,46 @@ class Layout(
         }
 }
 
+/** An edge of the viewport on one axis: the left or top one ([START]), or the right or bottom one ([END]). */
+enum class Edge { START, END }
+
+/** The edge a window starting at [at], [size] long, sits against in a viewport [extent] long; null for neither. */
+private fun edgeAt(
+    at: Int,
+    size: Int,
+    extent: Int,
+): Edge? =
+    when {
+        at == 0 -> Edge.START
+        at + size == extent -> Edge.END
+        else -> null
+    }
+
+/** Where a window [size] long starts against [edge] of a viewport [extent] long; null for no edge. */
+private fun startAt(
+    edge: Edge?,
+    size: Int,
+    extent: Int,
+): Int? =
+    when (edge) {
+        Edge.START -> 0
+        Edge.END -> extent - size
+        null -> null
+    }
+
+/**
+ * Where a window [size] long starts on an axis of a viewport [extent] long, against neither edge
+ * ([edgeAt]): in the middle; where the middle would touch an edge (the window is about as long as
+ * the viewport, or longer), at the larger of 1 and one pixel past its place against the far edge.
+ */
+private fun clearOf(
+    size: Int,
+    extent: Int,
+): Int {
+    val room = extent - size
+    return if (room >= 2) room / 2 else maxOf(room, 0) + 1
+}
+
 /** A window: the main player, the playlist editor, the equalizer. It shows one of its layouts. */
 class Container(
     val rt: SkinRuntime,
@@ -1755,9 +1864,20 @@ class Container(
     val layouts = ArrayList<Layout>()
     var current: Layout? = null
     var visible = attrs["default_visible"]?.toBool() ?: true
-    var x = attrs["default_x"]?.toIntLenient() ?: 0
-    var y = attrs["default_y"]?.toIntLenient() ?: 0
     val name = attrs["name"] ?: id
+
+    /** Where each layout sits in the viewport at the start (`default_x`, `default_y`); see [Layout.viewX]. */
+    internal val defaultX = attrs["default_x"]?.toIntLenient() ?: 0
+    internal val defaultY = attrs["default_y"]?.toIntLenient() ?: 0
+
+    /**
+     * Puts each layout where a phone draws it in a new viewport ([Layout.fitViewport]): in the
+     * middle, on an axis no script moved it against an edge on, for the main window.
+     */
+    internal fun fitViewport() {
+        val middle = this === rt.mainContainer
+        for (l in layouts) l.fitViewport(middle)
+    }
 
     fun layout(id: String): Layout? = layouts.firstOrNull { it.id.equals(id, ignoreCase = true) }
 
@@ -1853,10 +1973,13 @@ class Container(
                 Value.Bool(rt.isOpen(this))
             }
 
+            // moving the container moves the layout it shows
             "setxmlparam" -> {
-                when (args[0].asString.lowercase()) {
-                    "x" -> x = args[1].asInt
-                    "y" -> y = args[1].asInt
+                current?.let {
+                    when (args[0].asString.lowercase()) {
+                        "x" -> it.moveTo(args[1].asInt, it.viewY)
+                        "y" -> it.moveTo(it.viewX, args[1].asInt)
+                    }
                 }
                 Value.Null
             }
@@ -1878,8 +2001,7 @@ class Container(
             }
 
             "setlocation" -> {
-                x = args[0].asInt
-                y = args[1].asInt
+                current?.moveTo(args[0].asInt, args[1].asInt)
                 Value.Null
             }
 

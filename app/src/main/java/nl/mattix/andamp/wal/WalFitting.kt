@@ -4,7 +4,6 @@ package nl.mattix.andamp.wal
 
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
-import nl.mattix.andamp.modernskin.maki.Value
 import nl.mattix.andamp.modernskin.skin.Layout
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.modernskin.skin.StackArrange
@@ -54,9 +53,7 @@ internal class WalFitting {
             val s = WalScale.of(box, layout.minW, layout.minH)
             val w = maxOf(layout.minW, (box.width / s).toInt())
             val h = if (fit.compact) layout.minH else maxOf(layout.minH, (box.height / s).toInt())
-            if (layout.size != w to h) {
-                layout.makiCall("resize", listOf(Value.Int(0), Value.Int(0), Value.Int(w), Value.Int(h)))
-            }
+            if (layout.size != w to h) layout.resizeTo(w, h)
         }
         // sideways the whole stack sets the scale, and the windows docked under the main one are
         // sized only once the skin has a view
@@ -189,7 +186,12 @@ internal class WalFitting {
         return firstWidths.getOrPut(main) { main.contentRight() }
     }
 
-    /** Where a stack of [size], showing [drawn] of it, goes in [fit]'s box; see [WalScale.place]. */
+    /**
+     * Where a stack of [size], showing [drawn] of it, goes in [fit]'s box; see [WalScale.place]. It
+     * goes against the edges of the box a script moved the main window against in the viewport, in
+     * the layout it shows ([Layout.edgeX], [Layout.edgeY]), unless the box sizes that layout
+     * ([fillsBox]), which then sits where the box puts it.
+     */
     private fun place(
         runtime: SkinRuntime,
         fit: WalFit,
@@ -198,7 +200,18 @@ internal class WalFitting {
         drawn: Pair<Int, Int>,
     ): WalScale.Place {
         val layout = runtime.mainLayout
-        return WalScale.place(fit, layout?.size ?: size, baseW, layout?.contentRight() ?: size.first, size, drawn, restingW)
+        val moved = layout?.takeUnless(::fillsBox)
+        return WalScale.place(
+            fit,
+            layout?.size ?: size,
+            baseW,
+            layout?.contentRight() ?: size.first,
+            size,
+            drawn,
+            restingW,
+            moved?.edgeX,
+            moved?.edgeY,
+        )
     }
 
     /** The left column of [runtime]'s stack in two columns, within the [drawn] stack; null in one column. */
