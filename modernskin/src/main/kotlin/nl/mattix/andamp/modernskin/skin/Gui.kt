@@ -126,6 +126,19 @@ open class GuiObject(
         effectiveAlpha = paintAlpha(parentAlpha)
     }
 
+    /** What [paintAlpha] reads of the object itself: its two alphas and whether it is enabled. */
+    protected fun paintKey(): Int = (activeAlpha shl 9) or (inactiveAlpha shl 1) or (if (enabled) 1 else 0)
+
+    /**
+     * After its alphas or enabled changed with nothing moved: it and what it holds paint with the
+     * new alpha from the next frame, with no layout pass. An alpha to or from 0 ([wasZero] before)
+     * also changes its window's shape, which a faded out object is no part of.
+     */
+    protected fun alphaChanged(wasZero: Boolean) {
+        if (this is Layout) refreshAlphas() else refreshAlpha(parent?.effectiveAlpha ?: 255)
+        if (wasZero != (alpha == 0)) rt.invalidate() else rt.repaint()
+    }
+
     /** `relat*` as written: "%..." is a percentage. */
     private fun relat(value: String): Int = if (value.trimStart().startsWith("%")) 2 else value.toIntLenient() ?: 0
 
@@ -379,7 +392,8 @@ open class GuiObject(
 
         fun lerp(i: Int) = to[i]?.let { Math.round(from[i] + (it - from[i]) * eased).toInt() }
         val place = listOf(x, y, w, h)
-        val wasAlpha = alpha
+        val wasZero = alpha == 0
+        val paint = paintKey()
         lerp(0)?.let { x = it }
         lerp(1)?.let { y = it }
         lerp(2)?.let { w = it }
@@ -388,8 +402,8 @@ open class GuiObject(
         // a fade only repaints; the windows are laid out again only when something moved or resized
         if (listOf(x, y, w, h) != place) {
             rt.relayout()
-        } else if (alpha != wasAlpha) {
-            rt.invalidate()
+        } else if (paintKey() != paint) {
+            alphaChanged(wasZero)
         }
         if (f >= 1.0) {
             moveStart = null
@@ -528,9 +542,12 @@ open class GuiObject(
         value: String,
     ) {
         val before = attrs[key.lowercase()]
+        val paint = paintKey()
+        val wasZero = alpha == 0
         setParam(key, value)
         // what an object keeps for itself (a layer's image) shows on the next frame too
         if (before != value) rt.invalidate()
+        if (paintKey() != paint) alphaChanged(wasZero)
     }
 
     @Suppress("CyclomaticComplexMethod", "LongMethod") // one arm per script method of GuiObject
@@ -638,8 +655,10 @@ open class GuiObject(
 
             "setalpha" -> {
                 Value.Null.also {
+                    val paint = paintKey()
+                    val wasZero = alpha == 0
                     alpha = args[0].asInt.coerceIn(0, 255)
-                    rt.invalidate()
+                    if (paintKey() != paint) alphaChanged(wasZero)
                 }
             }
 
@@ -831,7 +850,11 @@ open class Group(
     ) {
         // every attribute lands in attrs, a xui parameter too
         if (attrs[key.lowercase()] != value) rt.invalidate()
-        if (setParam(key, value)) return
+        val paint = paintKey()
+        val wasZero = alpha == 0
+        val known = setParam(key, value)
+        if (paintKey() != paint) alphaChanged(wasZero)
+        if (known) return
         // a xui parameter: for the group's scripts, and for the child it exposes
         xuiParams[key] = value
         rt.deliverXuiParams(this)
@@ -2098,8 +2121,19 @@ class AnimatedLayer(
 
     fun gotoFrame(n: Int) {
         frame = n
-        rt.invalidate()
+        frameChanged()
         dispatch("onframe", Value.Int(n))
+    }
+
+    /**
+     * Asks for a frame for a new picture of the strip: only while it shows, and with its window's
+     * shape worked out again only when the strip is part of it (a sysregion).
+     */
+    private fun frameChanged() {
+        when {
+            regionOp() != 0 -> rt.invalidate()
+            rt.shows(this) -> rt.repaint()
+        }
     }
 
     fun play() {
@@ -2136,7 +2170,7 @@ class AnimatedLayer(
             }
             // back to the start without onFrame
             frame = startFrame
-            rt.invalidate()
+            frameChanged()
         } else {
             gotoFrame(frame + step)
         }
@@ -2391,7 +2425,7 @@ open class Button(
         py: Int,
     ) {
         pressed = true
-        rt.invalidate()
+        rt.repaint()
         super.pointerDown(px, py)
     }
 
@@ -2401,7 +2435,7 @@ open class Button(
         inside: Boolean,
     ) {
         pressed = false
-        rt.invalidate()
+        rt.repaint()
         super.pointerUp(px, py, inside)
         // a menu the release handler opened took the touch
         if (inside && !rt.pressEnded) click()
@@ -2409,7 +2443,7 @@ open class Button(
 
     override fun pointerCancel() {
         pressed = false
-        rt.invalidate()
+        rt.repaint()
     }
 
     open fun click() {
@@ -2435,7 +2469,7 @@ open class Button(
             "setactivated" -> {
                 Value.Null.also {
                     activated = args[0].truthy
-                    rt.invalidate()
+                    rt.repaint()
                     dispatch("onactivate", Value.Int(if (activated) 1 else 0))
                 }
             }
@@ -2447,7 +2481,7 @@ open class Button(
             "setactivatednocallback" -> {
                 Value.Null.also {
                     activated = args[0].truthy
-                    rt.invalidate()
+                    rt.repaint()
                 }
             }
 
@@ -2690,9 +2724,17 @@ class ProgressGrid(
     /** Whether its filled part is not what the last frame drew. */
     internal fun filledChanged(): Boolean = filled() != drawnFilled
 
+    /** The play position and filled length [nextFillAt] last saw, and the time it gave for them. */
+    private var askedPosition = -1
+    private var askedFilled = -1
+    private var askedDue = 0L
+
     /**
-     * When, in the runtime's clock at [now], its filled part next grows by a pixel while the song
-     * plays on; null while it does not play or is full.
+     * When, in the runtime's clock at [now], its filled part next grows while the song plays on: at
+     * the first whole second of play from which it shows a pixel more, when the time display moves
+     * on too, so one frame shows both. Null while it does not play or is full. A position that
+     * still stands where it stood when that time came (a player waiting for its sound) asks again
+     * a second later.
      */
     internal fun nextFillAt(now: Long): Long? {
         val p = rt.player
@@ -2701,9 +2743,17 @@ class ProgressGrid(
         val f = filled()
         if (f >= length) return null
         val position = p.positionMs
-        // the first position that fills one pixel more, never the one playing now
-        val next = ceil((f + 1).toDouble() * p.lengthMs / length).toLong()
-        return now + maxOf(1L, next - position)
+        if (position != askedPosition || f != askedFilled) {
+            // the first position that fills one pixel more, never the one playing now, at a whole second
+            val next = ceil((f + 1).toDouble() * p.lengthMs / length).toLong()
+            val second = (next + SECOND_MS - 1) / SECOND_MS * SECOND_MS
+            askedPosition = position
+            askedFilled = f
+            askedDue = now + maxOf(1L, second - position)
+        } else if (now >= askedDue) {
+            askedDue = now + SECOND_MS
+        }
+        return askedDue
     }
 
     override fun draw(out: MutableList<DrawCmd>) {
@@ -2719,6 +2769,10 @@ class ProgressGrid(
                 else -> Rect(rect.left, rect.top, n, rect.height)
             }
         drawIn(out, part)
+    }
+
+    private companion object {
+        const val SECOND_MS = 1000L
     }
 }
 

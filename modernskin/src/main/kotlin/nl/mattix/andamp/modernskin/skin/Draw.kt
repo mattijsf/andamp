@@ -139,7 +139,7 @@ enum class VAlign { TOP, CENTER, BOTTOM }
 /** What the renderer draws, in order, in layout pixels. */
 sealed class DrawCmd {
     /** The object that drew this; its name is made only when [owner] is read. */
-    internal var ownedBy: Any? = null
+    internal open var ownedBy: Any? = null
 
     /** The object that drew this, for tracing a wrong pixel back to the skin's XML. */
     var owner: String?
@@ -179,7 +179,13 @@ sealed class DrawCmd {
         val region: Region,
     ) : DrawCmd()
 
-    object WindowEnd : DrawCmd()
+    object WindowEnd : DrawCmd() {
+        // one object shared by every window of every skin: it keeps no owner, which would keep
+        // that object's skin in memory for as long as the app runs
+        override var ownedBy: Any?
+            get() = null
+            set(value) = Unit
+    }
 
     companion object {
         /** Owner names made so far, by reading [owner]. */
@@ -233,7 +239,12 @@ sealed class DrawCmd {
         val rect: Rect,
     ) : DrawCmd()
 
-    object Unclip : DrawCmd()
+    /** The end of the last [Clip]; like [WindowEnd], one shared object that keeps no owner. */
+    object Unclip : DrawCmd() {
+        override var ownedBy: Any?
+            get() = null
+            set(value) = Unit
+    }
 
     /**
      * A small ARGB picture ([w] x [h], rows top first) stretched over [rect] with nearest pixels: the

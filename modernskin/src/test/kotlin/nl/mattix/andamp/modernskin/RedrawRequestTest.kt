@@ -2,6 +2,7 @@
 package nl.mattix.andamp.modernskin
 
 import nl.mattix.andamp.modernskin.maki.Value
+import nl.mattix.andamp.modernskin.skin.DrawCmd
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.FontDef
 import nl.mattix.andamp.modernskin.skin.SkinFiles
@@ -119,10 +120,19 @@ class RedrawRequestTest {
         redraws(5, skin)
         player.play()
 
-        // 62 display frames of 16 ms in a second: a step is due on every second one, as the bars
-        // move on from the frame that drew them
+        // 62 display frames of 16 ms in a second; the steps keep to a 25 ms grid, 40 in a second
         val asked = redraws(62, skin)
-        assertTrue("at most 40 frames a second, not 62: $asked", asked in 30..40)
+        assertTrue("40 frames a second, not 62 nor 31: $asked", asked in 38..40)
+    }
+
+    @Test
+    fun `the oscilloscope asks for a frame per 25 ms step too`() {
+        val skin = runtime("""<vis id="vis" x="0" y="0" w="72" h="16" mode="2"/>""")
+        redraws(5, skin)
+        player.play()
+
+        val asked = redraws(62, skin)
+        assertTrue("40 frames a second, not 62 nor 31: $asked", asked in 38..40)
     }
 
     @Test
@@ -173,5 +183,36 @@ class RedrawRequestTest {
         assertFalse(skin.framesWanted)
         skin.mainLayout?.findObject("vis")?.makiCall("setmode", listOf(Value.Int(1)))
         assertEquals("a new mode shows at once", 1, redraws(2, skin))
+    }
+
+    @Test
+    fun `a script's new alpha and a fade show on the next frames without a layout pass`() {
+        val skin =
+            runtime(
+                """<group id="glow" x="0" y="0" w="20" h="20">""" +
+                    """<rect id="box" x="0" y="0" w="10" h="10" color="255,0,0" filled="1"/></group>""",
+            )
+        redraws(5, skin)
+        val glow = checkNotNull(skin.mainLayout?.findObject("glow"))
+
+        fun drawnAlpha() =
+            skin
+                .draw()
+                .filterIsInstance<DrawCmd.Fill>()
+                .single()
+                .alpha
+        val passes = skin.layoutPasses
+        glow.makiCall("setalpha", listOf(Value.Int(128)))
+        assertEquals(1, redraws(1, skin))
+        assertEquals("the box inside paints at its group's alpha", 128, drawnAlpha())
+
+        glow.makiCall("settargeta", listOf(Value.Int(0)))
+        glow.makiCall("settargetspeed", listOf(Value.Num(1.0)))
+        glow.makiCall("gototarget", emptyList())
+        redraws(31, skin)
+        assertTrue("half way: ${drawnAlpha()}", drawnAlpha() in 32..96)
+        assertEquals(passes, skin.layoutPasses)
+        redraws(40, skin)
+        assertTrue("faded out", skin.draw().filterIsInstance<DrawCmd.Fill>().all { it.alpha == 0 })
     }
 }

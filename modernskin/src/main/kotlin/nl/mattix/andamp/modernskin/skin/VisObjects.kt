@@ -51,11 +51,11 @@ class Vis(
     private val speed = FloatArray(COLUMNS) { PEAK_START_SPEED }
     private var lastFrameAt = -1L
 
-    /** When the oscilloscope was last drawn, and whether it showed the flat line of no waveform then. */
+    /** The oscilloscope's last 25 ms step, and whether it showed the flat line of no waveform then. */
     private var scopeAt = -1L
     private var scopeFlat = true
 
-    /** When its picture last moved on: the last 25 ms step of the bars, or the oscilloscope's last draw. */
+    /** When its picture last moved on: the last 25 ms step of the bars or of the oscilloscope. */
     private val movedAt: Long get() = if (mode == 2) scopeAt else lastFrameAt
 
     /**
@@ -71,11 +71,20 @@ class Vis(
             else -> bars.any { it > 0f } || peak.any { it > 0f }
         }
 
-    /** Whether a 25 ms step has passed since its picture last moved on, at [now]. */
-    internal fun stepDue(now: Long): Boolean = movedAt < 0 || now - movedAt >= FRAME_MS
+    /**
+     * [from] moved on by the whole 25 ms frames up to [now]; [now] itself for a first frame, or when
+     * the clock went back (the phone's time was set).
+     */
+    private fun onGrid(
+        from: Long,
+        now: Long,
+    ): Long = if (from < 0 || now < from) now else from + (now - from) / FRAME_MS * FRAME_MS
+
+    /** Whether a 25 ms step has passed since its picture last moved on, at [now] (or the clock went back). */
+    internal fun stepDue(now: Long): Boolean = movedAt < 0 || now < movedAt || now - movedAt >= FRAME_MS
 
     /** When its next 25 ms step is due, in the runtime's clock; [now] when one is due already. */
-    internal fun nextStepAt(now: Long): Long = if (movedAt < 0) now else maxOf(now, movedAt + FRAME_MS)
+    internal fun nextStepAt(now: Long): Long = if (stepDue(now)) now else movedAt + FRAME_MS
 
     @Suppress("CyclomaticComplexMethod") // one flat branch per vis attribute a skin can set
     override fun setParam(
@@ -168,12 +177,23 @@ class Vis(
 
     private fun tint(c: Rgb) = rt.gamma(gammaGroup)?.let { Rgb(it.apply(c.value or OPAQUE) and 0xffffff) } ?: c
 
-    /** Advances bars and peaks by the 25 ms frames since the last draw. */
+    /**
+     * Advances bars and peaks by the 25 ms frames since the last one, which stay on a 25 ms grid: on
+     * a 60 Hz screen two of every three display frames step one frame, so they move 40 times a
+     * second, as Winamp's do.
+     */
     private fun step(levels: FloatArray) {
         val now = rt.now()
-        val frames = if (lastFrameAt < 0) 1 else ((now - lastFrameAt) / FRAME_MS).toInt().coerceIn(0, MAX_FRAMES)
+        val frames =
+            if (lastFrameAt < 0 ||
+                now < lastFrameAt
+            ) {
+                1
+            } else {
+                ((now - lastFrameAt) / FRAME_MS).toInt().coerceAtMost(MAX_FRAMES)
+            }
         if (frames == 0) return
-        lastFrameAt = now
+        lastFrameAt = if (frames == MAX_FRAMES) now else onGrid(lastFrameAt, now)
         val fall = FALLOFF_STEPS[falloff] / 16f
         val accel = PEAK_ACCEL[peakFalloff]
         repeat(frames) {
@@ -246,7 +266,7 @@ class Vis(
      */
     private fun paintScope(px: IntArray) {
         val wave = rt.player.waveform()
-        scopeAt = rt.now()
+        scopeAt = onGrid(scopeAt, rt.now())
         scopeFlat = wave.isEmpty()
         val colors = IntArray(SCOPE_COLORS) { tint(scopeColors[it]).value or OPAQUE }
         var last = -1
@@ -287,7 +307,7 @@ class Vis(
             "setmode" -> {
                 Value.Null.also {
                     mode = args[0].asInt.takeIf { it in 0..2 } ?: 0
-                    rt.invalidate()
+                    rt.repaint()
                 }
             }
 
@@ -298,7 +318,7 @@ class Vis(
             "nextmode" -> {
                 Value.Null.also {
                     mode = if (mode >= 2) 0 else mode + 1
-                    rt.invalidate()
+                    rt.repaint()
                 }
             }
 

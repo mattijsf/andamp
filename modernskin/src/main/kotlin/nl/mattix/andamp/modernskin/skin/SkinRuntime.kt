@@ -1353,6 +1353,15 @@ class SkinRuntime(
         changeCount++
     }
 
+    /**
+     * Asks for a frame for a change that moves, resizes, shows, hides and reshapes nothing: a
+     * strip's next picture, a slider's thumb, a text, a pressed button, an alpha that stays above 0.
+     * What is worked out from the windows and their shapes (see [changeCount]) is kept.
+     */
+    fun repaint() {
+        dirty = true
+    }
+
     fun relayout() {
         needsLayout = true
         dirty = true
@@ -1362,8 +1371,8 @@ class SkinRuntime(
     /**
      * Counts [invalidate] and [relayout] calls and layout passes: what the windows are, their shapes
      * and the edges worked out from them ([Layout.contentRight], [drawnSize] and the like) are kept
-     * until it moves on. A visualizer, a ticker or a time moving on changes none of these, and asks
-     * for its frame without it.
+     * until it moves on. A visualizer, a ticker, a time or anything else that asks with [repaint]
+     * changes none of these, and gets its frame without it.
      */
     var changeCount = 0L
         private set
@@ -1543,13 +1552,20 @@ class SkinRuntime(
     private var progressGrids: List<ProgressGrid> = emptyList()
     private var buttons: List<Button> = emptyList()
 
-    /** Whether [o] shows: it and every group around it visible, not faded out, and with room to draw in. */
-    private fun shows(o: GuiObject): Boolean {
+    /**
+     * Whether [o] shows: in a window on screen, it and every group around it visible, not faded
+     * out, and with room to draw in.
+     */
+    internal fun shows(o: GuiObject): Boolean {
         val room = o.rect.width > 0 && o.rect.height > 0
         if (!room || !o.visible || o.effectiveAlpha <= 0) return false
-        var p = o.parent
-        while (p != null && p.visible) p = p.parent
-        return p == null
+        var top = o
+        while (true) {
+            val up = top.parent ?: break
+            if (!up.visible) return false
+            top = up
+        }
+        return top is Layout && windows.any { it === top }
     }
 
     /**
@@ -2035,7 +2051,7 @@ class SkinRuntime(
     ) {
         if (target !is Button) return
         target.pressed = pressed
-        invalidate()
+        repaint()
     }
 
     /** The object hears the button go down at a point of the stack, and the finger come in. */

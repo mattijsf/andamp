@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package nl.mattix.andamp.modernskin
 
+import nl.mattix.andamp.modernskin.maki.Value
 import nl.mattix.andamp.modernskin.skin.DrawCmd
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.FontDef
@@ -8,6 +9,7 @@ import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinHost
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -25,7 +27,9 @@ class PublishCostTest {
                         """<container id="main" name="t" default_visible="1"><layout id="normal" w="200" h="100">""" +
                         """<group id="body" x="0" y="0" w="150" h="60" sysregion="1" rectrgn="1">""" +
                         """<layer id="face" x="0" y="0" w="150" h="60" image="face"/>""" +
-                        """<text id="clock" display="time" x="20" y="0" w="60" h="12"/></group>""" +
+                        """<text id="clock" display="time" x="20" y="0" w="60" h="12"/>""" +
+                        """<animatedlayer id="strip" x="0" y="60" w="10" h="10" image="face" frameheight="10" speed="50"/>""" +
+                        """<slider id="seek" action="seek" x="0" y="70" w="150" h="10"/></group>""" +
                         """</layout></container>""" +
                         """<container id="pl" name="pl" default_visible="0"><layout id="normal" w="200" h="80">""" +
                         """<group id="frame" x="0" y="0" w="200" h="80" sysregion="1" rectrgn="1">""" +
@@ -107,6 +111,44 @@ class PublishCostTest {
 
         rt.invalidate()
         assertTrue("a change makes it again", shape() !== first)
+    }
+
+    @Test
+    fun `a playing strip, a moving thumb and a fade keep each window's shape`() {
+        player.lengthMs = 10_000
+        val strip = checkNotNull(rt.mainLayout?.findObject("strip"))
+        strip.makiCall("play", emptyList())
+        player.play()
+
+        fun shape() =
+            rt
+                .drawWindows()
+                .first()
+                .second
+                .filterIsInstance<DrawCmd.WindowStart>()
+                .single()
+        val first = shape()
+        val before = rt.shapesWorkedOut
+        var frames = 0
+        repeat(120) {
+            t += 16
+            if (it == 60) rt.mainLayout?.findObject("face")?.makiCall("setalpha", listOf(Value.Int(128)))
+            if (rt.tick()) {
+                frames++
+                assertSame(first, shape())
+            }
+        }
+        assertTrue("the strip and the thumb moved: $frames", frames > 20)
+        assertEquals(before, rt.shapesWorkedOut)
+    }
+
+    @Test
+    fun `the draw commands every skin shares keep no object, so no skin stays in memory through them`() {
+        rt.drawWindows()
+        rt.draw()
+        assertNull(DrawCmd.Unclip.ownedBy)
+        assertNull(DrawCmd.WindowEnd.ownedBy)
+        assertNull(DrawCmd.Unclip.owner)
     }
 
     @Test

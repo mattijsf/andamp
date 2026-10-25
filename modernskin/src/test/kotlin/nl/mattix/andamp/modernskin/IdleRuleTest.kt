@@ -56,7 +56,11 @@ class IdleRuleTest {
         }
 
     private var t = 1_000_000L
-    private val player = FakePlayer().apply { clock = { t } }
+
+    // the player's own clock: it moves with the runtime's unless a test holds it, as a player
+    // waiting for its sound does
+    private var playerHeld: Long? = null
+    private val player = FakePlayer().apply { clock = { playerHeld ?: t } }
 
     private fun runtime(body: String) =
         SkinRuntime(files(body), host, player).apply {
@@ -159,6 +163,33 @@ class IdleRuleTest {
     }
 
     @Test
+    fun `a strip out of sight steps on for the scripts but asks for no frames`() {
+        val rt =
+            runtime(
+                """<group id="folded" x="0" y="20" w="10" h="10" visible="0">""" +
+                    """<animatedlayer id="strip" x="0" y="0" w="10" h="10" image="strip" autoplay="1" speed="50"/></group>""",
+            )
+        player.play()
+        rt.tick()
+        rt.drawWindows()
+        val strip = rt.find("strip")
+        assertFalse(rt.framesWanted)
+        assertEquals("it still steps on time", t + 50, rt.nextDueAt())
+        val frame = strip.makiCall("getcurframe", emptyList())?.asInt
+        assertEquals("but draws nothing", 0, wakeWhenDue(rt, 1_060))
+        assertEquals(
+            "21 steps on, a strip of 5 shows its next frame",
+            (checkNotNull(frame) + 1) % 5,
+            strip.makiCall("getcurframe", emptyList())?.asInt,
+        )
+
+        rt.find("folded").makiCall("show", emptyList())
+        assertTrue("shown, it wants frames", rt.framesWanted)
+        val shown = wakeWhenDue(rt, 1_000)
+        assertTrue("and asks for them: $shown", shown > 10)
+    }
+
+    @Test
     fun `a playing skin with a shown visualizer wants frames, one with its visualizer off does not`() {
         val rt = runtime("""<vis id="vis" x="0" y="0" w="72" h="16"/><vis id="hidden" x="0" y="20" w="72" h="16" visible="0"/>""")
         assertFalse(rt.framesWanted)
@@ -173,7 +204,7 @@ class IdleRuleTest {
     }
 
     @Test
-    fun `a scrolling text ticker is next due while playing or paused and holds still while stopped`() {
+    fun `a scrolling text ticker is next due while playing or paused and holds at its start while stopped`() {
         // the title is 150 px wide in a 40 px box
         val rt = runtime("""<text id="title" display="songname" ticker="1" x="0" y="0" w="40" h="12"/>""")
         run(rt, 10_000, every = 250)
@@ -195,11 +226,55 @@ class IdleRuleTest {
         assertTrue(scrollOf(rt) > playing)
 
         player.stop()
-        rt.tick()
-        val stopped = scrollOf(rt)
+        assertTrue("stopping puts it back at the start", rt.tick())
+        assertEquals(0, scrollOf(rt))
         assertNull(rt.nextDueAt())
         run(rt, 2_000, every = 250)
-        assertEquals("stopped again, it holds where it was", stopped, scrollOf(rt))
+        assertEquals("and it holds there", 0, scrollOf(rt))
+    }
+
+    @Test
+    fun `a ticker goes on from where it held, however long the skin rested`() {
+        val rt = runtime("""<text id="title" display="songname" ticker="1" x="0" y="0" w="40" h="12"/>""")
+        player.play()
+        wakeWhenDue(rt, 6_000)
+        player.stop()
+        rt.tick()
+        // resting: no wakes for a minute
+        t += 60_000
+        player.play()
+        rt.tick()
+        assertEquals("the first frame after the rest shows it where it held", 0, scrollOf(rt))
+        assertTrue("then it waits out its pause at the start", checkNotNull(rt.nextDueAt()) >= t + 4_000)
+        wakeWhenDue(rt, 3_900)
+        assertEquals(0, scrollOf(rt))
+
+        // back from a temporary message, the title starts over and waits its pause, with no jump
+        wakeWhenDue(rt, 1_000)
+        assertTrue(scrollOf(rt) > 0)
+        rt.find("title").makiCall("setalternatetext", listOf(Value.Str("Volume: 50%")))
+        wakeWhenDue(rt, 1_000)
+        rt.tick()
+        assertEquals(0, scrollOf(rt))
+        wakeWhenDue(rt, 3_900)
+        assertEquals(0, scrollOf(rt))
+    }
+
+    @Test
+    fun `a songticker goes on after a pause from where it held, however long the skin rested`() {
+        val rt = runtime("""<songticker id="title" x="0" y="0" w="40" h="12"/>""")
+        player.play()
+        wakeWhenDue(rt, 2_000)
+        player.pause()
+        rt.tick()
+        val held = scrollOf(rt)
+        assertTrue("it scrolled: $held", held > 0)
+        assertNull(rt.nextDueAt())
+        t += 60_000
+        player.play()
+        rt.tick()
+        assertEquals("it goes on from where it held, one step on", held + 1, scrollOf(rt))
+        assertEquals(t + 39, rt.nextDueAt())
     }
 
     @Test
@@ -254,5 +329,46 @@ class IdleRuleTest {
         assertFalse(rt.framesWanted)
         assertEquals("its next pixel", t + 1_000, rt.nextDueAt())
         assertEquals("one frame for each pixel over 10 s", 10, wakeWhenDue(rt, 10_000))
+    }
+
+    @Test
+    fun `a progress grid that fills several pixels a second moves once a second, with the time`() {
+        // 100 px over a 25 s song: 4 pixels a second
+        player.lengthMs = 25_000
+        val rt =
+            runtime(
+                """<progressgrid id="seek" x="0" y="0" w="100" h="8"/>""" +
+                    """<text id="clock" display="time" x="0" y="10" w="60" h="12"/>""",
+            )
+        player.play()
+        rt.tick()
+        rt.drawWindows()
+        assertEquals("at the next whole second", t + 1_000, rt.nextDueAt())
+        assertEquals("a frame a second", 10, wakeWhenDue(rt, 10_000))
+    }
+
+    @Test
+    fun `a progress grid whose player waits for its sound asks again a second later, not on every frame`() {
+        player.lengthMs = 100_000
+        val rt = runtime("""<progressgrid id="seek" x="0" y="0" w="100" h="8"/>""")
+        player.play()
+        t += 999
+        rt.tick()
+        rt.drawWindows()
+        assertEquals(t + 1, rt.nextDueAt())
+        // the place stands still for 5 s
+        playerHeld = t
+        t += 1
+        assertFalse(rt.tick())
+        var wakes = 0
+        val end = t + 5_000
+        while (true) {
+            val due = checkNotNull(rt.nextDueAt())
+            if (due > end) break
+            t = maxOf(due, t + 16)
+            wakes++
+            rt.tick()
+        }
+        assertTrue("about one a second: $wakes", wakes in 4..6)
     }
 }

@@ -437,11 +437,15 @@ class ReferenceRenderTest {
         }
     }
 
-    /** Renders, compares and returns the share of pixels that differ from the reference, in percent (null without one). */
-    @Suppress("LongMethod", "CyclomaticComplexMethod", "NestedBlockDepth") // the VM's steps in order, one arm per draw command
-    private fun render(sc: Scenario): Double? {
+    /** A scenario's skin, demo player and runtime, set up as the reference VM was; not loaded yet. */
+    private class Setup(
+        val host: Java2dHost,
+        val player: FakePlayer,
+        val rt: SkinRuntime,
+    )
+
+    private fun setUp(sc: Scenario): Setup {
         val res = File(localResource("/CornerAmp_Redux.wal").toURI()).parentFile
-        val name = sc.name
         val files = withDefaults(withSiblings(ZipSkinFiles(File(res, sc.wal)), res))
         val host = Java2dHost(WithGeneratedImages(files))
         val player =
@@ -466,46 +470,65 @@ class ReferenceRenderTest {
         System.getProperty("setting")?.let { p -> rt.storedSettings[p.substringBefore('=')] = p.substringAfter('=') }
         rt.viewportW = VM_SCREEN_W
         rt.viewportH = VM_SCREEN_H
+        return Setup(host, player, rt)
+    }
+
+    /**
+     * -Dtiming: prints how long the scenario's skin takes to load, and to tick and draw a frame, on
+     * a runtime of its own, so the scenario renders and scores the same with or without it.
+     * -Dtiming.reps=n frames for each measure (default 50); -Djfr=<file> records a profile of the
+     * run. The music plays and the clock moves one display frame before each frame, so every frame
+     * measured shows something new. A quarter as many frames first warm the code up; of four
+     * rounds the fastest counts, the one least disturbed by garbage collection or other work.
+     */
+    private fun time(sc: Scenario) {
+        val setup = setUp(sc)
+        val player = setup.player
+        val rt = setup.rt
         val t0 = System.nanoTime()
         rt.load()
-        if (System.getProperty("timing") != null) {
-            // -Dtiming.reps=n frames for each measure (default 50); -Djfr=<file> records a profile of the run.
-            // The music plays and the clock moves one display frame before each frame, so every frame
-            // measured shows something new. A quarter as many frames first warm the code up; of four
-            // rounds the fastest counts, the one least disturbed by garbage collection or other work
-            val reps = System.getProperty("timing.reps")?.toIntOrNull() ?: 50
-            val t1 = System.nanoTime()
-            val clock = clockOf(rt)
-            player.play()
-            repeat(reps / 4) {
-                clock.now += TestClock.FRAME
-                rt.tick()
-                rt.drawWindows()
-            }
-            var tickNanos = Long.MAX_VALUE
-            var drawNanos = Long.MAX_VALUE
-            repeat(TIMING_ROUNDS) {
-                var ticks = 0L
-                var draws = 0L
-                repeat(reps) {
-                    clock.now += TestClock.FRAME
-                    val a = System.nanoTime()
-                    rt.tick()
-                    val b = System.nanoTime()
-                    rt.drawWindows()
-                    ticks += b - a
-                    draws += System.nanoTime() - b
-                }
-                tickNanos = minOf(tickNanos, ticks)
-                drawNanos = minOf(drawNanos, draws)
-            }
-            player.stop()
+        val reps = System.getProperty("timing.reps")?.toIntOrNull() ?: 50
+        val t1 = System.nanoTime()
+        val clock = clockOf(rt)
+        player.play()
+        repeat(reps / 4) {
+            clock.now += TestClock.FRAME
             rt.tick()
-            println(
-                "TIMING ${sc.name} load=${(t1 - t0) / 1_000_000} ms drawWindows=${drawNanos / 1000 / reps} us/frame " +
-                    "tick=${tickNanos / 1000 / reps} us, best of $TIMING_ROUNDS rounds of $reps frames",
-            )
+            rt.drawWindows()
         }
+        var tickNanos = Long.MAX_VALUE
+        var drawNanos = Long.MAX_VALUE
+        repeat(TIMING_ROUNDS) {
+            var ticks = 0L
+            var draws = 0L
+            repeat(reps) {
+                clock.now += TestClock.FRAME
+                val a = System.nanoTime()
+                rt.tick()
+                val b = System.nanoTime()
+                rt.drawWindows()
+                ticks += b - a
+                draws += System.nanoTime() - b
+            }
+            tickNanos = minOf(tickNanos, ticks)
+            drawNanos = minOf(drawNanos, draws)
+        }
+        println(
+            "TIMING ${sc.name} load=${(t1 - t0) / 1_000_000} ms drawWindows=${drawNanos / 1000 / reps} us/frame " +
+                "tick=${tickNanos / 1000 / reps} us, best of $TIMING_ROUNDS rounds of $reps frames",
+        )
+    }
+
+    /** Renders, compares and returns the share of pixels that differ from the reference, in percent (null without one). */
+    @Suppress("LongMethod", "CyclomaticComplexMethod", "NestedBlockDepth") // the VM's steps in order, one arm per draw command
+    private fun render(sc: Scenario): Double? {
+        val name = sc.name
+        val setup = setUp(sc)
+        val host = setup.host
+        val player = setup.player
+        val rt = setup.rt
+        rt.load()
+        if (System.getProperty("timing") != null) time(sc)
         sc.theme?.let { rt.selectGammaSet(it) }
         // -Dprobe.color=a,b: those colors as the skin resolves them
         System.getProperty("probe.color")?.split(",")?.forEach {
