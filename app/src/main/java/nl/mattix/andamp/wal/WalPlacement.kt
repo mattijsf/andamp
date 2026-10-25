@@ -194,8 +194,9 @@ internal data class WalPlacement(
          * [ask], the classic stack as the classic skin would have it: the skin's [stack]
          * (`windowRects[MAIN]`, virtual px, null while it has none) takes the main window's place,
          * so the plug-in window of [visH] docks under or over it ([dockedMainH]), or its left
-         * column when [dock] gives one; and no room is kept for the equalizer, which the skin shows.
-         * Only the main window's height changes: the plug-in window keeps the classic x and width.
+         * column when [dock] gives one, and then sits from the column's left edge, clear of the
+         * right column ([ClassicStack.Ask.dock]); and no room is kept for the equalizer, which the
+         * skin shows. In one column the plug-in window keeps the classic stack's x.
          */
         fun dockedStack(
             ask: ClassicStack.Ask,
@@ -203,8 +204,11 @@ internal data class WalPlacement(
             dock: WalDock?,
             visH: Int,
         ): ClassicStack.Places {
-            val against = stack?.let { dock?.within(it) ?: it }
-            return ClassicStack.layout(ask.copy(mainH = dockedMainH(against, ask.screen, visH) ?: ask.mainH, eq = null))
+            val column = stack?.let { dock?.within(it) }
+            val against = column ?: stack
+            return ClassicStack.layout(
+                ask.copy(mainH = dockedMainH(against, ask.screen, visH) ?: ask.mainH, eq = null, dock = column),
+            )
         }
     }
 }

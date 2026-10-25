@@ -15,7 +15,8 @@ import org.junit.Test
 /**
  * How a phone sets out a skin's windows as one stack ([StackArrange]): each window docked under
  * what shows of the main one at its natural height, the last list window filling the height
- * upright, and a touch beside the stack meaning the nearest window.
+ * upright, list windows in a column of their own beside the main one when the app asks for two
+ * columns, and a touch beside the stack meaning the nearest window.
  */
 class StackArrangeTest {
     // a main window 300x200 whose shaped body shows 200x120 of it, an equalizer and a playlist,
@@ -134,5 +135,99 @@ class StackArrangeTest {
         assertNull("past the slop", at(10, 260 + slop))
         assertSame("the equalizer covers the main window's empty space under the body", window("eq"), at(10, 150))
         assertSame("beside the equalizer the main window", window("main"), at(250, 150))
+    }
+
+    @Test
+    fun `sideways with two columns the list windows sit right of the main window and the last fills the height`() {
+        rt.viewSize = 600 to 400
+        rt.columns = 2
+        open("eq", "pl")
+
+        assertEquals(Rect(0, 0, 300, 200), rectOf("main"))
+        assertEquals(
+            "from the top at the main window's full width, as wide as what shows of it, as tall as the view",
+            Rect(300, 0, 200, 400),
+            rectOf("pl"),
+        )
+        assertEquals(500 to 400, rt.stackSize)
+    }
+
+    @Test
+    fun `the equalizer stays under the player in the left column`() {
+        rt.viewSize = 600 to 400
+        rt.columns = 2
+        open("pl", "eq")
+
+        assertEquals("under the body, at its height though it is the last window", Rect(0, 120, 200, 60), rectOf("eq"))
+        assertEquals(Rect(300, 0, 200, 400), rectOf("pl"))
+        assertEquals(
+            "the left column reaches to the right column, and down to the equalizer or the main window",
+            Rect(0, 0, 300, 200),
+            StackArrange.leftColumn(window("main"), rt.windows.drop(1), 2, rt::showsList, rt::windowRect),
+        )
+    }
+
+    @Test
+    fun `with no list window open, two columns are one`() {
+        rt.viewSize = 600 to 400
+        open("eq")
+        val one = rectOf("eq")
+
+        rt.columns = 2
+        assertEquals(one, rectOf("eq"))
+        assertEquals(Rect(0, 120, 200, 60), one)
+        assertNull(
+            "no left column to dock against",
+            StackArrange.leftColumn(window("main"), rt.windows.drop(1), 2, rt::showsList, rt::windowRect),
+        )
+    }
+
+    @Test
+    fun `a stack's natural size in one column and in two leaves every window as it is`() {
+        rt.viewSize = 200 to 1000
+        open("eq", "pl")
+        assertEquals(Rect(0, 180, 200, 820), rectOf("pl"))
+        val passes = rt.layoutPasses
+        val others = rt.windows.drop(1)
+
+        assertEquals(
+            "one column: the playlist at its natural height",
+            300 to 260,
+            StackArrange.naturalSize(window("main"), others, 1, rt::showsList),
+        )
+        assertEquals(
+            "two columns: as tall as the main window",
+            500 to 200,
+            StackArrange.naturalSize(window("main"), others, 2, rt::showsList),
+        )
+        assertEquals("no window changed", 200 to 820, window("pl").size)
+        assertEquals("no layout pass ran", passes, rt.layoutPasses)
+        assertEquals(Rect(0, 180, 200, 820), rectOf("pl"))
+    }
+
+    @Test
+    fun `a touch beside a right-column window finds it by distance both ways`() {
+        rt.viewSize = 600 to 400
+        rt.columns = 2
+        open("eq", "pl")
+        rt.ensureLayout()
+        val slop = 6
+
+        fun at(
+            x: Int,
+            y: Int,
+        ) = StackArrange.windowAt(rt.windows, rt::windowRect, x to y, slop)
+
+        assertSame("just left of the playlist", window("pl"), at(300 - slop, 300))
+        assertNull("in the room under the left column, far from both columns", at(100, 300))
+        assertSame(
+            "just under the main window, whose room under its body the equalizer covers",
+            window("main"),
+            at(
+                100,
+                199 + slop,
+            ),
+        )
+        assertNull("a slop away both ways is further than the slop", at(300 - slop, 400 + slop - 1))
     }
 }

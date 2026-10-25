@@ -526,8 +526,8 @@ class SkinRuntime(
 
     /**
      * How many columns the stack is set out in once the app gives it a [viewSize]; a change lays the
-     * windows out again. [StackArrange] sets out one column whatever it says: every window docks
-     * under the main one.
+     * windows out again. At 2 [StackArrange] puts the windows that show a list in a column right of
+     * the main window, else every window docks under the main one.
      */
     var columns = 1
         set(value) {
