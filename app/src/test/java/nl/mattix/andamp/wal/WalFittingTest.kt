@@ -7,9 +7,11 @@ import androidx.compose.ui.unit.IntRect
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.Layout
+import nl.mattix.andamp.modernskin.skin.Player
 import nl.mattix.andamp.modernskin.skin.Rect
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
+import nl.mattix.andamp.modernskin.skin.Track
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -21,8 +23,9 @@ import org.robolectric.annotation.Config
 /**
  * How a modern skin is fitted into the player's box: sideways in the app, two columns when they
  * show the skin larger than one, decided again when a window opens or closes, from the windows'
- * natural sizes; and upright, a drawer that runs past the screen shrinks the skin once its slide
- * ends, and a docked window wider than the main one shows whole.
+ * natural sizes, with the right column clear of the left one and as wide whatever a drawer does;
+ * and upright, a drawer that runs past the screen shrinks the skin once its slide ends, and a
+ * docked window wider than the main one shows whole.
  *
  * The skins are small stand-ins with the corpus skins' sizes. The boxes are the ones the `placed`
  * lines report: andamp-p4-small (720x1280 at 320 dpi) has 720x1066 upright and 1138x568 sideways;
@@ -67,11 +70,13 @@ class WalFittingTest {
                 """</layout></container>""" + playlist(354, 164),
         )
 
-    // CornerAmp: a 246 by 228 main window, an equalizer and a playlist at least 275 wide
+    // CornerAmp: a 246 by 228 main window, an equalizer held at 275 by 145 and a playlist at least
+    // 275 wide
     private val cornerAmp =
         skin(
             """<container id="main" name="t" default_visible="1"><layout id="normal" w="246" h="228"/></container>""" +
-                """<container id="eq" name="Equalizer" default_visible="0"><layout id="normal" w="275" h="145"/></container>""" +
+                """<container id="eq" name="Equalizer" default_visible="0"><layout id="normal" w="275" h="145" """ +
+                """minimum_w="275" minimum_h="145" maximum_w="275" maximum_h="145"/></container>""" +
                 playlist(320, 200, minW = 275),
         )
 
@@ -82,13 +87,14 @@ class WalFittingTest {
                 playlist(275, 116),
         )
 
-    // MMD3: a 583 px wide main window whose body ends at 381, with a drawer that slides out right of it
+    // MMD3: a 583 px wide main window whose body ends at 381, with a drawer that slides out right of
+    // it, and a shade bar 800 px wide
     private val mmd3 =
         skin(
             """<container id="main" name="t" default_visible="1"><layout id="normal" w="583" h="216">""" +
                 """<group id="drawer" x="181" y="20" w="200" h="150" sysregion="1" rectrgn="1"/>""" +
                 """<group id="body" x="0" y="0" w="381" h="216" sysregion="1" rectrgn="1"/>""" +
-                """</layout></container>""" + playlist(381, 260, minW = 275),
+                """</layout><layout id="shade" w="800" h="23"/></container>""" + playlist(381, 260, minW = 275),
         )
 
     private val small = WalFit(1138, 568, 2f, sideways = true)
@@ -99,8 +105,9 @@ class WalFittingTest {
     private inner class Fitted(
         files: SkinFiles,
         var fit: WalFit,
+        player: FakePlayer = FakePlayer(),
     ) {
-        val rt = SkinRuntime(files, WalHost(files, app.cacheDir), FakePlayer()).apply { load() }
+        val rt = SkinRuntime(files, WalHost(files, app.cacheDir), player).apply { load() }
         val fitting = WalFitting()
         val baseW = WalFitting.baseWOf(rt)
 
@@ -183,20 +190,83 @@ class WalFittingTest {
 
         corner.open("pl")
         assertEquals(2, corner.rt.columns)
-        assertEquals("the equalizer under the main window", Rect(0, 228, 246, 145), corner.rt.windowRect(corner.window("eq")))
-        // 1.8x in two columns (521 by 373), against 1.17x stacked
+        assertEquals(
+            "the equalizer under the main window, at the 275 px it is held at",
+            Rect(0, 228, 275, 145),
+            corner.rt.windowRect(corner.window("eq")),
+        )
+        // 1.8x in two columns (550 by 373), against 1.17x stacked
         assertEquals(672f / 373, corner.layout().scale)
         assertEquals(
-            "the playlist from the top at the main window's width, as tall as the box",
-            Rect(246, 0, 275, 373),
+            "the playlist from the top where the equalizer ends, as tall as the box",
+            Rect(275, 0, 275, 373),
             corner.rt.windowRect(corner.window("pl")),
         )
-        assertEquals("the visualizer docks under the left column", IntRect(0, 0, 246, 373), corner.layout().dock)
+        assertTrue(
+            "the columns do not overlap",
+            corner.rt.windowRect(corner.window("pl")).left >= corner.rt.windowRect(corner.window("eq")).right,
+        )
+        assertEquals("the visualizer docks under the left column", IntRect(0, 0, 275, 373), corner.layout().dock)
 
         corner.close("pl")
         assertEquals(1, corner.rt.columns)
-        assertEquals(Rect(0, 228, 246, 145), corner.rt.windowRect(corner.window("eq")))
+        assertEquals(Rect(0, 228, 275, 145), corner.rt.windowRect(corner.window("eq")))
         assertNull(corner.layout().dock)
+    }
+
+    @Test
+    fun `sideways, a drawer sliding out of the main window leaves the columns and the scale as they are`() {
+        val skin = Fitted(mmd3, pixel).apply { open("pl") }
+        val drawer = checkNotNull(skin.window("main").findObject("drawer"))
+        assertEquals(2, skin.rt.columns)
+        assertEquals(2f, skin.layout().scale)
+        val playlist = Rect(583, 0, 381, 870 / 2)
+        assertEquals(
+            "right of the main window's full width, as wide as its body",
+            playlist,
+            skin.rt.windowRect(skin.window("pl")),
+        )
+
+        skin.rt.moving.add(drawer)
+        drawer.setXmlParam("x", "383")
+        assertEquals("while it slides", 2f, skin.layout().scale)
+        skin.rt.moving.clear()
+        assertEquals("once it rests", 2f, skin.layout().scale)
+        assertEquals("the playlist keeps its width", playlist, skin.rt.windowRect(skin.window("pl")))
+
+        // turned sideways or the playlist opened while the drawer is out: the same columns and scale
+        skin.close("pl")
+        skin.open("pl")
+        assertEquals(2, skin.rt.columns)
+        assertEquals(2f, skin.layout().scale)
+        drawer.setXmlParam("x", "181")
+        assertEquals("closed again", 2f, skin.layout().scale)
+        assertEquals(playlist, skin.rt.windowRect(skin.window("pl")))
+    }
+
+    @Test
+    fun `a tap on a row in the right column selects it, a second tap or a double tap plays it`() {
+        val player = FakePlayer().apply { playlist = List(5) { Track("Track $it", 60_000) } }
+        val modern = Fitted(winampModern, pixel, player).apply { open("pl") }
+        assertEquals(2, modern.rt.columns)
+        val list = modern.rt.windowRect(modern.window("pl"))
+
+        // rows are 15 px from 3 px under the list's top, and the list sits at the window's corner
+        fun row(i: Int) = list.left + 40 to list.top + 3 + i * 15 + 7
+
+        fun tap(at: Pair<Int, Int>) {
+            modern.rt.pointerDown(at.first, at.second)
+            modern.rt.pointerUp(at.first, at.second)
+        }
+        tap(row(1))
+        assertEquals("selected only", Player.Status.STOPPED, player.status)
+        tap(row(1))
+        assertEquals(Player.Status.PLAYING, player.status)
+        assertEquals(1, player.trackIndex)
+
+        tap(row(3))
+        modern.rt.doubleTap(row(3).first, row(3).second)
+        assertEquals(3, player.trackIndex)
     }
 
     @Test
@@ -266,6 +336,44 @@ class WalFittingTest {
         assertEquals("closing, the scale holds", 720f / 583, skin.layout().scale)
         skin.rt.moving.clear()
         assertEquals("closed, it grows back", 720f / 381, skin.layout().scale)
+    }
+
+    @Test
+    fun `upright, a window opened while the drawer is out still lets the skin grow back when it closes`() {
+        val upright = WalFit(720, 1066, 2f, sideways = false)
+        val skin = Fitted(mmd3, upright)
+        val drawer = checkNotNull(skin.window("main").findObject("drawer"))
+        drawer.setXmlParam("x", "383")
+        assertEquals("the drawer out", 720f / 583, skin.layout().scale)
+
+        skin.open("pl")
+        assertEquals("the view the closed drawer gives", 381 to 564, skin.rt.viewSize)
+        assertEquals(720f / 583, skin.layout().scale)
+
+        drawer.setXmlParam("x", "181")
+        assertEquals("closed, it grows back", 720f / 381, skin.layout().scale)
+        assertEquals(
+            "and the playlist reaches the bottom",
+            Rect(0, 216, 381, 564 - 216),
+            skin.rt.windowRect(skin.window("pl")),
+        )
+    }
+
+    @Test
+    fun `upright, a playlist under a shade bar wider than the main window still reaches the bottom`() {
+        val upright = WalFit(720, 1066, 2f, sideways = false)
+        val skin = Fitted(mmd3, upright).apply { open("pl") }
+
+        checkNotNull(skin.rt.container("main")).switchTo("shade")
+        skin.refit()
+        assertEquals("800 px across at 0.9x", 720f / 800, skin.layout().scale)
+        assertEquals(800 to 1184, skin.rt.viewSize)
+        assertEquals(Rect(0, 23, 800, 1184 - 23), skin.rt.windowRect(skin.window("pl")))
+
+        checkNotNull(skin.rt.container("main")).switchTo("normal")
+        skin.refit()
+        assertEquals("back at the main window's scale", 720f / 381, skin.layout().scale)
+        assertEquals(Rect(0, 216, 381, 564 - 216), skin.rt.windowRect(skin.window("pl")))
     }
 
     @Test

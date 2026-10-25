@@ -9,9 +9,12 @@ package nl.mattix.andamp.modernskin.skin
  *
  * The stack has one column or two. In one, every window docks under the main one. In two (a phone
  * held sideways), the main window and the windows that show no list stay in the left column, and
- * the windows that show a list ([SkinRuntime.showsList]) go to a right column beside it, which
- * starts at the main window's full width, so a drawer sliding out of the main window to the right
- * (MMD3) never runs under it. With no list window open, two columns are one.
+ * the windows that show a list ([SkinRuntime.showsList]) go to a right column beside it. The right
+ * column starts at the main window's full width, so a drawer sliding out of the main window to the
+ * right (MMD3) never runs under it, or further right where a window in the left column is wider
+ * (CornerAmp's equalizer, at least 275 px under a 246 px player). Its windows are as wide as the
+ * app says ([Ask.columnWidth]), so a drawer sliding does not change the stack's size. With no list
+ * window open, two columns are one.
  */
 object StackArrange {
     /** What [arrange] sets out. */
@@ -28,41 +31,55 @@ object StackArrange {
         val columns: Int,
         /** Whether a window shows a list, which shows more rows when the window is taller. */
         val showsList: (Layout) -> Boolean,
+        /**
+         * How wide the windows of a right column are, in layout pixels ([SkinRuntime.columnWidth]);
+         * 0 for as wide as what shows of the main window ([Layout.contentRight]).
+         */
+        val columnWidth: Int = 0,
     )
 
-    /** A column of docked windows: they hang from [top], one under the other, at [x]. */
+    /** A column of docked windows: they hang from [top], one under the other, at [x], [width] wide. */
     private class Column(
         val x: Int,
         val top: Int,
+        val width: Int,
         val windows: List<Layout>,
     )
 
     /**
      * The columns [others] dock in beside or under [main]: one under what is visible of the main
-     * window ([Layout.contentBottom]), so the first window in it follows a drawer, and with
-     * [columns] at 2 and a list window among them, a second for the list windows, from the top at
-     * the main window's full width. [Layout.layoutRoot] must have run on [main].
+     * window ([Layout.contentBottom]), so the first window in it follows a drawer, as wide as what
+     * shows of the main window ([Layout.contentRight]); and with [columns] at 2 and a list window
+     * among them, a second for the list windows, from the top, [columnWidth] wide (0 for as wide as
+     * the first), starting where the main window and every window left in the first one end.
+     * [Layout.layoutRoot] must have run on [main].
      */
     private fun columnsOf(
         main: Layout,
         others: List<Layout>,
         columns: Int,
         showsList: (Layout) -> Boolean,
+        columnWidth: Int,
     ): List<Column> {
         val under = main.contentBottom()
+        val width = main.contentRight()
         val (lists, rest) = others.partition(showsList)
-        if (columns != 2 || lists.isEmpty()) return listOf(Column(0, under, others))
-        return listOf(Column(0, under, rest), Column(main.size.first, 0, lists))
+        if (columns != 2 || lists.isEmpty()) return listOf(Column(0, under, width, others))
+        val right = rest.maxOfOrNull { sizeAt(it, width).first } ?: 0
+        return listOf(
+            Column(0, under, width, rest),
+            Column(maxOf(main.size.first, right), 0, columnWidth.takeIf { it > 0 } ?: width, lists),
+        )
     }
 
     /**
      * Where each window of [ask] sits, in layout pixels: the main window at (0, 0) at its size, and
      * each other window in its column ([columnsOf]) in the order they opened. With a view each
-     * docked window is as wide as what shows of the main one ([Layout.contentRight]; MMD3 keeps
-     * room on its right for a panel) and as tall as [naturalHeight] says; the last one of a column
-     * takes the height left when [Ask.stretchLast] is on, room is left, it can be made taller and
-     * it shows a list. Without a view (the reference tests) every window keeps the size it has, in
-     * one column.
+     * docked window is as wide as its column (under the main window, what shows of it,
+     * [Layout.contentRight]; MMD3 keeps room on its right for a panel) and as tall as
+     * [naturalHeight] says; the last one of a column takes the height left when [Ask.stretchLast]
+     * is on, room is left, it can be made taller and it shows a list. Without a view (the
+     * reference tests) every window keeps the size it has, in one column.
      */
     internal fun arrange(ask: Ask): Map<Layout, Rect> {
         val placed = LinkedHashMap<Layout, Rect>()
@@ -81,12 +98,10 @@ object StackArrange {
             }
             return placed
         }
-        // as wide as what shows of the main window (MMD3 keeps room on its right for a panel)
-        val width = main.contentRight()
-        for (column in columnsOf(main, ask.others, ask.columns, ask.showsList)) {
+        for (column in columnsOf(main, ask.others, ask.columns, ask.showsList, ask.columnWidth)) {
             var y = column.top
             column.windows.forEachIndexed { i, l ->
-                l.w = width
+                l.w = column.width
                 val natural = naturalHeight(l)
                 val left = view.second - y
                 // the height the skin gives it (or its minimum), unless it is the last of its
@@ -107,22 +122,23 @@ object StackArrange {
     /**
      * How large the stack of [main] and [others] is when set out in [columns] with a view and every
      * window at its natural height ([naturalHeight]), as [arrange] sets it out with stretchLast
-     * off, in layout pixels. It changes no window's size and runs no layout pass, so the skin hears
-     * nothing: the app weighs one column against two with it.
+     * off and a right column [columnWidth] wide ([Ask.columnWidth]), in layout pixels. It changes
+     * no window's size and runs no layout pass, so the skin hears nothing: the app weighs one
+     * column against two with it.
      */
     fun naturalSize(
         main: Layout,
         others: List<Layout>,
         columns: Int,
         showsList: (Layout) -> Boolean,
+        columnWidth: Int = 0,
     ): Pair<Int, Int> {
         var (right, bottom) = main.size
         main.layoutRoot()
-        val width = main.contentRight()
-        for (column in columnsOf(main, others, columns, showsList)) {
+        for (column in columnsOf(main, others, columns, showsList, columnWidth)) {
             var y = column.top
             for (l in column.windows) {
-                val (w, h) = sizeAt(l, width)
+                val (w, h) = sizeAt(l, column.width)
                 right = maxOf(right, column.x + w)
                 y += h
             }
@@ -134,9 +150,10 @@ object StackArrange {
     /**
      * The left column of a stack in two columns, in layout pixels from the stack's top-left corner,
      * where [rectOf] says each window of [main] and [others] sits: from the left edge to where the
-     * right column starts, and from the top to where the lowest window in it ends as Winamp docks
-     * to it ([Layout.snappedSize], so Winamp Modern's closed drawer is left out). Null for a stack
-     * in one column: [columns] is not 2, or no list window is open.
+     * right column starts (the main window's full width, or a wider window in the left column),
+     * and from the top to where the lowest window in it ends as Winamp docks to it
+     * ([Layout.snappedSize], so Winamp Modern's closed drawer is left out). Null for a stack in one
+     * column: [columns] is not 2, or no list window is open.
      */
     fun leftColumn(
         main: Layout,
@@ -146,23 +163,25 @@ object StackArrange {
         rectOf: (Layout) -> Rect,
     ): Rect? {
         if (columns != 2 || others.none(showsList)) return null
-        val bottom = (listOf(main) + others.filterNot(showsList)).maxOf { rectOf(it).top + it.snappedSize().second }
-        return Rect(0, 0, main.size.first, bottom)
+        val column = listOf(main) + others.filterNot(showsList)
+        val bottom = column.maxOf { rectOf(it).top + it.snappedSize().second }
+        return Rect(0, 0, column.maxOf { rectOf(it).right }, bottom)
     }
 
     /**
      * How far right the windows of a stack in one column show when [arrange] docks [others] under
-     * [main] with a view: what shows of the main window ([Layout.contentRight]), or a docked window
-     * its minimum width makes wider, in layout pixels. It changes no window's size and runs no
-     * layout pass.
+     * [main] with a view while the main window shows [width] across (0 for what it shows now,
+     * [Layout.contentRight]): that width, or a docked window its minimum width makes wider, in
+     * layout pixels. It changes no window's size and runs no layout pass.
      */
     fun shownWidth(
         main: Layout,
         others: List<Layout>,
+        width: Int = 0,
     ): Int {
         main.layoutRoot()
-        val width = main.contentRight()
-        return maxOf(width, others.maxOfOrNull { sizeAt(it, width).first } ?: 0)
+        val across = width.takeIf { it > 0 } ?: main.contentRight()
+        return maxOf(across, others.maxOfOrNull { sizeAt(it, across).first } ?: 0)
     }
 
     /** [window]'s size when [arrange] docks it [width] wide at the height the skin gives it; it is left as it was. */

@@ -537,11 +537,24 @@ class SkinRuntime(
             }
         }
 
+    /**
+     * How wide the windows in the right column of two [columns] are, in layout pixels; 0 for as
+     * wide as what shows of the main window. A change lays the windows out again.
+     */
+    var columnWidth = 0
+        set(value) {
+            if (value != field) {
+                field = value
+                relayout()
+            }
+        }
+
     /** Stacks the windows as [StackArrange.arrange] sets them out: the main one at its size, the others under it. */
     private fun arrange() {
         placed.clear()
         val main = mainLayout ?: return
-        placed.putAll(StackArrange.arrange(StackArrange.Ask(main, windows.drop(1), viewSize, stretchLast, columns, ::showsList)))
+        val ask = StackArrange.Ask(main, windows.drop(1), viewSize, stretchLast, columns, ::showsList, columnWidth)
+        placed.putAll(StackArrange.arrange(ask))
     }
 
     /**

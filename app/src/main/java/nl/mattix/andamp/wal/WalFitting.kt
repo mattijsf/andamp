@@ -8,21 +8,31 @@ import nl.mattix.andamp.modernskin.maki.Value
 import nl.mattix.andamp.modernskin.skin.Layout
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.modernskin.skin.StackArrange
+import java.util.IdentityHashMap
 
 /**
  * How the box a skin goes in on the screen reaches its runtime, and where its stack then sits. One
  * per engine, used on its thread only: it remembers which windows were on screen at the last fit,
- * and how wide the stack was when nothing last slid.
+ * how wide the stack was when nothing last slid, and how wide each main window was the first time
+ * it was fitted.
  *
  * Sideways in the app (not the floating player, which is compact), a stack with a list window open
  * goes to two columns ([SkinRuntime.columns]) when that shows the skin larger than one column: the
  * main window and the windows that show no list on the left, the list windows on the right, the
  * last one as tall as the box. Both are weighed from the windows' natural sizes
  * ([StackArrange.naturalSize]), before any layout pass, so deciding sends the skin no events.
+ *
+ * The right column and the upright view go by how wide the main window is at rest
+ * ([restingWidth]), not by what it shows now, so a drawer that is out of it (MMD3's equalizer) when
+ * a window opens or the phone turns changes neither the columns nor the size the stack comes back
+ * to.
  */
 internal class WalFitting {
     /** The windows on screen at the last [apply] or [refit], compared by identity. */
     private var windows: List<Layout> = emptyList()
+
+    /** What each main window showed across the first time it was fitted, by identity; see [restingWidth]. */
+    private val firstWidths = IdentityHashMap<Layout, Int>()
 
     /** What the upright stack showed across while nothing slid, and the fit it was shown in; see [layout]. */
     private var restingW = 0
@@ -78,7 +88,9 @@ internal class WalFitting {
      * Gives [runtime] the view [box] holds upright: at the main window's scale ([WalScale.fit]), or
      * smaller when a docked window its minimum width makes wider than the main one would run past
      * the box at that scale (CornerAmp's playlist), so the last list window still reaches the
-     * box's bottom at the scale the stack is drawn at ([WalScale.across]).
+     * box's bottom at the scale the stack is drawn at ([WalScale.across]). The windows are measured
+     * against the main window at rest ([restingWidth]), so a drawer that is out at the time leaves
+     * the view as it is with the drawer closed.
      */
     private fun uprightView(
         runtime: SkinRuntime,
@@ -86,7 +98,7 @@ internal class WalFitting {
         baseW: Int,
     ) {
         val main = runtime.mainLayout ?: return
-        val shown = StackArrange.shownWidth(main, runtime.windows.drop(1))
+        val shown = StackArrange.shownWidth(main, runtime.windows.drop(1), restingWidth(main))
         runtime.viewSize = view(box, WalScale.across(box.width, shown, WalScale.fit(box, main.size, baseW)))
     }
 
@@ -95,7 +107,8 @@ internal class WalFitting {
      * box is not compact, the main window does not fill the box ([sizedToBox]) and two columns show
      * the skin larger than one (more than [TIE] larger), else in one; and gives it the view at the
      * scale chosen, so the last list window of two columns takes the box's height. A stack in one
-     * column keeps each window's height, as the skin gives it.
+     * column keeps each window's height, as the skin gives it. The right column is as wide as the
+     * main window at rest ([restingWidth], [SkinRuntime.columnWidth]).
      */
     private fun decideColumns(
         runtime: SkinRuntime,
@@ -104,9 +117,13 @@ internal class WalFitting {
         val main = runtime.mainLayout ?: return
         val others = runtime.windows.drop(1)
         val box = IntSize(fit.widthPx, fit.heightPx)
+        val width = restingWidth(main)
+        runtime.columnWidth = width
 
         fun scale(columns: Int) =
-            StackArrange.naturalSize(main, others, columns, runtime::showsList).let { (w, h) -> WalScale.of(box, w, h) }
+            StackArrange
+                .naturalSize(main, others, columns, runtime::showsList, width)
+                .let { (w, h) -> WalScale.of(box, w, h) }
         val one = scale(1)
         val two = if (fit.compact || sizedToBox(main) || others.none(runtime::showsList)) null else scale(2)
         val wider = two != null && two > one * (1 + TIE)
@@ -158,6 +175,18 @@ internal class WalFitting {
             wantsFrames = wantsFrames,
             dock = dockOf(runtime, drawn),
         )
+    }
+
+    /**
+     * How wide [main] shows across at rest, in layout pixels: what it showed the first time it was
+     * fitted (MMD3's main window with its drawers closed, as it starts; its shade bar at its full
+     * width), so a drawer that is out later does not count. A window sized to the box both ways
+     * (Bento) has no drawer to leave out and is measured as it is now, since a new box resizes it.
+     */
+    private fun restingWidth(main: Layout): Int {
+        main.layoutRoot()
+        if (main.resizesHorizontally() && main.resizesVertically()) return main.contentRight()
+        return firstWidths.getOrPut(main) { main.contentRight() }
     }
 
     /** Where a stack of [size], showing [drawn] of it, goes in [fit]'s box; see [WalScale.place]. */

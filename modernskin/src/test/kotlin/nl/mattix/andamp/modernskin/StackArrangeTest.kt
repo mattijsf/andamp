@@ -15,12 +15,12 @@ import org.junit.Test
 /**
  * How a phone sets out a skin's windows as one stack ([StackArrange]): each window docked under
  * what shows of the main one at its natural height, the last list window filling the height
- * upright, list windows in a column of their own beside the main one when the app asks for two
- * columns, and a touch beside the stack meaning the nearest window.
+ * upright, list windows in a second column beside the main one when the app asks for two columns,
+ * and a touch beside the stack meaning the nearest window.
  */
 class StackArrangeTest {
     // a main window 300x200 whose shaped body shows 200x120 of it, an equalizer and a playlist,
-    // both of which can be made taller
+    // both of which can be made taller, and a window held at 340 px wide
     private val files =
         object : SkinFiles {
             private val m =
@@ -38,7 +38,9 @@ class StackArrangeTest {
                         """<component id="list" param="guid:{45F3F7C1-A6F3-4ee6-A15E-125E92FC3F8D}" """ +
                         """x="0" y="0" w="290" h="70"/>""" +
                         """<layer id="pl.sizer" resize="bottomright" x="290" y="70" w="10" h="10"/>""" +
-                        """</layout></container>""",
+                        """</layout></container>""" +
+                        """<container id="wide" name="Wide" default_visible="0">""" +
+                        """<layout id="normal" w="340" h="40" minimum_w="340" maximum_w="340"/></container>""",
                 ).mapValues { it.value.toByteArray() }
 
             override fun read(path: String): ByteArray? = m[SkinFiles.normalize(path)]
@@ -165,6 +167,39 @@ class StackArrangeTest {
             Rect(0, 0, 300, 200),
             StackArrange.leftColumn(window("main"), rt.windows.drop(1), 2, rt::showsList, rt::windowRect),
         )
+    }
+
+    @Test
+    fun `the right column starts past a window in the left column that is wider than the main one`() {
+        rt.viewSize = 800 to 400
+        rt.columns = 2
+        open("wide", "pl")
+
+        assertEquals("held at its minimum width, wider than the main window", Rect(0, 120, 340, 40), rectOf("wide"))
+        assertEquals("the playlist from where the wide window ends", Rect(340, 0, 200, 400), rectOf("pl"))
+        assertEquals(540 to 400, rt.stackSize)
+        assertEquals(
+            "the left column reaches to where the right one starts",
+            Rect(0, 0, 340, 200),
+            StackArrange.leftColumn(window("main"), rt.windows.drop(1), 2, rt::showsList, rt::windowRect),
+        )
+        assertEquals(540 to 200, StackArrange.naturalSize(window("main"), rt.windows.drop(1), 2, rt::showsList))
+    }
+
+    @Test
+    fun `the right column keeps the width it is given while what shows of the main window changes`() {
+        rt.viewSize = 600 to 400
+        rt.columns = 2
+        rt.columnWidth = 200
+        open("eq", "pl")
+        assertEquals(Rect(300, 0, 200, 400), rectOf("pl"))
+
+        // the body widens, as MMD3's equalizer drawer slides out of its main window
+        checkNotNull(window("main").findObject("body")).setXmlParam("w", "260")
+        assertEquals("the equalizer under the main window follows it", Rect(0, 120, 260, 60), rectOf("eq"))
+        assertEquals("the playlist keeps its width", Rect(300, 0, 200, 400), rectOf("pl"))
+        assertEquals("so the stack keeps its size", 500 to 400, rt.stackSize)
+        assertEquals(500 to 200, StackArrange.naturalSize(window("main"), rt.windows.drop(1), 2, rt::showsList, 200))
     }
 
     @Test
