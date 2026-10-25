@@ -5,7 +5,8 @@ package nl.mattix.andamp.modernskin.skin
  * The playlist editor's list: `<component param="guid:{45F3F7C1-...}">`, which Winamp fills with
  * its own playlist. Rows of 15 px in the skin's list colors as Winamp 5.666 draws them: number and
  * title on the left, length on the right, the current entry in the "current" color, a narrow
- * scrollbar at the right edge. A tap selects a row, a second tap plays it, a drag scrolls.
+ * scrollbar at the right edge. A tap selects a row, a second tap plays it, a double tap plays the
+ * row under it, a drag scrolls.
  */
 class PlaylistView(
     rt: SkinRuntime,
@@ -160,9 +161,30 @@ class PlaylistView(
         inside: Boolean,
     ) {
         if (dragged || !inside) return
-        val index = (py - rowsTop + scrollPx) / ROW
-        if (index !in rt.player.tracks.indices) return
+        val index = rowAt(py) ?: return
         if (index == selected) rt.player.playTrack(index) else selected = index
+        selectionChanged()
+    }
+
+    /**
+     * The second tap of a double tap, which reaches the list in place of a press and a release:
+     * the row under it is selected and plays, as a double click plays it in Winamp.
+     */
+    override fun doubleTap(
+        px: Int,
+        py: Int,
+    ) {
+        super.doubleTap(px, py)
+        val index = rowAt(py) ?: return
+        selected = index
+        rt.player.playTrack(index)
+        selectionChanged()
+    }
+
+    /** The entry whose row is at [py], a point of the window, or null past the last one. */
+    private fun rowAt(py: Int): Int? = ((py - rowsTop + scrollPx) / ROW).takeIf { it in rt.player.tracks.indices }
+
+    private fun selectionChanged() {
         rt.playlistSelectedMs = rt.player.tracks
             .getOrNull(selected)
             ?.lengthMs ?: 0
