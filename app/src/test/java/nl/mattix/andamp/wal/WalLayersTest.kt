@@ -240,6 +240,20 @@ class WalLayersTest {
     }
 
     @Test
+    fun `a window that moves and draws the same is moved, not recorded again`() {
+        val layers = layers()
+        secondRect = Rect(0, 30, 30, 10)
+        frame(layers, plans(1, 1))
+        secondRect = Rect(6, 30, 30, 10)
+        assertEquals(emptyList<String>(), frame(layers, plans(1, 1)))
+        secondRect = Rect(10, 30, 30, 10)
+        assertEquals(emptyList<String>(), frame(layers, plans(1, 1)))
+        frame(layers, plans(1, 1), scale = 1.5f)
+        secondRect = Rect(4, 30, 30, 10)
+        assertEquals(emptyList<String>(), frame(layers, plans(1, 1), scale = 1.5f))
+    }
+
+    @Test
     fun `a window without a positive height is drawn the plain way, where its clip reaches`() {
         val layers = layers()
         frame(layers, plans(1, 1))

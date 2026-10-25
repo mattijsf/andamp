@@ -8,6 +8,7 @@ import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.modernskin.skin.SkinsFolderFiles
+import nl.mattix.andamp.modernskin.skin.WindowPlan
 import nl.mattix.andamp.modernskin.skin.WithGeneratedImages
 import nl.mattix.andamp.modernskin.skin.ZipSkinFiles
 import org.junit.Assert.assertEquals
@@ -16,10 +17,12 @@ import org.junit.Test
 import java.io.File
 
 /**
- * The planner on the corpus skins (local files, skipped without them), playing for 300 frames on a
- * stepped clock: it draws exactly what drawWindows draws, every plan holds its promises, and a
- * renderer keeping windows and runs by version never shows a stale picture. Prints what each skin
- * gets kept apart, and what planning costs beside drawing.
+ * The planner on the corpus skins (local files, skipped without them), playing on a stepped clock,
+ * then stopped, left resting past the live hold and played again: it draws exactly what drawWindows
+ * draws, every plan holds its promises, and a renderer keeping windows and runs by version never
+ * shows a stale picture. Once a skin has played a while no window is recorded again; the skins that
+ * draw the most keep their moving parts apart, and those runs end once their objects rest. Prints
+ * what each skin gets kept apart, and what planning costs beside drawing.
  */
 class DrawPlannerCorpusTest {
     @Test
@@ -66,6 +69,7 @@ class DrawPlannerCorpusTest {
         return rt to player
     }
 
+    /** One skin playing: [PLAY_MS] of play, then Stop, a rest past the live hold, and play again. */
     private fun play(
         res: File,
         name: String,
@@ -73,8 +77,7 @@ class DrawPlannerCorpusTest {
         var t = START
         val (rt, player) = runtime(res, name) { t }
         val (twin, twinPlayer) = runtime(res, name) { t }
-        val planner = DrawPlanner()
-        val cache = PlanCache()
+        val run = Run(name, rt, twin)
         repeat(SETTLE_FRAMES) {
             t += FRAME
             rt.tick()
@@ -82,41 +85,101 @@ class DrawPlannerCorpusTest {
         }
         player.play()
         twinPlayer.play()
+        val playing = t
+        var steadyRecords = -1
+        var steadyRuns = 0
+        while (t < playing + PLAY_MS) {
+            t += FRAME
+            // the last seconds of play: objects that move turned live long before
+            val steady = t >= playing + PLAY_MS - STEADY_MS
+            if (steady && steadyRecords < 0) steadyRecords = run.cache.windowRecords
+            val plans = run.frame(t) ?: continue
+            if (steady) steadyRuns = maxOf(steadyRuns, plans.sumOf { it.runs.size })
+        }
+        assertEquals(
+            "$name: no window recorded again in the last ${STEADY_MS / 1000} s of play",
+            steadyRecords,
+            run.cache.windowRecords,
+        )
+        if (name in KEPT_APART) assertTrue("$name keeps moving parts apart while it plays", steadyRuns > 0)
+        val playRecords = run.cache.windowRecords
+        player.stop()
+        twinPlayer.stop()
+        val stopped = t
+        while (t < stopped + STOP_MS) {
+            t += FRAME
+            run.frame(t)
+        }
+        // nothing drawn for longer than the live hold, then a frame, then play again
+        t += DrawPlanner.LIVE_HOLD_MS + FRAME
+        run.frame(t, force = true)
+        player.play()
+        twinPlayer.play()
+        val again = t
+        while (t < again + STOP_MS) {
+            t += FRAME
+            run.frame(t)
+        }
+        if (name in KEPT_APART) assertTrue("$name: runs end once their objects rest", run.runsEnded > 0)
+        val sizes = rt.windows.map { rt.windowRect(it) }
+        val published = run.published
+        println(
+            "PLAN $name: ${rt.windows.size} windows $sizes, $published frames published, " +
+                "runs per frame ${run.runsSeen.toSortedMap()}, window records $playRecords while playing " +
+                "(none in the last ${STEADY_MS / 1000} s, with up to $steadyRuns runs) and " +
+                "${run.cache.windowRecords - playRecords} from Stop on, " +
+                "run records ${run.cache.runRecords}, runs ended ${run.runsEnded}, " +
+                "planned ${run.planner.fullPlans} times from the start, " +
+                "planning ${run.planner.planNanos / 1000 / published} us " +
+                "against drawing ${run.drawNanos / 1000 / published} us a frame",
+        )
+    }
+
+    /** A skin's runtime planned frame by frame beside a [twin] that draws as drawWindows draws, checked each frame. */
+    private inner class Run(
+        val name: String,
+        val rt: SkinRuntime,
+        val twin: SkinRuntime,
+    ) {
+        val planner = DrawPlanner()
+        val cache = PlanCache()
+        val runsSeen = HashMap<Int, Int>()
         var published = 0
         var drawNanos = 0L
-        val runsSeen = HashMap<Int, Int>()
-        var oneVersion = 0
-        repeat(FRAMES) { frame ->
-            t += FRAME
+        var runsEnded = 0
+        private var frames = 0
+        private var lastRuns = emptySet<Long>()
+
+        /** Ticks both runtimes at [t]; when they changed, or with [force], plans and checks a frame and gives its plans. */
+        fun frame(
+            t: Long,
+            force: Boolean = false,
+        ): List<WindowPlan>? {
+            val at = frames++
             val changed = rt.tick()
-            assertEquals("$name frame $frame: both runtimes tick alike", changed, twin.tick())
-            if (!changed && frame > 0) return@repeat
+            assertEquals("$name frame $at: both runtimes tick alike", changed, twin.tick())
+            if (!changed && !force && at > 0) return null
             published++
             val planned = planner.draw(rt, t)
             val d0 = System.nanoTime()
             val stack = twin.drawWindows()
             drawNanos += System.nanoTime() - d0
-            assertEquals("$name frame $frame: windows", stack.size, planned.stack.size)
+            assertEquals("$name frame $at: windows", stack.size, planned.stack.size)
             for (i in stack.indices) {
                 val (r, cmds) = stack[i]
                 val (pr, pcmds) = planned.stack[i]
-                assertEquals("$name frame $frame window $i", r, pr)
-                assertEquals("$name frame $frame window $i: commands", cmds.size, pcmds.size)
-                for (k in cmds.indices) assertTrue("$name frame $frame window $i command $k", alike(cmds[k], pcmds[k]))
+                assertEquals("$name frame $at window $i", r, pr)
+                assertEquals("$name frame $at window $i: commands", cmds.size, pcmds.size)
+                for (k in cmds.indices) assertTrue("$name frame $at window $i command $k", alike(cmds[k], pcmds[k]))
             }
-            cache.frame(planned.stack, planned.plans, "$name frame $frame")
+            cache.frame(planned.stack, planned.plans, "$name frame $at")
             val runs = planned.plans.sumOf { it.runs.size }
             runsSeen[runs] = (runsSeen[runs] ?: 0) + 1
-            if (frame > 0) oneVersion++
+            val ids = planned.plans.flatMap { p -> p.runs.map { it.id } }.toSet()
+            runsEnded += lastRuns.count { it !in ids }
+            lastRuns = ids
+            return planned.plans
         }
-        val sizes = rt.windows.map { rt.windowRect(it) }
-        println(
-            "PLAN $name: ${rt.windows.size} windows $sizes, $published frames published, " +
-                "runs per frame ${runsSeen.toSortedMap()}, window records ${cache.windowRecords}, " +
-                "run records ${cache.runRecords}, planned ${planner.fullPlans} times from the start, " +
-                "planning ${planner.planNanos / 1000 / published} us against drawing ${drawNanos / 1000 / published} us a frame",
-        )
-        assertTrue("$name drew frames", published > 0 && oneVersion >= 0)
     }
 
     /** The same drawing from two runtimes: a window's shape is another object in each, so it is compared by what it holds. */
@@ -142,13 +205,18 @@ class DrawPlannerCorpusTest {
                 "Winamp3x.wal",
                 "Winamp2000SP4.wal",
             )
+
+        /** The skins whose moving parts are kept apart while they play: the three that draw the most. */
+        val KEPT_APART = setOf("Bento.wal", "BigBento.wal", "MMD3.wal")
         const val START = 1_792_324_800_000L
 
         /** The phone's size in skin pixels, as a full-screen Bento has it. */
         const val W = 633
         const val H = 1258
         const val FRAME = 16L
-        const val FRAMES = 300
         const val SETTLE_FRAMES = 120
+        const val PLAY_MS = 40_000L
+        const val STEADY_MS = 15_000L
+        const val STOP_MS = 2_000L
     }
 }

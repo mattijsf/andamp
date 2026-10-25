@@ -35,7 +35,8 @@ import kotlin.random.Random
  * playing, drawn frame after frame with kept parts ([WalLayers]) as the engine plans them, each
  * frame drawn checked pixel for pixel against [drawWalStack]'s drawing of the same frame: at a
  * whole scale, and the stack layer of a fractional one. The screen skips frames as it does when
- * the engine runs ahead; a theme switch and a stop come along the way.
+ * the engine runs ahead; a theme switch, a stop, a rest longer than the live hold (after which the
+ * runs of objects at rest end) and play again come along the way.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -93,17 +94,23 @@ class WalLayersCorpusTest {
         var compared = 0
         var records = 0
         layers.onRecord = { _, _ -> records++ }
+        var runsBeforeRest = 0
+        var runsAfterRest = 0
         repeat(TICKS) { tick ->
             t += FRAME
             when (tick) {
                 PLAY_AT -> player.play()
                 THEME_AT -> themes.getOrNull(1)?.let(rt::selectGammaSet)
                 STOP_AT -> player.stop()
+                REST_AT -> t += DrawPlanner.LIVE_HOLD_MS
+                PLAY_AGAIN_AT -> player.play()
             }
-            if (!rt.tick() && tick != 0) return@repeat
+            val forced = tick == 0 || tick == REST_AT
+            if (!rt.tick() && !forced) return@repeat
             val planned = planner.draw(rt, t)
             // the screen draws some frames and skips others
-            if (random.nextInt(3) == 0 && tick != TICKS - 1) return@repeat
+            if (random.nextInt(3) == 0 && tick != TICKS - 1 && !forced) return@repeat
+            if (tick == REST_AT) runsBeforeRest = layers.keptRuns
             val stack = planned.stack
             val w = stack.maxOf { it.first.right } * SCALE
             val h = stack.maxOf { it.first.bottom } * SCALE
@@ -126,9 +133,14 @@ class WalLayersCorpusTest {
             }
             assertArrayEquals("$name tick $tick", plain, ours)
             compared++
+            if (tick == REST_AT) runsAfterRest = layers.keptRuns
         }
-        println("LAYERS $name fractional=$fractional: $compared frames compared, $records recordings")
+        println(
+            "LAYERS $name fractional=$fractional: $compared frames compared, $records recordings, " +
+                "runs kept $runsBeforeRest before the rest and $runsAfterRest after",
+        )
         assertTrue(compared > 0)
+        if (name in KEPT_APART) assertTrue("$name: runs end once their objects rest", runsAfterRest < runsBeforeRest)
         layers.release()
     }
 
@@ -155,12 +167,19 @@ class WalLayersCorpusTest {
                 "Winamp3x.wal",
                 "Winamp2000SP4.wal",
             )
+
+        /** The skins whose moving parts are kept apart while they play: the three that draw the most. */
+        val KEPT_APART = setOf("Bento.wal", "BigBento.wal", "MMD3.wal")
         const val START = 1_792_324_800_000L
         const val FRAME = 16L
-        const val TICKS = 150
+        const val TICKS = 180
         const val PLAY_AT = 10
         const val THEME_AT = 80
         const val STOP_AT = 120
+
+        /** Nothing is drawn for longer than the live hold before this tick: the runs of objects at rest end. */
+        const val REST_AT = 140
+        const val PLAY_AGAIN_AT = 141
         const val SCALE = 2
     }
 }
