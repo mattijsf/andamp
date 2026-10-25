@@ -164,7 +164,7 @@ internal class WalLook(
         val frame = engine.frame ?: return
         val at = frame.layout ?: return
         val host = host ?: return
-        scope.drawWalStack(frame.stack, host, at.scale, 0f, layer)
+        scope.drawWalStack(frame.stack, host, at.scale, 0f, layer, frame.themeKey)
         // only the first frame drawn after failed ones is reported, not every frame
         if (drawFailing) {
             drawFailing = false
