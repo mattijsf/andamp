@@ -188,8 +188,39 @@ class WalPlacementTest {
         assertEquals(IntRect(10, 8, 99, 108), dock!!.within(stack))
         val docked = WalPlacement.dockedStack(ask, stack, dock, visH = 120)
         assertEquals(108, docked.vis.y)
-        assertEquals("the classic x, not the column's", ClassicStack.layout(ask).vis.x, docked.vis.x)
+        assertEquals(
+            "275 px wide, wider than the 89 px column: it ends where the column ends, but not left of the screen",
+            0,
+            docked.vis.x,
+        )
         assertEquals("one column has nothing to dock against but the stack", null, WalDock.of(layout(2f, 0f, 0f, 400, 300)))
+
+        // a phone held sideways, 1200 virtual px across; a stack 1200 by 300 drawn as 600 by 150 from
+        // x 420, whose left column is 700 skin px wide
+        val sideways = ask.copy(screen = WindowScreen(width = 1200, height = 500, safeTop = 8, safeBottom = 480))
+        val wide = IntRect(420, 8, 1020, 158)
+        val wideDock = WalDock(IntRect(0, 0, 700, 200), 1200, 300)
+        assertEquals(IntRect(420, 8, 770, 108), wideDock.within(wide))
+        assertEquals(
+            "under the column from its left edge",
+            420,
+            WalPlacement.dockedStack(sideways, wide, wideDock, visH = 120).vis.x,
+        )
+        val wider = sideways.copy(vis = ClassicStack.Member(120, top = 108, placed = false, width = 400))
+        assertEquals(
+            "400 px wide: it ends where the column ends and the right column starts",
+            770 - 400,
+            WalPlacement.dockedStack(wider, wide, wideDock, visH = 120).vis.x,
+        )
+    }
+
+    @Test
+    fun `in one column the plug-in window keeps the classic stack's x`() {
+        val ask = ClassicStack.Ask(screen, sideways = true, mainH = 116, eq = null, vis = ClassicStack.Member(120, null, false))
+
+        val docked = WalPlacement.dockedStack(ask, IntRect(10, 8, 210, 158), dock = null, visH = 120)
+
+        assertEquals(ClassicStack.layout(ask).vis.x, docked.vis.x)
     }
 
     @Test
@@ -267,6 +298,21 @@ class WalPlacementTest {
         assertEquals("it still fits where it was moved", atMiddle, WalPlacement.held(atMiddle, grown, box))
         assertEquals("its bottom held at the box's", IntOffset(-186, 2274 - 656 - 24), WalPlacement.held(atBottom, grown, box))
         assertEquals("the drawer closed", atBottom, WalPlacement.held(atBottom, home, box))
+    }
+
+    @Test
+    fun `a kept move is held inside a stack grown to two columns, and comes back with one column`() {
+        // moved to the bottom in one column; a list window opening sets the stack out in two, wider and taller
+        val one = IntRect(186, 24, 894, 352)
+        val atBottom = IntOffset(-186, 1922)
+        val two = IntRect(0, 24, 1080, 1100)
+
+        assertEquals(
+            "across where the engine puts it, down as far as the box allows",
+            IntOffset(0, 1174),
+            WalPlacement.held(atBottom, two, box),
+        )
+        assertEquals("the list window closed: where it was moved", atBottom, WalPlacement.held(atBottom, one, box))
     }
 
     @Test

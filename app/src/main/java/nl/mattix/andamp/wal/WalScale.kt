@@ -59,12 +59,16 @@ internal object WalScale {
     /**
      * Where a stack of [stack] skin px goes in [fit]'s box. Upright, the main window of [mainSize]
      * sets the scale (see [fit], with [baseW]) and the stack hangs from the top, centered by how
-     * far right the main window's content reaches ([contentRight]); a stack taller than the box at
-     * that scale is shrunk to the box's height and centered both ways. Sideways, the whole stack
-     * fits the box both ways and is centered both ways. The scale keeps room for the whole stack,
-     * so a drawer opening inside it leaves the scale as it is; the centering goes by the part of
-     * it the windows show ([drawn]), from its top-left corner.
+     * far right the main window's content reaches ([contentRight]) and moved left as far as keeps
+     * what the windows show inside the box. A stack that shows [widest] px across, more than the
+     * box holds at that scale (MMD3's drawer slid out, or a docked window its minimum width makes
+     * wider than the main one), is shrunk until it fits across; one taller than the box at that
+     * scale is shrunk to the box's height and centered both ways. Sideways, the whole stack fits
+     * the box both ways and is centered both ways. The scale keeps room for the whole stack, so a
+     * drawer opening inside it leaves the scale as it is; the centering goes by the part of it the
+     * windows show ([drawn]), from its top-left corner.
      */
+    @Suppress("LongParameterList") // the stack's sizes as the engine has them, each needed apart
     fun place(
         fit: WalFit,
         mainSize: Pair<Int, Int>,
@@ -72,6 +76,7 @@ internal object WalScale {
         contentRight: Int,
         stack: Pair<Int, Int>,
         drawn: Pair<Int, Int> = stack,
+        widest: Int = drawn.first,
     ): Place {
         val box = IntSize(fit.widthPx, fit.heightPx)
         val (stackW, stackH) = stack
@@ -82,11 +87,24 @@ internal object WalScale {
             val s = of(box, stackW, stackH)
             return Place(s, left(width, drawnW, s), left(height, drawnH, s))
         }
-        val s = fit(box, mainSize, baseW)
-        if (stackH <= 0 || stackH * s <= height) return Place(s, left(width, contentRight, s), 0f)
+        val s = across(box.width, widest, fit(box, mainSize, baseW))
+
+        fun across(scale: Float) = minOf(left(width, contentRight, scale), maxOf(0f, kotlin.math.floor(width - drawnW * scale)))
+        if (stackH <= 0 || stackH * s <= height) return Place(s, across(s), 0f)
         val shrunk = height / stackH
-        return Place(shrunk, left(width, contentRight, shrunk), left(height, drawnH, shrunk))
+        return Place(shrunk, across(shrunk), left(height, drawnH, shrunk))
     }
+
+    /**
+     * [scale], or the scale at which [shown] px across fit [width] when they run past it at
+     * [scale]: whole from 2x up, as [of] gives it. A pixel's slack keeps a window sized to the box
+     * at a fractional scale from being shrunk by a rounding.
+     */
+    fun across(
+        width: Int,
+        shown: Int,
+        scale: Float,
+    ): Float = if (shown > 0 && shown * scale > width + 1f) minOf(scale, whole(width.toFloat() / shown)) else scale
 
     /** The scale that fits [lw] x [lh] in [size]: whole numbers from 2x up, so the pixels stay crisp. */
     fun of(
@@ -95,8 +113,9 @@ internal object WalScale {
         lh: Int,
     ): Float {
         if (lw <= 0 || lh <= 0) return 1f
-        val s = minOf(size.width.toFloat() / lw, size.height.toFloat() / lh)
-        // whole-number scaling keeps the pixels crisp, like the classic windows; a wide layout gets what fits
-        return if (s >= 2f) kotlin.math.floor(s) else s
+        return whole(minOf(size.width.toFloat() / lw, size.height.toFloat() / lh))
     }
+
+    /** [s] floored to a whole number from 2x up, so the pixels stay crisp like the classic windows'; below that, [s]. */
+    private fun whole(s: Float): Float = if (s >= 2f) kotlin.math.floor(s) else s
 }

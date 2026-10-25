@@ -526,10 +526,22 @@ class SkinRuntime(
 
     /**
      * How many columns the stack is set out in once the app gives it a [viewSize]; a change lays the
-     * windows out again. [StackArrange] sets out one column whatever it says: every window docks
-     * under the main one.
+     * windows out again. At 2 [StackArrange] puts the windows that show a list in a column right of
+     * the main window, else every window docks under the main one.
      */
     var columns = 1
+        set(value) {
+            if (value != field) {
+                field = value
+                relayout()
+            }
+        }
+
+    /**
+     * How wide the windows in the right column of two [columns] are, in layout pixels; 0 for as
+     * wide as what shows of the main window. A change lays the windows out again.
+     */
+    var columnWidth = 0
         set(value) {
             if (value != field) {
                 field = value
@@ -541,7 +553,8 @@ class SkinRuntime(
     private fun arrange() {
         placed.clear()
         val main = mainLayout ?: return
-        placed.putAll(StackArrange.arrange(StackArrange.Ask(main, windows.drop(1), viewSize, stretchLast, columns, ::showsList)))
+        val ask = StackArrange.Ask(main, windows.drop(1), viewSize, stretchLast, columns, ::showsList, columnWidth)
+        placed.putAll(StackArrange.arrange(ask))
     }
 
     /**

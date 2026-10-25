@@ -103,4 +103,64 @@ class WalScaleTest {
         assertEquals(1000f / 600, shrunk.scale)
         assertEquals(kotlin.math.floor((1000 - 500 * shrunk.scale) / 2), shrunk.top)
     }
+
+    @Test
+    fun `upright, a drawer that runs past the screen shrinks the skin once it rests`() {
+        // MMD3 on the Pixel: 381 px show at the start, which sets 2x; its drawer slid out shows all 583
+        val pixel = WalFit(960, 1908, 2.25f, false)
+        val sliding = WalScale.place(pixel, 583 to 216, 381, 583, 583 to 476, drawn = 583 to 476, widest = 381)
+        assertEquals("while it slides, the width before the slide holds the scale", 2f, sliding.scale)
+
+        val resting = WalScale.place(pixel, 583 to 216, 381, 583, 583 to 476, drawn = 583 to 476)
+        assertEquals(960f / 583, resting.scale)
+        assertEquals(0f, resting.left)
+        assertTrue("the whole drawer is on screen", 583 * resting.scale <= 960f)
+    }
+
+    @Test
+    fun `it grows back when the drawer closes`() {
+        val pixel = WalFit(960, 1908, 2.25f, false)
+        val closing = WalScale.place(pixel, 583 to 216, 381, 381, 583 to 476, drawn = 381 to 476, widest = 583)
+        assertEquals("while the drawer slides back, the scale holds", 960f / 583, closing.scale)
+
+        val closed = WalScale.place(pixel, 583 to 216, 381, 381, 583 to 476, drawn = 381 to 476)
+        assertEquals(2f, closed.scale)
+        assertEquals((960 - 381 * 2) / 2f, closed.left)
+    }
+
+    @Test
+    fun `on a small phone the drawer fits, CornerAmp stays at a whole 2x, and Bento fills the width`() {
+        // a 360 dp phone: 720 px wide, about 1136 px high for the skin
+        val small = WalFit(720, 1136, 2f, false)
+
+        val mmd3 = WalScale.place(small, 583 to 216, 381, 381, 583 to 216, drawn = 381 to 216)
+        assertEquals("closed: from the 381 px that show", 720f / 381, mmd3.scale)
+        val open = WalScale.place(small, 583 to 216, 381, 583, 583 to 216)
+        assertEquals("open: its whole 583 px inside the box", 720f / 583, open.scale)
+        assertTrue(583 * open.scale <= 720f)
+
+        val corner = WalScale.place(small, 246 to 228, 246, 246, 246 to 228)
+        assertEquals("2.9x would fit, and whole scales from 2x up keep the pixels crisp", 2f, corner.scale)
+        assertEquals((720 - 246 * 2) / 2f, corner.left)
+
+        // Bento is sized to the box at the scale its minimum width fits: 633 px in 720
+        val s = WalScale.of(IntSize(720, 1136), 633, 492)
+        assertEquals(720f / 633, s)
+        val w = maxOf(633, (720 / s).toInt())
+        val h = maxOf(492, (1136 / s).toInt())
+        val bento = WalScale.place(small, w to h, 0, w, w to h)
+        assertEquals("its size fills the box, and a rounding does not shrink it", s, bento.scale)
+        assertEquals(0f, bento.left)
+    }
+
+    @Test
+    fun `a window docked wider than the main one is kept inside the box`() {
+        // CornerAmp's playlist is at least 275 px wide under a 246 px main window, here in a box 500 px wide
+        val narrow = WalFit(500, 1136, 2f, false)
+        val place = WalScale.place(narrow, 246 to 228, 246, 246, 275 to 428)
+
+        assertEquals(500f / 275, place.scale)
+        assertEquals("moved left so the playlist ends inside the box", 0f, place.left)
+        assertTrue(place.left + 275 * place.scale <= 500f)
+    }
 }

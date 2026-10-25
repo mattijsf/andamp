@@ -3,6 +3,7 @@
 package nl.mattix.andamp.ui.window
 
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
 import nl.mattix.andamp.ui.SIDEWAYS_STACK_H
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -105,5 +106,35 @@ class ClassicStackTest {
         assertEquals(IntOffset(25, top + mainH), places.eq)
         assertEquals(IntOffset(25 + MAIN_W, top), places.playlist)
         assertEquals(PlaylistLayout.segmentsThatFit(SIDEWAYS_STACK_H), places.playlistSegments)
+    }
+
+    @Test
+    fun `with no modern skin column to dock against, the stack is the classic one`() {
+        val sideways = WindowScreen(width = 800, height = 400, safeTop = top, safeBottom = 380)
+        val ask = ClassicStack.Ask(sideways, sideways = true, mainH, eq(), plugin())
+        val places = ClassicStack.layout(ask)
+
+        val left = (800 - 2 * MAIN_W) / 2
+        assertEquals(IntOffset(left, top), places.main)
+        assertEquals(IntOffset(left, top + mainH), places.eq)
+        assertEquals(IntOffset(left, top + mainH + eqH), places.vis)
+        assertEquals(IntOffset(left + MAIN_W, top), places.playlist)
+        assertEquals(places, ClassicStack.layout(ask.copy(dock = null)))
+    }
+
+    @Test
+    fun `a modern skin's left column moves only the plug-in window across`() {
+        val sideways = WindowScreen(width = 800, height = 400, safeTop = top, safeBottom = 380)
+        val ask = ClassicStack.Ask(sideways, sideways = true, mainH, eq(), plugin())
+        val classic = ClassicStack.layout(ask)
+
+        val docked = ClassicStack.layout(ask.copy(dock = IntRect(40, top, 340, 200)))
+        assertEquals("from the column's left edge", IntOffset(40, classic.vis.y), docked.vis)
+        assertEquals(classic.copy(vis = docked.vis), docked)
+
+        val narrow = ClassicStack.layout(ask.copy(dock = IntRect(200, top, 400, 200)))
+        assertEquals("wider than the column: it ends where the column ends", 400 - MILKDROP_W, narrow.vis.x)
+        val offScreen = ClassicStack.layout(ask.copy(dock = IntRect(10, top, 110, 200)))
+        assertEquals("never left of the screen", 0, offScreen.vis.x)
     }
 }
