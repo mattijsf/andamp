@@ -7,6 +7,7 @@ import nl.mattix.andamp.modernskin.maki.Value
  * A line of text: a fixed string, or a player display such as the time or the song name. With
  * `ticker="1"` a string wider than the box scrolls.
  */
+@Suppress("LargeClass") // every display Winamp's text object shows, its two tickers and how each draws
 class Text(
     rt: SkinRuntime,
     tag: String = "text",
@@ -75,11 +76,21 @@ class Text(
     private var tickedAt = -1L
     private var skipped = 0
 
+    /**
+     * Whether the ticker holds still: the music stopped (or, for a songticker, not playing), a
+     * temporary message, or a text that fits. When it may move again it goes on from where it held
+     * (see [resume]), however long the skin rested meanwhile.
+     */
+    private var held = false
+
     @Suppress("CyclomaticComplexMethod") // one flat branch per text attribute a skin can set
     override fun setParam(
         key: String,
         value: String,
     ): Boolean {
+        // a new font, size or weight measures anew
+        widths.clear()
+        loopOf = null
         if (super.setParam(key, value)) return true
         when (key.lowercase()) {
             "text", "default" -> {
@@ -325,7 +336,18 @@ class Text(
             null
         }
 
+    /** Widths measured for the last few strings, in the font as set now; a ticker asks for the same ones on every step. */
+    private val widths = LinkedHashMap<String, Int>()
+
     fun textWidth(text: String = currentText): Int {
+        widths[text]?.let { return it }
+        val w = measure(text)
+        if (widths.size >= MAX_WIDTHS) widths.remove(widths.keys.first())
+        widths[text] = w
+        return w
+    }
+
+    private fun measure(text: String): Int {
         bitmapFont()?.let { f ->
             val advance = f.charWidth + f.hSpacing
             val colon = colonWidth ?: advance
@@ -391,7 +413,7 @@ class Text(
     fun tick(now: Long): Boolean {
         if (alternateText != null && now >= alternateUntil) {
             alternateText = null
-            rt.invalidate()
+            rt.repaint()
         }
         if (!ticker || rect.width <= 0) return shownChanged()
         val text = currentText
@@ -412,7 +434,7 @@ class Text(
         val overflow = textWidth(text) - rect.width
         return when {
             overflow <= 0 -> {
-                tickedAt = now
+                hold(now)
                 if (scroll != 0) {
                     scroll = 0
                     true
@@ -423,8 +445,7 @@ class Text(
 
             // a temporary message holds the ticker still
             !alternateText.isNullOrEmpty() -> {
-                tickedAt = now
-                false
+                hold(now)
             }
 
             songTicker -> {
@@ -446,12 +467,18 @@ class Text(
         return true
     }
 
-    /** A text's ticker: on every third poll tick it moves `tickerstep` px, pausing 4 s at each end. */
+    /**
+     * A text's ticker: on every third poll tick it moves `tickerstep` px, pausing 4 s at each end.
+     * While the music is stopped it holds at the start of the text; when it plays, it waits there
+     * its 4 s and scrolls on.
+     */
     private fun textStep(
         now: Long,
         overflow: Int,
     ): Boolean {
         val (period, pause) = pollTimer() ?: return false
+        if (rt.player.status == Player.Status.STOPPED) return holdAtStart(now, pause)
+        resume(now, period.toLong())
         var changed = false
         // ticks Windows could not deliver in time are caught up
         while (now - tickedAt >= period) {
@@ -474,22 +501,19 @@ class Text(
 
     /**
      * A songticker: a loop with no pause, or a bounce with 2 s at each end, 1 px every 39 ms while
-     * playing.
+     * playing; it holds where it is while paused or stopped.
      */
     private fun songStep(
         now: Long,
         text: String,
     ): Boolean {
-        // it holds still while stopped
-        if (rt.player.status != Player.Status.PLAYING) {
-            tickedAt = now
-            return false
-        }
+        if (rt.player.status != Player.Status.PLAYING) return hold(now)
+        resume(now, SONG_STEP_MS)
         var changed = false
         while (now - tickedAt >= SONG_STEP_MS) {
             tickedAt += SONG_STEP_MS
             if (!bounce) {
-                val period = textWidth(text + LOOP_GAP + text) - textWidth(text)
+                val period = loopPeriod(text)
                 scroll = if (period > 0) (scroll + 1) % period else 0
                 changed = true
                 continue
@@ -507,6 +531,111 @@ class Text(
             }
         }
         return changed
+    }
+
+    /** Holds the ticker where it is (see [held]); false, as nothing moved. */
+    private fun hold(now: Long): Boolean {
+        held = true
+        tickedAt = now
+        return false
+    }
+
+    /**
+     * Holds the ticker at the start of its text, to wait [startPause] poll ticks there once it moves
+     * again: a stopped skin shows the beginning of the title. True when that moved it back.
+     */
+    private fun holdAtStart(
+        now: Long,
+        startPause: Int,
+    ): Boolean {
+        hold(now)
+        val moved = scroll != 0
+        scroll = 0
+        scrollDir = 1
+        scrollPause = startPause
+        skipped = 0
+        return moved
+    }
+
+    /**
+     * Ends a hold at [now]: the ticker's clock goes on from at most one [period] back, so however
+     * long the skin rested, it takes at most one step on from where it held.
+     */
+    private fun resume(
+        now: Long,
+        period: Long,
+    ) {
+        if (!held) return
+        held = false
+        tickedAt = maxOf(tickedAt, now - period)
+    }
+
+    /** How far a looping songticker scrolls before [text] starts over: the text and the gap after it. */
+    private var loopOf: String? = null
+    private var loopIs = 0
+
+    private fun loopPeriod(text: String): Int {
+        if (text != loopOf) {
+            loopIs = textWidth(text + LOOP_GAP + text) - textWidth(text)
+            loopOf = text
+        }
+        return loopIs
+    }
+
+    /**
+     * When, in the runtime's clock at [now], this text next changes by itself with the player in
+     * [status]: a temporary message going back, or the ticker's next step (while playing or
+     * paused, a songticker only while playing; none during an end pause, which it waits out).
+     * Null when neither will.
+     */
+    internal fun nextDueAt(
+        now: Long,
+        status: Player.Status,
+    ): Long? {
+        val back = if (alternateText != null) alternateUntil else null
+        val step = nextStepAt(now, status) ?: return back
+        return if (back == null) step else minOf(back, step)
+    }
+
+    private fun nextStepAt(
+        now: Long,
+        status: Player.Status,
+    ): Long? {
+        val moves =
+            ticker && rect.width > 0 && status != Player.Status.STOPPED && (!songTicker || status == Player.Status.PLAYING)
+        if (!moves) return null
+        val text = currentText
+        val overflow = textWidth(text) - rect.width
+        return when {
+            text != lastText || tickedAt < 0 -> {
+                now
+            }
+
+            !alternateText.isNullOrEmpty() -> {
+                null
+            }
+
+            overflow <= 0 -> {
+                if (scroll != 0) now else null
+            }
+
+            // the first tick after a hold ends it (see [resume])
+            held -> {
+                now
+            }
+
+            songTicker -> {
+                tickedAt + SONG_STEP_MS * (if (bounce) scrollPause + 1 else 1)
+            }
+
+            // the polls an end pause waits, then the polls skipped before a move
+            else -> {
+                pollTimer()?.let { (period, _) ->
+                    tickedAt +
+                        period.toLong() * (scrollPause + maxOf(0, TEXT_SKIP - skipped) + 1)
+                }
+            }
+        }
     }
 
     override fun draw(out: MutableList<DrawCmd>) {
@@ -661,7 +790,7 @@ class Text(
 
     /** Scripts hear `onTextChanged` with the text now shown. */
     private fun textChanged() {
-        rt.invalidate()
+        rt.repaint()
         dispatch("ontextchanged", Value.Str(currentText))
     }
 
@@ -685,7 +814,7 @@ class Text(
                     val t = args[0].asString
                     if (t != alternateText) alternateUntil = rt.now() + ALTERNATE_MS
                     alternateText = t
-                    rt.invalidate()
+                    rt.repaint()
                 }
             }
 
@@ -719,6 +848,9 @@ class Text(
 
         /** A text ticker moves on every third poll tick: the default "Text Ticker Speed" of 1/3. */
         const val TEXT_SKIP = 2
+
+        /** Strings whose width a text keeps. */
+        private const val MAX_WIDTHS = 4
         const val ALTERNATE_MS = 1000L
         const val EMPTY_WIDTH = 32
 

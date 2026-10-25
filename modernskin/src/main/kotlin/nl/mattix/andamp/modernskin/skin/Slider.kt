@@ -127,7 +127,7 @@ class Slider(
         val clamped = p.coerceIn(low, high)
         if (clamped == position && fromUser) return
         position = clamped
-        rt.invalidate()
+        rt.repaint()
         dispatch("onsetposition", Value.Int(position))
         if (fromUser) rt.sliderMoved(this, final = false)
     }
@@ -168,7 +168,7 @@ class Slider(
     ) {
         if (dragging) {
             dragging = false
-            rt.invalidate()
+            rt.repaint()
             super.pointerUp(px, py, inside)
             // a menu the release handler opened took the touch
             if (rt.pressEnded) return
@@ -184,7 +184,7 @@ class Slider(
     override fun pointerCancel() {
         if (dragging) {
             dragging = false
-            rt.invalidate()
+            rt.repaint()
             val (px, py) = rt.lastPointer
             dispatch("onleftbuttonup", Value.Int(px), Value.Int(py))
         }
@@ -206,7 +206,8 @@ class Slider(
         val target = rt.sliderTarget(this) ?: return
         if (target != position || !synced) {
             position = target.coerceIn(low, high)
-            rt.invalidate()
+            // a thumb out of sight draws nothing; it shows where it is when it shows again
+            if (rt.shows(this)) rt.repaint()
             // the first placement is the skin starting up, not a change scripts react to
             if (synced) {
                 dispatch("onsetposition", Value.Int(position))

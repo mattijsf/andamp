@@ -122,6 +122,13 @@ class SkinRuntime(
     private var lastTitle = player.title
     private var lastVolume = player.volume
 
+    /** The player's shuffle, repeat and crossfade switches as bits 1, 2 and 4. */
+    private fun switches(): Int =
+        (if (player.shuffle) 1 else 0) or (if (player.repeat) 2 else 0) or (if (player.crossfade) 4 else 0)
+
+    // the switches at the last tick
+    private var lastSwitches = switches()
+
     // the playlist and its current entry at the last tick: a change asks for a frame
     private var lastTracks = player.tracks
     private var lastTrackIndex = player.trackIndex
@@ -176,6 +183,8 @@ class SkinRuntime(
         for (c in containers) if (c.visible) c.current?.announceVisible(true)
         ensureLayout()
         objects.filterIsInstance<AnimatedLayer>().forEach { it.startIfAuto() }
+        // the main window has the focus from the start, so the first press moves no focus
+        if (focused == null) focused = mainLayout
         relayout()
     }
 
@@ -344,12 +353,19 @@ class SkinRuntime(
         val match = gammaSets.keys.firstOrNull { it.equals(name, ignoreCase = true) } ?: return
         if (match != currentGammaSet) settingsChanged()
         currentGammaSet = match
+        gammas.clear()
         invalidate()
     }
 
+    /** Each gamma group's tint in the color theme worn now, as [gamma] answered it. */
+    private val gammas = HashMap<String, Gamma?>()
+
     fun gamma(group: String?): Gamma? {
         if (group == null) return null
-        return currentGammaSet?.let { gammaSets[it] }?.get(group.lowercase())?.takeUnless { it.isIdentity }
+        if (gammas.containsKey(group)) return gammas[group]
+        val g = currentGammaSet?.let { gammaSets[it] }?.get(group.lowercase())?.takeUnless { it.isIdentity }
+        gammas[group] = g
+        return g
     }
 
     fun color(
@@ -398,7 +414,18 @@ class SkinRuntime(
     private val opened = ArrayList<Container>()
 
     /** The windows on screen, top to bottom: the main one first. */
-    val windows: List<Layout> get() = listOfNotNull(mainLayout) + opened.mapNotNull { it.current }
+    val windows: List<Layout>
+        get() {
+            if (windowsAt != changeCount) {
+                windowsNow = listOfNotNull(mainLayout) + opened.mapNotNull { it.current }
+                windowsAt = changeCount
+            }
+            return windowsNow
+        }
+
+    // a window opens, closes or switches its layout only with a relayout, which [changeCount] counts
+    private var windowsNow: List<Layout> = emptyList()
+    private var windowsAt = -1L
 
     /** The window opened last, which Back puts away; null when only the main window is open. */
     val topWindow: Container? get() = opened.lastOrNull()
@@ -465,6 +492,21 @@ class SkinRuntime(
         focused = l
     }
 
+    /**
+     * Gives [l] the focus as a touch does: the window losing it and [l] show their alphas and
+     * pictures for it (activealpha and inactivealpha, a layer's inactiveimage) on the next frame,
+     * with nothing moved or resized, so no layout pass runs and no object hears onResize.
+     */
+    private fun takeFocus(l: Layout) {
+        if (l === focused) return
+        val had = focused?.takeIf { it in windows } ?: mainLayout
+        focused = l
+        if (had === l) return
+        had?.refreshAlphas()
+        l.refreshAlphas()
+        invalidate()
+    }
+
     /** A script's Container.show / hide: the same as a button's, into the phone's stack and out. */
     fun showContainer(
         c: Container,
@@ -525,9 +567,19 @@ class SkinRuntime(
     val stackSize: Pair<Int, Int>
         get() {
             if (needsLayout) doLayout()
-            val rects = windows.map { windowRect(it) }
-            return (rects.maxOfOrNull { it.right } ?: 0) to (rects.maxOfOrNull { it.bottom } ?: 0)
+            if (stackAt != changeCount) {
+                val rects = windows.map { windowRect(it) }
+                stackNow = (rects.maxOfOrNull { it.right } ?: 0) to (rects.maxOfOrNull { it.bottom } ?: 0)
+                stackAt = changeCount
+            }
+            return stackNow
         }
+
+    // worked out once for each change (see [changeCount]), as a frame asks for them several times
+    private var stackNow = 0 to 0
+    private var stackAt = -1L
+    private var drawnNow = 0 to 0
+    private var drawnAt = -1L
 
     /**
      * The part of the stack its windows show, in layout pixels: [stackSize] with each window cut on
@@ -539,14 +591,18 @@ class SkinRuntime(
     val drawnSize: Pair<Int, Int>
         get() {
             if (needsLayout) doLayout()
-            var right = 0
-            var bottom = 0
-            for (l in windows) {
-                val r = windowRect(l)
-                right = maxOf(right, r.left + l.contentRight())
-                bottom = maxOf(bottom, r.top + l.snappedSize().second)
+            if (drawnAt != changeCount) {
+                var right = 0
+                var bottom = 0
+                for (l in windows) {
+                    val r = windowRect(l)
+                    right = maxOf(right, r.left + l.contentRight())
+                    bottom = maxOf(bottom, r.top + l.snappedSize().second)
+                }
+                drawnNow = right to bottom
+                drawnAt = changeCount
             }
-            return right to bottom
+            return drawnNow
         }
 
     /** Total length of the playlist entries selected in the playlist editor, for `display="pe_info"`. */
@@ -706,6 +762,7 @@ class SkinRuntime(
                                 )
                         }
                     if (currentGammaSet == null) currentGammaSet = id
+                    gammas.clear()
                 }
             }
 
@@ -814,6 +871,8 @@ class SkinRuntime(
             }
         }
         container.current = container.layouts.firstOrNull { it.id == "normal" } ?: container.layouts.firstOrNull()
+        // a new main window, for what is worked out from the windows
+        changeCount++
     }
 
     /** Applies a groupdef, its inherited chain first, then the node's own attributes and children. */
@@ -1291,12 +1350,36 @@ class SkinRuntime(
 
     fun invalidate() {
         dirty = true
+        changeCount++
+    }
+
+    /**
+     * Asks for a frame for a change that moves, resizes, shows, hides and reshapes nothing: a
+     * strip's next picture, a slider's thumb, a text, a pressed button, an alpha that stays above 0.
+     * What is worked out from the windows and their shapes (see [changeCount]) is kept.
+     */
+    fun repaint() {
+        dirty = true
     }
 
     fun relayout() {
         needsLayout = true
         dirty = true
+        changeCount++
     }
+
+    /**
+     * Counts [invalidate] and [relayout] calls and layout passes: what the windows are, their shapes
+     * and the edges worked out from them ([Layout.contentRight], [drawnSize] and the like) are kept
+     * until it moves on. A visualizer, a ticker, a time or anything else that asks with [repaint]
+     * changes none of these, and gets its frame without it.
+     */
+    var changeCount = 0L
+        private set
+
+    /** Window shapes worked out so far (see [changeCount]). */
+    var shapesWorkedOut = 0L
+        internal set
 
     /** Lays the main window out now, for a script that asks where something is. */
     fun ensureLayout() {
@@ -1321,16 +1404,22 @@ class SkinRuntime(
     private fun layoutPass() {
         layoutPasses++
         needsLayout = false
+        changeCount++
+        skinMenus.clear()
         arrange()
         for (l in windows) l.layoutRoot()
-        val all = ArrayList<GuiObject>()
-
-        fun walk(o: GuiObject) {
-            all.add(o)
-            if (o is Group) o.children.forEach { walk(it) }
-        }
-        for (l in windows) walk(l)
+        val found = Found()
+        for (l in windows) found.walk(l)
+        val all = found.all
+        val changed = all.size != objects.size || all.indices.any { all[it] !== objects[it] }
         objects = all
+        sliders = found.sliders
+        texts = found.texts
+        visObjects = found.visObjects
+        progressGrids = found.grids
+        buttons = found.buttons
+        // an object gone from every window, such as a group a script dropped, is let go of
+        if (changed) lastRects.keys.removeAll { it.layoutObject?.container == null }
         // the player's sliders show where the player is from their first frame: at the load, and in
         // a window or layout shown for the first time, which no tick has synced yet
         for (o in all) if (o is Slider) o.placeIfUnsynced()
@@ -1430,22 +1519,91 @@ class SkinRuntime(
 
     // ---- per frame ---------------------------------------------------------------------------
 
-    /** Whether something moves by itself right now (a target slide or a playing animation): tick every frame. */
-    val animating: Boolean get() = moving.isNotEmpty() || animations.any { it.playing }
+    /** Whether something moves by itself right now: a target slide, or an animation playing and not paused. */
+    val animating: Boolean get() = moving.isNotEmpty() || animations.any { it.running }
+
+    /** Every object of a window, in drawing order, and apart those that move with the player or the clock. */
+    private class Found {
+        val all = ArrayList<GuiObject>()
+        val sliders = ArrayList<Slider>()
+        val texts = ArrayList<Text>()
+        val visObjects = ArrayList<Vis>()
+        val grids = ArrayList<ProgressGrid>()
+        val buttons = ArrayList<Button>()
+
+        fun walk(o: GuiObject) {
+            all.add(o)
+            when (o) {
+                is Slider -> sliders.add(o)
+                is Text -> texts.add(o)
+                is Vis -> visObjects.add(o)
+                is ProgressGrid -> grids.add(o)
+                is Button -> buttons.add(o)
+                is Group -> o.children.forEach { walk(it) }
+                else -> Unit
+            }
+        }
+    }
+
+    // the objects of the windows on screen that move with the player or the clock, from the last layout pass
+    private var sliders: List<Slider> = emptyList()
+    private var texts: List<Text> = emptyList()
+    private var visObjects: List<Vis> = emptyList()
+    private var progressGrids: List<ProgressGrid> = emptyList()
+    private var buttons: List<Button> = emptyList()
 
     /**
-     * Whether something on the skin moves by itself now and wants a frame on every display frame.
-     * Always true: the app ticks the skin on every display frame while it shows it.
+     * Whether [o] shows: in a window on screen, it and every group around it visible, not faded
+     * out, and with room to draw in.
      */
-    val framesWanted: Boolean get() = true
+    internal fun shows(o: GuiObject): Boolean {
+        val room = o.rect.width > 0 && o.rect.height > 0
+        if (!room || !o.visible || o.effectiveAlpha <= 0) return false
+        var top = o
+        while (true) {
+            val up = top.parent ?: break
+            if (!up.visible) return false
+            top = up
+        }
+        return top is Layout && windows.any { it === top }
+    }
 
     /**
-     * When, in [clock] milliseconds, something on the skin next changes by itself while it wants no
-     * frames, such as a timer firing; null when nothing will. Always null: nothing is worked out
-     * from timers, animations or tickers.
+     * Whether something on the skin moves smoothly by itself now and wants a frame on every display
+     * frame: a visualizer that shows while the music plays, and while it falls to rest after; while
+     * the music plays or is paused, also a target slide or an animation playing and not paused.
+     * Stopped, a slide or an animation steps when [nextDueAt] says. Tickers, timers, the time and
+     * progress grids never want frames: they change at the moments [nextDueAt] gives.
      */
-    @Suppress("FunctionOnlyReturningConstant") // the call the app makes for when the skin is next due; see above
-    fun nextDueAt(): Long? = null
+    val framesWanted: Boolean
+        get() {
+            val status = player.status
+            for (v in visObjects) if (v.moving(status) && shows(v)) return true
+            if (status == Player.Status.STOPPED) return false
+            return moving.isNotEmpty() || animations.any { it.running && shows(it) }
+        }
+
+    /**
+     * When, in [clock] milliseconds, something on the skin next changes by itself: a running timer
+     * firing, an animation's next frame, a target slide (now), a temporary message going back, a
+     * ticker's next step (while playing or paused, a songticker only while playing), a progress
+     * grid's next pixel while playing, or a moving visualizer's next 25 ms step. Null when nothing
+     * will. A time due already comes back as it is.
+     */
+    fun nextDueAt(): Long? {
+        val now = now()
+        if (moving.isNotEmpty()) return now
+        val status = player.status
+        var due = Long.MAX_VALUE
+        for (timer in timers) if (timer.running) due = minOf(due, timer.nextAt)
+        for (a in animations) if (a.running) due = minOf(due, a.nextAt)
+        for (text in texts) if (shows(text)) text.nextDueAt(now, status)?.let { due = minOf(due, it) }
+        for (v in visObjects) if (v.moving(status) && shows(v)) due = minOf(due, v.nextStepAt(now))
+        if (status == Player.Status.PLAYING) {
+            for (g in progressGrids) if (shows(g)) g.nextFillAt(now)?.let { due = minOf(due, it) }
+        }
+        return due.takeIf { it != Long.MAX_VALUE }
+    }
 
     /** Script steps run since the last [tick] began, across every script. */
     val scriptSteps: Long get() = scripts.sumOf { it.stepsSinceRefill.toLong() }
@@ -1454,34 +1612,43 @@ class SkinRuntime(
     var timerFires = 0L
         private set
 
-    /** Advances timers, tickers and player-driven objects. Returns true when a redraw is due. */
+    /**
+     * Advances timers, tickers and player-driven objects. Returns true when a redraw is due: when
+     * something that shows changed, a visualizer that moves only once its 25 ms step has passed.
+     */
     fun tick(): Boolean {
         val t = now()
         advanceClocks(t)
         val status = player.status
         announcePlayer(status)
         if (needsLayout) doLayout()
-        for (o in objects) {
-            when (o) {
-                is Slider -> o.sync()
-
-                is Text -> if (o.tick(t)) dirty = true
-
-                // a status picture changes only with the player's status, which announcePlayer marks the frame for
-                is Vis, is ProgressGrid -> if (status == Player.Status.PLAYING) dirty = true
-            }
-        }
+        for (o in sliders) o.sync()
+        // a text out of sight still keeps its ticker and its message up to date
+        for (o in texts) if (o.tick(t) && shows(o)) dirty = true
+        for (o in visObjects) if (o.moving(status) && o.stepDue(t) && shows(o)) dirty = true
+        for (o in progressGrids) if (o.filledChanged() && shows(o)) dirty = true
+        for (o in buttons) if (o.stateChanged() && shows(o)) dirty = true
         if (needsLayout) doLayout()
         return dirty
     }
 
+    // what is due at a tick, gathered first: what it runs may start, stop or end others
+    private val dueAnimations = ArrayList<AnimatedLayer>()
+    private val dueSlides = ArrayList<GuiObject>()
+    private val dueTimers = ArrayList<Timer>()
+
     /** Refills every script's step budget, then moves animations and target slides and fires due timers, at [t]. */
     private fun advanceClocks(t: Long) {
         for (s in scripts) s.refill()
-        for (a in animations.filter { it.playing && t >= it.nextAt }) a.advance()
-        for (o in moving.toList()) o.stepTarget(t)
-        val due = timers.filter { it.running && t >= it.nextAt }
-        for (timer in due) {
+        dueAnimations.clear()
+        for (a in animations) if (a.playing && t >= a.nextAt) dueAnimations.add(a)
+        for (a in dueAnimations) a.advance()
+        dueSlides.clear()
+        for (o in moving) dueSlides.add(o)
+        for (o in dueSlides) o.stepTarget(t)
+        dueTimers.clear()
+        for (timer in timers) if (timer.running && t >= timer.nextAt) dueTimers.add(timer)
+        for (timer in dueTimers) {
             timer.nextAt = t + maxOf(1, timer.delay)
             timerFires++
             dispatch(timer, "ontimer", emptyList())
@@ -1490,8 +1657,9 @@ class SkinRuntime(
 
     /**
      * Tells the scripts what changed in the player since the last tick, as System events: its
-     * [status], the title, the equalizer and the volume. A changed playlist or current entry asks
-     * for a frame.
+     * [status], the title, the equalizer and the volume. Each of these, the shuffle, repeat and
+     * crossfade switches, a changed playlist or current entry asks for a frame, as an equalizer
+     * curve, a button or a display may show it.
      */
     private fun announcePlayer(status: Player.Status) {
         if (status != lastStatus) {
@@ -1522,10 +1690,12 @@ class SkinRuntime(
         if (player.eqEnabled != lastEqOn) {
             lastEqOn = player.eqEnabled
             dispatchSystem("oneqchanged", Value.Int(if (lastEqOn) 1 else 0))
+            dirty = true
         }
         if (player.eqPreamp != lastPreamp) {
             lastPreamp = player.eqPreamp
             dispatchSystem("oneqpreampchanged", Value.Int((lastPreamp - EQ_FLAT).coerceIn(-127, 127)))
+            dirty = true
         }
         for (i in lastBands.indices) {
             val v = player.eqBands.getOrElse(i) { EQ_FLAT }
@@ -1533,11 +1703,19 @@ class SkinRuntime(
                 lastBands[i] = v
                 // the band and its value on getEqBand's scale, -127..127
                 dispatchSystem("oneqbandchanged", Value.Int(i), Value.Int((v - EQ_FLAT).coerceIn(-127, 127)))
+                dirty = true
             }
         }
         if (player.volume != lastVolume) {
             lastVolume = player.volume
             dispatchSystem("onvolumechanged", Value.Int(lastVolume))
+            dirty = true
+        }
+        // the buttons and config values that show shuffle, repeat and crossfade
+        val switches = switches()
+        if (switches != lastSwitches) {
+            lastSwitches = switches
+            dirty = true
         }
         // another list with the same rows shows the same (a player may build the list on every read)
         val tracks = player.tracks
@@ -1565,34 +1743,57 @@ class SkinRuntime(
         dirty = false
         val drawn = ArrayList<DrawCmd>()
         layout.draw(drawn)
-        val out =
-            drawn.mapNotNull { cmd ->
-                when (cmd) {
-                    is DrawCmd.Image -> {
-                        fitToSheet(cmd)
-                    }
-
-                    is DrawCmd.WindowStart -> {
-                        DrawCmd
-                            .WindowStart(
-                                cmd.region.mapPics(::fitToSheet) ?: Region.Op(null, emptyList(), emptyList(), emptyList()),
-                            ).also { it.owner = cmd.owner }
-                    }
-
-                    else -> {
-                        cmd
+        val out = ArrayList<DrawCmd>(drawn.size)
+        for (cmd in drawn) {
+            when (cmd) {
+                is DrawCmd.Image -> {
+                    fitToSheet(cmd)?.let {
+                        it.gamma = gamma(it.bitmap.gammaGroup)
+                        out.add(it)
                     }
                 }
-            }
-        for (cmd in out) {
-            when (cmd) {
-                is DrawCmd.Image -> cmd.gamma = gamma(cmd.bitmap.gammaGroup)
-                is DrawCmd.WindowStart -> cmd.region.pics().forEach { it.gamma = gamma(it.bitmap.gammaGroup) }
-                is DrawCmd.BitmapText -> cmd.gamma = gamma(cmd.font.gammaGroup)
-                else -> Unit
+
+                is DrawCmd.WindowStart -> {
+                    out.add(windowStart(layout, cmd))
+                }
+
+                is DrawCmd.BitmapText -> {
+                    cmd.gamma = gamma(cmd.font.gammaGroup)
+                    out.add(cmd)
+                }
+
+                else -> {
+                    out.add(cmd)
+                }
             }
         }
         return out
+    }
+
+    /** A window's shape as [windowStart] last gave it: the shape it was made from, and the command. */
+    private class Shaped(
+        val from: Region,
+        val cmd: DrawCmd.WindowStart,
+    )
+
+    private val shaped = HashMap<Layout, Shaped>()
+
+    /**
+     * The start of [layout]'s shaped window with its pictures fitted to their sheets and tinted for
+     * the color theme. A window keeps its shape until the skin changes (see [changeCount]), and a
+     * new theme changes it, so the same shape gives back the same command and region from frame to
+     * frame, which a renderer may keep what it made from.
+     */
+    private fun windowStart(
+        layout: Layout,
+        cmd: DrawCmd.WindowStart,
+    ): DrawCmd.WindowStart {
+        shaped[layout]?.takeIf { it.from === cmd.region }?.let { return it.cmd }
+        val region = cmd.region.mapPics(::fitToSheet) ?: Region.Op(null, emptyList(), emptyList(), emptyList())
+        region.pics().forEach { it.gamma = gamma(it.bitmap.gammaGroup) }
+        val fitted = DrawCmd.WindowStart(region).also { it.ownedBy = cmd.ownedBy }
+        shaped[layout] = Shaped(cmd.region, fitted)
+        return fitted
     }
 
     /**
@@ -1602,34 +1803,68 @@ class SkinRuntime(
      * outside the picture. Null when nothing is left.
      */
     private fun fitToSheet(cmd: DrawCmd.Image): DrawCmd.Image? {
-        val (sheetW, sheetH) = host.imageSize(cmd.bitmap.file) ?: return cmd
         val b = cmd.bitmap
+        if (b.fit == BitmapDef.FIT_UNKNOWN) fitPart(b)
+        val part = b.fitted?.takeIf { b.fit == BitmapDef.FIT_CUT }
+        return when {
+            b.fit == BitmapDef.FIT_NONE -> null
+            part == null -> cmd
+            else -> cut(cmd, part)
+        }
+    }
+
+    /** [cmd] drawing only [part], the share of its picture that lies on the sheet. */
+    private fun cut(
+        cmd: DrawCmd.Image,
+        part: BitmapDef,
+    ): DrawCmd.Image? {
+        val b = cmd.bitmap
+        val fw = part.w ?: b.askedW
+        val fh = part.h ?: b.askedH
+        // a stretched picture keeps its scale: the destination shrinks by the same share
+        val dw = if (fw == b.askedW) cmd.dst.width else cmd.dst.width * fw / b.askedW
+        val dh = if (fh == b.askedH) cmd.dst.height else cmd.dst.height * fh / b.askedH
+        return if (dw <= 0 || dh <= 0) {
+            null
+        } else {
+            DrawCmd
+                .Image(part, Rect(cmd.dst.left, cmd.dst.top, dw, dh), cmd.alpha)
+                .also {
+                    it.ownedBy = cmd.ownedBy
+                    it.smooth = cmd.smooth
+                }
+        }
+    }
+
+    /**
+     * Works out once how much of the part [b] names lies on its sheet (see [BitmapDef.fit]); a sheet
+     * whose size is not known yet leaves it to the next frame.
+     */
+    private fun fitPart(b: BitmapDef) {
+        val (sheetW, sheetH) = host.imageSize(b.file) ?: return
         val sw = b.w ?: (sheetW - b.x)
         val sh = b.h ?: (sheetH - b.y)
         val fw = minOf(sw, sheetW - b.x)
         val fh = minOf(sh, sheetH - b.y)
         val empty = fw <= 0 || fh <= 0
         val outside = sw <= 0 || sh <= 0
-        if (empty || outside) return null
-        val whole = fw == sw && fh == sh
-        val sized = b.w != null && b.h != null
-        if (whole && sized) return cmd
-        // a stretched picture keeps its scale: the destination shrinks by the same share
-        val dw = if (fw == sw) cmd.dst.width else cmd.dst.width * fw / sw
-        val dh = if (fh == sh) cmd.dst.height else cmd.dst.height * fh / sh
-        return if (dw <= 0 || dh <= 0) {
-            null
-        } else {
-            DrawCmd
-                .Image(
-                    BitmapDef(b.id, b.file, b.x, b.y, fw, fh, b.gammaGroup),
-                    Rect(cmd.dst.left, cmd.dst.top, dw, dh),
-                    cmd.alpha,
-                ).also {
-                    it.owner = cmd.owner
-                    it.smooth = cmd.smooth
+        b.fit =
+            when {
+                empty || outside -> {
+                    BitmapDef.FIT_NONE
                 }
-        }
+
+                fw == sw && fh == sh && b.w != null && b.h != null -> {
+                    BitmapDef.FIT_WHOLE
+                }
+
+                else -> {
+                    b.fitted = BitmapDef(b.id, b.file, b.x, b.y, fw, fh, b.gammaGroup)
+                    b.askedW = sw
+                    b.askedH = sh
+                    BitmapDef.FIT_CUT
+                }
+            }
     }
 
     // ---- pointer -----------------------------------------------------------------------------
@@ -1800,12 +2035,7 @@ class SkinRuntime(
         if (needsLayout) doLayout()
         val target = touchTarget(sx, sy) ?: return
         // the touched window takes the focus, as a press of either mouse button gives it
-        target.layoutObject?.let { l ->
-            if (l !== focused) {
-                focused = l
-                relayout()
-            }
-        }
+        target.layoutObject?.let(::takeFocus)
         if (target === menuAim?.target && target !is Slider) {
             deferred = DeferredPress(target, sx, sy)
             showPressed(target, true)
@@ -1821,7 +2051,7 @@ class SkinRuntime(
     ) {
         if (target !is Button) return
         target.pressed = pressed
-        invalidate()
+        repaint()
     }
 
     /** The object hears the button go down at a point of the stack, and the finger come in. */
@@ -1900,28 +2130,6 @@ class SkinRuntime(
         val inside = x >= r.left - touchSlop && x < r.right + touchSlop && y >= r.top - touchSlop && y < r.bottom + touchSlop
         target.pointerUp(x, y, inside)
         leaveArea(target)
-    }
-
-    fun longPress(
-        sx: Int,
-        sy: Int,
-    ) = gesture { longPressAt(sx, sy) }
-
-    private fun longPressAt(
-        sx: Int,
-        sy: Int,
-    ) {
-        if (pressEnded) return
-        val unsent = deferred?.target
-        dropDeferred()
-        val held = captured
-        val target = held ?: unsent ?: hitTest(sx, sy) ?: return
-        // the held object lets go first: a long press is no release, so no click and no drag left on
-        captured = null
-        held?.let(::cancelPress)
-        val origin = target.layoutObject?.let { windowRect(it) } ?: Rect(0, 0, 0, 0)
-        target.rightClick(sx - origin.left, sy - origin.top)
-        held?.let(::leaveArea)
     }
 
     /** A second tap of a double tap, at a point of the stack; [seq] names it as [pointerDown]'s does. */
@@ -2015,10 +2223,21 @@ class SkinRuntime(
             .asSequence()
             .filter { it.layoutObject === window && !it.ghost && touchable(it, faded = true) }
             .map { it to distance2(it, x, y) }
-            .filter { (o, d) -> d <= slop2 && hasSkinMenu(o) }
+            .filter { (o, d) -> d <= slop2 && skinMenus.getOrPut(o) { hasSkinMenu(o) } }
             .minByOrNull { it.second }
             ?.first
     }
+
+    /**
+     * What [hasSkinMenu] answered for each object since the last layout pass. The scripts' bindings
+     * are read once per object for as long as the windows keep their objects; a script that binds
+     * a variable to another object is heard at the next layout pass.
+     */
+    private val skinMenus = HashMap<GuiObject, Boolean>()
+
+    /** How many times [hasSkinMenu] read the scripts' bindings, for tests. */
+    internal var skinMenuReads = 0L
+        private set
 
     /**
      * Whether a right click on [o] can open a menu of the skin's, read from the scripts' bytecode
@@ -2030,6 +2249,7 @@ class SkinRuntime(
      * not. Each script's bytecode is read up to a limit (see [Script.walkBudget]).
      */
     internal fun hasSkinMenu(o: GuiObject): Boolean {
+        skinMenuReads++
         val chain = dispatchChain(o)
         val events = Script.rightClickEvents(o is Button)
         if (chain.any { c -> scripts.any { it.reachesMenu(c, events) } }) return true

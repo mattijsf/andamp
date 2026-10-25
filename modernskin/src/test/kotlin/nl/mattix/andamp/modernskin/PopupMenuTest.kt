@@ -168,7 +168,9 @@ class PopupMenuTest {
 
         rt.gesture { menu.pop() }
         rt.pointerUp(15, 15)
-        rt.longPress(15, 15)
+        // the host's long press: it takes the touch, then right-clicks the press's object
+        rt.pointerCancel()
+        rt.rightClick(0)
 
         assertEquals(false, button.pressed)
         assertEquals(Player.Status.STOPPED, player.status)

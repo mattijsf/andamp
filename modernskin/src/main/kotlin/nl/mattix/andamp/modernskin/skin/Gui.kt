@@ -4,6 +4,7 @@ package nl.mattix.andamp.modernskin.skin
 import nl.mattix.andamp.modernskin.maki.MakiObject
 import nl.mattix.andamp.modernskin.maki.StdApi
 import nl.mattix.andamp.modernskin.maki.Value
+import kotlin.math.ceil
 
 internal fun String.toBool() = this == "1" || equals("true", ignoreCase = true)
 
@@ -115,6 +116,27 @@ open class GuiObject(
             a = 0
         }
         return if (enabled) a else a * 6 / 10
+    }
+
+    /**
+     * Works out the alpha it and every object inside it paint with again, under a parent painting
+     * with [parentAlpha], as a layout pass does but moving nothing: for a change of the focus.
+     */
+    internal open fun refreshAlpha(parentAlpha: Int) {
+        effectiveAlpha = paintAlpha(parentAlpha)
+    }
+
+    /** What [paintAlpha] reads of the object itself: its two alphas and whether it is enabled. */
+    protected fun paintKey(): Int = (activeAlpha shl 9) or (inactiveAlpha shl 1) or (if (enabled) 1 else 0)
+
+    /**
+     * After its alphas or enabled changed with nothing moved: it and what it holds paint with the
+     * new alpha from the next frame, with no layout pass. An alpha to or from 0 ([wasZero] before)
+     * also changes its window's shape, which a faded out object is no part of.
+     */
+    protected fun alphaChanged(wasZero: Boolean) {
+        if (this is Layout) refreshAlphas() else refreshAlpha(parent?.effectiveAlpha ?: 255)
+        if (wasZero != (alpha == 0)) rt.invalidate() else rt.repaint()
     }
 
     /** `relat*` as written: "%..." is a percentage. */
@@ -370,7 +392,8 @@ open class GuiObject(
 
         fun lerp(i: Int) = to[i]?.let { Math.round(from[i] + (it - from[i]) * eased).toInt() }
         val place = listOf(x, y, w, h)
-        val wasAlpha = alpha
+        val wasZero = alpha == 0
+        val paint = paintKey()
         lerp(0)?.let { x = it }
         lerp(1)?.let { y = it }
         lerp(2)?.let { w = it }
@@ -379,8 +402,8 @@ open class GuiObject(
         // a fade only repaints; the windows are laid out again only when something moved or resized
         if (listOf(x, y, w, h) != place) {
             rt.relayout()
-        } else if (alpha != wasAlpha) {
-            rt.invalidate()
+        } else if (paintKey() != paint) {
+            alphaChanged(wasZero)
         }
         if (f >= 1.0) {
             moveStart = null
@@ -518,7 +541,13 @@ open class GuiObject(
         key: String,
         value: String,
     ) {
+        val before = attrs[key.lowercase()]
+        val paint = paintKey()
+        val wasZero = alpha == 0
         setParam(key, value)
+        // what an object keeps for itself (a layer's image) shows on the next frame too
+        if (before != value) rt.invalidate()
+        if (paintKey() != paint) alphaChanged(wasZero)
     }
 
     @Suppress("CyclomaticComplexMethod", "LongMethod") // one arm per script method of GuiObject
@@ -626,8 +655,10 @@ open class GuiObject(
 
             "setalpha" -> {
                 Value.Null.also {
+                    val paint = paintKey()
+                    val wasZero = alpha == 0
                     alpha = args[0].asInt.coerceIn(0, 255)
-                    rt.invalidate()
+                    if (paintKey() != paint) alphaChanged(wasZero)
                 }
             }
 
@@ -817,7 +848,13 @@ open class Group(
         key: String,
         value: String,
     ) {
-        if (setParam(key, value)) return
+        // every attribute lands in attrs, a xui parameter too
+        if (attrs[key.lowercase()] != value) rt.invalidate()
+        val paint = paintKey()
+        val wasZero = alpha == 0
+        val known = setParam(key, value)
+        if (paintKey() != paint) alphaChanged(wasZero)
+        if (known) return
         // a xui parameter: for the group's scripts, and for the child it exposes
         xuiParams[key] = value
         rt.deliverXuiParams(this)
@@ -927,6 +964,11 @@ open class Group(
         for (c in children) c.layout(rect, effectiveAlpha)
     }
 
+    override fun refreshAlpha(parentAlpha: Int) {
+        super.refreshAlpha(parentAlpha)
+        for (c in children) c.refreshAlpha(effectiveAlpha)
+    }
+
     /** Lays this group out to fill [area] exactly, as a frame pane; its own position attributes do not apply. */
     fun layoutIn(
         area: Rect,
@@ -941,17 +983,17 @@ open class Group(
         if (!visible) return
         // a shaped group draws like any other: only the window's shape cuts
         val bg = background?.takeIf { drawBackground }?.let { rt.bitmap(it) }?.let { DrawCmd.Image(it, rect, effectiveAlpha) }
-        bg?.let { out.add(it.also { c -> c.owner = toString() }) }
+        bg?.let { out.add(it.also { c -> c.ownedBy = this }) }
         drawChildren(out)
     }
 
     private fun drawChildren(out: MutableList<DrawCmd>) {
         // children paint only inside their group (Bento's title bar cuts its 20 px menu pictures at 18)
-        out.add(DrawCmd.Clip(rect).also { it.owner = toString() })
+        out.add(DrawCmd.Clip(rect).also { it.ownedBy = this })
         for (c in children) {
             val from = out.size
             c.draw(out)
-            for (i in from until out.size) if (out[i].owner == null) out[i].owner = c.toString()
+            for (i in from until out.size) if (out[i].ownedBy == null) out[i].ownedBy = c
         }
         out.add(DrawCmd.Unclip)
     }
@@ -1203,10 +1245,7 @@ class FrameSplitter(
         if (bar.isNotEmpty()) {
             rt.bitmap(bar)?.let {
                 out.add(
-                    DrawCmd.Image(it, long, effectiveAlpha).also { c ->
-                        c.owner =
-                            toString()
-                    },
+                    DrawCmd.Image(it, long, effectiveAlpha).also { c -> c.ownedBy = this },
                 )
             }
         }
@@ -1235,7 +1274,7 @@ class FrameSplitter(
                     long.height,
                 )
             }
-        rt.bitmap(grip)?.let { out.add(DrawCmd.Image(it, g, effectiveAlpha).also { c -> c.owner = toString() }) }
+        rt.bitmap(grip)?.let { out.add(DrawCmd.Image(it, g, effectiveAlpha).also { c -> c.ownedBy = this }) }
     }
 
     override fun makiCall(
@@ -1458,6 +1497,15 @@ class Layout(
      * ends at 164 px until the drawer slides out. The layout's height when it has none.
      */
     fun contentBottom(): Int {
+        val at = rt.changeCount
+        if (bottomAt != at) {
+            bottomNow = workOutBottom()
+            bottomAt = at
+        }
+        return bottomNow
+    }
+
+    private fun workOutBottom(): Int {
         var bottom = -1
 
         // returns whether a shaped group was found at or under [o]
@@ -1480,10 +1528,43 @@ class Layout(
      * Null for a window with no shape at all, which shows as its rectangle.
      */
     private fun windowShape(): Region? {
-        val cuts = ArrayList<Region>()
-        val r = composedRegion(cuts)
-        if (r == null && cuts.isEmpty()) return null
-        return Region.Op(r ?: Region.Box(Rect(0, 0, size.first, size.second)), emptyList(), emptyList(), cuts)
+        val at = rt.changeCount
+        if (shapeAt != at) {
+            val composed = composed()
+            shapeNow =
+                if (composed == null && cutsNow.isEmpty()) {
+                    null
+                } else {
+                    Region.Op(composed ?: Region.Box(Rect(0, 0, size.first, size.second)), emptyList(), emptyList(), cutsNow)
+                }
+            shapeAt = at
+        }
+        return shapeNow
+    }
+
+    // the window's region and edges, each with the [SkinRuntime.changeCount] it was worked out at: a
+    // frame asks for them several times, and a moving visualizer or ticker changes none of them
+    private var composedAt = -1L
+    private var composedNow: Region? = null
+    private var cutsNow: List<Region> = emptyList()
+    private var shapeAt = -1L
+    private var shapeNow: Region? = null
+    private var rightAt = -1L
+    private var rightNow = 0
+    private var bottomAt = -1L
+    private var bottomNow = 0
+
+    /** The layout's region with its children's, and the whole-window cuts, worked out once for each change. */
+    private fun composed(): Region? {
+        val at = rt.changeCount
+        if (composedAt != at) {
+            rt.shapesWorkedOut++
+            val cuts = ArrayList<Region>()
+            composedNow = composedRegion(cuts)
+            cutsNow = cuts
+            composedAt = at
+        }
+        return composedNow
     }
 
     /**
@@ -1493,17 +1574,28 @@ class Layout(
      * Its shade bar is 800 px wide, and only its background reaches past the drawers ending at 677.
      */
     fun contentRight(): Int {
-        if (desktopAlpha) return size.first
-        val shape = composedRegion(ArrayList()) as? Region.Op ?: return size.first
-        val right = shape.add.mapNotNull { it.bounds()?.right }.maxOrNull() ?: return size.first
-        if (right >= size.first) return size.first
+        val at = rt.changeCount
+        if (rightAt != at) {
+            rightNow = if (desktopAlpha) size.first else workOutRight(composed() as? Region.Op, size.first)
+            rightAt = at
+        }
+        return rightNow
+    }
+
+    private fun workOutRight(
+        shape: Region.Op?,
+        width: Int,
+    ): Int {
+        if (shape == null) return width
+        val right = shape.add.mapNotNull { it.bounds()?.right }.maxOrNull() ?: return width
+        if (right >= width) return width
         val background =
             when (val base = shape.base) {
                 is Region.Box -> base.rect.right
                 is Region.Pic -> rt.opaqueRight(base.image.bitmap, base.image.dst)
                 else -> 0
             }
-        return maxOf(right, background).coerceIn(1, size.first)
+        return maxOf(right, background).coerceIn(1, width)
     }
 
     /**
@@ -1543,7 +1635,7 @@ class Layout(
             super.draw(out)
             return
         }
-        out.add(DrawCmd.WindowStart(shape).also { it.owner = toString() })
+        out.add(DrawCmd.WindowStart(shape).also { it.ownedBy = this })
         super.draw(out)
         out.add(DrawCmd.WindowEnd)
     }
@@ -1572,6 +1664,12 @@ class Layout(
         rect = Rect(0, 0, width, height)
         effectiveAlpha = alpha
         for (c in children) c.layout(rect, effectiveAlpha)
+    }
+
+    /** The alphas of [layoutRoot] worked out again for the window's focus, with nothing moved or resized. */
+    internal fun refreshAlphas() {
+        effectiveAlpha = alpha
+        for (c in children) c.refreshAlpha(effectiveAlpha)
     }
 
     override fun hitTest(
@@ -1912,6 +2010,9 @@ class AnimatedLayer(
     private var step = 1
     var nextAt = 0L
 
+    /** Playing and not paused: it steps on at [nextAt]. A paused strip shows one frame until it resumes. */
+    val running: Boolean get() = playing && !paused
+
     override fun setParam(
         key: String,
         value: String,
@@ -2020,8 +2121,19 @@ class AnimatedLayer(
 
     fun gotoFrame(n: Int) {
         frame = n
-        rt.invalidate()
+        frameChanged()
         dispatch("onframe", Value.Int(n))
+    }
+
+    /**
+     * Asks for a frame for a new picture of the strip: only while it shows, and with its window's
+     * shape worked out again only when the strip is part of it (a sysregion).
+     */
+    private fun frameChanged() {
+        when {
+            regionOp() != 0 -> rt.invalidate()
+            rt.shows(this) -> rt.repaint()
+        }
     }
 
     fun play() {
@@ -2058,7 +2170,7 @@ class AnimatedLayer(
             }
             // back to the start without onFrame
             frame = startFrame
-            rt.invalidate()
+            frameChanged()
         } else {
             gotoFrame(frame + step)
         }
@@ -2232,6 +2344,31 @@ open class Button(
     open val isActive: Boolean
         get() = activated || rt.actionState(action, param)
 
+    /**
+     * Whether it lights up for a window the app may open or close without the skin: a TOGGLE. A
+     * switch of the player or a config value that changes asks for a frame itself.
+     */
+    internal val followsHost: Boolean get() = action.equals("TOGGLE", ignoreCase = true)
+
+    /** The state its picture shows: active (1) or not (0). */
+    internal open val shownState: Int get() = if (isActive) 1 else 0
+
+    /** [shownState] as the last frame drew it, or as last heard of; null before the first frame. */
+    private var drawnState: Int? = null
+
+    /**
+     * Whether [shownState] moved, for a window of the app (see [followsHost]), since the last frame
+     * drew the button or this last answered. Each change is told once.
+     */
+    internal fun stateChanged(): Boolean {
+        if (!followsHost) return false
+        val was = drawnState ?: return false
+        val now = shownState
+        if (now == was) return false
+        drawnState = now
+        return true
+    }
+
     override fun draw(out: MutableList<DrawCmd>) {
         if (!visible) return
         if (borders) drawFramedButton(rt, out, rect, effectiveAlpha, pressed)
@@ -2257,6 +2394,7 @@ open class Button(
                 ),
             )
         }
+        drawnState = shownState
         val img = (if (pressed) picture(downImage) else null) ?: (if (isActive) activeImage else null) ?: picture(image) ?: return
         val bmp = rt.bitmap(img) ?: return
         // a centered picture sits in a box the normal picture's size, 1 px right and down while
@@ -2287,7 +2425,7 @@ open class Button(
         py: Int,
     ) {
         pressed = true
-        rt.invalidate()
+        rt.repaint()
         super.pointerDown(px, py)
     }
 
@@ -2297,7 +2435,7 @@ open class Button(
         inside: Boolean,
     ) {
         pressed = false
-        rt.invalidate()
+        rt.repaint()
         super.pointerUp(px, py, inside)
         // a menu the release handler opened took the touch
         if (inside && !rt.pressEnded) click()
@@ -2305,7 +2443,7 @@ open class Button(
 
     override fun pointerCancel() {
         pressed = false
-        rt.invalidate()
+        rt.repaint()
     }
 
     open fun click() {
@@ -2331,7 +2469,7 @@ open class Button(
             "setactivated" -> {
                 Value.Null.also {
                     activated = args[0].truthy
-                    rt.invalidate()
+                    rt.repaint()
                     dispatch("onactivate", Value.Int(if (activated) 1 else 0))
                 }
             }
@@ -2341,7 +2479,10 @@ open class Button(
             }
 
             "setactivatednocallback" -> {
-                Value.Null.also { activated = args[0].truthy }
+                Value.Null.also {
+                    activated = args[0].truthy
+                    rt.repaint()
+                }
             }
 
             else -> {
@@ -2488,6 +2629,8 @@ class NStatesButton(
 
     override val isActive: Boolean get() = valueOf(state) != 0
 
+    override val shownState: Int get() = state
+
     /** The picture with the state number appended, missing or not. */
     override fun picture(base: String?): String? = if (autoElements && states >= 2) base?.let { "$it$state" } else base
 
@@ -2564,21 +2707,72 @@ class ProgressGrid(
         return super.setParam(key, value)
     }
 
+    /** Whether it fills from top or bottom, so its height grows; else its width does. */
+    private val upright: Boolean get() = orientation == "top" || orientation == "bottom"
+
+    /** The length of its filled part, in layout pixels; -1 while it shows none (stopped, no length). */
+    fun filled(): Int {
+        val p = rt.player
+        if (p.status == Player.Status.STOPPED || p.lengthMs <= 0) return -1
+        val f = (p.positionMs.toFloat() / p.lengthMs).coerceIn(0f, 1f)
+        return ((if (upright) rect.height else rect.width) * f).toInt()
+    }
+
+    /** [filled] as the last frame drew it. */
+    private var drawnFilled = -1
+
+    /** Whether its filled part is not what the last frame drew. */
+    internal fun filledChanged(): Boolean = filled() != drawnFilled
+
+    /** The play position and filled length [nextFillAt] last saw, and the time it gave for them. */
+    private var askedPosition = -1
+    private var askedFilled = -1
+    private var askedDue = 0L
+
+    /**
+     * When, in the runtime's clock at [now], its filled part next grows while the song plays on: at
+     * the first whole second of play from which it shows a pixel more, when the time display moves
+     * on too, so one frame shows both. Null while it does not play or is full. A position that
+     * still stands where it stood when that time came (a player waiting for its sound) asks again
+     * a second later.
+     */
+    internal fun nextFillAt(now: Long): Long? {
+        val p = rt.player
+        val length = if (upright) rect.height else rect.width
+        if (p.status != Player.Status.PLAYING || p.lengthMs <= 0 || length <= 0) return null
+        val f = filled()
+        if (f >= length) return null
+        val position = p.positionMs
+        if (position != askedPosition || f != askedFilled) {
+            // the first position that fills one pixel more, never the one playing now, at a whole second
+            val next = ceil((f + 1).toDouble() * p.lengthMs / length).toLong()
+            val second = (next + SECOND_MS - 1) / SECOND_MS * SECOND_MS
+            askedPosition = position
+            askedFilled = f
+            askedDue = now + maxOf(1L, second - position)
+        } else if (now >= askedDue) {
+            askedDue = now + SECOND_MS
+        }
+        return askedDue
+    }
+
     override fun draw(out: MutableList<DrawCmd>) {
         if (!visible) return
-        val p = rt.player
-        if (p.status == Player.Status.STOPPED || p.lengthMs <= 0) return
-        val f = (p.positionMs.toFloat() / p.lengthMs).coerceIn(0f, 1f)
-        val w = (rect.width * f).toInt()
-        val h = (rect.height * f).toInt()
+        val n = filled()
+        drawnFilled = n
+        if (n < 0) return
         val part =
             when (orientation) {
-                "left" -> Rect(rect.right - w, rect.top, w, rect.height)
-                "top" -> Rect(rect.left, rect.top, rect.width, h)
-                "bottom" -> Rect(rect.left, rect.bottom - h, rect.width, h)
-                else -> Rect(rect.left, rect.top, w, rect.height)
+                "left" -> Rect(rect.right - n, rect.top, n, rect.height)
+                "top" -> Rect(rect.left, rect.top, rect.width, n)
+                "bottom" -> Rect(rect.left, rect.bottom - n, rect.width, n)
+                else -> Rect(rect.left, rect.top, n, rect.height)
             }
         drawIn(out, part)
+    }
+
+    private companion object {
+        const val SECOND_MS = 1000L
     }
 }
 

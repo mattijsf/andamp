@@ -27,7 +27,25 @@ class BitmapDef(
     val w: Int?,
     val h: Int?,
     val gammaGroup: String? = null,
-)
+) {
+    /**
+     * This part cut to what its file holds (see [SkinRuntime.draw]), worked out once: [FIT_UNKNOWN]
+     * until then, [FIT_WHOLE] when the file holds all of it at the size it names, [FIT_CUT] with the
+     * part the file holds in [fitted] and the size asked for in [askedW] x [askedH], [FIT_NONE] when
+     * nothing of it lies on the file.
+     */
+    internal var fit = FIT_UNKNOWN
+    internal var fitted: BitmapDef? = null
+    internal var askedW = 0
+    internal var askedH = 0
+
+    internal companion object {
+        const val FIT_UNKNOWN = 0
+        const val FIT_WHOLE = 1
+        const val FIT_CUT = 2
+        const val FIT_NONE = 3
+    }
+}
 
 /**
  * A color theme's tint for one gamma group: per-channel factors in 1/4096 steps around 1, an
@@ -120,8 +138,19 @@ enum class VAlign { TOP, CENTER, BOTTOM }
 
 /** What the renderer draws, in order, in layout pixels. */
 sealed class DrawCmd {
+    /** The object that drew this; its name is made only when [owner] is read. */
+    internal open var ownedBy: Any? = null
+
     /** The object that drew this, for tracing a wrong pixel back to the skin's XML. */
-    var owner: String? = null
+    var owner: String?
+        get() =
+            ownedBy?.let {
+                ownerNamesBuilt++
+                it.toString()
+            }
+        set(value) {
+            ownedBy = value
+        }
 
     /** A bitmap, or the part of it [src] names, stretched to [dst]. */
     class Image(
@@ -150,9 +179,20 @@ sealed class DrawCmd {
         val region: Region,
     ) : DrawCmd()
 
-    object WindowEnd : DrawCmd()
+    object WindowEnd : DrawCmd() {
+        // one object shared by every window of every skin: it keeps no owner, which would keep
+        // that object's skin in memory for as long as the app runs
+        override var ownedBy: Any?
+            get() = null
+            set(value) = Unit
+    }
 
     companion object {
+        /** Owner names made so far, by reading [owner]. */
+        @Volatile
+        var ownerNamesBuilt = 0L
+            internal set
+
         /**
          * Whether a pixel of a region picture marks a cut: opaque, whatever its color. Winamp
          * Modern's main window marks its corners in black, its shaded playlist in white.
@@ -199,7 +239,12 @@ sealed class DrawCmd {
         val rect: Rect,
     ) : DrawCmd()
 
-    object Unclip : DrawCmd()
+    /** The end of the last [Clip]; like [WindowEnd], one shared object that keeps no owner. */
+    object Unclip : DrawCmd() {
+        override var ownedBy: Any?
+            get() = null
+            set(value) = Unit
+    }
 
     /**
      * A small ARGB picture ([w] x [h], rows top first) stretched over [rect] with nearest pixels: the
