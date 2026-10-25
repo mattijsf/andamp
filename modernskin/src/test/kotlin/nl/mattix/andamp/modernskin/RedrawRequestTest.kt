@@ -8,12 +8,17 @@ import nl.mattix.andamp.modernskin.skin.FontDef
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinHost
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
+import nl.mattix.andamp.modernskin.skin.ZipSkinFiles
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
 
-/** A frame is asked for only when something shown changed: not for a status picture or a time that did not move. */
+/**
+ * A frame is asked for only when something shown changed: not for a status picture or a time that
+ * did not move, nor for a text or a strip frame a script sets again.
+ */
 class RedrawRequestTest {
     private fun files(
         body: String,
@@ -214,5 +219,107 @@ class RedrawRequestTest {
         assertEquals(passes, skin.layoutPasses)
         redraws(40, skin)
         assertTrue("faded out", skin.draw().filterIsInstance<DrawCmd.Fill>().all { it.alpha == 0 })
+    }
+
+    @Test
+    fun `a script writing the text a text shows again asks for no frame`() {
+        val skin =
+            runtime(
+                """<text id="label" text="192" x="0" y="0" w="60" h="12"/>""" +
+                    """<text id="clock" display="time" x="0" y="20" w="60" h="12"/>""",
+            )
+        redraws(5, skin)
+        val label = checkNotNull(skin.mainLayout?.findObject("label"))
+        val clock = checkNotNull(skin.mainLayout?.findObject("clock"))
+
+        label.makiCall("settext", listOf(Value.Str("192")))
+        label.setXmlParam("text", "192")
+        assertEquals("the same text by setText and by setXmlParam", 0, redraws(1, skin))
+        label.makiCall("settext", listOf(Value.Str("320")))
+        assertEquals("a new text", 1, redraws(1, skin))
+
+        clock.setXmlParam("text", "00:03")
+        assertEquals("a script's text over the time display", 1, redraws(1, skin))
+        clock.setXmlParam("text", "00:03")
+        clock.makiCall("settext", listOf(Value.Str("00:03")))
+        assertEquals(0, redraws(1, skin))
+    }
+
+    @Test
+    fun `a strip sent to the frame it shows asks for no frame`() {
+        val skin = runtime("""<animatedlayer id="vu" x="0" y="0" w="10" h="10"/>""")
+        redraws(5, skin)
+        val vu = checkNotNull(skin.mainLayout?.findObject("vu"))
+
+        vu.makiCall("gotoframe", listOf(Value.Int(0)))
+        assertEquals("the frame it shows", 0, redraws(1, skin))
+        vu.makiCall("gotoframe", listOf(Value.Int(3)))
+        assertEquals("another frame", 1, redraws(1, skin))
+        vu.makiCall("gotoframe", listOf(Value.Int(3)))
+        assertEquals(0, redraws(1, skin))
+    }
+
+    @Test
+    fun `a playing strip that starts where it ends asks for no frame when it goes round`() {
+        val skin =
+            runtime(
+                """<animatedlayer id="still" x="0" y="0" w="10" h="10" start="0" end="0" autoplay="1"/>""",
+            )
+        redraws(5, skin)
+        val still = checkNotNull(skin.mainLayout?.findObject("still"))
+        assertTrue("it keeps playing", still.makiCall("isplaying", emptyList())?.truthy == true)
+
+        assertEquals("ten 200 ms steps in 2 s", 0, redraws(125, skin))
+    }
+
+    @Test
+    fun `a text fading to a target draws the alphas on the way`() {
+        val skin = runtime("""<text id="clock" display="time" x="0" y="0" w="60" h="12"/>""")
+        player.play()
+        player.pause()
+        redraws(5, skin)
+        val clock = checkNotNull(skin.mainLayout?.findObject("clock"))
+
+        // Winamp2000SP4's pauseblink.m: to 0 over 0.6 s
+        clock.makiCall("settargeta", listOf(Value.Int(0)))
+        clock.makiCall("settargetspeed", listOf(Value.Num(0.6)))
+        clock.makiCall("gototarget", emptyList())
+        val drawn = ArrayList<Int>()
+        repeat(40) {
+            t += 16
+            if (skin.tick()) {
+                drawn +=
+                    skin
+                        .draw()
+                        .filterIsInstance<DrawCmd.Text>()
+                        .map { it.alpha }
+                        .distinct()
+                        .single()
+            }
+        }
+        assertTrue("a frame for nearly every display frame of the fade: ${drawn.size}", drawn.size >= 36)
+        assertTrue("alphas between the ends: $drawn", drawn.count { it in 32..224 } >= 15)
+        assertEquals(0, drawn.last())
+        assertEquals("falling all the way", drawn.sortedDescending(), drawn)
+    }
+
+    @Test
+    fun `Winamp2000SP4 paused asks for a frame only when its time blinks`() {
+        val files = ZipSkinFiles(File(localResource("/Winamp2000SP4.wal").toURI()))
+        val skin =
+            SkinRuntime(files, TestHost(files), player).apply {
+                clock = { t }
+                load()
+            }
+        player.play()
+        redraws(200, skin)
+        player.pause()
+        redraws(200, skin)
+
+        // its wa2songtimer.maki writes the time (or "  :  " in the dark second) 20 times a second,
+        // and system.maki writes its bitrate and frequency 10 times a second; the time shows and
+        // goes once a second
+        val asked = redraws(625, skin) // 10 s
+        assertTrue("about 10 frames in 10 s, not 220: $asked", asked in 9..11)
     }
 }

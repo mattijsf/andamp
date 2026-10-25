@@ -94,8 +94,7 @@ class Text(
         if (super.setParam(key, value)) return true
         when (key.lowercase()) {
             "text", "default" -> {
-                staticText = value
-                textChanged()
+                changeText { staticText = value }
             }
 
             "display" -> {
@@ -780,18 +779,27 @@ class Text(
         val k = key.lowercase()
         if ((k == "text" || k == "default") && !display.isNullOrEmpty()) {
             attrs[k] = value
-            scriptText = value
-            alternateText = null
-            textChanged()
+            changeText {
+                scriptText = value
+                alternateText = null
+            }
             return
         }
         super.setXmlParam(key, value)
     }
 
-    /** Scripts hear `onTextChanged` with the text now shown. */
-    private fun textChanged() {
-        rt.repaint()
-        dispatch("ontextchanged", Value.Str(currentText))
+    /**
+     * Runs [change] to what the text holds. It asks for a frame only when the text shown is now
+     * different, so a script that writes the same text again on a timer (Winamp2000SP4's time
+     * and bitrate, 20 and 10 times a second) asks for none. Scripts hear `onTextChanged` with the
+     * text now shown either way.
+     */
+    private inline fun changeText(change: () -> Unit) {
+        val before = currentText
+        change()
+        val now = currentText
+        if (now != before) rt.repaint()
+        dispatch("ontextchanged", Value.Str(now))
     }
 
     override fun makiCall(
@@ -801,10 +809,11 @@ class Text(
         when (name) {
             "settext" -> {
                 Value.Null.also {
-                    if (display.isNullOrEmpty()) staticText = args[0].asString else scriptText = args[0].asString
-                    // new text also ends a temporary message
-                    alternateText = null
-                    textChanged()
+                    changeText {
+                        if (display.isNullOrEmpty()) staticText = args[0].asString else scriptText = args[0].asString
+                        // new text also ends a temporary message
+                        alternateText = null
+                    }
                 }
             }
 
