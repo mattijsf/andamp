@@ -469,15 +469,41 @@ class ReferenceRenderTest {
         val t0 = System.nanoTime()
         rt.load()
         if (System.getProperty("timing") != null) {
-            // -Dtiming.reps=n frames for each measure (default 50); -Djfr=<file> records a profile of the run
+            // -Dtiming.reps=n frames for each measure (default 50); -Djfr=<file> records a profile of the run.
+            // The music plays and the clock moves one display frame before each frame, so every frame
+            // measured shows something new. A quarter as many frames first warm the code up; of four
+            // rounds the fastest counts, the one least disturbed by garbage collection or other work
             val reps = System.getProperty("timing.reps")?.toIntOrNull() ?: 50
             val t1 = System.nanoTime()
-            repeat(reps) { rt.drawWindows() }
-            val t2 = System.nanoTime()
-            repeat(reps) { rt.tick() }
+            val clock = clockOf(rt)
+            player.play()
+            repeat(reps / 4) {
+                clock.now += TestClock.FRAME
+                rt.tick()
+                rt.drawWindows()
+            }
+            var tickNanos = Long.MAX_VALUE
+            var drawNanos = Long.MAX_VALUE
+            repeat(TIMING_ROUNDS) {
+                var ticks = 0L
+                var draws = 0L
+                repeat(reps) {
+                    clock.now += TestClock.FRAME
+                    val a = System.nanoTime()
+                    rt.tick()
+                    val b = System.nanoTime()
+                    rt.drawWindows()
+                    ticks += b - a
+                    draws += System.nanoTime() - b
+                }
+                tickNanos = minOf(tickNanos, ticks)
+                drawNanos = minOf(drawNanos, draws)
+            }
+            player.stop()
+            rt.tick()
             println(
-                "TIMING ${sc.name} load=${(t1 - t0) / 1_000_000} ms drawWindows=${(t2 - t1) / 1000 / reps} us/frame " +
-                    "tick=${(System.nanoTime() - t2) / 1000 / reps} us, over $reps frames",
+                "TIMING ${sc.name} load=${(t1 - t0) / 1_000_000} ms drawWindows=${drawNanos / 1000 / reps} us/frame " +
+                    "tick=${tickNanos / 1000 / reps} us, best of $TIMING_ROUNDS rounds of $reps frames",
             )
         }
         sc.theme?.let { rt.selectGammaSet(it) }
@@ -903,6 +929,9 @@ class ReferenceRenderTest {
         /** The reference VM's work area in physical pixels: 1024x768 at 122 % scaling, less the taskbar. */
         const val VM_SCREEN_W = 1248
         const val VM_SCREEN_H = 853
+
+        /** Rounds of -Dtiming frames; the fastest counts. */
+        const val TIMING_ROUNDS = 4
 
         /** -Dsysfonts=<dir>: Windows fonts by file name, e.g. the reference VM's (Microsoft's; local only, never committed). */
         val SYS_FONTS: File? = System.getProperty("sysfonts")?.let { File(it) }

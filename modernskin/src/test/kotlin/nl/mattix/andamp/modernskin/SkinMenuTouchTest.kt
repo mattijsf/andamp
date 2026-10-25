@@ -196,6 +196,12 @@ class SkinMenuTouchTest {
         rt.pointerUp(x, y)
     }
 
+    /** The host's long press on touch [seq]: it takes the touch, then right-clicks what the touch landed on. */
+    private fun longPress(seq: Int) {
+        rt.pointerCancel()
+        rt.rightClick(seq)
+    }
+
     @Test
     fun `a menu from a release handler shows, and the button gives no click after it`() {
         script(button, "onleftbuttonup")
@@ -233,28 +239,29 @@ class SkinMenuTouchTest {
     }
 
     @Test
-    fun `after a menu ends the press a long press does nothing, and the next touch works as usual`() {
+    fun `after a menu ends the press the rest of it does nothing, and the next touch works as usual`() {
         script(button, "onrightbuttonup")
         val x = button.rect.left + 2
         val y = button.rect.top + 2
-        rt.pointerDown(x, y)
+        rt.pointerDown(x, y, seq = 1)
         rt.gesture { menu.makiCall("popatmouse", emptyList()) }
 
-        rt.longPress(x, y)
-        assertEquals("the long press after the menu opened none", 1, shown.size)
+        rt.pointerMove(x + 10, y)
+        rt.pointerCancel()
+        assertEquals("the rest of the touch after the menu opened none", 1, shown.size)
 
-        rt.pointerDown(x, y)
+        rt.pointerDown(x, y, seq = 2)
         assertTrue("a press held back from the button shows it pressed", button.pressed)
-        rt.longPress(x, y)
+        longPress(2)
         assertEquals("a new touch's long press opens the skin's menu", 2, shown.size)
         assertFalse("a long press lets go of the button", button.pressed)
         assertTrue("the button heard nothing of that press: $heard", heard.isEmpty())
 
         // the button hears a press once the finger moves beyond reach
-        rt.pointerDown(x, y)
+        rt.pointerDown(x, y, seq = 3)
         rt.pointerMove(x + 10, y)
         assertEquals(listOf("enter"), heard)
-        rt.longPress(x + 10, y)
+        longPress(3)
         assertEquals(3, shown.size)
         assertFalse("a long press lets go of the button it pressed", button.pressed)
         assertEquals(listOf("enter", "leave"), heard)
@@ -327,8 +334,8 @@ class SkinMenuTouchTest {
         }
         val x = hidden.rect.left + 5
         val y = hidden.rect.top + 5
-        rt.pointerDown(x, y)
-        rt.longPress(x, y)
+        rt.pointerDown(x, y, seq = 1)
+        longPress(1)
         assertEquals(1, shown.size)
     }
 
@@ -341,8 +348,8 @@ class SkinMenuTouchTest {
         assertEquals(screen, rt.hitTest(40, 135))
 
         assertEquals(trigger, rt.touchTarget(40, 135))
-        rt.pointerDown(40, 135)
-        rt.longPress(40, 135)
+        rt.pointerDown(40, 135, seq = 1)
+        longPress(1)
         assertEquals(1, shown.size)
     }
 

@@ -697,9 +697,11 @@ class WalEngineTest {
                 ?.wantsFrames,
         )
         assertTrue("asked as the frame was made", asked.get() > 0)
+        // the runtime as the source: a stopped skin with nothing that moves wants none
+        val wanted = onEngine { it.framesWanted }
         engine.fit(phone)
-        awaitThat("the runtime, as the source, says it wants frames") { engine.frame?.layout?.wantsFrames == true }
-        assertEquals(true, engine.frame?.wantsFrames)
+        awaitThat("the runtime, as the source, says whether it wants frames") { engine.frame?.layout?.wantsFrames == wanted }
+        assertEquals(wanted, engine.frame?.wantsFrames)
     }
 
     @Test(timeout = 20_000)

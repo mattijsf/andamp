@@ -51,6 +51,32 @@ class Vis(
     private val speed = FloatArray(COLUMNS) { PEAK_START_SPEED }
     private var lastFrameAt = -1L
 
+    /** When the oscilloscope was last drawn, and whether it showed the flat line of no waveform then. */
+    private var scopeAt = -1L
+    private var scopeFlat = true
+
+    /** When its picture last moved on: the last 25 ms step of the bars, or the oscilloscope's last draw. */
+    private val movedAt: Long get() = if (mode == 2) scopeAt else lastFrameAt
+
+    /**
+     * Whether its picture still moves with the player in [status]: while the music plays, and after
+     * it stops or pauses until the bars and peaks have fallen to the bottom, or the oscilloscope
+     * has drawn its flat line once. A mode that shows nothing never moves.
+     */
+    internal fun moving(status: Player.Status): Boolean =
+        when {
+            mode !in 1..2 -> false
+            status == Player.Status.PLAYING -> true
+            mode == 2 -> !scopeFlat
+            else -> bars.any { it > 0f } || peak.any { it > 0f }
+        }
+
+    /** Whether a 25 ms step has passed since its picture last moved on, at [now]. */
+    internal fun stepDue(now: Long): Boolean = movedAt < 0 || now - movedAt >= FRAME_MS
+
+    /** When its next 25 ms step is due, in the runtime's clock; [now] when one is due already. */
+    internal fun nextStepAt(now: Long): Long = if (movedAt < 0) now else maxOf(now, movedAt + FRAME_MS)
+
     @Suppress("CyclomaticComplexMethod") // one flat branch per vis attribute a skin can set
     override fun setParam(
         key: String,
@@ -220,6 +246,8 @@ class Vis(
      */
     private fun paintScope(px: IntArray) {
         val wave = rt.player.waveform()
+        scopeAt = rt.now()
+        scopeFlat = wave.isEmpty()
         val colors = IntArray(SCOPE_COLORS) { tint(scopeColors[it]).value or OPAQUE }
         var last = -1
         for (x in 0 until WIDTH) {
@@ -268,7 +296,10 @@ class Vis(
             }
 
             "nextmode" -> {
-                Value.Null.also { mode = if (mode >= 2) 0 else mode + 1 }
+                Value.Null.also {
+                    mode = if (mode >= 2) 0 else mode + 1
+                    rt.invalidate()
+                }
             }
 
             else -> {

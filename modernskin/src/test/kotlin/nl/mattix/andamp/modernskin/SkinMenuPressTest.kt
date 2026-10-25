@@ -312,8 +312,8 @@ class SkinMenuPressTest {
         assertFalse("a double tap", button.pressed)
 
         hold(seq = 6)
-        rt.longPress(x, y)
-        assertFalse("a long press", button.pressed)
+        rt.pointerCancel()
+        assertFalse("the host's long press", button.pressed)
 
         hold(seq = 7)
         checkNotNull(rt.mainContainer).switchTo("shade")
