@@ -189,6 +189,16 @@ class WalEngineRestTest {
             done.get(5, TimeUnit.SECONDS)
         }
 
+    /**
+     * Whether [run]'s engine has a wake set, read on its thread between two tasks: each task sets
+     * the wake again behind itself, which another thread can see half done.
+     */
+    private fun wakeSet(run: Run): Boolean {
+        val set = CompletableFuture<Boolean>()
+        run.engine.postAlways { set.complete(run.engine.wakeSet) }
+        return set.get(5, TimeUnit.SECONDS)
+    }
+
     /** Moves the clock on by [ms], one at a time, letting [run]'s engine thread catch up with each. */
     private fun advance(
         run: Run,
@@ -279,14 +289,14 @@ class WalEngineRestTest {
         val run = resting("rests", timer)
         run.engine.awake = true
         settle(run)
-        assertTrue("awake, a wake is set", run.engine.wakeSet)
+        assertTrue("awake, a wake is set", wakeSet(run))
 
         run.engine.awake = false
 
-        assertFalse("resting, it is dropped at once", run.engine.wakeSet)
+        assertFalse("resting, it is dropped", wakeSet(run))
         advance(run, 500)
         assertEquals(0, run.engine.wakes)
-        assertFalse("and none is set again", run.engine.wakeSet)
+        assertFalse("and none is set again", wakeSet(run))
 
         run.engine.awake = true
         advance(run, 1)
@@ -299,7 +309,7 @@ class WalEngineRestTest {
         val run = resting("menu", timer)
         run.engine.awake = true
         settle(run)
-        assertTrue(run.engine.wakeSet)
+        assertTrue(wakeSet(run))
 
         val heard = openMenu(run.engine)
         val menu = awaitMenu(run.engine)
@@ -311,7 +321,7 @@ class WalEngineRestTest {
         settle(run)
         assertTrue("what fell due under it wakes the skin once after: ${run.engine.wakes}", run.engine.wakes <= 1)
         advance(run, 1)
-        assertTrue("and the wakes go on", run.engine.wakeSet)
+        assertTrue("and the wakes go on", wakeSet(run))
     }
 
     @Test(timeout = 20_000)
@@ -354,12 +364,48 @@ class WalEngineRestTest {
         val holding = CountDownLatch(1)
         engine.post(publish = false) { holding.await() }
 
+        // the tick finds a new song, which it would publish by itself
+        player.title = "Another song"
         engine.pointerMove(15, 15)
         engine.requestTick()
         holding.countDown()
         onEngine { }
 
         assertEquals(before + 1, main.frames.get())
+        player.title = "A third song"
+        engine.requestTick()
+        onEngine { }
+        assertEquals("a new song alone is a frame", before + 2, main.frames.get())
+    }
+
+    @Test(timeout = 20_000)
+    fun `a change the skin shows while a tick runs is ticked again after it`() {
+        val hold = AtomicBoolean(false)
+        val inTick = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val run = resting("again") { WalIdle(framesWanted = false, nextDueAt = null, stopped = true) }
+        // called at the end of a tick, which has read the player by then
+        run.engine.onTicked = { _, _, _, _, _ ->
+            if (hold.getAndSet(false)) {
+                inTick.countDown()
+                release.await(5, TimeUnit.SECONDS)
+            }
+        }
+        run.engine.awake = true
+        run.engine.requestTick()
+        settle(run)
+        val frames = run.frames.get()
+
+        hold.set(true)
+        run.engine.requestTick(WalCause.KEY)
+        assertTrue("the tick runs", inTick.await(5, TimeUnit.SECONDS))
+        player.title = "Another song"
+        run.engine.requestTick(WalCause.KEY)
+        release.countDown()
+        settle(run)
+
+        assertEquals("the new song is shown, with nothing else to tick the resting skin", frames + 1, run.frames.get())
+        assertFalse("and nothing is set to wake it", wakeSet(run))
     }
 
     @Test(timeout = 20_000)

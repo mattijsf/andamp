@@ -116,12 +116,8 @@ internal class WalEngine(
     private val wake =
         Runnable {
             if (!awake || host.menus.menu != null || !tickWaiting.compareAndSet(false, true)) return@Runnable
-            try {
-                wakes++
-                guarded("tick") { tick(WalCause.WAKE) }
-            } finally {
-                tickWaiting.set(false)
-            }
+            wakes++
+            runTick(WalCause.WAKE)
         }
 
     // the rule the wakes follow, and its clocks; touched on the engine thread, apart from cancel
@@ -186,7 +182,9 @@ internal class WalEngine(
     var awake = false
         set(value) {
             field = value
-            if (value) handler.post(planWake) else rest.cancel()
+            // dropped at once, and again on the engine thread behind a wake it may be setting now
+            if (!value) rest.cancel()
+            handler.post(planWake)
         }
 
     /** The box applied to the runtime last; see [fit]. */
@@ -210,6 +208,25 @@ internal class WalEngine(
 
     private val published = AtomicReference<WalFrame?>(null)
     private val tickWaiting = AtomicBoolean(false)
+
+    /** Counts the ticks asked for a change the skin shows ([WalCause.KEY]); see [runTick]. */
+    private val keyAsks = AtomicInteger()
+
+    /**
+     * Runs the tick that holds [tickWaiting] for a cause, then lets it go. A tick asked for a change
+     * the skin shows after this one started asks for one more, so a resting skin, which nothing
+     * else ticks, still shows the change.
+     */
+    private val runTick: (WalCause) -> Unit = { cause ->
+        val asked = keyAsks.get()
+        try {
+            guarded("tick") { tick(cause) }
+        } finally {
+            tickWaiting.set(false)
+            if (keyAsks.get() != asked) requestTick(WalCause.KEY)
+        }
+    }
+
     private val moveWaiting = AtomicReference<Pair<Int, Int>?>(null)
 
     /** The start has been reported, or the engine closed before it was: nothing more is reported. */
@@ -415,20 +432,19 @@ internal class WalEngine(
 
     /**
      * Asks for a tick, which the timing log names by [cause]. One running or waiting covers this
-     * request, so a slow tick has none queued behind it, and none is asked while a menu is up.
+     * request, so a slow tick has none queued behind it, and none is asked while a menu is up. A
+     * change the skin shows ([WalCause.KEY]) that comes while a tick runs gets one more tick after
+     * it, as that tick may have read the player before the change.
      */
     fun requestTick(cause: WalCause = WalCause.TICK) {
         // the skin stands still under its menu, and no ticks wait to run in a burst after it
         if (host.menus.menu != null) return
+        if (cause == WalCause.KEY) keyAsks.incrementAndGet()
         if (!tickWaiting.compareAndSet(false, true)) return
         publishersWaiting.incrementAndGet()
         handler.post {
             publishersWaiting.decrementAndGet()
-            try {
-                guarded("tick") { tick(cause) }
-            } finally {
-                tickWaiting.set(false)
-            }
+            runTick(cause)
         }
     }
 

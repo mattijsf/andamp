@@ -114,7 +114,6 @@ internal fun rememberWalLayerParts(
     covered: () -> Boolean,
     compact: Boolean = false,
 ): WalLayerParts {
-    // a window of the app over the whole skin hides it as well as a screen does
     val openMenuNow by rememberUpdatedState(openMenu)
     val minimizeNow by rememberUpdatedState(onMinimize)
     val playlistNow by rememberUpdatedState(playlistActions)
@@ -128,6 +127,7 @@ internal fun rememberWalLayerParts(
                 onMinimize = { minimizeNow() },
                 openFile = { andPlay -> if (andPlay) playlistNow.addFileThenPlay() else playlistNow.addFile() },
             ),
+            // a window of the app over the whole skin hides it as well as a screen does
             covered = { coveredNow() || hidesModernSkin(vm.state) },
             openMenu = { onSkinMenu, anchor -> openMenuNow(onSkinMenu, anchor) },
             menuTitle = vm.words.get(R.string.menu_skin_menu),

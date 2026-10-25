@@ -62,6 +62,11 @@ class WalRestTest {
         assertFalse("static after a second", rest.wantsFrames(moves, 2_000))
         assertEquals("woken as if due at once, four times a second", 2_250L, wakeAt(moves, 2_000))
         assertEquals("its timers too", 2_250L, wakeAt(idle(due = 2_017), 2_000))
+        assertEquals(
+            "a timer due later does not hold back a look at one that says it moves",
+            2_250L,
+            wakeAt(idle(due = 2_800, framesWanted = true), 2_000),
+        )
     }
 
     @Test

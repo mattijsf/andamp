@@ -123,6 +123,27 @@ class UiClocksTest {
     }
 
     @Test
+    fun `a throw the dark screen cuts short ends where the list stands, and is not carried again`() {
+        val state = WinampState()
+        val visited = mutableListOf<Int>()
+        start(state, followsScreen = true)
+        state.flung = Flung(rowsPerSecond = 30f, from = 100) { visited += it }
+        Snapshot.sendApplyNotifications()
+        compose.mainClock.advanceTimeBy(300)
+        val cut = visited.last()
+        assertTrue("the list travels before the screen goes dark: $cut", cut > 100)
+
+        screen(on = false)
+        compose.mainClock.advanceTimeBy(100)
+        assertEquals("the throw lets go of the list", null, state.flung)
+        visited.clear()
+        screen(on = true)
+        compose.mainClock.advanceTimeBy(1_000)
+
+        assertEquals("the list is neither moved back nor carried on", emptyList<Int>(), visited)
+    }
+
+    @Test
     fun `the clocks rest while nothing they drive shows, and step again once something does`() {
         val state = WinampState()
         var shown by mutableStateOf(false)
@@ -162,6 +183,35 @@ class UiClocksTest {
         compose.mainClock.advanceTimeBy(1_000)
 
         assertTrue("the car's surface steps it", state.marqueeStep > handed)
+    }
+
+    @Test
+    fun `a throw cut short when nothing the clocks drive shows any more is not carried again`() {
+        val state = WinampState()
+        val visited = mutableListOf<Int>()
+        var shown by mutableStateOf(true)
+        compose.mainClock.autoAdvance = false
+        owner.registry.currentState = Lifecycle.State.RESUMED
+        compose.setContent {
+            CompositionLocalProvider(LocalLifecycleOwner provides owner) { UiClocks(state, shown = { shown }) }
+        }
+        compose.mainClock.advanceTimeBy(1)
+        state.flung = Flung(rowsPerSecond = 30f, from = 100) { visited += it }
+        Snapshot.sendApplyNotifications()
+        compose.mainClock.advanceTimeBy(300)
+        assertTrue("the list travels before its window closes: ${visited.last()}", visited.last() > 100)
+
+        // the Library closes over a modern skin mid-throw, and opens again
+        shown = false
+        Snapshot.sendApplyNotifications()
+        compose.mainClock.advanceTimeBy(100)
+        assertEquals("the throw lets go of the list", null, state.flung)
+        visited.clear()
+        shown = true
+        Snapshot.sendApplyNotifications()
+        compose.mainClock.advanceTimeBy(1_000)
+
+        assertEquals("the list is neither moved back nor carried on", emptyList<Int>(), visited)
     }
 
     @Test

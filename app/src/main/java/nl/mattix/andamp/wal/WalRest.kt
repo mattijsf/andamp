@@ -64,7 +64,9 @@ internal class WalRest(
         now: Long,
         runtimeNow: Long,
     ): Long? {
-        val due = idle.nextDueAt ?: runtimeNow.takeIf { idle.framesWanted } ?: return null
+        // a skin that says it moves gets here once static: it is looked at as soon as the gap allows,
+        // whatever its timers say
+        val due = if (idle.framesWanted) runtimeNow else idle.nextDueAt ?: return null
         val rest = if (idle.stopped || static(now)) REST_GAP_MS else LIVE_GAP_MS
         val gap = if (fromScreen) maxOf(rest, SCREEN_GAP_MS) else rest
         return maxOf(now + (due - runtimeNow).coerceAtLeast(0), tickAt + gap).coerceAtMost(now + MAX_AHEAD_MS)

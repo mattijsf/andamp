@@ -119,9 +119,12 @@ class WalFrameLoopTest {
             up()
         }
         val inFirstSecond = ticksOver(SECOND_OF_FRAMES)
-        frames(SECOND_OF_FRAMES + FRAMES)
+        // up to about 1.9 s after the touch
+        val inSecondSecond = ticksOver(SECOND_OF_FRAMES - FRAMES)
+        frames(2 * FRAMES)
 
         assertTrue("a tick a frame after the touch: $inFirstSecond", inFirstSecond >= SECOND_OF_FRAMES - 3)
+        assertTrue("and on through the second second: $inSecondSecond", inSecondSecond >= SECOND_OF_FRAMES - FRAMES - 3)
         assertEquals("none once two seconds have passed", 0, ticksOver(SECOND_OF_FRAMES))
     }
 
