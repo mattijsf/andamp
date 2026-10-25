@@ -2119,9 +2119,14 @@ class AnimatedLayer(
         out.add(DrawCmd.Image(BitmapDef(def.id, def.file, sx, sy, fw, fh, def.gammaGroup), rect, effectiveAlpha))
     }
 
+    /**
+     * Shows frame [n], and scripts hear `onFrame`. Going to the frame it already shows asks for no
+     * new picture: a VU script sends a resting strip to frame 0 on every timer (MMD3, DeClassified).
+     */
     fun gotoFrame(n: Int) {
+        val moved = n != frame
         frame = n
-        frameChanged()
+        if (moved) frameChanged()
         dispatch("onframe", Value.Int(n))
     }
 
@@ -2168,9 +2173,10 @@ class AnimatedLayer(
                 stop()
                 return
             }
-            // back to the start without onFrame
+            // back to the start without onFrame; a strip that starts where it ends asks for no new picture
+            val moved = frame != startFrame
             frame = startFrame
-            frameChanged()
+            if (moved) frameChanged()
         } else {
             gotoFrame(frame + step)
         }
