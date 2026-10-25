@@ -483,6 +483,28 @@ class ModernPlayerSurfaceTest {
     }
 
     @Test
+    fun `with a modern skin laid out and no classic window open the classic clocks rest`() {
+        show()
+        val before = vm.state.marqueeStep
+
+        compose.mainClock.advanceTimeBy(2_000)
+
+        assertEquals("nothing shows the classic title", before, vm.state.marqueeStep)
+    }
+
+    @Test
+    fun `the Library's search caret blinks over a modern skin`() {
+        show()
+        vm.state.setWindowOpen(WindowStore.LIBRARY, true) { vm.state.libraryOpen = it }
+        frames()
+        val before = vm.state.marqueeStep
+
+        compose.mainClock.advanceTimeBy(1_000)
+
+        assertTrue("the clock the caret blinks by steps: ${vm.state.marqueeStep}", vm.state.marqueeStep > before)
+    }
+
+    @Test
     fun `the app's screen shows the worn modern skin, and a classic skin brings the classic windows back`() {
         val vm = wearingModern()
         val look = vm.skinOps.wal!!
