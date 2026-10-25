@@ -4,7 +4,6 @@ package nl.mattix.andamp.wal
 
 import androidx.compose.runtime.IntState
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.sync.Mutex
 import nl.mattix.andamp.modernskin.skin.SkinMenu
@@ -118,12 +117,13 @@ internal interface WalSurface {
     val lastInputAt: Long
 
     /**
-     * Draws the latest frame with its top-left at [scope]'s origin, at [WalLayout.scale]. At a
-     * scale between whole numbers the frame is drawn into [layer] off screen and shrunk to fit.
+     * Draws the latest frame with its top-left at [scope]'s origin, at [WalLayout.scale], keeping
+     * in [layers] what it drew for the frames after (see [drawWalStackLayered]). At a scale between
+     * whole numbers the frame is drawn into the stack layer off screen and shrunk to fit.
      */
     fun draw(
         scope: DrawScope,
-        layer: GraphicsLayer,
+        layers: WalLayers,
     )
 
     /** [draw] threw [error]; called on main. It counts toward the three failures in a row that drop the skin. */

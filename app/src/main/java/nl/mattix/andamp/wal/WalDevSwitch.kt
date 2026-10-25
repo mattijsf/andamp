@@ -45,9 +45,17 @@ import kotlin.concurrent.thread
  *
  * `direct` draws skins at a fractional scale (Bento, Winamp3x) straight onto the screen with hard
  * edges ([WalRender.direct]), in place of drawing them at the next whole scale and shrinking the
- * picture; `--ez on false` goes back. It shows from the skin's next frame and holds until the app's
- * process ends. `--es wal draw direct` turns it on too and `--es wal draw whole` off: am takes the
- * word after `draw` as the intent's package, and drops what follows it.
+ * picture; `--ez on false` goes back. It shows at once and holds until the app's process ends.
+ * `--es wal draw direct` turns it on too and `--es wal draw whole` off: am takes the word after
+ * `draw` as the intent's package, and drops what follows it.
+ *
+ *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal layers
+ *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal layers --ez on false
+ *
+ * `layers` keeps each window's drawing between frames and draws again only what changed
+ * ([WalRender.layers], on from the start); `--ez on false` draws every command of every frame, as
+ * before, and stops the engine planning frames. It shows at once (frames the engine made while it
+ * was off are drawn every command until the next one) and holds until the app's process ends.
  *
  * Guarded by android.permission.DUMP in the manifest: only the shell, or an app granted DUMP over
  * adb, can send it.
@@ -64,7 +72,8 @@ class WalDevSwitch : BroadcastReceiver() {
             "timing" -> timing(intent.getBooleanExtra("on", true))
             "direct" -> direct(intent.getBooleanExtra("on", true))
             "draw" -> direct(intent.`package` == "direct")
-            else -> Log.w(WalHost.TAG, "WalDevSwitch: say --es wal on, off, check, timing or direct (got $command)")
+            "layers" -> layers(intent.getBooleanExtra("on", true))
+            else -> Log.w(WalHost.TAG, "WalDevSwitch: say --es wal on, off, check, timing, direct or layers (got $command)")
         }
     }
 
@@ -93,10 +102,14 @@ class WalDevSwitch : BroadcastReceiver() {
 
     private fun direct(on: Boolean) {
         WalRender.direct = on
-        Log.i(
-            WalHost.TAG,
-            "fractional scales drawn ${if (on) "directly with hard edges" else "whole and shrunk"} from the next frame",
-        )
+        WalRender.redraws.intValue++
+        Log.i(WalHost.TAG, "fractional scales drawn ${if (on) "directly with hard edges" else "whole and shrunk"}")
+    }
+
+    private fun layers(on: Boolean) {
+        WalRender.layers = on
+        WalRender.redraws.intValue++
+        Log.i(WalHost.TAG, "frames drawn ${if (on) "keeping what did not change" else "with every command"}")
     }
 
     private fun check(

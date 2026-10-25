@@ -6,8 +6,9 @@ import nl.mattix.andamp.BuildConfig
 
 /**
  * The modern-skin timing log, under [TAG]: each engine tick and each frame published with what
- * caused it, how long the touches waited for the engine thread, the load, and where the stack is
- * placed on the screen. On in a debug build from the start; [WalDevSwitch] turns it on in any build
+ * caused it, how long the touches waited for the engine thread, the load, where the stack is
+ * placed on the screen, and what each frame drawn with kept parts recorded again
+ * ([WalLayers]). On in a debug build from the start; [WalDevSwitch] turns it on in any build
  * (`--es wal timing`) and off again, until the app's process ends.
  */
 internal object WalTiming {

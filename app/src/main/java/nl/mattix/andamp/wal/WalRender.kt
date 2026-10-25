@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.wal
 
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.BlendMode
@@ -22,6 +23,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import nl.mattix.andamp.modernskin.skin.Align
 import nl.mattix.andamp.modernskin.skin.DrawCmd
+import nl.mattix.andamp.modernskin.skin.LiveRun
 import nl.mattix.andamp.modernskin.skin.Rect
 import nl.mattix.andamp.modernskin.skin.VAlign
 
@@ -36,11 +38,16 @@ internal object WalRender {
     var direct = false
 
     /**
-     * Whether the engine works out, for each frame it publishes, which parts of each window changed
-     * ([WalFrame.plans]). On unless switched off; it holds until the app's process ends.
+     * Keeps each window's drawing, and the parts of it that change, between frames, and draws
+     * again only what changed (see [WalLayers]); off, every frame draws every command. On unless
+     * switched off; it holds until the app's process ends. The engine plans frames only while it is
+     * on.
      */
     @Volatile
     var layers = true
+
+    /** Moves when a switch changes how frames are drawn, so the skin on screen is drawn again at once; read while drawing. */
+    val redraws = mutableIntStateOf(0)
 }
 
 /**
@@ -135,6 +142,8 @@ internal fun DrawScope.drawWindowsAt(
  * With [overClear] nothing is under the window yet (a clear layer): a shape it opens with then
  * masks what the window drew where it lies, in place of drawing the window into a separate layer
  * and masking that. The pixels are the same.
+ *
+ * Each of [runs] is drawn by [drawRun] (with its index) in place of its commands, where they stand.
  */
 internal fun DrawScope.drawWalWindow(
     cmds: List<DrawCmd>,
@@ -142,10 +151,28 @@ internal fun DrawScope.drawWalWindow(
     withText: Boolean = true,
     overClear: Boolean = false,
     hard: Boolean = false,
+    runs: List<LiveRun> = emptyList(),
+    drawRun: DrawScope.(Int) -> Unit = {},
 ) {
     val at = WindowAt(host, if (hard) Paint().apply { isAntiAlias = false } else null)
     at.inPlace = (cmds.firstOrNull() as? DrawCmd.WindowStart)?.takeIf { overClear }
-    for (cmd in cmds) if (withText || cmd !is DrawCmd.Text) drawCmd(cmd, at)
+    if (runs.isEmpty()) {
+        for (cmd in cmds) if (withText || cmd !is DrawCmd.Text) drawCmd(cmd, at)
+        return
+    }
+    var next = 0
+    var i = 0
+    while (i < cmds.size) {
+        val run = runs.getOrNull(next)
+        if (run != null && i == run.from) {
+            drawRun(next)
+            i = run.to
+            next++
+            continue
+        }
+        val cmd = cmds[i++]
+        if (withText || cmd !is DrawCmd.Text) drawCmd(cmd, at)
+    }
 }
 
 /** What drawing one window's commands goes by: the shapes it has open, and how hard edges are drawn. */

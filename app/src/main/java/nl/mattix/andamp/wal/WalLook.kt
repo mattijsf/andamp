@@ -12,7 +12,6 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.sync.Mutex
 import nl.mattix.andamp.modernskin.skin.Player
@@ -161,13 +160,13 @@ internal class WalLook(
 
     override fun draw(
         scope: DrawScope,
-        layer: GraphicsLayer,
+        layers: WalLayers,
     ) {
         val engine = engine ?: return
         val frame = engine.frame ?: return
         val at = frame.layout ?: return
         val host = host ?: return
-        scope.drawWalStack(frame.stack, host, at.scale, 0f, layer, frame.themeKey)
+        scope.drawWalStackLayered(frame.stack, frame.plans, host, at.scale, layers, frame.themeKey)
         // only the first frame drawn after failed ones is reported, not every frame
         if (drawFailing) {
             drawFailing = false

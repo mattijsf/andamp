@@ -3,6 +3,7 @@
 package nl.mattix.andamp.wal
 
 import android.content.Context
+import android.os.Build
 import android.util.Log
 import android.view.ViewConfiguration
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -24,11 +25,11 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
@@ -418,9 +419,10 @@ private class PublishedRect {
     var rect: IntRect? = null
 }
 
-/** The frame whose draw threw: it is reported once and not drawn again. */
+/** The frame whose draw threw: it is reported once and not drawn again, unless a switch changes how frames are drawn. */
 private class FailedFrame {
     var frame = -1
+    var redraws = -1
 }
 
 /**
@@ -443,7 +445,15 @@ private fun WalCanvas(
     val doubleTapSlop = remember(context) { ViewConfiguration.get(context).scaledDoubleTapSlop.toFloat() }
     // touches are mapped with the placement of the moment, not the one the gesture began with
     val placedNow by rememberUpdatedState(placed)
-    val layer = rememberGraphicsLayer()
+    val graphics = LocalGraphicsContext.current
+    // nothing is drawn under the stack where the window shows what lies behind it: over other apps,
+    // and in the activity from Android 9 on (a translucent window)
+    val clearBelow = parts.compact || Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+    val layers =
+        remember(surface, graphics, clearBelow) {
+            WalLayers(graphics::createGraphicsLayer, graphics::releaseGraphicsLayer, clearBelow)
+        }
+    DisposableEffect(layers) { onDispose { layers.release() } }
     val failed = remember(surface) { FailedFrame() }
     val stack = placed.stack
     Spacer(
@@ -478,9 +488,13 @@ private fun WalCanvas(
                 awaitEachGesture { walGesture(touch) { surface.menu != null } }
             }.drawBehind {
                 val frame = surface.frames.intValue
-                if (frame == failed.frame) return@drawBehind
-                runCatching { surface.draw(this, layer) }.onFailure { error ->
+                val redraws = WalRender.redraws.intValue
+                if (frame == failed.frame && redraws == failed.redraws) return@drawBehind
+                runCatching { surface.draw(this, layers) }.onFailure { error ->
                     failed.frame = frame
+                    failed.redraws = redraws
+                    // nothing kept from before the failure is trusted
+                    layers.drop()
                     surface.drawFailed(error)
                 }
             },

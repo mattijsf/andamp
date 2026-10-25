@@ -9,7 +9,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.unit.IntOffset
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
@@ -94,7 +93,7 @@ internal class FakeWalSurface : WalSurface {
 
     override fun draw(
         scope: DrawScope,
-        layer: GraphicsLayer,
+        layers: WalLayers,
     ) {
         draws++
         drawThrows?.let { throw it }
