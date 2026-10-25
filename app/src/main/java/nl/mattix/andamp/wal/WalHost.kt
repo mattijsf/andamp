@@ -535,6 +535,13 @@ internal class WalHost(
  * by its place among the frame's pictures of that size, two for each, used in turn: a frame never
  * writes the bitmap the frame before it may still be showing. Outside a frame each one gets a new
  * bitmap.
+ *
+ * A drawing kept between frames ([Recorded], a layer recorded once and drawn as it is in later
+ * frames) asks for its pictures only while it is recorded ([recording]). What it holds counts as
+ * drawn in every frame that draws it again ([retain]), so neither the budget nor a theme switch
+ * lets go of a picture it shows, and the bytes counted stay true. Its changing pixel pictures get
+ * two bitmaps for each place in it, used in turn at each recording, so a bitmap it shows is never
+ * written while it shows it.
  */
 internal class WalDrawing(
     private val budget: Long,
@@ -558,9 +565,88 @@ internal class WalDrawing(
         val source: Entry?,
         val held: Held?,
         var frame: Long,
+        /** A window shape, kept apart from the rest. */
+        val shape: Boolean = false,
     ) {
         /** False once it was let go. */
         var kept = true
+
+        /** The recording that last took it into what it holds (see [Recorded.stamp]). */
+        var heldBy = 0L
+    }
+
+    /**
+     * What one drawing kept between frames holds of these pictures: those it asked for while it was
+     * recorded, and the bitmaps of its changing pixel pictures, two for each place in it.
+     */
+    internal class Recorded {
+        internal val held = ArrayList<Entry>()
+
+        /** Names its last recording; each recording gets a new one. */
+        internal var stamp = 0L
+        private var place = 0
+        private val buffers = ArrayList<Buffers>()
+
+        /** A recording starts as [stamp]: what it holds is gathered again. */
+        internal fun start(stamp: Long) {
+            this.stamp = stamp
+            held.clear()
+            place = 0
+        }
+
+        /** [cmd]'s pixels in the bitmap of its place in this drawing that the recording before did not use. */
+        internal fun pixels(cmd: DrawCmd.Pixels): ImageBitmap {
+            val at = place++
+            var buffer = buffers.getOrNull(at)
+            if (buffer == null || buffer.w != cmd.w || buffer.h != cmd.h) {
+                buffer = Buffers(cmd.w, cmd.h, at)
+                if (at < buffers.size) buffers[at] = buffer else buffers.add(buffer)
+            }
+            val bitmap = buffer.next(stamp)
+            bitmap.asAndroidBitmap().setPixels(cmd.argb, 0, cmd.w, 0, 0, cmd.w, cmd.h)
+            return bitmap
+        }
+    }
+
+    /** The drawing being recorded, which holds what is asked for meanwhile, or null. */
+    private var recording: Recorded? = null
+    private var stamps = 0L
+
+    /**
+     * Runs [body] as a recording of [into]: what it asks for is held by [into], which drops what
+     * an earlier recording held. Recordings may nest; each holds what is asked for inside it alone.
+     */
+    fun <T> recording(
+        into: Recorded,
+        body: () -> T,
+    ): T {
+        val outer = recording
+        recording = into
+        into.start(++stamps)
+        try {
+            return body()
+        } finally {
+            recording = outer
+        }
+    }
+
+    /** What [kept] holds, marked as drawn in this frame, which draws it again without asking for it. */
+    fun retain(kept: Recorded) {
+        for (e in kept.held) {
+            if (e.shape) {
+                e.frame = frame
+            } else if (e.kept) {
+                mark(e)
+            }
+        }
+    }
+
+    /** [e] is held by the drawing being recorded, if any. */
+    private fun hold(e: Entry) {
+        val r = recording ?: return
+        if (e.heldBy == r.stamp) return
+        e.heldBy = r.stamp
+        r.held.add(e)
     }
 
     /** Kept pictures, the least recently looked up first. */
@@ -670,8 +756,16 @@ internal class WalDrawing(
 
     /** The picture kept under [key], marked as drawn in this frame, or null when none is kept. */
     internal fun find(key: Any): Entry? {
-        if (key is ShapeKey) return shapes[key]?.also { it.frame = frame }
-        return entries[key]?.also(::mark)
+        if (key is ShapeKey) {
+            return shapes[key]?.also {
+                it.frame = frame
+                hold(it)
+            }
+        }
+        return entries[key]?.also {
+            mark(it)
+            hold(it)
+        }
     }
 
     /**
@@ -686,9 +780,10 @@ internal class WalDrawing(
     ): Entry {
         made++
         if (key is ShapeKey) {
-            val e = Entry(picture, themed, null, picture?.let { Held(sizeOf(it)) }, frame)
+            val e = Entry(picture, themed, null, picture?.let { Held(sizeOf(it)) }, frame, shape = true)
             shapes.put(key, e)?.let { shapeBytes -= it.held?.bytes ?: 0L }
             shapeBytes += e.held?.bytes ?: 0L
+            hold(e)
             return e
         }
         val held =
@@ -698,6 +793,7 @@ internal class WalDrawing(
         val e = Entry(picture, themed, source, held, frame)
         entries.put(key, e)?.let(::letGo)
         mark(e)
+        hold(e)
         return e
     }
 
@@ -723,8 +819,12 @@ internal class WalDrawing(
         make: () -> T,
     ): T = entry(key, themed, make).picture as T
 
-    /** [cmd]'s pixels in a bitmap kept for its size and its place among this frame's pictures of that size. */
+    /**
+     * [cmd]'s pixels in a bitmap kept for its size and its place among this frame's pictures of
+     * that size; while a kept drawing is recorded, in that drawing's bitmap for its place in it.
+     */
     fun changing(cmd: DrawCmd.Pixels): ImageBitmap {
+        recording?.let { return it.pixels(cmd) }
         if (!inFrame) return Bitmap.createBitmap(cmd.argb, cmd.w, cmd.h, Bitmap.Config.ARGB_8888).asImageBitmap()
         var place = 0
         var buffer: Buffers? = null
