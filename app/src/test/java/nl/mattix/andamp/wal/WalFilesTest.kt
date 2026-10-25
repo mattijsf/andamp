@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.wal
 
+import nl.mattix.andamp.modernskin.skin.ZipSkinFiles
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule
@@ -151,6 +152,41 @@ class WalFilesTest {
             setOf("unnamed", "broken", "other"),
             WalFiles.siblings(listOf("Unnamed" to unnamed, "Broken" to notAZip, "Other" to noSkinXml)).keys,
         )
+    }
+
+    @Test
+    fun `a sibling holds only the files read from it, each read from its archive once`() {
+        val bento = wal("Bento.wal", "skin.xml" to "<a/>")
+        val big =
+            wal(
+                "Big Bento.wal",
+                "skin.xml" to "<b/>",
+                "xml/player.xml" to "<player/>",
+                "pictures/big.png" to "x".repeat(200_000),
+            )
+        val opened = mutableListOf<ZipSkinFiles.OnDemand>()
+
+        val files = WalFiles.open(bento, listOf(bento, big)) { file -> ZipSkinFiles.OnDemand(file).also { opened += it } }
+        assertEquals("<player/>", files.read("../Big Bento/xml/player.xml")?.decodeToString())
+        assertEquals("<player/>", files.read("@SKINSPATH@\\Big Bento\\xml\\player.xml")?.decodeToString())
+
+        assertEquals("opened once", 1, opened.size)
+        assertEquals("<player/>".length.toLong(), opened.single().heldBytes)
+        // read on from the archive as it was opened
+        big.delete()
+        assertEquals(200_000, files.read("../Big Bento/pictures/big.png")?.size)
+        assertNull(files.read("../Big Bento/pictures/none.png"))
+    }
+
+    @Test
+    fun `a sibling in a folder inside its archive reads as a whole archive would`() {
+        val bento = wal("Bento.wal", "skin.xml" to "<a/>")
+        val big = wal("Big Bento.wal", "Big Bento/skin.xml" to "<b/>", "Big Bento/xml/player.xml" to "<player/>")
+
+        val files = WalFiles.open(bento, listOf(bento, big))
+
+        assertEquals("<player/>", files.read("../Big Bento/xml/player.xml")?.decodeToString())
+        assertEquals(ZipSkinFiles(big).names().sorted(), ZipSkinFiles.OnDemand(big).names().sorted())
     }
 
     @Test

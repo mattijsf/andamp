@@ -58,6 +58,68 @@ class ZipSkinFiles(
 
     override fun names(): List<String> = entries.keys.toList()
 
+    /**
+     * A `.wal` read entry by entry as paths ask for it, for a skin another skin reads a few files
+     * from (Bento reads Big Bento's scripts and XML): the list of entries is read as it opens, and
+     * only the bytes of the entries read are kept, within the same limits as a whole archive. The
+     * archive stays open while this is in use, so a file deleted meanwhile reads on as it was.
+     * Two threads may read at once.
+     */
+    class OnDemand(
+        file: File,
+    ) : SkinFiles {
+        private val zip = ZipFile(file)
+
+        /** Entry names by path, as [ZipSkinFiles] would name them. */
+        private val index: Map<String, String>
+
+        /** The entries read so far, null for one that did not read; guarded by itself. */
+        private val kept = HashMap<String, ByteArray?>()
+
+        /** The bytes [kept] holds. */
+        var heldBytes = 0L
+            private set
+
+        init {
+            val all = LinkedHashMap<String, String>()
+            for (e in zip
+                .entries()
+                .asSequence()
+                .filter { !it.isDirectory }
+                .take(MAX_ENTRIES)) {
+                all[SkinFiles.normalize(e.name)] = e.name
+            }
+            val prefix = WalArchive.skinFolder(all.keys)
+            index =
+                if (prefix.isNullOrEmpty()) {
+                    all
+                } else {
+                    all.filterKeys { it.startsWith(prefix) }.mapKeys { it.key.removePrefix(prefix) }
+                }
+        }
+
+        override fun read(path: String): ByteArray? {
+            val n = SkinFiles.normalize(path)
+            synchronized(kept) { if (n in kept) return kept[n] }
+            val name = index[n] ?: return null
+            // read outside the lock, so one thread does not wait on another's entry
+            val bytes =
+                runCatching {
+                    zip.getEntry(name)?.let { e -> zip.getInputStream(e).use { readAtMost(it, MAX_ENTRY) } }
+                }.getOrNull()
+            return synchronized(kept) {
+                if (n !in kept) {
+                    val held = bytes?.takeIf { heldBytes + it.size <= MAX_TOTAL }
+                    kept[n] = held
+                    heldBytes += held?.size ?: 0
+                }
+                kept[n]
+            }
+        }
+
+        override fun names(): List<String> = index.keys.toList()
+    }
+
     private companion object {
         const val MAX_ENTRY = 32 * 1024 * 1024
         const val MAX_TOTAL = 128L * 1024 * 1024

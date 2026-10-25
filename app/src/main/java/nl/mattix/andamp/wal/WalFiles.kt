@@ -25,11 +25,15 @@ internal object WalFiles {
      * are compared as [folderName] gives them. A file under two names is opened once. A name of
      * [skin] itself reads the skin, as Winamp reads its folder (Big Bento names "Big Bento" for its
      * scroll bars and its notifier script).
+     *
+     * The skin is read whole; a sibling is opened with [openSibling], which by default reads only
+     * the files asked of it and keeps only those ([ZipSkinFiles.OnDemand]).
      */
     fun open(
         skin: File,
         siblings: Map<String, File>,
         base: SkinFiles = AndampDefaultSet,
+        openSibling: (File) -> SkinFiles = { ZipSkinFiles.OnDemand(it) },
     ): SkinFiles {
         val skinFiles = ZipSkinFiles(skin)
         val byName = siblings.mapKeys { folderName(it.key) }
@@ -42,7 +46,7 @@ internal object WalFiles {
             if (file == skin) return@sibling skinFiles
             synchronized(opened) { if (file in opened) return@sibling opened[file] }
             // a sibling that does not open is read as missing, and not tried again
-            val made = runCatching { ZipSkinFiles(file) }.getOrNull()
+            val made = runCatching { openSibling(file) }.getOrNull()
             synchronized(opened) { if (file in opened) opened[file] else made.also { opened[file] = it } }
         }
         return LayeredSkinFiles(SkinsFolderFiles(skinFiles, sibling), base)
@@ -53,7 +57,8 @@ internal object WalFiles {
         skin: File,
         siblings: List<File>,
         base: SkinFiles = AndampDefaultSet,
-    ): SkinFiles = open(skin, siblings.associateBy { it.nameWithoutExtension }, base)
+        openSibling: (File) -> SkinFiles = { ZipSkinFiles.OnDemand(it) },
+    ): SkinFiles = open(skin, siblings.associateBy { it.nameWithoutExtension }, base, openSibling)
 
     /** How a path names a sibling: its folder name, lowercased, without spaces. */
     fun folderName(name: String): String = name.replace(" ", "").lowercase()
