@@ -42,6 +42,7 @@ import nl.mattix.andamp.wal.WalLook
 import nl.mattix.andamp.wal.WalPlayer
 import nl.mattix.andamp.wal.WalPrepare
 import nl.mattix.andamp.wal.WalSettings
+import nl.mattix.andamp.wal.WalSharp
 import kotlin.math.roundToInt
 
 /**
@@ -140,8 +141,13 @@ class WinampViewModel
                 viewModelScope,
                 skinLibrary,
                 words = words,
-                // the file, not WalGate.on, which reads off until the file has been read
-                modernOn = { WalGate.read(app) },
+                // the stored switch, not WalGate.on, which reads off until it has been read; sharp
+                // pixels are read with it, so a modern skin's first frame already wears them
+                modernOn = {
+                    WalSharp.read(app)
+                    WalGate.read(app)
+                },
+                // stored in order with the Preferences switch's changes
                 turnModernOn = { WalGate.write(app, true) },
                 openModern = { id, file, name, siblings ->
                     // the player is made before its look, and its file picker is the look's sink

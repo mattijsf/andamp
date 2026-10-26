@@ -10,6 +10,7 @@ import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.ui.window.testViewModel
 import nl.mattix.andamp.wal.WalGate
+import nl.mattix.andamp.wal.switchModernSkinsOn
 import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -37,9 +38,7 @@ class ModernDoubleSizeTest {
 
     @Before
     fun setUp() {
-        // modern skins on, as a debug build reads them with no switch written
-        WalGate.forget()
-        WalGate.file(app).delete()
+        switchModernSkinsOn(app)
         app
             .getSharedPreferences("skins", 0)
             .edit()
@@ -52,7 +51,7 @@ class ModernDoubleSizeTest {
     @After
     fun tearDown() {
         made.forEach { it.skinOps.wal?.release(save = false) }
-        WalGate.forget()
+        WalGate.clear(app)
     }
 
     private fun await(

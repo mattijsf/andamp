@@ -85,6 +85,13 @@ internal data class WalLayout(
      * ([WalPlaces.skinPlaced]).
      */
     val edgePlacements: Int = 0,
+    /**
+     * The skin's color themes, in the order the skin's theme list shows them (case-insensitive),
+     * one per name ignoring case; empty for a skin with none.
+     */
+    val themes: List<String> = emptyList(),
+    /** The color theme this frame wears, one of [themes], or null for a skin with none. */
+    val theme: String? = null,
 )
 
 /**
@@ -97,6 +104,7 @@ internal data class WalLayout(
  * The activity and the floating player can each show the skin. Only the one holding [turn]
  * installs [sink], posts fits, asks for ticks, shows the skin's menus and publishes the window rect.
  */
+@Suppress("TooManyFunctions") // every call the screen makes into a worn skin: touches, menus, fits, ticks and themes
 internal interface WalSurface {
     /** Bumped on main after each new frame or menu change; changes close together count once. */
     val frames: IntState
@@ -106,6 +114,16 @@ internal interface WalSurface {
 
     /** The skin's popup menu waiting for an answer, or null; snapshot state set on main. */
     val menu: SkinMenu?
+
+    /**
+     * The skin's color themes, in the order the skin's theme list shows them (case-insensitive),
+     * one per name ignoring case, as the latest [layout] carries them; empty until the skin has
+     * loaded. Read on main.
+     */
+    val themes: List<String> get() = layout?.themes.orEmpty()
+
+    /** The color theme the latest frame wears, or null before the first frame. Read on main. */
+    val theme: String? get() = layout?.theme
 
     /** Held by the one player surface that owns [sink], [fit], ticks, menus and the window rect. */
     val turn: Mutex
@@ -223,4 +241,11 @@ internal interface WalSurface {
 
     /** Posts a save of the skin's settings to the engine thread. */
     fun save()
+
+    /**
+     * Puts on the color theme [name], one of [themes], on the engine thread, and keeps it for the
+     * next start, as a pick from the skin's theme list does. Does nothing before the skin has
+     * loaded.
+     */
+    fun pickTheme(name: String) {}
 }

@@ -45,6 +45,7 @@ import nl.mattix.andamp.wal.WalPlacement
 import nl.mattix.andamp.wal.WalSurface
 import nl.mattix.andamp.wal.hidesModernSkin
 import nl.mattix.andamp.wal.stackOf
+import nl.mattix.andamp.wal.switchModernSkinsOn
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -103,18 +104,17 @@ class ModernPlayerSurfaceTest {
     @After
     fun tearDown() {
         wearing.forEach { it.skinOps.wal?.release(save = false) }
-        if (wearing.isNotEmpty()) WalGate.forget()
+        if (wearing.isNotEmpty()) WalGate.clear(ApplicationProvider.getApplicationContext<Application>())
     }
 
     /**
      * A view model wearing a modern skin that loads (one window with a play button), chosen before
-     * the view model is made, as at a start with that skin worn. Modern skins are on, as a debug
-     * build reads them with no switch written.
+     * the view model is made, as at a start with that skin worn. Modern skins are switched on
+     * first.
      */
     private fun wearingModern(): WinampViewModel {
         val app = ApplicationProvider.getApplicationContext<Application>()
-        WalGate.forget()
-        WalGate.file(app).delete()
+        switchModernSkinsOn(app)
         app
             .getSharedPreferences("skins", 0)
             .edit()

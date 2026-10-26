@@ -129,7 +129,7 @@
     <string name="prefs_notice_avs_decoder_what">The .avs preset format\'s framing and field layouts, as the preset reader follows them.</string>
     <string name="prefs_notice_projectm_eval_what">Evaluates the expressions AVS presets are scripted in, built into the AVS library.</string>
     <string name="prefs_notice_milkdrop_what">Ryan Geiss\'s original, whose .milk presets projectM renders.</string>
-    <string name="prefs_notice_webamp_what">Its sprite maps are the ground truth for every coordinate in the skinned windows.</string>
+    <string name="prefs_notice_webamp_what">Its sprite maps are the ground truth for every coordinate in the skinned windows. Its transcription of std.mi lists the script calls the modern-skin engine answers, and its description of the script bytecode is the layout the engine reads.</string>
     <string name="prefs_notice_liberation_sans_what">The playlist\'s font, metric-compatible with the Arial that PLEDIT.TXT names.</string>
     <string name="prefs_notice_liberation_sans_obligation">Bundled unmodified, under a name the license permits.</string>
     <string name="prefs_notice_dejavu_what">Stands in for the Windows fonts that Winamp modern skins name without carrying them.</string>
@@ -183,6 +183,32 @@
     <string name="prefs_player_summary_wallpaper_colors">Wallpaper colors</string>
     <string name="prefs_player_summary_all_with_overlay">Always on top, windows, lists, touch and colors</string>
     <string name="prefs_player_summary_all">Windows, lists, touch and colors</string>
+    <!-- The heading of the last section on Preferences > Player, over the modern skins switch; shown in a build that offers modern skins. -->
+    <string name="prefs_player_skins_section">Skins</string>
+    <!-- In the Player row's line on the Preferences list, while the modern skins switch is on. -->
+    <string name="prefs_player_summary_modern_skins">Modern skins</string>
+    <!-- In the Player row's line on the Preferences list, while modern skins and sharp pixels are both on. -->
+    <string name="prefs_player_summary_sharp_pixels">Sharp pixels</string>
+    <!-- The Player row's line when none of its switches is changed, in a build that offers modern skins: what the page holds. -->
+    <string name="prefs_player_summary_all_skins">Windows, lists, touch, colors and skins</string>
+    <!-- As prefs_player_summary_all_skins, on a phone that offers Always on top. -->
+    <string name="prefs_player_summary_all_with_overlay_skins">Always on top, windows, lists, touch, colors and skins</string>
+
+    <!-- ModernSkinPrefs.kt: the Skins section on Preferences > Player -->
+    <!-- The switch that lets Winamp modern skins be added and worn. -->
+    <string name="prefs_modern_skins_title">Modern skins (beta)</string>
+    <!-- Under the modern skins switch while it is on. -->
+    <string name="prefs_modern_skins_on">Winamp modern skins (.wal) can be added and worn, as well as classic ones. Some may look or work a little differently than in Winamp. Press and hold a modern skin to open Andamp\'s menu. Switching this off puts your last classic skin back on.</string>
+    <!-- Under the modern skins switch while it is off. -->
+    <string name="prefs_modern_skins_off">Only classic skins (.wsz) can be added. Switch this on to add and wear Winamp modern skins (.wal) too. Modern skins you added before stay hidden until then.</string>
+    <!-- A note under the modern skins switch: what wears a modern skin and what keeps a classic one. -->
+    <string name="prefs_modern_skins_note">Only the player wears a modern skin. The menus, Media Library, Skin Browser, widget and Android Auto keep your last classic skin, unless you picked another one for the widget or Android Auto. While a modern skin is worn, Playlist Editor, Equalizer, Double Size and Visualization options are grayed out in the menu, because the skin draws the player\'s windows and visualizer.</string>
+    <!-- The switch under the modern skins switch, shown while that one is on: modern skins shown at an in-between size are drawn with hard edges. "An in-between size" in the two texts below means a size that is not a whole number of times the skin's size, such as 2.5 times rather than exactly 2 or 3 times; it does not mean an odd number. "Uneven in width" means some strokes come out thicker than others. -->
+    <string name="prefs_sharp_pixels_title">Sharp pixels</string>
+    <!-- Under the sharp pixels switch while it is on. -->
+    <string name="prefs_sharp_pixels_on">Crisp edges, but some letters and lines come out uneven in width. This changes only modern skins that Andamp shows at an in-between size, such as 2.5 times, to fit your screen.</string>
+    <!-- Under the sharp pixels switch while it is off. -->
+    <string name="prefs_sharp_pixels_off">Smooth, but slightly blurred. Switch this on for crisp edges; some letters and lines then come out uneven in width. This changes only modern skins that Andamp shows at an in-between size, such as 2.5 times, to fit your screen.</string>
 
     <!-- PluginsSection.kt -->
     <string name="prefs_plugins_intro">Lua audio plug-ins. Andamp keeps its own copy, so the original file can be moved or deleted.</string>

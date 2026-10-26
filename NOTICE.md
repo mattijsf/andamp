@@ -109,6 +109,18 @@ CSS) are the reference for every sprite rectangle in `SpriteMap.kt` and for the 
 engine's Winamp quirks. The coordinates are facts about the Winamp skin format,
 transcribed with attribution.
 
+The modern skin engine in `:modernskin` takes two more things from Webamp. `StdApi.kt`, the
+table of script calls the engine answers, is generated from Webamp's transcription of
+`std.mi`, Nullsoft's header for the skin script library: class ids, method names and
+parameter counts. `MakiParser.kt` reads compiled skin scripts by the layout that Webamp's
+`maki-bytecode.md` describes. Both say so in the code.
+
+## Wasabi SDK: zlib
+
+Nullsoft's Wasabi SDK (499g), under the zlib license, is a reference for how the modern skin
+engine in `:modernskin` behaves. Comments that name one of its files point at the behavior
+read there. No SDK source is included.
+
 ## Liberation Sans: SIL OFL 1.1
 
 <https://github.com/liberationfonts/liberation-fonts>
