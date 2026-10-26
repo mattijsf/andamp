@@ -117,7 +117,10 @@ internal class WalSettings(
     private fun read(id: String): JSONObject? = prefs.getString(id, null)?.let { runCatching { JSONObject(it) }.getOrNull() }
 
     internal companion object {
-        /** The preferences file of modern skins: each skin's value, its places, and the modern-skin switches ([WalSharp]). */
+        /**
+         * The preferences file of modern skins: each skin's value, its places, and the modern-skin
+         * switches ([WalGate], [WalSharp]).
+         */
         const val PREFS = "wal_skins"
         private const val THEME = "theme"
         private const val SETTINGS = "settings"

@@ -2,14 +2,24 @@
 
 package nl.mattix.andamp.wal
 
+import android.util.Log
 import nl.mattix.andamp.BuildConfig
 
 /**
  * The modern-skin timing log, under [TAG]: each engine tick and each frame published with what
  * caused it, how long the touches waited for the engine thread, the load, where the stack is
  * placed on the screen, and what each frame drawn with kept parts recorded again
- * ([WalLayers]). On in a debug build from the start; [WalDevSwitch] turns it on in any build
- * (`--es wal timing`) and off again, until the app's process ends.
+ * ([WalLayers]).
+ *
+ * On in a debug build from the start. A release build logs it when the log level of [TAG] was set
+ * to debug before the app started; it is read once per process:
+ *
+ *     adb shell setprop log.tag.WalTiming D
+ *     adb shell am force-stop <package>
+ *     adb logcat -s WalTiming
+ *
+ * `adb shell setprop log.tag.WalTiming INFO` and a restart turn it off again. A debug build's adb
+ * switch also turns it on and off while the process runs.
  */
 internal object WalTiming {
     /** The log tag of the timing lines. */
@@ -17,7 +27,7 @@ internal object WalTiming {
 
     /** Whether the timing lines are logged now; read on every thread. */
     @Volatile
-    var on: Boolean = BuildConfig.DEBUG
+    var on: Boolean = BuildConfig.DEBUG || Log.isLoggable(TAG, Log.DEBUG)
 
     /**
      * The line for one tick or one published frame on engine thread [thread]: the work before the
