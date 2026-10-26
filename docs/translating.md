@@ -100,9 +100,9 @@ comes from, so that the next person keeps to them.
 |---|---|---|
 | skin | skin | Winamp |
 | modern skin | moderne skin | unverified |
-| Modern skins (beta) | Moderne skins (bèta) | unverified |
+| Modern skins (beta) | Moderne skins (bèta) | Andamp |
 | color theme | kleurthema | unverified |
-| Skin menu | skinmenu | unverified |
+| Skin menu | skinmenu | Andamp |
 | sharp pixels | scherpe pixels | Andamp |
 | visualization | visualisatie | Winamp |
 | Media Library | mediabibliotheek | Winamp |
@@ -128,10 +128,10 @@ comes from, so that the next person keeps to them.
 |---|---|---|
 | skin | skin | Winamp |
 | modern skin | skin moderne | unverified |
-| Modern skins (beta) | Skins modernes (bêta) | unverified |
+| Modern skins (beta) | Skins modernes (bêta) | Andamp |
 | color theme | thème de couleurs | unverified |
-| Skin menu | menu du skin | unverified |
-| sharp pixels | pixels nets | unverified |
+| Skin menu | menu du skin | Andamp |
+| sharp pixels | pixels nets | Andamp |
 | visualization | visualisation | Winamp |
 | Media Library | médiathèque | Winamp |
 | playlist | liste de lecture | Winamp |
@@ -160,10 +160,10 @@ comes from, so that the next person keeps to them.
 |---|---|---|
 | skin | Skin | Winamp |
 | modern skin | moderner Skin | unverified |
-| Modern skins (beta) | Moderne Skins (Beta) | unverified |
+| Modern skins (beta) | Moderne Skins (Beta) | Andamp |
 | color theme | Farbthema | unverified |
-| Skin menu | Skin-Menü | unverified |
-| sharp pixels | scharfe Pixel | unverified |
+| Skin menu | Skin-Menü | Andamp |
+| sharp pixels | scharfe Pixel | Andamp |
 | visualization | Visualisierung | Winamp |
 | Media Library | Medienbibliothek | Winamp |
 | playlist | Playlist | Winamp |
@@ -192,10 +192,10 @@ comes from, so that the next person keeps to them.
 |---|---|---|
 | skin | 皮肤 | common usage (Winamp: 面板) |
 | modern skin | 现代皮肤 | unverified |
-| Modern skins (beta) | 现代皮肤（测试版） | unverified |
+| Modern skins (beta) | 现代皮肤（测试版） | Andamp |
 | color theme | 配色方案 | unverified |
-| Skin menu | 皮肤菜单 | unverified |
-| sharp pixels | 锐利像素 | unverified |
+| Skin menu | 皮肤菜单 | Andamp |
+| sharp pixels | 锐利像素 | Andamp |
 | visualization | 可视化效果 | Winamp |
 | Media Library | 媒体库 | Winamp |
 | playlist | 播放列表 | Winamp |

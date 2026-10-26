@@ -93,7 +93,7 @@
     <string name="skin_modern_failed_title">“%1$s” kon niet worden geopend</string>
     <string name="skin_modern_failed_body">Deze moderne skin laadde niet en is dus niet toegevoegd.</string>
     <string name="skin_modern_stopped_title">“%1$s” werkt niet meer</string>
-    <string name="skin_modern_stopped_body">Andamp toont voorlopig je laatste klassieke skin. Deze moderne skin wordt opnieuw geprobeerd als Andamp de volgende keer start. Wil je dat niet, kies dan een andere skin in Skins of verwijder deze in de Skinbrowser.</string>
+    <string name="skin_modern_stopped_body">Andamp toont voorlopig je laatste klassieke skin. Deze moderne skin wordt opnieuw geprobeerd als Andamp de volgende keer start. Wil je dat niet, kies dan een andere skin in Skins of verwijder deze in de skinbrowser.</string>
 
     <!-- AmpModals.kt -->
     <string name="skin_modern_offer_title">Moderne skins aanzetten?</string>

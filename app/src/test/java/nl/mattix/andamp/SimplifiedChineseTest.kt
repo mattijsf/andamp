@@ -50,6 +50,13 @@ class SimplifiedChineseTest {
     }
 
     @Test
+    fun `the offer turns modern skins on rather than opening a file`() {
+        // 打开 with an object reads as opening a file, as in skin_modern_failed_title
+        assertEquals("要开启现代皮肤吗？", words.get(R.string.skin_modern_offer_title))
+        assertEquals("开启并添加", words.get(R.string.skin_modern_offer_accept))
+    }
+
+    @Test
     fun `a count has one form, with the number grouped`() {
         assertEquals("1 首曲目", words.plural(R.plurals.library_count_tracks, 1))
         assertEquals("1,234 首曲目", words.plural(R.plurals.phone_count_tracks, 1234))

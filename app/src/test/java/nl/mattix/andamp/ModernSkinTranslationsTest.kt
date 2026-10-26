@@ -96,7 +96,10 @@ class ModernSkinTranslationsTest {
                     "prefs_player_skins_.*|prefs_player_summary_.*(modern|sharp|_skins).*",
             )
 
-        /** The modern-skin strings when this test was written, so that a renamed key cannot empty the list. */
-        const val MODERN_AT_LEAST = 29
+        /**
+         * Low enough to hold when a modern-skin string is removed, high enough to catch a pattern
+         * that finds few or none of them.
+         */
+        const val MODERN_AT_LEAST = 20
     }
 }
