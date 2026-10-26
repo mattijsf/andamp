@@ -65,7 +65,8 @@ To improve a translation that exists, edit its file and open a pull request.
   the app reads the way people remember it. Use another word only where Winamp's would
   not be understood today. The tables below have the words used so far.
 - **Names stay.** Andamp, Winamp, Milkdrop, AVS, projectM, the names of skins, equalizer
-  presets, plug-ins and effects are not translated.
+  presets, plug-ins and effects are not translated. Nor are a modern skin's color theme names
+  and the labels it writes in its menus: they show as the skin wrote them.
 
 ## What stays in English
 
@@ -87,8 +88,8 @@ comes from, so that the next person keeps to them.
 - **Common usage** is the word most media players use today, where Winamp's word would
   not be understood or has gone out of use. The word Winamp used is given beside it. It
   was found by comparing the translations of six open-source players (VLC, Clementine,
-  Rhythmbox, Audacious, DeaDBeeF and Quod Libet) and the Spotify and Apple pages in that
-  language.
+  Rhythmbox, Audacious, DeaDBeeF and Quod Libet) and the help pages of two large music
+  services in that language.
 - **Andamp** is a word for something Winamp did not have.
 - **Unverified** means the word the Winamp menus used in that language was not at hand.
   If you know it, a pull request that corrects the table and the strings is welcome.
@@ -99,6 +100,10 @@ comes from, so that the next person keeps to them.
 |---|---|---|
 | skin | skin | Winamp |
 | modern skin | moderne skin | unverified |
+| Modern skins (beta) | Moderne skins (bèta) | unverified |
+| color theme | kleurthema | unverified |
+| Skin menu | skinmenu | unverified |
+| sharp pixels | scherpe pixels | Andamp |
 | visualization | visualisatie | Winamp |
 | Media Library | mediabibliotheek | Winamp |
 | playlist | afspeellijst | common usage (Winamp: speellijst) |
@@ -123,6 +128,10 @@ comes from, so that the next person keeps to them.
 |---|---|---|
 | skin | skin | Winamp |
 | modern skin | skin moderne | unverified |
+| Modern skins (beta) | Skins modernes (bêta) | unverified |
+| color theme | thème de couleurs | unverified |
+| Skin menu | menu du skin | unverified |
+| sharp pixels | pixels nets | unverified |
 | visualization | visualisation | Winamp |
 | Media Library | médiathèque | Winamp |
 | playlist | liste de lecture | Winamp |
@@ -151,6 +160,10 @@ comes from, so that the next person keeps to them.
 |---|---|---|
 | skin | Skin | Winamp |
 | modern skin | moderner Skin | unverified |
+| Modern skins (beta) | Moderne Skins (Beta) | unverified |
+| color theme | Farbthema | unverified |
+| Skin menu | Skin-Menü | unverified |
+| sharp pixels | scharfe Pixel | unverified |
 | visualization | Visualisierung | Winamp |
 | Media Library | Medienbibliothek | Winamp |
 | playlist | Playlist | Winamp |
@@ -179,6 +192,10 @@ comes from, so that the next person keeps to them.
 |---|---|---|
 | skin | 皮肤 | common usage (Winamp: 面板) |
 | modern skin | 现代皮肤 | unverified |
+| Modern skins (beta) | 现代皮肤（测试版） | unverified |
+| color theme | 配色方案 | unverified |
+| Skin menu | 皮肤菜单 | unverified |
+| sharp pixels | 锐利像素 | unverified |
 | visualization | 可视化效果 | Winamp |
 | Media Library | 媒体库 | Winamp |
 | playlist | 播放列表 | Winamp |

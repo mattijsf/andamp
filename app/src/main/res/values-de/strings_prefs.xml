@@ -115,7 +115,7 @@
     <string name="prefs_notice_avs_decoder_what">Der Dateiaufbau und die Feldanordnung des .avs-Formats für Voreinstellungen, so wie der Leser der Voreinstellungen sie befolgt.</string>
     <string name="prefs_notice_projectm_eval_what">Wertet die Ausdrücke aus, in denen AVS-Voreinstellungen geskriptet sind; in die AVS-Bibliothek eingebaut.</string>
     <string name="prefs_notice_milkdrop_what">Das Original von Ryan Geiss, dessen .milk-Voreinstellungen projectM rendert.</string>
-    <string name="prefs_notice_webamp_what">Seine Sprite-Tabellen sind die Referenz für jede Koordinate in den Fenstern mit Skin.</string>
+    <string name="prefs_notice_webamp_what">Seine Sprite-Tabellen sind die Referenz für jede Koordinate in den Fenstern mit Skin. Seine Abschrift von std.mi listet die Skriptaufrufe auf, die die Engine für moderne Skins beantwortet, und seine Beschreibung des Skript-Bytecodes ist der Aufbau, den die Engine liest.</string>
     <string name="prefs_notice_liberation_sans_what">Die Schriftart der Playlist, metrisch kompatibel mit der Arial, die PLEDIT.TXT nennt.</string>
     <string name="prefs_notice_liberation_sans_obligation">Unverändert beigelegt, unter einem Namen, den die Lizenz erlaubt.</string>
     <string name="prefs_notice_dejavu_what">Ersetzt die Windows-Schriftarten, die moderne Winamp-Skins nennen, aber nicht mitbringen.</string>
@@ -167,6 +167,20 @@
     <string name="prefs_player_summary_wallpaper_colors">Farben des Hintergrundbilds</string>
     <string name="prefs_player_summary_all_with_overlay">Immer im Vordergrund, Fenster, Listen, Berührung und Farben</string>
     <string name="prefs_player_summary_all">Fenster, Listen, Berührung und Farben</string>
+    <string name="prefs_player_skins_section">Skins</string>
+    <string name="prefs_player_summary_modern_skins">Moderne Skins</string>
+    <string name="prefs_player_summary_sharp_pixels">Scharfe Pixel</string>
+    <string name="prefs_player_summary_all_skins">Fenster, Listen, Berührung, Farben und Skins</string>
+    <string name="prefs_player_summary_all_with_overlay_skins">Immer im Vordergrund, Fenster, Listen, Berührung, Farben und Skins</string>
+
+    <!-- ModernSkinPrefs.kt -->
+    <string name="prefs_modern_skins_title">Moderne Skins (Beta)</string>
+    <string name="prefs_modern_skins_on">Neben klassischen Skins kannst du auch moderne Winamp-Skins (.wal) hinzufügen und tragen. Manche sehen vielleicht etwas anders aus oder funktionieren etwas anders als in Winamp. Halte einen modernen Skin gedrückt, um das Menü von Andamp zu öffnen. Schaltest du dies aus, trägt der Player wieder deinen letzten klassischen Skin.</string>
+    <string name="prefs_modern_skins_off">Nur klassische Skins (.wsz) lassen sich hinzufügen. Schalte dies ein, um auch moderne Winamp-Skins (.wal) hinzuzufügen und zu tragen. Moderne Skins, die du schon hinzugefügt hast, bleiben bis dahin verborgen.</string>
+    <string name="prefs_modern_skins_note">Nur der Player trägt einen modernen Skin. Die Menüs, die Medienbibliothek, der Skin-Browser, das Widget und Android Auto behalten deinen letzten klassischen Skin, außer du hast für das Widget oder Android Auto einen anderen gewählt. Solange der Player einen modernen Skin trägt, sind Playlist-Editor, Equalizer, Doppelte Größe und Visualisierungsoptionen im Menü ausgegraut, weil der Skin die Fenster und die Visualisierung des Players zeichnet.</string>
+    <string name="prefs_sharp_pixels_title">Scharfe Pixel</string>
+    <string name="prefs_sharp_pixels_on">Klare Kanten, aber manche Buchstaben und Linien werden ungleich dick. Das betrifft nur moderne Skins, die Andamp in einer Zwischengröße zeigt, etwa 2,5-fach vergrößert, damit sie auf deinen Bildschirm passen.</string>
+    <string name="prefs_sharp_pixels_off">Weich, aber leicht unscharf. Schalte dies für klare Kanten ein; manche Buchstaben und Linien werden dann ungleich dick. Das betrifft nur moderne Skins, die Andamp in einer Zwischengröße zeigt, etwa 2,5-fach vergrößert, damit sie auf deinen Bildschirm passen.</string>
 
     <!-- PluginsSection.kt -->
     <string name="prefs_plugins_intro">Audio-Plug-ins in Lua. Andamp behält eine eigene Kopie, die Originaldatei kann also verschoben oder gelöscht werden.</string>

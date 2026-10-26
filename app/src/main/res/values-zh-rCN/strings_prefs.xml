@@ -110,7 +110,7 @@
     <string name="prefs_notice_avs_decoder_what">.avs 预设格式的帧结构与字段布局，预设读取器遵循它们。</string>
     <string name="prefs_notice_projectm_eval_what">计算 AVS 预设脚本中的表达式，内置于 AVS 库中。</string>
     <string name="prefs_notice_milkdrop_what">Ryan Geiss 的原作，projectM 渲染的正是它的 .milk 预设。</string>
-    <string name="prefs_notice_webamp_what">它的精灵图坐标是带皮肤的窗口中每个坐标的依据。</string>
+    <string name="prefs_notice_webamp_what">它的精灵图坐标是带皮肤的窗口中每个坐标的依据。它对 std.mi 的转录列出了现代皮肤引擎所响应的脚本调用，它对脚本字节码的描述就是引擎读取的格式。</string>
     <string name="prefs_notice_liberation_sans_what">播放列表的字体，与 PLEDIT.TXT 指定的 Arial 度量兼容。</string>
     <string name="prefs_notice_liberation_sans_obligation">未经修改地打包，使用许可证允许的名称。</string>
     <string name="prefs_notice_dejavu_what">代替 Winamp 现代皮肤指定但未附带的 Windows 字体。</string>
@@ -162,6 +162,20 @@
     <string name="prefs_player_summary_wallpaper_colors">壁纸颜色</string>
     <string name="prefs_player_summary_all_with_overlay">总在最前、窗口、列表、触控和颜色</string>
     <string name="prefs_player_summary_all">窗口、列表、触控和颜色</string>
+    <string name="prefs_player_skins_section">皮肤</string>
+    <string name="prefs_player_summary_modern_skins">现代皮肤</string>
+    <string name="prefs_player_summary_sharp_pixels">锐利像素</string>
+    <string name="prefs_player_summary_all_skins">窗口、列表、触控、颜色和皮肤</string>
+    <string name="prefs_player_summary_all_with_overlay_skins">总在最前、窗口、列表、触控、颜色和皮肤</string>
+
+    <!-- ModernSkinPrefs.kt -->
+    <string name="prefs_modern_skins_title">现代皮肤（测试版）</string>
+    <string name="prefs_modern_skins_on">除了经典皮肤，您还可以添加并使用 Winamp 现代皮肤（.wal）。部分现代皮肤的外观或功能可能与在 Winamp 中略有不同。按住现代皮肤即可打开 Andamp 的菜单。关闭此项后，播放器会换回您上次使用的经典皮肤。</string>
+    <string name="prefs_modern_skins_off">只能添加经典皮肤（.wsz）。打开此项，即可同时添加并使用 Winamp 现代皮肤（.wal）。您以前添加的现代皮肤会一直隐藏，直到打开此项。</string>
+    <string name="prefs_modern_skins_note">只有播放器使用现代皮肤。菜单、媒体库、皮肤浏览器、小部件和 Android Auto 会保留您上次使用的经典皮肤，除非您为小部件或 Android Auto 选择了其他皮肤。播放器使用现代皮肤时，菜单中的“播放列表编辑器”、“均衡器”、“双倍大小”和“可视化效果选项”会显示为灰色，因为播放器的窗口和可视化效果由该皮肤绘制。</string>
+    <string name="prefs_sharp_pixels_title">锐利像素</string>
+    <string name="prefs_sharp_pixels_on">边缘清晰，但部分文字和线条会粗细不均。此项只影响 Andamp 为适应屏幕而以非整数倍大小（例如 2.5 倍）显示的现代皮肤。</string>
+    <string name="prefs_sharp_pixels_off">平滑，但略显模糊。打开此项可获得清晰的边缘，但部分文字和线条会粗细不均。此项只影响 Andamp 为适应屏幕而以非整数倍大小（例如 2.5 倍）显示的现代皮肤。</string>
 
     <!-- PluginsSection.kt -->
     <string name="prefs_plugins_intro">Lua 音频插件。Andamp 会保留自己的副本，因此原文件可以移动或删除。</string>

@@ -115,7 +115,7 @@
     <string name="prefs_notice_avs_decoder_what">De opbouw en veldindelingen van het .avs-formaat, zoals de lezer van presets ze volgt.</string>
     <string name="prefs_notice_projectm_eval_what">Rekent de expressies uit waarin AVS-presets zijn geschreven, ingebouwd in de AVS-bibliotheek.</string>
     <string name="prefs_notice_milkdrop_what">Het origineel van Ryan Geiss, waarvan projectM de .milk-presets weergeeft.</string>
-    <string name="prefs_notice_webamp_what">De sprite-kaarten ervan zijn de maatstaf voor elke coördinaat in de vensters met een skin.</string>
+    <string name="prefs_notice_webamp_what">De sprite-kaarten ervan zijn de maatstaf voor elke coördinaat in de vensters met een skin. Uit Webamp komen ook de transcriptie van std.mi, met de scriptaanroepen die de engine voor moderne skins beantwoordt, en de beschrijving van de scriptbytecode, de indeling die de engine leest.</string>
     <string name="prefs_notice_liberation_sans_what">Het lettertype van de afspeellijst, met dezelfde maten als de Arial die PLEDIT.TXT noemt.</string>
     <string name="prefs_notice_liberation_sans_obligation">Ongewijzigd meegeleverd, onder een naam die de licentie toestaat.</string>
     <string name="prefs_notice_dejavu_what">Vervangt de Windows-lettertypen die moderne Winamp-skins noemen maar niet meeleveren.</string>
@@ -167,6 +167,20 @@
     <string name="prefs_player_summary_wallpaper_colors">Achtergrondkleuren</string>
     <string name="prefs_player_summary_all_with_overlay">Altijd bovenaan, vensters, lijsten, aanraking en kleuren</string>
     <string name="prefs_player_summary_all">Vensters, lijsten, aanraking en kleuren</string>
+    <string name="prefs_player_skins_section">Skins</string>
+    <string name="prefs_player_summary_modern_skins">Moderne skins</string>
+    <string name="prefs_player_summary_sharp_pixels">Scherpe pixels</string>
+    <string name="prefs_player_summary_all_skins">Vensters, lijsten, aanraking, kleuren en skins</string>
+    <string name="prefs_player_summary_all_with_overlay_skins">Altijd bovenaan, vensters, lijsten, aanraking, kleuren en skins</string>
+
+    <!-- ModernSkinPrefs.kt -->
+    <string name="prefs_modern_skins_title">Moderne skins (bèta)</string>
+    <string name="prefs_modern_skins_on">Naast klassieke skins kun je ook moderne Winamp-skins (.wal) toevoegen en dragen. Sommige zien er misschien iets anders uit of werken iets anders dan in Winamp. Houd je vinger op een moderne skin om het menu van Andamp te openen. Zet je dit uit, dan draagt de speler weer je laatste klassieke skin.</string>
+    <string name="prefs_modern_skins_off">Je kunt alleen klassieke skins (.wsz) toevoegen. Zet dit aan om ook moderne Winamp-skins (.wal) toe te voegen en te dragen. Moderne skins die je eerder hebt toegevoegd, blijven tot dan verborgen.</string>
+    <string name="prefs_modern_skins_note">Alleen de speler draagt een moderne skin. De menu’s, de Mediabibliotheek, de Skinbrowser, de widget en Android Auto houden je laatste klassieke skin, tenzij je voor de widget of Android Auto een andere hebt gekozen. Zolang de speler een moderne skin draagt, zijn Afspeellijsteditor, Equalizer, Dubbele grootte en Visualisatieopties grijs in het menu, omdat de skin de vensters en de visualisatie van de speler tekent.</string>
+    <string name="prefs_sharp_pixels_title">Scherpe pixels</string>
+    <string name="prefs_sharp_pixels_on">Strakke randen, maar sommige letters en lijnen worden ongelijk dik. Dit verandert alleen moderne skins die Andamp op een tussenmaat laat zien, zoals 2,5 keer zo groot, zodat ze op je scherm passen.</string>
+    <string name="prefs_sharp_pixels_off">Zacht, maar iets wazig. Zet dit aan voor strakke randen; sommige letters en lijnen worden dan ongelijk dik. Dit verandert alleen moderne skins die Andamp op een tussenmaat laat zien, zoals 2,5 keer zo groot, zodat ze op je scherm passen.</string>
 
     <!-- PluginsSection.kt -->
     <string name="prefs_plugins_intro">Lua-plug-ins voor geluid. Andamp bewaart een kopie, dus het oorspronkelijke bestand mag worden verplaatst of verwijderd.</string>

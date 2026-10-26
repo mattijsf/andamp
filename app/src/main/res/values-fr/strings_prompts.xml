@@ -85,8 +85,18 @@
     <string name="prompt_jump_to_time_title">Sauter à la position</string>
     <string name="prompt_jump_to_time_confirm">Sauter</string>
 
+    <!-- SkinOps.kt -->
     <string name="skin_modern_title">« %1$s » est un skin moderne</string>
     <string name="skin_modern_body">Andamp charge les skins Winamp classiques (.wsz). Les skins modernes (.wal) ne peuvent pas être ajoutés dans cette version.</string>
     <string name="skin_too_large_title">« %1$s » est trop volumineux</string>
     <string name="skin_too_large_body">Ce fichier est trop volumineux pour être chargé comme skin.</string>
+    <string name="skin_modern_failed_title">« %1$s » n’a pas pu être ouvert</string>
+    <string name="skin_modern_failed_body">Ce skin moderne ne s’est pas chargé, il n’a donc pas été ajouté.</string>
+    <string name="skin_modern_stopped_title">« %1$s » ne fonctionne plus</string>
+    <string name="skin_modern_stopped_body">Andamp affiche pour l’instant votre dernier skin classique à la place. Ce skin moderne sera réessayé au prochain démarrage d’Andamp. Pour que cela cesse, choisissez un autre skin dans « Skins » ou retirez celui-ci dans l’explorateur de skins.</string>
+
+    <!-- AmpModals.kt -->
+    <string name="skin_modern_offer_title">Activer les skins modernes ?</string>
+    <string name="skin_modern_offer_body">« %1$s » est un skin moderne de Winamp. Les skins modernes sont en bêta. Les activer et ajouter ce skin ? Maintenez le doigt sur un skin moderne pour ouvrir le menu d’Andamp. Vous pouvez désactiver les skins modernes dans Préférences &gt; Lecteur.</string>
+    <string name="skin_modern_offer_accept">Activer et ajouter</string>
 </resources>

@@ -34,6 +34,8 @@ class TranslatedLanguagesTest {
         assertEquals("1 TRACK", words.plural(R.plurals.library_count_tracks, 1))
         assertEquals("2 TRACKS", words.plural(R.plurals.library_count_tracks, 2))
         assertEquals("analyzer, medium refresh rate", widget.summary(words))
+        assertEquals("Modern skins (beta)", words.get(R.string.prefs_modern_skins_title))
+        assertEquals("Color themes", words.get(R.string.menu_color_themes))
     }
 
     @Test
@@ -44,6 +46,8 @@ class TranslatedLanguagesTest {
         assertEquals("1 NUMMER", words.plural(R.plurals.library_count_tracks, 1))
         assertEquals("2 NUMMERS", words.plural(R.plurals.library_count_tracks, 2))
         assertEquals("Analyse, verversing: gemiddeld", widget.summary(words))
+        assertEquals("Moderne skins (bèta)", words.get(R.string.prefs_modern_skins_title))
+        assertEquals("Kleurthema’s", words.get(R.string.menu_color_themes))
     }
 
     @Test
@@ -60,6 +64,8 @@ class TranslatedLanguagesTest {
         assertEquals("1 TITEL", words.plural(R.plurals.library_count_tracks, 1))
         // a noun keeps its capital inside the line, which is why the line gets its words from resources for that place
         assertEquals("Analysator, Aktualisierungsrate: mittel", widget.summary(words))
+        assertEquals("Moderne Skins (Beta)", words.get(R.string.prefs_modern_skins_title))
+        assertEquals("Farbthemen", words.get(R.string.menu_color_themes))
     }
 
     @Test
@@ -71,6 +77,8 @@ class TranslatedLanguagesTest {
         assertEquals("2 MORCEAUX", words.plural(R.plurals.library_count_tracks, 2))
         // the adjective agrees with "fréquence"
         assertEquals("Analyseur, fréquence d’actualisation moyenne", widget.summary(words))
+        assertEquals("Skins modernes (bêta)", words.get(R.string.prefs_modern_skins_title))
+        assertEquals("Thèmes de couleurs", words.get(R.string.menu_color_themes))
     }
 
     @Test

@@ -43,6 +43,13 @@ class SimplifiedChineseTest {
     }
 
     @Test
+    fun `modern skins are worded in Chinese`() {
+        assertEquals("现代皮肤（测试版）", words.get(R.string.prefs_modern_skins_title))
+        assertEquals("配色方案", words.get(R.string.menu_color_themes))
+        assertEquals("Bento · 现代皮肤", words.get(R.string.skin_row_modern, "Bento"))
+    }
+
+    @Test
     fun `a count has one form, with the number grouped`() {
         assertEquals("1 首曲目", words.plural(R.plurals.library_count_tracks, 1))
         assertEquals("1,234 首曲目", words.plural(R.plurals.phone_count_tracks, 1234))
