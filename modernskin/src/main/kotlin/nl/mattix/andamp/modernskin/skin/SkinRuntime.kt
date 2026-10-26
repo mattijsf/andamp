@@ -2203,6 +2203,23 @@ class SkinRuntime(
      */
     val menuTarget: Int? get() = menuAim?.seq
 
+    /** The objects with a skin menu on screen when a touch landed on none of them, each aimed at its center. */
+    private class MenuChoices(
+        val aims: List<MenuAim>,
+        val named: SkinMenuChoices,
+    )
+
+    private var menuChoices: MenuChoices? = null
+
+    /**
+     * When the last [pointerDown] or [doubleTap] landed on no object with a skin menu
+     * ([menuTarget] is null): its seq and the objects with a skin menu on screen, else null. They
+     * count as on screen in an open window's current layout, shown and taking clicks; one in a
+     * closed window or behind a hidden parent does not. [rightClick] with that seq and an index
+     * into them opens that object's menu.
+     */
+    val skinMenuChoices: SkinMenuChoices? get() = menuChoices?.named
+
     private var moveSeq: Int? = null
 
     /**
@@ -2224,18 +2241,49 @@ class SkinRuntime(
         return generateSequence(o.parent) { it.parent }.firstNotNullOfOrNull { it.move } ?: false
     }
 
-    /** Remembers the object with a skin menu under a touch at a point of the stack, or none. */
+    /**
+     * Remembers the object with a skin menu under a touch at a point of the stack; under none, the
+     * objects with a skin menu on screen.
+     */
     private fun aimMenu(
         sx: Int,
         sy: Int,
         seq: Int,
     ) {
-        menuAim = null
         if (needsLayout) doLayout()
-        val window = windowAt(sx, sy) ?: return
+        menuAim = menuAimAt(sx, sy, seq)
+        menuChoices = if (menuAim == null) menusOnScreen(seq) else null
+    }
+
+    /** The object with a skin menu under a touch at a point of the stack, aimed where the touch landed, or null. */
+    private fun menuAimAt(
+        sx: Int,
+        sy: Int,
+        seq: Int,
+    ): MenuAim? {
+        val window = windowAt(sx, sy) ?: return null
         val origin = windowRect(window)
-        val target = menuObjectAt(window, sx - origin.left, sy - origin.top) ?: return
-        menuAim = MenuAim(seq, target, sx - origin.left, sy - origin.top)
+        val target = menuObjectAt(window, sx - origin.left, sy - origin.top) ?: return null
+        return MenuAim(seq, target, sx - origin.left, sy - origin.top)
+    }
+
+    /**
+     * The objects with a skin menu on screen (see [skinMenuChoices]) for the touch [seq], top to
+     * bottom and then left to right in the stack, each aimed at its center; null when there are
+     * none. A ghost takes no clicks and is left out, as [menuObjectAt] leaves it out.
+     */
+    private fun menusOnScreen(seq: Int): MenuChoices? {
+        val aims =
+            objects
+                .asSequence()
+                .filter { !it.ghost && touchable(it, faded = true) && skinMenus.getOrPut(it) { hasSkinMenu(it) } }
+                .mapNotNull { o -> o.layoutObject?.let { o to windowRect(it) } }
+                .sortedWith(compareBy({ (o, w) -> w.top + o.rect.top }, { (o, w) -> w.left + o.rect.left }))
+                .map { (o, _) -> MenuAim(seq, o, (o.rect.left + o.rect.right) / 2, (o.rect.top + o.rect.bottom) / 2) }
+                .toList()
+        if (aims.isEmpty()) return null
+        val named = aims.map { SkinMenuChoices.Choice(it.target.id, it.target.tooltip) }
+        return MenuChoices(aims, SkinMenuChoices(seq, named))
     }
 
     /**
@@ -2306,23 +2354,32 @@ class SkinRuntime(
     /**
      * A right click on the object the touch [seq] landed on, at the point it landed (see
      * [menuTarget]), as a separate touch: onRightButtonDown and onRightButtonUp, and on a Button
-     * then onRightClick. A menu a handler pops shows, even after the host ended the press with
-     * [pointerCancel]. Nothing happens for an older touch's seq, or when the object is no longer on
-     * screen (its window closed or its layout switched away).
+     * then onRightClick. With a [choice], the right click goes to that object of
+     * [skinMenuChoices] instead, at its center. A menu a handler pops shows, even after the host
+     * ended the press with [pointerCancel]. Nothing happens for an older touch's seq, a choice not
+     * in the list, or when the object is no longer on screen (its window closed or its layout
+     * switched away).
      */
-    fun rightClick(seq: Int) =
-        gesture(fresh = true) {
-            val aim = menuAim?.takeIf { it.seq == seq } ?: return@gesture
-            // the touch was a long press: a deferred press goes nowhere
-            dropDeferred()
-            if (needsLayout) doLayout()
-            if (aim.target !in objects) return@gesture
-            // a press still held lets go first, as a right click takes the mouse
-            if (captured != null) endPress()
-            lastPointer = aim.x to aim.y
-            aim.target.rightClick(aim.x, aim.y)
-            if (aim.target is Button) aim.target.dispatch("onrightclick")
-        }
+    fun rightClick(
+        seq: Int,
+        choice: Int? = null,
+    ) = gesture(fresh = true) {
+        val aim = if (choice == null) menuAim else menuChoices?.aims?.getOrNull(choice)
+        aim?.takeIf { it.seq == seq }?.let(::rightClickAt)
+    }
+
+    /** A right click on [aim]'s object at its point, as [rightClick] sends it. */
+    private fun rightClickAt(aim: MenuAim) {
+        // the touch was a long press: a deferred press goes nowhere
+        dropDeferred()
+        if (needsLayout) doLayout()
+        if (aim.target !in objects) return
+        // a press still held lets go first, as a right click takes the mouse
+        if (captured != null) endPress()
+        lastPointer = aim.x to aim.y
+        aim.target.rightClick(aim.x, aim.y)
+        if (aim.target is Button) aim.target.dispatch("onrightclick")
+    }
 
     /** Pointer calls running now; a skin may pop a menu only from one, as a reply to the listener's touch. */
     private var gestureDepth = 0

@@ -25,3 +25,18 @@ class SkinMenu(
         val menu: SkinMenu,
     ) : Item
 }
+
+/**
+ * The objects with a skin menu on screen when the touch [seq] landed beside all of them, top to
+ * bottom, for the host to offer by name (see [SkinRuntime.skinMenuChoices]).
+ */
+data class SkinMenuChoices(
+    val seq: Int,
+    val objects: List<Choice>,
+) {
+    /** An object with a skin menu: its [id] in the skin, and its [tooltip] when the skin gives one. */
+    data class Choice(
+        val id: String,
+        val tooltip: String?,
+    )
+}

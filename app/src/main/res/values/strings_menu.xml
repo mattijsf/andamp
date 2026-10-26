@@ -3,8 +3,18 @@
     <!-- MainMenu.kt -->
     <!-- The title of the player's main menu: the name Winamp gives it. -->
     <string name="menu_winamp" translatable="false">Winamp</string>
-    <!-- The main menu's first entry where a modern skin has a right-click menu at the long press; opens that menu. -->
+    <!-- The main menu's first entry while a modern skin with a right-click menu is worn; opens that menu, or lists the skin's menus when it has several. -->
     <string name="menu_skin_menu">Skin menu</string>
+    <!-- Under "Skin menu": a modern skin's right-click menu on its visualizer, named so where the skin gives the visualizer no name. -->
+    <string name="menu_skin_menu_visualizer">Visualizer</string>
+    <!-- Under "Skin menu": a modern skin's right-click menu on its time display. -->
+    <string name="menu_skin_menu_time">Time</string>
+    <!-- Under "Skin menu": a modern skin's right-click menu on its album art. -->
+    <string name="menu_skin_menu_album_art">Album art</string>
+    <!-- Under "Skin menu": a modern skin's right-click menu on its rating stars. -->
+    <string name="menu_skin_menu_rating">Rating</string>
+    <!-- Under "Skin menu": a modern skin's right-click menu on a part of the skin with no name, numbered among those. -->
+    <string name="menu_skin_menu_numbered">Menu %1$d</string>
     <string name="menu_play">Play</string>
     <string name="menu_play_file">Play file...</string>
     <string name="menu_play_directory">Play directory...</string>

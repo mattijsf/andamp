@@ -168,6 +168,7 @@ internal class WalFitting {
             windowOpen = windowOpen,
             animating = runtime.animating,
             menuTarget = runtime.menuTarget,
+            menuChoices = runtime.skinMenuChoices,
             moveTarget = runtime.moveTarget,
             wantsFrames = wantsFrames,
             dock = dockOf(runtime, drawn),

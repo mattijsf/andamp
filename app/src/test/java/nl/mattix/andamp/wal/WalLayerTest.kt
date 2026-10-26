@@ -34,7 +34,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.test.core.app.ApplicationProvider
+import nl.mattix.andamp.modernskin.skin.SkinMenuChoices
 import nl.mattix.andamp.skin.SkinLoader
+import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.LibraryAccess
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WinampState
@@ -448,6 +450,49 @@ class WalLayerTest {
         assertEquals(MAIN_MENU, state.activeMenu?.title)
         compose.onNodeWithText(PREFERENCES).assertExists()
         compose.onNodeWithText(SKIN_MENU).assertDoesNotExist()
+    }
+
+    @Test
+    fun `a press beside the skin's only menu gets Skin menu, which right-clicks that object`() {
+        layer()
+        surface.menusBesideEveryPress = listOf(SkinMenuChoices.Choice("title1", null))
+
+        screen().performTouchInput { down(Offset(450f, 100f)) }
+        frames(1)
+        compose.mainClock.advanceTimeBy(ViewConfiguration.getLongPressTimeout() + 50L)
+        screen().performTouchInput { up() }
+        frames()
+
+        compose.onNodeWithText(SKIN_MENU).performClick()
+        frames()
+
+        assertEquals("the only object, for that press", listOf(1 to 0), surface.choiceClicks)
+        assertTrue(surface.rightClicks.isEmpty())
+        assertNull("the main menu closed", state.activeMenu)
+    }
+
+    @Test
+    fun `a press beside several skin menus lists them under Skin menu by name, and a pick right-clicks that one`() {
+        layer()
+        surface.menusBesideEveryPress =
+            listOf(SkinMenuChoices.Choice("main.vis.trigger", null), SkinMenuChoices.Choice("maincfg", "Configuration"))
+
+        screen().performTouchInput { down(Offset(450f, 100f)) }
+        frames(1)
+        compose.mainClock.advanceTimeBy(ViewConfiguration.getLongPressTimeout() + 50L)
+        screen().performTouchInput { up() }
+        frames()
+
+        val entry = state.activeMenu?.items?.first() as AmpMenuItem.Submenu
+        assertEquals(SKIN_MENU, entry.label)
+        assertEquals(listOf("Visualizer", "Configuration"), entry.items.map { (it as AmpMenuItem.Action).label })
+        compose.onNodeWithText(SKIN_MENU).performClick()
+        frames()
+        compose.onNodeWithText("Configuration").performClick()
+        frames()
+
+        assertEquals(listOf(1 to 1), surface.choiceClicks)
+        assertNull("the main menu closed", state.activeMenu)
     }
 
     @Test

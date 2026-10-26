@@ -240,9 +240,12 @@ internal class WalLook(
         return seq
     }
 
-    override fun rightClick(seq: Int) {
+    override fun rightClick(
+        seq: Int,
+        choice: Int?,
+    ) {
         lastInputAt = SystemClock.uptimeMillis()
-        engine?.rightClick(seq)
+        engine?.rightClick(seq, choice)
     }
 
     override fun closeTopWindow() {
