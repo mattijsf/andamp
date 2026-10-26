@@ -35,6 +35,9 @@ internal object WalSharp {
     /** Held while the stored value loads, so it loads once. */
     private val reading = Any()
 
+    /** Told after the stored value has loaded and before it is applied; for tests. */
+    internal var onLoaded: (() -> Unit)? = null
+
     /**
      * The application whose stored value [read] loads, whatever context it is given;
      * set by [forget] for tests, null in the app.
@@ -51,6 +54,7 @@ internal object WalSharp {
         synchronized(reading) {
             if (known) return
             val stored = prefs(storedIn ?: context).getBoolean(KEY, false)
+            onLoaded?.invoke()
             synchronized(lock) {
                 // a change made while the stored value loaded is newer than it
                 if (!known) apply(stored)
@@ -81,6 +85,7 @@ internal object WalSharp {
             known = false
             WalRender.direct = false
         }
+        onLoaded = null
         Snapshot.sendApplyNotifications()
     }
 

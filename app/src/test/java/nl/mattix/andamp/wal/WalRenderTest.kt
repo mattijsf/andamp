@@ -144,6 +144,8 @@ class WalRenderTest {
 
     @Test
     fun `drawn directly, pieces meet on whole screen pixels and show nothing of what lies under them`() {
+        // waits for the application's startup read of sharp pixels, which would set direct back
+        WalSharp.read(app)
         WalRender.direct = true
         val gray = 0xFF808080.toInt()
         val magenta = 0xFFFF00FF.toInt()

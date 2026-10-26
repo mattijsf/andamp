@@ -281,6 +281,8 @@ class WalLayersTest {
     @Test
     fun `with sharp pixels on, a whole scale keeps its parts and a fractional one is drawn the plain way`() {
         val layers = layers()
+        // waits for the application's startup read of sharp pixels, which would set direct back
+        WalSharp.read(app)
         WalRender.direct = true
         assertEquals(listOf("run 11", "window 1", "window 2", "stack 0"), frame(layers, plans(1, 1)))
         assertEquals(emptyList<String>(), frame(layers, plans(1, 1)))

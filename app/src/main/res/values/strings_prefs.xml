@@ -202,13 +202,13 @@
     <!-- Under the modern skins switch while it is off. -->
     <string name="prefs_modern_skins_off">Only classic skins (.wsz) can be added. Switch this on to add and wear Winamp modern skins (.wal) too. Modern skins you added before stay hidden until then.</string>
     <!-- A note under the modern skins switch: what wears a modern skin and what keeps a classic one. -->
-    <string name="prefs_modern_skins_note">Only the player wears a modern skin. The menus, Media Library, Skin Browser, widget and Android Auto keep your last classic skin, unless you picked another one for the widget or Android Auto. While a modern skin is worn, Playlist Editor, Equalizer and Double Size are grayed out in the menu, because the skin draws the player\'s windows.</string>
-    <!-- The switch under the modern skins switch, shown while that one is on: modern skins resized by an uneven amount are drawn with hard edges. -->
+    <string name="prefs_modern_skins_note">Only the player wears a modern skin. The menus, Media Library, Skin Browser, widget and Android Auto keep your last classic skin, unless you picked another one for the widget or Android Auto. While a modern skin is worn, Playlist Editor, Equalizer, Double Size and Visualization options are grayed out in the menu, because the skin draws the player\'s windows and visualizer.</string>
+    <!-- The switch under the modern skins switch, shown while that one is on: modern skins shown at an in-between size are drawn with hard edges. "An in-between size" in the two texts below means a size that is not a whole number of times the skin's size, such as 2.5 times rather than exactly 2 or 3 times; it does not mean an odd number. "Uneven in width" means some strokes come out thicker than others. -->
     <string name="prefs_sharp_pixels_title">Sharp pixels</string>
     <!-- Under the sharp pixels switch while it is on. -->
-    <string name="prefs_sharp_pixels_on">Crisp edges, but some letters and lines come out uneven in width. This changes only modern skins that Andamp resizes by an uneven amount to fit your screen.</string>
+    <string name="prefs_sharp_pixels_on">Crisp edges, but some letters and lines come out uneven in width. This changes only modern skins that Andamp shows at an in-between size, such as 2.5 times, to fit your screen.</string>
     <!-- Under the sharp pixels switch while it is off. -->
-    <string name="prefs_sharp_pixels_off">Smooth, but slightly blurred. Switch this on for crisp edges; some letters and lines then come out uneven in width. This changes only modern skins that Andamp resizes by an uneven amount to fit your screen.</string>
+    <string name="prefs_sharp_pixels_off">Smooth, but slightly blurred. Switch this on for crisp edges; some letters and lines then come out uneven in width. This changes only modern skins that Andamp shows at an in-between size, such as 2.5 times, to fit your screen.</string>
 
     <!-- PluginsSection.kt -->
     <string name="prefs_plugins_intro">Lua audio plug-ins. Andamp keeps its own copy, so the original file can be moved or deleted.</string>
