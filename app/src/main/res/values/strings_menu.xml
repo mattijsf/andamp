@@ -44,6 +44,8 @@
     <string name="menu_ten_tracks_back">Ten tracks back</string>
     <string name="menu_skin_browser">Skin Browser...</string>
     <string name="menu_load_skin">Load skin...</string>
+    <!-- A submenu in Skins, after Load skin..., while a worn modern skin has two or more color themes; lists them by the names the skin gives them. -->
+    <string name="menu_color_themes">Color themes</string>
     <!-- Winamp's entry, angle brackets and all; opens the skin museum. -->
     <string name="menu_get_more_skins">&lt;&lt; Get more skins! &gt;&gt;</string>
     <!-- a modern skin's row in the Skins menu and the Skin Browser; %1$s is the skin's name -->

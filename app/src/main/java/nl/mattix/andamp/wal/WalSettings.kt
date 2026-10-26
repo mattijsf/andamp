@@ -116,23 +116,24 @@ internal class WalSettings(
 
     private fun read(id: String): JSONObject? = prefs.getString(id, null)?.let { runCatching { JSONObject(it) }.getOrNull() }
 
-    private companion object {
+    internal companion object {
+        /** The preferences file of modern skins: each skin's value, its places, and the modern-skin switches ([WalSharp]). */
         const val PREFS = "wal_skins"
-        const val THEME = "theme"
-        const val SETTINGS = "settings"
-        const val STRINGS = "strings"
-        const val INTS = "ints"
-        const val TAG = "WalSettings"
-        const val DX = "dx"
-        const val DY = "dy"
+        private const val THEME = "theme"
+        private const val SETTINGS = "settings"
+        private const val STRINGS = "strings"
+        private const val INTS = "ints"
+        private const val TAG = "WalSettings"
+        private const val DX = "dx"
+        private const val DY = "dy"
 
         /** Where a skin's place is kept, apart from the value the engine thread writes whole. */
-        fun placeKey(
+        private fun placeKey(
             id: String,
             sideways: Boolean,
         ) = if (sideways) "$id.place.sideways" else "$id.place"
 
         /** About 256 KB of JSON per skin. */
-        const val MAX_CHARS = 256 * 1024
+        private const val MAX_CHARS = 256 * 1024
     }
 }

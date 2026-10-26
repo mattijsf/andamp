@@ -26,6 +26,8 @@ import nl.mattix.andamp.modernskin.skin.WindowPlan
 import org.junit.After
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -274,6 +276,18 @@ class WalLayersTest {
         assertEquals(emptyList<String>(), frame(layers, plans(1, 1)))
         assertEquals(0, layers.keptWindows)
         assertEquals(listOf("run 11", "window 1", "window 2", "stack 0"), frame(layers, plans(1, 1), scale = 1.5f))
+    }
+
+    @Test
+    fun `with sharp pixels on, a whole scale keeps its parts and a fractional one is drawn the plain way`() {
+        val layers = layers()
+        WalRender.direct = true
+        assertEquals(listOf("run 11", "window 1", "window 2", "stack 0"), frame(layers, plans(1, 1)))
+        assertEquals(emptyList<String>(), frame(layers, plans(1, 1)))
+        assertTrue(layers.suits(stack(), plans(1, 1), 2, fractional = false))
+        assertFalse(layers.suits(stack(), plans(1, 1), 2, fractional = true))
+        WalRender.direct = false
+        assertTrue(layers.suits(stack(), plans(1, 1), 2, fractional = true))
     }
 
     @Test

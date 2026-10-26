@@ -126,7 +126,9 @@ internal class WalLayers(
     /**
      * Whether a frame of [stack] with its [plans] can be drawn with kept drawings: the switches
      * allow it, the plans match the windows, every window has a width and a height, the stack
-     * layer would not be too large, and a whole scale has nothing drawn under it.
+     * layer would not be too large, and a whole scale has nothing drawn under it. Sharp pixels
+     * ([WalRender.direct]) leave a fractional scale to [drawWalStack], which draws it with hard
+     * edges; a whole scale, which they do not change, keeps its drawings.
      */
     fun suits(
         stack: List<Pair<Rect, List<DrawCmd>>>,
@@ -134,7 +136,7 @@ internal class WalLayers(
         whole: Int,
         fractional: Boolean,
     ): Boolean {
-        val switched = keeps && WalRender.layers && !WalRender.direct && (fractional || WalRender.wholeOffscreen)
+        val switched = keeps && WalRender.layers && !(WalRender.direct && fractional) && (fractional || WalRender.wholeOffscreen)
         if (!switched || stack.isEmpty() || plans.size != stack.size) return false
         if (stack.any { (r, _) -> r.width <= 0 || r.height <= 0 }) return false
         val w = stack.maxOf { it.first.right }.toLong() * whole

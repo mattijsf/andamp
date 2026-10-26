@@ -102,10 +102,10 @@
 
     <!-- SkinOps.kt: a worn modern skin that stopped working while it ran; %1$s is the skin's name -->
     <string name="skin_modern_stopped_title">“%1$s” stopped working</string>
-    <string name="skin_modern_stopped_body">Andamp shows your last classic skin instead for now. This modern skin is tried again the next time Andamp starts.</string>
+    <string name="skin_modern_stopped_body">Andamp shows your last classic skin instead for now. This modern skin is tried again the next time Andamp starts. To stop that, pick another skin in Skins or remove this one in the Skin Browser.</string>
 
     <!-- AmpModals.kt: a modern skin picked while modern skins are off; %1$s is the picked file's name -->
     <string name="skin_modern_offer_title">Turn on modern skins?</string>
-    <string name="skin_modern_offer_body">“%1$s” is a Winamp modern skin. Modern skins are in beta. Turn them on and add this skin? You can turn them off in Preferences &gt; Player.</string>
+    <string name="skin_modern_offer_body">“%1$s” is a Winamp modern skin. Modern skins are in beta. Turn them on and add this skin? Press and hold a modern skin to open Andamp\'s menu. You can turn modern skins off in Preferences &gt; Player.</string>
     <string name="skin_modern_offer_accept">Turn on and add</string>
 </resources>

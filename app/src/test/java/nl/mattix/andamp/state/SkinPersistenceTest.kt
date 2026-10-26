@@ -42,12 +42,15 @@ class SkinPersistenceTest {
     private val library = SkinLibrary(app)
     private val baseBytes by lazy { app.assets.open("skins/AndAmp Light.wsz").use { it.readBytes() } }
 
+    /** Every view model a test made; each is stopped after the test, so none reads the switch in the next one. */
+    private val made = ArrayList<WinampViewModel>()
+
     private fun vm(): WinampViewModel =
         WinampViewModel(
             app,
             createBackend = { scope -> MockBackend(FakeTracks.tracks, scope) },
             presetStore = InMemoryEqPresetStore(),
-        )
+        ).also { made += it }
 
     private fun await(condition: () -> Boolean) {
         val deadline = System.currentTimeMillis() + 10_000
@@ -63,12 +66,16 @@ class SkinPersistenceTest {
         return vm.skin!!.name
     }
 
-    // the switch is read once per process: each test starts from its file
+    // the switch is read once per process: each test starts from its file, which view models
+    // left from earlier tests read too
     @Before
-    fun forgetSwitch() = WalGate.forget()
+    fun forgetSwitch() = WalGate.forget(app)
 
     @After
-    fun forgetSwitchAfter() = WalGate.forget()
+    fun forgetSwitchAfter() {
+        made.forEach { it.viewModelScope.cancel() }
+        WalGate.forget()
+    }
 
     /** A modern skin with one window, as a .wal holds it. */
     private val walBytes: ByteArray by lazy {
@@ -203,7 +210,7 @@ class SkinPersistenceTest {
         // the process ends: its players go, and the switch is read from its file again
         first.viewModelScope.cancel()
         second.viewModelScope.cancel()
-        WalGate.forget()
+        WalGate.forget(app)
         val third = vm()
         await { third.skin != null && third.skinOps.currentId == id }
         assertEquals(id, library.currentId)
