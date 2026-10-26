@@ -5,6 +5,7 @@ package nl.mattix.andamp.ui.menu
 import android.app.Application
 import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
+import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.MusicSource
@@ -12,8 +13,11 @@ import nl.mattix.andamp.state.SkinEntry
 import nl.mattix.andamp.state.SkinKind
 import nl.mattix.andamp.state.SkinLibrary
 import nl.mattix.andamp.state.SourceMark
+import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.ui.window.testViewModel
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -27,6 +31,24 @@ class MainMenuTest {
     private companion object {
         const val SETTLE_MS = 5_000L
     }
+
+    private val app = ApplicationProvider.getApplicationContext<Application>()
+
+    /** The view models that wore a modern skin; let go after each test. */
+    private val wearing = ArrayList<WinampViewModel>()
+
+    @After
+    fun letGoOfModernSkins() {
+        wearing.forEach { letGoOfModernSkin(app, it) }
+    }
+
+    private fun wear(
+        vararg themes: String,
+        started: Boolean = true,
+    ) = wearThemedModernSkin(app, *themes, started = started).also { wearing += it }
+
+    /** The Skins submenu's entries, named as [shape] names them. */
+    private fun skinsShape(vm: WinampViewModel) = shape(submenu(mainMenu(vm, {}, {}, {}, {}), "Skins"))
 
     private fun actions(items: List<AmpMenuItem>) = items.filterIsInstance<AmpMenuItem.Action>()
 
@@ -478,6 +500,72 @@ class MainMenuTest {
         val skins = actions(submenu(mainMenu(vm, {}, {}, {}, {}), "Skins")).map { it.label }
 
         assertTrue(skins.toString(), "Bento · Modern skin" in skins)
+    }
+
+    @Test
+    fun `a worn modern skin's color themes come third in Skins, the worn one ticked, and a pick puts one on`() {
+        val vm = wear("Two", "one", "Three")
+
+        val skins = submenu(mainMenu(vm, {}, {}, {}, {}), "Skins")
+
+        val themes = skins[2] as AmpMenuItem.Submenu
+        assertEquals("Color themes", themes.label)
+        assertEquals("after Load skin..., before the divider", AmpMenuItem.Divider, skins[3])
+        assertTrue("only the player shows a theme", themes.needsTheApp)
+        assertEquals(
+            "in the order the skin's theme list shows them",
+            listOf("one", "Three", "Two"),
+            actions(themes.items).map {
+                it.label
+            },
+        )
+        assertEquals(
+            "the skin wears its first theme",
+            listOf("Two"),
+            actions(themes.items).filter { it.checked }.map { it.label },
+        )
+
+        actions(themes.items).first { it.label == "Three" }.onClick()
+
+        awaitModern("the picked theme is worn") { vm.skinOps.wal?.theme == "Three" }
+        val after = submenu(mainMenu(vm, {}, {}, {}, {}), "Skins")[2] as AmpMenuItem.Submenu
+        assertEquals(listOf("Three"), actions(after.items).filter { it.checked }.map { it.label })
+    }
+
+    @Test
+    fun `a modern skin with one color theme or none offers no Color themes`() {
+        val none = wear()
+        assertEquals("the skin has loaded", emptyList<String>(), none.skinOps.wal?.themes)
+        assertFalse(skinsShape(none).toString(), "Color themes" in skinsShape(none))
+        letGoOfModernSkin(app, none)
+
+        val one = wear("Only")
+        assertEquals("the skin has loaded", listOf("Only"), one.skinOps.wal?.themes)
+        assertFalse(skinsShape(one).toString(), "Color themes" in skinsShape(one))
+    }
+
+    @Test
+    fun `a modern skin that has not loaded offers no Color themes`() {
+        val vm = wear("One", "Two", started = false)
+
+        assertTrue("its look is on screen", vm.skinOps.wal != null)
+        assertFalse(skinsShape(vm).toString(), "Color themes" in skinsShape(vm))
+    }
+
+    @Test
+    fun `a modern skin parked under a music source's skin offers no Color themes`() {
+        val vm = wear("One", "Two")
+        val look = vm.skinOps.wal!!
+        assertTrue("on screen it offers them", "Color themes" in skinsShape(vm))
+
+        try {
+            vm.skinOps.wear(BundledSkins.SPOT.id)
+            awaitModern("the source's skin parks the modern look") { vm.skinOps.wal == null }
+
+            assertFalse(skinsShape(vm).toString(), "Color themes" in skinsShape(vm))
+        } finally {
+            look.release(save = false)
+        }
     }
 
     @Test

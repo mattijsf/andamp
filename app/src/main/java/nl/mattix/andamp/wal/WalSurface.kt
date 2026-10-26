@@ -143,11 +143,11 @@ internal interface WalSurface {
     var awake: Boolean
 
     /**
-     * When the listener last touched the skin, answered its menu or closed one of its windows with
-     * Back, in [android.os.SystemClock.uptimeMillis]; 0 before any. Every pointer call,
-     * [doubleTap], [rightClick], [answerMenu] and [closeTopWindow] sets it. Snapshot state set on
-     * main; each change gives the skin ticks on every display frame for a while
-     * ([WAL_INPUT_FRAMES_MS]).
+     * When the listener last touched the skin, answered its menu, closed one of its windows with
+     * Back or picked one of its color themes, in [android.os.SystemClock.uptimeMillis]; 0 before
+     * any. Every pointer call, [doubleTap], [rightClick], [answerMenu], [closeTopWindow] and
+     * [pickTheme] sets it. Snapshot state set on main; each change gives the skin ticks on every
+     * display frame for a while ([WAL_INPUT_FRAMES_MS]).
      */
     val lastInputAt: Long
 

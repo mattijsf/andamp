@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.ui.menu
 
+import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -11,9 +12,11 @@ import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.FakeTracks
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.ui.Screen
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -37,7 +40,17 @@ class WidgetMenuTest {
 
     private val opened = mutableListOf<String?>()
 
-    private fun menu() =
+    private val app = ApplicationProvider.getApplicationContext<Application>()
+
+    /** A view model that wore a modern skin; let go after the test. */
+    private var wearing: WinampViewModel? = null
+
+    @After
+    fun letGoOfModernSkin() {
+        wearing?.let { letGoOfModernSkin(app, it) }
+    }
+
+    private fun menu(vm: WinampViewModel = this.vm) =
         widgetMenu(
             vm,
             onWidgetSettings = {},
@@ -83,6 +96,24 @@ class WidgetMenuTest {
             assertNotNull("$label is on the menu", find(label))
             assertFalse("$label is grayed on the widget", enabledOf(label))
         }
+    }
+
+    @Test
+    fun `a worn modern skin's color themes are on it, and grayed`() {
+        val worn = wearThemedModernSkin(app, "One", "Two").also { wearing = it }
+
+        val themes = find("Color themes", menu(worn).items)
+
+        assertNotNull("Color themes is on the menu", themes)
+        assertFalse("Color themes is grayed on the widget", (themes as AmpMenuItem.Submenu).enabled)
+    }
+
+    @Test
+    fun `after a cold start from the widget's menu the modern skin has not loaded, so it offers no color themes`() {
+        val worn = wearThemedModernSkin(app, "One", "Two", started = false).also { wearing = it }
+
+        assertNotNull("the modern skin is worn", worn.skinOps.wal)
+        assertNull(find("Color themes", menu(worn).items))
     }
 
     @Test

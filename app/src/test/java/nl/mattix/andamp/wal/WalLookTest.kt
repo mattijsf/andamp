@@ -742,6 +742,7 @@ class WalLookTest {
                 "right click" to { look.rightClick(1) },
                 "menu answer" to { look.answerMenu(menu, 1) },
                 "Back" to { look.closeTopWindow() },
+                "theme pick" to { look.pickTheme("Two") },
             )
         look.fit(phone)
         await("the first frame arrives") { look.layout != null }

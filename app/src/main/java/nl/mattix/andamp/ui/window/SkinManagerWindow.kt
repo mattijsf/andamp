@@ -4,6 +4,7 @@ package nl.mattix.andamp.ui.window
 
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.Paint
 import android.graphics.Typeface
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.runtime.Composable
@@ -25,6 +26,7 @@ import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.SkinEntry
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
+import nl.mattix.andamp.state.Words
 import nl.mattix.andamp.ui.widget.Widget
 
 /**
@@ -116,11 +118,34 @@ fun SkinManagerWindow(
                 scale,
                 frame,
                 layout,
-                labels = entries.map { it.label(vm.words) },
+                labels = entries.map { it.rowLabel(vm.words) },
             )
         }
     }
 }
+
+/**
+ * What a Skin Browser row says: the skin's [name], with the words a modern skin's row puts
+ * [before] and [after] it (see [SkinEntry.label]). Only the name is clipped when the row is too
+ * narrow: [before] starts the row and [after] ends it, right-aligned before the REM column, both
+ * drawn whole.
+ */
+internal data class SkinRowLabel(
+    val name: String,
+    val before: String = "",
+    val after: String = "",
+)
+
+/** This entry's [SkinRowLabel]: its [SkinEntry.label] in the listener's language, split around its name. */
+internal fun SkinEntry.rowLabel(words: Words): SkinRowLabel {
+    val marked = copy(name = NAME_MARK).label(words)
+    val at = marked.indexOf(NAME_MARK)
+    if (at < 0) return SkinRowLabel(label(words))
+    return SkinRowLabel(name, before = marked.substring(0, at), after = marked.substring(at + NAME_MARK.length))
+}
+
+/** Stands in for the skin's name in [SkinEntry.label], to find where the name goes in a language's words. */
+private const val NAME_MARK = "\u0000"
 
 /**
  * One widget for the whole list, with the gesture of [rowListPointer]: a tap applies or
@@ -177,7 +202,7 @@ internal fun DrawScope.drawSkinList(
     frame: WindowFrame,
     layout: SkinManagerLayout = SkinManagerLayout(),
     /** What each row says, in the order of [entries]. */
-    labels: List<String> = entries.map { it.name },
+    labels: List<SkinRowLabel> = entries.map { SkinRowLabel(it.name) },
 ) {
     val width = layout.listWidth(frame)
     val height = layout.listHeight()
@@ -214,7 +239,7 @@ internal class SkinListRasterizer(
         scale: Int,
         visibleRows: Int = SkinManagerLayout.DEFAULT_ROWS,
         rowH: Int = SkinManagerLayout.ROW_H,
-        labels: List<String> = entries.map { it.name },
+        labels: List<SkinRowLabel> = entries.map { SkinRowLabel(it.name) },
     ): ImageBitmap {
         val key = listOf(entries, scroll, currentId, style, width, height, scale, visibleRows, rowH, labels)
         cache?.let { if (key == cacheKey) return it }
@@ -233,22 +258,53 @@ internal class SkinListRasterizer(
             }
             paint.color = (if (active) style.current else style.normal).toArgb()
 
-            // REM first; the name is then clipped to what is left of the row
-            var nameRight = width - ListText.RIGHT_INSET
+            // REM first; the label then takes what is left of the row
+            var labelRight = width - ListText.RIGHT_INSET
             if (BundledSkins.of(entry.id) == null) {
                 val rem = paint.measureText(REMOVE_LABEL)
                 canvas.drawText(REMOVE_LABEL, width - ListText.RIGHT_INSET - rem, baseline, paint)
-                nameRight = (width - SkinManagerLayout.REMOVE_W).toFloat()
+                labelRight = (width - SkinManagerLayout.REMOVE_W).toFloat()
             }
-            canvas.save()
-            canvas.clipRect(0f, top, nameRight, top + rowH)
-            canvas.drawText(labels.getOrElse(index) { entry.name }, ListText.LEFT_INSET, baseline, paint)
-            canvas.restore()
+            drawLabel(canvas, paint, labels.getOrElse(index) { SkinRowLabel(entry.name) }, labelRight, top, rowH, baseline)
         }
         val image = bitmap.asImageBitmap()
         cacheKey = key
         cache = image
         return image
+    }
+
+    /**
+     * Draws [label] in its row, between the row's left inset and [right]: the words before the name
+     * from the left, the words after it right-aligned against [right], and the name between them,
+     * clipped to the room they leave. Words wider than the whole row are clipped to it too.
+     */
+    @Suppress("LongParameterList") // the row's place and the paint it is drawn with
+    private fun drawLabel(
+        canvas: Canvas,
+        paint: Paint,
+        label: SkinRowLabel,
+        right: Float,
+        top: Float,
+        rowH: Int,
+        baseline: Float,
+    ) {
+        val bottom = top + rowH
+        val left = ListText.LEFT_INSET
+        canvas.save()
+        canvas.clipRect(0f, top, right, bottom)
+        if (label.before.isNotEmpty()) canvas.drawText(label.before, left, baseline, paint)
+        val nameLeft = (left + paint.measureText(label.before)).coerceAtMost(right)
+        val afterW = paint.measureText(label.after)
+        val nameRight = (right - afterW).coerceAtLeast(nameLeft)
+        if (label.after.isNotEmpty()) {
+            canvas.save()
+            canvas.clipRect(nameLeft, top, right, bottom)
+            canvas.drawText(label.after, right - afterW, baseline, paint)
+            canvas.restore()
+        }
+        canvas.clipRect(0f, top, nameRight, bottom)
+        canvas.drawText(label.name, nameLeft, baseline, paint)
+        canvas.restore()
     }
 
     private companion object {

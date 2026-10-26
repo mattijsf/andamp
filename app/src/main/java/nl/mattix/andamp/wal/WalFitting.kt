@@ -37,6 +37,9 @@ internal class WalFitting {
     private var restingW = 0
     private var restingFit: WalFit? = null
 
+    /** The skin's color themes as [WalLayout.themes] carries them, worked out at the first [layout]; see [themesOf]. */
+    private var themes: List<String>? = null
+
     /** Gives [runtime] the box of [fit], as [WalEngine.fit] tells; [baseW] as [baseWOf] gives it. */
     fun apply(
         runtime: SkinRuntime,
@@ -135,7 +138,8 @@ internal class WalFitting {
      * see [SkinRuntime.drawnSize]), so the window rect, the touch area and the visualizer window
      * docked under the skin go by where the skin ends; in two columns the visualizer window docks
      * under the left one ([WalLayout.dock]). A touch 24 dp beside an object still means it at that
-     * scale. The layout carries [wantsFrames] as the frame has it.
+     * scale. The layout carries [wantsFrames] as the frame has it, and the skin's color themes with
+     * the one it wears.
      *
      * Upright, a stack wider across than the box (MMD3's drawer slid out) is shrunk to fit once the
      * slide ends, and grows back once a slide closing it ends: while something slides, the width
@@ -158,6 +162,7 @@ internal class WalFitting {
         }
         val place = place(runtime, fit, baseW, size, drawn)
         runtime.touchSlop = kotlin.math.ceil(TOUCH_SLOP_DP * fit.density / place.scale).toInt()
+        val themes = themesOf(runtime)
         return WalLayout(
             fit = fit,
             scale = place.scale,
@@ -173,8 +178,23 @@ internal class WalFitting {
             wantsFrames = wantsFrames,
             dock = dockOf(runtime, drawn),
             edgePlacements = runtime.edgePlacements,
+            themes = themes,
+            theme = runtime.currentGammaSet?.let { worn -> themes.firstOrNull { it.equals(worn, ignoreCase = true) } },
         )
     }
+
+    /**
+     * [runtime]'s color themes in the order the skin's theme list shows them: sorted ignoring case,
+     * one per name ignoring case (the first the skin defines, which is the one picking that name
+     * puts on), without blank names. A skin reads all its themes as it loads, so they are worked
+     * out once.
+     */
+    private fun themesOf(runtime: SkinRuntime): List<String> =
+        themes ?: buildList<String> {
+            for (name in runtime.gammaSetNames()) {
+                if (name.isNotBlank() && none { it.equals(name, ignoreCase = true) }) add(name)
+            }
+        }.sortedWith(String.CASE_INSENSITIVE_ORDER).also { themes = it }
 
     /**
      * How wide [main] shows across at rest, in layout pixels: what it showed the first time it was
