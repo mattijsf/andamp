@@ -4,12 +4,18 @@ package nl.mattix.andamp.state
 
 import android.content.Context
 import android.content.SharedPreferences
+import android.util.Log
 import nl.mattix.andamp.R
 import nl.mattix.andamp.modernskin.skin.WalArchive
 import nl.mattix.andamp.skin.BundledSkin
 import nl.mattix.andamp.skin.BundledSkins
 import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import java.io.InputStream
+import java.io.OutputStream
+import java.nio.channels.FileChannel
+import java.nio.file.StandardOpenOption
 import java.security.MessageDigest
 import java.util.zip.ZipFile
 
@@ -48,9 +54,19 @@ data class SkinEntry(
  * Besides the listener's choice and a source's skin, the "skins" file keeps the last
  * classic choice, which is drawn wherever a modern skin cannot be (see [lastClassic]), and
  * the widget's skin (see [widgetSkin]).
+ *
+ * A stored skin is on the disk whole and under its name before any record names it, so a
+ * record never names a missing or empty file, also when the phone switches off right after
+ * a skin was added. The display name and the choice are kept in the same "skins" file, which
+ * is written whole, so a choice kept on the disk comes with its name.
  */
-class SkinLibrary(
+class SkinLibrary internal constructor(
     context: Context,
+    /**
+     * Flushes an open file or folder to the disk: a stored skin's bytes before the rename that
+     * gives them their name, and the skins folder after it. A test makes it fail.
+     */
+    private val flush: (FileChannel) -> Unit = { it.force(true) },
 ) {
     private val assets = context.assets
     private val dir = File(context.filesDir, "skins")
@@ -108,7 +124,8 @@ class SkinLibrary(
 
     /**
      * Stores [bytes] under its content hash and returns the entry. Identical bytes
-     * overwrite the same file, and the display name is updated.
+     * overwrite the same file, and the display name is updated. When the bytes cannot be
+     * written or renamed into place, nothing changes and the failure is thrown.
      */
     fun save(
         bytes: ByteArray,
@@ -119,11 +136,8 @@ class SkinLibrary(
         val file = File(dir, "$id$CLASSIC_EXT")
         // write-then-rename, so a crash mid-write cannot leave a partial skin
         val tmp = File(dir, "$id$CLASSIC_EXT.tmp")
-        tmp.writeBytes(bytes)
-        if (!tmp.renameTo(file)) {
-            file.delete()
-            check(tmp.renameTo(file)) { "could not store skin '$name'" }
-        }
+        writeFlushed(tmp) { it.write(bytes) }
+        moveIntoPlace(tmp, file) { "could not store skin '$name'" }
         prefs.edit().putString(nameKey(id), name).apply()
         return SkinEntry(id, name, file.length())
     }
@@ -131,7 +145,9 @@ class SkinLibrary(
     /**
      * Stores [tmp], a modern skin streamed to a temporary file, in the library under [id],
      * the content hash taken while it streamed, deletes [tmp] and returns the stored file. The
-     * display name is written apart, with [setName], once the skin has been built.
+     * display name is written apart, with [setName], once the skin has been built. When the
+     * copy cannot be written or renamed into place, nothing in the library changes and the
+     * failure is thrown.
      *
      * [tmp] is copied, not moved: a file made in the cache folder keeps counting as the app's
      * cache wherever it is moved, and clearing the cache would not free it.
@@ -144,13 +160,53 @@ class SkinLibrary(
         val file = File(dir, "$id$MODERN_EXT")
         // copied next to the store first, so a crash mid-copy cannot leave a partial skin
         val part = File(dir, "$id$MODERN_EXT.tmp")
-        tmp.copyTo(part, overwrite = true)
+        writeFlushed(part) { out -> tmp.inputStream().use { it.copyTo(out) } }
         tmp.delete()
-        if (!part.renameTo(file)) {
-            file.delete()
-            check(part.renameTo(file)) { "could not store modern skin '$id'" }
-        }
+        moveIntoPlace(part, file) { "could not store modern skin '$id'" }
         return file
+    }
+
+    /**
+     * Writes [part] with [write] and flushes it to the disk, so the whole skin is there before
+     * a rename gives it the stored name. A part not written and flushed in full is deleted, and
+     * the failure is thrown.
+     */
+    private fun writeFlushed(
+        part: File,
+        write: (OutputStream) -> Unit,
+    ) {
+        var flushed = false
+        try {
+            FileOutputStream(part).use { out ->
+                write(out)
+                flush(out.channel)
+            }
+            flushed = true
+        } finally {
+            if (!flushed) part.delete()
+        }
+    }
+
+    /**
+     * Renames the flushed [part] to [file], over the copy stored there before, then flushes the
+     * skins folder, so the new name is on the disk before a record names it. A rename that fails
+     * deletes [part], leaves [file] as it was, and throws with [message].
+     */
+    private fun moveIntoPlace(
+        part: File,
+        file: File,
+        message: () -> String,
+    ) {
+        if (!part.renameTo(file)) {
+            part.delete()
+            error(message())
+        }
+        try {
+            FileChannel.open(dir.toPath(), StandardOpenOption.READ).use(flush)
+        } catch (e: IOException) {
+            // the skin is whole under its name either way
+            Log.w(TAG, "the skins folder was not flushed", e)
+        }
     }
 
     /**
@@ -410,6 +466,7 @@ class SkinLibrary(
     private fun hash(bytes: ByteArray): String = idOf(MessageDigest.getInstance("SHA-256").digest(bytes))
 
     companion object {
+        private const val TAG = "SkinLibrary"
         private const val CLASSIC_EXT = ".wsz"
         private const val MODERN_EXT = ".wal"
         private const val CURRENT_KEY = "current"

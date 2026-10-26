@@ -27,6 +27,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.ByteArrayOutputStream
 import java.io.File
+import java.io.IOException
 import java.io.InputStream
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
@@ -44,7 +45,15 @@ import kotlin.random.Random
 @Config(sdk = [35])
 class SkinPickTest {
     private val app = ApplicationProvider.getApplicationContext<Application>()
-    private val library = SkinLibrary(app)
+
+    /** Whether flushing a stored skin to the disk fails. */
+    private var flushFails = false
+
+    private val library =
+        SkinLibrary(app) { channel ->
+            if (flushFails) throw IOException("the disk failed")
+            channel.force(true)
+        }
     private val state = WinampState()
 
     /** Whether modern skins are on; taking the offer turns them on. */
@@ -431,6 +440,22 @@ class SkinPickTest {
         assertNull(ops.wal)
         assertTrue("its look is let go", looks.single().released)
         await { engineThreads().isEmpty() }
+    }
+
+    @Test
+    fun `a modern skin that cannot be flushed to the disk is not added, changes no record and opens no look`() {
+        modernOn = true
+        val ops = started()
+        val before = records()
+        flushFails = true
+
+        val title = pick(ops, loading().inputStream(), "Bento.wal")
+
+        assertEquals("“Bento.wal” couldn't be opened", title)
+        assertEquals("nothing is stored and no record changes", before, records())
+        assertEquals(SkinEntry.BASE_ID, ops.currentId)
+        assertNull(ops.wal)
+        assertTrue(built.isEmpty())
     }
 
     @Test
