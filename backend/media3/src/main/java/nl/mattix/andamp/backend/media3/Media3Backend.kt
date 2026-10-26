@@ -706,9 +706,34 @@ class Media3Backend(
         }
         val info = player.deviceInfo
         if (info.maxVolume <= info.minVolume) return // no range to map onto yet; see publishVolume
-        player.setDeviceVolume(DeviceVolume.stepFor(fraction, info.minVolume, info.maxVolume), 0)
+        val step = DeviceVolume.stepFor(fraction, info.minVolume, info.maxVolume)
+        val watch = volumeWatch
+        if (watch != null && step == player.deviceVolume && !heardAt(step, info.minVolume)) {
+            // Media3 still holds the volume from before a move to another
+            // output or a mute, takes the step for the one it has and would
+            // set nothing. The step is set here, and Media3 has no change to
+            // report, so it is read back
+            watch.set(step)?.let { level ->
+                deviceLevel = level
+                publishVolume()
+            }
+            return
+        }
+        player.setDeviceVolume(step, 0)
         // no read-back here: the device answers through onDeviceVolumeChanged,
         // so one path owns the slider
+    }
+
+    /**
+     * Whether the phone's media volume was last heard at [step], with a muted
+     * stream heard at [min]. True when nothing has been heard yet.
+     */
+    private fun heardAt(
+        step: Int,
+        min: Int,
+    ): Boolean {
+        val level = deviceLevel ?: return true
+        return if (level.muted) step == min else level.volume == step
     }
 
     /**

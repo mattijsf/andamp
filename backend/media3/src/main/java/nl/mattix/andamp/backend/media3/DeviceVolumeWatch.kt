@@ -31,7 +31,7 @@ internal data class DeviceLevel(
  * volume on both, and when one of the app's activities starts, which also
  * catches a change no broadcast reported.
  *
- * It only reads: nothing here sets a volume.
+ * It sets a volume only through [set], for a step the listener asked for.
  */
 internal class DeviceVolumeWatch(
     context: Context,
@@ -109,6 +109,17 @@ internal class DeviceVolumeWatch(
                 muted = audio.isStreamMute(AudioManager.STREAM_MUSIC),
             )
         }.getOrNull()
+    }
+
+    /**
+     * Sets the media stream to [volume] and returns the volume read after,
+     * or null when the phone does not answer. A volume above 0 also unmutes
+     * the stream, as for any other app that sets one.
+     */
+    fun set(volume: Int): DeviceLevel? {
+        val audio = audio ?: return null
+        runCatching { audio.setStreamVolume(AudioManager.STREAM_MUSIC, volume, 0) }
+        return reading()
     }
 
     fun release() {

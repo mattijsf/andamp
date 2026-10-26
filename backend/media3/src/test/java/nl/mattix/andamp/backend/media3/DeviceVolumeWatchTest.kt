@@ -149,6 +149,39 @@ class DeviceVolumeWatchTest {
         assertEquals(4 / steps.toFloat(), b.state.value.volumeFraction, 0.001f)
     }
 
+    /**
+     * Media3 still holds the headphones' volume after the move, and takes a
+     * drag to that same step for the one it already has.
+     */
+    @Test
+    fun `dragging to the top after a move to the speaker sets the top`() {
+        val b = backend()
+        b.setVolume(1f) // the headphones' volume, at the top
+        idleEverything()
+        moveOutput(4) // the speaker's volume
+
+        b.setVolume(1f)
+        idleEverything()
+
+        assertEquals(steps, audio.getStreamVolume(AudioManager.STREAM_MUSIC))
+        assertEquals(1f, b.state.value.volumeFraction, 0.001f)
+    }
+
+    @Test
+    fun `dragging elsewhere after a move to the speaker still goes through Media3`() {
+        val b = backend()
+        b.setVolume(1f)
+        idleEverything()
+        moveOutput(4)
+
+        b.setVolume(10 / steps.toFloat())
+        idleEverything()
+
+        assertEquals(10, audio.getStreamVolume(AudioManager.STREAM_MUSIC))
+        assertEquals("Media3 read the volume it set", 10, player.deviceVolume)
+        assertEquals(10 / steps.toFloat(), b.state.value.volumeFraction, 0.001f)
+    }
+
     @Test
     fun `with the app's own volume, a move to another output leaves the slider alone`() {
         val b = backend()
