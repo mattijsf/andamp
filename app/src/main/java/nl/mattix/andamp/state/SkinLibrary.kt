@@ -55,10 +55,13 @@ data class SkinEntry(
  * classic choice, which is drawn wherever a modern skin cannot be (see [lastClassic]), and
  * the widget's skin (see [widgetSkin]).
  *
- * A stored skin is on the disk whole and under its name before any record names it, so a
- * record never names a missing or empty file, also when the phone switches off right after
- * a skin was added. The display name and the choice are kept in the same "skins" file, which
- * is written whole, so a choice kept on the disk comes with its name.
+ * When a skin is added, its file reaches the disk whole and under its name before any record
+ * names it, so a phone that switches off right after the add comes back with the skin or as
+ * it was before. This rests on flushing the skins folder after the rename; a folder that
+ * cannot be flushed is logged, and the store goes on. The display name and the choice are
+ * kept in the same "skins" file, which is written whole, so a choice kept on the disk comes
+ * with its name. A classic skin is named just after it is stored, so a phone that switches
+ * off in between keeps the skin with no name, listed under its id.
  */
 class SkinLibrary internal constructor(
     context: Context,
@@ -189,8 +192,9 @@ class SkinLibrary internal constructor(
 
     /**
      * Renames the flushed [part] to [file], over the copy stored there before, then flushes the
-     * skins folder, so the new name is on the disk before a record names it. A rename that fails
-     * deletes [part], leaves [file] as it was, and throws with [message].
+     * skins folder, so the new name is on the disk before a record names it. A folder that
+     * cannot be flushed is logged, and the store goes on. A rename that fails deletes [part],
+     * leaves [file] as it was, and throws with [message].
      */
     private fun moveIntoPlace(
         part: File,
@@ -204,20 +208,22 @@ class SkinLibrary internal constructor(
         try {
             FileChannel.open(dir.toPath(), StandardOpenOption.READ).use(flush)
         } catch (e: IOException) {
-            // the skin is whole under its name either way
+            // the skin is stored; only its new name may not be on the disk yet
             Log.w(TAG, "the skins folder was not flushed", e)
         }
     }
 
     /**
-     * Deletes what storing a modern skin leaves when the process ends partway: a part copied
-     * before it was renamed, and a skin with no display name, stored but not yet loaded, as
-     * the name is written once the skin has loaded. Run at start, before anything is stored.
+     * Deletes what storing a skin leaves when the process ends partway: a part of either kind
+     * written before it was renamed, and a modern skin with no display name, stored but not yet
+     * loaded, as the name is written once the skin has loaded. A classic skin with no name is
+     * whole and stays. Run at start, before anything is stored.
      */
     fun dropUnfinished() {
         val named = { file: File -> prefs.contains(nameKey(file.name.removeSuffix(MODERN_EXT))) }
+        val parts = listOf("$CLASSIC_EXT.tmp", "$MODERN_EXT.tmp")
         dir
-            .listFiles { file -> file.isFile && file.name.endsWith("$MODERN_EXT.tmp") }
+            .listFiles { file -> file.isFile && parts.any { file.name.endsWith(it) } }
             ?.forEach { it.delete() }
         dir
             .listFiles { file -> file.isFile && file.name.endsWith(MODERN_EXT) && !named(file) }

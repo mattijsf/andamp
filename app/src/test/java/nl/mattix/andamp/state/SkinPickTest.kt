@@ -10,6 +10,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.Player
+import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.wal.WalLook
 import nl.mattix.andamp.wal.WalSettings
 import org.junit.After
@@ -456,6 +457,20 @@ class SkinPickTest {
         assertEquals(SkinEntry.BASE_ID, ops.currentId)
         assertNull(ops.wal)
         assertTrue(built.isEmpty())
+    }
+
+    @Test
+    fun `a classic skin that cannot be flushed to the disk still goes on, is not stored and changes no record`() {
+        library.choose(BundledSkins.SPOT.id)
+        val ops = started()
+        val before = records()
+        flushFails = true
+
+        picked(ops, app.assets.open("skins/AndAmp Light.wsz").use { it.readBytes() }, "Light.wsz")
+
+        assertEquals("Light.wsz", ops.skin!!.name)
+        assertEquals(SkinOps.UNSTORED_ID, ops.currentId)
+        assertEquals("nothing is stored and no record changes", before, records())
     }
 
     @Test

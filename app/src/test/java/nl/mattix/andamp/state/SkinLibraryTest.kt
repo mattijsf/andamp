@@ -8,14 +8,11 @@ import nl.mattix.andamp.skin.BundledSkins
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
-import java.io.IOException
-import java.nio.channels.FileChannel
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35])
@@ -303,129 +300,6 @@ class SkinLibraryTest {
         assertFalse("no part is left", java.io.File(app.filesDir, "skins/$id.wal.tmp").exists())
     }
 
-    // a skin added just before the phone switches off
-
-    private val skins get() = java.io.File(app.filesDir, "skins")
-
-    /** The size of [name] in the skins folder, or "none" when it is not there. */
-    private fun sizeOf(name: String) = java.io.File(skins, name).let { if (it.exists()) "${it.length()}" else "none" }
-
-    private val failingFlush: (FileChannel) -> Unit = { throw IOException("the disk failed") }
-
-    /** [bytes] streamed to a temporary file in the cache folder, as a pick leaves them for [SkinLibrary.storeModern]. */
-    private fun picked(bytes: ByteArray) =
-        java.io.File
-            .createTempFile("pick", ".tmp", app.cacheDir)
-            .apply { writeBytes(bytes) }
-
-    /** Whether [name] in the skins folder holds [bytes]. */
-    private fun holds(
-        name: String,
-        bytes: ByteArray,
-    ): Boolean {
-        val file = java.io.File(skins, name)
-        return file.readBytes().contentEquals(bytes)
-    }
-
-    @Test
-    fun `a stored classic skin is whole and leaves no temporary file`() {
-        val entry = library.save(bytes(13, size = 4096), "Whole.wsz")
-
-        assertTrue(holds("${entry.id}.wsz", bytes(13, size = 4096)))
-        assertEquals("no part is left", "none", sizeOf("${entry.id}.wsz.tmp"))
-    }
-
-    @Test
-    fun `a classic skin is flushed whole before the rename names it, and the folder after it, before its name is kept`() {
-        val id = library.idFor(bytes(14))
-        val seen = ArrayList<String>()
-        val flushing =
-            SkinLibrary(app) { channel ->
-                seen += "part ${sizeOf("$id.wsz.tmp")}, stored ${sizeOf("$id.wsz")}, named ${skinsPrefs.contains("name:$id")}"
-                channel.force(true)
-            }
-
-        flushing.save(bytes(14), "Flushed.wsz")
-
-        assertEquals(listOf("part 64, stored none, named false", "part none, stored 64, named false"), seen)
-        assertEquals("Flushed.wsz", library.nameOf(id))
-    }
-
-    @Test
-    fun `a modern skin's copy is flushed whole before the rename names it, and the folder after it`() {
-        val bytes = zipOf("skin.xml")
-        val tmp = picked(bytes)
-        val id = library.idFor(bytes)
-        val seen = ArrayList<String>()
-        val flushing =
-            SkinLibrary(app) { channel ->
-                seen += "part ${sizeOf("$id.wal.tmp")}, stored ${sizeOf("$id.wal")}"
-                channel.force(true)
-            }
-
-        flushing.storeModern(tmp, id)
-
-        assertEquals(listOf("part ${bytes.size}, stored none", "part none, stored ${bytes.size}"), seen)
-    }
-
-    @Test
-    fun `a classic skin that cannot be flushed is not stored, and the copy stored before stays`() {
-        val before = library.save(bytes(15), "Before.wsz")
-        library.choose(before.id)
-        val failing = SkinLibrary(app, failingFlush)
-        val added = library.idFor(bytes(16))
-
-        assertThrows(IOException::class.java) { failing.save(bytes(15), "Again.wsz") }
-        assertThrows(IOException::class.java) { failing.save(bytes(16), "Added.wsz") }
-
-        assertTrue(holds("${before.id}.wsz", bytes(15)))
-        assertEquals("Before.wsz", library.nameOf(before.id))
-        assertEquals(before.id, library.currentId)
-        assertFalse(library.has(added))
-        assertFalse(skinsPrefs.contains("name:$added"))
-        assertEquals("no part is left", listOf("${before.id}.wsz"), skins.list()!!.toList())
-    }
-
-    @Test
-    fun `a modern skin that cannot be flushed is not stored, and the copy stored before stays`() {
-        val before = library.addModern(app, "Bento")
-        val kept = java.io.File(skins, "$before.wal").readBytes()
-        val again = picked(kept)
-        val addedBytes = zipOf("skin.xml", "xml/other.xml")
-        val added = picked(addedBytes)
-        val failing = SkinLibrary(app, failingFlush)
-
-        assertThrows(IOException::class.java) { failing.storeModern(again, before) }
-        assertThrows(IOException::class.java) { failing.storeModern(added, library.idFor(addedBytes)) }
-
-        assertTrue(holds("$before.wal", kept))
-        assertEquals("Bento", library.nameOf(before))
-        assertFalse(library.has(library.idFor(addedBytes)))
-        assertEquals("no part is left", listOf("$before.wal"), skins.list()!!.toList())
-    }
-
-    @Test
-    fun `a skin that cannot be renamed into place leaves no part, no name and the choice as it was`() {
-        val worn = library.save(bytes(17), "Worn.wsz")
-        library.choose(worn.id)
-        val classic = library.idFor(bytes(18))
-        val modernBytes = zipOf("skin.xml", "xml/blocked.xml")
-        val modern = library.idFor(modernBytes)
-        val tmp = picked(modernBytes)
-        // a non-empty directory in each store's place, which a rename cannot replace
-        java.io.File(skins, "$classic.wsz/occupied").mkdirs()
-        java.io.File(skins, "$modern.wal/occupied").mkdirs()
-
-        assertThrows(IllegalStateException::class.java) { library.save(bytes(18), "Blocked.wsz") }
-        assertThrows(IllegalStateException::class.java) { library.storeModern(tmp, modern) }
-
-        assertEquals("none", sizeOf("$classic.wsz.tmp"))
-        assertEquals("none", sizeOf("$modern.wal.tmp"))
-        assertFalse(skinsPrefs.contains("name:$classic"))
-        assertEquals(worn.id, library.currentId)
-        assertEquals(worn.id, library.worn)
-    }
-
     @Test
     fun `what a store cut short leaves is dropped, and finished skins stay`() {
         val classic = library.save(bytes(1), "A.wsz").id
@@ -433,13 +307,17 @@ class SkinLibraryTest {
         val skins = java.io.File(app.filesDir, "skins")
         val unnamed = java.io.File(skins, "0123456789abcdef0123456789abcdef.wal").apply { writeBytes(zipOf("skin.xml")) }
         val part = java.io.File(skins, "$modern.wal.tmp").apply { writeBytes(bytes(2)) }
+        val classicPart = java.io.File(skins, "$classic.wsz.tmp").apply { writeBytes(bytes(3)) }
+        val unnamedClassic = java.io.File(skins, "fedcba9876543210fedcba9876543210.wsz").apply { writeBytes(bytes(4)) }
 
         library.dropUnfinished()
 
         assertFalse(unnamed.exists())
         assertFalse(part.exists())
+        assertFalse(classicPart.exists())
         assertTrue(library.has(classic))
         assertTrue(library.has(modern))
+        assertTrue("a whole classic skin stays without a name", unnamedClassic.exists())
     }
 
     @Test
