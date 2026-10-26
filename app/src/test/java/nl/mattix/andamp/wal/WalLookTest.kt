@@ -8,7 +8,15 @@ import android.graphics.Bitmap
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import android.widget.FrameLayout
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Canvas
+import androidx.compose.ui.graphics.GraphicsContext
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.LayoutDirection
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.Player
@@ -18,6 +26,7 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -251,6 +260,36 @@ class WalLookTest {
         await("onFailed is told") { told.isNotEmpty() }
         assertEquals("a start failure, not a skin that stopped working", listOf(false), told)
         assertNull("the late skin is not shown", look.layout)
+    }
+
+    @Test(timeout = 20_000)
+    fun `the hold switch keeps drawing the frame drawn last until it is switched off`() {
+        val look = look()
+        look.fit(phone)
+        await("the first frame arrives") { look.layout != null }
+        val graphics = GraphicsContext(FrameLayout(app))
+        val layers = WalLayers(graphics::createGraphicsLayer, graphics::releaseGraphicsLayer, clearBelow = true, nodes = false)
+
+        fun draw() =
+            CanvasDrawScope().draw(Density(1f), LayoutDirection.Ltr, Canvas(ImageBitmap(700, 400)), Size(700f, 400f)) {
+                look.draw(this, layers)
+            }
+        try {
+            draw()
+            val first = look.engine!!.frame
+            assertSame(first, look.shown)
+            WalRender.hold = true
+            look.fit(WalFit(1000, 2000, 3f, sideways = false))
+            await("a frame for the new fit arrives") { look.engine!!.frame !== first }
+            draw()
+            assertSame("held", first, look.shown)
+            WalRender.hold = false
+            draw()
+            assertSame("the latest", look.engine!!.frame, look.shown)
+        } finally {
+            WalRender.hold = false
+            layers.release()
+        }
     }
 
     @Test(timeout = 20_000)

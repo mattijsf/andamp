@@ -719,7 +719,8 @@ class WalEngineTest {
         engine.fit(phone)
         onEngine { }
 
-        val line = Regex("tick wal-${main.name}: tick \\d+ ns, publish \\d+ ns, (\\w+)")
+        // a planned frame's line ends with its planning time
+        val line = Regex("tick wal-${main.name}: tick \\d+ ns, publish \\d+ ns, (\\w+)(, plan \\d+ ns( from the start)?)?")
         val causes = ShadowLog.getLogsForTag(WalTiming.TAG).mapNotNull { line.matchEntire(it.msg)?.groupValues?.get(1) }
         assertEquals(listOf("touch", "touch", "key", "fit"), causes)
     }

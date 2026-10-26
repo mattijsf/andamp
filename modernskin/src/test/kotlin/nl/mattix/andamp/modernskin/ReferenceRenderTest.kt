@@ -5,6 +5,7 @@ import nl.mattix.andamp.modernskin.maki.Value
 import nl.mattix.andamp.modernskin.skin.Align
 import nl.mattix.andamp.modernskin.skin.AndampDefaultSet
 import nl.mattix.andamp.modernskin.skin.DrawCmd
+import nl.mattix.andamp.modernskin.skin.DrawPlanner
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.FontDef
 import nl.mattix.andamp.modernskin.skin.Gamma
@@ -516,6 +517,31 @@ class ReferenceRenderTest {
         println(
             "TIMING ${sc.name} load=${(t1 - t0) / 1_000_000} ms drawWindows=${drawNanos / 1000 / reps} us/frame " +
                 "tick=${tickNanos / 1000 / reps} us, best of $TIMING_ROUNDS rounds of $reps frames",
+        )
+        // the same frames drawn through the planner, as the app draws them: what planning adds
+        val planner = DrawPlanner()
+        var planNanos = Long.MAX_VALUE
+        var plannedNanos = Long.MAX_VALUE
+        repeat(TIMING_ROUNDS + 1) { round ->
+            val before = planner.planNanos
+            var draws = 0L
+            repeat(reps) {
+                clock.now += TestClock.FRAME
+                rt.tick()
+                val a = System.nanoTime()
+                planner.draw(rt, clock.now)
+                draws += System.nanoTime() - a
+            }
+            // the first round warms the planner up
+            if (round > 0) {
+                planNanos = minOf(planNanos, planner.planNanos - before)
+                plannedNanos = minOf(plannedNanos, draws)
+            }
+        }
+        println(
+            "TIMING ${sc.name} planned drawWindows=${plannedNanos / 1000 / reps} us/frame, of which planning " +
+                "${planNanos / reps / 1000.0} us (${"%.1f".format(100.0 * planNanos / drawNanos)} % of drawWindows); " +
+                "windows planned from the start ${planner.fullPlans}, at a quick look ${planner.quickPlans}",
         )
     }
 

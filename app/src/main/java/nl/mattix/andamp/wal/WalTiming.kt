@@ -6,8 +6,9 @@ import nl.mattix.andamp.BuildConfig
 
 /**
  * The modern-skin timing log, under [TAG]: each engine tick and each frame published with what
- * caused it, how long the touches waited for the engine thread, the load, and where the stack is
- * placed on the screen. On in a debug build from the start; [WalDevSwitch] turns it on in any build
+ * caused it, how long the touches waited for the engine thread, the load, where the stack is
+ * placed on the screen, and what each frame drawn with kept parts recorded again
+ * ([WalLayers]). On in a debug build from the start; [WalDevSwitch] turns it on in any build
  * (`--es wal timing`) and off again, until the app's process ends.
  */
 internal object WalTiming {
@@ -21,14 +22,21 @@ internal object WalTiming {
     /**
      * The line for one tick or one published frame on engine thread [thread]: the work before the
      * frame (the tick, the touch or the task) and the frame's draw list, in ns (0 when nothing was
-     * published), and what caused it. A tick that published nothing has its line too.
+     * published), and what caused it. A tick that published nothing has its line too. A frame the
+     * engine planned ([WalRender.layers]) ends with the part of its draw list's time spent planning
+     * it, [planNanos], and says when a window of it was planned [fromStart] rather than by a quick
+     * look at the frame before.
      */
     fun line(
         thread: String,
         workNanos: Long,
         publishNanos: Long,
         cause: WalCause,
-    ): String = "tick $thread: tick $workNanos ns, publish $publishNanos ns, ${cause.word}"
+        planNanos: Long? = null,
+        fromStart: Boolean = false,
+    ): String =
+        "tick $thread: tick $workNanos ns, publish $publishNanos ns, ${cause.word}" +
+            (planNanos?.let { ", plan $it ns" + if (fromStart) " from the start" else "" } ?: "")
 }
 
 /** What made the engine tick a skin or publish a frame of it, as the timing lines name it. */

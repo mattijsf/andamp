@@ -12,7 +12,6 @@ import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.sync.Mutex
 import nl.mattix.andamp.modernskin.skin.Player
@@ -140,6 +139,10 @@ internal class WalLook(
     private var lastSeq = 0
     private var drawFailing = false
 
+    /** The frame drawn last; the main thread's, as [WalRender.hold] keeps drawing it. Read by tests. */
+    internal var shown: WalFrame? = null
+        private set
+
     /** A frame or menu change already waits for its main post, which takes the latest. */
     private val updateWaiting = AtomicBoolean(false)
 
@@ -161,13 +164,16 @@ internal class WalLook(
 
     override fun draw(
         scope: DrawScope,
-        layer: GraphicsLayer,
+        layers: WalLayers,
     ) {
         val engine = engine ?: return
-        val frame = engine.frame ?: return
+        val latest = engine.frame ?: return
+        // while the hold switch is on, the frame drawn last stays
+        val frame = if (WalRender.hold) shown ?: latest else latest
+        shown = frame
         val at = frame.layout ?: return
         val host = host ?: return
-        scope.drawWalStack(frame.stack, host, at.scale, 0f, layer, frame.themeKey)
+        scope.drawWalStackLayered(frame.stack, frame.plans, host, at.scale, layers, frame.themeKey)
         // only the first frame drawn after failed ones is reported, not every frame
         if (drawFailing) {
             drawFailing = false

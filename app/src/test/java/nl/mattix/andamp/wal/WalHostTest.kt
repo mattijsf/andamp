@@ -20,6 +20,7 @@ import nl.mattix.andamp.modernskin.skin.Region
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -282,6 +283,93 @@ class WalHostTest {
             all += System.identityHashCode(second)
         }
         assertEquals("two bitmaps for each", 4, all.size)
+    }
+
+    /** [stack] drawn into a frame in color theme [theme] as a recording of [kept], as a layer kept between frames records it. */
+    private fun WalHost.record(
+        stack: List<Pair<Rect, List<DrawCmd>>>,
+        kept: WalDrawing.Recorded,
+        theme: String? = null,
+    ) {
+        val img = ImageBitmap(stack.maxOf { it.first.right }, stack.maxOf { it.first.bottom })
+        drawing.begin(theme)
+        CanvasDrawScope().draw(Density(1f), LayoutDirection.Ltr, Canvas(img), Size(img.width.toFloat(), img.height.toFloat())) {
+            drawing.recording(kept) { drawWindowsAt(stack, this@record, 1f) }
+        }
+        drawing.end()
+    }
+
+    /** A frame in color theme [theme] that draws nothing new but shows what [kept] holds, if given. */
+    private fun WalHost.showOnly(
+        kept: WalDrawing.Recorded?,
+        theme: String? = null,
+    ) {
+        drawing.begin(theme)
+        kept?.let(drawing::retain)
+        drawing.end()
+    }
+
+    @Test
+    fun `what a kept drawing shows stays through the budget and a theme switch while it is shown`() {
+        val kept = WalDrawing.Recorded()
+        val shown = host(budget = 16)
+        shown.record(window(gamma(0)), kept, theme = "One")
+        val bytes = shown.drawing.bytes
+        assertTrue(bytes > 16)
+        shown.showOnly(kept, theme = "Two")
+        shown.showOnly(kept, theme = "Two")
+        assertEquals(bytes, shown.drawing.bytes)
+        assertEquals(setOf(gamma(0)), shown.drawing.tints())
+        assertEquals(bytes, shown.drawing.keptBytes())
+
+        // no longer shown, it goes as any picture the frame did not draw
+        shown.showOnly(null, theme = "Three")
+        assertEquals(0L, shown.drawing.bytes)
+    }
+
+    @Test
+    fun `a kept drawing holds each picture it asked for once, and only from its last recording`() {
+        val kept = WalDrawing.Recorded()
+        val host = host()
+        val stack = window(gamma(0), count = 3)
+        host.record(stack + stack, kept)
+        // three pieces and the tinted sheet they were cut from, though drawn twice
+        assertEquals(4, kept.held.size)
+        host.record(window(null, count = 2), kept)
+        assertEquals(2, kept.held.size)
+    }
+
+    @Test
+    fun `a kept drawing's changing pixels take turns between two bitmaps for each place in it`() {
+        val host = host()
+        val first = WalDrawing.Recorded()
+        val other = WalDrawing.Recorded()
+        val red = 0xFFFF0000.toInt()
+        val blue = 0xFF0000FF.toInt()
+
+        fun recordVis(kept: WalDrawing.Recorded): Pair<ImageBitmap, ImageBitmap> {
+            host.drawing.begin(null)
+            val pair = host.drawing.recording(kept) { host.pixels(vis(red)) to host.pixels(vis(blue)) }
+            host.drawing.end()
+            return pair
+        }
+        val a1 = recordVis(first)
+        assertNotSame("two places, two bitmaps", a1.first, a1.second)
+        assertEquals(List(8) { blue }, a1.second.colors())
+        // frames that only show it neither write nor drop its bitmaps
+        host.drawing.begin(null)
+        val plain = host.pixels(vis(red))
+        host.drawing.end()
+        repeat(3) { host.showOnly(first) }
+        val a2 = recordVis(first)
+        val a3 = recordVis(first)
+        assertNotSame("never the bitmap the recording before used", a1.first, a2.first)
+        assertSame(a1.first, a3.first)
+        assertSame(a1.second, a3.second)
+        val b = recordVis(other)
+        val ownBitmaps = setOf(a1.first, a1.second, a2.first, a2.second).map(System::identityHashCode)
+        assertTrue("another drawing never shares them", System.identityHashCode(b.first) !in ownBitmaps)
+        assertTrue("a frame drawn the plain way never shares them", System.identityHashCode(plain) !in ownBitmaps)
     }
 
     private companion object {
