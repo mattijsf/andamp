@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.IntRect
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.Transport
+import nl.mattix.andamp.modernskin.skin.SkinMenuChoices
 import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.skin.Skin
@@ -272,6 +273,27 @@ class ModernPlayerSurfaceTest {
         frames()
 
         assertEquals(listOf(1), surface.rightClicks)
+    }
+
+    @Test
+    fun `a long press beside several of the skin's menus leads the main menu with them under Skin menu`() {
+        surface.menusBesideEveryPress =
+            listOf(SkinMenuChoices.Choice("main.vis.trigger", null), SkinMenuChoices.Choice("display.time", null))
+        show()
+
+        longPress(Offset(450f, 100f))
+
+        val menu = vm.state.activeMenu!!
+        val first = menu.items[0] as AmpMenuItem.Submenu
+        assertEquals(vm.words.get(R.string.menu_skin_menu), first.label)
+        assertEquals(
+            listOf(R.string.menu_skin_menu_visualizer, R.string.menu_skin_menu_time).map { vm.words.get(it) },
+            first.items.map { (it as AmpMenuItem.Action).label },
+        )
+        assertSame(AmpMenuItem.Divider, menu.items[1])
+
+        (first.items[1] as AmpMenuItem.Action).onClick()
+        assertEquals(listOf(1 to 1), surface.choiceClicks)
     }
 
     @Test
