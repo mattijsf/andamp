@@ -174,6 +174,8 @@ fun PreferencesScreen(
                             vm.skinOps.paletteChanged()
                         },
                     ),
+                // the player follows the switch through WalGate, so nothing here calls into it
+                modern = modernSkinPrefsOf(context),
                 volume =
                     VolumePrefs(
                         mode = vm.volumeModes.mode,
@@ -274,6 +276,7 @@ data class PrefsSections(
     val tapAssist: TapAssistPrefs = TapAssistPrefs(),
     val lists: ListPrefs = ListPrefs(),
     val palette: PalettePrefs = PalettePrefs(),
+    val modern: ModernSkinPrefs = ModernSkinPrefs(),
     val volume: VolumePrefs = VolumePrefs(),
     val widget: WidgetPrefs = WidgetPrefs(),
     val sources: SourcesPrefs = SourcesPrefs(),

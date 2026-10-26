@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.ui.prefs
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import nl.mattix.andamp.R
@@ -36,6 +37,7 @@ internal fun PlayerPage(
         Section(stringResource(R.string.prefs_player_colors_section))
         Group { PaletteRow(sections.palette) }
     }
+    ModernSkinsSection(sections.modern)
 }
 
 /** The Player row's line: which of its switches are on, or what the page holds when none are. */
@@ -53,8 +55,18 @@ internal fun PrefsSections.playerSummary(words: Words): String {
             R.string.prefs_player_summary_row_format.takeIf { lists.rowFormat != RowFormat.DEFAULT },
             R.string.prefs_player_summary_tap_assist.takeIf { tapAssist.enabled },
             R.string.prefs_player_summary_wallpaper_colors.takeIf { palette.offered && palette.enabled },
+            R.string.prefs_player_summary_modern_skins.takeIf { modern.offered && modern.enabled },
+            R.string.prefs_player_summary_sharp_pixels.takeIf { modern.offered && modern.enabled && modern.sharp },
         )
-    return on.joinToString(" · ") { words.get(it) }.ifEmpty {
-        words.get(if (overlay.offered) R.string.prefs_player_summary_all_with_overlay else R.string.prefs_player_summary_all)
-    }
+    return on.joinToString(" · ") { words.get(it) }.ifEmpty { words.get(contents()) }
 }
+
+/** What the page holds, for the Player row's line when none of its switches is changed. */
+@StringRes
+private fun PrefsSections.contents(): Int =
+    when {
+        overlay.offered && modern.offered -> R.string.prefs_player_summary_all_with_overlay_skins
+        overlay.offered -> R.string.prefs_player_summary_all_with_overlay
+        modern.offered -> R.string.prefs_player_summary_all_skins
+        else -> R.string.prefs_player_summary_all
+    }

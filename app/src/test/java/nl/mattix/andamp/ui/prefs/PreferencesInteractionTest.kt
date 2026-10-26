@@ -212,7 +212,10 @@ class PreferencesInteractionTest {
 
     private var picked = 0
 
-    private fun show(backend: EffectBackend): DspOps {
+    private fun show(
+        backend: EffectBackend,
+        sections: PrefsSections = PrefsSections(),
+    ): DspOps {
         val facade = PlayerFacade(backend)
         val ops = DspOps(app, facade)
         val plugins = PluginOps(app, facade, ops, scope)
@@ -224,6 +227,7 @@ class PreferencesInteractionTest {
                 onRequestAccess = {},
                 onPickPlugin = { picked++ },
                 onClose = {},
+                sections = sections,
             )
         }
         return ops
@@ -263,6 +267,20 @@ class PreferencesInteractionTest {
 
         tag("prefs.back").performClick()
         tag("prefs.open.player").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun `the modern skins switch lives on the Player page, and the Player row names it while on`() {
+        show(EffectBackend(scope), PrefsSections(modern = ModernSkinPrefs(offered = true, enabled = true)))
+
+        allTags("prefs.modern.switch").assertCountEquals(0)
+        compose
+            .onNodeWithText(app.getString(nl.mattix.andamp.R.string.prefs_player_summary_modern_skins), substring = true)
+            .performScrollTo()
+            .assertIsDisplayed()
+        tag("prefs.open.player").performScrollTo().performClick()
+        tag("prefs.modern.switch").performScrollTo().assertIsOn()
+        tag("prefs.sharp.switch").performScrollTo().assertIsOff()
     }
 
     @Test
