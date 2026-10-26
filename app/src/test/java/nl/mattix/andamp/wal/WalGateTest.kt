@@ -3,6 +3,7 @@
 package nl.mattix.andamp.wal
 
 import android.app.Application
+import android.content.Context
 import androidx.compose.runtime.snapshotFlow
 import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.launch
@@ -11,6 +12,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -20,8 +22,9 @@ import org.robolectric.annotation.Config
 import java.io.File
 
 /**
- * The modern-skin switch: off with nothing stored, what it stores, changes stored in the order they
- * are made, a change racing the first read, and the state the player follows.
+ * The modern-skin switch: off with nothing stored, kept in the backed-up modern-skin preferences,
+ * a value in the no-backup file moved there once, changes stored in the order they are made, a
+ * change racing the first read, and the state the player follows.
  *
  * A plain Application, because AndAmpApp reads the switch at startup on a thread that would race
  * the reads here.
@@ -30,7 +33,13 @@ import java.io.File
 @Config(sdk = [35], application = Application::class)
 class WalGateTest {
     private val app = ApplicationProvider.getApplicationContext<Application>()
-    private val file get() = File(app.noBackupFilesDir, "wal_dev")
+    private val prefs get() = app.getSharedPreferences(WalSettings.PREFS, Context.MODE_PRIVATE)
+    private val oldFile get() = File(app.noBackupFilesDir, "wal_dev")
+
+    /** What the preferences hold under the switch's key, or null when nothing is stored. */
+    private fun stored(): Boolean? = if (prefs.contains(WalGate.KEY)) prefs.getBoolean(WalGate.KEY, false) else null
+
+    private fun store(value: Boolean) = prefs.edit().putBoolean(WalGate.KEY, value).commit()
 
     @Before
     fun clear() = WalGate.clear(app)
@@ -39,15 +48,10 @@ class WalGateTest {
     fun forget() = WalGate.clear(app)
 
     @Test
-    fun `with nothing stored it reads off`() {
+    fun `with nothing stored it reads off, in every build`() {
         assertFalse(WalGate.read(app))
         assertFalse(WalGate.on)
-    }
-
-    @Test
-    fun `a stored value that says neither reads off`() {
-        file.writeText("yes")
-        assertFalse(WalGate.read(app))
+        assertNull("reading stores nothing", stored())
     }
 
     @Test
@@ -59,25 +63,38 @@ class WalGateTest {
 
     @Test
     fun `off is written and read back`() {
-        file.writeText("on")
+        store(true)
         WalGate.write(app, false)
         WalGate.forget(app)
         assertFalse(WalGate.read(app))
     }
 
     @Test
-    fun `the value lives in the no-backup folder and holds the word`() {
+    fun `the value is kept in the modern-skin preferences, not in the no-backup folder`() {
         WalGate.write(app, true)
-        assertEquals(app.noBackupFilesDir, WalGate.file(app).parentFile)
-        assertEquals("on", file.readText())
+        assertEquals(true, stored())
         WalGate.write(app, false)
-        assertEquals("off", file.readText())
+        assertEquals(false, stored())
+        assertEquals(
+            "nothing goes to the no-backup folder",
+            emptyList<String>(),
+            app.noBackupFilesDir
+                .list()
+                .orEmpty()
+                .toList(),
+        )
+    }
+
+    @Test
+    fun `a restored value is read at the first start`() {
+        store(true)
+        assertTrue(WalGate.read(app))
     }
 
     @Test
     fun `the stored value is read once`() {
         assertFalse(WalGate.read(app))
-        file.writeText("on")
+        store(true)
         assertFalse(WalGate.read(app))
     }
 
@@ -97,7 +114,7 @@ class WalGateTest {
         assertTrue(WalGate.on)
         assertTrue("read gives the change, not what is stored", WalGate.read(app))
         WalGate.awaitStored()
-        assertEquals("on", file.readText())
+        assertEquals(true, stored())
     }
 
     @Test
@@ -108,7 +125,7 @@ class WalGateTest {
         WalGate.change(app, true)
         assertTrue(WalGate.on)
         WalGate.awaitStored()
-        assertEquals("on", file.readText())
+        assertEquals(true, stored())
         WalGate.forget(app)
         assertTrue(WalGate.read(app))
     }
@@ -118,38 +135,83 @@ class WalGateTest {
         WalGate.change(app, true)
         WalGate.change(app, false)
         WalGate.write(app, true)
-        assertEquals("on", file.readText())
+        assertEquals(true, stored())
     }
 
     @Test
     fun `a change made while the first read loads is not undone by it`() {
         // the hook first: whichever read loads the stored value makes the change while it loads
         WalGate.onLoaded = { WalGate.change(app, true) }
-        file.writeText("off")
+        store(false)
         assertTrue(WalGate.read(app))
         assertTrue(WalGate.on)
         WalGate.awaitStored()
-        assertEquals("on", file.readText())
+        assertEquals(true, stored())
     }
 
     @Test
     fun `a change to off made while the first read loads is not undone by it`() {
         WalGate.onLoaded = { WalGate.change(app, false) }
-        file.writeText("on")
+        store(true)
         assertFalse(WalGate.read(app))
         assertFalse(WalGate.on)
         WalGate.awaitStored()
-        assertEquals("off", file.readText())
+        assertEquals(false, stored())
     }
 
     @Test
     fun `clearing drops what is stored, forgetting keeps it`() {
         WalGate.write(app, true)
         WalGate.forget(app)
-        assertTrue(file.exists())
+        assertEquals(true, stored())
         WalGate.clear(app)
-        assertFalse(file.exists())
+        assertNull(stored())
         assertFalse(WalGate.read(app))
+    }
+
+    @Test
+    fun `on in the no-backup file is moved to the preferences once, and the file goes`() {
+        oldFile.writeText("on")
+        assertTrue(WalGate.read(app))
+        assertFalse(oldFile.exists())
+        assertEquals(true, stored())
+        WalGate.forget(app)
+        assertTrue("the next start reads the preferences", WalGate.read(app))
+    }
+
+    @Test
+    fun `off in the no-backup file is moved the same way`() {
+        oldFile.writeText("off")
+        assertFalse(WalGate.read(app))
+        assertFalse(oldFile.exists())
+        assertEquals(false, stored())
+    }
+
+    @Test
+    fun `a file that says neither is moved as off`() {
+        oldFile.writeText("yes")
+        assertFalse(WalGate.read(app))
+        assertFalse(oldFile.exists())
+        assertEquals(false, stored())
+    }
+
+    @Test
+    fun `the stored value wins over the file, which goes`() {
+        store(true)
+        oldFile.writeText("off")
+        assertTrue(WalGate.read(app))
+        assertFalse(oldFile.exists())
+        assertEquals(true, stored())
+    }
+
+    @Test
+    fun `a change stored before the file is read wins over it`() {
+        oldFile.writeText("on")
+        WalGate.write(app, false)
+        WalGate.forget(app)
+        assertFalse(WalGate.read(app))
+        assertFalse(oldFile.exists())
+        assertEquals(false, stored())
     }
 
     @Test

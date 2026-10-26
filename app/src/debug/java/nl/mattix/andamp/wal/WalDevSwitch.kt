@@ -7,12 +7,11 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
-import java.io.IOException
 import kotlin.concurrent.thread
 
 /**
- * The adb switch for modern skins while they are in development, in every build. `<package>` is
- * nl.mattix.andamp, plus the id suffix when the build has one (nl.mattix.andamp.dev):
+ * The adb switch for modern skins, in debug builds. `<package>` is nl.mattix.andamp, plus the id
+ * suffix when the build has one (nl.mattix.andamp.dev):
  *
  *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal on
  *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal off
@@ -22,8 +21,8 @@ import kotlin.concurrent.thread
  *     adb logcat -s ModernSkin
  *     adb pull /sdcard/Android/data/<package>/files/wal-check/
  *
- * `on` and `off` set [WalGate]: they write its file and its state, so a running app follows at
- * once and the next start reads the same. The log says what the file holds.
+ * `on` and `off` set [WalGate] as the switch in Preferences does: a running app follows at once and
+ * the next start reads the same. The log says what is stored.
  *
  * `check` runs every .wal in that folder through [WalCheck], which leaves a PNG beside each skin. A
  * run stops after [BUDGET_MS] and says how many skins are left; `check` again carries on, and
@@ -37,17 +36,18 @@ import kotlin.concurrent.thread
  *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal timing --ez on false
  *     adb logcat -s WalTiming
  *
- * `timing` turns the timing log ([WalTiming]) on, in a release build too, and `--ez on false`
- * turns it off; either holds until the app's process ends. A debug build starts with it on.
+ * `timing` turns the timing log ([WalTiming]) on, and `--ez on false` turns it off; either holds
+ * until the app's process ends. A debug build starts with it on.
  *
  *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal direct
  *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal direct --ez on false
  *
- * `direct` draws skins at a fractional scale (Bento, Winamp3x) straight onto the screen with hard
- * edges ([WalRender.direct]), in place of drawing them at the next whole scale and shrinking the
- * picture; `--ez on false` goes back. It shows at once and holds until the app's process ends.
- * `--es wal draw direct` turns it on too and `--es wal draw whole` off: am takes the word after
- * `draw` as the intent's package, and drops what follows it.
+ * `direct` switches sharp pixels on ([WalSharp]) as the setting in Preferences does: skins at a
+ * fractional scale (Bento, Winamp3x) are drawn straight onto the screen with hard edges, in place
+ * of being drawn at the next whole scale and shrunk; `--ez on false` switches them off. It shows at
+ * once and is kept, like the setting. `--es wal draw direct` turns it on too and
+ * `--es wal draw whole` off: am takes the word after `draw` as the intent's package, and drops what
+ * follows it.
  *
  *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal layers
  *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal layers --ez on false
@@ -70,8 +70,8 @@ import kotlin.concurrent.thread
  * other switches can draw that one frame each way and screenshots compare them; `--ez on false`
  * goes back to the latest frame.
  *
- * Guarded by android.permission.DUMP in the manifest: only the shell, or an app granted DUMP over
- * adb, can send it.
+ * Guarded by android.permission.DUMP in the debug manifest: only the shell, or an app granted DUMP
+ * over adb, can send it.
  */
 class WalDevSwitch : BroadcastReceiver() {
     override fun onReceive(
@@ -83,8 +83,8 @@ class WalDevSwitch : BroadcastReceiver() {
             "on" -> gate(context, true)
             "off" -> gate(context, false)
             "timing" -> timing(intent.getBooleanExtra("on", true))
-            "direct" -> direct(intent.getBooleanExtra("on", true))
-            "draw" -> direct(intent.`package` == "direct")
+            "direct" -> direct(context, intent.getBooleanExtra("on", true))
+            "draw" -> direct(context, intent.`package` == "direct")
             "layers" -> layers(intent)
             "hold" -> hold(intent.getBooleanExtra("on", true))
             else -> Log.w(WalHost.TAG, "WalDevSwitch: say --es wal on, off, check, timing, direct, layers or hold (got $command)")
@@ -99,10 +99,9 @@ class WalDevSwitch : BroadcastReceiver() {
         thread(name = "wal-gate") {
             try {
                 WalGate.write(context, on)
-                val file = WalGate.file(context)
-                Log.i(WalHost.TAG, "modern skins ${if (WalGate.on) "on" else "off"}: ${file.path} holds ${file.readText()}")
-            } catch (e: IOException) {
-                Log.w(WalHost.TAG, "WalDevSwitch: could not write the switch", e)
+                val prefs = context.getSharedPreferences(WalSettings.PREFS, Context.MODE_PRIVATE)
+                val stored = "${WalSettings.PREFS} holds ${WalGate.KEY}=${prefs.all[WalGate.KEY]}"
+                Log.i(WalHost.TAG, "modern skins ${if (WalGate.on) "on" else "off"}: $stored")
             } finally {
                 pending.finish()
             }
@@ -114,9 +113,11 @@ class WalDevSwitch : BroadcastReceiver() {
         Log.i(WalHost.TAG, "timing log ${if (on) "on" else "off"} under ${WalTiming.TAG}")
     }
 
-    private fun direct(on: Boolean) {
-        WalRender.direct = on
-        WalRender.redraws.intValue++
+    private fun direct(
+        context: Context,
+        on: Boolean,
+    ) {
+        WalSharp.change(context, on)
         Log.i(WalHost.TAG, "fractional scales drawn ${if (on) "directly with hard edges" else "whole and shrunk"}")
     }
 

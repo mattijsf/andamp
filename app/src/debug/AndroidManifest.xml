@@ -19,6 +19,16 @@
             android:permission="android.permission.DUMP" />
 
         <!--
+          Modern skins over adb: `adb shell am broadcast` turns them on or off, runs a check of the
+          skins in the app's external wal-check folder, and switches how they are drawn and timed
+          (see WalDevSwitch). Guarded like the receiver above.
+        -->
+        <receiver
+            android:name="nl.mattix.andamp.wal.WalDevSwitch"
+            android:exported="true"
+            android:permission="android.permission.DUMP" />
+
+        <!--
           A bare desktop to show behind the translucent player: the wallpaper,
           Andamp's icon and a search bar. Guarded like the receiver: only the
           shell starts it. A task of its own, because starting it in the app's

@@ -27,12 +27,15 @@ import nl.mattix.andamp.modernskin.skin.LiveRun
 import nl.mattix.andamp.modernskin.skin.Rect
 import nl.mattix.andamp.modernskin.skin.VAlign
 
-/** How skins are drawn; switched over adb ([WalDevSwitch]) to compare ways of drawing. */
+/**
+ * How skins are drawn. [direct] follows the listener's sharp pixels setting ([WalSharp]); tests, and
+ * the adb switch of debug builds, set the others to compare ways of drawing.
+ */
 internal object WalRender {
     /**
      * Draws a stack at a fractional scale straight onto the screen with hard edges, in place of
-     * drawing it at the next whole scale and shrinking the picture (see [drawWalStack]). Off unless
-     * switched on; it holds until the app's process ends.
+     * drawing it at the next whole scale and shrinking the picture (see [drawWalStack]). Set by
+     * [WalSharp], which keeps it: off unless sharp pixels are switched on.
      */
     @Volatile
     var direct = false

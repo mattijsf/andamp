@@ -17,11 +17,11 @@ import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import java.io.File
 
 /**
- * Runs the modern skins in a folder once each, off screen, so a build can be tried over adb (see
- * [WalDevSwitch]): load, [TICKS] ticks on a stepped clock with a demo track playing, and the windows
- * drawn at 1x into a PNG beside the skin. Each skin's name before it loads, then its load time, the
- * p95 of a tick plus its draw list and the drawing time, or its failure, go to the log under
- * [WalHost.TAG].
+ * Runs the modern skins in a folder once each, off screen, so a debug build can be tried over adb
+ * (`--es wal check` to its adb switch): load, [TICKS] ticks on a stepped clock with a demo track
+ * playing, and the windows drawn at 1x into a PNG beside the skin. Each skin's name before it
+ * loads, then its load time, the p95 of a tick plus its draw list and the drawing time, or its
+ * failure, go to the log under [WalHost.TAG].
  *
  * A run that runs out of time stops between skins, after one skin at least. A file in the folder
  * keeps which skins the run has finished, for the installed build and each skin's size and date, so

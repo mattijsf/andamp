@@ -10,6 +10,7 @@ import kotlinx.coroutines.cancel
 import nl.mattix.andamp.backend.mock.MockBackend
 import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.wal.WalGate
+import nl.mattix.andamp.wal.WalSettings
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -32,7 +33,7 @@ import java.util.zip.ZipOutputStream
  * Main and IO; [await] idles the Robolectric main looper so Main continuations run while
  * real IO threads make progress.
  *
- * Modern skins are loaded by the engine, behind the switch the app reads from its file.
+ * Modern skins are loaded by the engine, behind the switch the app reads from its preferences.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE) // skin decode goes through BitmapFactory
@@ -66,8 +67,8 @@ class SkinPersistenceTest {
         return vm.skin!!.name
     }
 
-    // the switch is read once per process: each test starts from its file, which view models
-    // left from earlier tests read too
+    // the switch is read once per process: each test starts from what it stored, which view
+    // models left from earlier tests read too
     @Before
     fun forgetSwitch() = WalGate.forget(app)
 
@@ -207,7 +208,7 @@ class SkinPersistenceTest {
         val second = vm()
         await { second.skin != null && second.skinOps.currentId == id }
 
-        // the process ends: its players go, and the switch is read from its file again
+        // the process ends: its players go, and the switch is read from the preferences again
         first.viewModelScope.cancel()
         second.viewModelScope.cancel()
         WalGate.forget(app)
@@ -244,5 +245,56 @@ class SkinPersistenceTest {
         assertFalse(unfinished.exists())
         assertFalse(copy.exists())
         assertTrue(vm.state.skinEntries.none { it.kind == SkinKind.MODERN })
+    }
+
+    /**
+     * Wears the classic MyCustom.wsz, then the modern [walBytes] with modern skins on; then the
+     * process ends and a backup is restored onto a new phone: the preferences and the skins' files
+     * come back, with modern skins switched [on] or off, and the no-backup folder is empty. Returns
+     * the classic skin's id and the modern skin's.
+     */
+    private fun wornThenRestored(on: Boolean): Pair<String, String> {
+        WalGate.write(app, true)
+        val first = startedVm()
+        first.skinOps.load(baseBytes.inputStream(), "MyCustom.wsz")
+        await { first.skin?.name == "MyCustom.wsz" && library.currentId != SkinEntry.BASE_ID }
+        val classic = library.currentId
+        val id = library.idFor(walBytes)
+        first.skinOps.load(walBytes.inputStream(), "Bento.wal")
+        await { first.skinOps.currentId == id && library.currentId == id }
+
+        made.forEach { it.viewModelScope.cancel() }
+        WalGate.clear(app)
+        app.noBackupFilesDir.deleteRecursively()
+        app
+            .getSharedPreferences(WalSettings.PREFS, 0)
+            .edit()
+            .putBoolean(WalGate.KEY, on)
+            .commit()
+        return classic to id
+    }
+
+    @Test
+    fun `restored with modern skins on, the modern skin worn before goes on at the first start`() {
+        val (_, id) = wornThenRestored(on = true)
+
+        val vm = vm()
+
+        await { vm.skin != null && vm.skinOps.currentId == id }
+        assertEquals(id, library.currentId)
+        assertTrue(WalGate.on)
+    }
+
+    @Test
+    fun `restored with modern skins off, the last classic choice goes on and the modern skin stays stored`() {
+        val (classic, id) = wornThenRestored(on = false)
+
+        val vm = vm()
+
+        await { vm.skin?.name == "MyCustom.wsz" && vm.skinOps.currentId == classic }
+        assertEquals(classic, library.currentId)
+        assertTrue(File(app.filesDir, "skins/$id.wal").isFile)
+        assertEquals("Bento", library.nameOf(id))
+        assertFalse(WalGate.on)
     }
 }
