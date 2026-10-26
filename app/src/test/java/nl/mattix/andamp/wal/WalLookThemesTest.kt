@@ -9,7 +9,9 @@ import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Rule
@@ -22,6 +24,7 @@ import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowLooper
 import java.io.File
+import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.zip.ZipEntry
@@ -124,25 +127,52 @@ class WalLookThemesTest {
     }
 
     @Test(timeout = 20_000)
-    fun `a theme picked before the skin starts is dropped, and one picked after release does nothing`() {
+    fun `a theme picked before the skin starts is dropped`() {
         val look = look()
 
         look.pickTheme("Two")
         look.fit(phone)
         await("the first frame arrives") { look.layout != null }
-        assertEquals("One", look.theme)
-        repeat(20) {
-            shadowOf(Looper.getMainLooper()).idle()
-            Thread.sleep(10)
-        }
+        // a pick held for the start would be on by now, and its save due after the clock moves on
+        settle(look)
         ShadowLooper.idleMainLooper(WalLook.SAVE_DELAY_MS * 2, TimeUnit.MILLISECONDS)
+        settle(look)
+
+        assertEquals("One", look.theme)
+        assertEquals("One", look.engine?.frame?.themeKey)
         assertNull("nothing changed, so nothing is saved", prefs.getString(look.id, null))
+    }
 
-        look.release(save = false)
+    @Test(timeout = 20_000)
+    fun `a theme picked after release changes nothing the skin keeps`() {
+        val look = look()
+        look.fit(phone)
+        await("the first frame arrives") { look.layout != null }
+        val engineThread = Thread.getAllStackTraces().keys.single { it.name == "wal-${look.id}" }
+
+        look.release(save = true)
+        engineThread.join(5_000)
+        assertFalse("the engine thread ended", engineThread.isAlive)
+        val kept = prefs.getString(look.id, null)
+        assertTrue("the release saved the theme worn: $kept", kept.orEmpty().contains("\"theme\":\"One\""))
+
         look.pickTheme("Two")
+        ShadowLooper.idleMainLooper(WalLook.SAVE_DELAY_MS * 2, TimeUnit.MILLISECONDS)
 
+        assertEquals("what the release saved stays", kept, prefs.getString(look.id, null))
         assertEquals(emptyList<String>(), look.themes)
         assertNull(look.theme)
+    }
+
+    /**
+     * Waits until the work already posted to [look]'s engine thread is done, then takes the frame it
+     * published on the main thread.
+     */
+    private fun settle(look: WalLook) {
+        val done = CountDownLatch(1)
+        look.engine!!.postAlways { done.countDown() }
+        assertTrue("the engine thread finished its work", done.await(5, TimeUnit.SECONDS))
+        shadowOf(Looper.getMainLooper()).idle()
     }
 
     private companion object {
