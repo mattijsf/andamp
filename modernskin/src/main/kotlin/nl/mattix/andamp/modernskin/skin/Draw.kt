@@ -13,6 +13,9 @@ data class Rect(
 
     operator fun contains(p: Pair<Int, Int>) = p.first >= left && p.first < right && p.second >= top && p.second < bottom
 
+    /** Whether this rectangle and [r] share at least one pixel. */
+    fun overlaps(r: Rect) = r.left < right && left < r.right && r.top < bottom && top < r.bottom
+
     companion object {
         val EMPTY = Rect(0, 0, 0, 0)
     }

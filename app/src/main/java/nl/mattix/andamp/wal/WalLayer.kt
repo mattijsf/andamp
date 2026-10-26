@@ -172,7 +172,7 @@ internal fun hidesModernSkin(s: WinampState): Boolean {
  * layout worked out for another box (the phone was turned) leaves the stack where it was last
  * placed, or the companion when it never was.
  *
- * A drag from one of the skin's move areas moves the stack inside the box ([WalDrag]); the skin
+ * A drag from any part of the skin but a control moves the stack inside the box ([WalDrag]); the skin
  * keeps where it was moved to, upright and sideways apart ([WalSurface.places]). A stack that has
  * grown past the box's edge from there is held inside it ([WalPlacement.held]).
  *

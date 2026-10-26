@@ -38,7 +38,9 @@ import org.junit.Test
 class SkinMenuTouchTest {
     // a Play button with a label over its middle, a seek bar, a slider hidden under a layer, a
     // trigger layer under a screen (as a vis trigger lies under the vis), a slider uncovered only
-    // along its left edge, a seek bar under a twin at alpha 1, and a layer a script only animates
+    // along its left edge, a seek bar under a twin at alpha 1, a layer a script only animates, a
+    // tab under an EQ band, as Winamp Modern's config drawer sets its tabs under its sliders, and a
+    // small button on a pad
     private val files =
         object : SkinFiles {
             private val m =
@@ -61,6 +63,10 @@ class SkinMenuTouchTest {
                         """<slider id="shown.seek" action="seek" x="200" y="200" w="80" h="10" orientation="h"/>""" +
                         """<slider id="twin.seek" action="seek" x="200" y="200" w="80" h="10" orientation="h" alpha="1"/>""" +
                         """<layer id="animated" x="200" y="250" w="40" h="30"/>""" +
+                        """<slider id="band" action="eq_band" param="3" x="40" y="180" w="10" h="50" orientation="v"/>""" +
+                        """<layer id="tab" x="10" y="236" w="80" h="14"/>""" +
+                        """<layer id="pad" x="100" y="180" w="80" h="40"/>""" +
+                        """<button id="dot" action="PLAY" x="130" y="195" w="8" h="8"/>""" +
                         """</layout></container>""",
                 ).mapValues { it.value.toByteArray() }
 
@@ -377,6 +383,53 @@ class SkinMenuTouchTest {
         rt.touchSlop = 24
 
         assertTrue(rt.touchTarget(195, 265) !== animated)
+    }
+
+    @Test
+    fun `a tab a script hears taps on takes the tap over the slider just above it`() {
+        val band = checkNotNull(rt.mainLayout?.findObject("band")) as Slider
+        val tab = checkNotNull(rt.mainLayout?.findObject("tab"))
+        script(tab, "onleftbuttondown")
+        rt.touchSlop = 24
+        val before = band.position
+        // on the tab, 12 px under the band
+        val x = band.rect.left + 4
+        val y = band.rect.bottom + 11
+
+        assertEquals(tab, rt.touchTarget(x, y))
+        rt.pointerDown(x, y)
+        assertFalse(band.dragging)
+        rt.pointerUp(x, y)
+        assertEquals("the tab heard the press", 1, shown.size)
+        assertEquals(before, band.position)
+    }
+
+    @Test
+    fun `a tab a script hears only right clicks on leaves the tap to the slider just above it`() {
+        val band = checkNotNull(rt.mainLayout?.findObject("band"))
+        val tab = checkNotNull(rt.mainLayout?.findObject("tab"))
+        script(tab, "onrightbuttonup")
+        rt.touchSlop = 24
+
+        assertEquals(band, rt.touchTarget(band.rect.left + 4, band.rect.bottom + 11))
+    }
+
+    @Test
+    fun `a pad a script hears taps on leaves a tap beside the button on it to the button`() {
+        val pad = checkNotNull(rt.mainLayout?.findObject("pad"))
+        val dot = checkNotNull(rt.mainLayout?.findObject("dot"))
+        script(pad, "onleftbuttondown")
+        rt.touchSlop = 24
+        // on the pad, 6 px left of the button
+        val x = dot.rect.left - 6
+        val y = dot.rect.top + 2
+        assertEquals(pad, rt.hitTest(x, y))
+
+        assertEquals(dot, rt.touchTarget(x, y))
+        rt.pointerDown(x, y)
+        rt.pointerUp(x, y)
+        assertEquals(Player.Status.PLAYING, player.status)
+        assertTrue("the pad heard nothing", shown.isEmpty())
     }
 
     @Test

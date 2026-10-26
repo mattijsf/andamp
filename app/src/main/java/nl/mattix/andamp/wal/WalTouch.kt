@@ -14,7 +14,7 @@ import androidx.compose.ui.unit.IntOffset
 /**
  * One finger on a modern skin, as the skin hears it: a press, its moves and its release; a second
  * tap soon after a first one as a double tap; and a long press, which the skin does not hear as a
- * click but which opens the main menu. A press on one of the skin's move areas
+ * click but which opens the main menu. A press on a part of the skin that is not a control
  * ([WalLayout.moveTarget]) that travels past the touch slop moves the whole stack through [drag]
  * instead: the skin's press is cancelled and it hears nothing more of that finger.
  *
@@ -111,7 +111,7 @@ internal class WalTouch(
         }
         if ((at - p.at).getDistance() > rules.touchSlop) p.still = false
         val d = drag
-        // the engine names the press on a move area once it has handled it: each move asks again
+        // the engine names a press that moves the stack once it has handled it: each move asks again
         if (!p.still && d != null && surface.layout?.moveTarget == p.seq) {
             p.dragging = true
             surface.pointerCancel()

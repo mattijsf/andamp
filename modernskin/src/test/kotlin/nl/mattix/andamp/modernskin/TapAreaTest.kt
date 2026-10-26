@@ -7,6 +7,8 @@ import nl.mattix.andamp.modernskin.skin.GuiObject
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.modernskin.skin.Slider
 import nl.mattix.andamp.modernskin.skin.ZipSkinFiles
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -51,11 +53,85 @@ class TapAreaTest {
         return controls.associateWith { found[it] ?: intArrayOf(0) }
     }
 
+    /**
+     * Winamp Modern's config drawer sets its tabs a few pixels under the EQ sliders. Drawn 2x on a
+     * 3x screen the margin is 36 layout pixels, which reaches from a tab's label up to the sliders:
+     * a tap on a label still switches the tab, and the sliders still move by a drag.
+     */
+    @Test
+    fun winampModernDrawerTabsTakeTaps() {
+        val files = ZipSkinFiles(File(localResource("/WinampModern566.wal").toURI()))
+        val player = FakePlayer()
+        val rt = SkinRuntime(files, TestHost(files), player)
+        var now = 0L
+        rt.clock = { now }
+        player.clock = { now }
+        rt.load()
+
+        fun settle() =
+            repeat(SETTLE_FRAMES) {
+                now += FRAME_MS
+                rt.tick()
+            }
+
+        fun tap(o: GuiObject) {
+            val origin = rt.windowRect(checkNotNull(o.layoutObject))
+            val x = origin.left + o.rect.left + o.rect.width / 2
+            val y = origin.top + o.rect.top + o.rect.height / 2
+            rt.pointerDown(x, y)
+            rt.pointerUp(x, y)
+            settle()
+        }
+
+        fun shown(o: GuiObject) = o.visible && generateSequence(o.parent) { it.parent }.all { it.visible }
+        val main = checkNotNull(rt.mainLayout)
+        settle()
+        tap(checkNotNull(main.findObject("drawer.button.open")))
+        rt.touchSlop = 36
+        val pages =
+            listOf(
+                "eq",
+                "options",
+                "colorthemes",
+            ).associateWith { checkNotNull(main.findObject("player.normal.drawer.$it")) }
+        val bands = rt.allObjects.filterIsInstance<Slider>().filter { it.action.equals("eq_band", true) }
+        val positions = bands.map { it.position }
+        assertTrue("the drawer opens on the equalizer", shown(pages.getValue("eq")))
+        // from the equalizer to each other tab, as the sliders sit right above them there
+        for (tab in listOf("colorthemes", "eq", "options")) {
+            val trap = rt.allObjects.single { it.id.equals("mousetrapTab$tab", true) && shown(it) }
+            tap(trap)
+            assertTrue("$tab shows after a tap on its label", shown(pages.getValue(tab)))
+            assertTrue("one page shows: ${pages.filterValues(::shown).keys}", pages.values.count(::shown) == 1)
+        }
+        assertEquals("no EQ band moved", positions, bands.map { it.position })
+
+        // back on the equalizer, a drag up a band's track moves that band, not the skin
+        tap(rt.allObjects.single { it.id.equals("mousetrapTabEQ", true) && shown(it) })
+        val band = bands.first { shown(it) }
+        val before = band.position
+        val origin = rt.windowRect(checkNotNull(band.layoutObject))
+        val x = origin.left + band.rect.left + band.rect.width / 2
+        val y = origin.top + band.rect.top + band.rect.height - 4
+        rt.pointerDown(x, y, seq = 1)
+        rt.pointerMove(x, y - band.rect.height / 2)
+        rt.pointerUp(x, y - band.rect.height / 2)
+        assertNull("the band took the drag", rt.moveTarget)
+        assertTrue("the band moved: ${band.position}", band.position != before)
+    }
+
     @Test
     fun everyControlIsReachable() {
         for (wal in listOf("WinampModern566.wal", "MMD3.wal", "CornerAmp_Redux.wal")) {
             val unreachable = areas(wal).filterValues { it[0] == 0 }.keys
             assertTrue("$wal: no finger reaches $unreachable", unreachable.isEmpty())
         }
+    }
+
+    private companion object {
+        const val FRAME_MS = 16L
+
+        /** Two seconds of frames: long enough for the drawer to slide open and a tab to switch. */
+        const val SETTLE_FRAMES = 125
     }
 }
