@@ -2,9 +2,13 @@
 
 package nl.mattix.andamp.ui.menu
 
+import android.app.Application
+import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.AmpMenuItem
+import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.ui.window.testViewModel
+import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -18,10 +22,25 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w900dp-h1600dp-mdpi")
 class MenuLabelConventionTest {
+    private val app = ApplicationProvider.getApplicationContext<Application>()
+
+    /** A view model that wore a modern skin; let go after the test. */
+    private var wearing: WinampViewModel? = null
+
+    @After
+    fun letGoOfModernSkin() {
+        wearing?.let { letGoOfModernSkin(app, it) }
+    }
+
     private fun allMenus(): List<AmpMenu> {
         val vm = testViewModel()
+        val modern = wearThemedModernSkin(app, "One", "Two").also { wearing = it }
         return listOf(
             mainMenu(vm, {}, {}, {}, {}),
+            // with a modern skin worn whose color themes are listed under Skins
+            mainMenu(modern, {}, {}, {}, {}, modernPlayer = true).also { menu ->
+                assertTrue("Color themes is listed", submenuLabels(menu.items).contains("Color themes"))
+            },
             // led by a skin's menu, or several, as a long press on a modern skin opens it
             mainMenu(vm, {}, {}, {}, {}, skinMenus = listOf(AmpMenuItem.Action("Visualizer") {})),
             mainMenu(vm, {}, {}, {}, {}, skinMenus = listOf("Visualizer", "Time").map { AmpMenuItem.Action(it) {} }),

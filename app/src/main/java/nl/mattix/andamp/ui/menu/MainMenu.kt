@@ -311,7 +311,16 @@ fun optionsMenu(
         anchor,
     )
 
-/** Winamp's Skins submenu: the browser, the picker, and every skin in the library. */
+/**
+ * Winamp's Skins submenu: the browser, the picker, "Color themes" for the modern skin on screen,
+ * and every skin in the library.
+ *
+ * "Color themes" lists the skin's themes in the order the skin's theme list shows them, as the skin
+ * names them, the one it wears ticked, each putting that theme on. It is left out with a classic
+ * skin worn, with a modern one parked under a music source's skin, before the skin has loaded, and
+ * for a skin with fewer than two themes. It is marked as needing the app: a theme shows only on the
+ * player.
+ */
 internal fun skinItems(
     vm: WinampViewModel,
     onPickSkin: () -> Unit,
@@ -329,6 +338,19 @@ internal fun skinItems(
         // not marked either: the picker belongs to whoever hosts the menu, and
         // both hosts can open one
         add(AmpMenuItem.Action(vm.words.get(R.string.menu_load_skin), onClick = onPickSkin))
+        vm.skinOps.wal?.takeIf { it.themes.size >= MIN_THEMES }?.let { look ->
+            add(
+                AmpMenuItem.Submenu(
+                    vm.words.get(R.string.menu_color_themes),
+                    look.themes.map { name ->
+                        AmpMenuItem.Action(name.take(MAX_THEME_NAME), checked = name.equals(look.theme, ignoreCase = true)) {
+                            look.pickTheme(name)
+                        }
+                    },
+                    needsTheApp = true,
+                ),
+            )
+        }
         add(AmpMenuItem.Divider)
         add(
             // Winamp's <Base Skin>, under the name of the skin the app ships with and falls back to
@@ -350,6 +372,12 @@ internal fun skinItems(
             )
         }
     }
+
+/** The fewest color themes a skin has for "Color themes" to be offered: with one there is nothing to pick. */
+private const val MIN_THEMES = 2
+
+/** Characters shown of a color theme's name, as many as a skin's menus show of an entry's words. */
+private const val MAX_THEME_NAME = 128
 
 /** The Options list itself, shown under Options and behind the clutter bar's O. */
 private fun optionsItems(

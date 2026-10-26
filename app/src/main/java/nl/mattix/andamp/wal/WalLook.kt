@@ -42,6 +42,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * A start that fails after a fit, and a skin that stops working, are told to [onFailed] on the main
  * thread.
  */
+@Suppress("TooManyFunctions") // every call of WalSurface, plus the start, park and release of the skin it holds
 internal class WalLook(
     /** The skin's id in the library. */
     val id: String,
@@ -263,6 +264,16 @@ internal class WalLook(
 
     override fun dismissMenu() {
         engine?.dismissMenu()
+    }
+
+    /**
+     * Puts on the color theme [name] on the engine thread, which publishes the recolored frame; the
+     * change is saved as one from the skin's theme list is ([keepLater]). Dropped before the engine
+     * has started and after [release].
+     */
+    override fun pickTheme(name: String) {
+        lastInputAt = SystemClock.uptimeMillis()
+        engine?.post { it.selectGammaSet(name) }
     }
 
     override fun save() {

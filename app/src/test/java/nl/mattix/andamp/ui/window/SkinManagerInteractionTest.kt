@@ -3,11 +3,13 @@
 package nl.mattix.andamp.ui.window
 
 import android.app.Application
+import android.graphics.Typeface
 import android.os.Looper
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
@@ -16,6 +18,7 @@ import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SkinLoader
 import nl.mattix.andamp.state.SkinEntry
+import nl.mattix.andamp.state.SkinKind
 import nl.mattix.andamp.state.SkinLibrary
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
@@ -31,6 +34,7 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import java.io.File
+import kotlin.math.ceil
 
 /**
  * The skin manager's list, with a library too big for the window. One widget serves both
@@ -322,6 +326,42 @@ class SkinManagerInteractionTest {
         val after = vm.state.windowRects[WindowStore.SKINS]!!
         assertEquals("the window widens by two steps", before.width + 2 * SkinManagerLayout.WIDTH_STEP, after.width)
         assertEquals("the left edge stays put", before.left, after.left)
+    }
+
+    @Test
+    fun `a long modern name is clipped before its suffix, which is drawn whole before REM`() {
+        val typeface = Typeface.createFromAsset(app.assets, PlaylistTextRasterizer.ASSET_PATH)
+        val long = SkinEntry("long", "A modern skin with a name that is much too long to fit a row", 0, SkinKind.MODERN)
+        val short = SkinEntry("short", "Bento", 0, SkinKind.MODERN)
+        val classic = SkinEntry("classic", "Classic", 0)
+        assertEquals(60, long.name.length)
+        val entries = listOf(long, short, classic)
+        val labels = entries.map { it.rowLabel(vm.words) }
+        assertEquals(SkinRowLabel(long.name, after = " · Modern skin"), labels[0])
+        assertEquals("a classic row is its name alone", SkinRowLabel("Classic"), labels[2])
+        val width = layout.listWidth(frame)
+        val style = skin.pledit
+
+        val rows =
+            SkinListRasterizer(typeface)
+                .layer(entries, 0, "none", style, width, layout.listHeight(), 1, layout.visibleRows, layout.rowH, labels)
+                .asAndroidBitmap()
+
+        // from where the suffix starts to the row's end, REM included
+        val paint = ListText.paint(ListText.typefaceFor(style.fontName, typeface))
+        val suffixLeft = ceil(width - SkinManagerLayout.REMOVE_W - paint.measureText(labels[0].after)).toInt()
+
+        fun pixels(
+            row: Int,
+            xs: IntRange,
+        ): List<Int> {
+            val top = SkinManagerLayout.rowY(row, layout.rowH)
+            return (top until top + layout.rowH).flatMap { y -> xs.map { x -> rows.getPixel(x, y) } }
+        }
+        val suffix = suffixLeft until width
+        assertTrue("the suffix is drawn", pixels(1, suffix).any { it != 0 })
+        assertEquals("the long row's suffix and REM look as the short row's", pixels(1, suffix), pixels(0, suffix))
+        assertTrue("the name runs up to the suffix", pixels(0, suffixLeft - 8 until suffixLeft).any { it != 0 })
     }
 
     @Test
