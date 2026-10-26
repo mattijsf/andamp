@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.test.core.app.ApplicationProvider
+import nl.mattix.andamp.modernskin.maki.Value
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.Player
 import nl.mattix.andamp.modernskin.skin.SkinMenu
@@ -641,6 +642,54 @@ class WalLookTest {
         assertNull(look.places[true])
         assertNull(WalSettings(app).place(look.id, sideways = false))
         assertNull(WalSettings(app).place(look.id, sideways = true))
+    }
+
+    /**
+     * On [look]'s engine, in one touch: the skin's [menu], and when an item is picked from it, the
+     * main window moved into the top left corner, as CornerAmp moves to the corner picked.
+     */
+    private fun cornerFromMenu(
+        look: WalLook,
+        menu: SkinMenu,
+    ) = look.engine!!.post { rt ->
+        rt.gesture(fresh = true) {
+            if (rt.menuChoice(menu) != 0) {
+                val (w, h) = checkNotNull(rt.mainLayout).size
+                checkNotNull(rt.mainLayout).makiCall("resize", listOf(Value.Int(0), Value.Int(0), Value.Int(w), Value.Int(h)))
+            }
+        }
+    }
+
+    @Test(timeout = 20_000)
+    fun `a corner picked from the skin's menu puts the stack back where the engine puts it, and a dismissed menu does not`() {
+        val look = look()
+        look.fit(phone)
+        await("the first frame arrives") { look.layout != null }
+        look.places[false] = IntOffset(-150, 300)
+        look.places[true] = IntOffset(30, 0)
+        val menu = SkinMenu(listOf(SkinMenu.Command(1, "Left Up Corner", checked = false, disabled = false)))
+
+        cornerFromMenu(look, menu)
+        await("the menu waits for the player") { look.menu === menu }
+        look.answerMenu(menu, 0)
+        assertEquals(0, onEngine(look) { it?.edgePlacements })
+        await("the menu closed") { look.menu == null }
+        assertEquals("dismissed", IntOffset(-150, 300), look.places[false])
+
+        cornerFromMenu(look, menu)
+        await("the menu waits again") { look.menu === menu }
+        look.answerMenu(menu, 1)
+        await("the place is dropped") { look.places[false] == null }
+        assertNull(look.places[true])
+        assertNull(WalSettings(app).place(look.id, sideways = false))
+        assertEquals(1, look.layout?.edgePlacements)
+
+        // a place the listener drags to after it stays while the skin places itself no more
+        look.places[false] = IntOffset(10, 20)
+        look.requestTick()
+        assertEquals(1, onEngine(look) { it?.edgePlacements })
+        shadowOf(Looper.getMainLooper()).idle()
+        assertEquals(IntOffset(10, 20), look.places[false])
     }
 
     @Test

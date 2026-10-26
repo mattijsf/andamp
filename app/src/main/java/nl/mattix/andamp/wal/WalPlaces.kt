@@ -36,4 +36,18 @@ internal class WalPlaces(
         this[false] = null
         this[true] = null
     }
+
+    /** The count of [skinPlaced] last seen. */
+    private var placements = 0
+
+    /**
+     * The skin has moved its main window against a screen edge [count] times after a pick from one
+     * of its menus ([WalLayout.edgePlacements]), counted from its start: a new count puts the stack
+     * back where the engine puts it, as a corner picked from CornerAmp's corner menu does.
+     */
+    fun skinPlaced(count: Int) {
+        if (count == placements) return
+        placements = count
+        clear()
+    }
 }

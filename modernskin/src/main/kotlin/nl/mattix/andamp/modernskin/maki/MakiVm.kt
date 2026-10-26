@@ -94,16 +94,27 @@ class Script(
         events: Set<String>,
     ): Set<String> = if (disabled) emptySet() else handlerStarts(target, events).flatMapTo(HashSet()) { reach(it).calls }
 
+    /**
+     * Whether a handler here for one of [events] bound to [target] can read where the mouse is
+     * (`getMousePosX`, `getMousePosY`), read from the bytecode: MMD3's knobs turn with the mouse
+     * that way while the button is down, from a timer the press starts.
+     */
+    fun readsMouse(
+        target: MakiObject,
+        events: Set<String>,
+    ): Boolean = !disabled && handlerStarts(target, events).any { reach(it).readsMouse }
+
     /** Where the handlers here for [events] bound to [target] start in the code. */
     private fun handlerStarts(
         target: MakiObject,
         events: Set<String>,
     ): List<Int> = events.flatMap { e -> bindingsByEvent[e].orEmpty().filter { binds(it, target) }.map { it.codeIndex } }
 
-    /** What a handler's code can reach: a popup menu, and the events it fires by calling them. */
+    /** What a handler's code can reach: a popup menu, the events it fires by calling them, and where the mouse is. */
     private class Reach(
         val popsMenu: Boolean,
         val calls: Set<String>,
+        val readsMouse: Boolean,
     )
 
     /** The [Reach] from each handler start, worked out the first time it is asked for. */
@@ -135,6 +146,7 @@ class Script(
         // every instruction reached, in the order it is read
         val order = ArrayList<Int>()
         var popsMenu = false
+        var readsMouse = false
         val calls = HashSet<String>()
 
         fun visit(ip: Int) {
@@ -165,6 +177,7 @@ class Script(
                 Opcodes.CALL, Opcodes.CALL2 -> {
                     val name = program.methods.getOrNull(op.arg)?.name ?: ""
                     if (name in MENU_CALLS) popsMenu = true
+                    if (name in MOUSE_CALLS) readsMouse = true
                     when {
                         name.startsWith("on") -> calls += name
 
@@ -181,7 +194,7 @@ class Script(
             }
         }
         order.forEach(seen::clear)
-        return Reach(popsMenu, calls)
+        return Reach(popsMenu, calls, readsMouse)
     }
 
     /** Takes one instruction from [walkBudget]; false when none is left, which the log says once. */
@@ -326,6 +339,10 @@ class Script(
 
         /** The PopupMenu calls that show a menu. */
         private val MENU_CALLS = setOf("popatmouse", "popatxy")
+
+        /** The System calls that read where the mouse is. */
+        private val MOUSE_CALLS = setOf("getmouseposx", "getmouseposy")
+
         private val RIGHT_BUTTON = setOf("onrightbuttondown", "onrightbuttonup")
         private val RIGHT_BUTTON_AND_CLICK = RIGHT_BUTTON + "onrightclick"
 

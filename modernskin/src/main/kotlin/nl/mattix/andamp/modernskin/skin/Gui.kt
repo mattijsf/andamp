@@ -1460,7 +1460,8 @@ class Layout(
     /**
      * Moves the window to [x], [y] in this layout as a script does, by a resize to [width] by
      * [height] or through the container at the size the layout has, and notes the edges of the
-     * viewport it then sits against ([edgeX], [edgeY]).
+     * viewport it then sits against ([edgeX], [edgeY]). The main window against an edge counts in
+     * [SkinRuntime.edgePlacements].
      */
     internal fun moveTo(
         x: Int,
@@ -1472,6 +1473,7 @@ class Layout(
         val (vw, vh) = rt.viewport
         edgeX = edgeAt(x, width, vw)
         edgeY = edgeAt(y, height, vh)
+        if (this === rt.mainLayout && (edgeX != null || edgeY != null)) rt.mainPlacedAtEdge()
     }
 
     /**

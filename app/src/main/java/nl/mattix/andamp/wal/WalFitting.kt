@@ -172,6 +172,7 @@ internal class WalFitting {
             moveTarget = runtime.moveTarget,
             wantsFrames = wantsFrames,
             dock = dockOf(runtime, drawn),
+            edgePlacements = runtime.edgePlacements,
         )
     }
 

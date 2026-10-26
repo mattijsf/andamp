@@ -12,8 +12,8 @@ import androidx.compose.ui.unit.round
 import kotlin.math.abs
 
 /**
- * The listener moving a modern skin's stack by one of its move areas, once [WalTouch] hands the
- * finger over. The stack follows the finger inside its box and stays wholly in it; once the drag
+ * The listener moving a modern skin's stack by a part that is not a control, once [WalTouch] hands
+ * the finger over. The stack follows the finger inside its box and stays wholly in it; once the drag
  * has gone further than the snap distance, the stack snaps to the box's edges and back to the place
  * the engine gives it, as a classic window snaps ([WalPlacement.snap]). When the finger lifts, the
  * place goes to [keep], upright or sideways as the stack was laid out when the drag began: how far

@@ -447,6 +447,21 @@ class SkinRuntime(
         }
 
     /**
+     * How many times a script moved the main window against an edge of the viewport ([Layout.moveTo])
+     * after the listener picked from one of its menus in the same touch, as CornerAmp does when a
+     * corner is picked from its corner menu. The host then puts the skin back where it places it,
+     * wherever the listener dragged it. A move as the skin starts, on a timer or on a tap does not
+     * count, as MMD3 puts its shade bar against the top edge when a button switches to it.
+     */
+    var edgePlacements = 0
+        private set
+
+    /** The main window was moved against an edge of the viewport; see [edgePlacements]. */
+    internal fun mainPlacedAtEdge() {
+        if (gestureDepth > 0 && pickedThisGesture) edgePlacements++
+    }
+
+    /**
      * Whether the last docked window takes the height [viewSize] leaves under the others, when it
      * can be made taller and shows a list, which then shows more rows (see [showsList]); an
      * equalizer or a visualizer frame keeps the height the skin gives it. Off, every window keeps
@@ -1927,6 +1942,20 @@ class SkinRuntime(
     private fun isControl(o: GuiObject): Boolean = o is Button || o is Slider || o is ColorThemeList || o is PlaylistView
 
     /**
+     * Whether a script hears a tap on [o]: one listens to it for [TAP_EVENTS], or to the group that
+     * exposes it as its xui child, which hears what happens to it.
+     */
+    private fun hearsTap(o: GuiObject): Boolean = dispatchChain(o).any { c -> scripts.any { it.listensTo(c, TAP_EVENTS) } }
+
+    /**
+     * Whether a script follows the finger across [o], or across the group that exposes it as its
+     * xui child: it hears the finger move ([FOLLOW_EVENTS]), as on a seek or volume strip a script
+     * works itself, or reads where the mouse is once the button goes down on it, as MMD3's knobs do.
+     */
+    private fun followsFinger(o: GuiObject): Boolean =
+        dispatchChain(o).any { c -> scripts.any { it.listensTo(c, FOLLOW_EVENTS) || it.readsMouse(c, PRESS_EVENTS) } }
+
+    /**
      * How far, in layout pixels, a finger may land beside an object and still mean it. The app sets
      * it from the screen: 24 dp, so even a tiny button answers across Android's 48 dp touch target.
      */
@@ -1984,9 +2013,11 @@ class SkinRuntime(
 
     /**
      * What a finger at a point means. A finger is wider than a mouse pointer, so in order: a control
-     * right under it; the nearest control within [touchSlop]; an object a script listens to right
-     * under it; the nearest such object within [touchSlop]. Controls come first so a background a
-     * script watches does not take a tap meant for the button beside it. The topmost wins a tie.
+     * right under it; an object a script hears a tap on (see [hearsTap]) right under it, unless the
+     * nearest control within [touchSlop] overlaps it; that nearest control; an object a script
+     * listens to right under it; the nearest such object within [touchSlop]. So a config drawer's
+     * tab takes a tap on it from the sliders just above it, while a background a script watches
+     * leaves a tap beside a button on it to the button. The topmost wins a tie.
      * A nearby control counts only if a mouse could click it at one of a few of its points (see
      * [clickable]), so one hidden behind another, like a closed drawer's sliders behind the main
      * window, takes no touch. A nearby script object counts if the script listens to it for
@@ -2017,7 +2048,9 @@ class SkinRuntime(
                 .filter { (o, d) -> d <= slop2 && pick(o) && (!shown || clickable(o, window, x, y)) }
                 .minByOrNull { it.second }
                 ?.first
-        return nearest(shown = true, ::isControl)
+        val control = nearest(shown = true, ::isControl)
+        if (hit != null && hearsTap(hit) && control?.rect?.overlaps(hit.rect) != true) return hit
+        return control
             ?: hit?.takeIf { reacts(it) }
             ?: nearest(shown = false) { o -> !isControl(o) && scripts.any { it.listensTo(o, POINTER_EVENTS) } }
             ?: hit
@@ -2054,27 +2087,30 @@ class SkinRuntime(
     ) = gesture(fresh = true) {
         aimMenu(sx, sy, seq)
         moveSeq = null
-        pointerDownAt(sx, sy)
-        // a press that opened a menu has been let go of, and moves nothing; a press held back from
-        // an object with a skin menu still moves the window when that object is a move area
-        if ((captured ?: deferred?.target)?.let(::movesWindow) == true) moveSeq = seq
+        val touched = pointerDownAt(sx, sy)
+        // a press on no object moves the window; a press that opened a menu has been let go of, and
+        // moves nothing; a press held back from an object with a skin menu moves the window as a
+        // press on that object would
+        if (touched == null || (captured ?: deferred?.target)?.let(::movesWindow) == true) moveSeq = seq
     }
 
+    /** Presses what a finger at a point of the stack means (see [touchTarget]), and returns it; null for nothing. */
     private fun pointerDownAt(
         sx: Int,
         sy: Int,
-    ) {
+    ): GuiObject? {
         dropDeferred()
         if (needsLayout) doLayout()
-        val target = touchTarget(sx, sy) ?: return
+        val target = touchTarget(sx, sy) ?: return null
         // the touched window takes the focus, as a press of either mouse button gives it
         target.layoutObject?.let(::takeFocus)
         if (target === menuAim?.target && target !is Slider) {
             deferred = DeferredPress(target, sx, sy)
             showPressed(target, true)
-            return
+            return target
         }
         press(target, sx, sy)
+        return target
     }
 
     /** Shows a held press's button pressed, or no longer; its scripts hear nothing of it. */
@@ -2223,19 +2259,29 @@ class SkinRuntime(
     private var moveSeq: Int? = null
 
     /**
-     * The seq of the last [pointerDown] when the object it pressed moves the window (see
-     * [movesWindow]), else null; a [doubleTap] clears it. The host moves the skin when such a press
-     * turns into a drag.
+     * The seq of the last [pointerDown] when it landed on no object, or the object it pressed moves
+     * the window (see [movesWindow]), else null; a [doubleTap] clears it. The host moves the skin
+     * when such a press turns into a drag.
      */
     val moveTarget: Int? get() = moveSeq
 
     /**
-     * Whether a drag that starts on [o] moves the window, as Winamp moves one by its move areas:
-     * what [o] writes in `move`, else what the nearest group around it writes. A wasabi title bar's
-     * mousetrap moves it unless it says otherwise; a control never does, as a drag works the control.
+     * Whether a drag that starts on [o] moves the window. It moves it from every part where a drag
+     * does nothing else, as from a move area in Winamp, so a skin moves from anywhere but its
+     * controls; an object that writes `move="0"` is no exception. A control never moves it, as a
+     * drag works the control, and neither does an object a script follows the finger across
+     * ([followsFinger]), unless it is a move area ([isMoveArea]).
      */
     internal fun movesWindow(o: GuiObject): Boolean {
         if (isControl(o)) return false
+        return isMoveArea(o) || !followsFinger(o)
+    }
+
+    /**
+     * Whether Winamp moves the window by a drag on [o]: what [o] writes in `move`, else what the
+     * nearest group around it writes; a wasabi title bar's mousetrap moves it unless it says otherwise.
+     */
+    private fun isMoveArea(o: GuiObject): Boolean {
         o.move?.let { return it }
         if (o.id == TITLE_BAR_TRAP && o.parent?.id == TITLE_BAR) return true
         return generateSequence(o.parent) { it.parent }.firstNotNullOfOrNull { it.move } ?: false
@@ -2390,6 +2436,9 @@ class SkinRuntime(
     /** A menu in this touch closed without the listener: the touch shows no more. */
     private var menusEnded = false
 
+    /** The listener picked an item from a menu in this touch; see [edgePlacements]. */
+    private var pickedThisGesture = false
+
     /**
      * A menu ended this touch's press: its moves, release and long press go nowhere, and the
      * control that was pressed gives no click or final position for it.
@@ -2415,6 +2464,7 @@ class SkinRuntime(
         if (fresh) {
             menusThisGesture = 0
             menusEnded = false
+            pickedThisGesture = false
             pressEnded = false
         }
         gestureDepth++
@@ -2450,6 +2500,7 @@ class SkinRuntime(
         endPress()
         val picked = host.chooseFromMenu(menu)
         if (picked == null) menusEnded = true
+        if ((picked ?: 0) != 0) pickedThisGesture = true
         return picked ?: 0
     }
 
@@ -2901,6 +2952,15 @@ class SkinRuntime(
                 "onleftclick",
                 "onrightclick",
             )
+
+        /** The events a tap fires on an object that is not a control: the left button going down and up. */
+        val TAP_EVENTS = setOf("onleftbuttondown", "onleftbuttonup")
+
+        /** The event of a finger moving while it presses: a script that hears it on an object works that object by a drag. */
+        val FOLLOW_EVENTS = setOf("onmousemove")
+
+        /** The event of the left button going down. */
+        val PRESS_EVENTS = setOf("onleftbuttondown")
 
         /** Menus a script may pop in reply to one touch; more answer 0 without showing. */
         const val MAX_MENUS_PER_GESTURE = 3

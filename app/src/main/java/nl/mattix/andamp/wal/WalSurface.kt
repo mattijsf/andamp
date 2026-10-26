@@ -60,7 +60,10 @@ internal data class WalLayout(
     val menuChoices: SkinMenuChoices? = null,
     /** The seq of the down whose object has a skin menu, or null; see [WalSurface.pointerDown]. */
     val menuTarget: Int?,
-    /** The seq of the down that landed on one of the skin's move areas, or null; a drag from it moves the stack. */
+    /**
+     * The seq of the down that landed on a part of the skin a drag moves it by, anywhere but a
+     * control (`SkinRuntime.movesWindow`), or null; a drag from it moves the stack.
+     */
     val moveTarget: Int? = null,
     /**
      * Whether the screen ticks the skin on every display frame, as its frame says
@@ -75,6 +78,13 @@ internal data class WalLayout(
      * whole stack.
      */
     val dock: IntRect? = null,
+    /**
+     * How many times the skin moved its main window against a screen edge after the listener
+     * picked from one of its menus (`SkinRuntime.edgePlacements`), as a corner picked from
+     * CornerAmp's corner menu does: each new one puts the stack back where the engine places it
+     * ([WalPlaces.skinPlaced]).
+     */
+    val edgePlacements: Int = 0,
 )
 
 /**

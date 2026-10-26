@@ -421,6 +421,7 @@ internal class WalLook(
         updateWaiting.set(false)
         val engine = engine ?: return
         layout = engine.frame?.layout
+        layout?.let { places.skinPlaced(it.edgePlacements) }
         menu = engine.menu
         frameCount.intValue++
     }
