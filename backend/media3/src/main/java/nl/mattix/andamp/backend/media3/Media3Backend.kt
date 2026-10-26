@@ -80,6 +80,11 @@ class Media3Backend(
     network: NetworkWatch = NetworkWatch.Assumed,
     /** The clock a reconnect's budget is kept on. */
     clock: () -> Long = android.os.SystemClock::elapsedRealtime,
+    /**
+     * Where the phone's media volume is read when Media3 does not read it;
+     * see [DeviceVolumeWatch]. Null leaves the slider on what Media3 reports.
+     */
+    volumeContext: Context? = null,
 ) : PlaybackBackend {
     constructor(context: Context, tracks: List<Track>, scope: CoroutineScope, startIndex: Int = 0) : this(
         context,
@@ -137,6 +142,7 @@ class Media3Backend(
         startIndex,
         context.applicationContext,
         SystemNetworkWatch(context),
+        volumeContext = context.applicationContext,
     )
 
     private val initialIndex = startIndex.coerceIn(0, (tracks.size - 1).coerceAtLeast(0))
@@ -172,6 +178,23 @@ class Media3Backend(
 
     /** Whose volume the slider moves; see [setVolumeMode]. */
     private var volumeMode = VolumeMode.DEVICE
+
+    /**
+     * The phone's media volume as last heard, from Media3 or from
+     * [volumeWatch], whichever reported last; null until the first report.
+     *
+     * Media3 reads the volume when one is set, and keeps that reading through
+     * a move to another output and a mute, which [volumeWatch] reads.
+     */
+    private var deviceLevel: DeviceLevel? = null
+
+    private val volumeWatch =
+        volumeContext?.let { context ->
+            DeviceVolumeWatch(context) { level ->
+                deviceLevel = level
+                publishVolume()
+            }
+        }
 
     /** Whether anything has been heard from the item now loaded; see [refreshConnecting]. */
     private var heardThisItem = false
@@ -349,13 +372,16 @@ class Media3Backend(
             ) {
                 // the volume keys, the system panel and other apps all arrive
                 // here, and the slider follows them
+                deviceLevel = DeviceLevel(volume, muted)
                 publishVolume()
             }
 
             override fun onDeviceInfoChanged(deviceInfo: androidx.media3.common.DeviceInfo) {
                 // the first value arrives here: Media3 fetches the device's
                 // range on a background thread, and until then there is
-                // nothing to place the slider on
+                // nothing to place the slider on. A volume of 0 that is not
+                // muted arrives only here, as Media3 starts from that value
+                if (deviceLevel == null) deviceLevel = DeviceLevel(player.deviceVolume, player.isDeviceMuted)
                 publishVolume()
             }
 
@@ -712,11 +738,18 @@ class Media3Backend(
     }
 
     /** Where the phone's own media volume sits, 0..1, or 1 when it has no range yet. */
-    private fun deviceFraction(): Float {
+    private fun deviceFraction(): Float = heardFraction() ?: 1f
+
+    /**
+     * The phone's media volume as last heard, 0..1, with a muted stream at 0;
+     * null when there is no range or no volume yet.
+     */
+    private fun heardFraction(): Float? {
         val info = player.deviceInfo
-        if (info.maxVolume <= info.minVolume) return 1f
-        if (player.isDeviceMuted) return 0f
-        return DeviceVolume.fractionFor(player.deviceVolume, info.minVolume, info.maxVolume)
+        val level = deviceLevel
+        if (info.maxVolume <= info.minVolume || level == null) return null
+        if (level.muted) return 0f
+        return DeviceVolume.fractionFor(level.volume, info.minVolume, info.maxVolume)
     }
 
     /**
@@ -733,14 +766,7 @@ class Media3Backend(
             _state.value = _state.value.copy(volumeFraction = player.volume)
             return
         }
-        val info = player.deviceInfo
-        if (info.maxVolume <= info.minVolume) return
-        val fraction =
-            if (player.isDeviceMuted) {
-                0f
-            } else {
-                DeviceVolume.fractionFor(player.deviceVolume, info.minVolume, info.maxVolume)
-            }
+        val fraction = heardFraction() ?: return
         _state.value = _state.value.copy(volumeFraction = fraction)
     }
 
@@ -881,6 +907,7 @@ class Media3Backend(
         // canceled before the player is released
         fade?.cancel()
         scanJob?.cancel()
+        volumeWatch?.release()
         player.release()
     }
 
