@@ -214,7 +214,7 @@ class SkinLibraryTest {
         SkinLibrary(app).delete(hash)
         val dir = java.io.File(app.filesDir, "skins")
         // a non-empty directory in the store's place: the write-then-rename
-        // cannot rename over it and cannot delete it either, so the save fails
+        // cannot rename over it, so the save fails
         java.io.File(dir, "$hash.wsz/occupied").mkdirs()
         val legacy = java.io.File(dir, "current.wsz").apply { writeBytes(bytes(9)) }
         app
@@ -301,12 +301,14 @@ class SkinLibraryTest {
     }
 
     @Test
-    fun `what a store cut short leaves is dropped, and finished skins stay`() {
+    fun `what a modern store cut short leaves is dropped, and finished skins and classic files stay`() {
         val classic = library.save(bytes(1), "A.wsz").id
         val modern = library.addModern(app, "Bento")
         val skins = java.io.File(app.filesDir, "skins")
         val unnamed = java.io.File(skins, "0123456789abcdef0123456789abcdef.wal").apply { writeBytes(zipOf("skin.xml")) }
         val part = java.io.File(skins, "$modern.wal.tmp").apply { writeBytes(bytes(2)) }
+        val classicPart = java.io.File(skins, "$classic.wsz.tmp").apply { writeBytes(bytes(3)) }
+        val unnamedClassic = java.io.File(skins, "fedcba9876543210fedcba9876543210.wsz").apply { writeBytes(bytes(4)) }
 
         library.dropUnfinished()
 
@@ -314,6 +316,8 @@ class SkinLibraryTest {
         assertFalse(part.exists())
         assertTrue(library.has(classic))
         assertTrue(library.has(modern))
+        assertTrue("a classic store may still be writing its part", classicPart.exists())
+        assertTrue("a whole classic skin stays without a name", unnamedClassic.exists())
     }
 
     @Test
