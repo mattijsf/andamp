@@ -13,6 +13,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.io.File
 
 /**
  * The app on a phone set to Simplified Chinese: the strings under `values-zh-rCN` are the ones
@@ -53,11 +54,17 @@ class SimplifiedChineseTest {
     fun `a skin is 面板, as Winamp's Chinese translation calls it, in every string`() {
         assertEquals("面板浏览器...", words.get(R.string.menu_skin_browser))
         assertEquals("<< 获得更多面板！ >>", words.get(R.string.menu_get_more_skins))
-        val resources = ApplicationProvider.getApplicationContext<Context>().resources
+        val root = repositoryRoot()
+        val dirs = chineseValueDirs(root)
+        // a scan that found neither the app's nor Android Auto's Chinese text would pass over nothing
+        val modules = dirs.map { it.relativeTo(root).invariantSeparatorsPath.substringBefore("/src/") }
+        assertTrue("$modules", modules.containsAll(listOf("app", "androidauto")))
         val older =
-            R.string::class.java.fields
-                .map { resources.getText(it.getInt(null)).toString() }
-                .filter { "皮肤" in it }
+            dirs
+                .flatMap { it.listFiles().orEmpty().toList() }
+                .flatMap { file ->
+                    file.readLines().filter { "皮肤" in it }.map { "${file.relativeTo(root)}: ${it.trim()}" }
+                }
         assertEquals(emptyList<String>(), older)
     }
 
@@ -97,4 +104,28 @@ class SimplifiedChineseTest {
     fun `a language with no translation gets the English`() {
         assertEquals("Options", words.get(R.string.menu_options))
     }
+
+    /** The checkout's top directory, wherever the test was run from. */
+    private fun repositoryRoot(): File =
+        generateSequence(File(".").absoluteFile) { it.parentFile }
+            .firstOrNull { it.resolve("app/src/main/res").isDirectory }
+            ?: error("no app/src/main/res above ${File(".").absolutePath}")
+
+    /**
+     * The `res/values-zh-rCN` directory of every source set of every module that
+     * `settings.gradle.kts` includes, so that strings, plurals and string arrays are all read.
+     */
+    private fun chineseValueDirs(root: File): List<File> =
+        Regex("""include\("(:[^"]+)"\)""")
+            .findAll(root.resolve("settings.gradle.kts").readText())
+            .map { root.resolve(it.groupValues[1].removePrefix(":").replace(':', '/')) }
+            .flatMap { module ->
+                module
+                    .resolve("src")
+                    .listFiles()
+                    .orEmpty()
+                    .asSequence()
+            }.map { it.resolve("res/values-zh-rCN") }
+            .filter { it.isDirectory }
+            .toList()
 }
