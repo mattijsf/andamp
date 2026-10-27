@@ -20,18 +20,24 @@ import kotlin.coroutines.CoroutineContext
 /** A zip holding [names], each with a few bytes. With a skin.xml among them it reads as a modern skin. */
 internal fun zipOf(vararg names: String): ByteArray = zipWith(*names.map { it to it }.toTypedArray())
 
-/** A zip holding each path with its text. */
+/**
+ * A zip holding each path with its text. Every entry carries the same fixed time, so the same
+ * entries always give the same bytes and the same content hash.
+ */
 internal fun zipWith(vararg entries: Pair<String, String>): ByteArray {
     val out = ByteArrayOutputStream()
     ZipOutputStream(out).use { zip ->
         entries.forEach { (name, text) ->
-            zip.putNextEntry(ZipEntry(name))
+            zip.putNextEntry(ZipEntry(name).apply { time = FIXTURE_ZIP_TIME })
             zip.write(text.toByteArray())
             zip.closeEntry()
         }
     }
     return out.toByteArray()
 }
+
+/** 1 January 2000, 00:00 local time: the time every fixture zip entry carries. */
+private val FIXTURE_ZIP_TIME = java.util.GregorianCalendar(2000, 0, 1).timeInMillis
 
 /**
  * A modern skin that loads: one window with a play button. [seed] sets the window's width, so the
