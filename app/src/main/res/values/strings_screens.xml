@@ -57,4 +57,7 @@
     <!-- The placeholder holds the site a plug-in link must be on. -->
     <string name="import_not_a_plugin_link">that link is not a plug-in on %1$s</string>
     <string name="import_file_could_not_be_opened">the file could not be opened</string>
+    <!-- AndroidManifest.xml: SkinImportActivity, PluginImportActivity -->
+    <!-- The name Andamp has in another app's Open with or Share list, for a Winamp skin (.wsz or .wal) or a .lua plug-in. -->
+    <string name="import_add_to_andamp">Add to Andamp</string>
 </resources>

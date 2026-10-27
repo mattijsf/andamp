@@ -17,7 +17,7 @@ is any other language.
 | `strings_player.xml` | playlist prompts, the file info box, This Phone and its scan |
 | `strings_equalizer.xml` | the equalizer's PRESETS menu and its dialogs |
 | `strings_prompts.xml` | questions, notices and the buttons they share |
-| `strings_screens.xml` | the skin museum, the welcome screen, About, plug-in import |
+| `strings_screens.xml` | the skin museum, the welcome screen, About, skin and plug-in import |
 | `strings_widget.xml` | what the home-screen widget says to a screen reader |
 
 A translation is the same files in a directory named for the language:
@@ -65,7 +65,8 @@ To improve a translation that exists, edit its file and open a pull request.
   the app reads the way people remember it. Use another word only where Winamp's would
   not be understood today. The tables below have the words used so far.
 - **Names stay.** Andamp, Winamp, Milkdrop, AVS, projectM, the names of skins, equalizer
-  presets, plug-ins and effects are not translated.
+  presets, plug-ins and effects are not translated. Nor are a modern skin's color theme names
+  and the labels it writes in its menus: they show as the skin wrote them.
 
 ## What stays in English
 
@@ -80,25 +81,31 @@ font instead.
 Each table lists the words a translation uses for the things Winamp named, and where each
 comes from, so that the next person keeps to them.
 
-- **Winamp** is the text Nullsoft wrote for the Winamp installer in that language. It is in
-  the Winamp source that was published, under `Src/installer/winamp/languages/`.
-- **Audacious** is a free player with a Winamp-style interface, used where the installer
-  has no word.
+- **Winamp** is the text that came with Winamp in that language: the text of the Winamp
+  installer, in the Winamp source that was published, under `Src/installer/winamp/languages/`,
+  and the official language packs in the Winamp 5.666 full installer, which hold the program's
+  menus and its texts for modern skins.
+- **Audacious** is a free player with a Winamp-style interface, used where Winamp's word has
+  not been checked.
 - **Common usage** is the word most media players use today, where Winamp's word would
   not be understood or has gone out of use. The word Winamp used is given beside it. It
   was found by comparing the translations of six open-source players (VLC, Clementine,
-  Rhythmbox, Audacious, DeaDBeeF and Quod Libet) and the Spotify and Apple pages in that
-  language.
+  Rhythmbox, Audacious, DeaDBeeF and Quod Libet) and the help pages of two large music
+  services in that language.
 - **Andamp** is a word for something Winamp did not have.
-- **Unverified** means the word the Winamp menus used in that language was not at hand.
-  If you know it, a pull request that corrects the table and the strings is welcome.
+- **Unverified** means the word has not been checked against Winamp's text in that language.
+  If you know Winamp's word, a pull request that corrects the table and the strings is welcome.
 
 ### Dutch
 
 | English | Nederlands | From |
 |---|---|---|
 | skin | skin | Winamp |
-| modern skin | moderne skin | unverified |
+| modern skin | moderne skin | Winamp |
+| Modern skins (beta) | Moderne skins (bèta) | Andamp |
+| color theme | kleurthema | Winamp |
+| Skin menu | skinmenu | Andamp |
+| sharp pixels | scherpe pixels | Andamp |
 | visualization | visualisatie | Winamp |
 | Media Library | mediabibliotheek | Winamp |
 | playlist | afspeellijst | common usage (Winamp: speellijst) |
@@ -122,7 +129,11 @@ comes from, so that the next person keeps to them.
 | English | Français | From |
 |---|---|---|
 | skin | skin | Winamp |
-| modern skin | skin moderne | unverified |
+| modern skin | skin moderne | Winamp |
+| Modern skins (beta) | Skins modernes (bêta) | Andamp |
+| color theme | thème (menu: Thèmes) | Winamp |
+| Skin menu | menu du skin | Andamp |
+| sharp pixels | pixels nets | Andamp |
 | visualization | visualisation | Winamp |
 | Media Library | médiathèque | Winamp |
 | playlist | liste de lecture | Winamp |
@@ -150,7 +161,11 @@ comes from, so that the next person keeps to them.
 | English | Deutsch | From |
 |---|---|---|
 | skin | Skin | Winamp |
-| modern skin | moderner Skin | unverified |
+| modern skin | moderner Skin | Winamp |
+| Modern skins (beta) | Moderne Skins (Beta) | Andamp |
+| color theme | Farbschema (menu: Farbschemen) | Winamp |
+| Skin menu | Skin-Menü | Andamp |
+| sharp pixels | scharfe Pixel | Andamp |
 | visualization | Visualisierung | Winamp |
 | Media Library | Medienbibliothek | Winamp |
 | playlist | Playlist | Winamp |
@@ -177,8 +192,13 @@ comes from, so that the next person keeps to them.
 
 | English | 简体中文 | From |
 |---|---|---|
-| skin | 皮肤 | common usage (Winamp: 面板) |
-| modern skin | 现代皮肤 | unverified |
+| skin | 面板 | Winamp |
+| modern skin | 现代面板 | Winamp |
+| Modern skins (beta) | 现代面板（测试版） | Andamp |
+| color theme | 颜色主题 | Winamp |
+| Skin menu | 面板菜单 | Andamp |
+| sharp pixels | 锐利像素 | Andamp |
+| load (a skin) | 加载 | Winamp |
 | visualization | 可视化效果 | Winamp |
 | Media Library | 媒体库 | Winamp |
 | playlist | 播放列表 | Winamp |

@@ -48,4 +48,5 @@
     <!-- PluginImportActivity.kt -->
     <string name="import_not_a_plugin_link">ce lien n’est pas un plugin sur %1$s</string>
     <string name="import_file_could_not_be_opened">le fichier n’a pas pu être ouvert</string>
+    <string name="import_add_to_andamp">Ajouter à Andamp</string>
 </resources>

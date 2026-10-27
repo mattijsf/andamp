@@ -1,6 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- MainMenu.kt -->
+    <string name="menu_skin_menu">Menu du skin</string>
+    <string name="menu_skin_menu_visualizer">Visualisation</string>
+    <string name="menu_skin_menu_time">Temps</string>
+    <string name="menu_skin_menu_album_art">Pochette</string>
+    <string name="menu_skin_menu_rating">Note</string>
+    <string name="menu_skin_menu_numbered">Menu %1$d</string>
     <string name="menu_play">Lire</string>
     <string name="menu_play_file">Lire un fichier...</string>
     <string name="menu_play_directory">Lire un dossier...</string>
@@ -30,7 +36,9 @@
     <string name="menu_ten_tracks_back">Dix morceaux en arrière</string>
     <string name="menu_skin_browser">Explorateur de skins...</string>
     <string name="menu_load_skin">Charger un skin...</string>
+    <string name="menu_color_themes">Thèmes</string>
     <string name="menu_get_more_skins">&lt;&lt; Obtenir plus de skins ! &gt;&gt;</string>
+    <string name="skin_row_modern">%1$s · Skin moderne</string>
     <string name="menu_preferences">Préférences...</string>
     <string name="menu_time_elapsed">Temps écoulé</string>
     <string name="menu_time_remaining">Temps restant</string>

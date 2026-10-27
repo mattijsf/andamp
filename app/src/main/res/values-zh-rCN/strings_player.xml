@@ -101,6 +101,6 @@
     <string name="museum_could_not_download">无法下载 %1$s</string>
     <string name="museum_could_not_read">无法读取 %1$s</string>
 
-    <string name="skin_picked_name">所选皮肤</string>
+    <string name="skin_picked_name">所选面板</string>
     <string name="media_unknown_title">未知</string>
 </resources>

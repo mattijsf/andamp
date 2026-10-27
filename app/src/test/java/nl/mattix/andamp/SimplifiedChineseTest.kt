@@ -13,6 +13,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
+import java.io.File
 
 /**
  * The app on a phone set to Simplified Chinese: the strings under `values-zh-rCN` are the ones
@@ -39,7 +40,50 @@ class SimplifiedChineseTest {
                 }
             }
 
-        assertTrue("$labels", labels.containsAll(listOf("均衡器", "选项", "可视化效果", "皮肤", "退出")))
+        assertTrue("$labels", labels.containsAll(listOf("均衡器", "选项", "可视化效果", "面板", "退出")))
+    }
+
+    @Test
+    fun `modern skins are worded in Chinese`() {
+        assertEquals("现代面板（测试版）", words.get(R.string.prefs_modern_skins_title))
+        assertEquals("颜色主题", words.get(R.string.menu_color_themes))
+        assertEquals("Bento · 现代面板", words.get(R.string.skin_row_modern, "Bento"))
+    }
+
+    @Test
+    fun `a skin is 面板, as Winamp's Chinese translation calls it, in every string`() {
+        assertEquals("面板浏览器...", words.get(R.string.menu_skin_browser))
+        assertEquals("<< 获得更多面板！ >>", words.get(R.string.menu_get_more_skins))
+        val root = repositoryRoot()
+        val dirs = chineseValueDirs(root)
+        // a scan that found neither the app's nor Android Auto's Chinese text would pass over nothing
+        val modules = dirs.map { it.relativeTo(root).invariantSeparatorsPath.substringBefore("/src/") }
+        assertTrue("$modules", modules.containsAll(listOf("app", "androidauto")))
+        val older =
+            dirs
+                .flatMap { it.listFiles().orEmpty().toList() }
+                .flatMap { file ->
+                    file.readLines().filter { "皮肤" in it }.map { "${file.relativeTo(root)}: ${it.trim()}" }
+                }
+        assertEquals(emptyList<String>(), older)
+    }
+
+    @Test
+    fun `loading a skin is 加载, as in Winamp's Chinese translation`() {
+        assertEquals("加载面板...", words.get(R.string.menu_load_skin))
+        assertEquals("此现代面板未能加载，因此没有添加。", words.get(R.string.skin_modern_failed_body))
+    }
+
+    @Test
+    fun `the offer turns modern skins on rather than opening a file`() {
+        // 打开 with an object reads as opening a file, as in skin_modern_failed_title
+        assertEquals("要开启现代面板吗？", words.get(R.string.skin_modern_offer_title))
+        assertEquals("开启并添加", words.get(R.string.skin_modern_offer_accept))
+    }
+
+    @Test
+    fun `another app offers to add a skin or a plug-in to Andamp in Chinese`() {
+        assertEquals("添加到 Andamp", words.get(R.string.import_add_to_andamp))
     }
 
     @Test
@@ -66,4 +110,28 @@ class SimplifiedChineseTest {
     fun `a language with no translation gets the English`() {
         assertEquals("Options", words.get(R.string.menu_options))
     }
+
+    /** The checkout's top directory, wherever the test was run from. */
+    private fun repositoryRoot(): File =
+        generateSequence(File(".").absoluteFile) { it.parentFile }
+            .firstOrNull { it.resolve("app/src/main/res").isDirectory }
+            ?: error("no app/src/main/res above ${File(".").absolutePath}")
+
+    /**
+     * The `res/values-zh-rCN` directory of every source set of every module that
+     * `settings.gradle.kts` includes, so that strings, plurals and string arrays are all read.
+     */
+    private fun chineseValueDirs(root: File): List<File> =
+        Regex("""include\("(:[^"]+)"\)""")
+            .findAll(root.resolve("settings.gradle.kts").readText())
+            .map { root.resolve(it.groupValues[1].removePrefix(":").replace(':', '/')) }
+            .flatMap { module ->
+                module
+                    .resolve("src")
+                    .listFiles()
+                    .orEmpty()
+                    .asSequence()
+            }.map { it.resolve("res/values-zh-rCN") }
+            .filter { it.isDirectory }
+            .toList()
 }
