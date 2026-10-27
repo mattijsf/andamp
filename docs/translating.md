@@ -198,6 +198,7 @@ comes from, so that the next person keeps to them.
 | color theme | 颜色主题 | Winamp |
 | Skin menu | 面板菜单 | Andamp |
 | sharp pixels | 锐利像素 | Andamp |
+| load (a skin) | 加载 | Winamp |
 | visualization | 可视化效果 | Winamp |
 | Media Library | 媒体库 | Winamp |
 | playlist | 播放列表 | Winamp |

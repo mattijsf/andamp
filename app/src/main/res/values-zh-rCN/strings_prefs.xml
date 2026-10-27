@@ -118,7 +118,7 @@
     <string name="prefs_notice_luaj_what">在沙箱中运行描述效果的 .lua 文件。</string>
     <string name="prefs_notice_androidx_what">界面工具包、导航、生命周期，以及用于本地播放的 Media3。</string>
     <string name="prefs_notice_kotlin_what">编程语言及其并发库。</string>
-    <string name="prefs_notice_material_what">它的色彩引擎根据已载入的面板生成现代界面的配色。</string>
+    <string name="prefs_notice_material_what">它的色彩引擎根据已加载的面板生成现代界面的配色。</string>
     <string name="prefs_notice_coil_what">载入并缓存面板博物馆的缩略图。</string>
     <string name="prefs_notice_okhttp_what">唯一的 HTTP 客户端，用于面板博物馆和电台流。</string>
 

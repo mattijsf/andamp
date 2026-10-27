@@ -35,7 +35,7 @@
     <string name="menu_start_of_list">列表开头</string>
     <string name="menu_ten_tracks_back">后退十首</string>
     <string name="menu_skin_browser">面板浏览器...</string>
-    <string name="menu_load_skin">载入面板...</string>
+    <string name="menu_load_skin">加载面板...</string>
     <string name="menu_color_themes">颜色主题</string>
     <string name="menu_get_more_skins">&lt;&lt; 获得更多面板！ &gt;&gt;</string>
     <string name="skin_row_modern">%1$s · 现代面板</string>

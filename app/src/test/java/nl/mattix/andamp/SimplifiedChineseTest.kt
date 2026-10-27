@@ -69,6 +69,12 @@ class SimplifiedChineseTest {
     }
 
     @Test
+    fun `loading a skin is 加载, as in Winamp's Chinese translation`() {
+        assertEquals("加载面板...", words.get(R.string.menu_load_skin))
+        assertEquals("此现代面板未能加载，因此没有添加。", words.get(R.string.skin_modern_failed_body))
+    }
+
+    @Test
     fun `the offer turns modern skins on rather than opening a file`() {
         // 打开 with an object reads as opening a file, as in skin_modern_failed_title
         assertEquals("要开启现代面板吗？", words.get(R.string.skin_modern_offer_title))
