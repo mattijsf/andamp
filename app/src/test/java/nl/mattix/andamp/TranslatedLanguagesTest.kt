@@ -65,7 +65,7 @@ class TranslatedLanguagesTest {
         // a noun keeps its capital inside the line, which is why the line gets its words from resources for that place
         assertEquals("Analysator, Aktualisierungsrate: mittel", widget.summary(words))
         assertEquals("Moderne Skins (Beta)", words.get(R.string.prefs_modern_skins_title))
-        assertEquals("Farbthemen", words.get(R.string.menu_color_themes))
+        assertEquals("Farbschemen", words.get(R.string.menu_color_themes))
     }
 
     @Test
@@ -78,7 +78,7 @@ class TranslatedLanguagesTest {
         // the adjective agrees with "fréquence"
         assertEquals("Analyseur, fréquence d’actualisation moyenne", widget.summary(words))
         assertEquals("Skins modernes (bêta)", words.get(R.string.prefs_modern_skins_title))
-        assertEquals("Thèmes de couleurs", words.get(R.string.menu_color_themes))
+        assertEquals("Thèmes", words.get(R.string.menu_color_themes))
     }
 
     @Test

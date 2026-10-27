@@ -81,8 +81,10 @@ font instead.
 Each table lists the words a translation uses for the things Winamp named, and where each
 comes from, so that the next person keeps to them.
 
-- **Winamp** is the text Nullsoft wrote for the Winamp installer in that language. It is in
-  the Winamp source that was published, under `Src/installer/winamp/languages/`.
+- **Winamp** is the text Nullsoft wrote for Winamp in that language: the text of the Winamp
+  installer, in the Winamp source that was published, under `Src/installer/winamp/languages/`,
+  and Winamp 5.666's official language packs, which hold the program's menus and its texts for
+  modern skins.
 - **Audacious** is a free player with a Winamp-style interface, used where the installer
   has no word.
 - **Common usage** is the word most media players use today, where Winamp's word would
@@ -99,9 +101,9 @@ comes from, so that the next person keeps to them.
 | English | Nederlands | From |
 |---|---|---|
 | skin | skin | Winamp |
-| modern skin | moderne skin | unverified |
+| modern skin | moderne skin | Winamp |
 | Modern skins (beta) | Moderne skins (bèta) | Andamp |
-| color theme | kleurthema | unverified |
+| color theme | kleurthema | Winamp |
 | Skin menu | skinmenu | Andamp |
 | sharp pixels | scherpe pixels | Andamp |
 | visualization | visualisatie | Winamp |
@@ -127,9 +129,9 @@ comes from, so that the next person keeps to them.
 | English | Français | From |
 |---|---|---|
 | skin | skin | Winamp |
-| modern skin | skin moderne | unverified |
+| modern skin | skin moderne | Winamp |
 | Modern skins (beta) | Skins modernes (bêta) | Andamp |
-| color theme | thème de couleurs | unverified |
+| color theme | thème (menu: Thèmes) | Winamp |
 | Skin menu | menu du skin | Andamp |
 | sharp pixels | pixels nets | Andamp |
 | visualization | visualisation | Winamp |
@@ -159,9 +161,9 @@ comes from, so that the next person keeps to them.
 | English | Deutsch | From |
 |---|---|---|
 | skin | Skin | Winamp |
-| modern skin | moderner Skin | unverified |
+| modern skin | moderner Skin | Winamp |
 | Modern skins (beta) | Moderne Skins (Beta) | Andamp |
-| color theme | Farbthema | unverified |
+| color theme | Farbschema (menu: Farbschemen) | Winamp |
 | Skin menu | Skin-Menü | Andamp |
 | sharp pixels | scharfe Pixel | Andamp |
 | visualization | Visualisierung | Winamp |
@@ -190,11 +192,11 @@ comes from, so that the next person keeps to them.
 
 | English | 简体中文 | From |
 |---|---|---|
-| skin | 皮肤 | common usage (Winamp: 面板) |
-| modern skin | 现代皮肤 | unverified |
-| Modern skins (beta) | 现代皮肤（测试版） | Andamp |
-| color theme | 配色方案 | unverified |
-| Skin menu | 皮肤菜单 | Andamp |
+| skin | 面板 | Winamp |
+| modern skin | 现代面板 | Winamp |
+| Modern skins (beta) | 现代面板（测试版） | Andamp |
+| color theme | 颜色主题 | Winamp |
+| Skin menu | 面板菜单 | Andamp |
 | sharp pixels | 锐利像素 | Andamp |
 | visualization | 可视化效果 | Winamp |
 | Media Library | 媒体库 | Winamp |

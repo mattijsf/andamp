@@ -39,20 +39,32 @@ class SimplifiedChineseTest {
                 }
             }
 
-        assertTrue("$labels", labels.containsAll(listOf("均衡器", "选项", "可视化效果", "皮肤", "退出")))
+        assertTrue("$labels", labels.containsAll(listOf("均衡器", "选项", "可视化效果", "面板", "退出")))
     }
 
     @Test
     fun `modern skins are worded in Chinese`() {
-        assertEquals("现代皮肤（测试版）", words.get(R.string.prefs_modern_skins_title))
-        assertEquals("配色方案", words.get(R.string.menu_color_themes))
-        assertEquals("Bento · 现代皮肤", words.get(R.string.skin_row_modern, "Bento"))
+        assertEquals("现代面板（测试版）", words.get(R.string.prefs_modern_skins_title))
+        assertEquals("颜色主题", words.get(R.string.menu_color_themes))
+        assertEquals("Bento · 现代面板", words.get(R.string.skin_row_modern, "Bento"))
+    }
+
+    @Test
+    fun `a skin is 面板, as Winamp's Chinese translation calls it, in every string`() {
+        assertEquals("面板浏览器...", words.get(R.string.menu_skin_browser))
+        assertEquals("<< 获得更多面板！ >>", words.get(R.string.menu_get_more_skins))
+        val resources = ApplicationProvider.getApplicationContext<Context>().resources
+        val older =
+            R.string::class.java.fields
+                .map { resources.getText(it.getInt(null)).toString() }
+                .filter { "皮肤" in it }
+        assertEquals(emptyList<String>(), older)
     }
 
     @Test
     fun `the offer turns modern skins on rather than opening a file`() {
         // 打开 with an object reads as opening a file, as in skin_modern_failed_title
-        assertEquals("要开启现代皮肤吗？", words.get(R.string.skin_modern_offer_title))
+        assertEquals("要开启现代面板吗？", words.get(R.string.skin_modern_offer_title))
         assertEquals("开启并添加", words.get(R.string.skin_modern_offer_accept))
     }
 

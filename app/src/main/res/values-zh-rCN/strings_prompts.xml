@@ -85,17 +85,17 @@
     <string name="prompt_jump_to_time_confirm">跳转</string>
 
     <!-- SkinOps.kt -->
-    <string name="skin_modern_title">“%1$s”是现代皮肤</string>
-    <string name="skin_modern_body">Andamp 加载经典 Winamp 皮肤（.wsz）。此版本无法添加现代皮肤（.wal）。</string>
+    <string name="skin_modern_title">“%1$s”是现代面板</string>
+    <string name="skin_modern_body">Andamp 加载经典 Winamp 面板（.wsz）。此版本无法添加现代面板（.wal）。</string>
     <string name="skin_too_large_title">“%1$s”太大</string>
-    <string name="skin_too_large_body">此文件太大，无法作为皮肤加载。</string>
+    <string name="skin_too_large_body">此文件太大，无法作为面板加载。</string>
     <string name="skin_modern_failed_title">无法打开“%1$s”</string>
-    <string name="skin_modern_failed_body">此现代皮肤未能加载，因此没有添加。</string>
+    <string name="skin_modern_failed_body">此现代面板未能加载，因此没有添加。</string>
     <string name="skin_modern_stopped_title">“%1$s”已停止工作</string>
-    <string name="skin_modern_stopped_body">Andamp 暂时改为显示您上次使用的经典皮肤。下次启动 Andamp 时会再次尝试此现代皮肤。如不想再尝试，请在“皮肤”中选择其他皮肤，或在皮肤浏览器中移除此皮肤。</string>
+    <string name="skin_modern_stopped_body">Andamp 暂时改为显示您上次使用的经典面板。下次启动 Andamp 时会再次尝试此现代面板。如不想再尝试，请在“面板”中选择其他面板，或在面板浏览器中移除此面板。</string>
 
     <!-- AmpModals.kt -->
-    <string name="skin_modern_offer_title">要开启现代皮肤吗？</string>
-    <string name="skin_modern_offer_body">“%1$s”是 Winamp 现代皮肤。现代皮肤目前处于测试阶段。要开启现代皮肤并添加此皮肤吗？按住现代皮肤即可打开 Andamp 的菜单。您可以在“首选项 &gt; 播放器”中关闭现代皮肤。</string>
+    <string name="skin_modern_offer_title">要开启现代面板吗？</string>
+    <string name="skin_modern_offer_body">“%1$s”是 Winamp 现代面板。现代面板目前处于测试阶段。要开启现代面板并添加此面板吗？按住现代面板即可打开 Andamp 的菜单。您可以在“首选项 &gt; 播放器”中关闭现代面板。</string>
     <string name="skin_modern_offer_accept">开启并添加</string>
 </resources>

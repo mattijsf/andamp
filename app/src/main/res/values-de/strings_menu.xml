@@ -36,7 +36,7 @@
     <string name="menu_ten_tracks_back">Zehn Titel zurück</string>
     <string name="menu_skin_browser">Skin-Browser...</string>
     <string name="menu_load_skin">Skin laden...</string>
-    <string name="menu_color_themes">Farbthemen</string>
+    <string name="menu_color_themes">Farbschemen</string>
     <string name="menu_get_more_skins">&lt;&lt; Mehr Skins holen! &gt;&gt;</string>
     <string name="skin_row_modern">%1$s · Moderner Skin</string>
     <string name="menu_preferences">Einstellungen...</string>
