@@ -36,6 +36,7 @@ class TranslatedLanguagesTest {
         assertEquals("analyzer, medium refresh rate", widget.summary(words))
         assertEquals("Modern skins (beta)", words.get(R.string.prefs_modern_skins_title))
         assertEquals("Color themes", words.get(R.string.menu_color_themes))
+        assertEquals("Add to Andamp", words.get(R.string.import_add_to_andamp))
     }
 
     @Test
@@ -48,6 +49,7 @@ class TranslatedLanguagesTest {
         assertEquals("Analyse, verversing: gemiddeld", widget.summary(words))
         assertEquals("Moderne skins (bèta)", words.get(R.string.prefs_modern_skins_title))
         assertEquals("Kleurthema’s", words.get(R.string.menu_color_themes))
+        assertEquals("Toevoegen aan Andamp", words.get(R.string.import_add_to_andamp))
     }
 
     @Test
@@ -66,6 +68,7 @@ class TranslatedLanguagesTest {
         assertEquals("Analysator, Aktualisierungsrate: mittel", widget.summary(words))
         assertEquals("Moderne Skins (Beta)", words.get(R.string.prefs_modern_skins_title))
         assertEquals("Farbschemen", words.get(R.string.menu_color_themes))
+        assertEquals("Zu Andamp hinzufügen", words.get(R.string.import_add_to_andamp))
     }
 
     @Test
@@ -79,6 +82,7 @@ class TranslatedLanguagesTest {
         assertEquals("Analyseur, fréquence d’actualisation moyenne", widget.summary(words))
         assertEquals("Skins modernes (bêta)", words.get(R.string.prefs_modern_skins_title))
         assertEquals("Thèmes", words.get(R.string.menu_color_themes))
+        assertEquals("Ajouter à Andamp", words.get(R.string.import_add_to_andamp))
     }
 
     @Test

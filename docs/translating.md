@@ -17,7 +17,7 @@ is any other language.
 | `strings_player.xml` | playlist prompts, the file info box, This Phone and its scan |
 | `strings_equalizer.xml` | the equalizer's PRESETS menu and its dialogs |
 | `strings_prompts.xml` | questions, notices and the buttons they share |
-| `strings_screens.xml` | the skin museum, the welcome screen, About, plug-in import |
+| `strings_screens.xml` | the skin museum, the welcome screen, About, skin and plug-in import |
 | `strings_widget.xml` | what the home-screen widget says to a screen reader |
 
 A translation is the same files in a directory named for the language:

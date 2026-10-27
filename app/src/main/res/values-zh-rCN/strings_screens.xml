@@ -48,4 +48,5 @@
     <!-- PluginImportActivity.kt -->
     <string name="import_not_a_plugin_link">该链接不是 %1$s 上的插件</string>
     <string name="import_file_could_not_be_opened">无法打开文件</string>
+    <string name="import_add_to_andamp">添加到 Andamp</string>
 </resources>

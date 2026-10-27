@@ -87,6 +87,15 @@ class TranslationsTest {
     }
 
     @Test
+    fun `the manifest takes every label from the strings`() {
+        // a label written into the manifest reads in English in every language
+        val manifest = resDir().resolveSibling("AndroidManifest.xml")
+        val labels = LABEL.findAll(manifest.readText()).map { it.groupValues[1] }.toList()
+        assertTrue("labels in ${manifest.path}: $labels", labels.isNotEmpty())
+        assertEquals(emptyList<String>(), labels.filterNot { it.startsWith("@string/") })
+    }
+
+    @Test
     fun `the English strings number their placeholders`() {
         // an unnumbered one cannot change places in a language that orders its words differently
         val unnumbered =
@@ -149,5 +158,8 @@ class TranslationsTest {
 
         /** A format placeholder: an optional `1$`, flags and a width, then what it formats. */
         val PLACEHOLDER = Regex("""%(\d+\$)?[-#+ 0,(]*\d*(?:\.\d+)?([a-zA-Z])""")
+
+        /** An `android:label` attribute in the manifest, with its value. */
+        val LABEL = Regex("""android:label="([^"]*)"""")
     }
 }

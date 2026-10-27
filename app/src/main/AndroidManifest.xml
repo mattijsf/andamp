@@ -97,7 +97,7 @@
             android:excludeFromRecents="true"
             android:noHistory="true"
             android:theme="@android:style/Theme.NoDisplay">
-            <intent-filter android:label="Add to Andamp">
+            <intent-filter android:label="@string/import_add_to_andamp">
                 <action android:name="android.intent.action.VIEW" />
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -105,7 +105,7 @@
                 <data android:mimeType="interface/x-winamp3-skin" />
                 <data android:mimeType="application/x-winamp-skin" />
             </intent-filter>
-            <intent-filter android:label="Add to Andamp">
+            <intent-filter android:label="@string/import_add_to_andamp">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="content" />
@@ -137,7 +137,7 @@
             android:excludeFromRecents="true"
             android:noHistory="true"
             android:theme="@android:style/Theme.NoDisplay">
-            <intent-filter android:label="Add to Andamp">
+            <intent-filter android:label="@string/import_add_to_andamp">
                 <action android:name="android.intent.action.VIEW" />
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
@@ -145,7 +145,7 @@
                 <data android:mimeType="application/x-lua" />
                 <data android:mimeType="text/x-lua-source" />
             </intent-filter>
-            <intent-filter android:label="Add to Andamp">
+            <intent-filter android:label="@string/import_add_to_andamp">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:scheme="content" />

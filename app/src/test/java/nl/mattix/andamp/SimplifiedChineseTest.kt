@@ -69,6 +69,11 @@ class SimplifiedChineseTest {
     }
 
     @Test
+    fun `another app offers to add a skin or a plug-in to Andamp in Chinese`() {
+        assertEquals("添加到 Andamp", words.get(R.string.import_add_to_andamp))
+    }
+
+    @Test
     fun `a count has one form, with the number grouped`() {
         assertEquals("1 首曲目", words.plural(R.plurals.library_count_tracks, 1))
         assertEquals("1,234 首曲目", words.plural(R.plurals.phone_count_tracks, 1234))
