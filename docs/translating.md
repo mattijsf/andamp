@@ -81,20 +81,20 @@ font instead.
 Each table lists the words a translation uses for the things Winamp named, and where each
 comes from, so that the next person keeps to them.
 
-- **Winamp** is the text Nullsoft wrote for Winamp in that language: the text of the Winamp
+- **Winamp** is the text that came with Winamp in that language: the text of the Winamp
   installer, in the Winamp source that was published, under `Src/installer/winamp/languages/`,
-  and Winamp 5.666's official language packs, which hold the program's menus and its texts for
-  modern skins.
-- **Audacious** is a free player with a Winamp-style interface, used where the installer
-  has no word.
+  and the official language packs in the Winamp 5.666 full installer, which hold the program's
+  menus and its texts for modern skins.
+- **Audacious** is a free player with a Winamp-style interface, used where Winamp's word has
+  not been checked.
 - **Common usage** is the word most media players use today, where Winamp's word would
   not be understood or has gone out of use. The word Winamp used is given beside it. It
   was found by comparing the translations of six open-source players (VLC, Clementine,
   Rhythmbox, Audacious, DeaDBeeF and Quod Libet) and the help pages of two large music
   services in that language.
 - **Andamp** is a word for something Winamp did not have.
-- **Unverified** means the word the Winamp menus used in that language was not at hand.
-  If you know it, a pull request that corrects the table and the strings is welcome.
+- **Unverified** means the word has not been checked against Winamp's text in that language.
+  If you know Winamp's word, a pull request that corrects the table and the strings is welcome.
 
 ### Dutch
 
