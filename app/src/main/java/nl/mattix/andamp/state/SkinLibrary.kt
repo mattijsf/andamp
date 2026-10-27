@@ -214,16 +214,19 @@ class SkinLibrary internal constructor(
     }
 
     /**
-     * Deletes what storing a skin leaves when the process ends partway: a part of either kind
-     * written before it was renamed, and a modern skin with no display name, stored but not yet
-     * loaded, as the name is written once the skin has loaded. A classic skin with no name is
-     * whole and stays. Run at start, before anything is stored.
+     * Deletes what storing a modern skin leaves when the process ends partway: a part copied
+     * before it was renamed, and a skin with no display name, stored but not yet loaded, as
+     * the name is written once the skin has loaded. Run at start, before anything is stored.
+     *
+     * Classic files stay. A library made elsewhere can store a classic skin while this runs (the
+     * legacy slot moves into the library as a library is made), so a classic part may still be
+     * written; one left over is not listed, and the next store of the same skin writes over it.
+     * A whole classic skin with no name still works, listed under its id.
      */
     fun dropUnfinished() {
         val named = { file: File -> prefs.contains(nameKey(file.name.removeSuffix(MODERN_EXT))) }
-        val parts = listOf("$CLASSIC_EXT.tmp", "$MODERN_EXT.tmp")
         dir
-            .listFiles { file -> file.isFile && parts.any { file.name.endsWith(it) } }
+            .listFiles { file -> file.isFile && file.name.endsWith("$MODERN_EXT.tmp") }
             ?.forEach { it.delete() }
         dir
             .listFiles { file -> file.isFile && file.name.endsWith(MODERN_EXT) && !named(file) }

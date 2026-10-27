@@ -301,7 +301,7 @@ class SkinLibraryTest {
     }
 
     @Test
-    fun `what a store cut short leaves is dropped, and finished skins stay`() {
+    fun `what a modern store cut short leaves is dropped, and finished skins and classic files stay`() {
         val classic = library.save(bytes(1), "A.wsz").id
         val modern = library.addModern(app, "Bento")
         val skins = java.io.File(app.filesDir, "skins")
@@ -314,9 +314,9 @@ class SkinLibraryTest {
 
         assertFalse(unnamed.exists())
         assertFalse(part.exists())
-        assertFalse(classicPart.exists())
         assertTrue(library.has(classic))
         assertTrue(library.has(modern))
+        assertTrue("a classic store may still be writing its part", classicPart.exists())
         assertTrue("a whole classic skin stays without a name", unnamedClassic.exists())
     }
 
