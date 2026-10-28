@@ -66,9 +66,10 @@ object WalGate {
     internal var onLoaded: (() -> Unit)? = null
 
     /**
-     * The application whose stored value [read] loads, whatever context it is given: set by
-     * [forget] for tests, so view models left from earlier tests read what the test stored. Null
-     * in the app.
+     * The application of the running test, set by [forget] for tests; null in the app. A [read]
+     * with a context of another application comes from a view model left from an earlier test: it
+     * gives what this application stored and leaves [on] as it is, so the test alone decides when
+     * the stored value is read.
      */
     @Volatile
     private var storedIn: Context? = null
@@ -80,9 +81,13 @@ object WalGate {
      */
     fun read(context: Context): Boolean {
         if (!known) {
+            val test = storedIn
+            if (test != null && (context.applicationContext ?: context) !== test) {
+                return store.submit(Callable { prefs(test).getBoolean(KEY, false) }).get()
+            }
             synchronized(reading) {
                 if (!known) {
-                    val app = storedIn ?: context.applicationContext ?: context
+                    val app = test ?: context.applicationContext ?: context
                     val stored = store.submit(Callable { load(app) }).get()
                     onLoaded?.invoke()
                     synchronized(lock) {
@@ -126,7 +131,8 @@ object WalGate {
     /**
      * Sets [on] back to its value before the first read, once the values set so far are stored, so
      * the next [read] loads the stored value again, as in a new process; for tests. With a
-     * [context], every read loads what that application stored.
+     * [context], reads load what that application stored, and only reads with that application
+     * set [on] (see [storedIn]).
      */
     internal fun forget(context: Context? = null) {
         awaitStored()

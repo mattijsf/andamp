@@ -105,6 +105,7 @@ class ModernPlayerSurfaceTest {
     fun tearDown() {
         wearing.forEach { it.skinOps.wal?.release(save = false) }
         if (wearing.isNotEmpty()) WalGate.clear(ApplicationProvider.getApplicationContext<Application>())
+        WalGate.forget()
     }
 
     /**

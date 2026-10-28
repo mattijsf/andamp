@@ -39,8 +39,9 @@ internal object WalSharp {
     internal var onLoaded: (() -> Unit)? = null
 
     /**
-     * The application whose stored value [read] loads, whatever context it is given;
-     * set by [forget] for tests, null in the app.
+     * The application of the running test, set by [forget] for tests; null in the app. A [read]
+     * with a context of another application comes from a view model left from an earlier test and
+     * does nothing, so the test alone decides when the stored value is read.
      */
     @Volatile
     private var storedIn: Context? = null
@@ -51,9 +52,11 @@ internal object WalSharp {
      */
     fun read(context: Context) {
         if (known) return
+        val test = storedIn
+        if (test != null && (context.applicationContext ?: context) !== test) return
         synchronized(reading) {
             if (known) return
-            val stored = prefs(storedIn ?: context).getBoolean(KEY, false)
+            val stored = prefs(test ?: context).getBoolean(KEY, false)
             onLoaded?.invoke()
             synchronized(lock) {
                 // a change made while the stored value loaded is newer than it
@@ -75,8 +78,8 @@ internal object WalSharp {
 
     /**
      * Sets everything back to before the first read, and [WalRender.direct] off, so each test starts
-     * from nothing read. With a [context], every read loads what that application stored, so view
-     * models left from earlier tests read what the test stored.
+     * from nothing read. With a [context], only reads with that application load the stored value
+     * (see [storedIn]).
      */
     internal fun forget(context: Context? = null) {
         storedIn = context?.let { it.applicationContext ?: it }

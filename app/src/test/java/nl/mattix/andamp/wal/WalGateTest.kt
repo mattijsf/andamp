@@ -45,7 +45,10 @@ class WalGateTest {
     fun clear() = WalGate.clear(app)
 
     @After
-    fun forget() = WalGate.clear(app)
+    fun forget() {
+        WalGate.clear(app)
+        WalGate.forget()
+    }
 
     @Test
     fun `with nothing stored it reads off, in every build`() {
@@ -59,6 +62,18 @@ class WalGateTest {
         WalGate.write(app, true)
         WalGate.forget(app)
         assertTrue(WalGate.read(app))
+    }
+
+    @Test
+    fun `a read by a player left from an earlier test gives the stored value and leaves the switch unread`() {
+        WalGate.write(app, true)
+        WalGate.forget(app)
+        val earlier = earlierApp()
+
+        assertTrue(WalGate.read(earlier))
+        assertFalse(WalGate.on)
+        assertTrue("a read with the test's application still loads it", WalGate.read(app))
+        assertTrue(WalGate.on)
     }
 
     @Test

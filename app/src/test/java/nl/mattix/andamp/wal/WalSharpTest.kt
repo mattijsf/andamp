@@ -73,6 +73,16 @@ class WalSharpTest {
     }
 
     @Test
+    fun `a read by a player left from an earlier test leaves the setting unread`() {
+        prefs.edit().putBoolean("sharp_pixels", true).commit()
+        WalSharp.read(earlierApp())
+        assertFalse(WalSharp.on)
+        assertFalse(WalRender.direct)
+        WalSharp.read(app)
+        assertTrue("a read with the test's application still loads it", WalSharp.on)
+    }
+
+    @Test
     fun `the stored value is read once`() {
         WalSharp.read(app)
         prefs.edit().putBoolean("sharp_pixels", true).commit()

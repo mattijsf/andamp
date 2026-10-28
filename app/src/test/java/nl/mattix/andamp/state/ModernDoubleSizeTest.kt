@@ -52,6 +52,7 @@ class ModernDoubleSizeTest {
     fun tearDown() {
         made.forEach { it.skinOps.wal?.release(save = false) }
         WalGate.clear(app)
+        WalGate.forget()
     }
 
     private fun await(
