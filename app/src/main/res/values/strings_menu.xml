@@ -35,7 +35,7 @@
     <string name="menu_skin_browser">Skin Browser...</string>
     <string name="menu_load_skin">Load skin...</string>
     <!-- A submenu in Skins, after Load skin..., while a worn modern skin has two or more color themes; lists them by the names the skin gives them. -->
-    <string name="menu_color_themes">Color themes</string>
+    <string name="menu_color_themes">Color Themes</string>
     <!-- The title of the dialog that Skin Settings... opens: the options a worn modern skin lists for Winamp's Options menu, grouped and named as the skin names them. Winamp's "Skin Settings". -->
     <string name="menu_skin_settings">Skin Settings</string>
     <!-- Under Options, after Skins, while a worn modern skin lists options; opens the Skin Settings dialog. -->

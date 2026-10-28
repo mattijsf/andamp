@@ -102,10 +102,10 @@ class WidgetMenuTest {
     fun `a worn modern skin's color themes are on it, and grayed`() {
         val worn = wearThemedModernSkin(app, "One", "Two").also { wearing = it }
 
-        val themes = find("Color themes", menu(worn).items)
+        val themes = find("Color Themes", menu(worn).items)
 
-        assertNotNull("Color themes is on the menu", themes)
-        assertFalse("Color themes is grayed on the widget", (themes as AmpMenuItem.Submenu).enabled)
+        assertNotNull("Color Themes is on the menu", themes)
+        assertFalse("Color Themes is grayed on the widget", (themes as AmpMenuItem.Submenu).enabled)
     }
 
     @Test
@@ -113,7 +113,7 @@ class WidgetMenuTest {
         val worn = wearThemedModernSkin(app, "One", "Two", started = false).also { wearing = it }
 
         assertNotNull("the modern skin is worn", worn.skinOps.wal)
-        assertNull(find("Color themes", menu(worn).items))
+        assertNull(find("Color Themes", menu(worn).items))
     }
 
     @Test

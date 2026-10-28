@@ -318,10 +318,10 @@ fun optionsMenu(
     )
 
 /**
- * Winamp's Skins submenu: the browser, the picker, "Color themes" for the modern skin on screen,
+ * Winamp's Skins submenu: the browser, the picker, "Color Themes" for the modern skin on screen,
  * and every skin in the library.
  *
- * "Color themes" lists the skin's themes in the order the skin's theme list shows them, as the skin
+ * "Color Themes" lists the skin's themes in the order the skin's theme list shows them, as the skin
  * names them, the one it wears ticked, each putting that theme on. It is left out with a classic
  * skin worn, with a modern one parked under a music source's skin, before the skin has loaded, and
  * for a skin with fewer than two themes. It is marked as needing the app: a theme shows only on the
@@ -379,7 +379,7 @@ internal fun skinItems(
         }
     }
 
-/** The fewest color themes a skin has for "Color themes" to be offered: with one there is nothing to pick. */
+/** The fewest color themes a skin has for "Color Themes" to be offered: with one there is nothing to pick. */
 private const val MIN_THEMES = 2
 
 /** Characters shown of a color theme's name, as many as a skin's menus show of an entry's words. */

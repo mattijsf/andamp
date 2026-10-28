@@ -474,7 +474,7 @@ class MainMenuTest {
         val skins = submenu(mainMenu(vm, {}, {}, {}, {}), "Skins")
 
         val themes = skins[2] as AmpMenuItem.Submenu
-        assertEquals("Color themes", themes.label)
+        assertEquals("Color Themes", themes.label)
         assertEquals("after Load skin..., before the divider", AmpMenuItem.Divider, skins[3])
         assertTrue("only the player shows a theme", themes.needsTheApp)
         assertEquals(
@@ -498,36 +498,36 @@ class MainMenuTest {
     }
 
     @Test
-    fun `a modern skin with one color theme or none offers no Color themes`() {
+    fun `a modern skin with one color theme or none offers no Color Themes`() {
         val none = wear()
         assertEquals("the skin has loaded", emptyList<String>(), none.skinOps.wal?.themes)
-        assertFalse(skinsShape(none).toString(), "Color themes" in skinsShape(none))
+        assertFalse(skinsShape(none).toString(), "Color Themes" in skinsShape(none))
         letGoOfModernSkin(app, none)
 
         val one = wear("Only")
         assertEquals("the skin has loaded", listOf("Only"), one.skinOps.wal?.themes)
-        assertFalse(skinsShape(one).toString(), "Color themes" in skinsShape(one))
+        assertFalse(skinsShape(one).toString(), "Color Themes" in skinsShape(one))
     }
 
     @Test
-    fun `a modern skin that has not loaded offers no Color themes`() {
+    fun `a modern skin that has not loaded offers no Color Themes`() {
         val vm = wear("One", "Two", started = false)
 
         assertTrue("its look is on screen", vm.skinOps.wal != null)
-        assertFalse(skinsShape(vm).toString(), "Color themes" in skinsShape(vm))
+        assertFalse(skinsShape(vm).toString(), "Color Themes" in skinsShape(vm))
     }
 
     @Test
-    fun `a modern skin parked under a music source's skin offers no Color themes`() {
+    fun `a modern skin parked under a music source's skin offers no Color Themes`() {
         val vm = wear("One", "Two")
         val look = vm.skinOps.wal!!
-        assertTrue("on screen it offers them", "Color themes" in skinsShape(vm))
+        assertTrue("on screen it offers them", "Color Themes" in skinsShape(vm))
 
         try {
             vm.skinOps.wear(BundledSkins.SPOT.id)
             awaitModern("the source's skin parks the modern look") { vm.skinOps.wal == null }
 
-            assertFalse(skinsShape(vm).toString(), "Color themes" in skinsShape(vm))
+            assertFalse(skinsShape(vm).toString(), "Color Themes" in skinsShape(vm))
         } finally {
             look.release(save = false)
         }
