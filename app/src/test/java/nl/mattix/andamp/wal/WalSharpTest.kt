@@ -79,7 +79,7 @@ class WalSharpTest {
         assertFalse(WalSharp.on)
         assertFalse(WalRender.direct)
         WalSharp.read(app)
-        assertTrue("the test's own read still loads it", WalSharp.on)
+        assertTrue("a read with the test's application still loads it", WalSharp.on)
     }
 
     @Test

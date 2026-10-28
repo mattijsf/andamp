@@ -45,7 +45,10 @@ class WalGateTest {
     fun clear() = WalGate.clear(app)
 
     @After
-    fun forget() = WalGate.clear(app)
+    fun forget() {
+        WalGate.clear(app)
+        WalGate.forget()
+    }
 
     @Test
     fun `with nothing stored it reads off, in every build`() {
@@ -69,7 +72,7 @@ class WalGateTest {
 
         assertTrue(WalGate.read(earlier))
         assertFalse(WalGate.on)
-        assertTrue("the test's own read still loads it", WalGate.read(app))
+        assertTrue("a read with the test's application still loads it", WalGate.read(app))
         assertTrue(WalGate.on)
     }
 

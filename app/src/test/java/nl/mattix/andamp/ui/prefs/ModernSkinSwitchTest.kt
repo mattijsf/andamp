@@ -96,6 +96,7 @@ class ModernSkinSwitchTest {
     fun tearDown() {
         stopPlayers()
         WalGate.clear(app)
+        WalGate.forget()
         WalSharp.forget()
     }
 

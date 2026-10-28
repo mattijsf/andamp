@@ -85,6 +85,7 @@ internal fun letGoOfModernSkin(
 ) {
     vm?.skinOps?.wal?.release(save = false)
     WalGate.clear(app)
+    WalGate.forget()
 }
 
 /**
