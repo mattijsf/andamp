@@ -19,20 +19,21 @@ import nl.mattix.andamp.state.Words
 import nl.mattix.andamp.ui.rememberWords
 
 /**
- * A source's row in a line: which of its states this phone is in.
+ * What a source's row says while it cannot play until the listener acts, or null when it can and
+ * the row describes its page.
  *
- * The account and the sign-in belong to the source, on the screen it draws in its own app; the
- * player opens that screen and does not draw it.
+ * The account and the sign-in belong to the source, on a screen in the source's app; the player
+ * opens that screen and does not draw it.
  *
- * [signedIn] is the app's own record, not the source's. It distinguishes a source that was signed
+ * [signedIn] is the player's record, not the source's. It distinguishes a source that was signed
  * in and has since been uninstalled: the rows it played are still in the playlist and are skipped,
  * and the line says so.
  */
-fun packSummary(
+fun packWarning(
     reach: PackReach,
     signedIn: Boolean,
     words: Words,
-): String =
+): String? =
     when (reach) {
         PackReach.Absent -> {
             words.get(if (signedIn) R.string.prefs_pack_uninstalled else R.string.prefs_pack_not_installed)
@@ -51,19 +52,16 @@ fun packSummary(
         }
 
         is PackReach.Ready -> {
-            reach.account.name
-                .takeIf { it.isNotBlank() }
-                ?.let { words.get(R.string.prefs_pack_signed_in_as, it) }
-                ?: words.get(R.string.prefs_pack_signed_in_here)
+            null
         }
     }
 
-/** The same line in the phone's language, for a composable that has no [Words] at hand. */
+/** The same warning in the phone's language, for a composable that has no [Words] at hand. */
 @Composable
-fun packSummary(
+fun packWarning(
     reach: PackReach,
     signedIn: Boolean,
-): String = packSummary(reach, signedIn, rememberWords())
+): String? = packWarning(reach, signedIn, rememberWords())
 
 /**
  * What [PackPage] says about a source built for another contract version, or null for a source

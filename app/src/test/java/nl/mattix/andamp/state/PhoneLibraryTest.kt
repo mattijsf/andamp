@@ -99,7 +99,6 @@ class PhoneLibraryTest {
 
         val library =
             PhoneStats(tracks = 1, artists = 2, albums = 1, durationMs = 3 * 86_400_000L + 4 * 3_600_000L, bytes = 4_509_715_660L)
-        assertEquals("1 track · 2 artists · 1 album", library.summary(EnglishWords))
         assertEquals("3 days 4 hours", library.listening(EnglishWords))
         assertEquals("4.2 GB", library.size)
         assertEquals("52 minutes", PhoneStats(1, 1, 1, 52 * 60_000L, 0).listening(EnglishWords))

@@ -27,7 +27,6 @@ import nl.mattix.andamp.state.ListFont
 import nl.mattix.andamp.state.SkinEntry
 import nl.mattix.andamp.state.SkinKind
 import nl.mattix.andamp.state.WinampViewModel
-import nl.mattix.andamp.state.Words
 import nl.mattix.andamp.ui.remote.CompanionCheck
 
 /**
@@ -65,11 +64,6 @@ fun androidAutoPrefsOf(
     onListFont = { vm.androidAutoStore.listFont = it },
     check = { CompanionCheck.of(vm.getApplication()) },
 )
-
-/** The summary on the row that opens the page. */
-fun AndroidAutoPrefs.summary(words: Words): String =
-    skins.firstOrNull { it.id == skin }?.let { words.get(R.string.prefs_android_auto_wears_skin, it.name) }
-        ?: words.get(R.string.prefs_android_auto_wears_own_skin)
 
 @Composable
 internal fun AndroidAutoPage(prefs: AndroidAutoPrefs) {

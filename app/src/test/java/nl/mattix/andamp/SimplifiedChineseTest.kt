@@ -51,6 +51,12 @@ class SimplifiedChineseTest {
     }
 
     @Test
+    fun `a Preferences row says what its page holds in Chinese`() {
+        assertEquals("可视化效果、刷新率、大小、点按和面板", words.get(R.string.prefs_widget_summary))
+        assertEquals("窗口、列表、触控和面板", words.get(R.string.prefs_player_summary_no_colors_skins))
+    }
+
+    @Test
     fun `a skin is 面板, as Winamp's Chinese translation calls it, in every string`() {
         assertEquals("面板浏览器...", words.get(R.string.menu_skin_browser))
         assertEquals("<< 获得更多面板！ >>", words.get(R.string.menu_get_more_skins))
@@ -89,7 +95,7 @@ class SimplifiedChineseTest {
     @Test
     fun `a count has one form, with the number grouped`() {
         assertEquals("1 首曲目", words.plural(R.plurals.library_count_tracks, 1))
-        assertEquals("1,234 首曲目", words.plural(R.plurals.phone_count_tracks, 1234))
+        assertEquals("1,234 天", words.plural(R.plurals.phone_days, 1234))
     }
 
     @Test

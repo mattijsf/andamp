@@ -18,7 +18,6 @@ import androidx.compose.ui.unit.dp
 import nl.mattix.andamp.R
 import nl.mattix.andamp.state.PresetImport
 import nl.mattix.andamp.state.VisPlugin
-import nl.mattix.andamp.state.Words
 import nl.mattix.andamp.state.presets.InstalledPack
 import nl.mattix.andamp.ui.menu.countFor
 import nl.mattix.andamp.ui.menu.idleLabelRes
@@ -49,20 +48,6 @@ data class VisualizerPrefs(
     /** Opens the screen that browses [presets]; null where that screen already is. */
     val onManagePresets: (() -> Unit)? = null,
 )
-
-/** One line for the root list. */
-fun VisualizerPrefs.summary(words: Words): String =
-    if (packs.isEmpty()) {
-        words.get(R.string.prefs_visualizer_summary_no_packs, plugin.menuLabel)
-    } else {
-        // the packs list is already the current engine's; count its kind
-        words.plural(
-            R.plurals.prefs_visualizer_summary_packs,
-            packs.size,
-            plugin.menuLabel,
-            packs.sumOf { it.countFor(plugin) },
-        )
-    }
 
 @Composable
 fun VisualizerSettings(prefs: VisualizerPrefs) {

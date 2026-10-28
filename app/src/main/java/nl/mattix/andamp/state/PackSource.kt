@@ -25,7 +25,7 @@ import nl.mattix.andamp.core.packapi.PackDescriptor
 import nl.mattix.andamp.core.playback.BrowseSource
 import nl.mattix.andamp.core.playback.PlaybackBackend
 import nl.mattix.andamp.ui.prefs.PackPage
-import nl.mattix.andamp.ui.prefs.packSummary
+import nl.mattix.andamp.ui.prefs.packWarning
 
 /**
  * A source that lives in an app of its own, as this player reaches it.
@@ -132,9 +132,9 @@ class PackSource(
     }
 
     @Composable
-    override fun Summary(signedIn: Boolean): String {
+    override fun Warning(signedIn: Boolean): String? {
         val now by client.reach.collectAsState()
-        return packSummary(now, signedIn)
+        return packWarning(now, signedIn)
     }
 
     // the pack can be uninstalled between the list being built and drawn

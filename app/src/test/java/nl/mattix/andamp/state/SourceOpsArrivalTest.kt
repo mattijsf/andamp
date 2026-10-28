@@ -66,7 +66,7 @@ class SourceOpsArrivalTest {
             override fun browse(context: Context): BrowseSource? = null
 
             @Composable
-            override fun Summary(signedIn: Boolean) = ""
+            override fun Warning(signedIn: Boolean): String? = null
         }
 
     /** A library that lists nothing; no test here opens the window. */

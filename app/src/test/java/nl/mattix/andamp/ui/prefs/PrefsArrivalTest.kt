@@ -73,7 +73,7 @@ class PrefsArrivalTest {
             override fun browse(context: Context): BrowseSource? = null
 
             @Composable
-            override fun Summary(signedIn: Boolean) = "Not signed in"
+            override fun Warning(signedIn: Boolean) = "Not signed in"
 
             @Composable
             override fun Page(

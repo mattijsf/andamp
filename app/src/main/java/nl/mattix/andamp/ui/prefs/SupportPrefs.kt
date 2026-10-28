@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.ui.prefs
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,7 +27,6 @@ import nl.mattix.andamp.R
 import nl.mattix.andamp.state.Tip
 import nl.mattix.andamp.state.TipNote
 import nl.mattix.andamp.state.TipShelf
-import nl.mattix.andamp.state.Words
 
 /** Preferences > Support Andamp, as the page needs it: what [nl.mattix.andamp.state.TipJar] holds. */
 data class SupportPrefs(
@@ -44,15 +44,9 @@ data class SupportPrefs(
     val outside: String? = null,
     val onOutside: (String) -> Unit = {},
 ) {
-    /** The line under the page's row in the list. */
-    fun summary(words: Words) =
-        words.get(
-            when {
-                outside != null -> R.string.prefs_support_on_site
-                given -> R.string.prefs_support_thanked
-                else -> R.string.prefs_support_leave_a_tip
-            },
-        )
+    /** What the page holds, for the line under its row in the list: the tips, or the way to the site. */
+    @StringRes
+    fun summary(): Int = if (outside != null) R.string.prefs_support_summary_outside else R.string.prefs_support_summary
 }
 
 /** The route of the page, which the main menu's entry opens Preferences on. */

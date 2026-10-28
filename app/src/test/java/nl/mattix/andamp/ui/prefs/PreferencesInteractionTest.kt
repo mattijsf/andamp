@@ -12,6 +12,8 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
+import androidx.compose.ui.test.hasTestTag
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -197,10 +199,12 @@ class PreferencesInteractionTest {
         val applied: MutableList<RackSettings> = mutableListOf(),
         /** A plug-in this backend found, for the parts of the page only a plug-in reaches. */
         private val extra: nl.mattix.andamp.core.model.EffectSpec? = null,
+        /** False for a backend that runs no effects at all. */
+        private val hasDsp: Boolean = true,
     ) : PlaybackBackend by MockBackend(FakeTracks.tracks, scope) {
         private val delegate = MockBackend(FakeTracks.tracks, scope)
         override val state get() = delegate.state
-        override val capabilities: Capabilities get() = delegate.capabilities.copy(hasDsp = true)
+        override val capabilities: Capabilities get() = delegate.capabilities.copy(hasDsp = hasDsp)
 
         override val effects: List<nl.mattix.andamp.core.model.EffectSpec>
             get() = BuiltInEffects.all + listOfNotNull(extra)
@@ -270,12 +274,12 @@ class PreferencesInteractionTest {
     }
 
     @Test
-    fun `the modern skins switch lives on the Player page, and the Player row names it while on`() {
+    fun `the modern skins switch lives on the Player page, and the Player row names skins`() {
         show(EffectBackend(scope), PrefsSections(modern = ModernSkinPrefs(offered = true, enabled = true)))
 
         allTags("prefs.modern.switch").assertCountEquals(0)
         compose
-            .onNodeWithText(app.getString(nl.mattix.andamp.R.string.prefs_player_summary_modern_skins), substring = true)
+            .onNodeWithText("Windows, lists, touch and skins")
             .performScrollTo()
             .assertIsDisplayed()
         tag("prefs.open.player").performScrollTo().performClick()
@@ -548,11 +552,11 @@ class PreferencesInteractionTest {
     }
 
     @Test
-    fun `the root shows the rack's row and summary, not its cards`() {
-        val ops = show(EffectBackend(scope))
+    fun `the root shows the rack's row and what its page holds, not its cards`() {
+        show(EffectBackend(scope))
 
         tag("prefs.open.dsp").assertIsDisplayed()
-        compose.onNodeWithText("${ops.rack.slots.size} effects · none on").assertIsDisplayed()
+        compose.onNodeWithText("Effect chain, plug-ins and peak limiter").assertIsDisplayed()
         allTags("dsp.${BuiltInEffects.REVERB}.title").assertCountEquals(0)
     }
 
@@ -570,14 +574,51 @@ class PreferencesInteractionTest {
     }
 
     @Test
-    fun `the root counts what the rack has switched on`() {
-        show(EffectBackend(scope))
+    fun `every row in the list says what its page holds, whatever is switched on`() {
+        show(
+            EffectBackend(scope),
+            PrefsSections(
+                overlay = OverlayPrefs(offered = true, wanted = true),
+                palette = PalettePrefs(offered = true, enabled = false),
+                modern = ModernSkinPrefs(offered = true, enabled = true, sharp = true),
+                androidAuto = AndroidAutoPrefs(offered = true),
+                support = SupportPrefs(given = true),
+            ),
+        )
         openRack()
         tag("dsp.${BuiltInEffects.REVERB}.on").performScrollTo().performClick()
-
         tag("prefs.back").performClick()
 
-        compose.onNodeWithText("${BuiltInEffects.ids.size} effects · 1 on").assertIsDisplayed()
+        val lines =
+            mapOf(
+                "prefs.source.phone" to "Access, library and scanning",
+                "prefs.open.dsp" to "Effect chain, plug-ins and peak limiter",
+                "prefs.open.player" to "Windows, lists, touch, colors and skins",
+                "prefs.open.visualizer" to "Plug-in, preset packs, favorites, presets and shuffle",
+                "prefs.open.widget" to "Visualizer, refresh rate, size, taps and skin",
+                "prefs.open.android_auto" to "Status, skin, playlist and versions",
+                "prefs.open.support" to "What a tip is for, and how to give one",
+                "prefs.open.about" to "Version and open-source licenses",
+            )
+        lines.forEach { (row, line) ->
+            tag(row).performScrollTo()
+            compose.onNode(hasTestTag(row) and hasText(line)).assertExists()
+        }
+
+        tag("prefs.open.about").performClick()
+        compose.onNodeWithText("The projects Andamp is built on, and their licenses").assertIsDisplayed()
+        tag("prefs.back").performClick()
+        tag("prefs.open.player").performScrollTo().performClick()
+        compose.onNodeWithText("What a song row shows, and in what order").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun `on a backend that runs no effects, the Effects row says so in place of what the page holds`() {
+        show(EffectBackend(scope, hasDsp = false))
+
+        tag("prefs.open.dsp").performScrollTo()
+        compose.onNode(hasTestTag("prefs.open.dsp") and hasText("This playback backend does not run effects.")).assertExists()
+        compose.onNodeWithText("Effect chain, plug-ins and peak limiter").assertDoesNotExist()
     }
 
     /** The Preamp is the input stage: its own section above the effects, fixed first, nothing to drag. */

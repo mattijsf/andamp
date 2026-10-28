@@ -55,20 +55,6 @@
     <string name="overlay_summary_on">The player floats on top of other apps</string>
 
     <!-- PhoneLibrary.kt: what is on this phone -->
-    <plurals name="phone_count_tracks">
-        <item quantity="one">%1$,d track</item>
-        <item quantity="other">%1$,d tracks</item>
-    </plurals>
-    <plurals name="phone_count_artists">
-        <item quantity="one">%1$,d artist</item>
-        <item quantity="other">%1$,d artists</item>
-    </plurals>
-    <plurals name="phone_count_albums">
-        <item quantity="one">%1$,d album</item>
-        <item quantity="other">%1$,d albums</item>
-    </plurals>
-    <!-- Tracks, artists and albums, each one of the counts above -->
-    <string name="phone_summary">%1$s · %2$s · %3$s</string>
     <plurals name="phone_days">
         <item quantity="one">%1$,d day</item>
         <item quantity="other">%1$,d days</item>

@@ -54,16 +54,6 @@
     <string name="overlay_summary_on">播放器悬浮在其他应用上方</string>
 
     <!-- PhoneLibrary.kt -->
-    <plurals name="phone_count_tracks">
-        <item quantity="other">%1$,d 首曲目</item>
-    </plurals>
-    <plurals name="phone_count_artists">
-        <item quantity="other">%1$,d 位艺术家</item>
-    </plurals>
-    <plurals name="phone_count_albums">
-        <item quantity="other">%1$,d 张专辑</item>
-    </plurals>
-    <string name="phone_summary">%1$s · %2$s · %3$s</string>
     <plurals name="phone_days">
         <item quantity="other">%1$,d 天</item>
     </plurals>

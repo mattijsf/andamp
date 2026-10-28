@@ -97,9 +97,13 @@ interface ExtraSource {
     /** Its library, or null while nobody is signed in. */
     fun browse(context: Context): BrowseSource?
 
-    /** Its row's subtitle on the main Preferences page. */
+    /**
+     * What its row on the main Preferences page says in place of what the page holds, while the
+     * listener has something to do before it plays: install it, update it or sign in. Null when
+     * nothing is needed.
+     */
     @Composable
-    fun Summary(signedIn: Boolean): String
+    fun Warning(signedIn: Boolean): String?
 
     /**
      * Its own settings, as an activity it owns and this app only opens. A composable cannot

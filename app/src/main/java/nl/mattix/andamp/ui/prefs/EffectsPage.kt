@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.ui.prefs
 
+import androidx.annotation.StringRes
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -28,19 +29,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.dp
 import nl.mattix.andamp.R
 import nl.mattix.andamp.state.DspOps
-import nl.mattix.andamp.state.PluginOps
-import nl.mattix.andamp.state.Words
 
-/** A one-line summary of the rack, for the page that links to it. */
-internal fun DspOps.summary(words: Words): String {
-    if (!available) return words.get(R.string.prefs_effects_unavailable_summary)
-    val on = rack.slots.count { it.enabled }
-    return if (on == 0) {
-        words.plural(R.plurals.prefs_effects_summary_none_on, rack.slots.size)
-    } else {
-        words.plural(R.plurals.prefs_effects_summary_on, rack.slots.size, on)
-    }
-}
+/** What the page holds, for the Effects row's line; where effects do not run, the page says only that. */
+@StringRes
+internal fun DspOps.summary(): Int = if (available) R.string.prefs_effects_summary else R.string.prefs_effects_unavailable_summary
 
 /** A section's name on the Effects page: Input, Effects, Output. */
 @Composable
@@ -56,7 +48,6 @@ private fun RackLabel(
 @Composable
 internal fun DspRack(
     dsp: DspOps,
-    plugins: PluginOps,
     snackbars: SnackbarHostState,
     scope: kotlinx.coroutines.CoroutineScope,
     peaks: () -> nl.mattix.andamp.core.playback.PeakReading,
@@ -104,13 +95,7 @@ internal fun DspRack(
             leadingContent = { Icon(Icons.Outlined.Extension, contentDescription = null) },
             headlineContent = { Text(stringResource(R.string.prefs_effects_manage_plugins)) },
             supportingContent = {
-                Text(
-                    if (plugins.entries.isEmpty()) {
-                        stringResource(R.string.prefs_effects_none_added)
-                    } else {
-                        stringResource(R.string.prefs_effects_added_count, plugins.entries.size)
-                    },
-                )
+                Text(stringResource(R.string.prefs_effects_manage_plugins_summary))
             },
             trailingContent = { Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null) },
         )

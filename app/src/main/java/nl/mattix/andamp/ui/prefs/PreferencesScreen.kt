@@ -23,7 +23,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
@@ -58,7 +57,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraphBuilder
@@ -78,7 +76,6 @@ import nl.mattix.andamp.state.SkinKind
 import nl.mattix.andamp.state.Store
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.sourceRoute
-import nl.mattix.andamp.ui.rememberWords
 import nl.mattix.andamp.widget.WidgetSettings
 
 /**
@@ -442,7 +439,7 @@ fun PreferencesPage(
                             }
                         }
                         page(PrefsPage.DSP.route) {
-                            DspRack(dsp, plugins, snackbars, scope, sections.peaks) { pages.navigate(PrefsPage.INSTALLED.route) }
+                            DspRack(dsp, snackbars, scope, sections.peaks) { pages.navigate(PrefsPage.INSTALLED.route) }
                         }
                         page(PrefsPage.INSTALLED.route) { InstalledPlugins(plugins, dsp, snackbars, scope, onPickPlugin) }
                         page(PrefsPage.VISUALIZER.route) { VisualizerSettings(sections.visualizer) }
@@ -539,7 +536,6 @@ private fun Root(
     sections: PrefsSections,
     onOpen: (String) -> Unit,
 ) {
-    val words = rememberWords()
     // the sources come first; the permission is on the phone's page, and its row says when it is
     // wanted
     SourcesSection(
@@ -555,7 +551,7 @@ private fun Root(
         // one entry: managing installed plug-ins is a button on the Effects page
         PageRow(
             page = PrefsPage.DSP,
-            summary = dsp.summary(words),
+            summary = stringResource(dsp.summary()),
             onOpen = { onOpen(it.route) },
         )
         VolumeRow(sections.volume)
@@ -565,23 +561,23 @@ private fun Root(
     Group {
         PageRow(
             page = PrefsPage.PLAYER,
-            summary = sections.playerSummary(words),
+            summary = stringResource(sections.playerSummary()),
             onOpen = { onOpen(it.route) },
         )
         PageRow(
             page = PrefsPage.VISUALIZER,
-            summary = sections.visualizer.summary(words),
+            summary = stringResource(R.string.prefs_visualizer_summary),
             onOpen = { onOpen(it.route) },
         )
         PageRow(
             page = PrefsPage.WIDGET,
-            summary = sections.widget.summary(words),
+            summary = stringResource(R.string.prefs_widget_summary),
             onOpen = { onOpen(it.route) },
         )
         if (sections.androidAuto.offered) {
             PageRow(
                 page = PrefsPage.ANDROID_AUTO,
-                summary = sections.androidAuto.summary(words),
+                summary = stringResource(R.string.prefs_android_auto_summary),
                 onOpen = { onOpen(it.route) },
             )
         }
@@ -591,12 +587,12 @@ private fun Root(
     Group {
         PageRow(
             page = PrefsPage.SUPPORT,
-            summary = sections.support.summary(words),
+            summary = stringResource(sections.support.summary()),
             onOpen = { onOpen(it.route) },
         )
         PageRow(
             page = PrefsPage.ABOUT,
-            summary = stringResource(R.string.prefs_about_summary, BuildConfig.VERSION_NAME),
+            summary = stringResource(R.string.prefs_about_summary),
             onOpen = { onOpen(it.route) },
         )
     }
@@ -611,7 +607,7 @@ private fun AboutPage(onOpen: (String) -> Unit) {
     Group {
         PageRow(
             page = PrefsPage.LICENCES,
-            summary = stringResource(R.string.prefs_about_licences_summary, Notices.all(LocalResources.current).size),
+            summary = stringResource(R.string.prefs_about_licences_summary),
             onOpen = { onOpen(it.route) },
         )
     }

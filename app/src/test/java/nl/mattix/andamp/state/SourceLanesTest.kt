@@ -78,7 +78,7 @@ class SourceLanesTest {
         override fun browse(context: Context): BrowseSource? = null
 
         @Composable
-        override fun Summary(signedIn: Boolean) = ""
+        override fun Warning(signedIn: Boolean): String? = null
     }
 
     /** What discovery has found right now, as the snapshot state [PackSources.found] is. */

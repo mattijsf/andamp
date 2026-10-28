@@ -64,15 +64,12 @@ private val PREVIEW_BACK = Color(0xFF000000)
 private val PREVIEW_TEXT = Color(0xFF00FF00)
 private val PREVIEW_CURRENT = Color(0xFFFFFFFF)
 
-/** The Lists group's row that opens the page of how a list writes a song; it says the format in the fields' names. */
+/** The Lists group's row that opens the page of how a list writes a song. */
 @Composable
-internal fun RowFormatRow(
-    prefs: ListPrefs,
-    onOpen: () -> Unit,
-) {
+internal fun RowFormatRow(onOpen: () -> Unit) {
     NavRow(
         title = stringResource(R.string.prefs_page_rows),
-        summary = spelled(prefs.rowFormat),
+        summary = stringResource(R.string.prefs_rows_summary),
         tag = "prefs.lists.format",
         onClick = onOpen,
     )
