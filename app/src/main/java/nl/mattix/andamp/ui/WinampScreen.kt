@@ -224,17 +224,11 @@ internal fun WinampScreen(
         vm.state.presetManagerRequested = false
         nav.navigate(Screen.MILKDROP)
     }
-    // a destination named from outside this screen, such as the floating player's menu. One
-    // already showing is not opened again: it takes the page it was asked for itself, and a
-    // new copy in its place would show its list instead. The player, under every screen, is
-    // reached by closing the screens over it
+    // a destination named from outside this screen, such as the floating player's menu
     LaunchedEffect(vm.state.arrivalDestination) {
         val going = vm.state.arrivalDestination ?: return@LaunchedEffect
         vm.state.arrivalDestination = null
-        when {
-            going == Screen.PLAYER -> nav.popBackStack(Screen.PLAYER, inclusive = false)
-            nav.currentDestination?.route != going -> nav.navigate(going)
-        }
+        nav.arriveAt(going)
     }
     val here =
         nav
