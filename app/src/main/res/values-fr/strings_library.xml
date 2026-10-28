@@ -89,7 +89,7 @@
     <string name="library_cant_reach_library">MÉDIATHÈQUE INJOIGNABLE</string>
     <string name="library_tap_to_retry">%1$s · RÉESSAYER</string>
 
-    <string name="library_queued">+%1$d À LA LISTE</string>
+    <string name="library_queued">+%1$d À LA SUITE</string>
     <string name="library_queued_next">+%1$d À SUIVRE</string>
     <string name="library_cant_delete">NON SUPPRIMÉE</string>
     <string name="library_cant_rename">NON RENOMMÉE</string>

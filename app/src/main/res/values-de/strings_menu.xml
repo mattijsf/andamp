@@ -11,7 +11,7 @@
     <string name="menu_play_file">Datei abspielen...</string>
     <string name="menu_play_directory">Verzeichnis abspielen...</string>
     <string name="menu_bookmark">Lesezeichen</string>
-    <string name="menu_view_file_info">Dateiinformationen anzeigen</string>
+    <string name="menu_view_file_info">Titelinformationen anzeigen</string>
     <string name="menu_bookmarks">Lesezeichen</string>
     <string name="menu_playlist_editor">Playlist-Editor</string>
     <string name="menu_equalizer">Equalizer</string>
@@ -30,33 +30,33 @@
     <string name="menu_stop_after_current">Nach diesem Titel stoppen</string>
     <string name="menu_back_5_seconds">5 Sekunden zurück</string>
     <string name="menu_fwd_5_seconds">5 Sekunden vor</string>
-    <string name="menu_jump_to_time">Springe zu Zeit...</string>
+    <string name="menu_jump_to_time">Springe zu Zeitmarke...</string>
     <string name="menu_jump_to_file">Springe zu Titel...</string>
-    <string name="menu_start_of_list">Anfang der Liste</string>
-    <string name="menu_ten_tracks_back">Zehn Titel zurück</string>
+    <string name="menu_start_of_list">Listenanfang</string>
+    <string name="menu_ten_tracks_back">10 Titel zurück</string>
     <string name="menu_skin_browser">Skin-Browser...</string>
     <string name="menu_load_skin">Skin laden...</string>
     <string name="menu_color_themes">Farbschemen</string>
-    <string name="menu_get_more_skins">&lt;&lt; Mehr Skins holen! &gt;&gt;</string>
+    <string name="menu_get_more_skins">&lt;&lt; Skins herunterladen! &gt;&gt;</string>
     <string name="skin_row_modern">%1$s · Moderner Skin</string>
     <string name="menu_preferences">Einstellungen...</string>
-    <string name="menu_time_elapsed">Verstrichene Zeit</string>
+    <string name="menu_time_elapsed">Abgelaufene Zeit</string>
     <string name="menu_time_remaining">Verbleibende Zeit</string>
     <string name="menu_always_on_top">Immer im Vordergrund</string>
     <string name="menu_double_size">Doppelte Größe</string>
     <string name="menu_repeat">Wiederholen</string>
-    <string name="menu_shuffle">Zufällige Wiedergabe</string>
+    <string name="menu_shuffle">Zufallsmodus</string>
 
     <!-- BookmarksMenu.kt -->
     <string name="menu_edit_bookmarks">Lesezeichen bearbeiten...</string>
-    <string name="menu_add_current_as_bookmark">Aktuelles als Lesezeichen hinzufügen</string>
+    <string name="menu_add_current_as_bookmark">Aktuellen Titel zu Lesezeichen hinzufügen</string>
 
     <!-- PlaylistRowMenu.kt -->
     <string name="menu_n_items">%1$d Einträge</string>
     <string name="menu_play_items">Auswahl abspielen</string>
     <string name="menu_remove_items">Auswahl entfernen</string>
     <string name="menu_crop_files">Nicht ausgewählte entfernen</string>
-    <string name="menu_file_info">Dateiinformationen</string>
+    <string name="menu_file_info">Titelinformationen anzeigen</string>
     <string name="menu_bookmark_items">Auswahl als Lesezeichen hinzufügen</string>
 
     <!-- VisualMenu.kt -->
@@ -111,7 +111,7 @@
     <string name="menu_sort_list">Liste sortieren</string>
     <string name="menu_sort_list_by_title">Liste nach Titel sortieren</string>
     <string name="menu_reverse_list">Liste umkehren</string>
-    <string name="menu_randomize_list">Liste zufällig anordnen</string>
+    <string name="menu_randomize_list">Liste mischen</string>
 
     <!-- LibraryRowMenu.kt -->
     <string name="menu_enqueue_next">Als Nächstes einreihen</string>

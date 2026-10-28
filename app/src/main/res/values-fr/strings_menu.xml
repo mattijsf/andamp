@@ -11,9 +11,9 @@
     <string name="menu_play_file">Lire un fichier...</string>
     <string name="menu_play_directory">Lire un dossier...</string>
     <string name="menu_bookmark">Signet</string>
-    <string name="menu_view_file_info">Afficher les informations sur le fichier</string>
+    <string name="menu_view_file_info">Informations sur le fichier...</string>
     <string name="menu_bookmarks">Signets</string>
-    <string name="menu_playlist_editor">Éditeur de liste de lecture</string>
+    <string name="menu_playlist_editor">Liste de lecture</string>
     <string name="menu_equalizer">Égaliseur</string>
     <string name="menu_media_library">Médiathèque</string>
     <string name="menu_options">Options</string>
@@ -26,25 +26,25 @@
     <string name="menu_pause">Pause</string>
     <string name="menu_stop">Arrêter</string>
     <string name="menu_next">Suivant</string>
-    <string name="menu_stop_with_fadeout">Arrêter en fondu</string>
-    <string name="menu_stop_after_current">Arrêter après le morceau en cours</string>
+    <string name="menu_stop_with_fadeout">Arrêter avec fondu</string>
+    <string name="menu_stop_after_current">Arrêter à la fin du morceau</string>
     <string name="menu_back_5_seconds">Reculer de 5 secondes</string>
     <string name="menu_fwd_5_seconds">Avancer de 5 secondes</string>
-    <string name="menu_jump_to_time">Sauter à la position...</string>
-    <string name="menu_jump_to_file">Sauter au fichier...</string>
+    <string name="menu_jump_to_time">Aller à un moment précis...</string>
+    <string name="menu_jump_to_file">Aller au morceau...</string>
     <string name="menu_start_of_list">Début de la liste</string>
     <string name="menu_ten_tracks_back">Dix morceaux en arrière</string>
-    <string name="menu_skin_browser">Explorateur de skins...</string>
+    <string name="menu_skin_browser">Liste des skins...</string>
     <string name="menu_load_skin">Charger un skin...</string>
     <string name="menu_color_themes">Thèmes</string>
-    <string name="menu_get_more_skins">&lt;&lt; Obtenir plus de skins ! &gt;&gt;</string>
+    <string name="menu_get_more_skins">&lt;&lt; Obtenir de nouveaux skins ! &gt;&gt;</string>
     <string name="skin_row_modern">%1$s · Skin moderne</string>
     <string name="menu_preferences">Préférences...</string>
     <string name="menu_time_elapsed">Temps écoulé</string>
     <string name="menu_time_remaining">Temps restant</string>
-    <string name="menu_always_on_top">Toujours au premier plan</string>
+    <string name="menu_always_on_top">Toujours visible</string>
     <string name="menu_double_size">Taille double</string>
-    <string name="menu_repeat">Répéter</string>
+    <string name="menu_repeat">Lecture en boucle</string>
     <string name="menu_shuffle">Lecture aléatoire</string>
 
     <!-- BookmarksMenu.kt -->
@@ -80,9 +80,9 @@
 
     <!-- VisualizationMenu.kt -->
     <string name="menu_visualization_options">Options de visualisation</string>
-    <string name="menu_start_stop_plug_in">Démarrer/Arrêter le plugin</string>
-    <string name="menu_configure_plug_in">Configurer le plugin</string>
-    <string name="menu_select_plug_in">Sélectionner un plugin</string>
+    <string name="menu_start_stop_plug_in">Démarrer/Arrêter le plug-in</string>
+    <string name="menu_configure_plug_in">Configurer le plug-in</string>
+    <string name="menu_select_plug_in">Sélectionner un plug-in</string>
     <string name="menu_spectrum_analyzer">Analyseur de spectre</string>
     <string name="menu_oscilloscope">Oscilloscope</string>
     <string name="menu_off">Désactivé</string>
@@ -99,7 +99,7 @@
     <string name="menu_cancel">Annuler</string>
     <string name="menu_save">Enregistrer</string>
     <string name="menu_edit">Modifier</string>
-    <string name="menu_enqueue">Ajouter</string>
+    <string name="menu_enqueue">Mettre à la suite</string>
     <string name="menu_open">Ouvrir</string>
     <string name="menu_remove">Retirer</string>
 
@@ -110,7 +110,7 @@
     <!-- PlaylistMenus.kt -->
     <string name="menu_sort_list">Trier la liste</string>
     <string name="menu_sort_list_by_title">Trier la liste par titre</string>
-    <string name="menu_reverse_list">Inverser la liste</string>
+    <string name="menu_reverse_list">Renverser la liste</string>
     <string name="menu_randomize_list">Mélanger la liste</string>
 
     <!-- LibraryRowMenu.kt -->

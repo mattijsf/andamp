@@ -78,7 +78,7 @@
     <string name="library_cant_reach_library">无法连接媒体库</string>
     <string name="library_tap_to_retry">%1$s · 点按重试</string>
 
-    <string name="library_queued">+%1$d 已加入队列</string>
+    <string name="library_queued">+%1$d 已排队</string>
     <string name="library_queued_next">+%1$d 下一首播放</string>
     <string name="library_cant_delete">无法删除</string>
     <string name="library_cant_rename">无法重命名</string>

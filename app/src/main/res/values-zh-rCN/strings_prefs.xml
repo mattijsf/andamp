@@ -79,7 +79,7 @@
 
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">预设</string>
-    <string name="prefs_milkdrop_pack_loading">预设包正在载入，或者插件窗口已关闭。</string>
+    <string name="prefs_milkdrop_pack_loading">预设包正在加载，或者插件窗口已关闭。</string>
     <string name="prefs_milkdrop_search_hint">搜索预设和文件夹</string>
     <string name="prefs_milkdrop_search_clear">清除搜索</string>
     <string name="prefs_milkdrop_search_none">没有与“%1$s”匹配的预设。</string>
@@ -113,7 +113,7 @@
     <string name="prefs_notice_androidx_what">界面工具包、导航、生命周期，以及用于本地播放的 Media3。</string>
     <string name="prefs_notice_kotlin_what">编程语言及其并发库。</string>
     <string name="prefs_notice_material_what">它的色彩引擎根据已加载的面板生成现代界面的配色。</string>
-    <string name="prefs_notice_coil_what">载入并缓存面板博物馆的缩略图。</string>
+    <string name="prefs_notice_coil_what">加载并缓存面板博物馆的缩略图。</string>
     <string name="prefs_notice_okhttp_what">唯一的 HTTP 客户端，用于面板博物馆和电台流。</string>
 
     <!-- Store.kt (storePlay) -->

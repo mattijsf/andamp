@@ -20,14 +20,14 @@
 
     <!-- EffectsPage.kt -->
     <string name="prefs_effects_unavailable_summary">Ce moteur de lecture ne prend pas en charge les effets.</string>
-    <string name="prefs_effects_summary">Chaîne d’effets, plugins et limiteur de crêtes</string>
+    <string name="prefs_effects_summary">Chaîne d’effets, plug-ins et limiteur de crêtes</string>
     <string name="prefs_effects_unavailable">Ce moteur de lecture ne prend pas en charge les effets.</string>
     <string name="prefs_effects_input_label">Entrée · avant tous les effets</string>
     <string name="prefs_effects_label">Effets</string>
     <string name="prefs_effects_order_note">L’audio circule de haut en bas — l’ordre change le son.</string>
     <string name="prefs_effects_output_label">Sortie · après tous les effets</string>
-    <string name="prefs_effects_manage_plugins">Gérer les plugins</string>
-    <string name="prefs_effects_manage_plugins_summary">Les plugins ajoutés, et en ajouter d’autres</string>
+    <string name="prefs_effects_manage_plugins">Gérer les plug-ins</string>
+    <string name="prefs_effects_manage_plugins_summary">Les plug-ins ajoutés, et en ajouter d’autres</string>
 
     <!-- LicencesPage.kt -->
     <string name="prefs_licences_note">Andamp repose sur le travail d’autres personnes. Chaque entrée renvoie vers sa source, où se trouve le texte complet de la licence.</string>
@@ -79,7 +79,7 @@
 
     <!-- MilkdropScreen.kt -->
     <string name="prefs_milkdrop_presets_section">Préréglages</string>
-    <string name="prefs_milkdrop_pack_loading">Le pack est en cours de chargement, ou la fenêtre du plugin est fermée.</string>
+    <string name="prefs_milkdrop_pack_loading">Le pack est en cours de chargement, ou la fenêtre du plug-in est fermée.</string>
     <string name="prefs_milkdrop_search_hint">Rechercher des préréglages et des dossiers</string>
     <string name="prefs_milkdrop_search_clear">Effacer la recherche</string>
     <string name="prefs_milkdrop_search_none">Aucun préréglage ne correspond à « %1$s ».</string>
@@ -103,7 +103,7 @@
     <!-- Notices.kt -->
     <string name="prefs_notice_projectm_what">Le moteur de visualisation Milkdrop, qui affiche les préréglages .milk.</string>
     <string name="prefs_notice_projectm_obligation">Andamp lie projectM %1$s dynamiquement, sous forme de bibliothèque distincte dans l’appli, afin qu’il puisse être remplacé. Le code source de cette révision exacte est le tag v%1$s à l’adresse ci-dessus, et le code de liaison qu’Andamp construit autour se trouve dans son propre dépôt. Aucune modification n’a été apportée à projectM.</string>
-    <string name="prefs_notice_avs_what">Le plugin de visualisation de Winamp, réimplémenté en Kotlin à partir du code source publié par Nullsoft.</string>
+    <string name="prefs_notice_avs_what">Le plug-in de visualisation de Winamp, réimplémenté en Kotlin à partir du code source publié par Nullsoft.</string>
     <string name="prefs_notice_avs_decoder_what">La structure et la disposition des champs du format de préréglage .avs, telles que les suit le chargeur de préréglages.</string>
     <string name="prefs_notice_projectm_eval_what">Évalue les expressions qui servent de scripts aux préréglages AVS ; intégré à la bibliothèque AVS.</string>
     <string name="prefs_notice_milkdrop_what">L’original de Ryan Geiss, dont projectM affiche les préréglages .milk.</string>
@@ -157,17 +157,17 @@
     <string name="prefs_modern_skins_title">Skins modernes (bêta)</string>
     <string name="prefs_modern_skins_on">Vous pouvez ajouter et porter des skins modernes de Winamp (.wal), en plus des skins classiques. Certains peuvent s’afficher ou fonctionner un peu différemment que dans Winamp. Maintenez le doigt sur un skin moderne pour ouvrir le menu d’Andamp. Si vous désactivez cette option, le lecteur reprend votre dernier skin classique.</string>
     <string name="prefs_modern_skins_off">Seuls les skins classiques (.wsz) peuvent être ajoutés. Activez cette option pour ajouter et porter aussi des skins modernes de Winamp (.wal). Les skins modernes que vous avez déjà ajoutés restent masqués jusque-là.</string>
-    <string name="prefs_modern_skins_note">Seul le lecteur porte un skin moderne. Les menus, la médiathèque, l’explorateur de skins, le widget et Android Auto gardent votre dernier skin classique, sauf si vous en avez choisi un autre pour le widget ou Android Auto. Tant que le lecteur porte un skin moderne, « Éditeur de liste de lecture », « Égaliseur », « Taille double » et « Options de visualisation » sont grisés dans le menu, car le skin dessine les fenêtres et la visualisation du lecteur.</string>
+    <string name="prefs_modern_skins_note">Seul le lecteur porte un skin moderne. Les menus, la médiathèque, la liste des skins, le widget et Android Auto gardent votre dernier skin classique, sauf si vous en avez choisi un autre pour le widget ou Android Auto. Tant que le lecteur porte un skin moderne, « Liste de lecture », « Égaliseur », « Taille double » et « Options de visualisation » sont grisés dans le menu, car le skin dessine les fenêtres et la visualisation du lecteur.</string>
     <string name="prefs_sharp_pixels_title">Pixels nets</string>
     <string name="prefs_sharp_pixels_on">Contours nets, mais certaines lettres et lignes sont d’épaisseur inégale. Cela ne change que les skins modernes qu’Andamp affiche à une taille intermédiaire, par exemple 2,5 fois leur taille, pour qu’ils tiennent sur votre écran.</string>
     <string name="prefs_sharp_pixels_off">Rendu lisse, mais légèrement flou. Activez cette option pour des contours nets ; certaines lettres et lignes sont alors d’épaisseur inégale. Cela ne change que les skins modernes qu’Andamp affiche à une taille intermédiaire, par exemple 2,5 fois leur taille, pour qu’ils tiennent sur votre écran.</string>
 
     <!-- PluginsSection.kt -->
-    <string name="prefs_plugins_intro">Plugins audio Lua. Andamp en garde sa propre copie, le fichier d’origine peut donc être déplacé ou supprimé.</string>
+    <string name="prefs_plugins_intro">Plug-ins audio Lua. Andamp en garde sa propre copie, le fichier d’origine peut donc être déplacé ou supprimé.</string>
     <string name="prefs_plugins_adding">Ajout…</string>
-    <string name="prefs_plugins_add">Ajouter un plugin</string>
+    <string name="prefs_plugins_add">Ajouter un plug-in</string>
     <string name="prefs_plugins_builtin_always">Les effets fournis avec Andamp sont toujours dans le rack.</string>
-    <string name="prefs_plugins_none">Aucun plugin ajouté</string>
+    <string name="prefs_plugins_none">Aucun plug-in ajouté</string>
     <string name="prefs_plugins_none_hint">Les effets fournis avec Andamp sont déjà dans le rack. Ajoutez un fichier .lua pour en avoir d’autres.</string>
     <string name="prefs_plugins_remove_named">Retirer %1$s</string>
     <string name="prefs_plugins_cannot_run">Ne fonctionne pas avec le format audio de ce morceau.</string>
@@ -176,16 +176,16 @@
     <string name="prefs_plugins_removed">%1$s retiré</string>
     <string name="prefs_plugins_remove">Retirer</string>
     <string name="prefs_plugins_cancel">Annuler</string>
-    <string name="prefs_plugins_refused_title">Impossible d’ajouter ce plugin</string>
+    <string name="prefs_plugins_refused_title">Impossible d’ajouter ce plug-in</string>
     <string name="prefs_plugins_ok">OK</string>
-    <string name="prefs_plugins_added_title">Plugin ajouté</string>
+    <string name="prefs_plugins_added_title">Plug-in ajouté</string>
     <string name="prefs_plugins_added_body">Il se trouve à la fin du rack dans « Effets », désactivé.</string>
-    <string name="prefs_plugins_updated_title">Plugin mis à jour</string>
+    <string name="prefs_plugins_updated_title">Plug-in mis à jour</string>
     <string name="prefs_plugins_updated_body">Il garde sa place dans le rack et ses réglages.</string>
     <string name="prefs_plugins_updated_body_replacing">Remplace la version %1$s. Il garde sa place dans le rack et ses réglages.</string>
     <string name="prefs_plugins_unchanged_title">Déjà ajouté</string>
     <string name="prefs_plugins_unchanged_body">Ce même fichier est déjà installé. Rien n’a changé.</string>
-    <string name="prefs_plugins_offer_title">Ajouter ce plugin ?</string>
+    <string name="prefs_plugins_offer_title">Ajouter ce plug-in ?</string>
     <string name="prefs_plugins_offer_from">Depuis %1$s</string>
     <string name="prefs_plugins_offer_add">Ajouter</string>
     <string name="prefs_plugins_replace_question">Remplacer %1$s ?</string>
@@ -195,11 +195,11 @@
     <string name="prefs_plugins_credit_by">par %1$s</string>
     <string name="prefs_plugins_credit_none">aucune version déclarée</string>
     <string name="prefs_plugins_more_title">Plus d’effets</string>
-    <string name="prefs_plugins_more_summary">Des plugins d’effets à installer depuis le site d’Andamp</string>
+    <string name="prefs_plugins_more_summary">Des plug-ins d’effets à installer depuis le site d’Andamp</string>
 
     <!-- PreferencesScreen.kt -->
     <string name="prefs_page_effects">Effets</string>
-    <string name="prefs_page_plugins">Plugins</string>
+    <string name="prefs_page_plugins">Plug-ins</string>
     <string name="prefs_page_visualizer">Visualisation</string>
     <string name="prefs_page_player">Lecteur</string>
     <string name="prefs_page_rows">Lignes des morceaux</string>
@@ -317,9 +317,9 @@
         <item quantity="one">%1$d préréglage marqué d’une étoile, de n’importe quel pack</item>
         <item quantity="other">%1$d préréglages marqués d’une étoile, de n’importe quel pack</item>
     </plurals>
-    <string name="prefs_visualizer_plugin_section">Plugin</string>
-    <string name="prefs_visualizer_summary">Plugin, packs de préréglages, favoris, préréglages et ordre aléatoire</string>
-    <string name="prefs_visualizer_avs_blurb">Le plugin de visualisation de Winamp, reconstruit. Joue les vrais préréglages .avs que vous importez.</string>
+    <string name="prefs_visualizer_plugin_section">Plug-in</string>
+    <string name="prefs_visualizer_summary">Plug-in, packs de préréglages, favoris, préréglages et ordre aléatoire</string>
+    <string name="prefs_visualizer_avs_blurb">Le plug-in de visualisation de Winamp, reconstruit. Joue les vrais préréglages .avs que vous importez.</string>
     <string name="prefs_visualizer_milkdrop_blurb">libprojectM. Joue les vrais préréglages .milk que vous importez.</string>
     <string name="prefs_visualizer_packs_section">Packs de préréglages</string>
     <string name="prefs_visualizer_import_empty">« %1$s » ne contenait aucun préréglage.</string>

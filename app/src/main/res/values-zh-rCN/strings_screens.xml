@@ -12,7 +12,7 @@
     <string name="museum_show_one_at_a_time">逐个显示</string>
     <string name="museum_order_and_filters">排序与筛选</string>
     <string name="museum_position">%1$d / %2$s</string>
-    <string name="museum_fetching">正在载入博物馆…</string>
+    <string name="museum_fetching">正在加载博物馆…</string>
     <string name="museum_out_of_reach">无法连接博物馆</string>
     <string name="museum_try_again">重试</string>
     <!-- SkinCount.kt -->
@@ -28,7 +28,7 @@
     <string name="museum_installing">正在安装…</string>
     <string name="museum_installed">已安装</string>
     <string name="museum_not_shown">不显示</string>
-    <string name="museum_try_this_page_again">重新载入此页</string>
+    <string name="museum_try_this_page_again">重新加载此页</string>
     <string name="museum_back_to_the_grid">返回平铺视图</string>
     <string name="museum_in_the_museum">在博物馆中查看</string>
     <!-- WelcomeScreen.kt -->

@@ -114,12 +114,14 @@ comes from, so that the next person keeps to them.
 | plug-in | plug-in | Winamp |
 | Preferences | Voorkeuren | Winamp |
 | Now playing | Nu speelt | Winamp |
-| Always On Top | Altijd bovenaan | Audacious |
-| Double Size | Dubbele grootte | Audacious |
-| Shuffle, Repeat | Willekeurig, Herhalen | Audacious |
-| Sort list, Reverse list, Randomize list | Lijst sorteren, Lijst omkeren, Lijst in willekeurige volgorde | Audacious |
-| Playlist Editor | Afspeellijsteditor | unverified |
-| Jump to file, Jump to time | Ga naar bestand, Ga naar tijd | unverified |
+| Always On Top | Altijd bovenop | Winamp |
+| Double Size | Dubbele grootte | Winamp |
+| Shuffle, Repeat | Shuffle, Herhalen | Winamp |
+| Sort list | Lijst sorteren | Andamp (Winamp: Sorteren) |
+| Reverse list, Randomize list | Lijst omkeren, Lijst willekeurig maken | Winamp |
+| Playlist Editor | Afspeellijsteditor | common usage (Winamp: speellijsteditor) |
+| Jump to file, Jump to time | Spring naar bestand, Spring naar tijd | Winamp |
+| Enqueue | In wachtrij | Winamp (modern skins) |
 | music source | muziekbron | Andamp |
 | effect, rack | effect, rack | Andamp |
 | tip | fooi | Andamp |
@@ -138,19 +140,21 @@ comes from, so that the next person keeps to them.
 | Media Library | médiathèque | Winamp |
 | playlist | liste de lecture | Winamp |
 | bookmark | signet | Winamp |
-| preset | préréglage | common usage (Winamp: définition) |
-| plug-in | plugin | Winamp |
+| preset | préréglage | common usage (Winamp: présélection) |
+| plug-in | plug-in | Winamp |
 | Preferences | Préférences | Winamp |
 | Now playing | Lecture en cours | Winamp |
 | track | morceau | Winamp |
-| Play, Playback | Lire, Lecture | Audacious |
-| Equalizer | Égaliseur | Audacious |
-| Playlist Editor | Éditeur de liste de lecture | Audacious |
-| Always On Top, Double Size | Toujours au premier plan, Taille double | Audacious |
-| Shuffle, Repeat | Lecture aléatoire, Répéter | Audacious |
-| Sort list, Reverse list, Randomize list | Trier la liste, Inverser la liste, Mélanger la liste | Audacious |
-| Jump to file, Jump to time | Sauter au fichier, Sauter à la position | Audacious |
-| Enqueue | Ajouter | unverified |
+| Play, Playback | Lire, Lecture | Winamp |
+| Equalizer | Égaliseur | Winamp |
+| Playlist Editor | Liste de lecture | Winamp |
+| Skin Browser | Liste des skins | Winamp |
+| Always On Top, Double Size | Toujours visible, Taille double | Winamp |
+| Shuffle, Repeat | Lecture aléatoire, Lecture en boucle | Winamp |
+| Reverse list | Renverser la liste | Winamp |
+| Sort list, Randomize list | Trier la liste, Mélanger la liste | Audacious |
+| Jump to file, Jump to time | Aller au morceau, Aller à un moment précis | Winamp |
+| Enqueue | Mettre à la suite | Winamp |
 | music source | source de musique | Andamp |
 | effect, rack | effet, rack | Andamp |
 | tip | pourboire | Andamp |
@@ -178,12 +182,14 @@ comes from, so that the next person keeps to them.
 | Enqueue | Einreihen | Winamp |
 | station | Sender | common usage (Winamp: Station) |
 | track | Titel | Winamp |
-| Equalizer, Options | Equalizer, Optionen | Audacious |
-| Always On Top, Double Size | Immer im Vordergrund, Doppelte Größe | Audacious |
-| Shuffle, Repeat | Zufällige Wiedergabe, Wiederholen | Audacious |
-| Sort list, Reverse list, Randomize list | Liste sortieren, Liste umkehren, Liste zufällig anordnen | Audacious |
-| Playlist Editor | Playlist-Editor | unverified |
-| Jump to time | Springe zu Zeit | unverified |
+| Equalizer, Options | Equalizer, Optionen | Winamp |
+| Always On Top, Double Size | Immer im Vordergrund, Doppelte Größe | Winamp |
+| Shuffle, Repeat | Zufallsmodus, Wiederholen | Winamp |
+| Sort list, Reverse list, Randomize list | Liste sortieren, Liste umkehren, Liste mischen | Winamp |
+| Playlist Editor | Playlist-Editor | Winamp |
+| Jump to time | Springe zu Zeitmarke | Winamp |
+| file info | Titelinformationen | Winamp |
+| auto-load preset | automatische Voreinstellung | Winamp |
 | music source | Musikquelle | Andamp |
 | effect, rack | Effekt, Rack | Andamp |
 | tip | Trinkgeld | Andamp |
@@ -198,21 +204,24 @@ comes from, so that the next person keeps to them.
 | color theme | 颜色主题 | Winamp |
 | Skin menu | 面板菜单 | Andamp |
 | sharp pixels | 锐利像素 | Andamp |
-| load (a skin) | 加载 | Winamp |
+| load | 加载 | Winamp |
 | visualization | 可视化效果 | Winamp |
 | Media Library | 媒体库 | Winamp |
 | playlist | 播放列表 | Winamp |
 | bookmark | 书签 | Winamp |
 | preset | 预设 | Winamp |
 | plug-in | 插件 | Winamp |
-| Jump to file | 跳转到文件 | Winamp |
-| Playlist Editor | 播放列表编辑器 | Audacious |
-| Equalizer | 均衡器 | Audacious |
-| Double Size | 双倍大小 | Audacious |
-| Sort list, Reverse list, Randomize list | 排序列表, 反转列表, 打乱列表 | Audacious |
-| Always On Top | 总在最前 | unverified |
-| Preferences | 首选项 | unverified |
-| Shuffle, Repeat | 随机播放, 重复播放 | unverified |
+| Jump to file, Jump to time | 跳到文件, 跳到时间 | Winamp |
+| Playlist Editor | 播放列表编辑器 | Winamp |
+| Equalizer | 均衡器 | Winamp |
+| Double Size | 双倍大小 | Winamp |
+| Sort list | 排序列表 | Andamp (Winamp: 排序) |
+| Sort list by title, Reverse list, Randomize list | 按标题排列列表, 反转列表, 随机排列列表 | Winamp |
+| Always On Top | 总在最上 | Winamp |
+| Preferences | 首选项 | Winamp |
+| Shuffle, Repeat | 随机, 重复 | Winamp |
+| Enqueue | 排队 | Winamp |
+| Previous, Next | 上一首, 下一首 | Winamp |
 | music source | 音乐源 | Andamp |
 | effect, rack | 效果, 机架 | Andamp |
 | tip | 打赏 | Andamp |

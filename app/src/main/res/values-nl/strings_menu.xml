@@ -30,22 +30,22 @@
     <string name="menu_stop_after_current">Stoppen na dit nummer</string>
     <string name="menu_back_5_seconds">5 seconden terug</string>
     <string name="menu_fwd_5_seconds">5 seconden vooruit</string>
-    <string name="menu_jump_to_time">Ga naar tijd...</string>
-    <string name="menu_jump_to_file">Ga naar bestand...</string>
+    <string name="menu_jump_to_time">Spring naar tijd...</string>
+    <string name="menu_jump_to_file">Spring naar bestand...</string>
     <string name="menu_start_of_list">Begin van de lijst</string>
     <string name="menu_ten_tracks_back">Tien nummers terug</string>
     <string name="menu_skin_browser">Skinbrowser...</string>
     <string name="menu_load_skin">Skin laden...</string>
     <string name="menu_color_themes">Kleurthema’s</string>
-    <string name="menu_get_more_skins">&lt;&lt; Meer skins ophalen! &gt;&gt;</string>
+    <string name="menu_get_more_skins">&lt;&lt; Zoek meer skins! &gt;&gt;</string>
     <string name="skin_row_modern">%1$s · Moderne skin</string>
     <string name="menu_preferences">Voorkeuren...</string>
     <string name="menu_time_elapsed">Verstreken tijd</string>
     <string name="menu_time_remaining">Resterende tijd</string>
-    <string name="menu_always_on_top">Altijd bovenaan</string>
+    <string name="menu_always_on_top">Altijd bovenop</string>
     <string name="menu_double_size">Dubbele grootte</string>
     <string name="menu_repeat">Herhalen</string>
-    <string name="menu_shuffle">Willekeurig</string>
+    <string name="menu_shuffle">Shuffle</string>
 
     <!-- BookmarksMenu.kt -->
     <string name="menu_edit_bookmarks">Bladwijzers bewerken...</string>
@@ -111,7 +111,7 @@
     <string name="menu_sort_list">Lijst sorteren</string>
     <string name="menu_sort_list_by_title">Lijst sorteren op titel</string>
     <string name="menu_reverse_list">Lijst omkeren</string>
-    <string name="menu_randomize_list">Lijst in willekeurige volgorde</string>
+    <string name="menu_randomize_list">Lijst willekeurig maken</string>
 
     <!-- LibraryRowMenu.kt -->
     <string name="menu_enqueue_next">Hierna afspelen</string>

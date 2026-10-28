@@ -50,7 +50,7 @@
     <string name="folder_no_longer_readable">Andamp kan deze map niet meer lezen. Sta de map opnieuw toe en de nummers spelen weer af.</string>
 
     <!-- OverlayOps.kt -->
-    <string name="overlay_title">Altijd bovenaan</string>
+    <string name="overlay_title">Altijd bovenop</string>
     <string name="overlay_needs_android_11">Zweven boven andere apps vereist Android 11 of hoger.</string>
     <string name="overlay_needs_permission">Andamp heeft toestemming nodig om vóór andere apps weer te geven, anders kan de speler er niet boven zweven.</string>
 
@@ -82,8 +82,8 @@
     <string name="notice_nothing_playable_body">Elk nummer in deze afspeellijst komt van een bron die deze telefoon nu niet kan bereiken: de bron is niet geïnstalleerd of er is niemand ingelogd. Bij elke rij staat welke van de twee.</string>
 
     <!-- WinampViewModel.kt -->
-    <string name="prompt_jump_to_time_title">Ga naar tijd</string>
-    <string name="prompt_jump_to_time_confirm">Ga</string>
+    <string name="prompt_jump_to_time_title">Spring naar tijd</string>
+    <string name="prompt_jump_to_time_confirm">Springen</string>
 
     <!-- SkinOps.kt -->
     <string name="skin_modern_title">“%1$s” is een moderne skin</string>

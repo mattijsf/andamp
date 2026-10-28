@@ -82,7 +82,7 @@
     <string name="notice_nothing_playable_body">Jeder Titel in dieser Playlist stammt von einer Quelle, die dieses Smartphone gerade nicht erreicht: Sie ist nicht installiert, oder niemand ist bei ihr angemeldet. In jeder Zeile steht, was zutrifft.</string>
 
     <!-- WinampViewModel.kt -->
-    <string name="prompt_jump_to_time_title">Springe zu Zeit</string>
+    <string name="prompt_jump_to_time_title">Springe zu Zeitmarke</string>
     <string name="prompt_jump_to_time_confirm">Springen</string>
 
     <!-- SkinOps.kt -->

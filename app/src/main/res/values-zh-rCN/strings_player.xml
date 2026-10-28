@@ -12,7 +12,7 @@
     <string name="playlist_save_in_andamp_note">可在媒体库的“列表”标签页中浏览</string>
     <string name="playlist_export">导出为文件…</string>
     <string name="playlist_export_note">其他播放器可以读取的 .m3u 文件</string>
-    <string name="playlist_load_title">载入播放列表</string>
+    <string name="playlist_load_title">加载播放列表</string>
     <string name="playlist_open_from_andamp">从 Andamp 打开</string>
     <string name="playlist_open_from_andamp_note">保存在这里的列表之一</string>
     <string name="playlist_import">从文件导入…</string>
@@ -24,7 +24,7 @@
     <string name="playlist_open_empty">这里还没有保存任何列表</string>
 
     <!-- WinampViewModel.kt -->
-    <string name="jump_to_file_title">跳转到文件</string>
+    <string name="jump_to_file_title">跳到文件</string>
     <string name="jump_to_file_empty">播放列表为空</string>
 
     <!-- FileInfoSource.kt and TrackInfoOps.kt -->

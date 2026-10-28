@@ -46,6 +46,17 @@ class TranslatedLanguagesTest {
     }
 
     @Test
+    @Config(qualifiers = "nl")
+    fun `the Dutch menus use the words of Winamp's Dutch translation`() {
+        assertEquals("Spring naar bestand...", words.get(R.string.menu_jump_to_file))
+        assertEquals("Spring naar tijd", words.get(R.string.prompt_jump_to_time_title))
+        assertEquals("Springen", words.get(R.string.prompt_jump_to_time_confirm))
+        assertEquals("Altijd bovenop", words.get(R.string.menu_always_on_top))
+        assertEquals("Shuffle", words.get(R.string.menu_shuffle))
+        assertEquals("Lijst willekeurig maken", words.get(R.string.menu_randomize_list))
+    }
+
+    @Test
     @Config(qualifiers = "nl-rBE")
     fun `Dutch as written in Belgium is Dutch`() {
         assertEquals("Opties", words.get(R.string.menu_options))
@@ -64,6 +75,16 @@ class TranslatedLanguagesTest {
     }
 
     @Test
+    @Config(qualifiers = "de")
+    fun `the German menus use the words of Winamp's German translation`() {
+        assertEquals("Springe zu Zeitmarke...", words.get(R.string.menu_jump_to_time))
+        assertEquals("Zufallsmodus", words.get(R.string.menu_shuffle))
+        assertEquals("Liste mischen", words.get(R.string.menu_randomize_list))
+        assertEquals("Titelinformationen anzeigen", words.get(R.string.menu_view_file_info))
+        assertEquals("Automatische Voreinstellung", words.get(R.string.eq_auto_load_preset))
+    }
+
+    @Test
     @Config(qualifiers = "fr")
     fun `French is read from its directory`() {
         assertEquals("Égaliseur", words.get(R.string.menu_equalizer))
@@ -74,6 +95,21 @@ class TranslatedLanguagesTest {
         assertEquals("Skins modernes (bêta)", words.get(R.string.prefs_modern_skins_title))
         assertEquals("Thèmes", words.get(R.string.menu_color_themes))
         assertEquals("Ajouter à Andamp", words.get(R.string.import_add_to_andamp))
+    }
+
+    @Test
+    @Config(qualifiers = "fr")
+    fun `the French menus use the words of Winamp's French translation`() {
+        assertEquals("Mettre à la suite", words.get(R.string.menu_enqueue))
+        assertEquals("+3 À LA SUITE", words.get(R.string.library_queued, 3))
+        assertEquals("Liste de lecture", words.get(R.string.menu_playlist_editor))
+        assertEquals("Toujours visible", words.get(R.string.menu_always_on_top))
+        assertEquals("Lecture en boucle", words.get(R.string.menu_repeat))
+        assertEquals("Aller au morceau...", words.get(R.string.menu_jump_to_file))
+        assertEquals("Aller à un moment précis...", words.get(R.string.menu_jump_to_time))
+        assertEquals("Valider", words.get(R.string.prompt_jump_to_time_confirm))
+        assertEquals("Liste des skins...", words.get(R.string.menu_skin_browser))
+        assertEquals("Plug-ins", words.get(R.string.prefs_page_plugins))
     }
 
     @Test

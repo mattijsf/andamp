@@ -24,7 +24,7 @@
     <string name="playlist_open_empty">Hier zijn nog geen lijsten opgeslagen</string>
 
     <!-- WinampViewModel.kt -->
-    <string name="jump_to_file_title">Ga naar bestand</string>
+    <string name="jump_to_file_title">Spring naar bestand</string>
     <string name="jump_to_file_empty">De afspeellijst is leeg</string>
 
     <!-- FileInfoSource.kt and TrackInfoOps.kt -->
