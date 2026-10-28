@@ -85,8 +85,6 @@
     <string name="prompt_jump_to_time_confirm">跳到</string>
 
     <!-- SkinOps.kt -->
-    <string name="skin_modern_title">“%1$s”是现代面板</string>
-    <string name="skin_modern_body">Andamp 加载经典 Winamp 面板（.wsz）。此版本无法添加现代面板（.wal）。</string>
     <string name="skin_too_large_title">“%1$s”太大</string>
     <string name="skin_too_large_body">此文件太大，无法作为面板加载。</string>
     <string name="skin_modern_failed_title">无法打开“%1$s”</string>

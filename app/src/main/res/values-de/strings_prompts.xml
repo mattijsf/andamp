@@ -86,8 +86,6 @@
     <string name="prompt_jump_to_time_confirm">Springen</string>
 
     <!-- SkinOps.kt -->
-    <string name="skin_modern_title">„%1$s“ ist ein moderner Skin</string>
-    <string name="skin_modern_body">Andamp lädt klassische Winamp-Skins (.wsz). Moderne Skins (.wal) können in dieser Version nicht hinzugefügt werden.</string>
     <string name="skin_too_large_title">„%1$s“ ist zu groß</string>
     <string name="skin_too_large_body">Diese Datei ist zu groß, um als Skin geladen zu werden.</string>
     <string name="skin_modern_failed_title">„%1$s“ ließ sich nicht öffnen</string>

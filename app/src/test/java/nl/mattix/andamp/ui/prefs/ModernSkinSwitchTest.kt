@@ -167,7 +167,7 @@ class ModernSkinSwitchTest {
 
     @Test
     fun `the Skins section comes last, reads off, holds the note, and has no sharp row while off`() {
-        showPlayerPage(PrefsSections(palette = PalettePrefs(offered = true), modern = ModernSkinPrefs(offered = true)))
+        showPlayerPage(PrefsSections(palette = PalettePrefs(offered = true)))
 
         val heading = compose.onNodeWithText(text(R.string.prefs_player_skins_section))
         heading.performScrollTo().assertIsDisplayed()
@@ -185,7 +185,7 @@ class ModernSkinSwitchTest {
 
     @Test
     fun `while on, Sharp pixels shows under the note`() {
-        showPlayerPage(PrefsSections(modern = ModernSkinPrefs(offered = true, enabled = true)))
+        showPlayerPage(PrefsSections(modern = ModernSkinPrefs(enabled = true)))
 
         modernSwitch.performScrollTo().assertIsOn()
         compose.onNodeWithText(text(R.string.prefs_modern_skins_on)).assertIsDisplayed()
@@ -193,17 +193,6 @@ class ModernSkinSwitchTest {
         compose.onNodeWithText(text(R.string.prefs_sharp_pixels_off)).assertIsDisplayed()
         val note = compose.onNodeWithText(text(R.string.prefs_modern_skins_note)).top()
         assertTrue(sharpSwitch.top() > note)
-    }
-
-    @Test
-    fun `a build that does not offer modern skins shows no Skins section`() {
-        showPlayerPage(PrefsSections(modern = ModernSkinPrefs(offered = false, enabled = true, sharp = true)))
-
-        tag("prefs.tapassist.switch").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText(text(R.string.prefs_player_skins_section)).assertDoesNotExist()
-        compose.onNodeWithText(text(R.string.prefs_modern_skins_note)).assertDoesNotExist()
-        modernSwitch.assertDoesNotExist()
-        sharpSwitch.assertDoesNotExist()
     }
 
     @Test

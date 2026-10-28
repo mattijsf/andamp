@@ -147,10 +147,8 @@
     <string name="prefs_player_lists_section">Lijsten</string>
     <string name="prefs_player_touch_section">Aanraking</string>
     <string name="prefs_player_colors_section">Kleuren</string>
-    <string name="prefs_player_summary_all">Vensters, lijsten, aanraking en kleuren</string>
     <string name="prefs_player_skins_section">Skins</string>
     <string name="prefs_player_summary_all_skins">Vensters, lijsten, aanraking, kleuren en skins</string>
-    <string name="prefs_player_summary_no_colors">Vensters, lijsten en aanraking</string>
     <string name="prefs_player_summary_no_colors_skins">Vensters, lijsten, aanraking en skins</string>
 
     <!-- ModernSkinPrefs.kt -->

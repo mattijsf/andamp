@@ -93,8 +93,6 @@
     <string name="prompt_jump_to_time_confirm">Jump</string>
 
     <!-- SkinOps.kt: a picked skin file that cannot be added; %1$s is the picked file's name -->
-    <string name="skin_modern_title">“%1$s” is a modern skin</string>
-    <string name="skin_modern_body">Andamp loads classic Winamp skins (.wsz). Modern skins (.wal) can\'t be added in this version.</string>
     <string name="skin_too_large_title">“%1$s” is too large</string>
     <string name="skin_too_large_body">This file is too large to load as a skin.</string>
     <string name="skin_modern_failed_title">“%1$s” couldn\'t be opened</string>

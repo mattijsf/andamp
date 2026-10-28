@@ -23,7 +23,6 @@ import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.skin.LiveSkins
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SkinLoader
-import nl.mattix.andamp.wal.WalBeta
 import nl.mattix.andamp.wal.WalFiles
 import nl.mattix.andamp.wal.WalLook
 import nl.mattix.andamp.widget.MainWindowWidget
@@ -42,7 +41,7 @@ import java.util.zip.ZipInputStream
  * A skin that parses is applied even if it cannot be stored, and a stored skin that does
  * not parse falls back to the bundled one. A picked modern skin (.wal) is added while modern
  * skins are on, once it has loaded. While they are off the listener is offered to turn them on
- * and add it, in a build that offers modern skins ([WalBeta]), or told why it was not added.
+ * and add it.
  *
  * A worn modern skin is drawn by its engine ([wal]) over the last classic choice ([skin]). Its
  * look is kept parked while a music source's classic skin is worn over it, and let go when another
@@ -67,12 +66,6 @@ class SkinOps internal constructor(
     private val modernOn: () -> Boolean = { false },
     /** Turns modern skins on, for the offer to add a modern skin picked while they are off. Called on IO. */
     private val turnModernOn: () -> Unit = {},
-    /**
-     * Whether a modern skin picked while modern skins are off is offered to be added with them
-     * turned on, as a build that offers modern skins does ([WalBeta]), rather than refused with a
-     * notice.
-     */
-    private val offerModern: Boolean = WalBeta.offered,
     /**
      * Makes the look of the stored modern skin [id] from its file, under the name its scripts read
      * (empty takes the name its skininfo gives), with the library's modern skins it may read from
@@ -238,9 +231,9 @@ class SkinOps internal constructor(
      * a notice says why, unless [onStored] is given: a caller that takes the result words it.
      *
      * A modern skin is added only while modern skins are on, and only once it has loaded in
-     * time; otherwise nothing changes and a notice says so. While they are off, it is refused
-     * with a notice, or in a debug build offered through [WinampState.modernOffer]; see
-     * [acceptOffer].
+     * time; otherwise nothing changes and a notice says so. While they are off, it is offered
+     * through [WinampState.modernOffer]; see [acceptOffer]. Where [allowModern] is false, it is
+     * treated as a file that is not a skin.
      *
      * @return the load, which is complete once any notice or offer is set.
      */
@@ -307,7 +300,7 @@ class SkinOps internal constructor(
         /** A modern skin that did not load, or not in time; it was not added. */
         data object Failed : Pick
 
-        /** A modern skin, which cannot be added here or while modern skins are off. */
+        /** A modern skin from a caller that adds only classic skins (the museum); it is not added and says nothing. */
         data object ModernRefused : Pick
 
         /** A modern skin picked while modern skins are off, kept in [file] until the offer is answered. */
@@ -348,8 +341,7 @@ class SkinOps internal constructor(
                     !isModern(file, whole, small) -> readClassic(file, small, name)
                     !allowModern -> Pick.ModernRefused
                     modernOn() -> addModern(file, SkinLibrary.idOf(digest.digest()), name)
-                    offerModern -> Pick.ModernOffer(file, SkinLibrary.idOf(digest.digest()), name)
-                    else -> Pick.ModernRefused
+                    else -> Pick.ModernOffer(file, SkinLibrary.idOf(digest.digest()), name)
                 }
         } catch (e: Exception) {
             Log.w(TAG, "Failed to load skin $name", e)
@@ -507,7 +499,6 @@ class SkinOps internal constructor(
     ): AmpPrompt? {
         val (title, body) =
             when (pick) {
-                Pick.ModernRefused -> R.string.skin_modern_title to R.string.skin_modern_body
                 Pick.Failed -> R.string.skin_modern_failed_title to R.string.skin_modern_failed_body
                 Pick.TooLarge -> R.string.skin_too_large_title to R.string.skin_too_large_body
                 else -> return null

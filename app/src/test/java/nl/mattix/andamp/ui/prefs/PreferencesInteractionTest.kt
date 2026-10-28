@@ -275,7 +275,7 @@ class PreferencesInteractionTest {
 
     @Test
     fun `the modern skins switch lives on the Player page, and the Player row names skins`() {
-        show(EffectBackend(scope), PrefsSections(modern = ModernSkinPrefs(offered = true, enabled = true)))
+        show(EffectBackend(scope), PrefsSections(modern = ModernSkinPrefs(enabled = true)))
 
         allTags("prefs.modern.switch").assertCountEquals(0)
         compose
@@ -580,7 +580,7 @@ class PreferencesInteractionTest {
             PrefsSections(
                 overlay = OverlayPrefs(offered = true, wanted = true),
                 palette = PalettePrefs(offered = true, enabled = false),
-                modern = ModernSkinPrefs(offered = true, enabled = true, sharp = true),
+                modern = ModernSkinPrefs(enabled = true, sharp = true),
                 androidAuto = AndroidAutoPrefs(offered = true),
                 support = SupportPrefs(given = true),
             ),

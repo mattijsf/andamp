@@ -15,7 +15,8 @@ import nl.mattix.andamp.state.displayNameOf
  * download, a chat.
  *
  * It shows nothing of its own. It hands the file to the process's one player, as Load skin does,
- * and brings the player forward, where the skin goes on or a notice says why it did not.
+ * and brings the player forward, where the skin goes on, a notice says why it did not, or a modern
+ * skin picked while modern skins are off is offered with them turned on.
  *
  * It is a separate activity and not a filter on [MainActivity] for the reason [PluginImportActivity]
  * gives: another app's VIEW starts its target in that app's task, so the player would open a

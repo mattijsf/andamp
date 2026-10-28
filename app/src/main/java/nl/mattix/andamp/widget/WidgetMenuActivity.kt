@@ -130,8 +130,8 @@ class WidgetMenuActivity : ComponentActivity() {
     }
 
     /**
-     * The skin picker's answer. The window stays until the load is done, so a notice about the
-     * pick has a window to show in; it closes once nothing shows.
+     * The skin picker's answer. The window stays until the load is done, so a notice or an offer
+     * about the pick has a window to show in; it closes once nothing shows.
      */
     internal fun skinPicked(uri: Uri?) {
         picking = false

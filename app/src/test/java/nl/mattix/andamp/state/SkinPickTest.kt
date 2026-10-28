@@ -35,11 +35,10 @@ import java.util.zip.ZipOutputStream
 import kotlin.random.Random
 
 /**
- * Picked files that are not added: a modern skin (.wal) while modern skins are off and a zip too
- * large for a skin each end in a notice that says why, and leave the library and the skin on
- * screen as they were. While modern skins are on, a modern skin is added once its look has
- * started, and that look goes on screen; a debug build with them off offers to turn them on and
- * add it.
+ * Picked files that are not added at once: a modern skin (.wal) picked while modern skins are off
+ * waits in an offer to turn them on and add it, and a zip too large for a skin ends in a notice
+ * that says why; both leave the library and the skin on screen as they were. While modern skins
+ * are on, a modern skin is added once its look has started, and that look goes on screen.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE) // the base skin decodes through BitmapFactory
@@ -84,8 +83,8 @@ class SkinPickTest {
         assertTrue("the condition holds within 20 s", condition())
     }
 
-    /** The player's skins, with modern skins off unless [modernOn] says otherwise; a debug build [offers] them. */
-    private fun started(offers: Boolean = false): SkinOps =
+    /** The player's skins, with modern skins off unless [modernOn] says otherwise. */
+    private fun started(): SkinOps =
         SkinOps(
             app,
             state,
@@ -93,7 +92,6 @@ class SkinPickTest {
             library,
             modernOn = { modernOn },
             turnModernOn = { modernOn = true },
-            offerModern = offers,
             openModern = { id, file, name, siblings ->
                 built += name
                 WalLook(id, file, name, siblings, app.cacheDir, WalSettings(app), player(), budgetMs = budgetMs)
@@ -204,6 +202,18 @@ class SkinPickTest {
         shadowOf(Looper.getMainLooper()).idle()
     }
 
+    /** Picks a modern skin while modern skins are off and returns the offer it ends in. */
+    private fun offered(
+        ops: SkinOps,
+        bytes: ByteArray = zip("skin.xml" to skinXml),
+        name: String = "Bento.wal",
+    ): ModernSkinOffer {
+        picked(ops, bytes, name)
+        val offer = state.modernOffer
+        assertNotNull("an offer", offer)
+        return offer!!
+    }
+
     /** What the library records and holds: the "skins" file and the stored files. */
     private fun records(): Pair<Map<String, *>, List<String>> =
         app.getSharedPreferences("skins", 0).all.toMap() to
@@ -244,28 +254,25 @@ class SkinPickTest {
     private val zipHead = byteArrayOf(0x50, 0x4b, 0x03, 0x04)
 
     @Test
-    fun `a modern skin is not added, and a notice says why`() {
+    fun `with modern skins off a modern skin is not added before the offer is answered`() {
         val ops = started()
-        val before = library.list()
+        val before = records()
         val onScreen = ops.skin!!.name
 
-        val title = pick(ops, zip("skin.xml" to skinXml, "player.xml" to skinXml).inputStream(), "Bento.wal")
+        offered(ops, zip("skin.xml" to skinXml, "player.xml" to skinXml), "Bento.wal")
 
-        assertEquals("“Bento.wal” is a modern skin", title)
-        assertEquals("the notice has only its OK", null, state.prompt!!.dismissLabel)
-        assertEquals("nothing is stored", before, library.list())
+        assertEquals("nothing is stored", before, records())
         assertEquals("the skin on screen stays", onScreen, ops.skin!!.name)
-        state.prompt!!.onConfirm()
-        assertNull(state.prompt)
+        assertEquals(SkinEntry.BASE_ID, ops.currentId)
+        assertNull(ops.wal)
+        assertTrue("no modern row is listed", state.skinEntries.none { it.kind == SkinKind.MODERN })
     }
 
     @Test
     fun `a modern skin kept in one folder of its zip is told apart too`() {
         val ops = started()
 
-        val title = pick(ops, zip("Bento/skin.xml" to skinXml).inputStream(), "Bento.zip")
-
-        assertEquals("“Bento.zip” is a modern skin", title)
+        assertEquals("Bento.zip", offered(ops, zip("Bento/skin.xml" to skinXml), "Bento.zip").name)
     }
 
     @Test
@@ -273,7 +280,7 @@ class SkinPickTest {
         val ops = started()
         val big = zip("skin.xml" to skinXml, "art.png" to noise(SkinOps.MAX_SKIN_BYTES + 1024))
 
-        assertEquals("“Big.wal” is a modern skin", pick(ops, big.inputStream(), "Big.wal"))
+        assertEquals("Big.wal", offered(ops, big, "Big.wal").name)
     }
 
     @Test
@@ -310,34 +317,36 @@ class SkinPickTest {
         // the end of a zip is its directory: without it only the entries themselves remain
         val cut = whole.copyOf(whole.size - 30)
 
-        assertEquals("“Cut.wal” is a modern skin", pick(ops, cut.inputStream(), "Cut.wal"))
+        assertEquals("Cut.wal", offered(ops, cut, "Cut.wal").name)
     }
 
     @Test
-    fun `a notice waits for the prompt on screen to be answered`() {
+    fun `an offer waits for the prompt on screen to be answered`() {
         val ops = started()
         val first = AmpPrompt("First", "", "OK", null) { state.prompt = null }
         state.prompt = first
 
-        ops.load(zip("skin.xml" to skinXml).inputStream(), "Bento.wal")
-        await { state.waitingNotice != null }
-        assertSame("the prompt on screen stays", first, state.prompt)
+        val offer = offered(ops)
 
+        // the offer's dialog shows only while no prompt does (AmpModals)
+        assertSame("the prompt on screen stays", first, state.prompt)
+        assertNull("the offer is no notice", state.waitingNotice)
         first.onConfirm()
-        await { state.prompt != null }
-        assertEquals("“Bento.wal” is a modern skin", state.prompt!!.title)
-        assertNull(state.waitingNotice)
+        shadowOf(Looper.getMainLooper()).idle()
+        assertNull(state.prompt)
+        assertSame("the offer is still there once the prompt is answered", offer, state.modernOffer)
     }
 
     @Test
     fun `a caller that takes the result words it, so no notice is set`() {
         val ops = started()
         var result: String? = "unset"
+        val big = zip("main.bmp" to noise(SkinOps.MAX_SKIN_BYTES + 1024))
 
-        val load = ops.load(zip("skin.xml" to skinXml).inputStream(), "Bento.wal") { result = it }
+        val load = ops.load(big.inputStream(), "Huge.wsz") { result = it }
         await { load.isCompleted }
 
-        assertNull("a modern skin reports no id", result)
+        assertNull("a zip too large reports no id", result)
         assertNull("the caller words it", state.prompt)
         assertNull(state.waitingNotice)
     }
@@ -522,31 +531,29 @@ class SkinPickTest {
         assertNoCopyLeft()
     }
 
-    // modern skins off, in a debug build
-
-    /** Picks a modern skin while modern skins are off and returns the offer it ends in. */
-    private fun offered(
-        ops: SkinOps,
-        bytes: ByteArray = zip("skin.xml" to skinXml),
-        name: String = "Bento.wal",
-    ): ModernSkinOffer {
-        picked(ops, bytes, name)
-        val offer = state.modernOffer
-        assertNotNull("an offer", offer)
-        return offer!!
-    }
+    // modern skins off: the offer
 
     @Test
-    fun `with modern skins off a debug build offers the skin, and Not now deletes the copy`() {
-        val ops = started(offers = true)
-        val before = records()
+    fun `with modern skins off, a modern skin gets the offer`() {
+        val ops = started()
 
         val offer = offered(ops)
 
         assertEquals("Bento.wal", offer.name)
         assertNull("no notice besides the offer", state.prompt)
+        assertNull(state.waitingNotice)
         assertTrue("a modal shows", state.showingAModal())
         assertTrue("nothing is loaded before the answer", built.isEmpty())
+        assertFalse("modern skins stay off until the answer", modernOn)
+    }
+
+    @Test
+    fun `Not now on the offer deletes the copy and changes nothing`() {
+        val ops = started()
+        val before = records()
+
+        val offer = offered(ops)
+
         offer.decline()
         await {
             app.cacheDir
@@ -561,7 +568,7 @@ class SkinPickTest {
 
     @Test
     fun `taking the offer turns modern skins on and adds the skin, opened once`() {
-        val ops = started(offers = true)
+        val ops = started()
         val bytes = loading()
         val id = library.idFor(bytes)
 
@@ -579,7 +586,7 @@ class SkinPickTest {
 
     @Test
     fun `an offer whose skin does not load leaves modern skins off and says so`() {
-        val ops = started(offers = true)
+        val ops = started()
         val before = records()
 
         offered(ops).accept()
@@ -593,7 +600,7 @@ class SkinPickTest {
 
     @Test
     fun `a newer pick replaces an offer still waiting`() {
-        val ops = started(offers = true)
+        val ops = started()
         val first = offered(ops, name = "First.wal")
 
         val second = offered(ops, zip("skin.xml" to skinXml, "player.xml" to skinXml), "Second.wal")
@@ -609,13 +616,5 @@ class SkinPickTest {
         )
         first.decline()
         assertSame("declining the old offer leaves the new one", second, state.modernOffer)
-    }
-
-    @Test
-    fun `a release build with modern skins off refuses the skin`() {
-        val ops = started(offers = false)
-
-        assertEquals("“Bento.wal” is a modern skin", pick(ops, zip("skin.xml" to skinXml).inputStream(), "Bento.wal"))
-        assertNull(state.modernOffer)
     }
 }

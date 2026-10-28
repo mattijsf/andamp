@@ -112,15 +112,12 @@ class ListPrefsTest {
     fun `the player row names the sections this phone shows, and not the Always on top switch`() {
         val overlay = OverlayPrefs(offered = true)
         val colors = PalettePrefs(offered = true)
-        val skins = ModernSkinPrefs(offered = true)
         val cases =
             mapOf(
-                PrefsSections(overlay = overlay, palette = colors, modern = skins) to "Windows, lists, touch, colors and skins",
-                PrefsSections(palette = colors, modern = skins) to "Windows, lists, touch, colors and skins",
-                PrefsSections(overlay = overlay, palette = colors) to "Windows, lists, touch and colors",
-                PrefsSections(overlay = overlay, modern = skins) to "Windows, lists, touch and skins",
-                PrefsSections(overlay = overlay) to "Windows, lists and touch",
-                PrefsSections() to "Windows, lists and touch",
+                PrefsSections(overlay = overlay, palette = colors) to "Windows, lists, touch, colors and skins",
+                PrefsSections(palette = colors) to "Windows, lists, touch, colors and skins",
+                PrefsSections(overlay = overlay) to "Windows, lists, touch and skins",
+                PrefsSections() to "Windows, lists, touch and skins",
             )
         cases.forEach { (sections, line) -> assertEquals(line, EnglishWords.get(sections.playerSummary())) }
     }

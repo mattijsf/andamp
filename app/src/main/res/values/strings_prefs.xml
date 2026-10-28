@@ -165,14 +165,10 @@
     <string name="prefs_player_lists_section">Lists</string>
     <string name="prefs_player_touch_section">Touch</string>
     <string name="prefs_player_colors_section">Colors</string>
-    <!-- The Player row's line: what the page holds. -->
-    <string name="prefs_player_summary_all">Windows, lists, touch and colors</string>
-    <!-- The heading of the last section on Preferences > Player, over the modern skins switch; shown in a build that offers modern skins. -->
+    <!-- The heading of the last section on Preferences > Player, over the modern skins switch. -->
     <string name="prefs_player_skins_section">Skins</string>
-    <!-- The Player row's line in a build that offers modern skins: what the page holds. -->
+    <!-- The Player row's line: what the page holds. -->
     <string name="prefs_player_summary_all_skins">Windows, lists, touch, colors and skins</string>
-    <!-- As prefs_player_summary_all, on a phone that cannot take colors from the wallpaper. -->
-    <string name="prefs_player_summary_no_colors">Windows, lists and touch</string>
     <!-- As prefs_player_summary_all_skins, on a phone that cannot take colors from the wallpaper. -->
     <string name="prefs_player_summary_no_colors_skins">Windows, lists, touch and skins</string>
 

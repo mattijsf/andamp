@@ -147,10 +147,8 @@
     <string name="prefs_player_lists_section">Listes</string>
     <string name="prefs_player_touch_section">Toucher</string>
     <string name="prefs_player_colors_section">Couleurs</string>
-    <string name="prefs_player_summary_all">Fenêtres, listes, toucher et couleurs</string>
     <string name="prefs_player_skins_section">Skins</string>
     <string name="prefs_player_summary_all_skins">Fenêtres, listes, toucher, couleurs et skins</string>
-    <string name="prefs_player_summary_no_colors">Fenêtres, listes et toucher</string>
     <string name="prefs_player_summary_no_colors_skins">Fenêtres, listes, toucher et skins</string>
 
     <!-- ModernSkinPrefs.kt -->
