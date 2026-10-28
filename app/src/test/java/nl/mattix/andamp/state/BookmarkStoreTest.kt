@@ -29,6 +29,62 @@ class BookmarkStoreTest {
     private fun open() = BookmarkStore(File(folder.root, "bookmarks.m3u")).also { store = it }
 
     @Test
+    fun `bookmarking many tracks writes the file once`() {
+        var flushes = 0
+        val store =
+            BookmarkStore(File(folder.root, "bookmarks.m3u")) {
+                flushes++
+                it.force(true)
+            }
+        store.add(track(1))
+        flushes = 0
+
+        val added = store.addAll((1..500).map { track(it) })
+
+        assertEquals(499, added)
+        assertEquals(1, flushes)
+        assertEquals(500, store.list().size)
+    }
+
+    @Test
+    fun `a place named twice in one batch is bookmarked once`() {
+        val store = open()
+
+        val again = track(2, title = "Again").copy(uri = "content://songs/1")
+
+        val added = store.addAll(listOf(track(1), again, null))
+
+        assertEquals(1, added)
+        assertEquals(listOf("Track 1"), store.list().map { it.title })
+    }
+
+    @Test
+    fun `removing many bookmarks writes the file once`() {
+        var flushes = 0
+        val store =
+            BookmarkStore(File(folder.root, "bookmarks.m3u")) {
+                flushes++
+                it.force(true)
+            }
+        store.addAll((1..5).map { track(it) })
+        flushes = 0
+
+        assertTrue(store.removeAt(setOf(0, 2, 4)))
+
+        assertEquals(1, flushes)
+        assertEquals(listOf("Track 2", "Track 4"), store.list().map { it.title })
+    }
+
+    @Test
+    fun `removing places that are not bookmarks writes nothing`() {
+        val store = open()
+        store.add(track(1))
+
+        assertFalse(store.removeAt(setOf(3, 7)))
+        assertEquals(1, store.list().size)
+    }
+
+    @Test
     fun `a store without a file lists no bookmarks`() {
         assertEquals(emptyList<Track>(), open().list())
     }

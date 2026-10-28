@@ -30,6 +30,9 @@ import nl.mattix.andamp.modernskin.skin.SkinHost
 import nl.mattix.andamp.modernskin.skin.SkinMenu
 import nl.mattix.andamp.modernskin.skin.Text
 import nl.mattix.andamp.modernskin.skin.WithGeneratedImages
+import nl.mattix.andamp.state.Flush
+import nl.mattix.andamp.state.forceToDisk
+import nl.mattix.andamp.state.writeFlushed
 import java.io.File
 import java.security.MessageDigest
 import java.util.Collections
@@ -339,22 +342,9 @@ internal class WalHost(
         return cached(typefaces, font.id) { files.read(font.file)?.let(::typefaceOf) }
     }
 
-    /**
-     * A typeface from a font file's bytes. Android reads fonts from files, so the bytes are kept in
-     * the cache under a name made from their content: two skins that call different fonts by the
-     * same id get different files, and a file is never half written.
-     */
-    private fun typefaceOf(bytes: ByteArray): Typeface? {
-        val f = File(cacheDir, "wal-font-${sha1(bytes)}.ttf")
-        if (!f.exists()) {
-            // named per thread, so two threads writing the same font do not mix their bytes
-            val tmp = File(cacheDir, "${f.name}.${Thread.currentThread().id}.tmp")
-            // a write cut short (a full disk) is dropped, not renamed into place
-            val written = runCatching { tmp.writeBytes(bytes) }.isSuccess
-            if (!written || !tmp.renameTo(f)) tmp.delete()
-        }
-        return runCatching { Typeface.createFromFile(f) }.getOrNull()
-    }
+    /** A typeface from a font file's bytes, read from the file [fontFile] keeps them in. */
+    private fun typefaceOf(bytes: ByteArray): Typeface? =
+        runCatching { Typeface.createFromFile(fontFile(cacheDir, bytes)) }.getOrNull()
 
     /** Ascent and descent in whole pixels as Windows lays the font out; null when its file gives none. */
     fun gdiLine(
@@ -517,6 +507,32 @@ internal class WalHost(
 
         private fun sha1(bytes: ByteArray): String =
             MessageDigest.getInstance("SHA-1").digest(bytes).joinToString("") { "%02x".format(it) }
+
+        /**
+         * The file in [cacheDir] that holds a font's [bytes], written when it is not there. Android
+         * reads fonts from files, so the bytes are kept under a name made from their content: two
+         * skins that call different fonts by the same id get different files. The bytes are flushed
+         * to the disk before the rename that names the file, and a file whose size is not that of
+         * the bytes, such as an empty one left when the phone switched off mid-write, is written
+         * again. When that write fails, a short file is deleted, so the file is whole or missing and
+         * reading a missing one as a font fails.
+         */
+        internal fun fontFile(
+            cacheDir: File,
+            bytes: ByteArray,
+            flush: Flush = forceToDisk,
+        ): File {
+            val f = File(cacheDir, "wal-font-${sha1(bytes)}.ttf")
+            if (f.length() != bytes.size.toLong()) {
+                // named per thread, so two threads writing the same font do not mix their bytes
+                val tmp = File(cacheDir, "${f.name}.${Thread.currentThread().id}.tmp")
+                // a write cut short (a full disk) deletes tmp, and nothing is renamed into place
+                val written = runCatching { tmp.writeFlushed(flush) { it.write(bytes) } }.isSuccess
+                if (written && !tmp.renameTo(f)) tmp.delete()
+                if (f.length() != bytes.size.toLong()) f.delete()
+            }
+            return f
+        }
     }
 }
 

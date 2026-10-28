@@ -14,6 +14,7 @@ import java.io.File
  */
 class BookmarkStore(
     private val file: File,
+    private val flush: Flush = forceToDisk,
 ) {
     /**
      * Every bookmark, oldest first. Rows whose uri has no scheme are dropped, since a
@@ -38,18 +39,35 @@ class BookmarkStore(
      * Bookmarks [track]; false when it has no usable uri, when the same uri is already
      * bookmarked, or when the file could not be read or written.
      */
-    fun add(track: Track?): Boolean {
-        val where = track?.uri?.trim().orEmpty()
-        if (!isSomewhere(where)) return false
-        val kept = read()
-        if (kept == null || kept.any { it.uri == where }) return false
-        return write(kept + track!!.copy(uri = where))
+    fun add(track: Track?): Boolean = addAll(listOf(track)) > 0
+
+    /**
+     * Bookmarks each of [tracks] with one write, for the playlist's "Bookmark item(s)". A track
+     * with no usable uri, or whose uri is already bookmarked or comes earlier in [tracks], is
+     * skipped. Returns how many were added: 0 also when the file could not be read or written.
+     */
+    fun addAll(tracks: List<Track?>): Int {
+        val kept = read() ?: return 0
+        val taken = kept.mapNotNullTo(mutableSetOf()) { it.uri }
+        val added =
+            tracks.mapNotNull { track ->
+                val where = track?.uri?.trim().orEmpty()
+                if (isSomewhere(where) && taken.add(where)) track!!.copy(uri = where) else null
+            }
+        if (added.isEmpty() || !write(kept + added)) return 0
+        return added.size
     }
 
-    fun removeAt(at: Int): Boolean {
+    fun removeAt(at: Int): Boolean = removeAt(setOf(at))
+
+    /**
+     * Removes the bookmarks at each of [indices] with one write; false when none of them is a
+     * bookmark, or when the file could not be read or written.
+     */
+    fun removeAt(indices: Set<Int>): Boolean {
         val kept = read() ?: return false
-        if (at !in kept.indices) return false
-        return write(kept.filterIndexed { index, _ -> index != at })
+        if (indices.none { it in kept.indices }) return false
+        return write(kept.filterIndexed { index, _ -> index !in indices })
     }
 
     /** Winamp's Edit: a bookmark keeps its place and takes a new name. */
@@ -67,7 +85,7 @@ class BookmarkStore(
     private fun Track.named(what: String) = copy(artist = "", title = what)
 
     private fun write(bookmarks: List<Track>): Boolean =
-        runCatching { file.writeAtomically(PlaylistCodec.encode(PlaylistCodec.Saved(bookmarks, 0))) }.isSuccess
+        runCatching { file.writeAtomically(PlaylistCodec.encode(PlaylistCodec.Saved(bookmarks, 0)), flush) }.isSuccess
 
     private companion object {
         /** A place has a scheme: content://, file://, https://, asset:///. */

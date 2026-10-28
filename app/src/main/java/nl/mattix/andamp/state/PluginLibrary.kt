@@ -35,8 +35,13 @@ data class PluginEntry(
  * contents, with the metadata in a preferences file. There is no current plug-in: the rack
  * decides which of them run. Removing a plug-in's rack settings is [DspOps]'s part.
  */
-class PluginLibrary(
+class PluginLibrary internal constructor(
     context: Context,
+    /**
+     * Flushes an open file or folder to the disk: a plug-in's Lua before the rename that gives it
+     * its stored name, and the plug-ins folder after it. A test records when it runs.
+     */
+    private val flush: Flush = forceToDisk,
 ) {
     private val dir = File(context.filesDir, "plugins")
     private val prefs: SharedPreferences = context.getSharedPreferences("plugins", Context.MODE_PRIVATE)
@@ -74,15 +79,18 @@ class PluginLibrary(
         val id = hash(source)
         dir.mkdirs()
         val file = fileFor(id)
-        // write-then-rename, so a crash mid-write cannot leave half a plug-in
+        // written and flushed, then renamed, so a crash or a phone switching off mid-write cannot
+        // leave half a plug-in
         val tmp = File(dir, "$id$EXT.tmp")
-        tmp.writeText(source)
+        tmp.writeFlushed(flush) { it.write(source.toByteArray()) }
         if (!tmp.renameTo(file)) {
             file.delete()
             check(tmp.renameTo(file)) { "could not store plug-in '${plugin.name}'" }
         }
-        // the plug-in's own metadata: its id, which the rack stores settings under, and what
-        // the list shows
+        // the plug-in is stored; a folder that cannot be flushed may only lose its new name
+        dir.flushFolder(flush)
+        // the plug-in's metadata: its id, which the rack stores settings under, and what the
+        // list shows
         prefs
             .edit()
             .putString(key("plugin", id), plugin.id)
