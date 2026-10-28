@@ -2754,27 +2754,188 @@ class SkinRuntime(
     private val configValues = HashMap<String, Int>()
     private val configItems = HashMap<String, ConfigItemObj>()
 
-    /** A `Config` item by name or GUID; [guid] given makes it when it does not exist yet. */
+    /**
+     * A `Config` item by name or GUID; [guid] given finds the item made with that GUID, and makes it
+     * when it does not exist yet, so getItem(GUID) and newItem(name, GUID) give one item in either order.
+     * An item getItem made under a name takes the GUID a later newItem of that name gives it.
+     */
     fun configItem(
         key: String,
         guid: String?,
     ): ConfigItemObj? {
         val k = key.lowercase()
-        return configItems[k]
-            ?: configItems.values.firstOrNull { it.guid?.lowercase() == k }
-            ?: guid?.let { g ->
-                ConfigItemObj(this, key, g).also {
-                    configItems[k] = it
-                    configItems[g.lowercase()] = it
-                }
+        configItems[k]?.let { return namedItem(k, it, guid) }
+        val found =
+            configItemByGuid(key)
+                ?: guid?.let(::configItemByGuid)
+        if (found != null) {
+            if (guid != null) configItems[k] = found
+            return found
+        }
+        return guid?.let { g ->
+            ConfigItemObj(this, key, g).also {
+                configItems[k] = it
+                configItems[g.lowercase()] = it
+                configChanged()
             }
+        }
+    }
+
+    /** [named], found under [k]: it takes [guid] when it has none yet, or gives way to the item that holds [guid]. */
+    private fun namedItem(
+        k: String,
+        named: ConfigItemObj,
+        guid: String?,
+    ): ConfigItemObj {
+        if (guid == null || !isGuid(guid) || isGuid(named.guid)) return named
+        val holder = configItemByGuid(guid)
+        if (holder != null) {
+            configItems[k] = holder
+            return holder
+        }
+        named.guid = guid
+        configItems[guid.lowercase()] = named
+        configChanged()
+        return named
+    }
+
+    private fun configItemByGuid(guid: String): ConfigItemObj? = configItems.values.firstOrNull { sameGuid(it.guid, guid) }
+
+    /**
+     * Counts changes to the skin's Config items: an item or attribute made, an attribute made by
+     * newAttribute, or a value changed. A host compares it to [SkinOptions.version] to know whether
+     * [skinOptions] would read differently.
+     */
+    var configVersion = 0
+        private set
+
+    internal fun configChanged() {
+        configVersion++
+    }
+
+    /**
+     * The options the skin's scripts list for Winamp's Options menu, read from the Config item
+     * [SkinOptions.OPTIONS_MENU] only (the Windows menu item is not read). An attribute whose value
+     * is another item's GUID is a submenu named by the attribute, "-" is a separator, and any other
+     * is a toggle. Attributes only read with getAttribute are left out. Reading makes no item.
+     */
+    fun skinOptions(): SkinOptions {
+        val root = configItemByGuid(SkinOptions.OPTIONS_MENU) ?: return SkinOptions(configVersion, emptyList())
+        return SkinOptions(configVersion, optionEntries(root, 0, listOf(root), intArrayOf(PopupMenu.MAX_ITEMS)))
+    }
+
+    /**
+     * The entries of [item] while [left] (the entries still allowed in the whole tree) lasts; [path]
+     * holds its ancestors and itself.
+     */
+    private fun optionEntries(
+        item: ConfigItemObj,
+        depth: Int,
+        path: List<ConfigItemObj>,
+        left: IntArray,
+    ): List<SkinOptions.Entry> {
+        val out = ArrayList<SkinOptions.Entry>()
+        val attributes =
+            item.attributes.values
+                .asSequence()
+                .take(OPTION_ATTRIBUTES)
+                .filter { it.made && it.name.isNotBlank() }
+        for (a in attributes) {
+            if (left[0] <= 0) break
+            if (a.data != "-") {
+                optionEntry(item, a, depth, path, left)?.let(out::add)
+            } else if (out.isNotEmpty() && out.last() != SkinOptions.Separator) {
+                // none at the start and none twice; one at the end is dropped below
+                out += SkinOptions.Separator
+                left[0]--
+            }
+        }
+        if (out.lastOrNull() == SkinOptions.Separator) {
+            out.removeAt(out.lastIndex)
+            left[0]++
+        }
+        return out
+    }
+
+    /**
+     * The entry attribute [a] of [item] makes, counted off [left]: a submenu when its value names a
+     * Config item, or null when that item is on [path], too deep or lists nothing; null for a GUID
+     * that names no item; else a toggle.
+     */
+    private fun optionEntry(
+        item: ConfigItemObj,
+        a: ConfigAttributeObj,
+        depth: Int,
+        path: List<ConfigItemObj>,
+        left: IntArray,
+    ): SkinOptions.Entry? {
+        val sub = optionItem(a.data)
+        return when {
+            sub != null -> {
+                optionSubmenu(a, sub, depth, path, left)
+            }
+
+            isGuid(a.data) -> {
+                null
+            }
+
+            else -> {
+                left[0]--
+                SkinOptions.Toggle(
+                    SkinOptions.Key(item.guid ?: "", a.name.lowercase()),
+                    PopupMenu.shownText(a.name),
+                    attributeOn(a.data),
+                )
+            }
+        }
+    }
+
+    /** The submenu attribute [a] opens onto [sub], or null when [sub] is on [path], too deep or lists nothing. */
+    private fun optionSubmenu(
+        a: ConfigAttributeObj,
+        sub: ConfigItemObj,
+        depth: Int,
+        path: List<ConfigItemObj>,
+        left: IntArray,
+    ): SkinOptions.Submenu? {
+        if (sub in path || depth >= PopupMenu.MAX_DEPTH) return null
+        // a submenu counts itself before its entries
+        left[0]--
+        val entries = optionEntries(sub, depth + 1, path + sub, left)
+        if (entries.isEmpty()) {
+            left[0]++
+            return null
+        }
+        return SkinOptions.Submenu(PopupMenu.shownText(a.name), entries)
+    }
+
+    /** The Config item an option's value names by GUID, or null for a value that names none. */
+    private fun optionItem(data: String): ConfigItemObj? = data.takeIf(::isGuid)?.let(::configItemByGuid)
+
+    /**
+     * Flips the option [key] names as a pick from Winamp's menu does: "1" over a value that reads
+     * as 0, "0" over any other. It is set with setData, so every script hears onDataChanged and the
+     * value is kept with the skin's settings. False for an unknown key, a separator, or a value that
+     * is a GUID, a submenu's or not.
+     */
+    fun toggleSkinOption(key: SkinOptions.Key): Boolean {
+        val a = configItemByGuid(key.item)?.attributes?.get(key.attribute) ?: return false
+        if (!a.made || a.data == "-" || isGuid(a.data)) return false
+        a.makiCall("setdata", listOf(Value.Str(if (attributeOn(a.data)) "0" else "1")))
+        return true
     }
 
     /** A numeric config attribute; repeat is 0 off, 1 the playlist, -1 the song. */
     fun configValue(name: String): Int =
         when (name.lowercase()) {
-            "repeat" -> if (player.repeat) 1 else 0
-            else -> scriptAttribute(name)?.data?.toIntOrNull() ?: configValues[name.lowercase()] ?: if (configFlag(name)) 1 else 0
+            "repeat" -> {
+                if (player.repeat) 1 else 0
+            }
+
+            else -> {
+                scriptAttribute(name)?.data?.takeIf { it.isNotBlank() }?.let(::wtoi) ?: configValues[name.lowercase()]
+                    ?: if (configFlag(name)) 1 else 0
+            }
         }
 
     /**
@@ -2813,7 +2974,7 @@ class SkinRuntime(
             "repeat" -> player.repeat
             "enable crossfading", "crossfade" -> player.crossfade
             "enable equalizer", "eq" -> player.eqEnabled
-            else -> scriptAttribute(name)?.let { it.data == "1" } ?: configFlags[name.lowercase()] ?: false
+            else -> scriptAttribute(name)?.let { wtoi(it.data) == 1 } ?: configFlags[name.lowercase()] ?: false
         }
 
     fun setConfigFlag(
@@ -2929,6 +3090,35 @@ class SkinRuntime(
     }
 
     private companion object {
+        /** Attributes of one Config item read for the options menu, as Winamp reads them. */
+        const val OPTION_ATTRIBUTES = 500
+
+        /** Whether two GUIDs are the same, written with or without braces. */
+        fun sameGuid(
+            a: String?,
+            b: String,
+        ): Boolean = a != null && a.trim('{', '}').equals(b.trim('{', '}'), ignoreCase = true)
+
+        private val GUID = Regex("""\{?[0-9A-Fa-f]{8}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{4}-[0-9A-Fa-f]{12}\}?""")
+
+        /** Whether [s] is written as a GUID, with or without braces. */
+        fun isGuid(s: String?): Boolean = s != null && GUID.matches(s.trim())
+
+        /** Whether an option's value ticks it in the options menu: read as a number, it is not 0. */
+        fun attributeOn(data: String): Boolean = wtoi(data) != 0
+
+        /** A value read as a number as Windows' _wtoi reads it: an optional sign and the leading digits, 0 for none. */
+        fun wtoi(s: String): Int {
+            val t = s.trimStart()
+            var i = if (t.startsWith('-') || t.startsWith('+')) 1 else 0
+            var n = 0L
+            while (i < t.length && t[i].isDigit() && n < Int.MAX_VALUE) {
+                n = n * 10 + (t[i] - '0')
+                i++
+            }
+            return (if (t.startsWith('-')) -n else n).coerceIn(Int.MIN_VALUE.toLong(), Int.MAX_VALUE.toLong()).toInt()
+        }
+
         /** Everything a groupdef holds, and its attributes that are no params of the group. */
         val ALL_CONTENT = setOf("params", "xui", "scripts")
         val DEF_ATTRS = setOf("id", "xuitag", "inherit_group", "inherit_content", "inherit_params", "behavior", "contentrect")

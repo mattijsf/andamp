@@ -65,8 +65,9 @@ To improve a translation that exists, edit its file and open a pull request.
   the app reads the way people remember it. Use another word only where Winamp's would
   not be understood today. The tables below have the words used so far.
 - **Names stay.** Andamp, Winamp, Milkdrop, AVS, projectM, the names of skins, equalizer
-  presets, plug-ins and effects are not translated. Nor are a modern skin's color theme names
-  and the labels it writes in its menus: they show as the skin wrote them.
+  presets, plug-ins and effects are not translated. Nor are a modern skin's color theme names,
+  the names of its options under Skin Settings and the labels it writes in its menus: they show
+  as the skin wrote them.
 
 ## What stays in English
 
@@ -105,6 +106,7 @@ comes from, so that the next person keeps to them.
 | Modern skins (beta) | Moderne skins (bèta) | Andamp |
 | color theme | kleurthema | Winamp |
 | Skin menu | skinmenu | Andamp |
+| Skin Settings | Skininstellingen | Winamp |
 | sharp pixels | scherpe pixels | Andamp |
 | visualization | visualisatie | Winamp |
 | Media Library | mediabibliotheek | Winamp |
@@ -135,6 +137,7 @@ comes from, so that the next person keeps to them.
 | Modern skins (beta) | Skins modernes (bêta) | Andamp |
 | color theme | thème (menu: Thèmes) | Winamp |
 | Skin menu | menu du skin | Andamp |
+| Skin Settings | Paramètres du skin | Winamp |
 | sharp pixels | pixels nets | Andamp |
 | visualization | visualisation | Winamp |
 | Media Library | médiathèque | Winamp |
@@ -169,6 +172,7 @@ comes from, so that the next person keeps to them.
 | Modern skins (beta) | Moderne Skins (Beta) | Andamp |
 | color theme | Farbschema (menu: Farbschemen) | Winamp |
 | Skin menu | Skin-Menü | Andamp |
+| Skin Settings | Skin-Einstellungen | Winamp |
 | sharp pixels | scharfe Pixel | Andamp |
 | visualization | Visualisierung | Winamp |
 | Media Library | Medienbibliothek | Winamp |
@@ -203,6 +207,7 @@ comes from, so that the next person keeps to them.
 | Modern skins (beta) | 现代面板（测试版） | Andamp |
 | color theme | 颜色主题 | Winamp |
 | Skin menu | 面板菜单 | Andamp |
+| Skin Settings | 面板设置 | Winamp |
 | sharp pixels | 锐利像素 | Andamp |
 | load | 加载 | Winamp |
 | visualization | 可视化效果 | Winamp |

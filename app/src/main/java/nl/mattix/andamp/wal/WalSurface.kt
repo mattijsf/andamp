@@ -8,6 +8,7 @@ import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.sync.Mutex
 import nl.mattix.andamp.modernskin.skin.SkinMenu
 import nl.mattix.andamp.modernskin.skin.SkinMenuChoices
+import nl.mattix.andamp.modernskin.skin.SkinOptions
 
 /** The box a player surface shows a modern skin in, as [WalSurface.fit] takes it. */
 internal data class WalFit(
@@ -92,6 +93,8 @@ internal data class WalLayout(
     val themes: List<String> = emptyList(),
     /** The color theme this frame wears, one of [themes], or null for a skin with none. */
     val theme: String? = null,
+    /** The options the skin lists for Winamp's Options menu, as of this frame. */
+    val skinOptions: SkinOptions = SkinOptions.EMPTY,
 )
 
 /**
@@ -124,6 +127,12 @@ internal interface WalSurface {
 
     /** The color theme the latest frame wears, or null before the first frame. Read on main. */
     val theme: String? get() = layout?.theme
+
+    /**
+     * The options the skin lists for Winamp's Options menu, as the latest [layout] carries them;
+     * empty until the skin has loaded. Read on main.
+     */
+    val skinOptions: SkinOptions get() = layout?.skinOptions ?: SkinOptions.EMPTY
 
     /** Held by the one player surface that owns [sink], [fit], ticks, menus and the window rect. */
     val turn: Mutex
@@ -248,4 +257,11 @@ internal interface WalSurface {
      * loaded.
      */
     fun pickTheme(name: String) {}
+
+    /**
+     * Flips the skin option [key] on the engine thread, as a pick from Winamp's menu does: the
+     * skin's scripts hear it, and it is saved like the skin's other settings. Does nothing before
+     * the skin has loaded or for a key the skin no longer lists.
+     */
+    fun toggleSkinOption(key: SkinOptions.Key) {}
 }

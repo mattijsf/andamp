@@ -5,6 +5,7 @@ package nl.mattix.andamp.wal
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import nl.mattix.andamp.modernskin.skin.Layout
+import nl.mattix.andamp.modernskin.skin.SkinOptions
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.modernskin.skin.StackArrange
 import java.util.IdentityHashMap
@@ -39,6 +40,9 @@ internal class WalFitting {
 
     /** The skin's color themes as [WalLayout.themes] carries them, worked out at the first [layout]; see [themesOf]. */
     private var themes: List<String>? = null
+
+    /** The skin's options as [WalLayout.skinOptions] carries them, read again when they changed; see [optionsOf]. */
+    private var options: SkinOptions? = null
 
     /** Gives [runtime] the box of [fit], as [WalEngine.fit] tells; [baseW] as [baseWOf] gives it. */
     fun apply(
@@ -138,8 +142,8 @@ internal class WalFitting {
      * see [SkinRuntime.drawnSize]), so the window rect, the touch area and the visualizer window
      * docked under the skin go by where the skin ends; in two columns the visualizer window docks
      * under the left one ([WalLayout.dock]). A touch 24 dp beside an object still means it at that
-     * scale. The layout carries [wantsFrames] as the frame has it, and the skin's color themes with
-     * the one it wears.
+     * scale. The layout carries [wantsFrames] as the frame has it, the skin's color themes with
+     * the one it wears, and the skin's options for Winamp's Options menu.
      *
      * Upright, a stack wider across than the box (MMD3's drawer slid out) is shrunk to fit once the
      * slide ends, and grows back once a slide closing it ends: while something slides, the width
@@ -180,8 +184,13 @@ internal class WalFitting {
             edgePlacements = runtime.edgePlacements,
             themes = themes,
             theme = runtime.currentGammaSet?.let { worn -> themes.firstOrNull { it.equals(worn, ignoreCase = true) } },
+            skinOptions = optionsOf(runtime),
         )
     }
+
+    /** [runtime]'s options for Winamp's Options menu, read again only when its Config items changed. */
+    private fun optionsOf(runtime: SkinRuntime): SkinOptions =
+        options?.takeIf { it.version == runtime.configVersion } ?: runtime.skinOptions().also { options = it }
 
     /**
      * [runtime]'s color themes in the order the skin's theme list shows them: sorted ignoring case,

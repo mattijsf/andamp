@@ -200,7 +200,7 @@ class PopupMenu(
             }
         }
 
-    private companion object {
+    internal companion object {
         /** Submenu levels shown; deeper ones are left out. */
         const val MAX_DEPTH = 8
 
@@ -427,9 +427,12 @@ class ConfigObj(
 class ConfigItemObj(
     private val rt: SkinRuntime,
     val name: String,
-    val guid: String?,
+    guid: String?,
 ) : MakiObject {
     override val makiGuid: String get() = StdApi.guidOf("ConfigItem") ?: ""
+
+    var guid: String? = guid
+        internal set
     val attributes = LinkedHashMap<String, ConfigAttributeObj>()
 
     override fun makiCall(
@@ -447,15 +450,25 @@ class ConfigItemObj(
 
             // Winamp's own items carry attributes no script made; an unknown one reads empty
             "getattribute" -> {
-                Value.of(attributes.getOrPut(args[0].asString.lowercase()) { ConfigAttributeObj(rt, this, args[0].asString, "") })
+                Value.of(
+                    attributes.getOrPut(args[0].asString.lowercase()) {
+                        rt.configChanged()
+                        ConfigAttributeObj(rt, this, args[0].asString, "")
+                    },
+                )
             }
 
+            // one only read so far takes the default and moves to where the script makes it
             "newattribute" -> {
-                Value.of(
-                    attributes.getOrPut(
-                        args[0].asString.lowercase(),
-                    ) { ConfigAttributeObj(rt, this, args[0].asString, args[1].asString) },
-                )
+                val k = args[0].asString.lowercase()
+                val a = attributes[k] ?: ConfigAttributeObj(rt, this, args[0].asString, args[1].asString)
+                if (!a.made) {
+                    attributes.remove(k)
+                    attributes[k] = a
+                    a.make(args[1].asString)
+                    rt.configChanged()
+                }
+                Value.of(a)
             }
 
             "getguid" -> {
@@ -483,6 +496,16 @@ class ConfigAttributeObj(
     var data: String = rt.storedSettings[name] ?: default
         private set
 
+    /** Whether a script made this attribute with newAttribute; one only read with getAttribute is not. */
+    var made = false
+        private set
+
+    /** Marks it made by newAttribute with [default]; a stored value still wins over it. */
+    internal fun make(default: String) {
+        made = true
+        data = rt.storedSettings[name] ?: default
+    }
+
     override fun makiCall(
         name: String,
         args: List<Value>,
@@ -503,7 +526,9 @@ class ConfigAttributeObj(
             // every setData tells the listeners, the same value included (Wasabi's Attribute::setDataNoCB)
             "setdata" -> {
                 Value.Null.also {
+                    val was = data
                     data = args[0].asString
+                    if (data != was) rt.configChanged()
                     // a button that shows the value shows the new one
                     if (rt.storedSettings.put(this.name, data) != data) {
                         rt.settingsChanged()

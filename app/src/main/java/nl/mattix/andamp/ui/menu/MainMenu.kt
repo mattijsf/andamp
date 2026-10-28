@@ -389,9 +389,10 @@ private fun optionsItems(
     /** Grays Double Size while a modern skin is worn; see [mainMenu]. */
     modernPlayer: Boolean = false,
 ): List<AmpMenuItem> =
-    listOf(
+    listOfNotNull(
         AmpMenuItem.Action(vm.words.get(R.string.menu_preferences), onClick = onPreferences),
         AmpMenuItem.Submenu(vm.words.get(R.string.menu_skins), skins),
+        skinSettingsItem(vm),
         AmpMenuItem.Divider,
         AmpMenuItem.Action(vm.words.get(R.string.menu_time_elapsed), checked = !vm.state.timeRemaining) {
             vm.state.timeRemaining =
