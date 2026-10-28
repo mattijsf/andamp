@@ -310,7 +310,8 @@ class WinampState {
     /**
      * Where the activity should navigate on arrival, set by the floating player, whose menu
      * can name a destination (Preferences, the museum) that only an activity can show. The
-     * screen navigates and clears it.
+     * screen navigates and clears it. The player's route closes the screens over the player,
+     * where a skin handed over from another app goes on.
      */
     var arrivalDestination by mutableStateOf<String?>(null)
 

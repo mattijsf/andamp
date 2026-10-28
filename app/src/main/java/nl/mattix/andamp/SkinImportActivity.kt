@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModelProvider
 import nl.mattix.andamp.state.AppViewModels
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.displayNameOf
+import nl.mattix.andamp.ui.Screen
 
 /**
  * A Winamp skin (.wsz, or a modern .wal) opened or shared from another app: a file manager, a
@@ -40,6 +41,8 @@ class SkinImportActivity : Activity() {
         if (file != null && stream != null) {
             player.skinOps.load(stream, displayNameOf(file) ?: getString(R.string.skin_picked_name))
         }
+        // the skin goes on in the player, so the app comes forward there and not on a screen over it
+        player.state.arrivalDestination = Screen.PLAYER
         startActivity(
             Intent(this, MainActivity::class.java)
                 .putExtra(MainActivity.SHOW_THE_APP, true)

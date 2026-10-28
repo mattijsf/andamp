@@ -124,7 +124,7 @@ class WidgetMenuActivity : ComponentActivity() {
                 anchorBounds = { IntRect(ANCHOR_X, ANCHOR_Y, ANCHOR_X, ANCHOR_Y) },
                 skin = skin,
                 // an added modern skin shows in the player, not in this window, so the player opens
-                onModernOfferTaken = { open(null) },
+                onModernOfferTaken = { open(Screen.PLAYER) },
             )
         }
     }

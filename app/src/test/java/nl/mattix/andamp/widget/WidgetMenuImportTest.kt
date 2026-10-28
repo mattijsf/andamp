@@ -18,6 +18,7 @@ import nl.mattix.andamp.state.FakeTracks
 import nl.mattix.andamp.state.InMemoryEqPresetStore
 import nl.mattix.andamp.state.SkinLibrary
 import nl.mattix.andamp.state.WinampViewModel
+import nl.mattix.andamp.ui.Screen
 import nl.mattix.andamp.wal.WalGate
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -192,7 +193,9 @@ class WidgetMenuImportTest {
             awaitThe { player.skinOps.currentId == id }
             assertTrue("modern skins are on", WalGate.on)
             assertTrue(menu.isFinishing)
-            assertEquals(MainActivity::class.java.name, shadowOf(menu).nextStartedActivity?.component?.className)
+            val started = shadowOf(menu).nextStartedActivity
+            assertEquals(MainActivity::class.java.name, started?.component?.className)
+            assertEquals("on the player", Screen.PLAYER, started?.getStringExtra(MainActivity.GO_TO))
         } finally {
             compose.runOnUiThread { AppViewModels.viewModelStore.clear() }
         }
