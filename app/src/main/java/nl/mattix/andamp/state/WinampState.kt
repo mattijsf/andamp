@@ -281,7 +281,7 @@ class WinampState {
         get() =
             activeMenu != null || namePrompt != null || presetPicker != null ||
                 bookmarkSheet != null || choiceSheet != null || trackInfo != null ||
-                prompt != null || aboutOpen
+                prompt != null || aboutOpen || skinSettings != null
 
     /**
      * The magnifier over a title bar, while a finger is holding one open. It is kept here
@@ -291,6 +291,9 @@ class WinampState {
 
     /** The about box, opened from the logo in the corner of the main window. */
     var aboutOpen by mutableStateOf(false)
+
+    /** The modern skin whose Skin Settings dialog is open, from Options > Skin Settings. */
+    internal var skinSettings by mutableStateOf<nl.mattix.andamp.wal.WalSurface?>(null)
 
     /**
      * Where the activity should navigate on arrival, set by the floating player, whose menu
@@ -330,7 +333,8 @@ class WinampState {
             namePrompt != null ||
             prompt != null ||
             modernOffer != null ||
-            aboutOpen
+            aboutOpen ||
+            skinSettings != null
 
     /**
      * Leaving the app ends a visit that came from outside it, so a later Done inside the

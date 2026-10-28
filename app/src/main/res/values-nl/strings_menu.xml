@@ -38,6 +38,7 @@
     <string name="menu_load_skin">Skin laden...</string>
     <string name="menu_color_themes">Kleurthema’s</string>
     <string name="menu_skin_settings">Skininstellingen</string>
+    <string name="menu_skin_settings_open">Skininstellingen...</string>
     <string name="menu_get_more_skins">&lt;&lt; Zoek meer skins! &gt;&gt;</string>
     <string name="skin_row_modern">%1$s · Moderne skin</string>
     <string name="menu_preferences">Voorkeuren...</string>

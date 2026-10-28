@@ -41,7 +41,7 @@ class MenuLabelConventionTest {
             // with a modern skin worn whose color themes are listed under Skins, and its options under Options
             mainMenu(modern, {}, {}, {}, {}, modernPlayer = true).also { menu ->
                 assertTrue("Color themes is listed", submenuLabels(menu.items).contains("Color themes"))
-                assertTrue("Skin Settings is listed", submenuLabels(menu.items).contains("Skin Settings"))
+                assertTrue("Skin Settings is listed", actionLabels(menu.items).contains("Skin Settings..."))
             },
             // led by a skin's menu, or several, as a long press on a modern skin opens it
             mainMenu(vm, {}, {}, {}, {}, skinMenus = listOf(AmpMenuItem.Action("Visualizer") {})),
@@ -50,6 +50,15 @@ class MenuLabelConventionTest {
             vm.eqOps.presetsMenu(),
         )
     }
+
+    private fun actionLabels(items: List<AmpMenuItem>): List<String> =
+        items.flatMap {
+            when (it) {
+                is AmpMenuItem.Action -> listOf(it.label)
+                is AmpMenuItem.Submenu -> actionLabels(it.items)
+                AmpMenuItem.Divider -> emptyList()
+            }
+        }
 
     private fun submenuLabels(items: List<AmpMenuItem>): List<String> =
         items.filterIsInstance<AmpMenuItem.Submenu>().flatMap { listOf(it.label) + submenuLabels(it.items) }

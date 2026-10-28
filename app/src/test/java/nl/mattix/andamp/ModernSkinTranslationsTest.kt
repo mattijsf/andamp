@@ -92,7 +92,7 @@ class ModernSkinTranslationsTest {
          */
         val MODERN =
             Regex(
-                "skin_modern_.*|skin_row_modern|menu_skin_menu.*|menu_color_themes|menu_skin_settings|" +
+                "skin_modern_.*|skin_row_modern|menu_skin_menu.*|menu_color_themes|menu_skin_settings.*|" +
                     "prefs_modern_.*|prefs_sharp_.*|" +
                     "prefs_player_skins_.*|prefs_player_summary_.*(modern|sharp|_skins).*",
             )

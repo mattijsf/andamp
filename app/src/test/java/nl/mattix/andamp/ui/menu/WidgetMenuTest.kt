@@ -121,10 +121,10 @@ class WidgetMenuTest {
         val worn = wearThemedModernSkin(app).also { wearing = it }
         seedSkinOptions(worn.skinOps.wal!!) { rt -> rt.optionsItem().option("Option", "1") }
 
-        val settings = find("Skin Settings", menu(worn).items)
+        val settings = find("Skin Settings...", menu(worn).items)
 
         assertNotNull("Skin Settings is on the menu", settings)
-        assertFalse("Skin Settings is grayed on the widget", (settings as AmpMenuItem.Submenu).enabled)
+        assertFalse("Skin Settings is grayed on the widget", (settings as AmpMenuItem.Action).enabled)
     }
 
     @Test
@@ -132,7 +132,7 @@ class WidgetMenuTest {
         val worn = wearThemedModernSkin(app, started = false).also { wearing = it }
 
         assertNotNull("the modern skin is worn", worn.skinOps.wal)
-        assertNull(find("Skin Settings", menu(worn).items))
+        assertNull(find("Skin Settings...", menu(worn).items))
     }
 
     @Test

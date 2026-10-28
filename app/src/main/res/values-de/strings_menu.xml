@@ -38,6 +38,7 @@
     <string name="menu_load_skin">Skin laden...</string>
     <string name="menu_color_themes">Farbschemen</string>
     <string name="menu_skin_settings">Skin-Einstellungen</string>
+    <string name="menu_skin_settings_open">Skin-Einstellungen...</string>
     <string name="menu_get_more_skins">&lt;&lt; Skins herunterladen! &gt;&gt;</string>
     <string name="skin_row_modern">%1$s · Moderner Skin</string>
     <string name="menu_preferences">Einstellungen...</string>

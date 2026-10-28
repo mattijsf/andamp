@@ -132,6 +132,11 @@ class ModalParityTest {
         val modals: List<Pair<String, (WinampState) -> Unit>> =
             listOf(
                 "the about box" to { s -> s.aboutOpen = true },
+                "skin settings" to { s ->
+                    s.skinSettings =
+                        nl.mattix.andamp.wal
+                            .FakeWalSurface()
+                },
                 "a menu" to { s -> s.activeMenu = AmpMenu("Options", emptyList()) },
                 "a name prompt" to { s -> s.namePrompt = NamePrompt("Name it", confirmLabel = "Save", onSubmit = {}) },
                 "a permission prompt" to { s ->
