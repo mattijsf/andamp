@@ -62,6 +62,18 @@ class WalGateTest {
     }
 
     @Test
+    fun `a read by a player left from an earlier test gives the stored value and leaves the switch unread`() {
+        WalGate.write(app, true)
+        WalGate.forget(app)
+        val earlier = earlierApp()
+
+        assertTrue(WalGate.read(earlier))
+        assertFalse(WalGate.on)
+        assertTrue("the test's own read still loads it", WalGate.read(app))
+        assertTrue(WalGate.on)
+    }
+
+    @Test
     fun `off is written and read back`() {
         store(true)
         WalGate.write(app, false)
