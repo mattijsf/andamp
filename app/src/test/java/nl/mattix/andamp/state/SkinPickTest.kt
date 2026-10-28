@@ -321,14 +321,30 @@ class SkinPickTest {
     }
 
     @Test
-    fun `an offer waits for the prompt on screen to be answered`() {
+    fun `a notice waits for the prompt on screen to be answered`() {
+        val ops = started()
+        val first = AmpPrompt("First", "", "OK", null) { state.prompt = null }
+        state.prompt = first
+        val big = zip("main.bmp" to noise(SkinOps.MAX_SKIN_BYTES + 1024))
+
+        ops.load(big.inputStream(), "Huge.wsz")
+        await { state.waitingNotice != null }
+        assertSame("the prompt on screen stays", first, state.prompt)
+
+        first.onConfirm()
+        assertEquals("“Huge.wsz” is too large", state.prompt?.title)
+        assertNull(state.waitingNotice)
+    }
+
+    @Test
+    fun `an offer raised under a prompt is no notice, and stays until answered`() {
         val ops = started()
         val first = AmpPrompt("First", "", "OK", null) { state.prompt = null }
         state.prompt = first
 
         val offer = offered(ops)
 
-        // the offer's dialog shows only while no prompt does (AmpModals)
+        // the offer's dialog waits for the prompt in AmpModals (AmpContextMenuTest)
         assertSame("the prompt on screen stays", first, state.prompt)
         assertNull("the offer is no notice", state.waitingNotice)
         first.onConfirm()
@@ -526,6 +542,7 @@ class SkinPickTest {
         await { load.isCompleted }
 
         assertNull(result)
+        assertNull("no offer", state.modernOffer)
         assertEquals("nothing is stored", before, records())
         assertTrue("it is not loaded", built.isEmpty())
         assertNoCopyLeft()
