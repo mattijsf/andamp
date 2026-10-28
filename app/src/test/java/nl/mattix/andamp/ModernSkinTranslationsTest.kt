@@ -43,7 +43,8 @@ class ModernSkinTranslationsTest {
         val wrong =
             (listOf("values") + LANGUAGES).mapNotNull { dir ->
                 val strings = stringsIn(dir)
-                val path = "${strings.getValue("prefs_title")} > ${strings.getValue("prefs_page_player")}"
+                // no-break spaces around > keep the path on one line
+                val path = "${strings.getValue("prefs_title")}\u00A0>\u00A0${strings.getValue("prefs_page_player")}"
                 "$dir: the offer does not name \"$path\"".takeUnless { path in strings.getValue("skin_modern_offer_body") }
             }
         assertEquals(emptyList<String>(), wrong)

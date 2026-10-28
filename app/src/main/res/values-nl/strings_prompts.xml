@@ -95,6 +95,6 @@
 
     <!-- AmpModals.kt -->
     <string name="skin_modern_offer_title">Moderne skins aanzetten?</string>
-    <string name="skin_modern_offer_body">“%1$s” is een moderne Winamp-skin. Moderne skins zijn nog in bèta. Ze aanzetten en deze skin toevoegen? Houd je vinger op een moderne skin om het menu van Andamp te openen. Je kunt moderne skins uitzetten in Voorkeuren &gt; Speler.</string>
+    <string name="skin_modern_offer_body">“%1$s” is een moderne Winamp-skin. Moderne skins zijn nog in bèta. Ze aanzetten en deze skin toevoegen? Houd je vinger op een moderne skin om het menu van Andamp te openen. Je kunt moderne skins uitzetten in Voorkeuren&#160;&gt;&#160;Speler.</string>
     <string name="skin_modern_offer_accept">Aanzetten en toevoegen</string>
 </resources>

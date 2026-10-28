@@ -66,7 +66,7 @@ class SimplifiedChineseTest {
     @Test
     fun `loading anything is 加载, as in Winamp's Chinese translation, in every string`() {
         assertEquals("加载面板...", words.get(R.string.menu_load_skin))
-        assertEquals("此现代面板未能加载，因此没有添加。", words.get(R.string.skin_modern_failed_body))
+        assertEquals("此现代面板加载失败，未添加。", words.get(R.string.skin_modern_failed_body))
         assertEquals("加载", words.get(R.string.eq_menu_load))
         assertEquals("自动加载预设", words.get(R.string.eq_auto_load_preset))
         assertEquals("重新加载此页", words.get(R.string.museum_try_this_page_again))

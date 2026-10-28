@@ -153,7 +153,7 @@
 
     <!-- ModernSkinPrefs.kt -->
     <string name="prefs_modern_skins_title">Skins modernes (bêta)</string>
-    <string name="prefs_modern_skins_on">Vous pouvez ajouter et porter des skins modernes de Winamp (.wal), en plus des skins classiques. Certains peuvent s’afficher ou fonctionner un peu différemment que dans Winamp. Maintenez le doigt sur un skin moderne pour ouvrir le menu d’Andamp. Si vous désactivez cette option, le lecteur reprend votre dernier skin classique.</string>
+    <string name="prefs_modern_skins_on">Vous pouvez ajouter et porter des skins modernes de Winamp (.wal), en plus des skins classiques. Certains peuvent s’afficher ou fonctionner un peu autrement que dans Winamp. Maintenez le doigt sur un skin moderne pour ouvrir le menu d’Andamp. Si vous désactivez cette option, le lecteur reprend votre dernier skin classique.</string>
     <string name="prefs_modern_skins_off">Seuls les skins classiques (.wsz) peuvent être ajoutés. Activez cette option pour ajouter et porter aussi des skins modernes de Winamp (.wal). Les skins modernes que vous avez déjà ajoutés restent masqués jusque-là.</string>
     <string name="prefs_modern_skins_note">Seul le lecteur porte un skin moderne. Les menus, la médiathèque, la liste des skins, le widget et Android Auto gardent votre dernier skin classique, sauf si vous en avez choisi un autre pour le widget ou Android Auto. Tant que le lecteur porte un skin moderne, « Liste de lecture », « Égaliseur », « Taille double » et « Options de visualisation » sont grisés dans le menu, car le skin dessine les fenêtres et la visualisation du lecteur.</string>
     <string name="prefs_sharp_pixels_title">Pixels nets</string>

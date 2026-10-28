@@ -95,6 +95,6 @@
 
     <!-- AmpModals.kt -->
     <string name="skin_modern_offer_title">Activer les skins modernes ?</string>
-    <string name="skin_modern_offer_body">« %1$s » est un skin moderne de Winamp. Les skins modernes sont en bêta. Les activer et ajouter ce skin ? Maintenez le doigt sur un skin moderne pour ouvrir le menu d’Andamp. Vous pouvez désactiver les skins modernes dans Préférences &gt; Lecteur.</string>
+    <string name="skin_modern_offer_body">« %1$s » est un skin moderne de Winamp. Les skins modernes sont en bêta. Les activer et ajouter ce skin ? Maintenez le doigt sur un skin moderne pour ouvrir le menu d’Andamp. Vous pouvez désactiver les skins modernes dans Préférences&#160;&gt;&#160;Lecteur.</string>
     <string name="skin_modern_offer_accept">Activer et ajouter</string>
 </resources>
