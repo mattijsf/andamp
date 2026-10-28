@@ -1,6 +1,6 @@
 # Andamp — Privacy Policy
 
-*Last updated 26 October 2026. Applies to Andamp for Android (`nl.mattix.andamp`) and to the music source apps published for it.*
+*Last updated 27 October 2026. Applies to Andamp for Android (`nl.mattix.andamp`) and to the music source apps published for it.*
 
 Andamp is a music player that runs on your phone. It has no account of its own and no
 server that collects anything. **Nothing about you or what you listen to is sent to the
@@ -70,10 +70,10 @@ deletes when you uninstall Andamp:
 to show them and to remember your place, and are stored only in that private storage.
 
 **Your phone's backup.** If you have backup turned on in Android, it includes Andamp's
-settings and playlists like those of any other app, so they come back on a new phone. That
-backup is Android's, stored in your own Google account and end-to-end encrypted where your
-phone supports it; the developer has no access to it. The thumbnail cache is never part of
-it. You can switch backup off in Android's settings.
+settings, playlists and the skins you installed, like those of any other app, so they come
+back on a new phone. That backup is Android's, stored in your own Google account and
+end-to-end encrypted where your phone supports it; the developer has no access to it. The
+thumbnail cache is never part of it. You can switch backup off in Android's settings.
 
 ## Music sources
 

@@ -163,8 +163,9 @@ license.
 
 **Plug-ins, presets and skins are yours.** As an additional permission under section 7 of
 the GPL, you may create and distribute effect plug-ins (`.lua`), visualizer presets
-(`.milk`, `.avs`) and skins (`.wsz`) under any terms you choose. This covers files loaded
-through those formats, not modified versions of Andamp itself.
+(`.milk`, `.avs`) and skins (`.wsz`, and `.wal` with the scripts inside them) under any terms
+you choose. This covers files loaded through those formats, not modified versions of Andamp
+itself.
 
 **The tip jar uses Google Play's library.** As an additional permission under section 7
 of the GPL, you may combine Andamp with the Google Play Billing Library
