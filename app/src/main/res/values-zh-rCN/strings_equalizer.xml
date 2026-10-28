@@ -8,6 +8,7 @@
     <string name="eq_menu_preset">预设...</string>
     <string name="eq_menu_default">默认</string>
     <string name="eq_auto_load_preset">自动加载预设</string>
+    <string name="eq_menu_auto_load_load">自动加载预设</string>
     <string name="eq_menu_auto_load_delete">自动加载预设...</string>
     <string name="eq_save_preset_title">保存预设</string>
     <string name="eq_save_auto_preset_title">保存自动加载预设</string>

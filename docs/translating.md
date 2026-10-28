@@ -189,7 +189,7 @@ comes from, so that the next person keeps to them.
 | Playlist Editor | Playlist-Editor | Winamp |
 | Jump to time | Springe zu Zeitmarke | Winamp |
 | file info | Titelinformationen | Winamp |
-| auto-load preset | automatische Voreinstellung | Winamp |
+| auto-load preset | automatische Voreinstellung (Load menu: Voreinstellungen automatisch laden) | Winamp |
 | music source | Musikquelle | Andamp |
 | effect, rack | Effekt, Rack | Andamp |
 | tip | Trinkgeld | Andamp |

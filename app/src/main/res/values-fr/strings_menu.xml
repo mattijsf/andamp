@@ -11,7 +11,7 @@
     <string name="menu_play_file">Lire un fichier...</string>
     <string name="menu_play_directory">Lire un dossier...</string>
     <string name="menu_bookmark">Signet</string>
-    <string name="menu_view_file_info">Informations sur le fichier...</string>
+    <string name="menu_view_file_info">Informations sur le fichier</string>
     <string name="menu_bookmarks">Signets</string>
     <string name="menu_playlist_editor">Liste de lecture</string>
     <string name="menu_equalizer">Égaliseur</string>

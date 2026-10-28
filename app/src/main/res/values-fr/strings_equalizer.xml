@@ -8,6 +8,7 @@
     <string name="eq_menu_preset">Préréglage...</string>
     <string name="eq_menu_default">Par défaut</string>
     <string name="eq_auto_load_preset">Préréglage à chargement automatique</string>
+    <string name="eq_menu_auto_load_load">Préréglage à chargement automatique</string>
     <string name="eq_menu_auto_load_delete">Préréglage à chargement automatique...</string>
     <string name="eq_save_preset_title">Enregistrer le préréglage</string>
     <string name="eq_save_auto_preset_title">Enregistrer le préréglage à chargement automatique</string>

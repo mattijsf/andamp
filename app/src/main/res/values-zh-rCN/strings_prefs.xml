@@ -89,7 +89,7 @@
     <string name="prefs_milkdrop_settings_tab">设置</string>
     <string name="prefs_milkdrop_favorites_chip">收藏 (%1$d)</string>
     <plurals name="prefs_milkdrop_favorites_count">
-        <item quantity="other">%1$d 个收藏，来自任意预设包。下一个和随机播放只在其中切换。</item>
+        <item quantity="other">%1$d 个收藏，来自任意预设包。下一个和随机只在其中切换。</item>
     </plurals>
     <string name="prefs_milkdrop_idle_playing">正在播放 %1$s。请在上方选择收藏或一个预设包。</string>
     <string name="prefs_milkdrop_idle_no_favorites">正在播放 %1$s。请在上方选择一个预设包，或在“设置”中导入一个。</string>

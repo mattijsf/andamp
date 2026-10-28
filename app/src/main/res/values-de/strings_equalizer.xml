@@ -8,6 +8,7 @@
     <string name="eq_menu_preset">Voreinstellung...</string>
     <string name="eq_menu_default">Standard</string>
     <string name="eq_auto_load_preset">Automatische Voreinstellung</string>
+    <string name="eq_menu_auto_load_load">Voreinstellungen automatisch laden</string>
     <string name="eq_menu_auto_load_delete">Automatische Voreinstellung...</string>
     <string name="eq_save_preset_title">Voreinstellung speichern</string>
     <string name="eq_save_auto_preset_title">Automatische Voreinstellung speichern</string>

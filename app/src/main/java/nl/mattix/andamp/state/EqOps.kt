@@ -131,7 +131,7 @@ class EqOps(
     /** Load > Auto-load preset: applies this track's own curve, whether or not AUTO is on. */
     private fun autoLoadEntry(): AmpMenuItem.Action {
         val own = state.currentTrack?.let { presets.autoPresets.get(TrackKey.of(it)) }
-        return AmpMenuItem.Action(words.get(R.string.eq_auto_load_preset), enabled = own != null) { own?.let(::applyPreset) }
+        return AmpMenuItem.Action(words.get(R.string.eq_menu_auto_load_load), enabled = own != null) { own?.let(::applyPreset) }
     }
 
     /** The factory presets plus the listener's own. */

@@ -9,6 +9,8 @@
     <string name="eq_menu_default">Default</string>
     <!-- Winamp's wording for a curve that belongs to one track -->
     <string name="eq_auto_load_preset">Auto-load preset</string>
+    <!-- Load > item that applies the playing track's curve -->
+    <string name="eq_menu_auto_load_load">Auto-load preset</string>
     <string name="eq_menu_auto_load_delete">Auto-load preset...</string>
     <string name="eq_save_preset_title">Save preset</string>
     <string name="eq_save_auto_preset_title">Save auto-load preset</string>

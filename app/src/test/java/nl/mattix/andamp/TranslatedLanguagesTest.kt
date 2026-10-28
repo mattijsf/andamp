@@ -4,6 +4,12 @@ package nl.mattix.andamp
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import nl.mattix.andamp.core.player.PlayerFacade
+import nl.mattix.andamp.state.AmpMenuItem
+import nl.mattix.andamp.state.EqOps
+import nl.mattix.andamp.state.InMemoryEqPresetStore
+import nl.mattix.andamp.state.RecordingEqBackend
+import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.Words
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -30,6 +36,7 @@ class TranslatedLanguagesTest {
         assertEquals("Modern skins (beta)", words.get(R.string.prefs_modern_skins_title))
         assertEquals("Color themes", words.get(R.string.menu_color_themes))
         assertEquals("Add to Andamp", words.get(R.string.import_add_to_andamp))
+        assertEquals("Auto-load preset", words.get(R.string.eq_menu_auto_load_load))
     }
 
     @Test
@@ -54,6 +61,10 @@ class TranslatedLanguagesTest {
         assertEquals("Altijd bovenop", words.get(R.string.menu_always_on_top))
         assertEquals("Shuffle", words.get(R.string.menu_shuffle))
         assertEquals("Lijst willekeurig maken", words.get(R.string.menu_randomize_list))
+        assertEquals(
+            "2 favorieten, uit elk pakket. Volgende en Shuffle blijven daarbinnen.",
+            words.plural(R.plurals.prefs_milkdrop_favorites_count, 2),
+        )
     }
 
     @Test
@@ -82,6 +93,26 @@ class TranslatedLanguagesTest {
         assertEquals("Liste mischen", words.get(R.string.menu_randomize_list))
         assertEquals("Titelinformationen anzeigen", words.get(R.string.menu_view_file_info))
         assertEquals("Automatische Voreinstellung", words.get(R.string.eq_auto_load_preset))
+        assertEquals("Automatische Voreinstellung...", words.get(R.string.eq_menu_auto_load_delete))
+        assertEquals("Voreinstellungen automatisch laden", words.get(R.string.eq_menu_auto_load_load))
+        assertEquals(
+            "2 Favoriten, aus jedem Paket. Weiter und Zufallsmodus bleiben darin.",
+            words.plural(R.plurals.prefs_milkdrop_favorites_count, 2),
+        )
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the German equalizer menu words each auto-load entry as Winamp does`() {
+        val ops = EqOps(WinampState(), PlayerFacade(RecordingEqBackend()), InMemoryEqPresetStore(), words)
+        val labels =
+            ops.presetsMenu().items.filterIsInstance<AmpMenuItem.Submenu>().associate { sub ->
+                sub.label to sub.items.filterIsInstance<AmpMenuItem.Action>().map { it.label }
+            }
+
+        assertEquals(listOf("Voreinstellung...", "Voreinstellungen automatisch laden", "Standard"), labels["Laden"])
+        assertEquals(listOf("Voreinstellung...", "Automatische Voreinstellung", "Standard"), labels["Speichern"])
+        assertEquals(listOf("Voreinstellung...", "Automatische Voreinstellung..."), labels["Löschen"])
     }
 
     @Test
@@ -110,6 +141,12 @@ class TranslatedLanguagesTest {
         assertEquals("Valider", words.get(R.string.prompt_jump_to_time_confirm))
         assertEquals("Liste des skins...", words.get(R.string.menu_skin_browser))
         assertEquals("Plug-ins", words.get(R.string.prefs_page_plugins))
+        assertEquals("Informations sur le fichier", words.get(R.string.menu_view_file_info))
+        assertEquals("Informations sur le fichier", words.get(R.string.menu_file_info))
+        assertEquals(
+            "2 favoris, de n’importe quel pack. Suivant et Lecture aléatoire restent parmi eux.",
+            words.plural(R.plurals.prefs_milkdrop_favorites_count, 2),
+        )
     }
 
     @Test
