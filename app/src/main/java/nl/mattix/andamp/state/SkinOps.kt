@@ -230,10 +230,10 @@ class SkinOps internal constructor(
      * file, so a mispick is common. A skin file too large to load changes nothing either, and
      * a notice says why, unless [onStored] is given: a caller that takes the result words it.
      *
-     * A modern skin is added only while modern skins are on, and only once it has loaded in
-     * time; otherwise nothing changes and a notice says so. While they are off, it is offered
-     * through [WinampState.modernOffer]; see [acceptOffer]. Where [allowModern] is false, it is
-     * treated as a file that is not a skin.
+     * While modern skins are on, a modern skin is added once it has loaded in time; one that does
+     * not load changes nothing, and a notice says so. While they are off, it is offered through
+     * [WinampState.modernOffer]; see [acceptOffer]. Where [allowModern] is false, it is treated as
+     * a file that is not a skin.
      *
      * @return the load, which is complete once any notice or offer is set.
      */
@@ -300,9 +300,6 @@ class SkinOps internal constructor(
         /** A modern skin that did not load, or not in time; it was not added. */
         data object Failed : Pick
 
-        /** A modern skin from a caller that adds only classic skins (the museum); it is not added and says nothing. */
-        data object ModernRefused : Pick
-
         /** A modern skin picked while modern skins are off, kept in [file] until the offer is answered. */
         class ModernOffer(
             val file: File,
@@ -336,10 +333,11 @@ class SkinOps internal constructor(
                     file.outputStream().use { DigestInputStream(stream, digest).copyAtMost(it, MAX_PICK_BYTES) }
                 }
             val small = whole && file.length() <= MAX_SKIN_BYTES
+            // to a caller that adds classic skins only (the museum), a modern skin is not a skin
             pick =
                 when {
                     !isModern(file, whole, small) -> readClassic(file, small, name)
-                    !allowModern -> Pick.ModernRefused
+                    !allowModern -> Pick.NotASkin
                     modernOn() -> addModern(file, SkinLibrary.idOf(digest.digest()), name)
                     else -> Pick.ModernOffer(file, SkinLibrary.idOf(digest.digest()), name)
                 }

@@ -167,7 +167,7 @@ class WidgetMenuActivity : ComponentActivity() {
     /** True while the document picker is in front, waiting for an answer. */
     private var picking by mutableStateOf(false)
 
-    /** True while a picked skin is loading, which may end in a notice. */
+    /** True while a picked skin is loading, which may end in a notice or an offer. */
     private var importing by mutableStateOf(false)
 
     /** This window's own menu, kept out of the state every other host draws. */
