@@ -65,7 +65,7 @@ import org.robolectric.annotation.Config
  * way out to what else there is.
  *
  * The second source is made up here, as a pack the listener installed would
- * bring it: its own subtitle, its own page, an update file.
+ * bring it: a warning while signed out, a page, an update file.
  */
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [35], qualifiers = "w411dp-h891dp-mdpi")
@@ -98,7 +98,7 @@ class SourcesPrefsTest {
             override fun browse(context: Context): BrowseSource? = null
 
             @Composable
-            override fun Summary(signedIn: Boolean) = if (signedIn) "Signed in as listener" else "Not signed in"
+            override fun Warning(signedIn: Boolean) = if (signedIn) null else "Not signed in"
 
             @Composable
             override fun Page(
@@ -158,12 +158,12 @@ class SourcesPrefsTest {
     private fun tag(value: String) = compose.onNodeWithTag(value, useUnmergedTree = true)
 
     @Test
-    fun `the phone comes first, says how much music there is, and the link to more comes last`() {
+    fun `the phone comes first, each row says what its page holds, and the link to more comes last`() {
         show(extras = listOf(other))
 
         compose.onNodeWithText("This Phone").assertIsDisplayed()
-        compose.onNodeWithText("1,234 tracks · 245 artists · 310 albums").assertIsDisplayed()
-        compose.onNodeWithText("Signed in as listener").assertIsDisplayed()
+        compose.onNodeWithText("Access, library and scanning").assertIsDisplayed()
+        compose.onNodeWithText("Account, settings, skin and updates").assertIsDisplayed()
         val phone = tag("prefs.source.phone").getUnclippedBoundsInRoot().top
         val second = tag("prefs.source.example").getUnclippedBoundsInRoot().top
         val more = tag("prefs.source.more").getUnclippedBoundsInRoot().top
@@ -204,6 +204,7 @@ class SourcesPrefsTest {
                 )
             },
         )
+        compose.onNodeWithText("Allow Music and audio to show the music on this phone").assertIsDisplayed()
         tag("prefs.source.phone").performClick()
         tag("prefs.library.action").assertIsDisplayed()
 
@@ -214,7 +215,7 @@ class SourcesPrefsTest {
         compose.onAllNodesWithText("Counting…").assertCountEquals(0)
         assertEquals("the library is counted once, when access comes", 1, counted)
         tag("prefs.back").performClick()
-        compose.onNodeWithText("1,234 tracks · 245 artists · 310 albums").assertIsDisplayed()
+        compose.onNodeWithText("Access, library and scanning").assertIsDisplayed()
     }
 
     @Test
@@ -309,7 +310,7 @@ class SourcesPrefsTest {
                 override fun settings(context: Context) = asked
 
                 @Composable
-                override fun Summary(signedIn: Boolean) = other.Summary(signedIn)
+                override fun Warning(signedIn: Boolean) = other.Warning(signedIn)
             }
         show(extras = listOf(apart))
         tag("prefs.source.example").performClick()
@@ -328,7 +329,7 @@ class SourcesPrefsTest {
                 override val skinnable = false
 
                 @Composable
-                override fun Summary(signedIn: Boolean) = other.Summary(signedIn)
+                override fun Warning(signedIn: Boolean) = other.Warning(signedIn)
 
                 @Composable
                 override fun Page(
@@ -337,8 +338,28 @@ class SourcesPrefsTest {
                 ) = other.Page(onSignedIn, onSignedOut)
             }
         show(extras = listOf(plain))
+        compose.onNodeWithText("Account, settings and updates").assertIsDisplayed()
         tag("prefs.source.example").performClick()
 
         compose.onAllNodesWithTag("prefs.skin.row", useUnmergedTree = true).assertCountEquals(0)
+    }
+
+    @Test
+    fun `a source waiting for the listener says so on its row instead of what its page holds`() {
+        val waiting =
+            object : ExtraSource by other {
+                @Composable
+                override fun Warning(signedIn: Boolean) = "Not signed in"
+
+                @Composable
+                override fun Page(
+                    onSignedIn: () -> Unit,
+                    onSignedOut: () -> Unit,
+                ) = other.Page(onSignedIn, onSignedOut)
+            }
+        show(extras = listOf(waiting))
+
+        compose.onNodeWithText("Not signed in").assertIsDisplayed()
+        compose.onAllNodesWithText("Account, settings, skin and updates").assertCountEquals(0)
     }
 }

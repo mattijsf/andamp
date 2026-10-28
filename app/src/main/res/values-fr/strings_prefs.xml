@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- AndroidAutoPrefs.kt -->
-    <string name="prefs_android_auto_wears_skin">Porte le skin %1$s</string>
-    <string name="prefs_android_auto_wears_own_skin">Porte le skin du lecteur</string>
     <string name="prefs_android_auto_skin_section">Skin</string>
+    <string name="prefs_android_auto_summary">État, skin, liste de lecture et versions</string>
     <string name="prefs_android_auto_skin_note">Dans Android Auto, la fenêtre principale porte ce skin. « Par défaut » garde celui que vous avez choisi pour le lecteur.</string>
     <string name="prefs_android_auto_skin_heading">Skin dans Android Auto</string>
     <string name="prefs_android_auto_list_section">Liste de lecture</string>
@@ -21,22 +20,14 @@
 
     <!-- EffectsPage.kt -->
     <string name="prefs_effects_unavailable_summary">Ce moteur de lecture ne prend pas en charge les effets.</string>
-    <plurals name="prefs_effects_summary_none_on">
-        <item quantity="one">%1$d effet · aucun en marche</item>
-        <item quantity="other">%1$d effets · aucun en marche</item>
-    </plurals>
-    <plurals name="prefs_effects_summary_on">
-        <item quantity="one">%1$d effet · %2$d en marche</item>
-        <item quantity="other">%1$d effets · %2$d en marche</item>
-    </plurals>
+    <string name="prefs_effects_summary">Chaîne d’effets, plugins et limiteur de crêtes</string>
     <string name="prefs_effects_unavailable">Ce moteur de lecture ne prend pas en charge les effets.</string>
     <string name="prefs_effects_input_label">Entrée · avant tous les effets</string>
     <string name="prefs_effects_label">Effets</string>
     <string name="prefs_effects_order_note">L’audio circule de haut en bas — l’ordre change le son.</string>
     <string name="prefs_effects_output_label">Sortie · après tous les effets</string>
     <string name="prefs_effects_manage_plugins">Gérer les plugins</string>
-    <string name="prefs_effects_none_added">Aucun ajouté pour l’instant</string>
-    <string name="prefs_effects_added_count">Ajoutés : %1$d</string>
+    <string name="prefs_effects_manage_plugins_summary">Les plugins ajoutés, et en ajouter d’autres</string>
 
     <!-- LicencesPage.kt -->
     <string name="prefs_licences_note">Andamp repose sur le travail d’autres personnes. Chaque entrée renvoie vers sa source, où se trouve le texte complet de la licence.</string>
@@ -69,6 +60,7 @@
     <string name="prefs_lists_marks_before">Avant</string>
     <string name="prefs_lists_marks_after">Après</string>
     <string name="prefs_rows_preview_section">Aperçu</string>
+    <string name="prefs_rows_summary">Ce qu’affiche une ligne de morceau, et dans quel ordre</string>
     <string name="prefs_rows_blocks_section">Ce qu’une ligne affiche</string>
     <string name="prefs_rows_blocks_about">Maintenir un bloc pour le déplacer. Quand un morceau n’a pas un champ, le texte après ce champ disparaît avec lui.</string>
     <string name="prefs_rows_before">Texte avant</string>
@@ -141,8 +133,6 @@
     <string name="prefs_pack_too_old">Installée, mais trop ancienne pour cette version d’Andamp</string>
     <string name="prefs_pack_too_new">Installée, mais conçue pour une version plus récente d’Andamp</string>
     <string name="prefs_pack_not_signed_in">Non connecté</string>
-    <string name="prefs_pack_signed_in_as">Connecté en tant que %1$s</string>
-    <string name="prefs_pack_signed_in_here">Connecté sur ce téléphone</string>
     <string name="prefs_pack_notice_outdated">La source %1$s est configurée pour une version plus ancienne d’Andamp et rien ne lui est donné à lire. Une version plus récente de la source rétablit ses morceaux.</string>
     <string name="prefs_pack_notice_ahead">La source %1$s est configurée pour une version plus récente d’Andamp et rien ne lui est donné à lire. Une mise à jour d’Andamp rétablit ses morceaux.</string>
     <string name="prefs_pack_update">Mettre à jour %1$s</string>
@@ -157,21 +147,11 @@
     <string name="prefs_player_lists_section">Listes</string>
     <string name="prefs_player_touch_section">Toucher</string>
     <string name="prefs_player_colors_section">Couleurs</string>
-    <string name="prefs_player_summary_always_on_top">Toujours au premier plan</string>
-    <string name="prefs_player_summary_windows_stay_open">Les fenêtres restent ouvertes</string>
-    <string name="prefs_player_summary_regular_font">Police normale dans les listes</string>
-    <string name="prefs_player_summary_roomy_rows">Lignes aérées</string>
-    <string name="prefs_player_summary_large_rows">Grandes lignes</string>
-    <string name="prefs_player_summary_row_format">Lignes des morceaux personnalisées</string>
-    <string name="prefs_player_summary_tap_assist">Aide au toucher</string>
-    <string name="prefs_player_summary_wallpaper_colors">Couleurs du fond d’écran</string>
-    <string name="prefs_player_summary_all_with_overlay">Toujours au premier plan, fenêtres, listes, toucher et couleurs</string>
     <string name="prefs_player_summary_all">Fenêtres, listes, toucher et couleurs</string>
     <string name="prefs_player_skins_section">Skins</string>
-    <string name="prefs_player_summary_modern_skins">Skins modernes</string>
-    <string name="prefs_player_summary_sharp_pixels">Pixels nets</string>
     <string name="prefs_player_summary_all_skins">Fenêtres, listes, toucher, couleurs et skins</string>
-    <string name="prefs_player_summary_all_with_overlay_skins">Toujours au premier plan, fenêtres, listes, toucher, couleurs et skins</string>
+    <string name="prefs_player_summary_no_colors">Fenêtres, listes et toucher</string>
+    <string name="prefs_player_summary_no_colors_skins">Fenêtres, listes, toucher et skins</string>
 
     <!-- ModernSkinPrefs.kt -->
     <string name="prefs_modern_skins_title">Skins modernes (bêta)</string>
@@ -228,12 +208,12 @@
     <string name="prefs_page_support">Soutenir Andamp</string>
     <string name="prefs_page_about">À propos d’Andamp</string>
     <string name="prefs_page_licences">Licences open source</string>
+    <string name="prefs_about_licences_summary">Les projets sur lesquels repose Andamp, et leurs licences</string>
+    <string name="prefs_about_summary">Version et licences open source</string>
     <string name="prefs_title">Préférences</string>
     <string name="prefs_sound_section">Son</string>
     <string name="prefs_look_section">Apparence et comportement</string>
-    <string name="prefs_about_summary">Version %1$s · licences open source</string>
     <string name="prefs_about_note">Andamp %1$s — une réplique de Winamp 2.8, sans lien avec Winamp ni ses propriétaires.</string>
-    <string name="prefs_about_licences_summary">%1$d projets sur lesquels repose Andamp</string>
 
     <!-- PrefsTopBar.kt -->
     <string name="prefs_top_back">Retour aux préférences</string>
@@ -279,8 +259,8 @@
     <string name="prefs_sources_more_summary">D’autres endroits d’où Andamp peut lire de la musique, et comment les ajouter</string>
     <string name="prefs_phone_permission_off">L’autorisation « %1$s » est désactivée</string>
     <string name="prefs_phone_allow">Autorisez « %1$s » pour afficher la musique de ce téléphone</string>
+    <string name="prefs_phone_summary">Accès, médiathèque et analyse</string>
     <string name="prefs_phone_counting">Comptage…</string>
-    <string name="prefs_phone_no_music">Aucune musique trouvée sur ce téléphone pour l’instant</string>
     <string name="prefs_phone_access_section">Accès</string>
     <string name="prefs_phone_library_section">Médiathèque</string>
     <string name="prefs_phone_tracks">Morceaux</string>
@@ -294,7 +274,11 @@
     <string name="prefs_phone_scanning">Analyse en cours…</string>
     <string name="prefs_source_settings_section">Paramètres</string>
     <string name="prefs_source_settings_title">Paramètres %1$s</string>
-    <string name="prefs_source_settings_summary">Son compte et tout ce qu’elle propose d’autre, sur son propre écran</string>
+    <string name="prefs_source_settings_summary">Compte et autres options, dans l’application de la source</string>
+    <string name="prefs_source_summary">Compte et paramètres</string>
+    <string name="prefs_source_summary_skin">Compte, paramètres et skin</string>
+    <string name="prefs_source_summary_updates">Compte, paramètres et mises à jour</string>
+    <string name="prefs_source_summary_skin_updates">Compte, paramètres, skin et mises à jour</string>
     <string name="prefs_source_skin_section">Skin</string>
     <string name="prefs_source_updates_section">Mises à jour</string>
     <string name="prefs_source_skin_note">Quand un morceau de la source %1$s est en lecture, le lecteur porte ce skin. « Par défaut » garde celui que vous avez choisi pour le lecteur.</string>
@@ -309,10 +293,9 @@
     <string name="prefs_updates_retry">Réessayer</string>
 
     <!-- SupportPrefs.kt -->
-    <string name="prefs_support_on_site">Sur andamp.nl</string>
-    <string name="prefs_support_thanked">Merci pour votre pourboire</string>
-    <string name="prefs_support_leave_a_tip">Laisser un pourboire</string>
     <string name="prefs_support_intro">Andamp est gratuit et sans publicité. Si vous l’appréciez, vous pouvez laisser un pourboire. Un pourboire ne débloque rien : tout dans Andamp reste gratuit, avec ou sans.</string>
+    <string name="prefs_support_summary_outside">Comment soutenir Andamp sur son site web</string>
+    <string name="prefs_support_summary">À quoi sert un pourboire, et comment en laisser un</string>
     <string name="prefs_support_closed">Les pourboires ne sont pas disponibles sur ce téléphone pour le moment.</string>
     <string name="prefs_support_play_note">Google Play se charge du paiement. Un pourboire peut être donné plusieurs fois.</string>
     <string name="prefs_support_given">Vous avez soutenu Andamp. Merci.</string>
@@ -328,11 +311,6 @@
     <string name="prefs_tap_assist_off">Les boutons ne réagissent qu’à un simple appui. Activez cette option si les petits sont difficiles à toucher.</string>
 
     <!-- VisualizerPrefs.kt -->
-    <string name="prefs_visualizer_summary_no_packs">%1$s · aucun pack de préréglages pour l’instant</string>
-    <plurals name="prefs_visualizer_summary_packs">
-        <item quantity="one">%2$s · %1$d pack, %3$d préréglages</item>
-        <item quantity="other">%2$s · %1$d packs, %3$d préréglages</item>
-    </plurals>
     <string name="prefs_visualizer_favorites">Favoris</string>
     <string name="prefs_visualizer_favorites_none">Les préréglages marqués d’une étoile, de n’importe quel pack, joués comme un seul. Aucun pour l’instant.</string>
     <plurals name="prefs_visualizer_favorites_summary">
@@ -340,6 +318,7 @@
         <item quantity="other">%1$d préréglages marqués d’une étoile, de n’importe quel pack</item>
     </plurals>
     <string name="prefs_visualizer_plugin_section">Plugin</string>
+    <string name="prefs_visualizer_summary">Plugin, packs de préréglages, favoris, préréglages et ordre aléatoire</string>
     <string name="prefs_visualizer_avs_blurb">Le plugin de visualisation de Winamp, reconstruit. Joue les vrais préréglages .avs que vous importez.</string>
     <string name="prefs_visualizer_milkdrop_blurb">libprojectM. Joue les vrais préréglages .milk que vous importez.</string>
     <string name="prefs_visualizer_packs_section">Packs de préréglages</string>
@@ -363,17 +342,11 @@
     <string name="prefs_volume_device">Le curseur règle le volume multimédia du téléphone, comme les touches de volume</string>
 
     <!-- WidgetPrefs.kt -->
-    <string name="prefs_widget_summary_no_vis">Sans visualisation, fréquence d’actualisation %1$s</string>
-    <string name="prefs_widget_summary">%1$s, fréquence d’actualisation %2$s</string>
-    <string name="prefs_widget_summary_analyzer">Analyseur</string>
-    <string name="prefs_widget_summary_oscilloscope">Oscilloscope</string>
-    <string name="prefs_widget_summary_refresh_low">faible</string>
-    <string name="prefs_widget_summary_refresh_medium">moyenne</string>
-    <string name="prefs_widget_summary_refresh_high">élevée</string>
     <string name="prefs_widget_vis_analyzer">Des barres qui bougent avec la musique, sur une courte boucle</string>
     <string name="prefs_widget_vis_oscilloscope">Une ligne ondulée qui bouge avec la musique, sur une courte boucle</string>
     <string name="prefs_widget_vis_off">Rien ne bouge, et cela ne consomme rien</string>
     <string name="prefs_widget_visualizer_title">Visualisation</string>
+    <string name="prefs_widget_summary">Visualisation, actualisation, taille, appuis et skin</string>
     <string name="prefs_widget_refresh_title">Fréquence d’actualisation</string>
     <string name="prefs_widget_size_title">Taille</string>
     <string name="prefs_widget_logo_title">Seul le logo ouvre Andamp</string>

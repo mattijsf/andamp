@@ -85,7 +85,7 @@ class SourceOpsTest {
             override fun browse(context: Context): BrowseSource? = null
 
             @Composable
-            override fun Summary(signedIn: Boolean) = ""
+            override fun Warning(signedIn: Boolean): String? = null
 
             @Composable
             override fun Page(

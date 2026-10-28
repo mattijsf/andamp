@@ -723,7 +723,7 @@ the phone's language.
   view model holds the app's (`vm.words`, which the menu builders read), an ops class that
   words a prompt or a header takes it as a constructor parameter, and a composable hands it
   on with `rememberWords()`.
-- **Keys** are `area_meaning` in snake case (`menu_support_andamp`, `prefs_support_leave_a_tip`),
+- **Keys** are `area_meaning` in snake case (`menu_support_andamp`, `prefs_support_summary`),
   the area being the file's. The English text is the key's documentation; a comment on the
   resource says where it shows and what a placeholder holds when the key alone does not.
 - **Placeholders** are positional, `%1$s`, `%1$d`; a count that changes the wording is a
@@ -742,7 +742,7 @@ the phone's language.
   the page for translators.
 - **Code does not change the case of a word it shows.** Lower case inside a sentence is
   English: a German noun keeps its capital. A word that reads differently inside a line
-  gets a resource for that place, as the widget's summary line has.
+  gets a resource for that place.
 - **The library window squeezes a label that is wider than its cell** (`ListText.squeeze`),
   since its cells were sized for the English. In the skin's font it cuts the label to whole
   letters and the font's ellipsis instead (`BitmapFont.fitted`).

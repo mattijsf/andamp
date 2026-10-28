@@ -6,10 +6,6 @@ import androidx.annotation.StringRes
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import nl.mattix.andamp.R
-import nl.mattix.andamp.state.ListFont
-import nl.mattix.andamp.state.RowFormat
-import nl.mattix.andamp.state.RowHeight
-import nl.mattix.andamp.state.Words
 
 /** Preferences > Player: the player window's own switches, grouped by what they touch; [onRows] opens Song rows. */
 @Composable
@@ -26,7 +22,7 @@ internal fun PlayerPage(
     Group {
         ListFontRow(sections.lists)
         RowHeightRow(sections.lists)
-        RowFormatRow(sections.lists, onRows)
+        RowFormatRow(onRows)
         if (sections.lists.marksOffered) SourceMarksRow(sections.lists)
     }
     Section(stringResource(R.string.prefs_player_touch_section))
@@ -40,33 +36,18 @@ internal fun PlayerPage(
     ModernSkinsSection(sections.modern)
 }
 
-/** The Player row's line: which of its switches are on, or what the page holds when none are. */
-internal fun PrefsSections.playerSummary(words: Words): String {
-    val on =
-        listOfNotNull(
-            R.string.prefs_player_summary_always_on_top.takeIf { overlay.wanted },
-            R.string.prefs_player_summary_windows_stay_open.takeIf { !shade.shadeEnabled },
-            R.string.prefs_player_summary_regular_font.takeIf { lists.font == ListFont.REGULAR },
-            when (lists.rowHeight) {
-                RowHeight.CLASSIC -> null
-                RowHeight.ROOMY -> R.string.prefs_player_summary_roomy_rows
-                RowHeight.LARGE -> R.string.prefs_player_summary_large_rows
-            },
-            R.string.prefs_player_summary_row_format.takeIf { lists.rowFormat != RowFormat.DEFAULT },
-            R.string.prefs_player_summary_tap_assist.takeIf { tapAssist.enabled },
-            R.string.prefs_player_summary_wallpaper_colors.takeIf { palette.offered && palette.enabled },
-            R.string.prefs_player_summary_modern_skins.takeIf { modern.offered && modern.enabled },
-            R.string.prefs_player_summary_sharp_pixels.takeIf { modern.offered && modern.enabled && modern.sharp },
-        )
-    return on.joinToString(" · ") { words.get(it) }.ifEmpty { words.get(contents()) }
-}
-
-/** What the page holds, for the Player row's line when none of its switches is changed. */
+/**
+ * What the page holds, for the Player row's line, by the sections this phone shows: Colors where
+ * it can take them from the wallpaper, Skins where modern skins are offered.
+ */
 @StringRes
-private fun PrefsSections.contents(): Int =
-    when {
-        overlay.offered && modern.offered -> R.string.prefs_player_summary_all_with_overlay_skins
-        overlay.offered -> R.string.prefs_player_summary_all_with_overlay
-        modern.offered -> R.string.prefs_player_summary_all_skins
-        else -> R.string.prefs_player_summary_all
+internal fun PrefsSections.playerSummary(): Int {
+    val colors = palette.offered
+    val skins = modern.offered
+    return when {
+        colors && skins -> R.string.prefs_player_summary_all_skins
+        colors -> R.string.prefs_player_summary_all
+        skins -> R.string.prefs_player_summary_no_colors_skins
+        else -> R.string.prefs_player_summary_no_colors
     }
+}

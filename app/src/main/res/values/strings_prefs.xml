@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- AndroidAutoPrefs.kt -->
-    <string name="prefs_android_auto_wears_skin">Wears %1$s</string>
-    <string name="prefs_android_auto_wears_own_skin">Wears the player\'s own skin</string>
     <string name="prefs_android_auto_skin_section">Skin</string>
+    <!-- The Android Auto row's line: what the page holds. -->
+    <string name="prefs_android_auto_summary">Status, skin, playlist and versions</string>
     <string name="prefs_android_auto_skin_note">In Android Auto the main window wears this skin. Default keeps the one you picked for the player.</string>
     <string name="prefs_android_auto_skin_heading">Skin in Android Auto</string>
     <string name="prefs_android_auto_list_section">Playlist</string>
@@ -22,24 +22,16 @@
 
     <!-- EffectsPage.kt -->
     <string name="prefs_effects_unavailable_summary">This playback backend does not run effects.</string>
-    <!-- The Effects row's line: how many effects the rack holds, none of them on. -->
-    <plurals name="prefs_effects_summary_none_on">
-        <item quantity="one">%1$d effect · none on</item>
-        <item quantity="other">%1$d effects · none on</item>
-    </plurals>
-    <!-- The Effects row's line: how many effects the rack holds, and how many are on. -->
-    <plurals name="prefs_effects_summary_on">
-        <item quantity="one">%1$d effect · %2$d on</item>
-        <item quantity="other">%1$d effects · %2$d on</item>
-    </plurals>
+    <!-- The Effects row's line: what the page holds. -->
+    <string name="prefs_effects_summary">Effect chain, plug-ins and peak limiter</string>
     <string name="prefs_effects_unavailable">This playback backend doesn\'t run effects.</string>
     <string name="prefs_effects_input_label">Input · before all effects</string>
     <string name="prefs_effects_label">Effects</string>
     <string name="prefs_effects_order_note">Audio flows top to bottom — the order changes the sound.</string>
     <string name="prefs_effects_output_label">Output · after all effects</string>
     <string name="prefs_effects_manage_plugins">Manage plug-ins</string>
-    <string name="prefs_effects_none_added">None added yet</string>
-    <string name="prefs_effects_added_count">%1$d added</string>
+    <!-- Under Manage plug-ins: what its page holds. -->
+    <string name="prefs_effects_manage_plugins_summary">Plug-ins you added, and adding more</string>
 
     <!-- LicencesPage.kt -->
     <string name="prefs_licences_note">Andamp is built on other people\'s work. Each entry links to its source, where the full license text lives.</string>
@@ -74,6 +66,8 @@
     <string name="prefs_lists_marks_before">Before</string>
     <string name="prefs_lists_marks_after">After</string>
     <string name="prefs_rows_preview_section">Preview</string>
+    <!-- The Song rows row's line: what the page holds. -->
+    <string name="prefs_rows_summary">What a song row shows, and in what order</string>
     <string name="prefs_rows_blocks_section">What a row shows</string>
     <string name="prefs_rows_blocks_about">Hold a block to drag it. When a song lacks a field, the text after that field is left out with it.</string>
     <string name="prefs_rows_before">Text before</string>
@@ -156,8 +150,6 @@
     <string name="prefs_pack_too_old">Installed, but too old for this version of Andamp</string>
     <string name="prefs_pack_too_new">Installed, but made for a newer version of Andamp</string>
     <string name="prefs_pack_not_signed_in">Not signed in</string>
-    <string name="prefs_pack_signed_in_as">Signed in as %1$s</string>
-    <string name="prefs_pack_signed_in_here">Signed in on this phone</string>
     <!-- The source's name. -->
     <string name="prefs_pack_notice_outdated">%1$s is set up for an older Andamp and is not asked to play anything. A newer one puts its tracks back.</string>
     <string name="prefs_pack_notice_ahead">%1$s is set up for a newer Andamp and is not asked to play anything. Updating Andamp puts its tracks back.</string>
@@ -173,26 +165,16 @@
     <string name="prefs_player_lists_section">Lists</string>
     <string name="prefs_player_touch_section">Touch</string>
     <string name="prefs_player_colors_section">Colors</string>
-    <string name="prefs_player_summary_always_on_top">Always on top</string>
-    <string name="prefs_player_summary_windows_stay_open">Windows stay open</string>
-    <string name="prefs_player_summary_regular_font">Regular font in the lists</string>
-    <string name="prefs_player_summary_roomy_rows">Roomy rows</string>
-    <string name="prefs_player_summary_large_rows">Large rows</string>
-    <string name="prefs_player_summary_row_format">Custom song rows</string>
-    <string name="prefs_player_summary_tap_assist">Tap assist</string>
-    <string name="prefs_player_summary_wallpaper_colors">Wallpaper colors</string>
-    <string name="prefs_player_summary_all_with_overlay">Always on top, windows, lists, touch and colors</string>
+    <!-- The Player row's line: what the page holds. -->
     <string name="prefs_player_summary_all">Windows, lists, touch and colors</string>
     <!-- The heading of the last section on Preferences > Player, over the modern skins switch; shown in a build that offers modern skins. -->
     <string name="prefs_player_skins_section">Skins</string>
-    <!-- In the Player row's line on the Preferences list, while the modern skins switch is on. -->
-    <string name="prefs_player_summary_modern_skins">Modern skins</string>
-    <!-- In the Player row's line on the Preferences list, while modern skins and sharp pixels are both on. -->
-    <string name="prefs_player_summary_sharp_pixels">Sharp pixels</string>
-    <!-- The Player row's line when none of its switches is changed, in a build that offers modern skins: what the page holds. -->
+    <!-- The Player row's line in a build that offers modern skins: what the page holds. -->
     <string name="prefs_player_summary_all_skins">Windows, lists, touch, colors and skins</string>
-    <!-- As prefs_player_summary_all_skins, on a phone that offers Always on top. -->
-    <string name="prefs_player_summary_all_with_overlay_skins">Always on top, windows, lists, touch, colors and skins</string>
+    <!-- As prefs_player_summary_all, on a phone that cannot take colors from the wallpaper. -->
+    <string name="prefs_player_summary_no_colors">Windows, lists and touch</string>
+    <!-- As prefs_player_summary_all_skins, on a phone that cannot take colors from the wallpaper. -->
+    <string name="prefs_player_summary_no_colors_skins">Windows, lists, touch and skins</string>
 
     <!-- ModernSkinPrefs.kt: the Skins section on Preferences > Player -->
     <!-- The switch that lets Winamp modern skins be added and worn. -->
@@ -260,13 +242,14 @@
     <string name="prefs_page_support">Support Andamp</string>
     <string name="prefs_page_about">About Andamp</string>
     <string name="prefs_page_licences">Open-source licenses</string>
+    <!-- The licenses row's line: what the page holds. -->
+    <string name="prefs_about_licences_summary">The projects Andamp is built on, and their licenses</string>
+    <!-- The About row's line: what the page holds. -->
+    <string name="prefs_about_summary">Version and open-source licenses</string>
     <string name="prefs_title">Preferences</string>
     <string name="prefs_sound_section">Sound</string>
     <string name="prefs_look_section">Look &amp; feel</string>
-    <!-- The app's version. -->
-    <string name="prefs_about_summary">Version %1$s · open-source licenses</string>
     <string name="prefs_about_note">Andamp %1$s — a Winamp 2.8 replica, not affiliated with Winamp or its owners.</string>
-    <string name="prefs_about_licences_summary">%1$d projects Andamp is built on</string>
 
     <!-- PrefsTopBar.kt -->
     <string name="prefs_top_back">Back to preferences</string>
@@ -316,8 +299,9 @@
     <!-- The permission's name, as the phone calls it. -->
     <string name="prefs_phone_permission_off">%1$s permission is off</string>
     <string name="prefs_phone_allow">Allow %1$s to show the music on this phone</string>
+    <!-- The phone row's line while the music can be read: what the page holds. -->
+    <string name="prefs_phone_summary">Access, library and scanning</string>
     <string name="prefs_phone_counting">Counting…</string>
-    <string name="prefs_phone_no_music">No music found on this phone yet</string>
     <string name="prefs_phone_access_section">Access</string>
     <string name="prefs_phone_library_section">Library</string>
     <string name="prefs_phone_tracks">Tracks</string>
@@ -332,7 +316,15 @@
     <string name="prefs_source_settings_section">Settings</string>
     <!-- The source's name. -->
     <string name="prefs_source_settings_title">%1$s settings</string>
-    <string name="prefs_source_settings_summary">Its account and whatever else it offers, on its own screen</string>
+    <string name="prefs_source_settings_summary">Account and other options, in the source\'s app</string>
+    <!-- A source's row line: what its page holds while it plays and asks nothing of the listener. -->
+    <string name="prefs_source_summary">Account and settings</string>
+    <!-- A source's row line, when its page shows the skin and no update check. -->
+    <string name="prefs_source_summary_skin">Account, settings and skin</string>
+    <!-- A source's row line, when its page shows the update check and no skin. -->
+    <string name="prefs_source_summary_updates">Account, settings and updates</string>
+    <!-- A source's row line, when its page shows the skin and the update check. -->
+    <string name="prefs_source_summary_skin_updates">Account, settings, skin and updates</string>
     <string name="prefs_source_skin_section">Skin</string>
     <string name="prefs_source_updates_section">Updates</string>
     <string name="prefs_source_skin_note">While a track from %1$s is playing, the player wears this skin. Default keeps the one you picked for the player.</string>
@@ -348,10 +340,11 @@
     <string name="prefs_updates_retry">Try again</string>
 
     <!-- SupportPrefs.kt -->
-    <string name="prefs_support_on_site">On andamp.nl</string>
-    <string name="prefs_support_thanked">Thank you for your tip</string>
-    <string name="prefs_support_leave_a_tip">Leave a tip</string>
     <string name="prefs_support_intro">Andamp is free and has no ads. If you enjoy it, you can leave a tip. A tip unlocks nothing: everything in Andamp stays free, with or without one.</string>
+    <!-- The Support row's line in a build that points to the website instead. -->
+    <string name="prefs_support_summary_outside">How to support Andamp on its website</string>
+    <!-- The Support row's line where Google Play sells the tips: what the page holds. -->
+    <string name="prefs_support_summary">What a tip is for, and how to give one</string>
     <string name="prefs_support_closed">Tips are not available on this phone right now.</string>
     <string name="prefs_support_play_note">Google Play takes the payment. A tip can be given more than once.</string>
     <string name="prefs_support_given">You have supported Andamp. Thank you.</string>
@@ -368,13 +361,6 @@
     <string name="prefs_tap_assist_off">Buttons answer a plain tap only. Switch this on if the small ones are hard to hit.</string>
 
     <!-- VisualizerPrefs.kt -->
-    <!-- The engine's name. -->
-    <string name="prefs_visualizer_summary_no_packs">%1$s · no preset packs yet</string>
-    <!-- How many packs, the engine's name, how many presets. -->
-    <plurals name="prefs_visualizer_summary_packs">
-        <item quantity="one">%2$s · %1$d pack, %3$d presets</item>
-        <item quantity="other">%2$s · %1$d packs, %3$d presets</item>
-    </plurals>
     <string name="prefs_visualizer_favorites">Favorites</string>
     <string name="prefs_visualizer_favorites_none">The presets you star, from any pack, played as one. None yet.</string>
     <plurals name="prefs_visualizer_favorites_summary">
@@ -382,6 +368,8 @@
         <item quantity="other">%1$d presets you starred, from any pack</item>
     </plurals>
     <string name="prefs_visualizer_plugin_section">Plug-in</string>
+    <!-- The Visualizer row's line: what the page holds. -->
+    <string name="prefs_visualizer_summary">Plug-in, preset packs, favorites, presets and shuffle</string>
     <string name="prefs_visualizer_avs_blurb">Winamp\'s own visualizer, rebuilt. Runs real .avs presets you import.</string>
     <string name="prefs_visualizer_milkdrop_blurb">libprojectM. Runs real .milk presets you import.</string>
     <string name="prefs_visualizer_packs_section">Preset packs</string>
@@ -407,20 +395,12 @@
     <string name="prefs_volume_device">The slider moves the phone\'s media volume, like the rocker</string>
 
     <!-- WidgetPrefs.kt -->
-    <!-- The line under the widget's row in Preferences. %1$s is one of the three refresh rates below. -->
-    <string name="prefs_widget_summary_no_vis">No visualizer, %1$s refresh rate</string>
-    <!-- %1$s is one of the two visualizers below, %2$s one of the three refresh rates. -->
-    <string name="prefs_widget_summary">%1$s, %2$s refresh rate</string>
-    <!-- The words those two lines are filled with, written as they read inside the line. -->
-    <string name="prefs_widget_summary_analyzer">analyzer</string>
-    <string name="prefs_widget_summary_oscilloscope">oscilloscope</string>
-    <string name="prefs_widget_summary_refresh_low">low</string>
-    <string name="prefs_widget_summary_refresh_medium">medium</string>
-    <string name="prefs_widget_summary_refresh_high">high</string>
     <string name="prefs_widget_vis_analyzer">Bars that move with the music, on a short loop</string>
     <string name="prefs_widget_vis_oscilloscope">A wavy line that moves with the music, on a short loop</string>
     <string name="prefs_widget_vis_off">Nothing moves, and nothing is spent on it</string>
     <string name="prefs_widget_visualizer_title">Visualizer</string>
+    <!-- The widget row's line: what the page holds. -->
+    <string name="prefs_widget_summary">Visualizer, refresh rate, size, taps and skin</string>
     <string name="prefs_widget_refresh_title">Refresh rate</string>
     <string name="prefs_widget_size_title">Size</string>
     <string name="prefs_widget_logo_title">Only the logo opens Andamp</string>

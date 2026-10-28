@@ -182,15 +182,6 @@ data class PhoneStats(
     val durationMs: Long,
     val bytes: Long,
 ) {
-    /** The row's subtitle on the main Preferences page. */
-    fun summary(words: Words): String =
-        words.get(
-            R.string.phone_summary,
-            words.plural(R.plurals.phone_count_tracks, tracks),
-            words.plural(R.plurals.phone_count_artists, artists),
-            words.plural(R.plurals.phone_count_albums, albums),
-        )
-
     /** The total playing time, as "3 days 4 hours" or "52 minutes". */
     fun listening(words: Words): String {
         val minutes = durationMs / MS_PER_MINUTE

@@ -7,6 +7,7 @@ import android.graphics.Bitmap
 import android.graphics.drawable.AdaptiveIconDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
+import androidx.annotation.StringRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -117,7 +118,7 @@ internal fun SourcesSection(
     Group {
         NavRow(
             title = MusicSource.LOCAL.shown(words),
-            summary = phoneSummary(access, sources.phone.stats, words),
+            summary = phoneSummary(access, words),
             tag = "prefs.source.phone",
             onClick = onPhone,
             leading = Icons.Outlined.PhoneAndroid,
@@ -126,7 +127,7 @@ internal fun SourcesSection(
         sources.extras.forEach { extra ->
             NavRow(
                 title = extra.source.label,
-                summary = extra.Summary(signedIn = extra.source in sources.signedIn),
+                summary = extra.Warning(signedIn = extra.source in sources.signedIn) ?: stringResource(extra.summary()),
                 tag = "prefs.${sourceRoute(extra.source).replace('/', '.')}",
                 onClick = { onSource(extra.source) },
                 leading = Icons.Outlined.LibraryMusic,
@@ -186,18 +187,31 @@ private fun Drawable.glyph(): Glyph {
 private const val ADAPTIVE_CANVAS = 216
 private const val ADAPTIVE_SAFE = 144
 
-/** The phone row's summary: the permission when it is missing, otherwise the count. */
+/**
+ * The phone row's line: what the page holds, or, while the music cannot be read, what to allow,
+ * since nothing from the phone plays until it is.
+ */
 internal fun phoneSummary(
     access: LibraryAccess,
-    stats: PhoneStats?,
     words: Words,
 ): String =
+    when (access) {
+        LibraryAccess.BLOCKED -> words.get(R.string.prefs_phone_permission_off, MusicPermission.current(words))
+        LibraryAccess.ASKABLE -> words.get(R.string.prefs_phone_allow, MusicPermission.current(words))
+        LibraryAccess.GRANTED -> words.get(R.string.prefs_phone_summary)
+    }
+
+/**
+ * What a source's page holds, for its row's line: its account and settings, then the skin and the
+ * update check where the page shows them.
+ */
+@StringRes
+internal fun ExtraSource.summary(): Int =
     when {
-        access == LibraryAccess.BLOCKED -> words.get(R.string.prefs_phone_permission_off, MusicPermission.current(words))
-        access != LibraryAccess.GRANTED -> words.get(R.string.prefs_phone_allow, MusicPermission.current(words))
-        stats == null -> words.get(R.string.prefs_phone_counting)
-        stats.tracks == 0 -> words.get(R.string.prefs_phone_no_music)
-        else -> stats.summary(words)
+        skinnable && updates != null -> R.string.prefs_source_summary_skin_updates
+        skinnable -> R.string.prefs_source_summary_skin
+        updates != null -> R.string.prefs_source_summary_updates
+        else -> R.string.prefs_source_summary
     }
 
 /**

@@ -16,7 +16,6 @@ import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import nl.mattix.andamp.state.EnglishWords
 import nl.mattix.andamp.state.ListFont
 import nl.mattix.andamp.state.SkinEntry
 import nl.mattix.andamp.ui.remote.CompanionCheck
@@ -213,16 +212,5 @@ class AndroidAutoPrefsTest {
         show()
 
         compose.onNodeWithText("Status").assertDoesNotExist()
-    }
-
-    @Test
-    fun `the row that opens the page names the skin`() {
-        assertEquals("Wears Walnut", AndroidAutoPrefs(skins = skins, skin = "wood").summary(EnglishWords))
-        assertEquals("Wears the player's own skin", AndroidAutoPrefs(skins = skins).summary(EnglishWords))
-    }
-
-    @Test
-    fun `a chosen skin that has gone reads as the player's own`() {
-        assertEquals("Wears the player's own skin", AndroidAutoPrefs(skins = skins, skin = "gone").summary(EnglishWords))
     }
 }

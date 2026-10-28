@@ -54,19 +54,6 @@
     <string name="overlay_summary_on">De speler zweeft boven andere apps</string>
 
     <!-- PhoneLibrary.kt -->
-    <plurals name="phone_count_tracks">
-        <item quantity="one">%1$,d nummer</item>
-        <item quantity="other">%1$,d nummers</item>
-    </plurals>
-    <plurals name="phone_count_artists">
-        <item quantity="one">%1$,d artiest</item>
-        <item quantity="other">%1$,d artiesten</item>
-    </plurals>
-    <plurals name="phone_count_albums">
-        <item quantity="one">%1$,d album</item>
-        <item quantity="other">%1$,d albums</item>
-    </plurals>
-    <string name="phone_summary">%1$s · %2$s · %3$s</string>
     <plurals name="phone_days">
         <item quantity="one">%1$,d dag</item>
         <item quantity="other">%1$,d dagen</item>

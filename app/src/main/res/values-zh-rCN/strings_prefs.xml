@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- AndroidAutoPrefs.kt -->
-    <string name="prefs_android_auto_wears_skin">使用 %1$s</string>
-    <string name="prefs_android_auto_wears_own_skin">使用播放器自己的面板</string>
     <string name="prefs_android_auto_skin_section">面板</string>
+    <string name="prefs_android_auto_summary">状态、面板、播放列表和版本</string>
     <string name="prefs_android_auto_skin_note">在 Android Auto 中，主窗口使用这个面板。“默认”沿用您为播放器选择的面板。</string>
     <string name="prefs_android_auto_skin_heading">Android Auto 中的面板</string>
     <string name="prefs_android_auto_list_section">播放列表</string>
@@ -21,20 +20,14 @@
 
     <!-- EffectsPage.kt -->
     <string name="prefs_effects_unavailable_summary">此播放后端不支持效果。</string>
-    <plurals name="prefs_effects_summary_none_on">
-        <item quantity="other">%1$d 个效果 · 均未开启</item>
-    </plurals>
-    <plurals name="prefs_effects_summary_on">
-        <item quantity="other">%1$d 个效果 · %2$d 个已开启</item>
-    </plurals>
+    <string name="prefs_effects_summary">效果链、插件和峰值限制器</string>
     <string name="prefs_effects_unavailable">此播放后端不支持效果。</string>
     <string name="prefs_effects_input_label">输入 · 在所有效果之前</string>
     <string name="prefs_effects_label">效果</string>
     <string name="prefs_effects_order_note">音频自上而下流过，顺序会改变声音。</string>
     <string name="prefs_effects_output_label">输出 · 在所有效果之后</string>
     <string name="prefs_effects_manage_plugins">管理插件</string>
-    <string name="prefs_effects_none_added">尚未添加</string>
-    <string name="prefs_effects_added_count">已添加 %1$d 个</string>
+    <string name="prefs_effects_manage_plugins_summary">已添加的插件，以及添加更多插件</string>
 
     <!-- LicencesPage.kt -->
     <string name="prefs_licences_note">Andamp 建立在他人的成果之上。每个条目都链接到其源代码，完整的许可证文本也在那里。</string>
@@ -67,6 +60,7 @@
     <string name="prefs_lists_marks_before">前</string>
     <string name="prefs_lists_marks_after">后</string>
     <string name="prefs_rows_preview_section">预览</string>
+    <string name="prefs_rows_summary">歌曲行显示的内容及其顺序</string>
     <string name="prefs_rows_blocks_section">每行显示的内容</string>
     <string name="prefs_rows_blocks_about">按住方块即可拖动。歌曲缺少某个字段时，该字段后的文字一并省略。</string>
     <string name="prefs_rows_before">前置文字</string>
@@ -136,8 +130,6 @@
     <string name="prefs_pack_too_old">已安装，但对这个版本的 Andamp 来说太旧</string>
     <string name="prefs_pack_too_new">已安装，但它是为更新版本的 Andamp 制作的</string>
     <string name="prefs_pack_not_signed_in">未登录</string>
-    <string name="prefs_pack_signed_in_as">已登录为 %1$s</string>
-    <string name="prefs_pack_signed_in_here">已在这部手机上登录</string>
     <string name="prefs_pack_notice_outdated">%1$s 是为旧版 Andamp 设置的，不会被要求播放任何内容。更新它即可恢复它的曲目。</string>
     <string name="prefs_pack_notice_ahead">%1$s 是为新版 Andamp 设置的，不会被要求播放任何内容。更新 Andamp 即可恢复它的曲目。</string>
     <string name="prefs_pack_update">更新 %1$s</string>
@@ -152,21 +144,11 @@
     <string name="prefs_player_lists_section">列表</string>
     <string name="prefs_player_touch_section">触控</string>
     <string name="prefs_player_colors_section">颜色</string>
-    <string name="prefs_player_summary_always_on_top">总在最前</string>
-    <string name="prefs_player_summary_windows_stay_open">窗口保持展开</string>
-    <string name="prefs_player_summary_regular_font">列表使用常规字体</string>
-    <string name="prefs_player_summary_roomy_rows">宽松的行</string>
-    <string name="prefs_player_summary_large_rows">大号的行</string>
-    <string name="prefs_player_summary_row_format">自定义歌曲行</string>
-    <string name="prefs_player_summary_tap_assist">点按辅助</string>
-    <string name="prefs_player_summary_wallpaper_colors">壁纸颜色</string>
-    <string name="prefs_player_summary_all_with_overlay">总在最前、窗口、列表、触控和颜色</string>
     <string name="prefs_player_summary_all">窗口、列表、触控和颜色</string>
     <string name="prefs_player_skins_section">面板</string>
-    <string name="prefs_player_summary_modern_skins">现代面板</string>
-    <string name="prefs_player_summary_sharp_pixels">锐利像素</string>
     <string name="prefs_player_summary_all_skins">窗口、列表、触控、颜色和面板</string>
-    <string name="prefs_player_summary_all_with_overlay_skins">总在最前、窗口、列表、触控、颜色和面板</string>
+    <string name="prefs_player_summary_no_colors">窗口、列表和触控</string>
+    <string name="prefs_player_summary_no_colors_skins">窗口、列表、触控和面板</string>
 
     <!-- ModernSkinPrefs.kt -->
     <string name="prefs_modern_skins_title">现代面板（测试版）</string>
@@ -223,12 +205,12 @@
     <string name="prefs_page_support">支持 Andamp</string>
     <string name="prefs_page_about">关于 Andamp</string>
     <string name="prefs_page_licences">开源许可证</string>
+    <string name="prefs_about_licences_summary">Andamp 所基于的项目及其许可证</string>
+    <string name="prefs_about_summary">版本和开源许可证</string>
     <string name="prefs_title">首选项</string>
     <string name="prefs_sound_section">声音</string>
     <string name="prefs_look_section">外观与操作</string>
-    <string name="prefs_about_summary">版本 %1$s · 开源许可证</string>
     <string name="prefs_about_note">Andamp %1$s，Winamp 2.8 的复刻版，与 Winamp 及其所有者无关联。</string>
-    <string name="prefs_about_licences_summary">Andamp 所基于的 %1$d 个项目</string>
 
     <!-- PrefsTopBar.kt -->
     <string name="prefs_top_back">返回首选项</string>
@@ -274,8 +256,8 @@
     <string name="prefs_sources_more_summary">Andamp 还能从哪些地方播放音乐，以及如何添加</string>
     <string name="prefs_phone_permission_off">“%1$s”权限已关闭</string>
     <string name="prefs_phone_allow">允许“%1$s”以显示这部手机上的音乐</string>
+    <string name="prefs_phone_summary">访问权限、媒体库和扫描</string>
     <string name="prefs_phone_counting">正在统计…</string>
-    <string name="prefs_phone_no_music">尚未在这部手机上找到音乐</string>
     <string name="prefs_phone_access_section">访问权限</string>
     <string name="prefs_phone_library_section">媒体库</string>
     <string name="prefs_phone_tracks">曲目</string>
@@ -289,7 +271,11 @@
     <string name="prefs_phone_scanning">正在扫描…</string>
     <string name="prefs_source_settings_section">设置</string>
     <string name="prefs_source_settings_title">%1$s 设置</string>
-    <string name="prefs_source_settings_summary">它的账户以及它提供的其他选项，在它自己的界面中</string>
+    <string name="prefs_source_settings_summary">账户和其他选项，在该来源的应用中</string>
+    <string name="prefs_source_summary">账户和设置</string>
+    <string name="prefs_source_summary_skin">账户、设置和面板</string>
+    <string name="prefs_source_summary_updates">账户、设置和更新</string>
+    <string name="prefs_source_summary_skin_updates">账户、设置、面板和更新</string>
     <string name="prefs_source_skin_section">面板</string>
     <string name="prefs_source_updates_section">更新</string>
     <string name="prefs_source_skin_note">播放来自 %1$s 的曲目时，播放器使用这个面板。“默认”沿用您为播放器选择的面板。</string>
@@ -304,10 +290,9 @@
     <string name="prefs_updates_retry">重试</string>
 
     <!-- SupportPrefs.kt -->
-    <string name="prefs_support_on_site">在 andamp.nl 上</string>
-    <string name="prefs_support_thanked">感谢您的打赏</string>
-    <string name="prefs_support_leave_a_tip">打赏</string>
     <string name="prefs_support_intro">Andamp 免费且没有广告。如果您喜欢它，可以打赏。打赏不会解锁任何功能：无论是否打赏，Andamp 的一切都保持免费。</string>
+    <string name="prefs_support_summary_outside">如何通过网站支持 Andamp</string>
+    <string name="prefs_support_summary">打赏的用途和打赏方式</string>
     <string name="prefs_support_closed">这部手机目前无法打赏。</string>
     <string name="prefs_support_play_note">由 Google Play 收款。可以多次打赏。</string>
     <string name="prefs_support_given">您已支持过 Andamp。谢谢。</string>
@@ -323,16 +308,13 @@
     <string name="prefs_tap_assist_off">按钮只响应普通点按。如果小按钮不容易点中，请打开此项。</string>
 
     <!-- VisualizerPrefs.kt -->
-    <string name="prefs_visualizer_summary_no_packs">%1$s · 尚无预设包</string>
-    <plurals name="prefs_visualizer_summary_packs">
-        <item quantity="other">%2$s · %1$d 个预设包，%3$d 个预设</item>
-    </plurals>
     <string name="prefs_visualizer_favorites">收藏</string>
     <string name="prefs_visualizer_favorites_none">您加星标的预设，来自任意预设包，作为一个整体播放。暂无。</string>
     <plurals name="prefs_visualizer_favorites_summary">
         <item quantity="other">%1$d 个加星标的预设，来自任意预设包</item>
     </plurals>
     <string name="prefs_visualizer_plugin_section">插件</string>
+    <string name="prefs_visualizer_summary">插件、预设包、收藏、预设和随机播放</string>
     <string name="prefs_visualizer_avs_blurb">Winamp 自己的可视化效果，重新实现。可运行您导入的真正的 .avs 预设。</string>
     <string name="prefs_visualizer_milkdrop_blurb">libprojectM。可运行您导入的真正的 .milk 预设。</string>
     <string name="prefs_visualizer_packs_section">预设包</string>
@@ -356,17 +338,11 @@
     <string name="prefs_volume_device">滑块调节手机的媒体音量，与音量键一样</string>
 
     <!-- WidgetPrefs.kt -->
-    <string name="prefs_widget_summary_no_vis">无可视化效果，刷新率：%1$s</string>
-    <string name="prefs_widget_summary">%1$s，刷新率：%2$s</string>
-    <string name="prefs_widget_summary_analyzer">分析器</string>
-    <string name="prefs_widget_summary_oscilloscope">示波器</string>
-    <string name="prefs_widget_summary_refresh_low">低</string>
-    <string name="prefs_widget_summary_refresh_medium">中</string>
-    <string name="prefs_widget_summary_refresh_high">高</string>
     <string name="prefs_widget_vis_analyzer">随音乐跳动的柱状条，短循环播放</string>
     <string name="prefs_widget_vis_oscilloscope">随音乐起伏的波形线，短循环播放</string>
     <string name="prefs_widget_vis_off">没有任何动画，也不消耗任何资源</string>
     <string name="prefs_widget_visualizer_title">可视化效果</string>
+    <string name="prefs_widget_summary">可视化效果、刷新率、大小、点按和面板</string>
     <string name="prefs_widget_refresh_title">刷新率</string>
     <string name="prefs_widget_size_title">大小</string>
     <string name="prefs_widget_logo_title">只有徽标可打开 Andamp</string>
