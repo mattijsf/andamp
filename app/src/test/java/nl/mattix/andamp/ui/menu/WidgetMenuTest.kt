@@ -117,6 +117,25 @@ class WidgetMenuTest {
     }
 
     @Test
+    fun `a worn modern skin's options are on it, and grayed`() {
+        val worn = wearThemedModernSkin(app).also { wearing = it }
+        seedSkinOptions(worn.skinOps.wal!!) { rt -> rt.optionsItem().option("Option", "1") }
+
+        val settings = find("Skin Settings", menu(worn).items)
+
+        assertNotNull("Skin Settings is on the menu", settings)
+        assertFalse("Skin Settings is grayed on the widget", (settings as AmpMenuItem.Submenu).enabled)
+    }
+
+    @Test
+    fun `after a cold start the skin has not loaded, so it offers no Skin Settings`() {
+        val worn = wearThemedModernSkin(app, started = false).also { wearing = it }
+
+        assertNotNull("the modern skin is worn", worn.skinOps.wal)
+        assertNull(find("Skin Settings", menu(worn).items))
+    }
+
+    @Test
     fun `what works from a home screen is left alone`() {
         // the verbs act on the player; Preferences and the museum are screens opened by name
         listOf("Play", "Stop", "Next", "Repeat", "Shuffle", "Time remaining", "Preferences...", "<< Get more skins! >>")

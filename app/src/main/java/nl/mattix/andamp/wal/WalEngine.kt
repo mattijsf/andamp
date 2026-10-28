@@ -460,8 +460,8 @@ internal class WalEngine(
 
     /**
      * Ticks the skin, and publishes a frame when what it shows changed, when an animation started or
-     * ended, when a frame waits for this tick, or when whether the skin wants frames from the screen
-     * changed. A log line alone publishes nothing.
+     * ended, when a frame waits for this tick, when whether the skin wants frames from the screen
+     * changed, or when the skin's options changed. A log line alone publishes nothing.
      */
     private fun tick(cause: WalCause) {
         val runtime = rt ?: return
@@ -478,7 +478,8 @@ internal class WalEngine(
         // and so does a skin that starts or stops wanting frames, or goes static
         val due =
             changed || pendingCause != null || runtime.animating != shown?.animating ||
-                rest.wantsFrames(idle, now) != shown?.wantsFrames
+                rest.wantsFrames(idle, now) != shown?.wantsFrames ||
+                shown?.layout?.let { it.skinOptions.version != runtime.configVersion } == true
         val t1 = host.menus.workClock
         val drew = due && publish(cause, tickNanos, merge = true, idleNow = idle)
         val drawNanos = if (drew) host.menus.workClock - t1 else 0L

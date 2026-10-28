@@ -17,6 +17,7 @@ import kotlinx.coroutines.sync.Mutex
 import nl.mattix.andamp.modernskin.skin.Player
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinMenu
+import nl.mattix.andamp.modernskin.skin.SkinOptions
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import java.io.File
 import java.util.concurrent.CompletableFuture
@@ -274,6 +275,16 @@ internal class WalLook(
     override fun pickTheme(name: String) {
         lastInputAt = SystemClock.uptimeMillis()
         engine?.post { it.selectGammaSet(name) }
+    }
+
+    /**
+     * Flips a skin option on the engine thread; the next frame carries the options as they then
+     * stand, and the change is saved as the skin's other settings are ([keepLater]). Dropped before
+     * the engine has started and after [release].
+     */
+    override fun toggleSkinOption(key: SkinOptions.Key) {
+        lastInputAt = SystemClock.uptimeMillis()
+        engine?.post { it.toggleSkinOption(key) }
     }
 
     override fun save() {
