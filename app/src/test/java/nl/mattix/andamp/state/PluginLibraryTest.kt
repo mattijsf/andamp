@@ -8,12 +8,14 @@ import nl.mattix.andamp.core.dsp.GraphSpec
 import nl.mattix.andamp.core.plugin.PluginSpec
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import java.io.File
+import java.io.IOException
 
 /**
  * Where an installed plug-in lives: the file the listener picked is copied in, so the
@@ -99,5 +101,34 @@ class PluginLibraryTest {
         // a second instance is what a relaunch amounts to
         assertEquals(listOf("Gain"), library().list().map { it.name })
         assertEquals(listOf("-- gain"), library().sources())
+    }
+
+    @Test
+    fun `a plug-in is flushed whole before the rename names it, and the folder after it`() {
+        val id = library().idFor("-- gain")
+        val plugins = File(app.filesDir, "plugins")
+
+        fun sizeOf(name: String) = File(plugins, name).let { if (it.exists()) "${it.length()}" else "none" }
+        val seen = ArrayList<String>()
+        val flushing =
+            PluginLibrary(app) { channel ->
+                seen += "part ${sizeOf("$id.lua.tmp")}, stored ${sizeOf("$id.lua")}"
+                channel.force(true)
+            }
+
+        flushing.save("-- gain", spec())
+
+        assertEquals(listOf("part 7, stored none", "part none, stored 7"), seen)
+        assertEquals(listOf("$id.lua"), plugins.list()!!.toList())
+    }
+
+    @Test
+    fun `a plug-in whose flush fails is not installed, and leaves no part`() {
+        val failing = PluginLibrary(app) { throw IOException("the disk failed") }
+
+        assertThrows(IOException::class.java) { failing.save("-- gain", spec()) }
+
+        assertEquals(emptyList<PluginEntry>(), library().list())
+        assertEquals(emptyList<String>(), File(app.filesDir, "plugins").list()!!.toList())
     }
 }
