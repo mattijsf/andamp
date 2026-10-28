@@ -79,6 +79,7 @@ class SimplifiedChineseTest {
         assertEquals("总在最上", words.get(R.string.overlay_title))
         assertEquals("随机", words.get(R.string.menu_shuffle))
         assertEquals("重复", words.get(R.string.menu_repeat))
+        assertEquals("2 个收藏，来自任意预设包。下一个和随机只在其中切换。", words.plural(R.plurals.prefs_milkdrop_favorites_count, 2))
         assertEquals("排队", words.get(R.string.menu_enqueue))
         assertEquals("+3 已排队", words.get(R.string.library_queued, 3))
         assertEquals(emptyList<String>(), chineseLinesWith("总在最前"))

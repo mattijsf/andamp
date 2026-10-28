@@ -8,6 +8,7 @@
     <string name="eq_menu_preset">Preset...</string>
     <string name="eq_menu_default">Standaard</string>
     <string name="eq_auto_load_preset">Auto-preset</string>
+    <string name="eq_menu_auto_load_load">Auto-preset</string>
     <string name="eq_menu_auto_load_delete">Auto-preset...</string>
     <string name="eq_save_preset_title">Preset opslaan</string>
     <string name="eq_save_auto_preset_title">Auto-preset opslaan</string>

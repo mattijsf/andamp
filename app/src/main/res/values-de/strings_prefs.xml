@@ -90,8 +90,8 @@
     <string name="prefs_milkdrop_settings_tab">Einstellungen</string>
     <string name="prefs_milkdrop_favorites_chip">Favoriten (%1$d)</string>
     <plurals name="prefs_milkdrop_favorites_count">
-        <item quantity="one">%1$d Favorit, aus jedem Paket. Weiter und Zufall bleiben darin.</item>
-        <item quantity="other">%1$d Favoriten, aus jedem Paket. Weiter und Zufall bleiben darin.</item>
+        <item quantity="one">%1$d Favorit, aus jedem Paket. Weiter und Zufallsmodus bleiben darin.</item>
+        <item quantity="other">%1$d Favoriten, aus jedem Paket. Weiter und Zufallsmodus bleiben darin.</item>
     </plurals>
     <string name="prefs_milkdrop_idle_playing">Die %1$s läuft. Wähle oben deine Favoriten oder ein Paket.</string>
     <string name="prefs_milkdrop_idle_no_favorites">Die %1$s läuft. Wähle oben ein Paket, oder importiere eines unter Einstellungen.</string>

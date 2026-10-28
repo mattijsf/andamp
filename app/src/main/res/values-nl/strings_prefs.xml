@@ -90,8 +90,8 @@
     <string name="prefs_milkdrop_settings_tab">Instellingen</string>
     <string name="prefs_milkdrop_favorites_chip">Favorieten (%1$d)</string>
     <plurals name="prefs_milkdrop_favorites_count">
-        <item quantity="one">%1$d favoriet, uit elk pakket. Volgende en Willekeurig blijven daarbinnen.</item>
-        <item quantity="other">%1$d favorieten, uit elk pakket. Volgende en Willekeurig blijven daarbinnen.</item>
+        <item quantity="one">%1$d favoriet, uit elk pakket. Volgende en Shuffle blijven daarbinnen.</item>
+        <item quantity="other">%1$d favorieten, uit elk pakket. Volgende en Shuffle blijven daarbinnen.</item>
     </plurals>
     <string name="prefs_milkdrop_idle_playing">De %1$s speelt. Kies hierboven je favorieten of een pakket.</string>
     <string name="prefs_milkdrop_idle_no_favorites">De %1$s speelt. Kies hierboven een pakket, of importeer er een onder Instellingen.</string>
