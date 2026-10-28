@@ -34,7 +34,7 @@ class TranslatedLanguagesTest {
         assertEquals("2 TRACKS", words.plural(R.plurals.library_count_tracks, 2))
         assertEquals("Visualizer, refresh rate, size, taps and skin", words.get(R.string.prefs_widget_summary))
         assertEquals("Modern skins (beta)", words.get(R.string.prefs_modern_skins_title))
-        assertEquals("Color themes", words.get(R.string.menu_color_themes))
+        assertEquals("Color Themes", words.get(R.string.menu_color_themes))
         assertEquals("Add to Andamp", words.get(R.string.import_add_to_andamp))
         assertEquals("Auto-load preset", words.get(R.string.eq_menu_auto_load_load))
     }
