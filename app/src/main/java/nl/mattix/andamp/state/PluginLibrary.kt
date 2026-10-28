@@ -89,8 +89,8 @@ class PluginLibrary internal constructor(
         }
         // the plug-in is stored; a folder that cannot be flushed may only lose its new name
         dir.flushFolder(flush)
-        // the plug-in's own metadata: its id, which the rack stores settings under, and what
-        // the list shows
+        // the plug-in's metadata: its id, which the rack stores settings under, and what the
+        // list shows
         prefs
             .edit()
             .putString(key("plugin", id), plugin.id)

@@ -41,7 +41,7 @@ class WalFontFileTest {
     }
 
     @Test
-    fun `an empty font file left by a cut is written again`() {
+    fun `an empty font file left when the phone switched off mid-write is written again`() {
         val name = WalHost.fontFile(cache, font).name
         File(cache, name).writeBytes(ByteArray(0))
 
@@ -71,6 +71,17 @@ class WalFontFileTest {
         }
 
         assertEquals(0, flushes)
+    }
+
+    @Test
+    fun `a short font file whose rewrite fails is removed`() {
+        val name = WalHost.fontFile(cache, font).name
+        File(cache, name).writeBytes(font.copyOf(100))
+
+        val file = WalHost.fontFile(cache, font) { throw IOException("the disk is full") }
+
+        assertFalse(file.exists())
+        assertEquals(emptyList<String>(), cache.list()!!.toList())
     }
 
     @Test

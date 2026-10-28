@@ -514,8 +514,8 @@ internal class WalHost(
          * skins that call different fonts by the same id get different files. The bytes are flushed
          * to the disk before the rename that names the file, and a file whose size is not that of
          * the bytes, such as an empty one left when the phone switched off mid-write, is written
-         * again. A write that fails leaves the file as it was, missing or short, and reading it as a
-         * font then fails.
+         * again. When that write fails, a short file is deleted, so the file is whole or missing and
+         * reading a missing one as a font fails.
          */
         internal fun fontFile(
             cacheDir: File,
@@ -529,6 +529,7 @@ internal class WalHost(
                 // a write cut short (a full disk) deletes tmp, and nothing is renamed into place
                 val written = runCatching { tmp.writeFlushed(flush) { it.write(bytes) } }.isSuccess
                 if (written && !tmp.renameTo(f)) tmp.delete()
+                if (f.length() != bytes.size.toLong()) f.delete()
             }
             return f
         }

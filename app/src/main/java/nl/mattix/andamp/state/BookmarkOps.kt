@@ -60,7 +60,7 @@ class BookmarkOps(
      */
     fun addAll(tracks: List<Track>) {
         edit(failed = words.get(R.string.bookmark_none_here)) {
-            tracks.count { store.add(it) } > 0
+            store.addAll(tracks) > 0
         }
     }
 
@@ -69,7 +69,7 @@ class BookmarkOps(
     /** Removes every bookmark whose uri is in [places]; used by the bookmarks dialog. */
     fun removeWhere(places: Set<String>) {
         val doomed = bookmarks.withIndex().filter { it.value.uri in places }.map { it.index }
-        edit(failed = null) { doomed.sortedDescending().all { store.removeAt(it) } }
+        edit(failed = null) { store.removeAt(doomed.toSet()) }
     }
 
     fun rename(
