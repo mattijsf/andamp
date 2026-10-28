@@ -7,10 +7,10 @@
     <string name="eq_menu_delete">Löschen</string>
     <string name="eq_menu_preset">Voreinstellung...</string>
     <string name="eq_menu_default">Standard</string>
-    <string name="eq_auto_load_preset">Auto-Lade-Voreinstellung</string>
-    <string name="eq_menu_auto_load_delete">Auto-Lade-Voreinstellung...</string>
+    <string name="eq_auto_load_preset">Automatische Voreinstellung</string>
+    <string name="eq_menu_auto_load_delete">Automatische Voreinstellung...</string>
     <string name="eq_save_preset_title">Voreinstellung speichern</string>
-    <string name="eq_save_auto_preset_title">Auto-Lade-Voreinstellung speichern</string>
+    <string name="eq_save_auto_preset_title">Automatische Voreinstellung speichern</string>
     <string name="eq_load_title">Voreinstellung laden</string>
     <string name="eq_load_confirm">Laden</string>
     <string name="eq_kind_factory">Ab Werk</string>
@@ -18,6 +18,6 @@
     <string name="eq_delete_title">Voreinstellungen löschen</string>
     <string name="eq_delete_confirm">Löschen</string>
     <string name="eq_delete_empty">Du hast noch keine Voreinstellung gespeichert</string>
-    <string name="eq_delete_auto_title">Auto-Lade-Voreinstellungen löschen</string>
+    <string name="eq_delete_auto_title">Automatische Voreinstellungen löschen</string>
     <string name="eq_delete_auto_empty">Noch kein Titel hat eine eigene Voreinstellung</string>
 </resources>

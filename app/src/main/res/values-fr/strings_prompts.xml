@@ -50,7 +50,7 @@
     <string name="folder_no_longer_readable">Andamp ne peut plus lire ce dossier. Autorisez-le à nouveau et ses morceaux seront lus comme avant.</string>
 
     <!-- OverlayOps.kt -->
-    <string name="overlay_title">Toujours au premier plan</string>
+    <string name="overlay_title">Toujours visible</string>
     <string name="overlay_needs_android_11">Flotter au-dessus des autres applis nécessite Android 11 ou une version ultérieure.</string>
     <string name="overlay_needs_permission">Andamp a besoin de l’autorisation de superposition aux autres applis avant de pouvoir flotter au-dessus d’elles.</string>
 
@@ -82,8 +82,8 @@
     <string name="notice_nothing_playable_body">Tous les morceaux de cette liste de lecture viennent d’une source que ce téléphone ne peut pas joindre pour le moment : elle n’est pas installée, ou personne n’y est connecté. Chaque ligne indique laquelle.</string>
 
     <!-- WinampViewModel.kt -->
-    <string name="prompt_jump_to_time_title">Sauter à la position</string>
-    <string name="prompt_jump_to_time_confirm">Sauter</string>
+    <string name="prompt_jump_to_time_title">Aller à un moment précis</string>
+    <string name="prompt_jump_to_time_confirm">Valider</string>
 
     <!-- SkinOps.kt -->
     <string name="skin_modern_title">« %1$s » est un skin moderne</string>
@@ -93,7 +93,7 @@
     <string name="skin_modern_failed_title">« %1$s » n’a pas pu être ouvert</string>
     <string name="skin_modern_failed_body">Ce skin moderne ne s’est pas chargé, il n’a donc pas été ajouté.</string>
     <string name="skin_modern_stopped_title">« %1$s » ne fonctionne plus</string>
-    <string name="skin_modern_stopped_body">Andamp affiche pour l’instant votre dernier skin classique à la place. Ce skin moderne sera réessayé au prochain démarrage d’Andamp. Pour que cela cesse, choisissez un autre skin dans « Skins » ou retirez celui-ci dans l’explorateur de skins.</string>
+    <string name="skin_modern_stopped_body">Andamp affiche pour l’instant votre dernier skin classique à la place. Ce skin moderne sera réessayé au prochain démarrage d’Andamp. Pour que cela cesse, choisissez un autre skin dans « Skins » ou retirez celui-ci dans « Liste des skins ».</string>
 
     <!-- AmpModals.kt -->
     <string name="skin_modern_offer_title">Activer les skins modernes ?</string>

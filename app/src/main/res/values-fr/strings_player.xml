@@ -24,7 +24,7 @@
     <string name="playlist_open_empty">Aucune liste enregistrée ici pour l’instant</string>
 
     <!-- WinampViewModel.kt -->
-    <string name="jump_to_file_title">Sauter au fichier</string>
+    <string name="jump_to_file_title">Aller au morceau</string>
     <string name="jump_to_file_empty">La liste de lecture est vide</string>
 
     <!-- FileInfoSource.kt and TrackInfoOps.kt -->

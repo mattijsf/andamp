@@ -22,16 +22,16 @@
     <string name="menu_skins">面板</string>
     <string name="menu_support_andamp">支持 Andamp...</string>
     <string name="menu_exit">退出</string>
-    <string name="menu_previous">上一曲</string>
+    <string name="menu_previous">上一首</string>
     <string name="menu_pause">暂停</string>
     <string name="menu_stop">停止</string>
-    <string name="menu_next">下一曲</string>
-    <string name="menu_stop_with_fadeout">淡出后停止</string>
-    <string name="menu_stop_after_current">播完当前曲目后停止</string>
+    <string name="menu_next">下一首</string>
+    <string name="menu_stop_with_fadeout">淡出停止</string>
+    <string name="menu_stop_after_current">播放完当前项后停止</string>
     <string name="menu_back_5_seconds">后退 5 秒</string>
     <string name="menu_fwd_5_seconds">前进 5 秒</string>
-    <string name="menu_jump_to_time">跳转到时间...</string>
-    <string name="menu_jump_to_file">跳转到文件...</string>
+    <string name="menu_jump_to_time">跳到时间...</string>
+    <string name="menu_jump_to_file">跳到文件...</string>
     <string name="menu_start_of_list">列表开头</string>
     <string name="menu_ten_tracks_back">后退十首</string>
     <string name="menu_skin_browser">面板浏览器...</string>
@@ -40,16 +40,16 @@
     <string name="menu_get_more_skins">&lt;&lt; 获得更多面板！ &gt;&gt;</string>
     <string name="skin_row_modern">%1$s · 现代面板</string>
     <string name="menu_preferences">首选项...</string>
-    <string name="menu_time_elapsed">已播放时间</string>
+    <string name="menu_time_elapsed">已用时间</string>
     <string name="menu_time_remaining">剩余时间</string>
-    <string name="menu_always_on_top">总在最前</string>
+    <string name="menu_always_on_top">总在最上</string>
     <string name="menu_double_size">双倍大小</string>
-    <string name="menu_repeat">重复播放</string>
-    <string name="menu_shuffle">随机播放</string>
+    <string name="menu_repeat">重复</string>
+    <string name="menu_shuffle">随机</string>
 
     <!-- BookmarksMenu.kt -->
     <string name="menu_edit_bookmarks">编辑书签...</string>
-    <string name="menu_add_current_as_bookmark">将当前曲目加入书签</string>
+    <string name="menu_add_current_as_bookmark">将当前项添加为书签</string>
 
     <!-- PlaylistRowMenu.kt -->
     <string name="menu_n_items">%1$d 个项目</string>
@@ -66,13 +66,13 @@
     <string name="menu_previous_preset">上一个预设</string>
     <string name="menu_show_preset_missing">显示预设缺少的效果</string>
     <string name="menu_manage_presets">管理预设...</string>
-    <string name="menu_load_preset_pack">载入预设包...</string>
+    <string name="menu_load_preset_pack">加载预设包...</string>
     <string name="menu_fullscreen">全屏</string>
     <string name="menu_close">关闭</string>
     <string name="menu_pack_with_count">%1$s (%2$d)</string>
     <string name="menu_avs_idle_preset">AVS 待机预设</string>
     <string name="menu_projectm_idle_preset">projectM 待机预设</string>
-    <string name="menu_no_presets_loaded">未载入预设</string>
+    <string name="menu_no_presets_loaded">未加载预设</string>
     <string name="menu_all_presets">全部 %1$d 个预设...</string>
     <string name="menu_favorites_with_count">收藏 (%1$d)</string>
     <string name="menu_add_favorite">加入收藏</string>
@@ -99,7 +99,7 @@
     <string name="menu_cancel">取消</string>
     <string name="menu_save">保存</string>
     <string name="menu_edit">编辑</string>
-    <string name="menu_enqueue">加入队列</string>
+    <string name="menu_enqueue">排队</string>
     <string name="menu_open">打开</string>
     <string name="menu_remove">移除</string>
 
@@ -109,9 +109,9 @@
 
     <!-- PlaylistMenus.kt -->
     <string name="menu_sort_list">排序列表</string>
-    <string name="menu_sort_list_by_title">按标题排序列表</string>
+    <string name="menu_sort_list_by_title">按标题排列列表</string>
     <string name="menu_reverse_list">反转列表</string>
-    <string name="menu_randomize_list">打乱列表</string>
+    <string name="menu_randomize_list">随机排列列表</string>
 
     <!-- LibraryRowMenu.kt -->
     <string name="menu_enqueue_next">下一首播放</string>

@@ -50,13 +50,13 @@
     <string name="folder_no_longer_readable">Andamp 无法再读取这个文件夹。重新允许后，其中的歌曲即可照常播放。</string>
 
     <!-- OverlayOps.kt -->
-    <string name="overlay_title">总在最前</string>
+    <string name="overlay_title">总在最上</string>
     <string name="overlay_needs_android_11">悬浮在其他应用上方需要 Android 11 或更高版本。</string>
     <string name="overlay_needs_permission">Andamp 需要“显示在其他应用的上层”权限，才能悬浮在其他应用上方。</string>
 
     <!-- PresetNotice.kt -->
     <string name="preset_unreadable">无法读取此预设</string>
-    <string name="preset_blank">已载入，但播放音乐时只显示黑色</string>
+    <string name="preset_blank">已加载，但播放音乐时只显示黑色</string>
     <string name="preset_unreadable_because">无法读取此预设：%1$s</string>
     <string name="preset_not_shown">此预设中未显示：%1$s</string>
     <string name="preset_and_more">%1$s 等另外 %2$d 个</string>
@@ -81,8 +81,8 @@
     <string name="notice_nothing_playable_body">此播放列表中的每首曲目都来自这部手机目前无法访问的音乐源：它尚未安装，或者没有人登录。每一行都会说明原因。</string>
 
     <!-- WinampViewModel.kt -->
-    <string name="prompt_jump_to_time_title">跳转到时间</string>
-    <string name="prompt_jump_to_time_confirm">跳转</string>
+    <string name="prompt_jump_to_time_title">跳到时间</string>
+    <string name="prompt_jump_to_time_confirm">跳到</string>
 
     <!-- SkinOps.kt -->
     <string name="skin_modern_title">“%1$s”是现代面板</string>

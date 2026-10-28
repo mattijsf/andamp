@@ -87,6 +87,15 @@ class TranslationsTest {
     }
 
     @Test
+    fun `French writes plug-in, as Winamp's French menus do`() {
+        val french = translations["values-fr"].orEmpty()
+        assertTrue("French strings: ${french.size}", french.size >= ENGLISH_AT_LEAST)
+        val plugin = Regex("""\bplugins?\b""", RegexOption.IGNORE_CASE)
+        val older = french.filter { plugin.containsMatchIn(it.text) }.map { "${it.key}: ${it.text}" }
+        assertEquals(emptyList<String>(), older)
+    }
+
+    @Test
     fun `the manifest takes every label from the strings`() {
         // a label written into the manifest reads in English in every language
         val manifest = resDir().resolveSibling("AndroidManifest.xml")

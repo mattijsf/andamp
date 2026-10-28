@@ -60,24 +60,38 @@ class SimplifiedChineseTest {
     fun `a skin is 面板, as Winamp's Chinese translation calls it, in every string`() {
         assertEquals("面板浏览器...", words.get(R.string.menu_skin_browser))
         assertEquals("<< 获得更多面板！ >>", words.get(R.string.menu_get_more_skins))
-        val root = repositoryRoot()
-        val dirs = chineseValueDirs(root)
-        // a scan that found neither the app's nor Android Auto's Chinese text would pass over nothing
-        val modules = dirs.map { it.relativeTo(root).invariantSeparatorsPath.substringBefore("/src/") }
-        assertTrue("$modules", modules.containsAll(listOf("app", "androidauto")))
-        val older =
-            dirs
-                .flatMap { it.listFiles().orEmpty().toList() }
-                .flatMap { file ->
-                    file.readLines().filter { "皮肤" in it }.map { "${file.relativeTo(root)}: ${it.trim()}" }
-                }
-        assertEquals(emptyList<String>(), older)
+        assertEquals(emptyList<String>(), chineseLinesWith("皮肤"))
     }
 
     @Test
-    fun `loading a skin is 加载, as in Winamp's Chinese translation`() {
+    fun `loading anything is 加载, as in Winamp's Chinese translation, in every string`() {
         assertEquals("加载面板...", words.get(R.string.menu_load_skin))
         assertEquals("此现代面板未能加载，因此没有添加。", words.get(R.string.skin_modern_failed_body))
+        assertEquals("加载", words.get(R.string.eq_menu_load))
+        assertEquals("自动加载预设", words.get(R.string.eq_auto_load_preset))
+        assertEquals("重新加载此页", words.get(R.string.museum_try_this_page_again))
+        assertEquals(emptyList<String>(), chineseLinesWith("载入"))
+    }
+
+    @Test
+    fun `the menus use Winamp's Chinese words`() {
+        assertEquals("总在最上", words.get(R.string.menu_always_on_top))
+        assertEquals("总在最上", words.get(R.string.overlay_title))
+        assertEquals("随机", words.get(R.string.menu_shuffle))
+        assertEquals("重复", words.get(R.string.menu_repeat))
+        assertEquals("排队", words.get(R.string.menu_enqueue))
+        assertEquals("+3 已排队", words.get(R.string.library_queued, 3))
+        assertEquals(emptyList<String>(), chineseLinesWith("总在最前"))
+    }
+
+    @Test
+    fun `jumping is 跳到, as in Winamp's Chinese menus and dialogs`() {
+        assertEquals("跳到文件...", words.get(R.string.menu_jump_to_file))
+        assertEquals("跳到文件", words.get(R.string.jump_to_file_title))
+        assertEquals("跳到时间...", words.get(R.string.menu_jump_to_time))
+        assertEquals("跳到时间", words.get(R.string.prompt_jump_to_time_title))
+        assertEquals("跳到", words.get(R.string.prompt_jump_to_time_confirm))
+        assertEquals(emptyList<String>(), chineseLinesWith("跳转"))
     }
 
     @Test
@@ -115,6 +129,20 @@ class SimplifiedChineseTest {
     @Config(qualifiers = "eo")
     fun `a language with no translation gets the English`() {
         assertEquals("Options", words.get(R.string.menu_options))
+    }
+
+    /** Each line of the Chinese resources of every module that holds [word], with the file it is in. */
+    private fun chineseLinesWith(word: String): List<String> {
+        val root = repositoryRoot()
+        val dirs = chineseValueDirs(root)
+        // a scan that found neither the app's nor Android Auto's Chinese text would pass over nothing
+        val modules = dirs.map { it.relativeTo(root).invariantSeparatorsPath.substringBefore("/src/") }
+        assertTrue("$modules", modules.containsAll(listOf("app", "androidauto")))
+        return dirs
+            .flatMap { it.listFiles().orEmpty().toList() }
+            .flatMap { file ->
+                file.readLines().filter { word in it }.map { "${file.relativeTo(root)}: ${it.trim()}" }
+            }
     }
 
     /** The checkout's top directory, wherever the test was run from. */
