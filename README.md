@@ -35,6 +35,7 @@ What works:
 - Android Auto: its own player with the playlist to pick from. With Autoamp beside it,
   Andamp also puts its skinned main window on the car's screen. Android Auto shows an app with a screen of its own in a car only when the
   phone records Google Play as its installer.
+- Classic `.wsz` skins, and Winamp modern skins (`.wal`) in beta.
 - A browser for the Winamp Skin Museum.
 - Jellyfin, Plex and Subsonic servers, through music sources that install as separate apps
   beside the player. See [docs/source-packs.md](docs/source-packs.md).
@@ -58,7 +59,7 @@ Min SDK is 26. It turns with the phone, and remembers one window arrangement for
 
 Three skins ship with the app: AndAmp Dark (the default), Light and Spot. To load another,
 tap the menu button in the top-left corner of the titlebar and pick Skins > Load skin...
-for any classic `.wsz` file, or Skins > << Get more skins! >> to browse the
+for a classic `.wsz` file, or Skins > << Get more skins! >> to browse the
 [Winamp Skin Museum](https://skins.webamp.org). Loaded skins are kept and listed under
 Skins. Winamp modern skins (`.wal`) can be worn too, in beta: turn on Preferences > Player >
 Modern skins (beta), or load a `.wal` and accept the offer to turn them on.
