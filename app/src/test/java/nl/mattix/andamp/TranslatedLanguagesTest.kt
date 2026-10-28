@@ -4,6 +4,12 @@ package nl.mattix.andamp
 
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
+import nl.mattix.andamp.core.player.PlayerFacade
+import nl.mattix.andamp.state.AmpMenuItem
+import nl.mattix.andamp.state.EqOps
+import nl.mattix.andamp.state.InMemoryEqPresetStore
+import nl.mattix.andamp.state.RecordingEqBackend
+import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.Words
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -93,6 +99,20 @@ class TranslatedLanguagesTest {
             "2 Favoriten, aus jedem Paket. Weiter und Zufallsmodus bleiben darin.",
             words.plural(R.plurals.prefs_milkdrop_favorites_count, 2),
         )
+    }
+
+    @Test
+    @Config(qualifiers = "de")
+    fun `the German equalizer menu words each auto-load entry as Winamp does`() {
+        val ops = EqOps(WinampState(), PlayerFacade(RecordingEqBackend()), InMemoryEqPresetStore(), words)
+        val labels =
+            ops.presetsMenu().items.filterIsInstance<AmpMenuItem.Submenu>().associate { sub ->
+                sub.label to sub.items.filterIsInstance<AmpMenuItem.Action>().map { it.label }
+            }
+
+        assertEquals(listOf("Voreinstellung...", "Voreinstellungen automatisch laden", "Standard"), labels["Laden"])
+        assertEquals(listOf("Voreinstellung...", "Automatische Voreinstellung", "Standard"), labels["Speichern"])
+        assertEquals(listOf("Voreinstellung...", "Automatische Voreinstellung..."), labels["Löschen"])
     }
 
     @Test
