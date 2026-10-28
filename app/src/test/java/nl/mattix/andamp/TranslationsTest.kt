@@ -91,9 +91,33 @@ class TranslationsTest {
         val french = translations["values-fr"].orEmpty()
         assertTrue("French strings: ${french.size}", french.size >= ENGLISH_AT_LEAST)
         val plugin = Regex("""\bplugins?\b""", RegexOption.IGNORE_CASE)
-        val older = french.filter { plugin.containsMatchIn(it.text) }.map { "${it.key}: ${it.text}" }
+        // resDir() is <root>/app/src/main/res
+        val root = resDir().resolve("../../../..").canonicalFile
+        val dirs = frenchValueDirs(root)
+        // a scan that found neither the app's nor Android Auto's French text would pass over nothing
+        val modules = dirs.map { it.relativeTo(root).invariantSeparatorsPath.substringBefore("/src/") }
+        assertTrue("$modules", modules.containsAll(listOf("app", "androidauto")))
+        val older =
+            dirs.flatMap { dir ->
+                entriesIn(dir).filter { plugin.containsMatchIn(it.text) }.map { "${dir.relativeTo(root)} ${it.key}: ${it.text}" }
+            }
         assertEquals(emptyList<String>(), older)
     }
+
+    /** The `res/values-fr` directory of every source set of every module that `settings.gradle.kts` includes. */
+    private fun frenchValueDirs(root: File): List<File> =
+        Regex("""include\("(:[^"]+)"\)""")
+            .findAll(root.resolve("settings.gradle.kts").readText())
+            .map { root.resolve(it.groupValues[1].removePrefix(":").replace(':', '/')) }
+            .flatMap { module ->
+                module
+                    .resolve("src")
+                    .listFiles()
+                    .orEmpty()
+                    .asSequence()
+            }.map { it.resolve("res/values-fr") }
+            .filter { it.isDirectory }
+            .toList()
 
     @Test
     fun `the manifest takes every label from the strings`() {

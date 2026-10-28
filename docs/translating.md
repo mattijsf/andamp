@@ -117,10 +117,11 @@ comes from, so that the next person keeps to them.
 | Always On Top | Altijd bovenop | Winamp |
 | Double Size | Dubbele grootte | Winamp |
 | Shuffle, Repeat | Shuffle, Herhalen | Winamp |
-| Sort list, Reverse list, Randomize list | Lijst sorteren, Lijst omkeren, Lijst willekeurig maken | Winamp |
+| Sort list | Lijst sorteren | Andamp (Winamp: Sorteren) |
+| Reverse list, Randomize list | Lijst omkeren, Lijst willekeurig maken | Winamp |
 | Playlist Editor | Afspeellijsteditor | common usage (Winamp: speellijsteditor) |
 | Jump to file, Jump to time | Spring naar bestand, Spring naar tijd | Winamp |
-| Enqueue | In wachtrij | Winamp |
+| Enqueue | In wachtrij | Winamp (modern skins) |
 | music source | muziekbron | Andamp |
 | effect, rack | effect, rack | Andamp |
 | tip | fooi | Andamp |
