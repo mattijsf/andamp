@@ -9,13 +9,14 @@ import nl.mattix.andamp.modernskin.skin.SkinHost
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.modernskin.skin.SystemObject
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 /** Button actions the app answers reach it; what the skin does itself stays inside. */
 class HostActionTest {
     // a main window with buttons for each kind of action, a file info button among them, and a song
-    // ticker a double tap asks file info from; a playlist window with a close button, and a frame the
+    // ticker a double tap asks file info from, a menu bar entry; a playlist window with a close button, and a frame the
     // skin keeps for Winamp's library
     private val files =
         object : SkinFiles {
@@ -35,6 +36,10 @@ class HostActionTest {
                         """x="240" y="0" w="20" h="20"/>""" +
                         """<button id="info" action="trackinfo" x="270" y="0" w="20" h="20"/>""" +
                         """<text id="ticker" display="songtitle" dblclickaction="trackinfo" x="0" y="25" w="200" h="10"/>""" +
+                        """<layer id="options.up" x="210" y="25" w="40" h="10"/>""" +
+                        """<layer id="options.down" x="210" y="25" w="40" h="10" visible="0"/>""" +
+                        """<menu id="options" menu="WA5:Options" menugroup="main" normal="options.up" down="options.down" """ +
+                        """x="210" y="25" w="40" h="10"/>""" +
                         """</layout></container>""" +
                         """<container id="pl" name="Playlist" default_visible="0"><layout id="normal" w="300" h="40">""" +
                         """<button id="pl.close" action="CLOSE" x="0" y="0" w="20" h="20"/>""" +
@@ -96,6 +101,26 @@ class HostActionTest {
             ),
             asked,
         )
+    }
+
+    @Test
+    fun `a menu bar entry shows its pressed picture while held and asks the app for the menu it names`() {
+        rt.load()
+        rt.onHostAction = { a, p -> asked += a to p }
+        rt.ensureLayout()
+        val layout = checkNotNull(rt.mainLayout)
+        val entry = checkNotNull(layout.findObject("options"))
+        val x = entry.rect.left + 2
+        val y = entry.rect.top + 2
+
+        rt.pointerDown(x, y)
+        assertTrue("pressed", layout.findObject("options.down")!!.visible)
+        assertFalse(layout.findObject("options.up")!!.visible)
+        rt.pointerUp(x, y)
+
+        assertEquals(listOf("MENU" to "WA5:Options"), asked)
+        assertTrue("let go", layout.findObject("options.up")!!.visible)
+        assertFalse(layout.findObject("options.down")!!.visible)
     }
 
     @Test

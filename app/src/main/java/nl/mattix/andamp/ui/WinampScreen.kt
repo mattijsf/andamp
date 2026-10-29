@@ -69,6 +69,7 @@ import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.state.displayNameOf
 import nl.mattix.andamp.ui.menu.AmpModals
 import nl.mattix.andamp.ui.menu.AmpPromptHost
+import nl.mattix.andamp.ui.menu.MenuBarSection
 import nl.mattix.andamp.ui.menu.mainMenu
 import nl.mattix.andamp.ui.menu.menuAnchorBounds
 import nl.mattix.andamp.ui.menu.optionsMenu
@@ -427,7 +428,7 @@ internal fun PlayerSurface(
                                 onOpenFile = { toPlay ->
                                     if (toPlay) playlistActions.addFileThenPlay() else playlistActions.addFile()
                                 },
-                                onOptions = { openMenu(null) },
+                                onOptions = { openMenu(null, null) },
                                 onExit = quit,
                                 visualizerMenu = visualizerMenu,
                             )
@@ -457,7 +458,7 @@ internal fun PlayerSurface(
                                 // the clutter bar's I: the item playing, or the last one that played
                                 onFileInfo = { vm.trackInfoOps.show(s.lastPlayed) },
                             ) {
-                                openMenu(null)
+                                openMenu(null, null)
                             }
                         }
                     }
@@ -469,7 +470,7 @@ internal fun PlayerSurface(
                         vm,
                         skin,
                         scale,
-                        onLongPress = { openMenu(null) },
+                        onLongPress = { openMenu(null, null) },
                         playlistActions,
                         libraryAccess,
                         mainWidgets,
@@ -510,8 +511,8 @@ private fun mainMenuOpener(
     onDoubleSize: () -> Unit,
     /** Whether a modern skin is worn, asked each time the menu opens. */
     modernPlayer: () -> Boolean,
-): (anchor: MenuAnchor?) -> Unit =
-    { anchor ->
+): (anchor: MenuAnchor?, section: MenuBarSection?) -> Unit =
+    { anchor, section ->
         val menu =
             mainMenu(
                 vm,
@@ -525,6 +526,7 @@ private fun mainMenuOpener(
                 onAlwaysOnTop = onAlwaysOnTop,
                 onDoubleSize = onDoubleSize,
                 modernPlayer = modernPlayer(),
+                section = section,
             )
         vm.state.activeMenu = if (anchor == null) menu else menu.copy(anchor = anchor)
     }

@@ -94,8 +94,10 @@ class SkinSettingsMenuTest {
     fun `a worn modern skin's Skin Settings follow Skins under Options, open the dialog for that skin, needing the app`() {
         val vm = wear()
         seedOptions(vm)
+        // the skin's own menu bar entry for Winamp's Options menu
+        val bar = mainMenu(vm, {}, {}, {}, {}, section = MenuBarSection.of("WA5:Options"))
 
-        for (list in listOf(options(vm), optionsMenu(vm).items)) {
+        for (list in listOf(options(vm), optionsMenu(vm).items, bar.items)) {
             val settings = list[2] as AmpMenuItem.Action
             assertEquals("Skins", labelOf(list[1]))
             assertEquals("Skin Settings...", settings.label)
@@ -106,6 +108,18 @@ class SkinSettingsMenuTest {
             assertTrue("the dialog shows the skin worn", vm.state.skinSettings === vm.skinOps.wal)
             assertTrue("it counts as a modal", vm.state.modalShowing)
         }
+    }
+
+    @Test
+    fun `the skin's Play menu bar entry lists Playback, and its other entries the whole menu`() {
+        val vm = testViewModel()
+
+        val play = mainMenu(vm, {}, {}, {}, {}, section = MenuBarSection.of("WA5:Play"))
+        val file = mainMenu(vm, {}, {}, {}, {}, section = MenuBarSection.of("WA5:File"))
+
+        assertEquals("Playback", play.title)
+        assertEquals(shape(submenu(mainMenu(vm, {}, {}, {}, {}), "Playback")), shape(play.items))
+        assertEquals(shape(mainMenu(vm, {}, {}, {}, {}).items), shape(file.items))
     }
 
     @Test

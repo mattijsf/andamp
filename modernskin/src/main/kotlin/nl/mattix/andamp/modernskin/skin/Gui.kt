@@ -3020,6 +3020,76 @@ open class Grid(
     }
 }
 
+/**
+ * A menu bar entry (`<Menu menu="WA5:Options">`, Winamp Modern's File, Play, Options, View and
+ * Help): a tap asks the player for the menu it names. It draws nothing itself; the objects its
+ * `normal` and `down` name are its pictures, the one shown while pressed and the other otherwise.
+ */
+class MenuButton(
+    rt: SkinRuntime,
+) : GuiObject(rt, "menu") {
+    override val className: String get() = "Menu"
+
+    /** The menu it opens, as Winamp names it: `WA5:File`, `WA5:PE_Playlist`. */
+    var menu: String? = null
+    private var normal: String? = null
+    private var down: String? = null
+
+    override fun setParam(
+        key: String,
+        value: String,
+    ): Boolean {
+        if (super.setParam(key, value)) return true
+        when (key.lowercase()) {
+            "menu" -> menu = value
+
+            "normal" -> normal = value
+
+            "down" -> down = value
+
+            // a mouse moving along the bar; a finger has no hover and no keyboard
+            "hover", "menugroup", "next", "prev" -> Unit
+
+            else -> return false
+        }
+        return true
+    }
+
+    private fun showPressed(pressed: Boolean) {
+        val up = normal?.let { parent?.findObject(it) }
+        val dn = down?.let { parent?.findObject(it) }
+        if (dn == null) return
+        if (pressed) {
+            dn.show()
+            up?.hide()
+        } else {
+            up?.show()
+            dn.hide()
+        }
+        rt.repaint()
+    }
+
+    override fun pointerDown(
+        px: Int,
+        py: Int,
+    ) {
+        showPressed(true)
+        super.pointerDown(px, py)
+    }
+
+    override fun pointerUp(
+        px: Int,
+        py: Int,
+        inside: Boolean,
+    ) {
+        showPressed(false)
+        super.pointerUp(px, py, inside)
+        if (inside && !rt.pressEnded) rt.action(this, "MENU", menu, null)
+    }
+
+    override fun pointerCancel() = showPressed(false)
+}
+
 /** Objects the skin names that this runtime does not draw. They still answer scripts. */
 class Unknown(
     rt: SkinRuntime,

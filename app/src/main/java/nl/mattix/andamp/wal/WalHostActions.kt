@@ -5,6 +5,7 @@ package nl.mattix.andamp.wal
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
+import nl.mattix.andamp.ui.menu.MenuBarSection
 import nl.mattix.andamp.ui.menu.visualizationItems
 import nl.mattix.andamp.ui.menu.visualizationMenu
 
@@ -14,8 +15,11 @@ import nl.mattix.andamp.ui.menu.visualizationMenu
  * the finger last went down on the skin ([pressAt]).
  */
 internal class WalHostActions(
-    /** The main menu: the skin's menu, system menu and control menu buttons, and the main window's close button. */
-    private val openMenu: (MenuAnchor?) -> Unit,
+    /**
+     * The main menu: the skin's menu, system menu and control menu buttons, and the main window's
+     * close button; a menu bar entry opens the part it names, when the main menu has it.
+     */
+    private val openMenu: (MenuBarSection?, MenuAnchor?) -> Unit,
     private val minimize: () -> Unit,
     private val toggleLibrary: () -> Unit,
     /** The visualizer window, which shows Milkdrop or AVS as picked. */
@@ -40,8 +44,12 @@ internal class WalHostActions(
         param: String?,
     ) {
         when (action) {
-            "MENU", "SYSMENU", "CONTROLMENU", "CLOSE" -> {
-                openMenu(pressAt?.invoke())
+            "MENU" -> {
+                openMenu(MenuBarSection.of(param), pressAt?.invoke())
+            }
+
+            "SYSMENU", "CONTROLMENU", "CLOSE" -> {
+                openMenu(null, pressAt?.invoke())
             }
 
             "MINIMIZE" -> {
@@ -94,7 +102,7 @@ internal class WalHostActions(
          */
         fun of(
             vm: WinampViewModel,
-            openMenu: (MenuAnchor?) -> Unit,
+            openMenu: (MenuBarSection?, MenuAnchor?) -> Unit,
             onMinimize: () -> Unit,
             openFile: (andPlay: Boolean) -> Unit,
         ): WalHostActions {

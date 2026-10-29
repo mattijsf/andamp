@@ -1118,6 +1118,10 @@ class SkinRuntime(
                     EqVis(this)
                 }
 
+                "menu" -> {
+                    MenuButton(this)
+                }
+
                 "wasabi:frame", "frame" -> {
                     val f = FrameSplitter(this)
                     fillGroup(f, node, defId = null)
