@@ -29,7 +29,9 @@ class EqOps(
     }
 
     fun setPreamp(value: Int) {
+        val was = state.preamp
         state.preamp = value.coerceIn(0, 63)
+        if (state.preamp == CENTER && was != CENTER) state.snaps++
         push()
     }
 

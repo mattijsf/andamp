@@ -102,6 +102,7 @@ import nl.mattix.andamp.ui.window.PlaylistLayout
 import nl.mattix.andamp.ui.window.PlaylistMenuActions
 import nl.mattix.andamp.ui.window.PlaylistShadeFloatWindow
 import nl.mattix.andamp.ui.window.SkinManagerWindow
+import nl.mattix.andamp.ui.window.SnapTicks
 import nl.mattix.andamp.ui.window.SurfaceScreen
 import nl.mattix.andamp.ui.window.WindowStacking
 import nl.mattix.andamp.ui.window.classicMember
@@ -366,6 +367,7 @@ internal fun PlayerSurface(
             if (floating && !vm.overlayOps.gate.wanted) onFloatingChanged(false)
         }
     }
+    SnapTicks(vm.state)
     Box(Modifier.fillMaxSize().then(if (locked) Modifier.background(Color.Black) else Modifier)) {
         // the fullscreen visualizer is drawn over every window and outside the insets the
         // windows are held inside

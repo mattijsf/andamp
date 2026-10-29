@@ -85,6 +85,9 @@ class WinampState {
 
     var volume by mutableIntStateOf(78) // 0..100
     var balance by mutableIntStateOf(0) // -100..100
+
+    /** Counts the times a balance or preamp set from a slider snapped to the middle or 0 dB; see [SnapTicks]. */
+    var snaps by mutableIntStateOf(0)
     var shuffle by mutableStateOf(false)
     var repeat by mutableStateOf(false)
 
