@@ -246,6 +246,7 @@ internal fun partsFor(
         WalHostActions(
             openMenu = { _, _ -> asked += "menu" },
             minimize = { asked += "minimize" },
+            exit = { asked += "exit" },
             toggleLibrary = { asked += "library" },
             toggleVisualizer = { asked += "visualizer" },
             visualizationMenu = { asked += "visualization menu" },

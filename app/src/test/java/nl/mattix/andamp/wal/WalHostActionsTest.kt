@@ -43,6 +43,7 @@ class WalHostActionsTest {
                 on("menu")
             },
             minimize = { on("minimize") },
+            exit = { on("exit") },
             toggleLibrary = { on("library") },
             toggleVisualizer = { on("visualizer") },
             visualizationMenu = {
@@ -70,7 +71,7 @@ class WalHostActionsTest {
         assertEquals(listOf("menu"), reaches("MENU"))
         assertEquals(listOf("menu"), reaches("SYSMENU"))
         assertEquals(listOf("menu"), reaches("CONTROLMENU"))
-        assertEquals(listOf("menu"), reaches("CLOSE"))
+        assertEquals("the main window's X, as the classic X", listOf("exit"), reaches("CLOSE"))
         assertEquals(listOf("minimize"), reaches("MINIMIZE"))
         assertEquals(listOf("library"), reaches("TOGGLE", "ml"))
         assertEquals(listOf("visualizer"), reaches("TOGGLE", "avs"))
@@ -231,13 +232,15 @@ class WalHostActionsTest {
                 openMenu = { _, at -> got += "menu at ${at?.x},${at?.y}" },
                 onMinimize = { got += "minimize" },
                 openFile = { got += "file $it" },
+                onExit = { got += "exit" },
             )
         actions.pressAt = { press }
 
+        actions.hostAction("SYSMENU", null)
         actions.hostAction("CLOSE", null)
         actions.hostAction("MINIMIZE", null)
         actions.openFile(andPlay = true)
 
-        assertEquals(listOf("menu at 40,12", "minimize", "file true"), got)
+        assertEquals(listOf("menu at 40,12", "exit", "minimize", "file true"), got)
     }
 }

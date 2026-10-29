@@ -16,11 +16,13 @@ import nl.mattix.andamp.ui.menu.visualizationMenu
  */
 internal class WalHostActions(
     /**
-     * The main menu: the skin's menu, system menu and control menu buttons, and the main window's
-     * close button; a menu bar entry opens the part it names, when the main menu has it.
+     * The main menu: the skin's menu, system menu and control menu buttons; a menu bar entry opens
+     * the part it names, when the main menu has it.
      */
     private val openMenu: (MenuBarSection?, MenuAnchor?) -> Unit,
     private val minimize: () -> Unit,
+    /** The main window's close button: stops the music and closes the player, as the classic X does. */
+    private val exit: () -> Unit,
     private val toggleLibrary: () -> Unit,
     /** The visualizer window, which shows Milkdrop or AVS as picked. */
     private val toggleVisualizer: () -> Unit,
@@ -48,8 +50,12 @@ internal class WalHostActions(
                 openMenu(MenuBarSection.of(param), pressAt?.invoke())
             }
 
-            "SYSMENU", "CONTROLMENU", "CLOSE" -> {
+            "SYSMENU", "CONTROLMENU" -> {
                 openMenu(null, pressAt?.invoke())
+            }
+
+            "CLOSE" -> {
+                exit()
             }
 
             "MINIMIZE" -> {
@@ -105,11 +111,13 @@ internal class WalHostActions(
             openMenu: (MenuBarSection?, MenuAnchor?) -> Unit,
             onMinimize: () -> Unit,
             openFile: (andPlay: Boolean) -> Unit,
+            onExit: () -> Unit = {},
         ): WalHostActions {
             val s = vm.state
             return WalHostActions(
                 openMenu = openMenu,
                 minimize = onMinimize,
+                exit = onExit,
                 toggleLibrary = {
                     s.setWindowOpen(WindowStore.LIBRARY, !s.libraryOpen) { on ->
                         if (on) vm.libraryOps.open() else s.libraryOpen = false
