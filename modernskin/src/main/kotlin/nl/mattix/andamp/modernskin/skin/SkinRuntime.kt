@@ -2176,6 +2176,7 @@ class SkinRuntime(
         if ("top" in r.edges) h -= y - r.y
         val (vw, vh) = viewport
         val size = within(w, l.minW, l.maxW, vw) to within(h, l.minH, l.maxH, vh)
+        if (l !== mainLayout) l.userSize = size
         if (size != l.size) l.resizeTo(size.first, size.second)
     }
 

@@ -23,6 +23,10 @@ class ResizeGripTest {
                         """<layout id="normal" w="200" h="100" minimum_w="150" minimum_h="80">""" +
                         """<layer id="body" x="0" y="0" w="180" h="80"/>""" +
                         """<layer id="grip" x="-10" y="-10" w="10" h="10" relatx="1" relaty="1" resize="bottomright"/>""" +
+                        """</layout></container>""" +
+                        """<container id="pl" name="Playlist" default_visible="0">""" +
+                        """<layout id="normal" w="200" h="60" minimum_w="100" minimum_h="40">""" +
+                        """<layer id="pl.grip" x="-10" y="-10" w="10" h="10" relatx="1" relaty="1" resize="bottomright"/>""" +
                         """</layout></container>""",
                 ).mapValues { it.value.toByteArray() }
 
@@ -81,5 +85,22 @@ class ResizeGripTest {
         drag(50, 40, 60, 30)
 
         assertEquals(200 to 100, main.size)
+    }
+
+    @Test
+    fun `a docked window resized by its grip keeps the size it was given as the stack is laid out again`() {
+        rt.openWindow(rt.containers.first { it.id == "pl" })
+        rt.ensureLayout()
+        val pl = rt.windows.last()
+        val at = rt.windowRect(pl)
+        rt.pointerDown(at.right - 5, at.bottom - 5, seq = 1)
+        rt.pointerMove(at.right - 45, at.bottom + 35)
+        rt.pointerUp(at.right - 45, at.bottom + 35)
+
+        rt.relayout()
+        rt.ensureLayout()
+
+        assertEquals(160 to 100, pl.size)
+        assertEquals(160 to 100, rt.windowRect(pl).let { it.width to it.height })
     }
 }
