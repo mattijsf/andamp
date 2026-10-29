@@ -178,25 +178,25 @@ class WalFittingTest {
     @Test
     fun `two columns are used only where they show the skin larger`() {
         val modern = Fitted(winampModern, taller).apply { open("pl") }
-        assertEquals("Winamp Modern stacked: 2x, against 1.67x in two columns", 1, modern.rt.columns)
+        assertEquals("Winamp Modern stacked: 2x, against 1.67x in two columns", 1, modern.rt.presentation.columns)
         assertEquals(2f, modern.layout().scale)
         modern.refit(small)
-        assertEquals("1.73x against 1.61x", 1, modern.rt.columns)
+        assertEquals("1.73x against 1.61x", 1, modern.rt.presentation.columns)
 
         val corner = Fitted(cornerAmp, taller).apply { open("pl") }
-        assertEquals("CornerAmp: 2x in two columns, against 1.57x stacked", 2, corner.rt.columns)
+        assertEquals("CornerAmp: 2x in two columns, against 1.57x stacked", 2, corner.rt.presentation.columns)
         assertEquals(2f, corner.layout().scale)
         corner.refit(small)
-        assertEquals("2x against 1.33x", 2, corner.rt.columns)
+        assertEquals("2x against 1.33x", 2, corner.rt.presentation.columns)
         assertEquals(2f, corner.layout().scale)
 
         val tie = Fitted(deClassified, taller).apply { open("pl") }
-        assertEquals("DeClassified: 2x either way, so it stays stacked", 1, tie.rt.columns)
+        assertEquals("DeClassified: 2x either way, so it stays stacked", 1, tie.rt.presentation.columns)
 
         val mmd3 = Fitted(mmd3, small).apply { open("pl") }
-        assertEquals("MMD3 on a small phone: 1.19x stacked, against 1.18x", 1, mmd3.rt.columns)
+        assertEquals("MMD3 on a small phone: 1.19x stacked, against 1.18x", 1, mmd3.rt.presentation.columns)
         mmd3.refit(pixel)
-        assertEquals("on the Pixel: 1.83x stacked, against 2x", 2, mmd3.rt.columns)
+        assertEquals("on the Pixel: 1.83x stacked, against 2x", 2, mmd3.rt.presentation.columns)
         assertEquals(2f, mmd3.layout().scale)
     }
 
@@ -204,7 +204,7 @@ class WalFittingTest {
     fun `Winamp Modern goes to two columns where the box is wide enough for them`() {
         val modern = Fitted(winampModern, pixel).apply { open("pl") }
 
-        assertEquals("3x in two columns, against 2x stacked", 2, modern.rt.columns)
+        assertEquals("3x in two columns, against 2x stacked", 2, modern.rt.presentation.columns)
         assertEquals(3f, modern.layout().scale)
         assertEquals(
             "the playlist right of the main window, as tall as the box",
@@ -216,15 +216,15 @@ class WalFittingTest {
     @Test
     fun `opening or closing a list window sideways decides again`() {
         val corner = Fitted(cornerAmp, taller)
-        assertEquals(1, corner.rt.columns)
+        assertEquals(1, corner.rt.presentation.columns)
         assertEquals(2f, corner.layout().scale)
 
         corner.open("eq")
-        assertEquals("no list window, no second column", 1, corner.rt.columns)
+        assertEquals("no list window, no second column", 1, corner.rt.presentation.columns)
         assertNull(corner.layout().dock)
 
         corner.open("pl")
-        assertEquals(2, corner.rt.columns)
+        assertEquals(2, corner.rt.presentation.columns)
         assertEquals(
             "the equalizer under the main window, at the 275 px it is held at",
             Rect(0, 228, 275, 145),
@@ -244,7 +244,7 @@ class WalFittingTest {
         assertEquals("the visualizer docks under the left column", IntRect(0, 0, 275, 373), corner.layout().dock)
 
         corner.close("pl")
-        assertEquals(1, corner.rt.columns)
+        assertEquals(1, corner.rt.presentation.columns)
         assertEquals(Rect(0, 228, 275, 145), corner.rt.windowRect(corner.window("eq")))
         assertNull(corner.layout().dock)
     }
@@ -253,7 +253,7 @@ class WalFittingTest {
     fun `sideways, a drawer sliding out of the main window leaves the columns and the scale as they are`() {
         val skin = Fitted(mmd3, pixel).apply { open("pl") }
         val drawer = checkNotNull(skin.window("main").findObject("drawer"))
-        assertEquals(2, skin.rt.columns)
+        assertEquals(2, skin.rt.presentation.columns)
         assertEquals(2f, skin.layout().scale)
         val playlist = Rect(583, 0, 381, 870 / 2)
         assertEquals(
@@ -272,7 +272,7 @@ class WalFittingTest {
         // turned sideways or the playlist opened while the drawer is out: the same columns and scale
         skin.close("pl")
         skin.open("pl")
-        assertEquals(2, skin.rt.columns)
+        assertEquals(2, skin.rt.presentation.columns)
         assertEquals(2f, skin.layout().scale)
         drawer.setXmlParam("x", "181")
         assertEquals("closed again", 2f, skin.layout().scale)
@@ -283,7 +283,7 @@ class WalFittingTest {
     fun `a tap on a row in the right column selects it, a second tap or a double tap plays it`() {
         val player = FakePlayer().apply { playlist = List(5) { Track("Track $it", 60_000) } }
         val modern = Fitted(winampModern, pixel, player).apply { open("pl") }
-        assertEquals(2, modern.rt.columns)
+        assertEquals(2, modern.rt.presentation.columns)
         val list = modern.rt.windowRect(modern.window("pl"))
 
         // rows are 15 px from 3 px under the list's top, and the list sits at the window's corner
@@ -308,7 +308,7 @@ class WalFittingTest {
     fun `the floating player keeps the fitted stack sideways`() {
         val corner = Fitted(cornerAmp, taller.copy(compact = true)).apply { open("pl") }
 
-        assertEquals(1, corner.rt.columns)
+        assertEquals(1, corner.rt.presentation.columns)
         assertEquals(
             "docked under the main window at its natural height",
             Rect(0, 228, 275, 200),
@@ -321,12 +321,12 @@ class WalFittingTest {
     fun `fitting the same box twice keeps the scale`() {
         val corner = Fitted(cornerAmp, taller).apply { open("pl") }
         val first = corner.layout()
-        val view = corner.rt.viewSize
+        val view = corner.rt.presentation.viewSize
 
         corner.fitting.apply(corner.rt, corner.fit, corner.baseW)
         corner.refit()
         assertEquals(first, corner.layout())
-        assertEquals(view, corner.rt.viewSize)
+        assertEquals(view, corner.rt.presentation.viewSize)
 
         val mmd3 = Fitted(mmd3, pixel).apply { open("pl") }
         val scale = mmd3.layout().scale
@@ -342,7 +342,7 @@ class WalFittingTest {
         val passes = corner.rt.layoutPasses
 
         corner.fitting.refit(corner.rt, corner.fit, corner.baseW)
-        assertEquals(2, corner.rt.columns)
+        assertEquals(2, corner.rt.presentation.columns)
         assertEquals("no layout pass, so no window heard of a size it does not get", passes, corner.rt.layoutPasses)
         corner.rt.ensureLayout()
         assertEquals("one pass sets the playlist where the decision put it", passes + 1, corner.rt.layoutPasses)
@@ -382,7 +382,7 @@ class WalFittingTest {
         assertEquals("the drawer out", 720f / 583, skin.layout().scale)
 
         skin.open("pl")
-        assertEquals("the view the closed drawer gives", 381 to 564, skin.rt.viewSize)
+        assertEquals("the view the closed drawer gives", 381 to 564, skin.rt.presentation.viewSize)
         assertEquals(720f / 583, skin.layout().scale)
 
         drawer.setXmlParam("x", "181")
@@ -402,7 +402,7 @@ class WalFittingTest {
         checkNotNull(skin.rt.container("main")).switchTo("shade")
         skin.refit()
         assertEquals("800 px across at 0.9x", 720f / 800, skin.layout().scale)
-        assertEquals(800 to 1184, skin.rt.viewSize)
+        assertEquals(800 to 1184, skin.rt.presentation.viewSize)
         assertEquals(Rect(0, 23, 800, 1184 - 23), skin.rt.windowRect(skin.window("pl")))
 
         checkNotNull(skin.rt.container("main")).switchTo("normal")

@@ -460,8 +460,8 @@ class WalEngineTest {
         assertEquals(WalScale.left(1080f, frame.contentRight, scale), layout.left)
         assertEquals(0f, layout.top)
         assertEquals(200 to 100, layout.stackW to layout.stackH)
-        assertEquals((1080 / scale).toInt() to (2000 / scale).toInt(), onEngine { it.viewSize })
-        assertEquals("24 dp at that scale", kotlin.math.ceil(24 * 3 / scale).toInt(), onEngine { it.touchSlop })
+        assertEquals((1080 / scale).toInt() to (2000 / scale).toInt(), onEngine { it.presentation.viewSize })
+        assertEquals("24 dp at that scale", kotlin.math.ceil(24 * 3 / scale).toInt(), onEngine { it.presentation.touchSlop })
     }
 
     @Test(timeout = 20_000)
@@ -473,11 +473,11 @@ class WalEngineTest {
                 ?.fit
                 ?.compact == true
         }
-        assertFalse(onEngine { it.stretchLast })
+        assertFalse(onEngine { it.presentation.stretchLast })
 
         engine.fit(phone)
         awaitThat("a frame for the full box") { engine.frame?.layout?.fit == phone }
-        assertTrue(onEngine { it.stretchLast })
+        assertTrue(onEngine { it.presentation.stretchLast })
     }
 
     @Test(timeout = 20_000)
