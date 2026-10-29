@@ -649,7 +649,9 @@ class WinampViewModel
          * facade is given the pan as -1..1.
          */
         override fun setBalance(balance: Int) {
+            val was = state.balance
             state.balance = balance.coerceIn(-BALANCE_RANGE, BALANCE_RANGE)
+            if (state.balance == 0 && was != 0) state.snaps++
             facade.setBalance(state.balance / BALANCE_RANGE.toFloat())
         }
 

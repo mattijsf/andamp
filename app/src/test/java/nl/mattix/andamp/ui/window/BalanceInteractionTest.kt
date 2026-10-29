@@ -77,6 +77,17 @@ class BalanceInteractionTest {
     }
 
     @Test
+    fun `reaching the center detent counts one snap, which the player surface ticks for`() {
+        compose.onRoot().performTouchInput { tapVirtual(212f, 63f) }
+        assertEquals(0, vm.state.snaps)
+        compose.onRoot().performTouchInput { tapVirtual(196.5f, 63f) }
+        assertEquals(1, vm.state.snaps)
+        // set again while already there: no second tick
+        vm.setBalance(0)
+        assertEquals(1, vm.state.snaps)
+    }
+
+    @Test
     fun `a backend that cannot pan still moves the slider`() {
         // MockBackend has no balance capability; the facade swallows the pan
         val plain =

@@ -160,7 +160,10 @@ class Slider(
         return low + (frac.coerceIn(0.0, 1.0) * range).toInt()
     }
 
-    /** Sets the position and tells the script; [fromUser] also drives the player. */
+    /**
+     * Sets the position and tells the script; [fromUser] also drives the player first, and the
+     * thumb goes where the player snapped to, so the script shows the snapped value.
+     */
     fun setPosition(
         p: Int,
         fromUser: Boolean,
@@ -168,9 +171,9 @@ class Slider(
         val clamped = p.coerceIn(low, high)
         if (clamped == position && fromUser) return
         position = clamped
+        if (fromUser) rt.sliderMoved(this, final = false)?.let { position = it.coerceIn(low, high) }
         rt.repaint()
         dispatch("onsetposition", Value.Int(position))
-        if (fromUser) rt.sliderMoved(this, final = false)
     }
 
     override fun pointerDown(

@@ -3102,40 +3102,58 @@ class SkinRuntime(
         range: Int,
     ): Int = Math.round(value.toDouble() * range / whole).toInt()
 
-    /** Drives the player from a slider the listener moved; the values round to the nearest. */
+    /**
+     * Drives the player from a slider the listener moved; the values round to the nearest. Returns
+     * where the thumb belongs when the player took another value than the slider's (the balance
+     * near the middle, the preamp near 0 dB), or null when it took the slider's.
+     */
     fun sliderMoved(
         s: Slider,
         final: Boolean,
-    ) {
+    ): Int? {
         val frac = (s.position - s.low).toDouble() / maxOf(1, s.high - s.low)
         val level = Math.round(frac * 255).toInt()
-        when (s.action) {
-            "seek" -> {
-                if (final) {
-                    player.seekTo(Math.round(frac * player.lengthMs).toInt())
-                    dispatchSystem("onseek", Value.Int(player.positionMs))
+        val taken =
+            when (s.action) {
+                "seek" -> {
+                    if (final) {
+                        player.seekTo(Math.round(frac * player.lengthMs).toInt())
+                        dispatchSystem("onseek", Value.Int(player.positionMs))
+                    }
+                    true
+                }
+
+                "volume" -> {
+                    player.volume = level
+                    true
+                }
+
+                "eq_band" -> {
+                    if (s.param.equals("preamp", ignoreCase = true)) {
+                        player.eqPreamp = level
+                        player.eqPreamp == level
+                    } else {
+                        s.param?.toIntOrNull()?.let { player.setEqBand(it - 1, level) }
+                        true
+                    }
+                }
+
+                "eq_preamp" -> {
+                    player.eqPreamp = level
+                    player.eqPreamp == level
+                }
+
+                "pan" -> {
+                    val pan = Math.round(frac * 2 * PAN_REACH).toInt() - PAN_REACH
+                    player.pan = pan
+                    player.pan == pan
+                }
+
+                else -> {
+                    true
                 }
             }
-
-            "volume" -> {
-                player.volume = level
-            }
-
-            "eq_band" -> {
-                when {
-                    s.param.equals("preamp", ignoreCase = true) -> player.eqPreamp = level
-                    else -> s.param?.toIntOrNull()?.let { player.setEqBand(it - 1, level) }
-                }
-            }
-
-            "eq_preamp" -> {
-                player.eqPreamp = level
-            }
-
-            "pan" -> {
-                player.pan = Math.round(frac * 2 * PAN_REACH).toInt() - PAN_REACH
-            }
-        }
+        return if (taken) null else sliderTarget(s)
     }
 
     private companion object {
