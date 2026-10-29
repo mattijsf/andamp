@@ -12,6 +12,7 @@ import nl.mattix.andamp.state.SpectrumColumns
 import nl.mattix.andamp.state.SpectrumPhysics
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.rowLabel
+import nl.mattix.andamp.ui.window.SliderMath
 import nl.mattix.andamp.ui.window.WindowControls
 import nl.mattix.andamp.ui.window.playOrOpen
 import kotlin.math.abs
@@ -282,23 +283,23 @@ internal class WalPlayer(
         merge { it.bands[band] = v }
     }
 
-    /**
-     * The preamp on the skin's scale. A skin's slider sets the value it shows, without the classic
-     * window's snap to 0 dB.
-     */
+    /** The preamp on the skin's scale; near 0 dB it snaps to 0 dB, as the classic window's does. */
     override var eqPreamp: Int
         get() = preampHeld.read(state.preamp, ::fromEq)
         set(value) {
-            val v = value.coerceIn(0, SKIN_TOP)
+            val v = value.coerceIn(0, SKIN_TOP).let { if (SliderMath.stickyPreamp(toEq(it)) == EqOps.CENTER) SKIN_FLAT else it }
             preampHeld.write(v, toEq(v), state.preamp)
             merge { it.preamp = v }
         }
 
-    /** The balance on the skin's scale, -127..127, as the classic window's balance sets it. */
+    /**
+     * The balance on the skin's scale, -127..127, as the classic window's balance sets it; near the
+     * middle it snaps to the middle, as that one does.
+     */
     override var pan: Int
         get() = panHeld.read(state.balance, ::fromBalance)
         set(value) {
-            val v = value.coerceIn(-PAN_REACH, PAN_REACH)
+            val v = value.coerceIn(-PAN_REACH, PAN_REACH).let { if (SliderMath.stickyBalance(toBalance(it)) == 0) 0 else it }
             panHeld.write(v, toBalance(v), state.balance)
             merge { it.pan = v }
         }
