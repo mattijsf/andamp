@@ -125,7 +125,8 @@ class TranslationsTest {
         val manifest = resDir().resolveSibling("AndroidManifest.xml")
         val labels = LABEL.findAll(manifest.readText()).map { it.groupValues[1] }.toList()
         assertTrue("labels in ${manifest.path}: $labels", labels.isNotEmpty())
-        assertEquals(emptyList<String>(), labels.filterNot { it.startsWith("@string/") })
+        // the app's name is filled in by the build: the strings' name, or the name of a test build
+        assertEquals(emptyList<String>(), labels.filterNot { it.startsWith("@string/") || it == "\${appLabel}" })
     }
 
     @Test

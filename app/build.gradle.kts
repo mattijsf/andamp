@@ -74,6 +74,7 @@ val storeSources = "src/store${store.replaceFirstChar { it.uppercase() }}/java"
  *
  * installs `nl.mattix.andamp.dev`. It is for trying a change on such a phone. `:androidauto`
  * reads the same property and then belongs to this second app. No release is built with it.
+ * Its launcher name says the suffix ("Andamp dev"), so it is told apart from the installed app.
  */
 val idSuffix: String? = (findProperty("andamp.id.suffix") as String?)?.takeIf { it.isNotBlank() }
 
@@ -272,6 +273,9 @@ android {
         // commit has which version code.
         versionCode = versionCodeOf(versionName!!)
         idSuffix?.let { applicationIdSuffix = it }
+        val suffixName = idSuffix?.trimStart('.')
+        manifestPlaceholders["appLabel"] = suffixName?.let { "Andamp $it" } ?: "@string/app_name"
+        manifestPlaceholders["modernSkinsLabel"] = suffixName?.let { "Modern $it" } ?: "Andamp Modern"
     }
 
     // One app, and no flavors. No source is compiled in: a source is an app the listener installed,
