@@ -10,8 +10,10 @@ import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.IntRect
 import androidx.test.core.app.ApplicationProvider
+import nl.mattix.andamp.R
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SkinLoader
+import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.LibraryAccess
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
@@ -56,6 +58,9 @@ class DoubleSizeSurfaceTest {
     /** What the surface was told about Always On Top being switched. */
     private val handed = mutableListOf<Boolean>()
 
+    /** The places the surface was asked to send the listener: the skin picker, the museum. */
+    private val sent = mutableListOf<String>()
+
     private lateinit var skin: Skin
     private lateinit var vm: WinampViewModel
 
@@ -80,9 +85,9 @@ class DoubleSizeSurfaceTest {
                 skin,
                 PlaylistMenuActions(),
                 LibraryAccessHandle(LibraryAccess.GRANTED, request = {}),
-                onPickSkin = {},
+                onPickSkin = { sent += "skin picker" },
                 onPreferences = {},
-                onMuseum = {},
+                onMuseum = { sent += "museum" },
                 onExit = {},
                 onMinimize = {},
                 onOverlaySettings = {},
@@ -143,6 +148,29 @@ class DoubleSizeSurfaceTest {
         // three screen pixels to a virtual one again, with room beside the player
         assertEquals(900 / 3, vm.state.screenW)
         assertEquals((900 / 3 - MAIN_W) / 2, rect(WindowStore.MAIN)!!.left)
+    }
+
+    @Test
+    fun `the O in the clutter bar opens Options, whose Skins load a skin and open the museum`() {
+        show()
+
+        compose.onRoot().performTouchInput {
+            down(filled(14, 29))
+            up()
+        }
+        settle()
+
+        val skins =
+            vm.state.activeMenu!!
+                .items
+                .filterIsInstance<AmpMenuItem.Submenu>()
+                .first { it.label == vm.words.get(R.string.menu_skins) }
+                .items
+                .filterIsInstance<AmpMenuItem.Action>()
+        skins.first { it.label == vm.words.get(R.string.menu_load_skin) }.onClick()
+        skins.first { it.label == vm.words.get(R.string.menu_get_more_skins) }.onClick()
+
+        assertEquals(listOf("skin picker", "museum"), sent)
     }
 
     @Test

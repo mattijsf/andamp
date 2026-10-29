@@ -317,7 +317,7 @@ internal fun WinampScreen(
  * own callbacks for the places it cannot reach.
  */
 @Composable
-@Suppress("LongParameterList") // one parameter per place this player cannot reach itself
+@Suppress("LongParameterList", "LongMethod") // one parameter per place this player cannot reach itself, each wired up here
 internal fun PlayerSurface(
     vm: WinampViewModel,
     skin: Skin,
@@ -446,6 +446,8 @@ internal fun PlayerSurface(
                                         vm,
                                         anchor,
                                         onPreferences,
+                                        onPickSkin = onPickSkin,
+                                        onMuseum = onMuseum,
                                         onAlwaysOnTop = alwaysOnTop,
                                         onDoubleSize = doubleSize,
                                         modernPlayer = walNow != null,
