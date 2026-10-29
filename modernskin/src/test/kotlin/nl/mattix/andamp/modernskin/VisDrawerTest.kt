@@ -26,6 +26,7 @@ class VisDrawerTest {
                         """<WinampAbstractionLayer version="0.8"><include file="player.xml"/></WinampAbstractionLayer>""",
                     "player.xml" to
                         """<container id="main" name="t" default_visible="1"><layout id="normal" w="200" h="100">""" +
+                        """<layer id="grip" x="190" y="90" w="10" h="10" resize="right"/>""" +
                         """<group id="drawer" x="10" y="60" w="180" h="40">""" +
                         """<windowholder id="vis" x="0" y="10" w="180" h="60" hold="guid:avs" visible="0"/>""" +
                         """</group></layout></container>""" +
@@ -148,5 +149,13 @@ class VisDrawerTest {
 
         assertEquals(true, player.eqEnabled)
         assertEquals("the skin's window stays shut", 1, rt.windows.size)
+    }
+
+    @Test
+    fun `a grip a script turns into a corner one leaves the window resizable as the skin wrote it`() {
+        main.findObject("grip")!!.setXmlParam("resize", "bottomright")
+
+        assertEquals(true, main.resizesVertically())
+        assertEquals("not sized to the box as a window resizable both ways", false, main.declaredResizableBothWays())
     }
 }

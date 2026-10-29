@@ -116,6 +116,9 @@ class SkinRuntime(
     private var dirty = true
     private var needsLayout = true
     private var scriptsStarted = false
+
+    /** Whether the skin's scripts have started: what is set from here on is set by them. */
+    val scriptsRunning: Boolean get() = scriptsStarted
     private var lastStatus = player.status
 
     /**
