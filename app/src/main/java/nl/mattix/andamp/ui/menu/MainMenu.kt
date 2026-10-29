@@ -40,11 +40,18 @@ fun mainMenu(
      * are grayed and unticked, and none of them changes unseen. The Milkdrop entries stay.
      */
     modernPlayer: Boolean = false,
+    /** One part of the menu on its own, for a modern skin's menu bar entry; null for all of it. */
+    section: MenuBarSection? = null,
 ): AmpMenu {
     val skins = skinItems(vm, onPickSkin, onMuseum)
     val bookmarks = bookmarksMenu(vm)
     val options = optionsItems(vm, onPreferences, skins, onAlwaysOnTop, onDoubleSize, modernPlayer)
     val playback = playbackItems(vm)
+    when (section) {
+        MenuBarSection.OPTIONS -> return AmpMenu(vm.words.get(R.string.menu_options), options, anchor)
+        MenuBarSection.PLAYBACK -> return AmpMenu(vm.words.get(R.string.menu_playback), playback, anchor)
+        null -> Unit
+    }
     return AmpMenu(
         vm.words.get(R.string.menu_winamp),
         listOfNotNull(
@@ -130,6 +137,28 @@ fun mainMenu(
         ),
         anchor,
     )
+}
+
+/**
+ * The parts of the main menu a modern skin's menu bar opens on their own: Winamp's Options menu is
+ * the Options list, and its Play menu, which starts and steps playback, the Playback list. The
+ * bar's other entries (File, View, Help, a playlist's or library's own) have no part of their own
+ * here and open the whole menu.
+ */
+enum class MenuBarSection {
+    OPTIONS,
+    PLAYBACK,
+    ;
+
+    companion object {
+        /** The part for the menu a skin's menu bar names, such as `WA5:Options`; null for the whole menu. */
+        fun of(menu: String?): MenuBarSection? =
+            when (menu?.lowercase()) {
+                "wa5:options" -> OPTIONS
+                "wa5:play" -> PLAYBACK
+                else -> null
+            }
+    }
 }
 
 /**

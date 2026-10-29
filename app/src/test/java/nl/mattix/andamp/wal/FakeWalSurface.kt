@@ -19,6 +19,7 @@ import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WinampState
+import nl.mattix.andamp.ui.menu.MenuBarSection
 import kotlin.math.floor
 
 /**
@@ -243,7 +244,7 @@ internal fun partsFor(
     WalLayerParts(
         surface,
         WalHostActions(
-            openMenu = { asked += "menu" },
+            openMenu = { _, _ -> asked += "menu" },
             minimize = { asked += "minimize" },
             toggleLibrary = { asked += "library" },
             toggleVisualizer = { asked += "visualizer" },
@@ -255,7 +256,7 @@ internal fun partsFor(
             fileInfo = { asked += "file info" },
         ),
         covered = covered,
-        openMenu = { anchor: MenuAnchor? ->
+        openMenu = { anchor: MenuAnchor?, _: MenuBarSection? ->
             state.activeMenu = AmpMenu(MAIN_MENU, listOf(AmpMenuItem.Action(PREFERENCES) {}), anchor)
         },
         menuTitle = SKIN_MENU,

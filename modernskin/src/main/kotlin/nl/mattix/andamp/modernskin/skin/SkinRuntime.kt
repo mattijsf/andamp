@@ -1118,6 +1118,10 @@ class SkinRuntime(
                     EqVis(this)
                 }
 
+                "menu" -> {
+                    MenuButton(this)
+                }
+
                 "wasabi:frame", "frame" -> {
                     val f = FrameSplitter(this)
                     fillGroup(f, node, defId = null)
@@ -2075,6 +2079,8 @@ class SkinRuntime(
      * [clickable]), so one hidden behind another, like a closed drawer's sliders behind the main
      * window, takes no touch. A nearby script object counts if the script listens to it for
      * presses or moves, even under another object: a vis trigger often lies under the vis.
+     * A menu bar entry takes a touch right on it only: it lies close under a title bar, which a
+     * drag beside it must still move.
      */
     fun touchTarget(
         sx: Int,
@@ -2085,7 +2091,7 @@ class SkinRuntime(
         val x = sx - origin.left
         val y = sy - origin.top
         val hit = window.hitTest(x, y)
-        if (hit != null && isControl(hit)) return hit
+        if (hit != null && (isControl(hit) || hit is MenuButton)) return hit
         val slop2 = touchSlop * touchSlop
 
         // the cheap tests first: a script's bindings are read only for objects within reach
@@ -2305,11 +2311,11 @@ class SkinRuntime(
      * Whether a drag that starts on [o] moves the window. It moves it from every part where a drag
      * does nothing else, as from a move area in Winamp, so a skin moves from anywhere but its
      * controls; an object that writes `move="0"` is no exception. A control never moves it, as a
-     * drag works the control, and neither does an object a script follows the finger across
+     * drag works the control, nor does a menu bar entry, and neither does an object a script follows the finger across
      * ([followsFinger]), unless it is a move area ([isMoveArea]).
      */
     internal fun movesWindow(o: GuiObject): Boolean {
-        if (isControl(o)) return false
+        if (isControl(o) || o is MenuButton) return false
         return isMoveArea(o) || !followsFinger(o)
     }
 

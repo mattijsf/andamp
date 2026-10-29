@@ -50,6 +50,7 @@ import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
+import nl.mattix.andamp.ui.menu.MenuBarSection
 import nl.mattix.andamp.ui.window.PlaylistMenuActions
 import nl.mattix.andamp.ui.window.WindowSnap
 import nl.mattix.andamp.ui.window.windowScreen
@@ -93,8 +94,8 @@ internal class WalLayerParts(
      * it, or a window of the app hides it whole ([hidesModernSkin]). Read in a snapshot.
      */
     val covered: () -> Boolean,
-    /** Opens the main menu at an anchor. */
-    val openMenu: (anchor: MenuAnchor?) -> Unit,
+    /** Opens the main menu at an anchor; a menu bar entry opens the part it names. */
+    val openMenu: (anchor: MenuAnchor?, section: MenuBarSection?) -> Unit,
     /** What a skin's popup menu is called as one of the app's menus. */
     val menuTitle: String,
     /** Whether the stack keeps to its natural size, as over other apps; see [WalFit.compact]. */
@@ -110,7 +111,7 @@ internal fun rememberWalLayerParts(
     surface: WalSurface,
     vm: WinampViewModel,
     playlistActions: PlaylistMenuActions,
-    openMenu: (anchor: MenuAnchor?) -> Unit,
+    openMenu: (anchor: MenuAnchor?, section: MenuBarSection?) -> Unit,
     onMinimize: () -> Unit,
     covered: () -> Boolean,
     compact: Boolean = false,
@@ -124,13 +125,13 @@ internal fun rememberWalLayerParts(
             surface,
             WalHostActions.of(
                 vm,
-                openMenu = { anchor -> openMenuNow(anchor) },
+                openMenu = { section, anchor -> openMenuNow(anchor, section) },
                 onMinimize = { minimizeNow() },
                 openFile = { andPlay -> if (andPlay) playlistNow.addFileThenPlay() else playlistNow.addFile() },
             ),
             // a window of the app over the whole skin hides it as well as a screen does
             covered = { coveredNow() || hidesModernSkin(vm.state) },
-            openMenu = { anchor -> openMenuNow(anchor) },
+            openMenu = { anchor, section -> openMenuNow(anchor, section) },
             menuTitle = vm.words.get(R.string.menu_skin_menu),
             compact = compact,
         )
@@ -483,7 +484,7 @@ private fun WalCanvas(
                             if (surface.layout?.menuTarget == seq) {
                                 surface.rightClick(seq)
                             } else {
-                                parts.openMenu(parts.actions.pressAt?.invoke())
+                                parts.openMenu(parts.actions.pressAt?.invoke(), null)
                             }
                         },
                         drag = drag,

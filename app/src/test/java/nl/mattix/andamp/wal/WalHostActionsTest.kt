@@ -8,6 +8,7 @@ import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.VisualCommands
 import nl.mattix.andamp.state.WindowStore
+import nl.mattix.andamp.ui.menu.MenuBarSection
 import nl.mattix.andamp.ui.window.testViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -27,6 +28,7 @@ class WalHostActionsTest {
 
     /** Where the menus asked for popped. */
     private val anchors = mutableListOf<MenuAnchor?>()
+    private val sections = mutableListOf<MenuBarSection?>()
 
     private fun on(name: String) {
         assertTrue("$name runs on the main thread", Looper.getMainLooper().isCurrentThread)
@@ -35,8 +37,9 @@ class WalHostActionsTest {
 
     private val actions =
         WalHostActions(
-            openMenu = {
-                anchors += it
+            openMenu = { section, anchor ->
+                sections += section
+                anchors += anchor
                 on("menu")
             },
             minimize = { on("minimize") },
@@ -96,6 +99,17 @@ class WalHostActionsTest {
     }
 
     @Test
+    fun `a menu bar entry opens the part of the main menu it names, and the whole menu for any other`() {
+        actions.hostAction("MENU", "WA5:Options")
+        actions.hostAction("MENU", "WA5:Play")
+        actions.hostAction("MENU", "WA5:File")
+        actions.hostAction("MENU", null)
+        actions.hostAction("SYSMENU", "WA5:Options")
+
+        assertEquals(listOf(MenuBarSection.OPTIONS, MenuBarSection.PLAYBACK, null, null, null), sections)
+    }
+
+    @Test
     fun `a menu the skin asks for pops at the last press`() {
         val press = MenuAnchor(WindowStore.MAIN, 40, 12, 1, 1)
         actions.hostAction("MENU", null)
@@ -109,7 +123,7 @@ class WalHostActionsTest {
     @Test
     fun `the library button opens and closes the library as the main menu does`() {
         val vm = testViewModel()
-        val actions = WalHostActions.of(vm, openMenu = {}, onMinimize = {}, openFile = {})
+        val actions = WalHostActions.of(vm, openMenu = { _, _ -> }, onMinimize = {}, openFile = {})
 
         actions.hostAction("TOGGLE", "ml")
         assertTrue(vm.state.libraryOpen)
@@ -122,7 +136,7 @@ class WalHostActionsTest {
     @Test
     fun `the visualizer button opens and closes the visualizer window`() {
         val vm = testViewModel()
-        val actions = WalHostActions.of(vm, openMenu = {}, onMinimize = {}, openFile = {})
+        val actions = WalHostActions.of(vm, openMenu = { _, _ -> }, onMinimize = {}, openFile = {})
 
         actions.hostAction("TOGGLE", "avs")
         assertTrue(vm.state.milkdropOn)
@@ -134,7 +148,7 @@ class WalHostActionsTest {
     @Test
     fun `fullscreen opens the visualizer window and fills the screen with it`() {
         val vm = testViewModel()
-        val actions = WalHostActions.of(vm, openMenu = {}, onMinimize = {}, openFile = {})
+        val actions = WalHostActions.of(vm, openMenu = { _, _ -> }, onMinimize = {}, openFile = {})
 
         actions.hostAction("VIS_FS", null)
 
@@ -158,7 +172,7 @@ class WalHostActionsTest {
 
                 override fun goToPreset(index: Int) = Unit
             }
-        val actions = WalHostActions.of(vm, openMenu = {}, onMinimize = {}, openFile = {})
+        val actions = WalHostActions.of(vm, openMenu = { _, _ -> }, onMinimize = {}, openFile = {})
 
         actions.hostAction("VIS_NEXT", null)
         assertEquals("closed, it is not stepped", emptyList<String>(), stepped)
@@ -172,7 +186,7 @@ class WalHostActionsTest {
     @Test
     fun `the visualization menu pops at the press with the in-player modes grayed`() {
         val vm = testViewModel()
-        val actions = WalHostActions.of(vm, openMenu = {}, onMinimize = {}, openFile = {})
+        val actions = WalHostActions.of(vm, openMenu = { _, _ -> }, onMinimize = {}, openFile = {})
         val press = MenuAnchor(WindowStore.MAIN, 40, 12, 1, 1)
         actions.pressAt = { press }
 
@@ -191,7 +205,7 @@ class WalHostActionsTest {
     @Test
     fun `the file info button shows the song playing, and nothing before a song has played`() {
         val vm = testViewModel()
-        val actions = WalHostActions.of(vm, openMenu = {}, onMinimize = {}, openFile = {})
+        val actions = WalHostActions.of(vm, openMenu = { _, _ -> }, onMinimize = {}, openFile = {})
 
         actions.hostAction("TRACKINFO", null)
         assertNull("nothing has played", vm.state.trackInfo)
@@ -214,7 +228,7 @@ class WalHostActionsTest {
         val actions =
             WalHostActions.of(
                 vm,
-                openMenu = { got += "menu at ${it?.x},${it?.y}" },
+                openMenu = { _, at -> got += "menu at ${at?.x},${at?.y}" },
                 onMinimize = { got += "minimize" },
                 openFile = { got += "file $it" },
             )
