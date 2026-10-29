@@ -25,14 +25,10 @@ class SkinMenusForTest {
     }
 
     @Test
-    fun `a press on an object with a menu offers that menu, which right-clicks it`() {
+    fun `a press on an object with a menu is offered nothing, as it opens that menu itself`() {
         surface.layout = surface.layout!!.copy(menuTarget = 4)
 
-        val menus = skinMenusFor(surface, 4, EnglishWords)
-
-        assertEquals(1, menus.size)
-        menus.single().onClick()
-        assertEquals(listOf(4), surface.rightClicks)
+        assertTrue(skinMenusFor(surface, 4, EnglishWords).isEmpty())
     }
 
     @Test

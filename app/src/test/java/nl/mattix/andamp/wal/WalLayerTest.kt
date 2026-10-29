@@ -418,7 +418,7 @@ class WalLayerTest {
     }
 
     @Test
-    fun `Skin menu leads the main menu only for a press the engine found a skin menu under, and right-clicks it`() {
+    fun `a press the engine found a skin menu under opens that menu, not the main menu`() {
         layer()
         surface.menuUnderEveryPress = true
 
@@ -428,11 +428,8 @@ class WalLayerTest {
         screen().performTouchInput { up() }
         frames()
 
-        compose.onNodeWithText(SKIN_MENU).performClick()
-        frames()
-
         assertEquals("the gesture of that press", listOf(1), surface.rightClicks)
-        assertNull("the main menu closed", state.activeMenu)
+        assertNull("no main menu", state.activeMenu)
     }
 
     @Test

@@ -482,9 +482,14 @@ private fun WalCanvas(
                             // measured as the menu opens, from the rect the menus read then
                             parts.actions.pressAt = { placedNow.anchorAt(point, state.windowRects[WindowStore.MAIN]) }
                         },
+                        // the skin's own menu where the press found one, else the main menu
                         onLongPress = { _, seq ->
                             haptics.performHapticFeedback(HapticFeedbackType.LongPress)
-                            parts.openMenu(skinMenusFor(surface, seq, parts.words), parts.actions.pressAt?.invoke())
+                            if (surface.layout?.menuTarget == seq) {
+                                surface.rightClick(seq)
+                            } else {
+                                parts.openMenu(skinMenusFor(surface, seq, parts.words), parts.actions.pressAt?.invoke())
+                            }
                         },
                         drag = drag,
                     )

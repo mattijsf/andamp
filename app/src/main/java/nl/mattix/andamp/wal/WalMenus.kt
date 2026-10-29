@@ -88,10 +88,11 @@ internal suspend fun showSkinMenus(
 }
 
 /**
- * The skin's right-click menus a long press offers under "Skin menu", for the press [seq]: the
- * menu of the object under it when the engine found one there ([WalLayout.menuTarget]); else each
- * object with a skin menu on screen ([WalLayout.menuChoices]), named by [skinMenuName], once per
- * name. Each entry right-clicks its object. Empty when the skin shows no right-click menu.
+ * The skin's right-click menus a long press beside them offers under "Skin menu", for the press
+ * [seq]: each object with a skin menu on screen ([WalLayout.menuChoices]), named by
+ * [skinMenuName], once per name. Each entry right-clicks its object. Empty when the skin shows no
+ * right-click menu. A press on an object with a menu opens that menu itself (see
+ * [WalLayout.menuTarget]), so it is offered nothing here.
  */
 internal fun skinMenusFor(
     surface: WalSurface,
@@ -99,9 +100,6 @@ internal fun skinMenusFor(
     words: Words,
 ): List<AmpMenuItem.Action> {
     val layout = surface.layout ?: return emptyList()
-    if (layout.menuTarget == seq) {
-        return listOf(AmpMenuItem.Action(words.get(R.string.menu_skin_menu)) { surface.rightClick(seq) })
-    }
     val choices = layout.menuChoices?.takeIf { it.seq == seq } ?: return emptyList()
     var unnamed = 0
     return choices.objects

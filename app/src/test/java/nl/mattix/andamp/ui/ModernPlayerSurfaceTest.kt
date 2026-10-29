@@ -13,8 +13,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.IntRect
 import androidx.test.core.app.ApplicationProvider
@@ -252,8 +250,7 @@ class ModernPlayerSurfaceTest {
     }
 
     @Test
-    fun `a long press opens the main menu at the press, led by Skin menu, with the classic windows grayed`() {
-        surface.menuUnderEveryPress = true
+    fun `a long press opens the main menu at the press, with the classic windows grayed`() {
         show()
         val press = Offset(450f, 100f)
 
@@ -261,19 +258,22 @@ class ModernPlayerSurfaceTest {
 
         val menu = vm.state.activeMenu!!
         assertPopsAt("it pops at the press", press, menu.anchor)
-        val first = menu.items[0] as AmpMenuItem.Action
-        assertEquals(vm.words.get(R.string.menu_skin_menu), first.label)
-        assertSame(AmpMenuItem.Divider, menu.items[1])
         for (classic in listOf(R.string.menu_playlist_editor, R.string.menu_equalizer)) {
             val entry = menu.items.filterIsInstance<AmpMenuItem.Action>().first { it.label == vm.words.get(classic) }
             assertFalse("${entry.label} is grayed", entry.enabled)
         }
         assertEquals("the skin's press was cancelled", listOf("down 150,50", "cancel"), surface.pointerCalls)
+    }
 
-        compose.onNodeWithText(vm.words.get(R.string.menu_skin_menu)).performClick()
-        frames()
+    @Test
+    fun `a long press on the skin's own menu opens it, with no main menu`() {
+        surface.menuUnderEveryPress = true
+        show()
+
+        longPress(Offset(450f, 100f))
 
         assertEquals(listOf(1), surface.rightClicks)
+        assertNull(vm.state.activeMenu)
     }
 
     @Test
