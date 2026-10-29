@@ -596,8 +596,10 @@ class WalLookTest {
     }
 
     @Test(timeout = 20_000)
-    fun `a press on a move area comes back in the layout as the move target, and a press on a button does not`() {
-        val bar = """<layer id="bar" x="0" y="40" w="200" h="14" move="1"/>"""
+    fun `a press on a move area or a button comes back in the layout as the move target, and a press on a slider does not`() {
+        val bar =
+            """<layer id="bar" x="0" y="40" w="200" h="14" move="1"/>""" +
+                """<slider id="vol" action="volume" x="0" y="70" w="200" h="10" orientation="h"/>"""
         val look = look(file = wal(playerXml = player.replace("</layout>", "$bar</layout>")))
         look.fit(phone)
         await("the first frame arrives") { look.layout != null }
@@ -606,8 +608,12 @@ class WalLookTest {
         look.pointerUp(150, 45)
         await("the press on the bar is named") { look.layout?.moveTarget == onBar }
 
-        look.pointerDown(15, 15)
-        await("the press on Play is not") { look.layout?.moveTarget == null }
+        val onPlay = look.pointerDown(15, 15)
+        look.pointerUp(15, 15)
+        await("the press on Play is named") { look.layout?.moveTarget == onPlay }
+
+        look.pointerDown(100, 75)
+        await("the press on the slider is not") { look.layout?.moveTarget == null }
     }
 
     @Test

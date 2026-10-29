@@ -10,7 +10,6 @@ import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.modernskin.skin.SystemObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -125,7 +124,7 @@ class HostActionTest {
     }
 
     @Test
-    fun `a menu bar entry keeps a tap on it from a button just above it, and a press on it moves no window`() {
+    fun `a menu bar entry keeps a tap on it from a button just above it, and a drag from it moves the window`() {
         rt.load()
         rt.touchSlop = 10
         rt.onHostAction = { a, p -> asked += a to p }
@@ -136,7 +135,7 @@ class HostActionTest {
         val y = entry.rect.top + 2
 
         rt.pointerDown(x, y, seq = 1)
-        assertNull("no window drag", rt.moveTarget)
+        assertEquals("a drag moves the window", 1, rt.moveTarget)
         rt.pointerUp(x, y)
 
         assertEquals(listOf("MENU" to "WA5:Options"), asked)

@@ -142,8 +142,17 @@ class MoveAreaTest {
     }
 
     @Test
-    fun `a button on a move area takes the press, and moves nothing`() {
-        assertNull(pressOn("close", seq = 2))
+    fun `a button moves the window by a drag, and a drag let go of clicks nothing`() {
+        assertEquals(2, pressOn("close", seq = 2))
+
+        listen(find("close"), "onleftclick")
+        val r = find("close").rect
+        rt.pointerDown(r.left + 2, r.top + 2, seq = 20)
+        assertEquals(20, rt.moveTarget)
+        // the host takes the drag past its touch slop and lets the press go
+        rt.pointerCancel()
+        rt.pointerUp(r.left + 2, r.top + 2)
+        assertEquals(emptyList<String>(), heard)
     }
 
     @Test
@@ -188,7 +197,7 @@ class MoveAreaTest {
     @Test
     fun `each press says it afresh, and a double tap is never one`() {
         assertEquals(9, pressOn("bar", seq = 9, dx = 100))
-        assertNull(pressOn("close", seq = 10))
+        assertNull(pressOn("volume", seq = 10, dx = 50))
 
         assertEquals(11, pressOn("bar", seq = 11, dx = 100))
         val r = find("bar").rect
@@ -219,7 +228,7 @@ class MoveAreaTest {
     }
 
     @Test
-    fun `Winamp Modern moves by its title bar and its background, not by its Play button`() {
+    fun `Winamp Modern moves by its title bar, its background and its Play button`() {
         val wal = ZipSkinFiles(File(localResource("/WinampModern566.wal").toURI()))
         val modern = SkinRuntime(wal, TestHost(wal), FakePlayer()).apply { load() }
         // the margin a Pixel 9 Pro gives at Winamp Modern's 2x: 24 dp at 2.25 px a dp
@@ -233,7 +242,7 @@ class MoveAreaTest {
 
         val play = modern.allObjects.first { it.id == "play" && it.layoutObject === main }.rect
         modern.pointerDown(play.left + play.width / 2, play.top + play.height / 2, seq = 2)
-        assertNull("the Play button", modern.moveTarget)
+        assertEquals("the Play button", 2, modern.moveTarget)
         modern.pointerUp(play.left + play.width / 2, play.top + play.height / 2)
 
         // the panel above the clock
