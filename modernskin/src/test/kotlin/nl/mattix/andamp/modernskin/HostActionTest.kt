@@ -10,6 +10,7 @@ import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.modernskin.skin.SystemObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -121,6 +122,24 @@ class HostActionTest {
         assertEquals(listOf("MENU" to "WA5:Options"), asked)
         assertTrue("let go", layout.findObject("options.up")!!.visible)
         assertFalse(layout.findObject("options.down")!!.visible)
+    }
+
+    @Test
+    fun `a menu bar entry keeps a tap on it from a button just above it, and a press on it moves no window`() {
+        rt.load()
+        rt.touchSlop = 10
+        rt.onHostAction = { a, p -> asked += a to p }
+        rt.ensureLayout()
+        val entry = checkNotNull(rt.mainLayout?.findObject("options"))
+        // 7 px under the library button, within the slop
+        val x = entry.rect.left + 2
+        val y = entry.rect.top + 2
+
+        rt.pointerDown(x, y, seq = 1)
+        assertNull("no window drag", rt.moveTarget)
+        rt.pointerUp(x, y)
+
+        assertEquals(listOf("MENU" to "WA5:Options"), asked)
     }
 
     @Test
