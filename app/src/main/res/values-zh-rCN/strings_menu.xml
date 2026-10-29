@@ -2,11 +2,6 @@
 <resources>
     <!-- MainMenu.kt -->
     <string name="menu_skin_menu">面板菜单</string>
-    <string name="menu_skin_menu_visualizer">可视化效果</string>
-    <string name="menu_skin_menu_time">时间</string>
-    <string name="menu_skin_menu_album_art">专辑封面</string>
-    <string name="menu_skin_menu_rating">评分</string>
-    <string name="menu_skin_menu_numbered">菜单 %1$d</string>
     <string name="menu_play">播放</string>
     <string name="menu_play_file">播放文件...</string>
     <string name="menu_play_directory">播放文件夹...</string>

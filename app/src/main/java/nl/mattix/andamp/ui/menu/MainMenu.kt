@@ -32,12 +32,6 @@ fun mainMenu(
     onAlwaysOnTop: () -> Unit = {},
     /** Winamp's Ctrl+D, Double Size, listed under Options after Always On Top. */
     onDoubleSize: () -> Unit = {},
-    /**
-     * A modern skin's right-click menus that a long press offers, each named and opening its menu.
-     * "Skin menu" then comes first, then a divider: one opens it directly, and several show as a
-     * submenu by name. None gives no entry.
-     */
-    skinMenus: List<AmpMenuItem.Action> = emptyList(),
     /** Where the menu pops from: unless given, the options button in the titlebar, like Winamp's system-menu icon. */
     anchor: MenuAnchor = MenuAnchor(WindowStore.MAIN, OPTIONS_X, OPTIONS_Y, OPTIONS_W, OPTIONS_H),
     /**
@@ -54,10 +48,6 @@ fun mainMenu(
     return AmpMenu(
         vm.words.get(R.string.menu_winamp),
         listOfNotNull(
-            // the skin's right-click menus, first and set apart; the entry names the menus, never
-            // their entries, because a skin's menu has none until its script builds it
-            skinMenuEntry(vm, skinMenus),
-            AmpMenuItem.Divider.takeIf { skinMenus.isNotEmpty() },
             AmpMenuItem.Submenu(
                 vm.words.get(R.string.menu_play),
                 listOf(
@@ -140,19 +130,6 @@ fun mainMenu(
         ),
         anchor,
     )
-}
-
-/** "Skin menu" for [skinMenus]: the only one's action, a submenu naming several, or nothing for none. */
-private fun skinMenuEntry(
-    vm: WinampViewModel,
-    skinMenus: List<AmpMenuItem.Action>,
-): AmpMenuItem? {
-    val label = vm.words.get(R.string.menu_skin_menu)
-    return when (skinMenus.size) {
-        0 -> null
-        1 -> AmpMenuItem.Action(label, onClick = skinMenus.single().onClick)
-        else -> AmpMenuItem.Submenu(label, skinMenus)
-    }
 }
 
 /**

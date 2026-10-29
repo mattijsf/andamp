@@ -304,8 +304,8 @@ class MoveAreaTest {
         assertEquals("the start puts it in its corner", Edge.START to Edge.START, main.edgeX to main.edgeY)
         assertEquals(0, corner.edgePlacements)
 
-        // a long press on the title it shows, then "Skin menu", dismissed and then picked: the
-        // same corner, then another
+        // a long press on the title it shows opens its menu, dismissed and then picked: the same
+        // corner, then another
         for ((seq, picked) in listOf(0, 1, 4).withIndex()) {
             answer = picked
             val title = main.children.first { it.id.startsWith("title") && it.visible }

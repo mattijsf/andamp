@@ -220,7 +220,7 @@ class ViewportEdgeTest {
             )
         for ((seq, picked) in listOf(4, 2, 3, 1, 4).withIndex()) {
             answer = picked
-            // a long press on the title it shows now, then "Skin menu"
+            // a long press on the title it shows now opens its menu
             val title = player.children.first { it.id.startsWith("title") && it.visible }
             corner.pointerDown(title.rect.left + 3, title.rect.top + 3, seq)
             corner.rightClick(seq)

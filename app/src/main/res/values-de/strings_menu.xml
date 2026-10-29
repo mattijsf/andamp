@@ -2,11 +2,6 @@
 <resources>
     <!-- MainMenu.kt -->
     <string name="menu_skin_menu">Skin-Menü</string>
-    <string name="menu_skin_menu_visualizer">Visualisierung</string>
-    <string name="menu_skin_menu_time">Zeit</string>
-    <string name="menu_skin_menu_album_art">Albumcover</string>
-    <string name="menu_skin_menu_rating">Bewertung</string>
-    <string name="menu_skin_menu_numbered">Menü %1$d</string>
     <string name="menu_play">Abspielen</string>
     <string name="menu_play_file">Datei abspielen...</string>
     <string name="menu_play_directory">Verzeichnis abspielen...</string>

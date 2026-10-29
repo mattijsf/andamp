@@ -15,10 +15,8 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import kotlinx.coroutines.sync.Mutex
 import nl.mattix.andamp.modernskin.skin.SkinMenu
-import nl.mattix.andamp.modernskin.skin.SkinMenuChoices
 import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.AmpMenuItem
-import nl.mattix.andamp.state.EnglishWords
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WinampState
 import kotlin.math.floor
@@ -53,8 +51,6 @@ internal class FakeWalSurface : WalSurface {
     val answers = mutableListOf<Pair<SkinMenu, Int>>()
     val rightClicks = mutableListOf<Int>()
 
-    /** Each right click on an object of [WalLayout.menuChoices]: the gesture's seq and the index picked. */
-    val choiceClicks = mutableListOf<Pair<Int, Int>>()
     val drawFailures = mutableListOf<Throwable>()
 
     /** Each value [awake] was set to, in order. */
@@ -76,9 +72,6 @@ internal class FakeWalSurface : WalSurface {
 
     /** Names each press as one whose object has a skin menu, as the engine's lookup does. */
     var menuUnderEveryPress = false
-
-    /** Offers these objects with a skin menu for each press, as the engine does for a press beside them all. */
-    var menusBesideEveryPress: List<SkinMenuChoices.Choice> = emptyList()
 
     /** Names each press, though no double tap, as one on a move area, as the engine's lookup does. */
     var moveAreaUnderEveryPress = false
@@ -164,22 +157,13 @@ internal class FakeWalSurface : WalSurface {
         calls += call
         seq++
         if (menuUnderEveryPress) layout = layout?.copy(menuTarget = seq)
-        if (menusBesideEveryPress.isNotEmpty()) layout = layout?.copy(menuChoices = SkinMenuChoices(seq, menusBesideEveryPress))
         // the engine names no double tap as a move
         if (moveAreaUnderEveryPress) layout = layout?.copy(moveTarget = seq.takeIf { call.startsWith("down") })
         return seq
     }
 
-    override fun rightClick(
-        seq: Int,
-        choice: Int?,
-    ) {
+    override fun rightClick(seq: Int) {
         input()
-        if (choice != null) {
-            calls += "rightClick $seq #$choice"
-            choiceClicks += seq to choice
-            return
-        }
         calls += "rightClick $seq"
         rightClicks += seq
     }
@@ -247,9 +231,8 @@ internal fun skinMenuOf(vararg labels: String) =
     SkinMenu(labels.mapIndexed { i, label -> SkinMenu.Command(i + 1, label, checked = false, disabled = false) })
 
 /**
- * The parts a player surface hands [surface]'s layer, with a main menu that holds "Skin menu" (when
- * given the skin's menus: the only one's action, or a submenu of several) and one other entry, and
- * records what the skin's buttons asked for in [asked].
+ * The parts a player surface hands [surface]'s layer, with a main menu of one entry, and records
+ * what the skin's buttons asked for in [asked].
  */
 internal fun partsFor(
     surface: WalSurface,
@@ -272,23 +255,10 @@ internal fun partsFor(
             fileInfo = { asked += "file info" },
         ),
         covered = covered,
-        openMenu = { skinMenus: List<AmpMenuItem.Action>, anchor: MenuAnchor? ->
-            state.activeMenu =
-                AmpMenu(
-                    MAIN_MENU,
-                    listOfNotNull(
-                        when (skinMenus.size) {
-                            0 -> null
-                            1 -> AmpMenuItem.Action(SKIN_MENU, onClick = skinMenus.single().onClick)
-                            else -> AmpMenuItem.Submenu(SKIN_MENU, skinMenus)
-                        },
-                        AmpMenuItem.Action(PREFERENCES) {},
-                    ),
-                    anchor,
-                )
+        openMenu = { anchor: MenuAnchor? ->
+            state.activeMenu = AmpMenu(MAIN_MENU, listOf(AmpMenuItem.Action(PREFERENCES) {}), anchor)
         },
         menuTitle = SKIN_MENU,
-        words = EnglishWords,
     )
 
 internal const val MAIN_MENU = "Winamp"

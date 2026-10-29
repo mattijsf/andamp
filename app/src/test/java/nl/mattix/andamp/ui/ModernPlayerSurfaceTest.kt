@@ -13,14 +13,11 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.junit4.v2.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.onNodeWithText
-import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.IntRect
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.Transport
-import nl.mattix.andamp.modernskin.skin.SkinMenuChoices
 import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.skin.Skin
@@ -51,7 +48,6 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
@@ -252,8 +248,7 @@ class ModernPlayerSurfaceTest {
     }
 
     @Test
-    fun `a long press opens the main menu at the press, led by Skin menu, with the classic windows grayed`() {
-        surface.menuUnderEveryPress = true
+    fun `a long press opens the main menu at the press, with the classic windows grayed`() {
         show()
         val press = Offset(450f, 100f)
 
@@ -261,40 +256,34 @@ class ModernPlayerSurfaceTest {
 
         val menu = vm.state.activeMenu!!
         assertPopsAt("it pops at the press", press, menu.anchor)
-        val first = menu.items[0] as AmpMenuItem.Action
-        assertEquals(vm.words.get(R.string.menu_skin_menu), first.label)
-        assertSame(AmpMenuItem.Divider, menu.items[1])
         for (classic in listOf(R.string.menu_playlist_editor, R.string.menu_equalizer)) {
             val entry = menu.items.filterIsInstance<AmpMenuItem.Action>().first { it.label == vm.words.get(classic) }
             assertFalse("${entry.label} is grayed", entry.enabled)
         }
         assertEquals("the skin's press was cancelled", listOf("down 150,50", "cancel"), surface.pointerCalls)
-
-        compose.onNodeWithText(vm.words.get(R.string.menu_skin_menu)).performClick()
-        frames()
-
-        assertEquals(listOf(1), surface.rightClicks)
     }
 
     @Test
-    fun `a long press beside several of the skin's menus leads the main menu with them under Skin menu`() {
-        surface.menusBesideEveryPress =
-            listOf(SkinMenuChoices.Choice("main.vis.trigger", null), SkinMenuChoices.Choice("display.time", null))
+    fun `a long press on a skin menu opens it, with no main menu`() {
+        surface.menuUnderEveryPress = true
+        show()
+
+        longPress(Offset(450f, 100f))
+
+        assertEquals(listOf(1), surface.rightClicks)
+        assertNull(vm.state.activeMenu)
+    }
+
+    @Test
+    fun `a long press beside the skin's menus opens the main menu, starting at Play`() {
         show()
 
         longPress(Offset(450f, 100f))
 
         val menu = vm.state.activeMenu!!
-        val first = menu.items[0] as AmpMenuItem.Submenu
-        assertEquals(vm.words.get(R.string.menu_skin_menu), first.label)
-        assertEquals(
-            listOf(R.string.menu_skin_menu_visualizer, R.string.menu_skin_menu_time).map { vm.words.get(it) },
-            first.items.map { (it as AmpMenuItem.Action).label },
-        )
-        assertSame(AmpMenuItem.Divider, menu.items[1])
-
-        (first.items[1] as AmpMenuItem.Action).onClick()
-        assertEquals(listOf(1 to 1), surface.choiceClicks)
+        assertEquals(vm.words.get(R.string.menu_winamp), menu.title)
+        assertEquals(vm.words.get(R.string.menu_play), (menu.items[0] as AmpMenuItem.Submenu).label)
+        assertTrue("no right click", surface.rightClicks.isEmpty())
     }
 
     @Test
@@ -313,10 +302,6 @@ class ModernPlayerSurfaceTest {
         val menu = vm.state.activeMenu!!
         assertEquals(vm.words.get(R.string.menu_winamp), menu.title)
         assertPopsAt("it pops at the press", Offset(450f, 100f), menu.anchor)
-        assertFalse(
-            "no Skin menu from a button",
-            menu.items.filterIsInstance<AmpMenuItem.Action>().any { it.label == vm.words.get(R.string.menu_skin_menu) },
-        )
 
         sink.openFile(andPlay = false)
         sink.openFile(andPlay = true)

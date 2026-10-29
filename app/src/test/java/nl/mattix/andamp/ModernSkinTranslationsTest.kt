@@ -12,7 +12,7 @@ import javax.xml.parsers.DocumentBuilderFactory
 
 /**
  * Every text a listener meets around modern skins, in each language Andamp ships: the switch and
- * its notes on Preferences > Player, the offer, the notices, the Skin menu, Color themes, Skin
+ * its notes on Preferences > Player, the offer, the notices, the skin menu title, Color themes, Skin
  * Settings and the row suffix. Another translation may be incomplete (see `TranslationsTest`), but a gap here
  * would show English in the middle of a translated screen about modern skins.
  */
@@ -87,12 +87,12 @@ class ModernSkinTranslationsTest {
         val LANGUAGES = listOf("values-de", "values-fr", "values-nl", "values-zh-rCN")
 
         /**
-         * Keys of modern-skin text: the prompts and the row suffix, the Skin menu, Color themes and
+         * Keys of modern-skin text: the prompts and the row suffix, the skin menu title, Color themes and
          * Skin Settings, and the Skins section on Preferences > Player with its lines in the Player row's summary.
          */
         val MODERN =
             Regex(
-                "skin_modern_.*|skin_row_modern|menu_skin_menu.*|menu_color_themes|menu_skin_settings.*|" +
+                "skin_modern_.*|skin_row_modern|menu_skin_menu|menu_color_themes|menu_skin_settings.*|" +
                     "prefs_modern_.*|prefs_sharp_.*|" +
                     "prefs_player_skins_.*|prefs_player_summary_.*(modern|sharp|_skins).*",
             )
