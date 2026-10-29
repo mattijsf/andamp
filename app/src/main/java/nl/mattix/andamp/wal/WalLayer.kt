@@ -113,11 +113,13 @@ internal fun rememberWalLayerParts(
     playlistActions: PlaylistMenuActions,
     openMenu: (anchor: MenuAnchor?, section: MenuBarSection?) -> Unit,
     onMinimize: () -> Unit,
+    onExit: () -> Unit,
     covered: () -> Boolean,
     compact: Boolean = false,
 ): WalLayerParts {
     val openMenuNow by rememberUpdatedState(openMenu)
     val minimizeNow by rememberUpdatedState(onMinimize)
+    val exitNow by rememberUpdatedState(onExit)
     val playlistNow by rememberUpdatedState(playlistActions)
     val coveredNow by rememberUpdatedState(covered)
     return remember(surface, vm, compact) {
@@ -127,6 +129,7 @@ internal fun rememberWalLayerParts(
                 vm,
                 openMenu = { section, anchor -> openMenuNow(anchor, section) },
                 onMinimize = { minimizeNow() },
+                onExit = { exitNow() },
                 openFile = { andPlay -> if (andPlay) playlistNow.addFileThenPlay() else playlistNow.addFile() },
             ),
             // a window of the app over the whole skin hides it as well as a screen does
