@@ -38,6 +38,7 @@
     <string name="menu_load_skin">加载面板...</string>
     <string name="menu_color_themes">颜色主题</string>
     <string name="menu_skin_settings">面板设置</string>
+    <string name="menu_skin_settings_open">面板设置...</string>
     <string name="menu_get_more_skins">&lt;&lt; 获得更多面板！ &gt;&gt;</string>
     <string name="skin_row_modern">%1$s · 现代面板</string>
     <string name="menu_preferences">首选项...</string>

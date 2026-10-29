@@ -723,6 +723,8 @@ class SkinOps internal constructor(
         widgetSkin = library.widgetSkin
         val off = wal?.takeIf { it !== next }
         wal = next
+        // the Skin Settings dialog belongs to the look on screen: it closes when that look leaves
+        if (state.skinSettings != null && state.skinSettings !== next) state.skinSettings = null
         if (parked === next) parked = null
         if (off != null && worn.source) {
             parked?.release(save = true)

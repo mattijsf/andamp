@@ -19,11 +19,16 @@ class SkinOptions(
 
     sealed interface Entry
 
-    /** A checkable option; [checked] as Winamp ticks it: the value read as a number is not 0. */
+    /**
+     * A checkable option; [checked] as Winamp ticks it: the value read as a number is not 0.
+     * [radio] when the skin's own page shows it as one of a set of radio buttons, which Winamp's
+     * menu does not tell apart (see [SkinRuntime.skinOptions]).
+     */
     data class Toggle(
         val key: Key,
         val text: String,
         val checked: Boolean,
+        val radio: Boolean = false,
     ) : Entry
 
     data object Separator : Entry

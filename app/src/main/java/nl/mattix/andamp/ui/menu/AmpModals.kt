@@ -77,20 +77,7 @@ fun AmpModals(
             // clear only the menu this popup showed: another may have been put up in its place
             AmpContextMenu(menu, anchorBounds(menu.anchor), modifier) { if (s.activeMenu === menu) s.activeMenu = null }
         }
-        s.presetPicker?.let { picker ->
-            PresetPickerDialog(picker) { if (s.presetPicker === picker) s.presetPicker = null }
-        }
-        s.trackInfo?.let { info ->
-            TrackInfoDialog(info) { if (s.trackInfo === info) s.trackInfo = null }
-        }
-        s.choiceSheet?.let { sheet ->
-            ChoiceSheetDialog(sheet) { if (s.choiceSheet === sheet) s.choiceSheet = null }
-        }
-        // drawn here so it also shows on the floating window, which has no screens
-        if (s.aboutOpen) AboutDialog { s.aboutOpen = false }
-        s.bookmarkSheet?.let { sheet ->
-            BookmarkSheetDialog(sheet) { if (s.bookmarkSheet === sheet) s.bookmarkSheet = null }
-        }
+        AmpInfoDialogs(s)
         // a permission prompt raised from the player (the clutter bar's A) and a backend's notice
         // are drawn here
         AmpPromptHost(s)
@@ -110,6 +97,28 @@ fun AmpModals(
             // dismissal must not tear that one down
             NamePromptDialog(prompt) { if (s.namePrompt === prompt) s.namePrompt = null }
         }
+    }
+}
+
+/** The pickers, sheets and boxes that each show one thing of [s] and clear it when closed. */
+@Composable
+private fun AmpInfoDialogs(s: WinampState) {
+    s.presetPicker?.let { picker ->
+        PresetPickerDialog(picker) { if (s.presetPicker === picker) s.presetPicker = null }
+    }
+    s.trackInfo?.let { info ->
+        TrackInfoDialog(info) { if (s.trackInfo === info) s.trackInfo = null }
+    }
+    s.choiceSheet?.let { sheet ->
+        ChoiceSheetDialog(sheet) { if (s.choiceSheet === sheet) s.choiceSheet = null }
+    }
+    // drawn here so it also shows on the floating window, which has no screens
+    if (s.aboutOpen) AboutDialog { s.aboutOpen = false }
+    s.skinSettings?.let { look ->
+        SkinSettingsDialog(look) { if (s.skinSettings === look) s.skinSettings = null }
+    }
+    s.bookmarkSheet?.let { sheet ->
+        BookmarkSheetDialog(sheet) { if (s.bookmarkSheet === sheet) s.bookmarkSheet = null }
     }
 }
 
