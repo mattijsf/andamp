@@ -544,17 +544,12 @@ internal class WalEngine(
         it.doubleTap(x, y, seq)
     }
 
-    /**
-     * Right-clicks the object and point touch [seq] went down on, or with a [choice] that object of
-     * [SkinRuntime.skinMenuChoices], for its skin menu; see [SkinRuntime.rightClick].
-     */
-    fun rightClick(
-        seq: Int,
-        choice: Int? = null,
-    ) = postTouch("right click") {
-        flushMove(it)
-        it.rightClick(seq, choice)
-    }
+    /** Right-clicks the object and point touch [seq] went down on, for its skin menu; see [SkinRuntime.rightClick]. */
+    fun rightClick(seq: Int) =
+        postTouch("right click") {
+            flushMove(it)
+            it.rightClick(seq)
+        }
 
     /** [post] for a touch; the timing log says how long it waited for the engine thread. */
     private fun postTouch(

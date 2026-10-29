@@ -75,43 +75,8 @@ class MainMenuTest {
     }
 
     @Test
-    fun `a skin's menu comes first, set apart by a divider, and opens on a tap`() {
-        var asked = 0
-
-        val menu = mainMenu(testViewModel(), {}, {}, {}, {}, skinMenus = listOf(AmpMenuItem.Action("Visualizer") { asked++ }))
-
-        val first = menu.items[0] as AmpMenuItem.Action
-        assertEquals("Skin menu", first.label)
-        assertEquals(AmpMenuItem.Divider, menu.items[1])
-        first.onClick()
-        assertEquals("the entry calls its callback once", 1, asked)
-    }
-
-    @Test
-    fun `several skin menus show under Skin menu by name, set apart by a divider, each opening its own`() {
-        val asked = mutableListOf<String>()
-        val skinMenus = listOf("Visualizer", "Time").map { name -> AmpMenuItem.Action(name) { asked += name } }
-
-        val menu = mainMenu(testViewModel(), {}, {}, {}, {}, skinMenus = skinMenus)
-
-        val first = menu.items[0] as AmpMenuItem.Submenu
-        assertEquals("Skin menu", first.label)
-        assertEquals(listOf("Visualizer", "Time"), first.items.map { (it as AmpMenuItem.Action).label })
-        assertEquals(AmpMenuItem.Divider, menu.items[1])
-        (first.items[1] as AmpMenuItem.Action).onClick()
-        assertEquals(listOf("Time"), asked)
-    }
-
-    @Test
-    fun `without a skin's menu the root starts at Play, and with one the rest follows unchanged`() {
-        val vm = testViewModel()
-
-        val plain = shape(mainMenu(vm, {}, {}, {}, {}).items)
-        val led = shape(mainMenu(vm, {}, {}, {}, {}, skinMenus = listOf(AmpMenuItem.Action("Visualizer") {})).items)
-
-        assertEquals("Play", plain.first())
-        assertTrue(plain.toString(), "Skin menu" !in plain)
-        assertEquals(listOf("Skin menu", "-") + plain, led)
+    fun `the root starts at Play`() {
+        assertEquals("Play", shape(mainMenu(testViewModel(), {}, {}, {}, {}).items).first())
     }
 
     @Test

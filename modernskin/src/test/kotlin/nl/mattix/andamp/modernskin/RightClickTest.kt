@@ -21,7 +21,6 @@ import nl.mattix.andamp.modernskin.skin.PopupMenu
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinHost
 import nl.mattix.andamp.modernskin.skin.SkinMenu
-import nl.mattix.andamp.modernskin.skin.SkinMenuChoices
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -31,12 +30,12 @@ import org.junit.Before
 import org.junit.Test
 
 /**
- * The right click a host sends for a touch (a long press, then "Skin menu"): on the object with a
+ * The right click a host sends for a touch (a long press): on the object with a
  * skin menu that touch landed on, at the point it landed, as a separate touch whose menus show.
  */
 class RightClickTest {
     // a button and a layer with menus, a plain Play button, a vis with a second Play button beside
-    // it, a hidden layer and a ghost, a shade layout to switch to, and a window that starts closed
+    // it, and a shade layout to switch to
     private val files =
         object : SkinFiles {
             private val m =
@@ -50,11 +49,7 @@ class RightClickTest {
                         """<button id="play" action="PLAY" x="10" y="150" w="20" h="20"/>""" +
                         """<vis id="vis" x="100" y="100" w="60" h="30"/>""" +
                         """<button id="near" action="PLAY" x="165" y="100" w="20" h="20"/>""" +
-                        """<layer id="hidden" x="200" y="10" w="20" h="20" visible="0"/>""" +
-                        """<layer id="ghost" x="230" y="10" w="20" h="20" ghost="1"/>""" +
-                        """</layout><layout id="shade" w="300" h="20"/></container>""" +
-                        """<container id="closed" name="c" default_visible="0"><layout id="normal" w="100" h="100">""" +
-                        """<layer id="art" x="10" y="10" w="20" h="20"/></layout></container>""",
+                        """</layout><layout id="shade" w="300" h="20"/></container>""",
                 ).mapValues { it.value.toByteArray() }
 
             override fun read(path: String): ByteArray? = m[SkinFiles.normalize(path)]
@@ -325,88 +320,10 @@ class RightClickTest {
     }
 
     @Test
-    fun `a touch beside the only menu offers it, and picking it right-clicks that object`() {
-        recordAll(layer)
-
-        press(play, seq = 1)
-        assertNull(rt.menuTarget)
-        assertEquals(SkinMenuChoices(1, listOf(SkinMenuChoices.Choice("layer", null))), rt.skinMenuChoices)
-        rt.pointerCancel()
-        rt.rightClick(1, choice = 0)
-
-        assertEquals(listOf("down", "up"), heard)
-        assertEquals(1, shown.size)
-        assertEquals(Player.Status.STOPPED, player.status)
-    }
-
-    @Test
-    fun `several menus are offered top to bottom with their tooltips, and a pick right-clicks only that one`() {
-        attach(vis, Handler("onrightbuttonup", listOf(record(UP), pop)))
-        attach(button, Handler("onrightclick", listOf(record(CLICK), pop)))
-
-        rt.pointerDown(250, 180, seq = 2)
-        assertEquals(
-            SkinMenuChoices(2, listOf(SkinMenuChoices.Choice("button", "Configuration"), SkinMenuChoices.Choice("vis", null))),
-            rt.skinMenuChoices,
-        )
-        rt.pointerCancel()
-        rt.rightClick(2, choice = 1)
-        assertEquals(listOf("up"), heard)
-        rt.rightClick(2, choice = 0)
-        assertEquals(listOf("up", "click"), heard)
-        assertEquals(2, shown.size)
-    }
-
-    @Test
-    fun `a hidden object, a ghost and an object in a closed window are not offered`() {
-        val hidden = checkNotNull(rt.mainLayout?.findObject("hidden"))
-        val ghost = checkNotNull(rt.mainLayout?.findObject("ghost"))
-        val art =
-            checkNotNull(
-                rt
-                    .container("closed")
-                    ?.layouts
-                    ?.single()
-                    ?.findObject("art"),
-            )
-        listOf(hidden, ghost, art, layer).forEach { attach(it, Handler("onrightbuttonup", listOf(pop))) }
-
-        press(play, seq = 1)
-
-        assertEquals(listOf("layer"), rt.skinMenuChoices?.objects?.map { it.id })
-    }
-
-    @Test
-    fun `a touch on an object with a menu names it and offers no list`() {
-        attach(layer, Handler("onrightbuttonup", listOf(pop)))
-        attach(vis, Handler("onrightbuttonup", listOf(pop)))
-
-        press(layer, seq = 3)
-
-        assertEquals(3, rt.menuTarget)
-        assertNull(rt.skinMenuChoices)
-    }
-
-    @Test
-    fun `a skin with no menu offers none`() {
+    fun `a skin with no menu names no touch`() {
         press(play, seq = 1)
 
         assertNull(rt.menuTarget)
-        assertNull(rt.skinMenuChoices)
-    }
-
-    @Test
-    fun `a pick for an older touch, or past the list, does nothing`() {
-        recordAll(layer)
-        press(play, seq = 1)
-        press(play, seq = 2)
-
-        rt.rightClick(1, choice = 0)
-        rt.rightClick(2, choice = 1)
-        rt.rightClick(2, choice = -1)
-
-        assertTrue(heard.isEmpty())
-        assertTrue(shown.isEmpty())
     }
 
     @Test

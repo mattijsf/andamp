@@ -60,7 +60,6 @@ import kotlinx.coroutines.sync.withLock
 import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.skin.Skin
-import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.VisMode
 import nl.mattix.andamp.state.VisualizerFeed
@@ -428,7 +427,7 @@ internal fun PlayerSurface(
                                 onOpenFile = { toPlay ->
                                     if (toPlay) playlistActions.addFileThenPlay() else playlistActions.addFile()
                                 },
-                                onOptions = { openMenu(emptyList(), null) },
+                                onOptions = { openMenu(null) },
                                 onExit = quit,
                                 visualizerMenu = visualizerMenu,
                             )
@@ -458,7 +457,7 @@ internal fun PlayerSurface(
                                 // the clutter bar's I: the item playing, or the last one that played
                                 onFileInfo = { vm.trackInfoOps.show(s.lastPlayed) },
                             ) {
-                                openMenu(emptyList(), null)
+                                openMenu(null)
                             }
                         }
                     }
@@ -470,7 +469,7 @@ internal fun PlayerSurface(
                         vm,
                         skin,
                         scale,
-                        onLongPress = { openMenu(emptyList(), null) },
+                        onLongPress = { openMenu(null) },
                         playlistActions,
                         libraryAccess,
                         mainWidgets,
@@ -497,8 +496,8 @@ internal fun PlayerSurface(
 
 /**
  * What opens the main menu, built at tap time so the Skins submenu shows the current skin. A
- * modern skin's long press opens it at the press, led by Skin menu when the skin has a right-click
- * menu on screen; the classic windows open it at the options button, with no anchor and no Skin menu.
+ * modern skin's long press opens it at the press; the classic windows open it at the options
+ * button, with no anchor.
  */
 private fun mainMenuOpener(
     vm: WinampViewModel,
@@ -511,8 +510,8 @@ private fun mainMenuOpener(
     onDoubleSize: () -> Unit,
     /** Whether a modern skin is worn, asked each time the menu opens. */
     modernPlayer: () -> Boolean,
-): (skinMenus: List<AmpMenuItem.Action>, anchor: MenuAnchor?) -> Unit =
-    { skinMenus, anchor ->
+): (anchor: MenuAnchor?) -> Unit =
+    { anchor ->
         val menu =
             mainMenu(
                 vm,
@@ -525,7 +524,6 @@ private fun mainMenuOpener(
                 onMuseum = onMuseum,
                 onAlwaysOnTop = onAlwaysOnTop,
                 onDoubleSize = onDoubleSize,
-                skinMenus = skinMenus,
                 modernPlayer = modernPlayer(),
             )
         vm.state.activeMenu = if (anchor == null) menu else menu.copy(anchor = anchor)

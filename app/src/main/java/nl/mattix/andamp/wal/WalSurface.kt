@@ -7,7 +7,6 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.sync.Mutex
 import nl.mattix.andamp.modernskin.skin.SkinMenu
-import nl.mattix.andamp.modernskin.skin.SkinMenuChoices
 import nl.mattix.andamp.modernskin.skin.SkinOptions
 
 /** The box a player surface shows a modern skin in, as [WalSurface.fit] takes it. */
@@ -53,12 +52,6 @@ internal data class WalLayout(
     val windowOpen: Boolean,
     /** Whether something slides or animates, so a stack changing size may not have come to rest yet. */
     val animating: Boolean,
-    /**
-     * For a down beside every object with a skin menu: its seq and the objects with one on screen,
-     * else null; see `SkinRuntime.skinMenuChoices`. [WalSurface.rightClick] with an index into them
-     * opens that object's menu.
-     */
-    val menuChoices: SkinMenuChoices? = null,
     /** The seq of the down whose object has a skin menu, or null; see [WalSurface.pointerDown]. */
     val menuTarget: Int?,
     /**
@@ -220,15 +213,8 @@ internal interface WalSurface {
         y: Int,
     ): Int
 
-    /**
-     * Right-clicks the object and point gesture [seq] went down on, for its skin menu; with a
-     * [choice], the object at that index of [WalLayout.menuChoices], at its center. A stale seq
-     * does nothing.
-     */
-    fun rightClick(
-        seq: Int,
-        choice: Int? = null,
-    )
+    /** Right-clicks the object and point gesture [seq] went down on, for its skin menu. A stale seq does nothing. */
+    fun rightClick(seq: Int)
 
     /** Closes the topmost skin window over the main one, as Back does. */
     fun closeTopWindow()
