@@ -776,6 +776,17 @@ class WalLayerTest {
         assertTrue(!state.visInSkin && !state.milkdropFullscreen)
     }
 
+    @Test
+    fun `the visualizer window closing tells the skin`() {
+        state.milkdropOn = true
+        layer()
+
+        state.milkdropOn = false
+        frames()
+
+        assertTrue(surface.calls.toString(), "visualizer window closed" in surface.calls)
+    }
+
     private companion object {
         const val VIS = "vis"
         const val SCALE = 3

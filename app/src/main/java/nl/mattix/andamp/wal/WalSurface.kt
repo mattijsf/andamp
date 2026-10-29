@@ -226,6 +226,12 @@ internal interface WalSurface {
     fun closeTopWindow()
 
     /**
+     * The visualizer window closed: what the skin moved out into it goes back into the skin
+     * (`SkinRuntime.visualizerWindowClosed`).
+     */
+    fun visualizerWindowClosed()
+
+    /**
      * The listener's answer to [menu]: the picked command's [id], or 0 for Back, a tap outside or
      * the menu going away. Ignored unless [menu] is the one waiting.
      */

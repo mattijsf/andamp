@@ -308,6 +308,7 @@ private fun CoroutineScope.holdTurn(
     }
     launch { snapshotFlow(fit).collect { surface.fit(it) } }
     launch { followSkinVisualizer(parts, state) }
+    launch { reattachOnClose(surface, state) }
     // the rect goes out as the turn is taken; a drawer sliding open moves it once more, when it stops
     launch {
         var first = true

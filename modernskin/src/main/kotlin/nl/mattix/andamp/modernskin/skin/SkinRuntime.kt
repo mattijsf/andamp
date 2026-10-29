@@ -572,7 +572,35 @@ class SkinRuntime(
      */
     internal fun showHostWindow(id: String) {
         val kind = windowKind(id.lowercase().removePrefix("guid:"))
-        if (kind in HOST_WINDOWS) onHostAction?.invoke("SHOW", kind)
+        if (kind !in HOST_WINDOWS) return
+        if (onHostAction != null) shownForSkin += kind
+        onHostAction?.invoke("SHOW", kind)
+    }
+
+    /** The windows the app opened for a script's `showWindow` ([showHostWindow]) and has not closed since. */
+    private val shownForSkin = LinkedHashSet<String>()
+
+    /**
+     * The app closed its visualizer window, which stands in for the skin's own visualizer and video
+     * windows (see [VIS_HOLDS]): each of those a script had it open goes back into the skin, as the
+     * skin's own window's Reattach button puts it (Winamp Modern's `button.vis.reattach`), the
+     * button in the skin's window for it whose id says "attach". The skin's window stays shut.
+     */
+    fun visualizerWindowClosed() {
+        for (kind in listOf("avs", "video")) {
+            if (!shownForSkin.remove(kind)) continue
+            val guid = TOGGLE_GUIDS[kind] ?: continue
+            val window = containers.firstOrNull { holds(it.attrs, guid) } ?: continue
+
+            fun find(o: GuiObject): Button? =
+                when {
+                    o is Button && o.id.contains("attach", ignoreCase = true) -> o
+                    o is Group -> o.children.firstNotNullOfOrNull { find(it) }
+                    else -> null
+                }
+            window.layouts.firstNotNullOfOrNull { find(it) }?.click()
+        }
+        invalidate()
     }
 
     /**

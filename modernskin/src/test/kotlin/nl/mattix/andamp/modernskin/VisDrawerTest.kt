@@ -28,7 +28,11 @@ class VisDrawerTest {
                         """<container id="main" name="t" default_visible="1"><layout id="normal" w="200" h="100">""" +
                         """<group id="drawer" x="10" y="60" w="180" h="40">""" +
                         """<windowholder id="vis" x="0" y="10" w="180" h="60" hold="guid:avs" visible="0"/>""" +
-                        """</group></layout></container>""",
+                        """</group></layout></container>""" +
+                        """<container id="avs" name="Visualizations" default_visible="0" """ +
+                        """component="guid:{0000000A-000C-0010-FF7B-01014263450C}"><layout id="normal" w="200" h="100">""" +
+                        """<button id="button.vis.reattach" action="EQ_TOGGLE" x="0" y="0" w="20" h="20"/>""" +
+                        """</layout></container>""",
                 ).mapValues { it.value.toByteArray() }
 
             override fun read(path: String): ByteArray? = m[SkinFiles.normalize(path)]
@@ -38,8 +42,10 @@ class VisDrawerTest {
 
     private val asked = ArrayList<Pair<String, String?>>()
 
+    private val player = FakePlayer().apply { clock = { 0L } }
+
     private val rt =
-        SkinRuntime(files, TestHost(files), FakePlayer().apply { clock = { 0L } }).apply {
+        SkinRuntime(files, TestHost(files), player).apply {
             clock = { 0L }
             viewSize = 200 to 1000
             load()
@@ -128,5 +134,19 @@ class VisDrawerTest {
         system.makiCall("showwindow", listOf(Value.Str("{12345678-0000-0000-0000-000000000000}"), Value.Str(""), Value.Int(0)))
 
         assertEquals(listOf("SHOW" to "avs", "SHOW" to "video"), asked)
+    }
+
+    @Test
+    fun `the visualizer window closing presses the reattach button of the window a script had the app show, once`() {
+        val system = SystemObject(rt, null, "", "test")
+        rt.visualizerWindowClosed()
+        assertEquals("nothing shown, nothing pressed", false, player.eqEnabled)
+
+        system.makiCall("showwindow", listOf(Value.Str("{0000000A-000C-0010-FF7B-01014263450C}"), Value.Str(""), Value.Int(0)))
+        rt.visualizerWindowClosed()
+        rt.visualizerWindowClosed()
+
+        assertEquals(true, player.eqEnabled)
+        assertEquals("the skin's window stays shut", 1, rt.windows.size)
     }
 }

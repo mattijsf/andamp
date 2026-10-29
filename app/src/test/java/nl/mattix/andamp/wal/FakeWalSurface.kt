@@ -176,6 +176,10 @@ internal class FakeWalSurface : WalSurface {
         closedWindows++
     }
 
+    override fun visualizerWindowClosed() {
+        calls += "visualizer window closed"
+    }
+
     override fun answerMenu(
         menu: SkinMenu,
         id: Int,

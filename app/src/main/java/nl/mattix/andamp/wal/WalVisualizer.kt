@@ -61,3 +61,18 @@ internal suspend fun followSkinVisualizer(
         if (!state.milkdropOn) state.milkdropFullscreen = false
     }
 }
+
+/**
+ * Tells the skin each time the visualizer window closes, until the turn is let go: what the skin
+ * moved out into it, with its Detach buttons, goes back into the skin.
+ */
+internal suspend fun reattachOnClose(
+    surface: WalSurface,
+    state: WinampState,
+) {
+    var open = state.milkdropOn
+    snapshotFlow { state.milkdropOn }.collect { on ->
+        if (open && !on) surface.visualizerWindowClosed()
+        open = on
+    }
+}
