@@ -89,6 +89,7 @@ class SkinRuntimeTest {
                         """<container id="eq" name="Equalizer" default_visible="0"><layout id="normal" w="200" h="60">""" +
                         """<slider id="band1" action="eq_band" param="1" x="10" y="5" w="13" h="40" orientation="v"/>""" +
                         """<slider id="preamp" action="EQ_BAND" param="preamp" x="30" y="5" w="13" h="40" orientation="v"/>""" +
+                        """<slider id="balance" action="PAN" x="50" y="5" w="64" h="13"/>""" +
                         """<layer id="eq.sizer" resize="bottomright" x="190" y="50" w="10" h="10"/>""" +
                         """</layout></container>""" +
                         """<container id="library" name="Library" default_visible="0" """ +
@@ -345,6 +346,28 @@ class SkinRuntimeTest {
         rt.pointerUp(at.left + preamp.rect.left + 6, at.top + preamp.rect.bottom - 1)
         assertEquals("pulled to the bottom", -128, preamp.position)
         assertEquals(0, player.eqPreamp)
+    }
+
+    @Test
+    fun `a balance slider has its middle at 127 of 0 to 255, both ways between it and the player`() {
+        val player = FakePlayer()
+        val rt = small(player)
+        settle(rt)
+        val eq = checkNotNull(rt.container("eq"))
+        rt.openWindow(eq)
+        rt.drawWindows()
+        val balance = checkNotNull(eq.current?.findObject("balance")) as Slider
+        assertEquals("the middle", 127, balance.position)
+
+        player.pan = -127
+        settle(rt)
+        assertEquals("hard left", 0, balance.position)
+
+        val at = rt.windowRect(checkNotNull(eq.current))
+        rt.pointerDown(at.left + balance.rect.right - 1, at.top + balance.rect.top + 6)
+        rt.pointerUp(at.left + balance.rect.right - 1, at.top + balance.rect.top + 6)
+        assertEquals("pulled to the right end", 255, balance.position)
+        assertEquals(127, player.pan)
     }
 
     @Test

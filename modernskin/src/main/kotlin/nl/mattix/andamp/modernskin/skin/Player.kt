@@ -32,6 +32,9 @@ interface Player {
     val eqBands: IntArray
     var eqPreamp: Int
 
+    /** The balance: -127 hard left, 0 the middle, 127 hard right. */
+    var pan: Int
+
     fun play()
 
     fun pause()
@@ -170,6 +173,7 @@ class FakePlayer : Player {
     override var eqEnabled = false
     override val eqBands = IntArray(10) { 128 }
     override var eqPreamp = 128
+    override var pan = 0
 
     override fun play() {
         if (status == Player.Status.PLAYING) return

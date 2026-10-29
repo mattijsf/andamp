@@ -435,6 +435,24 @@ class WalPlayerTest {
     }
 
     @Test
+    fun `the balance reaches the player on its scale, and reads as the player has it`() {
+        assertEquals("the middle", 0, player.pan)
+
+        player.pan = -127
+        player.pan = 64
+        assertEquals("held as written", 64, player.pan)
+        drain()
+        controls.apply()
+
+        assertEquals(listOf("setBalance(50)"), controls.calls)
+        assertEquals("landed", 64, player.pan)
+        state.balance = -100
+        assertEquals(-127, player.pan)
+        assertEquals(100, WalPlayer.toBalance(127))
+        for (b in -100..100) assertEquals("balance $b", b, WalPlayer.toBalance(WalPlayer.fromBalance(b)))
+    }
+
+    @Test
     fun `a seek holds its place until the backend is within a second of it`() {
         frames(10_000)
         player.seekTo(100_000)
