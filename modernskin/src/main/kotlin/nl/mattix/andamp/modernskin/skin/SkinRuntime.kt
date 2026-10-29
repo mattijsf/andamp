@@ -2309,13 +2309,16 @@ class SkinRuntime(
 
     /**
      * Whether a drag that starts on [o] moves the window. It moves it from every part where a drag
-     * does nothing else, as from a move area in Winamp, so a skin moves from anywhere but its
-     * controls; an object that writes `move="0"` is no exception. A control never moves it, as a
-     * drag works the control, nor does a menu bar entry, and neither does an object a script follows the finger across
-     * ([followsFinger]), unless it is a move area ([isMoveArea]).
+     * does nothing else, as from a move area in Winamp, so a skin moves from anywhere but what a
+     * drag works; an object that writes `move="0"` is no exception. A button or a menu bar entry
+     * moves it too, as a finger rarely finds a gap between a skin's small buttons: the host moves
+     * the window once the finger travels past its touch slop, and the press is let go without a
+     * click. A slider or a list never moves it, as a drag works it, and neither does an object a
+     * script follows the finger across ([followsFinger]), unless it is a move area ([isMoveArea]).
      */
     internal fun movesWindow(o: GuiObject): Boolean {
-        if (isControl(o) || o is MenuButton) return false
+        if (o is Slider || o is ColorThemeList || o is PlaylistView) return false
+        if (o is Button || o is MenuButton) return !followsFinger(o)
         return isMoveArea(o) || !followsFinger(o)
     }
 
