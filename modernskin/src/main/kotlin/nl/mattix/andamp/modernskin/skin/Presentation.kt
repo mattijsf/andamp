@@ -32,3 +32,15 @@ data class Presentation(
     val stretchLast: Boolean = true,
     val touchSlop: Int = 6,
 )
+
+/**
+ * What a skin keeps between runs ([SkinRuntime.savedSettings], [SkinRuntime.restoreSettings]):
+ * - [attributes]: its settings by attribute name, as Winamp keeps them in studio.xnf;
+ * - [strings], [ints]: its scripts' private and public values (setPrivateString, setPublicInt and
+ *   the like), by lowercase "section/item" or "public/item".
+ */
+data class SavedSettings(
+    val attributes: Map<String, String> = emptyMap(),
+    val strings: Map<String, String> = emptyMap(),
+    val ints: Map<String, Int> = emptyMap(),
+)

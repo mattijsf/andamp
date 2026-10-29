@@ -7,6 +7,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.FontDef
+import nl.mattix.andamp.modernskin.skin.SavedSettings
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinHost
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
@@ -62,9 +63,13 @@ class WalSettingsTest {
         val settings = WalSettings(app)
         val first = runtime().apply { load() }
         first.selectGammaSet("Warm")
-        first.storedSettings["Animate Config Drawer"] = "0"
-        first.privateStrings["bento/component"] = "Video"
-        first.privateInts["bento/width"] = 412
+        first.restoreSettings(
+            SavedSettings(
+                attributes = mapOf("Animate Config Drawer" to "0"),
+                strings = mapOf("bento/component" to "Video"),
+                ints = mapOf("bento/width" to 412),
+            ),
+        )
         settings.save("bento", first)
 
         val again = runtime()
@@ -73,30 +78,31 @@ class WalSettingsTest {
         settings.restoreTheme("bento", again)
 
         assertEquals("Warm", again.currentGammaSet)
-        assertEquals("0", again.storedSettings["Animate Config Drawer"])
-        assertEquals("Video", again.privateStrings["bento/component"])
-        assertEquals(412, again.privateInts["bento/width"])
+        val kept = again.savedSettings()
+        assertEquals("0", kept.attributes["Animate Config Drawer"])
+        assertEquals("Video", kept.strings["bento/component"])
+        assertEquals(412, kept.ints["bento/width"])
     }
 
     @Test
     fun `each skin keeps its values apart, and a forgotten skin starts clean`() {
         val settings = WalSettings(app)
         val one = runtime().apply { load() }
-        one.privateStrings["a/b"] = "one"
+        one.restoreSettings(SavedSettings(strings = mapOf("a/b" to "one")))
         settings.save("one", one)
         settings.save("two", runtime().apply { load() })
 
         val fresh = runtime()
         settings.restoreBeforeLoad("two", fresh)
-        assertTrue("another skin's values stay with it", fresh.privateStrings.isEmpty())
+        assertTrue("another skin's values stay with it", fresh.savedSettings().strings.isEmpty())
         val first = runtime()
         settings.restoreBeforeLoad("one", first)
-        assertEquals("one", first.privateStrings["a/b"])
+        assertEquals("one", first.savedSettings().strings["a/b"])
 
         settings.forget("one")
         val forgotten = runtime()
         settings.restoreBeforeLoad("one", forgotten)
-        assertTrue(forgotten.privateStrings.isEmpty())
+        assertTrue(forgotten.savedSettings().strings.isEmpty())
     }
 
     @Test

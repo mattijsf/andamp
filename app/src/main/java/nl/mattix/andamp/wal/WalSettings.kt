@@ -5,6 +5,7 @@ package nl.mattix.andamp.wal
 import android.content.Context
 import android.util.Log
 import androidx.compose.ui.unit.IntOffset
+import nl.mattix.andamp.modernskin.skin.SavedSettings
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import org.json.JSONObject
 
@@ -25,9 +26,21 @@ internal class WalSettings(
         rt: SkinRuntime,
     ) {
         val saved = read(id) ?: return
-        saved.optJSONObject(SETTINGS)?.let { o -> o.keys().forEach { k -> rt.storedSettings[k] = o.getString(k) } }
-        saved.optJSONObject(STRINGS)?.let { o -> o.keys().forEach { k -> rt.privateStrings[k] = o.getString(k) } }
-        saved.optJSONObject(INTS)?.let { o -> o.keys().forEach { k -> rt.privateInts[k] = o.getInt(k) } }
+
+        fun <T> entries(
+            key: String,
+            read: (JSONObject, String) -> T,
+        ): Map<String, T> {
+            val o = saved.optJSONObject(key) ?: return emptyMap()
+            return o.keys().asSequence().associateWith { read(o, it) }
+        }
+        rt.restoreSettings(
+            SavedSettings(
+                attributes = entries(SETTINGS, JSONObject::getString),
+                strings = entries(STRINGS, JSONObject::getString),
+                ints = entries(INTS, JSONObject::getInt),
+            ),
+        )
     }
 
     /** Puts back the color theme [id] wore, once its runtime has loaded the skin's themes. */
@@ -54,12 +67,13 @@ internal class WalSettings(
         id: String,
         rt: SkinRuntime,
     ): String? {
+        val kept = rt.savedSettings()
         val o =
             JSONObject()
                 .put(THEME, rt.currentGammaSet.orEmpty())
-                .put(SETTINGS, JSONObject(rt.storedSettings.toMap()))
-                .put(STRINGS, JSONObject(rt.privateStrings.toMap()))
-                .put(INTS, JSONObject(rt.privateInts.toMap()))
+                .put(SETTINGS, JSONObject(kept.attributes))
+                .put(STRINGS, JSONObject(kept.strings))
+                .put(INTS, JSONObject(kept.ints))
         val text = o.toString()
         // the preferences file holds every skin and is read whole: a skin keeps at most this much
         if (text.length > MAX_CHARS) {
