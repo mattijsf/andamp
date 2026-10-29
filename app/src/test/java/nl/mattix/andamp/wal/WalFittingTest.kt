@@ -339,17 +339,17 @@ class WalFittingTest {
     fun `deciding the columns sends the skin no resize events`() {
         val corner = Fitted(cornerAmp, taller)
         corner.rt.openWindow(checkNotNull(corner.rt.container("pl")))
-        val passes = corner.rt.layoutPasses
+        val passes = corner.rt.stats.layoutPasses
 
         corner.fitting.refit(corner.rt, corner.fit, corner.baseW)
         assertEquals(2, corner.rt.presentation.columns)
-        assertEquals("no layout pass, so no window heard of a size it does not get", passes, corner.rt.layoutPasses)
+        assertEquals("no layout pass, so no window heard of a size it does not get", passes, corner.rt.stats.layoutPasses)
         corner.rt.ensureLayout()
-        assertEquals("one pass sets the playlist where the decision put it", passes + 1, corner.rt.layoutPasses)
+        assertEquals("one pass sets the playlist where the decision put it", passes + 1, corner.rt.stats.layoutPasses)
 
         corner.fitting.refit(corner.rt, corner.fit, corner.baseW)
         corner.rt.ensureLayout()
-        assertEquals("the same windows: nothing is decided again", passes + 1, corner.rt.layoutPasses)
+        assertEquals("the same windows: nothing is decided again", passes + 1, corner.rt.stats.layoutPasses)
     }
 
     @Test

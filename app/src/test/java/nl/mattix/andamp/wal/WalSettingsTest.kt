@@ -62,7 +62,7 @@ class WalSettingsTest {
     fun `a skin's theme, settings and private values come back`() {
         val settings = WalSettings(app)
         val first = runtime().apply { load() }
-        first.selectGammaSet("Warm")
+        first.selectColorTheme("Warm")
         first.restoreSettings(
             SavedSettings(
                 attributes = mapOf("Animate Config Drawer" to "0"),
@@ -77,7 +77,7 @@ class WalSettingsTest {
         again.load()
         settings.restoreTheme("bento", again)
 
-        assertEquals("Warm", again.currentGammaSet)
+        assertEquals("Warm", again.colorTheme)
         val kept = again.savedSettings()
         assertEquals("0", kept.attributes["Animate Config Drawer"])
         assertEquals("Video", kept.strings["bento/component"])

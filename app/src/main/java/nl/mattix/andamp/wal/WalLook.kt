@@ -278,7 +278,7 @@ internal class WalLook(
      */
     override fun pickTheme(name: String) {
         lastInputAt = SystemClock.uptimeMillis()
-        engine?.post { it.selectGammaSet(name) }
+        engine?.post { it.selectColorTheme(name) }
     }
 
     /**

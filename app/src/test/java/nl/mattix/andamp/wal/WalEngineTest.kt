@@ -696,11 +696,11 @@ class WalEngineTest {
         assertNull(run.failure())
         assertEquals("One", run.engine.frame?.themeKey)
 
-        run.engine.post { it.selectGammaSet("two") }
+        run.engine.post { it.selectColorTheme("two") }
 
         awaitThat("a frame in the other theme") { run.engine.frame?.themeKey == "Two" }
         val worn = CompletableFuture<String?>()
-        run.engine.post(publish = false) { worn.complete(it.currentGammaSet) }
+        run.engine.post(publish = false) { worn.complete(it.colorTheme) }
         assertEquals(worn.get(5, TimeUnit.SECONDS), run.engine.frame?.themeKey)
     }
 

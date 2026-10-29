@@ -391,7 +391,7 @@ class WalLookTest {
         val look = look()
         look.fit(phone)
         await("the first frame arrives") { look.layout != null }
-        onEngine(look) { it!!.selectGammaSet("Two") }
+        onEngine(look) { it!!.selectColorTheme("Two") }
         // the task after it, so the save it scheduled is in the queue
         onEngine(look) { }
         val open = holdEngine(look)
@@ -413,7 +413,7 @@ class WalLookTest {
         val look = look()
         look.fit(phone)
         await("the first frame arrives") { look.layout != null }
-        onEngine(look) { it!!.selectGammaSet("Two") }
+        onEngine(look) { it!!.selectColorTheme("Two") }
         val open = holdEngine(look)
         // as a player surface saves when it goes, or a source's skin parks the look
         look.park()
@@ -464,9 +464,9 @@ class WalLookTest {
         look.fit(phone)
         await("the first frame arrives") { look.layout != null }
 
-        onEngine(look) { it!!.selectGammaSet("Two") }
-        onEngine(look) { it!!.selectGammaSet("One") }
-        onEngine(look) { it!!.selectGammaSet("Two") }
+        onEngine(look) { it!!.selectColorTheme("Two") }
+        onEngine(look) { it!!.selectColorTheme("One") }
+        onEngine(look) { it!!.selectColorTheme("Two") }
         repeat(20) { shadowOf(Looper.getMainLooper()).idle() }
         assertEquals("nothing is saved while changes come", 0, writes.get())
 
@@ -486,7 +486,7 @@ class WalLookTest {
         val first = look()
         first.fit(phone)
         await("the first frame arrives") { first.layout != null }
-        onEngine(first) { it!!.selectGammaSet("Two") }
+        onEngine(first) { it!!.selectColorTheme("Two") }
         first.release(save = true)
         await("the theme is kept") { prefs.getString(first.id, null)?.contains("Two") == true }
         val writes = AtomicInteger()
@@ -504,7 +504,7 @@ class WalLookTest {
             Thread.sleep(10)
         }
 
-        assertEquals("Two", onEngine(again) { it!!.currentGammaSet })
+        assertEquals("Two", onEngine(again) { it!!.colorTheme })
         assertEquals(0, writes.get())
         prefs.unregisterOnSharedPreferenceChangeListener(listener)
     }

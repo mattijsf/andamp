@@ -48,7 +48,7 @@ internal class WalSettings(
         id: String,
         rt: SkinRuntime,
     ) {
-        read(id)?.optString(THEME)?.takeIf { it.isNotEmpty() }?.let { rt.selectGammaSet(it) }
+        read(id)?.optString(THEME)?.takeIf { it.isNotEmpty() }?.let { rt.selectColorTheme(it) }
     }
 
     /** Keeps what [rt], the runtime of skin [id], holds now. */
@@ -70,7 +70,7 @@ internal class WalSettings(
         val kept = rt.savedSettings()
         val o =
             JSONObject()
-                .put(THEME, rt.currentGammaSet.orEmpty())
+                .put(THEME, rt.colorTheme.orEmpty())
                 .put(SETTINGS, JSONObject(kept.attributes))
                 .put(STRINGS, JSONObject(kept.strings))
                 .put(INTS, JSONObject(kept.ints))

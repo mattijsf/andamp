@@ -379,6 +379,15 @@ class SkinRuntime(
 
     fun gammaSetNames(): List<String> = gammaSets.keys.toList()
 
+    /** The skin's color themes (gammasets), in the order the skin defines them. */
+    val colorThemes: List<String> get() = gammaSetNames()
+
+    /** The color theme in use ([currentGammaSet]). */
+    val colorTheme: String? get() = currentGammaSet
+
+    /** Wears the color theme named [name], matched ignoring case; an unknown name changes nothing. */
+    fun selectColorTheme(name: String) = selectGammaSet(name)
+
     fun selectGammaSet(name: String) {
         val match = gammaSets.keys.firstOrNull { it.equals(name, ignoreCase = true) } ?: return
         if (match != currentGammaSet) settingsChanged()
@@ -1963,6 +1972,9 @@ class SkinRuntime(
     /** Timer events fired so far. */
     var timerFires = 0L
         private set
+
+    /** What the engine has done so far, for a host's timing log or probe; see [EngineStats]. */
+    val stats: EngineStats get() = EngineStats(scriptSteps, timerFires, layoutPasses, shapesWorkedOut)
 
     /**
      * Advances timers, tickers and player-driven objects. Returns true when a redraw is due: when
