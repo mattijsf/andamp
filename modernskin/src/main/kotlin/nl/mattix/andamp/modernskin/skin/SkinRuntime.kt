@@ -2132,7 +2132,72 @@ class SkinRuntime(
     /** Whether a touch on [o] does something: a control, or an object a script listens to. */
     private fun reacts(o: GuiObject): Boolean = isControl(o) || scripts.any { it.listensTo(o) }
 
-    private fun isControl(o: GuiObject): Boolean = o is Button || o is Slider || o is ColorThemeList || o is PlaylistView
+    private fun isControl(o: GuiObject): Boolean =
+        o is Button || o is Slider || o is ColorThemeList || o is PlaylistView || isGrip(o)
+
+    /**
+     * Whether [o] is a window's resize grip: its `resize`, as a script last set it, names an edge
+     * (Winamp Modern turns its frame's edges off with "0"), and it lies in a window.
+     */
+    private fun isGrip(o: GuiObject): Boolean {
+        val edges = o.attrs["resize"]?.lowercase() ?: return false
+        return o.layoutObject != null && GRIP_EDGES.any { it in edges }
+    }
+
+    /**
+     * A drag on a resize grip: the window it resizes, the edges it moves (`resize`, such as
+     * "bottomright"), and where the finger went down and the window's size then, in the window's pixels.
+     */
+    private class Resize(
+        val window: Layout,
+        val edges: String,
+        val x: Int,
+        val y: Int,
+        val size: Pair<Int, Int>,
+    )
+
+    /** The grip drag going on, or null. */
+    private var resizing: Resize? = null
+
+    /**
+     * Sizes the window as the finger at [x], [y] drags its grip, as Winamp sizes it: by as much as
+     * the finger traveled, kept within the window's minimum and maximum and within the phone's view.
+     */
+    private fun dragGrip(
+        r: Resize,
+        x: Int,
+        y: Int,
+    ) {
+        val l = r.window
+        var (w, h) = r.size
+        if ("right" in r.edges) w += x - r.x
+        if ("left" in r.edges) w -= x - r.x
+        if ("bottom" in r.edges) h += y - r.y
+        if ("top" in r.edges) h -= y - r.y
+        val (vw, vh) = viewport
+        val size = within(w, l.minW, l.maxW, vw) to within(h, l.minH, l.maxH, vh)
+        if (size != l.size) l.resizeTo(size.first, size.second)
+    }
+
+    /** [v] kept to at least [min] and at most [max] (none when 0) and [view], the view's side winning over a minimum. */
+    private fun within(
+        v: Int,
+        min: Int,
+        max: Int,
+        view: Int,
+    ): Int {
+        val top = if (max > 0) minOf(max, view) else view
+        return v.coerceAtMost(top).coerceAtLeast(minOf(min, top)).coerceAtLeast(1)
+    }
+
+    /** The grip drag ends: the window hears that the user resized it (`onUserResize`), as Winamp says at the end of a resize. */
+    private fun endGrip() {
+        val r = resizing ?: return
+        resizing = null
+        val l = r.window
+        val (w, h) = l.size
+        dispatch(l, "onuserresize", listOf(Value.Int(l.viewX), Value.Int(l.viewY), Value.Int(w), Value.Int(h)))
+    }
 
     /**
      * Whether a script hears a tap on [o]: one listens to it for [TAP_EVENTS], or to the group that
@@ -2329,6 +2394,10 @@ class SkinRuntime(
         val y = sy - capturedOrigin.top
         lastPointer = x to y
         captured = target
+        val window = target.layoutObject
+        if (window != null && isGrip(target)) {
+            resizing = Resize(window, target.attrs.getValue("resize").lowercase(), x, y, window.size)
+        }
         target.pointerDown(x, y)
         // a menu the press opened has let go of it already
         if (captured === target) {
@@ -2371,6 +2440,7 @@ class SkinRuntime(
         val x = sx - capturedOrigin.left
         val y = sy - capturedOrigin.top
         lastPointer = x to y
+        resizing?.let { dragGrip(it, x, y) }
         captured?.pointerMove(x, y)
     }
 
@@ -2387,6 +2457,8 @@ class SkinRuntime(
         val x = sx - capturedOrigin.left
         val y = sy - capturedOrigin.top
         lastPointer = x to y
+        resizing?.let { dragGrip(it, x, y) }
+        endGrip()
         val target = captured ?: return
         captured = null
         // a finger that drifts a little still counts as on the control
@@ -2451,9 +2523,11 @@ class SkinRuntime(
      * the window once the finger travels past its touch slop, and the press is let go without a
      * click. A slider or a list never moves it, as a drag works it, and neither does an object a
      * script follows the finger across ([followsFinger]), unless it is a move area ([isMoveArea]).
+     * A window's resize grip ([isGrip]) resizes it instead.
      */
     internal fun movesWindow(o: GuiObject): Boolean {
         if (o is Slider || o is ColorThemeList || o is PlaylistView) return false
+        if (isGrip(o)) return false
         if (o is Button || o is MenuButton) return !followsFinger(o)
         return isMoveArea(o) || !followsFinger(o)
     }
@@ -2670,6 +2744,7 @@ class SkinRuntime(
     private fun endPress() {
         pressEnded = true
         dropDeferred()
+        endGrip()
         val held = captured ?: return
         captured = null
         cancelPress(held)
@@ -3394,6 +3469,9 @@ class SkinRuntime(
 
         /** The windows the app shows when a host answers [onHostAction], by [windowKind]. */
         val HOST_WINDOWS = setOf("ml", "avs", "video")
+
+        /** The edges a resize grip's `resize` names. */
+        val GRIP_EDGES = listOf("left", "right", "top", "bottom")
 
         /** The actions whose state [actionState] reads. */
         val STATE_ACTIONS = setOf("TOGGLE", "EQ_TOGGLE", "EQ_AUTO")
