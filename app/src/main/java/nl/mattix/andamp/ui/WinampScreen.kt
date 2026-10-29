@@ -446,6 +446,8 @@ internal fun PlayerSurface(
                                         vm,
                                         anchor,
                                         onPreferences,
+                                        onPickSkin = onPickSkin,
+                                        onMuseum = onMuseum,
                                         onAlwaysOnTop = alwaysOnTop,
                                         onDoubleSize = doubleSize,
                                         modernPlayer = walNow != null,
