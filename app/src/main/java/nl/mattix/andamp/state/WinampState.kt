@@ -207,6 +207,15 @@ class WinampState {
     // The plug-in window (AVS or Milkdrop), independent of the in-player visualizer.
     var milkdropOn: Boolean by (placementOf(WindowStore.MILKDROP)::open).orDefault(false)
     var milkdropFullscreen by mutableStateOf(false)
+
+    /**
+     * Whether a worn modern skin shows the visualizer in part of a window, as Winamp Modern's drawer
+     * does in its visualizer mode; set by the skin's layer.
+     */
+    var visInSkin by mutableStateOf(false)
+
+    /** Whether the visualizer fills the screen: fullscreen asked for while its window or a modern skin shows it. */
+    val visualizerFullscreen: Boolean get() = milkdropFullscreen && (milkdropOn || visInSkin)
     var visPlugin by mutableStateOf(VisPlugin.Avs)
 
     /** Name of the preset pack the current engine runs; null is the engine's idle preset. */

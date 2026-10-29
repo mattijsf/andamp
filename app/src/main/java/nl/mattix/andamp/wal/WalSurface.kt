@@ -88,6 +88,12 @@ internal data class WalLayout(
     val theme: String? = null,
     /** The options the skin lists for Winamp's Options menu, as of this frame. */
     val skinOptions: SkinOptions = SkinOptions.EMPTY,
+    /**
+     * Where the skin shows Winamp's visualizer, in skin px from the stack's top-left corner
+     * (`SkinRuntime.visRect`), as Winamp Modern's drawer shows it in its visualizer mode; null when
+     * it shows none. The player draws its visualizer there.
+     */
+    val visRect: IntRect? = null,
 )
 
 /**

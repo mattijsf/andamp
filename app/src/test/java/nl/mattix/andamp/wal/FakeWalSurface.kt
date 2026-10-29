@@ -2,11 +2,13 @@
 
 package nl.mattix.andamp.wal
 
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.IntOffset
@@ -240,6 +242,7 @@ internal fun partsFor(
     state: WinampState,
     asked: MutableList<String> = mutableListOf(),
     covered: () -> Boolean = { state.playerCovered && !state.screenPulled },
+    visualizer: @Composable (Modifier) -> Unit = {},
 ): WalLayerParts =
     WalLayerParts(
         surface,
@@ -249,6 +252,7 @@ internal fun partsFor(
             exit = { asked += "exit" },
             toggleLibrary = { asked += "library" },
             toggleVisualizer = { asked += "visualizer" },
+            showVisualizer = { asked += "show visualizer" },
             visualizationMenu = { asked += "visualization menu" },
             fullscreenVisualizer = { asked += "fullscreen" },
             nextPreset = { asked += "next preset" },
@@ -261,6 +265,7 @@ internal fun partsFor(
             state.activeMenu = AmpMenu(MAIN_MENU, listOf(AmpMenuItem.Action(PREFERENCES) {}), anchor)
         },
         menuTitle = SKIN_MENU,
+        visualizer = visualizer,
     )
 
 internal const val MAIN_MENU = "Winamp"

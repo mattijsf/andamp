@@ -1781,8 +1781,11 @@ class Layout(
             }
 
             "resize" -> {
-                moveTo(args[0].asInt, args[1].asInt, args[2].asInt, args[3].asInt)
-                resizeTo(args[2].asInt, args[3].asInt)
+                val to = Rect(args[0].asInt, args[1].asInt, args[2].asInt, args[3].asInt)
+                if (!rt.maximizes(this, to)) {
+                    moveTo(to.left, to.top, to.width, to.height)
+                    resizeTo(to.width, to.height)
+                }
                 Value.Null
             }
 

@@ -108,7 +108,8 @@ class SkinRuntime(
      * name: "ml" (the library), "avs"
      * (the visualizer) or "video", or the id or GUID of another window the skin does not have. With
      * this set, the library, visualizer and video open in the app, not in a frame of the skin.
-     * Gets the action, uppercase, and the param or name.
+     * Also SHOW of such a window a script opens ([showHostWindow]), and VIS_FS for a maximize a tap
+     * asks for ([maximizes]). Gets the action, uppercase, and the param or name.
      */
     var onHostAction: ((action: String, param: String?) -> Unit)? = null
     var lastPointer = 0 to 0
@@ -492,6 +493,86 @@ class SkinRuntime(
 
     /** Where [layout] sits in the stack, in layout pixels. */
     fun windowRect(layout: Layout): Rect = placed[layout] ?: Rect(0, 0, layout.size.first, layout.size.second)
+
+    /**
+     * Where the visualizer shows in the stack, in layout pixels: a shown window holder for Winamp's
+     * visualizer (`hold="guid:avs"`, Winamp Modern's drawer in its visualizer mode), cut to the
+     * groups around it, as they cut what is drawn inside them. Null when none shows, or none of it
+     * is left uncut (a drawer shut). The app draws its visualizer there.
+     */
+    val visRect: Rect?
+        get() {
+            if (needsLayout) doLayout()
+
+            fun find(o: GuiObject): GuiObject? =
+                when {
+                    !o.visible -> null
+                    o is Group && o.tag in HOLDER_TAGS && holds(o.attrs, AVS_GUID) -> o
+                    o is Group -> o.children.firstNotNullOfOrNull { find(it) }
+                    else -> null
+                }
+            for (l in windows) {
+                if (!l.visible) continue
+                val holder = l.children.firstNotNullOfOrNull { find(it) } ?: continue
+                var r = holder.rect
+                var p = holder.parent
+                while (p != null) {
+                    r = r.cutTo(p.rect)
+                    p = p.parent
+                }
+                r = r.cutTo(Rect(0, 0, l.size.first, l.size.second))
+                if (r.width <= 0 || r.height <= 0) continue
+                val at = windowRect(l)
+                return Rect(at.left + r.left, at.top + r.top, r.width, r.height)
+            }
+            return null
+        }
+
+    private fun Rect.cutTo(c: Rect): Rect {
+        val l = maxOf(left, c.left)
+        val t = maxOf(top, c.top)
+        return Rect(l, t, minOf(right, c.right) - l, minOf(bottom, c.bottom) - t)
+    }
+
+    /**
+     * Whether a script's resize of [layout] to [to] is a maximize, which a phone does not do: the
+     * main window set over the whole viewport. The window stays as it is. A maximize a tap asks
+     * for, as Winamp Modern's Maximize button in its drawer does, shows the app's fullscreen visualizer instead (VIS_FS);
+     * one a script repeats by itself, as that drawer does whenever the snap margins change, does
+     * nothing more.
+     */
+    internal fun maximizes(
+        layout: Layout,
+        to: Rect,
+    ): Boolean {
+        val (vw, vh) = viewport
+        val coversViewport = to.left <= 0 && to.top <= 0 && to.right >= vw && to.bottom >= vh
+        if (layout !== mainLayout || !coversViewport) return false
+        if (firing.lastOrNull() == "onleftclick") onHostAction?.invoke("VIS_FS", null)
+        return true
+    }
+
+    /**
+     * A script's `isNamedWindowVisible` of the window [id] names by GUID or alias: the visualizer
+     * while the skin shows it ([visRect]), a window the app shows as the app says, else the skin's
+     * window as it is. Winamp Modern's Detach Visualizer moves the visualizer out only while it shows.
+     */
+    internal fun namedWindowVisible(id: String): Boolean {
+        val bare = id.lowercase().removePrefix("guid:")
+        val kind = windowKind(bare)
+        if (kind == "avs" && visRect != null) return true
+        return host.windowOpen(kind) ?: toggleTarget(bare)?.let { isOpen(it) } ?: false
+    }
+
+    /**
+     * A script's `showWindow` of a window the app shows ([HOST_WINDOWS]), named by GUID or alias:
+     * the app opens it (SHOW, with the window's name), as Winamp Modern's Detach Visualizer opens
+     * the visualizer in a separate window. Any other window stays as it is.
+     */
+    internal fun showHostWindow(id: String) {
+        val kind = windowKind(id.lowercase().removePrefix("guid:"))
+        if (kind in HOST_WINDOWS) onHostAction?.invoke("SHOW", kind)
+    }
 
     /**
      * Whether a skin window is open: on a phone (a [viewSize]), when it is in the stack, whatever
@@ -1412,7 +1493,7 @@ class SkinRuntime(
                 if (event in s.events && s.dispatch(target, event, args) > 0) result = s.lastReturn
             }
         } finally {
-            eventDepth--
+            leaveEvent()
         }
         if (target is GuiObject) {
             val p = target.parent
@@ -1567,6 +1648,9 @@ class SkinRuntime(
     /** How many events are firing inside each other right now. */
     private var eventDepth = 0
 
+    /** The events firing right now, the innermost last. */
+    private val firing = ArrayList<String>()
+
     /**
      * Whether another event may fire inside the ones already firing: a handler that fires an event
      * whose handler fires it back would otherwise never end.
@@ -1577,7 +1661,27 @@ class SkinRuntime(
             return false
         }
         eventDepth++
+        firing += event
         return true
+    }
+
+    /** Ends the innermost event [enterEvent] let fire. */
+    private fun leaveEvent() {
+        eventDepth--
+        firing.removeAt(firing.lastIndex)
+    }
+
+    /** Runs [handlers] as the handlers of [event] run, inside the events already firing; for a test. */
+    internal fun <T> firingEvent(
+        event: String,
+        handlers: () -> T,
+    ): T? {
+        if (!enterEvent(event)) return null
+        try {
+            return handlers()
+        } finally {
+            leaveEvent()
+        }
     }
 
     /** Fires [event] on [target] in every script. */
@@ -1592,7 +1696,7 @@ class SkinRuntime(
             // a copy: a handler may load another script
             for (s in scripts.toList()) if (event in s.events) n += s.dispatch(target, event, args)
         } finally {
-            eventDepth--
+            leaveEvent()
         }
         // what happens to the child a xui group exposes happens to the group
         if (target is GuiObject) {
@@ -3244,6 +3348,7 @@ class SkinRuntime(
         const val EQ_FLAT = 128
         const val PLAYLIST_GUID = "45f3f7c1-a6f3-4ee6-a15e-125e92fc3f8d"
         const val LIBRARY_GUID = "6b0edf80-c9a5-11d3-9f26-00c04f39ffc6"
+        const val AVS_GUID = "0000000a-000c-0010-ff7b-01014263450c"
 
         /** Winamp's windows that show a list: the playlist editor and the media library. */
         val LIST_GUIDS = listOf(PLAYLIST_GUID, LIBRARY_GUID)
@@ -3265,7 +3370,7 @@ class SkinRuntime(
                 "ml" to LIBRARY_GUID,
                 "musiclibrary" to LIBRARY_GUID,
                 "library" to LIBRARY_GUID,
-                "avs" to "0000000a-000c-0010-ff7b-01014263450c",
+                "avs" to AVS_GUID,
                 "video" to "f0816d7b-fffc-4343-80f2-e8199aa15cc3",
             )
         val GUI_ATTRS =

@@ -184,6 +184,7 @@ internal class WalFitting {
             themes = themes,
             theme = runtime.currentGammaSet?.let { worn -> themes.firstOrNull { it.equals(worn, ignoreCase = true) } },
             skinOptions = optionsOf(runtime),
+            visRect = runtime.visRect?.let { IntRect(it.left, it.top, it.right, it.bottom) },
         )
     }
 

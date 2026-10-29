@@ -732,7 +732,52 @@ class WalLayerTest {
         assertEquals("the skin heard none of it", emptyList<String>(), waiting.pointerCalls)
     }
 
+    @Test
+    fun `the visualizer shows where the skin shows it, and not while the player is covered`() {
+        surface.layoutFor = { stackOf(300, 100, 2f)(it).copy(visRect = IntRect(10, 20, 110, 70)) }
+        layer(partsFor(surface, state, visualizer = { Box(it.testTag(VIS)) }))
+
+        // the stack is at x = 150 at twice the size
+        assertEquals(
+            androidx.compose.ui.geometry
+                .Rect(170f, 40f, 370f, 140f),
+            compose.onNodeWithTag(VIS).fetchSemanticsNode().boundsInRoot,
+        )
+        assertTrue(state.visInSkin)
+
+        state.playerCovered = true
+        frames()
+        compose.onNodeWithTag(VIS).assertDoesNotExist()
+    }
+
+    @Test
+    fun `the skin showing the visualizer closes the visualizer window, which shows it instead while open`() {
+        val asked = mutableListOf<String>()
+        state.milkdropOn = true
+        surface.layoutFor = { stackOf(300, 100, 2f)(it).copy(visRect = IntRect(10, 20, 110, 70)) }
+        layer(partsFor(surface, state, asked, visualizer = { Box(it.testTag(VIS)) }))
+
+        assertEquals(listOf("visualizer"), asked)
+        // the window this test's actions leave open
+        compose.onNodeWithTag(VIS).assertDoesNotExist()
+    }
+
+    @Test
+    fun `fullscreen asked for in the skin ends when the skin stops showing the visualizer`() {
+        surface.layoutFor = { stackOf(300, 100, 2f)(it).copy(visRect = IntRect(10, 20, 110, 70)) }
+        layer()
+        state.milkdropFullscreen = true
+        assertTrue(state.visualizerFullscreen)
+
+        surface.layoutFor = stackOf(300, 100, 2f)
+        surface.fit(surface.fits.last())
+        frames()
+
+        assertTrue(!state.visInSkin && !state.milkdropFullscreen)
+    }
+
     private companion object {
+        const val VIS = "vis"
         const val SCALE = 3
         const val FRAMES = 6
         const val SCREEN = "screen"
