@@ -3200,12 +3200,25 @@ class SkinRuntime(
     /**
      * A config attribute a script made (Bento's "Show Playlist Tab"): a cfgattrib names it, and the
      * button and the script then share one value, so a tap is heard as onDataChanged and a script's
-     * setData shows on the button (Wasabi SDK guiobjwnd, cfgitemi).
+     * setData shows on the button (Wasabi SDK guiobjwnd, cfgitemi). With none of that name, the one
+     * attribute whose name differs only in a note in brackets at its end: Winamp Modern's config
+     * drawer names "Animate Video/Vis Drawer (disabled if opacity = 100%)", its script makes it
+     * "... (disabled if opacity < 100%)", and the checkbox would otherwise change nothing.
      */
     private fun scriptAttribute(name: String): ConfigAttributeObj? {
         val k = name.lowercase()
-        return configItems.values.firstNotNullOfOrNull { it.attributes[k] }
+        configItems.values.firstNotNullOfOrNull { it.attributes[k] }?.let { return it }
+        val bare = withoutNote(k).takeIf { it != k } ?: return null
+        // an item is kept under its name and its GUID both
+        return configItems.values
+            .distinct()
+            .flatMap { it.attributes.values }
+            .filter { it.made && withoutNote(it.name.lowercase()) == bare }
+            .singleOrNull()
     }
+
+    /** [name] without a note in brackets at its end ("animate (disabled if ...)" to "animate"). */
+    private fun withoutNote(name: String): String = name.replace(NOTE_AT_END, "")
 
     fun setConfigValue(
         name: String,
@@ -3469,6 +3482,9 @@ class SkinRuntime(
 
         /** The windows the app shows when a host answers [onHostAction], by [windowKind]. */
         val HOST_WINDOWS = setOf("ml", "avs", "video")
+
+        /** A note in brackets at the end of a setting's name, with the space before it. */
+        val NOTE_AT_END = Regex("""\s*\([^()]*\)\s*$""")
 
         /** The edges a resize grip's `resize` names. */
         val GRIP_EDGES = listOf("left", "right", "top", "bottom")
