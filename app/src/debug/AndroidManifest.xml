@@ -46,7 +46,7 @@
         <activity
             android:name="nl.mattix.andamp.debug.ModernSkinActivity"
             android:exported="true"
-            android:label="Andamp Modern"
+            android:label="${modernSkinsLabel}"
             android:launchMode="singleTop"
             android:taskAffinity="nl.mattix.andamp.modernskin"
             android:theme="@style/Theme.AndAmp">
