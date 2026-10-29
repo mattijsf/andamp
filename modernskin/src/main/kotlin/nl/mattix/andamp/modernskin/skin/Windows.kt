@@ -1,0 +1,31 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+package nl.mattix.andamp.modernskin.skin
+
+/**
+ * A window of a loaded skin, as the host names it: one layout of one container. A container that
+ * switches layout (to its shade, say) shows another window. An id stays the same for as long as
+ * the skin is loaded, and no other window of that skin gets it.
+ */
+@JvmInline
+value class WindowId(
+    val raw: Int,
+)
+
+/**
+ * What the host reads of a window at one moment ([SkinRuntime.windowInfo]): its size as it shows
+ * now, the minimum and maximum the skin sets (0 for none), whether the skin declares resize
+ * handles across and up and down ([Layout.declaredResizableBothWays]), and the edges of the
+ * viewport a script last moved it against ([Layout.edgeX], [Layout.edgeY]). Read it on the engine
+ * thread where it is needed: it does not follow later changes.
+ */
+data class WindowInfo(
+    val id: WindowId,
+    val size: Pair<Int, Int>,
+    val minW: Int,
+    val minH: Int,
+    val maxW: Int,
+    val maxH: Int,
+    val resizableBothWays: Boolean,
+    val edgeX: Edge?,
+    val edgeY: Edge?,
+)

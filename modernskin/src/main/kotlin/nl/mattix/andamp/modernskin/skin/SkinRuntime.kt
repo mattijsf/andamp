@@ -441,6 +441,86 @@ class SkinRuntime(
     private var windowsNow: List<Layout> = emptyList()
     private var windowsAt = -1L
 
+    // ---- Windows by id, as the host reads them ----------------------------------------------
+
+    private val layoutsById = HashMap<Int, Layout>()
+
+    /** A new id for [layout], which keeps it; see [WindowId]. */
+    internal fun newWindowId(layout: Layout): WindowId {
+        val id = WindowId(layoutsById.size + 1)
+        layoutsById[id.raw] = layout
+        return id
+    }
+
+    private fun layoutOf(id: WindowId): Layout = layoutsById[id.raw] ?: error("no window ${id.raw}")
+
+    /** The windows on screen, top to bottom, as [windows] has them: the main one first. */
+    val windowIds: List<WindowId>
+        get() {
+            val now = windows
+            if (windowIdsOf !== now) {
+                windowIdsNow = now.map { it.windowId }
+                windowIdsOf = now
+            }
+            return windowIdsNow
+        }
+
+    private var windowIdsNow: List<WindowId> = emptyList()
+    private var windowIdsOf: List<Layout>? = null
+
+    /** The main window as it shows now (its normal layout or its shade), or null when the skin has none. */
+    val mainWindow: WindowId? get() = mainLayout?.windowId
+
+    /** What [id] is like now; see [WindowInfo]. */
+    fun windowInfo(id: WindowId): WindowInfo {
+        val l = layoutOf(id)
+        return WindowInfo(id, l.size, l.minW, l.minH, l.maxW, l.maxH, l.declaredResizableBothWays(), l.edgeX, l.edgeY)
+    }
+
+    /** [id]'s size as it shows now, in layout pixels ([Layout.size]). */
+    fun windowSize(id: WindowId): Pair<Int, Int> = layoutOf(id).size
+
+    /** Sizes [id] to [width] by [height] where it is, as the host sizes a window to its box ([Layout.resizeTo]). */
+    fun resizeWindow(
+        id: WindowId,
+        width: Int,
+        height: Int,
+    ) = layoutOf(id).resizeTo(width, height)
+
+    /**
+     * Where [id] visibly ends on the right ([Layout.contentRight]); with [layOutFirst] after laying
+     * it out at its size, as the stack is measured.
+     */
+    fun contentRight(
+        id: WindowId,
+        layOutFirst: Boolean = false,
+    ): Int {
+        val l = layoutOf(id)
+        if (layOutFirst) l.layoutRoot()
+        return l.contentRight()
+    }
+
+    /** Whether a window docked under the main one shows a list ([showsList]). */
+    val listWindowOpen: Boolean get() = windows.drop(1).any(::showsList)
+
+    /**
+     * How far right the stack shows in one column while the main window shows [width] across (0 for
+     * what it shows now); see [StackArrange.shownWidth]. 0 without a main window.
+     */
+    fun shownWidth(width: Int = 0): Int = mainLayout?.let { StackArrange.shownWidth(it, windows.drop(1), width) } ?: 0
+
+    /**
+     * How large the stack is in [columns] at every window's natural height, with a right column
+     * [columnWidth] wide; see [StackArrange.naturalSize]. Null without a main window.
+     */
+    fun naturalStackSize(
+        columns: Int,
+        columnWidth: Int = 0,
+    ): Pair<Int, Int>? = mainLayout?.let { StackArrange.naturalSize(it, windows.drop(1), columns, ::showsList, columnWidth) }
+
+    /** The left column of the stack in two columns, as [columns] sets it out; see [StackArrange.leftColumn]. */
+    fun leftColumn(): Rect? = mainLayout?.let { StackArrange.leftColumn(it, windows.drop(1), columns, ::showsList, ::windowRect) }
+
     /** The window opened last, which Back puts away; null when only the main window is open. */
     val topWindow: Container? get() = opened.lastOrNull()
 

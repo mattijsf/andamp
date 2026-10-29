@@ -720,8 +720,8 @@ internal class WalEngine(
             } finally {
                 publishing = false
             }
-        val layout = runtime.mainLayout
-        val mainSize = layout?.size
+        val main = runtime.mainWindow
+        val mainSize = main?.let(runtime::windowSize)
         val size = sizeOf(stack)
         if (mainSize != null) WalScale.unfit(mainSize, size, baseW, box = null)?.let { error(it) }
         val windowOpen = runtime.topWindow != null
@@ -732,7 +732,7 @@ internal class WalEngine(
             WalFrame(
                 stack = stack,
                 mainSize = mainSize,
-                contentRight = layout?.contentRight() ?: 0,
+                contentRight = mainContentRight(runtime),
                 baseW = baseW,
                 windowOpen = windowOpen,
                 animating = runtime.animating,
@@ -773,6 +773,9 @@ internal class WalEngine(
             (stack.maxOfOrNull { it.first.right } ?: 0) to (stack.maxOfOrNull { it.first.bottom } ?: 0)
     }
 }
+
+/** How far right [runtime]'s main window visibly reaches; 0 without one. */
+private fun mainContentRight(runtime: SkinRuntime): Int = runtime.mainWindow?.let { runtime.contentRight(it) } ?: 0
 
 /**
  * [runtime]'s windows as drawWindows gives them, with a plan of each by [planner] at [now] while
