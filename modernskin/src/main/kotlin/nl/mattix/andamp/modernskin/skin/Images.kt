@@ -37,7 +37,7 @@ class Images(
             }
 
             "balance" -> {
-                CENTER
+                CENTER + p.pan.coerceIn(-PAN_REACH, PAN_REACH) * (CENTER - 1) / PAN_REACH
             }
 
             "seek" -> {
@@ -85,5 +85,8 @@ class Images(
 
     private companion object {
         const val CENTER = 0x8000
+
+        /** How far the player's balance reaches either way from the middle. */
+        const val PAN_REACH = 127
     }
 }

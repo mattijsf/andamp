@@ -3078,9 +3078,9 @@ class SkinRuntime(
                 s.low + scaled(player.eqPreamp, 255, s.high - s.low)
             }
 
-            // balance sits in the middle; the player has no pan yet
+            // the middle at 127 of 0..255, which Winamp Modern's display reads as the center
             "pan" -> {
-                (s.low + s.high) / 2
+                s.low + (player.pan + PAN_REACH) * (s.high - s.low) / (2 * PAN_REACH)
             }
 
             else -> {
@@ -3131,10 +3131,17 @@ class SkinRuntime(
             "eq_preamp" -> {
                 player.eqPreamp = level
             }
+
+            "pan" -> {
+                player.pan = Math.round(frac * 2 * PAN_REACH).toInt() - PAN_REACH
+            }
         }
     }
 
     private companion object {
+        /** How far the balance reaches either way from the middle. */
+        const val PAN_REACH = 127
+
         /** Attributes of one Config item read for the options menu, as Winamp reads them. */
         const val OPTION_ATTRIBUTES = 500
 

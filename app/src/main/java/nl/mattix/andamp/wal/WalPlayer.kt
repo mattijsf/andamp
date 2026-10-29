@@ -250,6 +250,7 @@ internal class WalPlayer(
     private val volumeHeld = Held(VOLUME_SLACK)
     private val bandsHeld = Array(EQ_BANDS) { Held() }
     private val preampHeld = Held()
+    private val panHeld = Held()
     private val shuffleHeld = Held()
     private val repeatHeld = Held()
     private val eqOnHeld = Held()
@@ -293,6 +294,15 @@ internal class WalPlayer(
             merge { it.preamp = v }
         }
 
+    /** The balance on the skin's scale, -127..127, as the classic window's balance sets it. */
+    override var pan: Int
+        get() = panHeld.read(state.balance, ::fromBalance)
+        set(value) {
+            val v = value.coerceIn(-PAN_REACH, PAN_REACH)
+            panHeld.write(v, toBalance(v), state.balance)
+            merge { it.pan = v }
+        }
+
     override var shuffle: Boolean
         get() = shuffleHeld.read(state.shuffle.bit) { it } == 1
         set(value) {
@@ -324,6 +334,7 @@ internal class WalPlayer(
         var volume: Int? = null
         val bands = arrayOfNulls<Int>(EQ_BANDS)
         var preamp: Int? = null
+        var pan: Int? = null
         var shuffle: Boolean? = null
         var repeat: Boolean? = null
         var eqOn: Boolean? = null
@@ -337,12 +348,14 @@ internal class WalPlayer(
                 out.volume = volume
                 bands.copyInto(out.bands)
                 out.preamp = preamp
+                out.pan = pan
                 out.shuffle = shuffle
                 out.repeat = repeat
                 out.eqOn = eqOn
                 volume = null
                 bands.fill(null)
                 preamp = null
+                pan = null
                 shuffle = null
                 repeat = null
                 eqOn = null
@@ -370,6 +383,7 @@ internal class WalPlayer(
         p.volume?.let { controls.setVolume(it / SKIN_TOP.toFloat()) }
         p.bands.forEachIndexed { band, v -> v?.let { controls.setBand(band, toEq(it)) } }
         p.preamp?.let { controls.setPreamp(toEq(it)) }
+        p.pan?.let { controls.setBalance(toBalance(it)) }
         p.eqOn?.let { if (state.eqOn != it) controls.toggleEq() }
         p.shuffle?.let { if (state.shuffle != it) controls.toggleShuffle() }
         p.repeat?.let { if (state.repeat != it) controls.toggleRepeat() }
@@ -573,6 +587,10 @@ internal class WalPlayer(
         /** The top of the skin's scale for the volume, the equalizer and the VU. */
         private const val SKIN_TOP = 255
 
+        /** How far the balance reaches either way on the skin's scale, and on the state's. */
+        private const val PAN_REACH = 127
+        private const val BALANCE_TOP = 100
+
         /** The equalizer's flat on the skin's scale. */
         private const val SKIN_FLAT = 128
 
@@ -615,6 +633,12 @@ internal class WalPlayer(
             } else {
                 EqOps.CENTER + ((v - SKIN_FLAT) * (EQ_TOP - EqOps.CENTER) / (SKIN_TOP - SKIN_FLAT).toFloat()).roundToInt()
             }
+
+        /** A balance of -100..100 on the skin's scale. */
+        fun fromBalance(balance: Int): Int = (balance * PAN_REACH / BALANCE_TOP.toFloat()).roundToInt()
+
+        /** A skin balance as the state shows it, -100..100. */
+        fun toBalance(pan: Int): Int = (pan * BALANCE_TOP / PAN_REACH.toFloat()).roundToInt()
 
         private fun lengthOf(track: Track?): Int =
             if (track == null || track.isStream) 0 else track.durationMs.coerceIn(0, Int.MAX_VALUE.toLong()).toInt()
