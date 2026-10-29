@@ -5,7 +5,9 @@ import nl.mattix.andamp.modernskin.maki.Value
 
 /**
  * A thumb on a bar. Its action ties it to the player: SEEK, VOLUME, EQ_BAND, EQ_PREAMP, PAN. The
- * position runs from `low` to `high`, 0..255 unless the XML says otherwise.
+ * position runs from `low` to `high`, 0..255 unless the XML says otherwise; an equalizer slider's
+ * runs from -128 to 127, flat at 0, as Winamp's does: Winamp Modern's EQ display divides a
+ * position by 10.5 for the dB it shows, and the thumb sits where 0..255 puts it.
  */
 class Slider(
     rt: SkinRuntime,
@@ -21,6 +23,8 @@ class Slider(
     var vertical = false
     var low = 0
     var high = 255
+    private var lowSet = false
+    private var highSet = false
     var position = 0
         private set
     var dragging = false
@@ -33,34 +37,71 @@ class Slider(
     ): Boolean {
         if (super.setParam(key, value)) return true
         when (key.lowercase()) {
-            "action" -> action = value.lowercase()
+            "action" -> {
+                takeAction(value)
+            }
 
-            "param" -> param = value
+            "param" -> {
+                param = value
+            }
 
-            "thumb" -> thumb = value
+            "thumb" -> {
+                thumb = value
+            }
 
-            "downthumb" -> downThumb = value
+            "downthumb" -> {
+                downThumb = value
+            }
 
-            "hoverthumb" -> Unit
+            "hoverthumb" -> {
+                Unit
+            }
 
-            "barleft" -> barLeft = value
+            "barleft" -> {
+                barLeft = value
+            }
 
-            "barmiddle" -> barMiddle = value
+            "barmiddle" -> {
+                barMiddle = value
+            }
 
-            "barright" -> barRight = value
+            "barright" -> {
+                barRight = value
+            }
 
-            "orientation" -> vertical = value.lowercase().startsWith("v")
+            "orientation" -> {
+                vertical = value.lowercase().startsWith("v")
+            }
 
-            "low" -> low = value.toIntLenient() ?: 0
+            "low" -> {
+                low = value.toIntLenient() ?: 0
+                lowSet = true
+            }
 
-            "high" -> high = value.toIntLenient() ?: 255
+            "high" -> {
+                high = value.toIntLenient() ?: 255
+                highSet = true
+            }
 
             // Winamp 5.666 has no thumboffset: a skin's is ignored
-            "cfgattrib", "cfgval", "thumboffset" -> Unit
+            "cfgattrib", "cfgval", "thumboffset" -> {
+                Unit
+            }
 
-            else -> return false
+            else -> {
+                return false
+            }
         }
         return true
+    }
+
+    /** The action, and an equalizer slider's range when the skin gives none. */
+    private fun takeAction(value: String) {
+        action = value.lowercase()
+        if (action == "eq_band" || action == "eq_preamp") {
+            if (!lowSet) low = EQ_LOW
+            if (!highSet) high = EQ_LOW + FULL
+        }
     }
 
     private val range: Int get() = maxOf(1, high - low)
@@ -116,7 +157,7 @@ class Slider(
                 val travel = maxOf(1, rect.width - tw)
                 (px - rect.left - grab).toDouble() / travel
             }
-        return (low + frac.coerceIn(0.0, 1.0) * range).toInt()
+        return low + (frac.coerceIn(0.0, 1.0) * range).toInt()
     }
 
     /** Sets the position and tells the script; [fromUser] also drives the player. */
@@ -231,3 +272,9 @@ class Slider(
             else -> super.makiCall(name, args)
         }
 }
+
+/** An equalizer slider's lowest position, flat at 0. */
+private const val EQ_LOW = -128
+
+/** The span of a slider's positions unless the skin gives one. */
+private const val FULL = 255

@@ -267,7 +267,8 @@ class WalPlayerEchoTest {
 
         fun thumbs() = SLIDERS.map { (layout.findObject(it) as Slider).position }
         val first = thumbs()
-        assertEquals(listOf(WalPlayer.fromPercent(20), WalPlayer.fromEq(10), WalPlayer.fromEq(50), 50), first)
+        // an equalizer slider runs from -128 to 127, flat at 0
+        assertEquals(listOf(WalPlayer.fromPercent(20), WalPlayer.fromEq(10) - 128, WalPlayer.fromEq(50) - 128, 50), first)
         fresh.tick()
         assertEquals("the first tick finds them in place", first, thumbs())
     }
@@ -297,8 +298,8 @@ class WalPlayerEchoTest {
         frames(40)
 
         assertEquals(positions.map { listOf(0, it - 128) }, heard("band"))
-        assertEquals(positions.map { listOf(it) }, heard("band.position"))
-        assertEquals(3, band.position)
+        assertEquals(positions.map { listOf(it - 128) }, heard("band.position"))
+        assertEquals(3 - 128, band.position)
         assertEquals(WalPlayer.toEq(3), state.eqBands[0])
     }
 
@@ -310,8 +311,8 @@ class WalPlayerEchoTest {
         frames(40)
 
         assertEquals(positions.map { listOf(it - 128) }, heard("preamp"))
-        assertEquals(positions.map { listOf(it) }, heard("preamp.position"))
-        assertEquals(255, preamp.position)
+        assertEquals(positions.map { listOf(it - 128) }, heard("preamp.position"))
+        assertEquals(127, preamp.position)
     }
 
     @Test

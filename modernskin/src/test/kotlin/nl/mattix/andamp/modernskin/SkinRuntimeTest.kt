@@ -88,6 +88,7 @@ class SkinRuntimeTest {
                         """</layout></container>""" +
                         """<container id="eq" name="Equalizer" default_visible="0"><layout id="normal" w="200" h="60">""" +
                         """<slider id="band1" action="eq_band" param="1" x="10" y="5" w="13" h="40" orientation="v"/>""" +
+                        """<slider id="preamp" action="EQ_BAND" param="preamp" x="30" y="5" w="13" h="40" orientation="v"/>""" +
                         """<layer id="eq.sizer" resize="bottomright" x="190" y="50" w="10" h="10"/>""" +
                         """</layout></container>""" +
                         """<container id="library" name="Library" default_visible="0" """ +
@@ -320,7 +321,30 @@ class SkinRuntimeTest {
         rt.openWindow(eq)
         rt.drawWindows()
 
-        assertEquals(204, (checkNotNull(eq.current?.findObject("band1")) as Slider).position)
+        assertEquals("204 of 255 on -128..127", 76, (checkNotNull(eq.current?.findObject("band1")) as Slider).position)
+    }
+
+    @Test
+    fun `an equalizer slider runs from -128 to 127, flat at 0, both ways between it and the player`() {
+        val player = FakePlayer().apply { eqPreamp = 128 }
+        val rt = small(player)
+        settle(rt)
+        val eq = checkNotNull(rt.container("eq"))
+        rt.openWindow(eq)
+        rt.drawWindows()
+        val preamp = checkNotNull(eq.current?.findObject("preamp")) as Slider
+        assertEquals("flat", 0, preamp.position)
+
+        // -7.3 dB in Winamp: Winamp Modern's display shows the position over 10.5
+        player.eqPreamp = 51
+        settle(rt)
+        assertEquals(-77, preamp.position)
+
+        val at = rt.windowRect(checkNotNull(eq.current))
+        rt.pointerDown(at.left + preamp.rect.left + 6, at.top + preamp.rect.bottom - 1)
+        rt.pointerUp(at.left + preamp.rect.left + 6, at.top + preamp.rect.bottom - 1)
+        assertEquals("pulled to the bottom", -128, preamp.position)
+        assertEquals(0, player.eqPreamp)
     }
 
     @Test
