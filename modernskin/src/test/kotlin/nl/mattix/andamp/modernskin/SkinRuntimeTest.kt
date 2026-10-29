@@ -22,6 +22,7 @@ import org.junit.Test
 import java.io.ByteArrayInputStream
 import java.io.File
 import javax.imageio.ImageIO
+import kotlin.math.abs
 
 /** A host for tests: image sizes through ImageIO, text 6 px per character, the log kept. */
 class TestHost(
@@ -131,11 +132,14 @@ class SkinRuntimeTest {
     /** The small skin loaded, on a clock that stands still. */
     private fun small(player: FakePlayer = FakePlayer()): SkinRuntime {
         player.clock = { 0L }
-        return SkinRuntime(small, TestHost(small), player).apply {
+        return smallWith(player)
+    }
+
+    private fun smallWith(player: Player): SkinRuntime =
+        SkinRuntime(small, TestHost(small), player).apply {
             clock = { 0L }
             load()
         }
-    }
 
     /** Ticks and draws until nothing asks for a frame. */
     private fun settle(rt: SkinRuntime) {
@@ -368,6 +372,38 @@ class SkinRuntimeTest {
         rt.pointerUp(at.left + balance.rect.right - 1, at.top + balance.rect.top + 6)
         assertEquals("pulled to the right end", 255, balance.position)
         assertEquals(127, player.pan)
+    }
+
+    @Test
+    fun `a balance thumb dragged near the middle goes where the player snapped it, while the finger still holds it`() {
+        val fake = FakePlayer()
+        // snaps near the middle, as the app's player does
+        val player =
+            object : Player by fake {
+                override var pan: Int
+                    get() = fake.pan
+                    set(value) {
+                        fake.pan = if (abs(value) <= 20) 0 else value
+                    }
+            }
+        fake.clock = { 0L }
+        val rt = smallWith(player)
+        settle(rt)
+        val eq = checkNotNull(rt.container("eq"))
+        rt.openWindow(eq)
+        rt.drawWindows()
+        val balance = checkNotNull(eq.current?.findObject("balance")) as Slider
+        val at = rt.windowRect(checkNotNull(eq.current))
+        val y = at.top + balance.rect.top + 6
+
+        rt.pointerDown(at.left + balance.rect.right - 1, y)
+        assertEquals(255, balance.position)
+        rt.pointerMove(at.left + (balance.rect.left + balance.rect.right) / 2 + 2, y)
+        assertEquals("snapped while held", 127, balance.position)
+        assertEquals(0, player.pan)
+        rt.pointerUp(at.left + (balance.rect.left + balance.rect.right) / 2 + 2, y)
+        assertEquals(127, balance.position)
+        assertEquals(0, player.pan)
     }
 
     @Test
