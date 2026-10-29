@@ -375,6 +375,25 @@ class SkinOptionsTest {
     }
 
     @Test
+    fun `Winamp Modern's drawer pair are radio buttons, as its own page draws them, and its other options are not`() {
+        val wal = ZipSkinFiles(File(localResource("/WinampModern566.wal").toURI()))
+        val rt = SkinRuntime(wal, TestHost(wal), FakePlayer().apply { clock = { 0L } }).apply { clock = { 0L } }
+        rt.load()
+        repeat(5) { rt.tick() }
+
+        val drawers =
+            rt
+                .skinOptions()
+                .entries
+                .sub("Winamp Modern")
+                .sub("Drawers")
+
+        assertTrue(drawers.toggle("Open Video/Vis from the top").radio)
+        assertTrue(drawers.toggle("Open Video/Vis from the bottom").radio)
+        assertFalse(drawers.toggle("Animate Config Drawer").radio)
+    }
+
+    @Test
     fun `Big Bento lists eight entries at the top`() {
         val wal = ZipSkinFiles(File(localResource("/BigBento.wal").toURI()))
         val rt = SkinRuntime(wal, TestHost(wal), FakePlayer().apply { clock = { 0L } }).apply { clock = { 0L } }

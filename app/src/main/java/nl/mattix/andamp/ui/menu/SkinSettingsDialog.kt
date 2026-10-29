@@ -10,11 +10,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -32,9 +34,10 @@ import nl.mattix.andamp.wal.WalSurface
 
 /**
  * The options a worn modern skin lists for Winamp's Options menu, on one page: each group under a
- * heading (see [settingRows]), each option a box ticked as the skin holds it. A tap flips it, the
- * skin's scripts hear it, and it is kept as the skin's other settings are. The ticks follow the
- * skin, so an option a script changes in answer shows changed.
+ * heading (see [settingRows]), each option a box ticked as the skin holds it, or a radio button
+ * where the skin shows one. A tap flips it, the skin's scripts hear it, and it is kept as the
+ * skin's other settings are. The ticks follow the skin, so an option a script changes in answer
+ * shows changed.
  */
 @Composable
 internal fun SkinSettingsDialog(
@@ -104,17 +107,28 @@ private fun SettingLine(
 
         is SettingRow.Option -> {
             val t = row.toggle
+            // a radio button picked stays picked: another of its set is picked instead
+            val tap =
+                if (t.radio) {
+                    Modifier.selectable(selected = t.checked, role = Role.RadioButton) { if (!t.checked) onToggle(t.key) }
+                } else {
+                    Modifier.toggleable(value = t.checked, role = Role.Checkbox) { onToggle(t.key) }
+                }
             Row(
                 Modifier
                     .fillMaxWidth()
                     .heightIn(min = ROW_MIN)
-                    .toggleable(value = t.checked, role = Role.Checkbox) { onToggle(t.key) }
+                    .then(tap)
                     .padding(start = INDENT * row.depth)
                     .testTag("settings.option.${t.text}"),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                // the row takes the tap and says what it is; the box only shows it
-                Checkbox(checked = t.checked, onCheckedChange = null, modifier = Modifier.padding(end = BOX_GAP))
+                // the row takes the tap and says what it is; the mark only shows it
+                if (t.radio) {
+                    RadioButton(selected = t.checked, onClick = null, modifier = Modifier.padding(end = BOX_GAP))
+                } else {
+                    Checkbox(checked = t.checked, onCheckedChange = null, modifier = Modifier.padding(end = BOX_GAP))
+                }
                 Text(t.text, style = MaterialTheme.typography.bodyMedium)
             }
         }

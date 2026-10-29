@@ -2,8 +2,10 @@
 
 package nl.mattix.andamp.ui.menu
 
+import androidx.compose.ui.test.assertIsNotSelected
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
+import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -57,6 +59,27 @@ class SkinSettingsDialogTest {
         compose.onNodeWithTag("settings.option.Animate Config Drawer").performClick()
 
         assertEquals(listOf(SkinOptions.Key("{item}", "animate config drawer")), flipped)
+    }
+
+    @Test
+    fun `a radio option shows as picked or not, and a tap asks for the flip only when it is not picked`() {
+        val flipped = ArrayList<SkinOptions.Key>()
+        val radios =
+            SkinOptions(
+                1,
+                listOf(
+                    SkinOptions.Toggle(SkinOptions.Key("{item}", "top"), "Top", checked = true, radio = true),
+                    SkinOptions.Toggle(SkinOptions.Key("{item}", "bottom"), "Bottom", checked = false, radio = true),
+                ),
+            )
+        compose.setContent { SkinSettingsBody(radios, { flipped += it }, {}) }
+
+        compose.onNodeWithTag("settings.option.Top").assertIsSelected()
+        compose.onNodeWithTag("settings.option.Bottom").assertIsNotSelected()
+        compose.onNodeWithTag("settings.option.Top").performClick()
+        compose.onNodeWithTag("settings.option.Bottom").performClick()
+
+        assertEquals(listOf(SkinOptions.Key("{item}", "bottom")), flipped)
     }
 
     @Test

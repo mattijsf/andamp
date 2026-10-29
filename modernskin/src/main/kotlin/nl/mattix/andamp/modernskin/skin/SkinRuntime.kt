@@ -2818,6 +2818,8 @@ class SkinRuntime(
      * [SkinOptions.OPTIONS_MENU] only (the Windows menu item is not read). An attribute whose value
      * is another item's GUID is a submenu named by the attribute, "-" is a separator, and any other
      * is a toggle. Attributes only read with getAttribute are left out. Reading makes no item.
+     * A toggle is a radio button when a toggle button of the skin set to that attribute draws a
+     * picture whose id says "radio", as Winamp Modern's config drawer draws its choices.
      */
     fun skinOptions(): SkinOptions {
         val root = configItemByGuid(SkinOptions.OPTIONS_MENU) ?: return SkinOptions(configVersion, emptyList())
@@ -2885,9 +2887,34 @@ class SkinRuntime(
                     SkinOptions.Key(item.guid ?: "", a.name.lowercase()),
                     PopupMenu.shownText(a.name),
                     attributeOn(a.data),
+                    radio = radioKey(item.guid, a.name) in radioAttributes,
                 )
             }
         }
+    }
+
+    /** An attribute as a toggle button's `cfgattrib` names it: the item's GUID without braces and the name, lowercased. */
+    private fun radioKey(
+        guid: String?,
+        name: String,
+    ): String = (guid ?: "").trim().trim('{', '}').lowercase() + ";" + name.trim().lowercase()
+
+    /** The attributes a toggle button of the skin shows with a radio picture; see [skinOptions]. */
+    private val radioAttributes: Set<String> by lazy {
+        val out = HashSet<String>()
+
+        fun walk(n: XmlNode) {
+            val attrib = n["cfgattrib"]
+            if (n.name == "togglebutton" && attrib != null && attrib.contains(';')) {
+                val pictures = listOfNotNull(n["image"], n["activeimage"], n["downimage"])
+                if (pictures.any { it.contains("radio", ignoreCase = true) }) {
+                    out += radioKey(attrib.substringBefore(';'), attrib.substringAfter(';'))
+                }
+            }
+            n.children.forEach(::walk)
+        }
+        groupDefs.values.forEach(::walk)
+        out
     }
 
     /** The submenu attribute [a] opens onto [sub], or null when [sub] is on [path], too deep or lists nothing. */
