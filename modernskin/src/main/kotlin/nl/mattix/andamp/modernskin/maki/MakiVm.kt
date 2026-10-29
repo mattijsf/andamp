@@ -223,6 +223,22 @@ class Script(
         budget = STEPS_PER_FRAME
     }
 
+    private val apis = arrayOfNulls<ApiMethod>(program.methods.size)
+    private val apiRead = BooleanArray(program.methods.size)
+
+    /**
+     * The `std.mi` entry of method [index], read from [StdApi] the first time a call needs it. A
+     * call looks it up by class and lowercased name, which costs more than the call itself.
+     */
+    internal fun api(index: Int): ApiMethod? {
+        if (!apiRead[index]) {
+            val m = program.methods[index]
+            apis[index] = StdApi.method(program.classes[m.classIndex], m.name)
+            apiRead[index] = true
+        }
+        return apis[index]
+    }
+
     /** Steps run since the last [refill]. */
     val stepsSinceRefill: Int get() = STEPS_PER_FRAME - budget
 
@@ -600,7 +616,7 @@ private class Interpreter(
 
     private fun call(op: Op) {
         val method = program.methods[op.arg]
-        val guid = program.classes[method.classIndex]
+        val api = script.api(op.arg)
         val argc =
             when {
                 op.argc >= 0 -> {
@@ -608,7 +624,7 @@ private class Interpreter(
                 }
 
                 else -> {
-                    StdApi.method(guid, method.name)?.params
+                    api?.params
                         ?: throw MakiRuntimeException("unknown method ${program.className(method.classIndex)}.${method.name}")
                 }
             }
@@ -616,7 +632,7 @@ private class Interpreter(
         val args = ArrayList<Value>(argc)
         repeat(argc) { args.add(pop().value) }
         val receiver = pop().value.asObject
-        val ret = StdApi.method(guid, method.name)?.ret ?: 'A'
+        val ret = api?.ret ?: 'A'
         if (receiver == null) {
             host.log("${program.id}: ${program.className(method.classIndex)}.${method.name} on null")
             pushValue(defaultFor(ret))
