@@ -27,7 +27,7 @@ internal class WalHostActions(
     private val toggleLibrary: () -> Unit,
     /** The visualizer window, which shows Milkdrop or AVS as picked. */
     private val toggleVisualizer: () -> Unit,
-    /** Opens the visualizer window, as Winamp Modern's Detach Visualizer moves the visualizer out of its drawer. */
+    /** Opens the visualizer window, as Winamp Modern's Detach Visualizer and Detach Video move it out of the drawer. */
     private val showVisualizer: () -> Unit,
     private val visualizationMenu: (MenuAnchor?) -> Unit,
     private val fullscreenVisualizer: () -> Unit,
@@ -69,7 +69,8 @@ internal class WalHostActions(
                 visualizationMenu(pressAt?.invoke())
             }
 
-            "VIS_FS" -> {
+            // the video's fullscreen too: Andamp plays no video, and the skin's video area shows the visualizer
+            "VIS_FS", "VID_FS" -> {
                 fullscreenVisualizer()
             }
 
@@ -86,7 +87,8 @@ internal class WalHostActions(
             }
 
             "SHOW" -> {
-                if (param == "avs") showVisualizer()
+                // the video too: Andamp plays no video, and the skin's video area shows the visualizer
+                if (param == "avs" || param == "video") showVisualizer()
             }
 
             // the windows the app shows; video and any other window are not there to show

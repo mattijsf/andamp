@@ -67,6 +67,15 @@ class VisDrawerTest {
     }
 
     @Test
+    fun `a holder for the video, which Andamp does not play, shows the visualizer too`() {
+        val holder = main.findObject("vis")!!
+        holder.attrs["hold"] = "guid:{F0816D7B-FFFC-4343-80F2-E8199AA15CC3}"
+        showVis(true)
+
+        assertEquals(Rect(10, 70, 180, 30), rt.visRect)
+    }
+
+    @Test
     fun `a drawer shut so far that none of its holder shows shows no visualizer`() {
         showVis(true)
         main.findObject("drawer")!!.makiCall("resize", listOf(Value.Int(10), Value.Int(60), Value.Int(180), Value.Int(10)))

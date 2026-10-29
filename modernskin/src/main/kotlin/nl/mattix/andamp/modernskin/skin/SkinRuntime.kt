@@ -496,9 +496,10 @@ class SkinRuntime(
 
     /**
      * Where the visualizer shows in the stack, in layout pixels: a shown window holder for Winamp's
-     * visualizer (`hold="guid:avs"`, Winamp Modern's drawer in its visualizer mode), cut to the
-     * groups around it, as they cut what is drawn inside them. Null when none shows, or none of it
-     * is left uncut (a drawer shut). The app draws its visualizer there.
+     * visualizer (`hold="guid:avs"`, Winamp Modern's drawer in its visualizer mode) or for its video,
+     * which Andamp does not play, cut to the groups around it, as they cut what is drawn inside
+     * them. Null when none shows, or none of it is left uncut (a drawer shut). The app draws its
+     * visualizer there.
      */
     val visRect: Rect?
         get() {
@@ -507,7 +508,7 @@ class SkinRuntime(
             fun find(o: GuiObject): GuiObject? =
                 when {
                     !o.visible -> null
-                    o is Group && o.tag in HOLDER_TAGS && holds(o.attrs, AVS_GUID) -> o
+                    o is Group && o.tag in HOLDER_TAGS && VIS_HOLDS.any { holds(o.attrs, it) } -> o
                     o is Group -> o.children.firstNotNullOfOrNull { find(it) }
                     else -> null
                 }
@@ -2755,7 +2756,7 @@ class SkinRuntime(
                 configFlags["eq_auto"] = !(configFlags["eq_auto"] ?: false)
             }
 
-            "VIS_NEXT", "VIS_PREV", "VIS_MENU", "VIS_FS" -> {
+            "VIS_NEXT", "VIS_PREV", "VIS_MENU", "VIS_FS", "VID_FS" -> {
                 onHostAction?.invoke(a, param)
             }
 
@@ -3349,6 +3350,10 @@ class SkinRuntime(
         const val PLAYLIST_GUID = "45f3f7c1-a6f3-4ee6-a15e-125e92fc3f8d"
         const val LIBRARY_GUID = "6b0edf80-c9a5-11d3-9f26-00c04f39ffc6"
         const val AVS_GUID = "0000000a-000c-0010-ff7b-01014263450c"
+        const val VIDEO_GUID = "f0816d7b-fffc-4343-80f2-e8199aa15cc3"
+
+        /** The windows a holder shows the visualizer in: Winamp's visualizer, and its video, which Andamp does not play. */
+        val VIS_HOLDS = listOf(AVS_GUID, VIDEO_GUID)
 
         /** Winamp's windows that show a list: the playlist editor and the media library. */
         val LIST_GUIDS = listOf(PLAYLIST_GUID, LIBRARY_GUID)
@@ -3371,7 +3376,7 @@ class SkinRuntime(
                 "musiclibrary" to LIBRARY_GUID,
                 "library" to LIBRARY_GUID,
                 "avs" to AVS_GUID,
-                "video" to "f0816d7b-fffc-4343-80f2-e8199aa15cc3",
+                "video" to VIDEO_GUID,
             )
         val GUI_ATTRS =
             setOf(

@@ -82,6 +82,8 @@ class WalHostActionsTest {
         assertEquals(listOf("previous preset"), reaches("VIS_PREV"))
         assertEquals(listOf("file info"), reaches("TRACKINFO"))
         assertEquals("Detach Visualizer", listOf("show visualizer"), reaches("SHOW", "avs"))
+        assertEquals("Detach Video, which the visualizer fills", listOf("show visualizer"), reaches("SHOW", "video"))
+        assertEquals("the video's fullscreen", listOf("fullscreen"), reaches("VID_FS"))
     }
 
     @Test
@@ -98,7 +100,7 @@ class WalHostActionsTest {
         assertEquals(emptyList<String>(), reaches("TOGGLE", "pl"))
         assertEquals(emptyList<String>(), reaches("TOGGLE", "guid:something"))
         assertEquals(emptyList<String>(), reaches("TOGGLE", null))
-        assertEquals(emptyList<String>(), reaches("SHOW", "video"))
+        assertEquals(emptyList<String>(), reaches("SHOW", "ml"))
         assertEquals(emptyList<String>(), reaches("SOMETHING_ELSE"))
     }
 
