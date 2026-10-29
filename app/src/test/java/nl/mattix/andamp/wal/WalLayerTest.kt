@@ -275,7 +275,7 @@ class WalLayerTest {
     }
 
     @Test
-    fun `a kept place comes back with touches mapped there, and holds the stack inside the box while it has grown`() {
+    fun `a kept place comes back with touches mapped there, and the stack grows past the box's bottom from there`() {
         surface.places[false] = IntOffset(-150, 300)
         layer()
         assertEquals(IntRect(0, 100, 200, 167), state.windowRects[WindowStore.MAIN])
@@ -287,10 +287,10 @@ class WalLayerTest {
         frames()
         assertEquals(listOf("down 150,50", "up 150,50"), surface.pointerCalls)
 
-        // a window opens under the main one, and the stack would run off the bottom
+        // a window opens under the main one: the stack runs off the bottom, as a desktop window does
         surface.layout = surface.layout!!.copy(stackH = 700)
         frames()
-        assertEquals("its bottom at the box's", IntRect(0, 66, 200, 533), state.windowRects[WindowStore.MAIN])
+        assertEquals("where it was moved", IntRect(0, 100, 200, 567), state.windowRects[WindowStore.MAIN])
 
         surface.layout = surface.layout!!.copy(stackH = 100)
         frames()

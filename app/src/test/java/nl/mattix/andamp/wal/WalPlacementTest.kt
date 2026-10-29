@@ -235,16 +235,26 @@ class WalPlacementTest {
     }
 
     @Test
-    fun `a moved stack stays wholly in the box, and keeps the engine's place on an axis it fills`() {
+    fun `a moved stack may go partly past the box's edges with a finger's width left in it, its top kept below the box's`() {
         val home = IntRect(186, 24, 894, 352)
 
-        assertEquals(IntOffset(0, 24), WalPlacement.clamp(IntOffset(-50, -10), home, box))
-        assertEquals(IntOffset(372, 2274 - 328), WalPlacement.clamp(IntOffset(500, 3000), home, box))
-        assertEquals(IntOffset(100, 500), WalPlacement.clamp(IntOffset(100, 500), home, box))
+        assertEquals("past the left edge", IntOffset(-500, 500), WalPlacement.clamp(IntOffset(-500, 500), home, box, KEEP))
+        assertEquals(
+            "no further than leaves KEEP px",
+            IntOffset(KEEP - 708, 500),
+            WalPlacement.clamp(IntOffset(-5000, 500), home, box, KEEP),
+        )
+        assertEquals(
+            "past the right edge",
+            IntOffset(1080 - KEEP, 500),
+            WalPlacement.clamp(IntOffset(5000, 500), home, box, KEEP),
+        )
+        assertEquals("past the bottom", IntOffset(100, 2274 - KEEP), WalPlacement.clamp(IntOffset(100, 5000), home, box, KEEP))
+        assertEquals("never above the top", IntOffset(100, 24), WalPlacement.clamp(IntOffset(100, -300), home, box, KEEP))
 
         // wider than the box: it stays where the engine put it across, and moves up and down
         val wide = IntRect(-43, 24, 1123, 456)
-        assertEquals(IntOffset(-43, 800), WalPlacement.clamp(IntOffset(0, 800), wide, box))
+        assertEquals(IntOffset(-43, 800), WalPlacement.clamp(IntOffset(0, 800), wide, box, KEEP))
     }
 
     @Test
@@ -277,42 +287,23 @@ class WalPlacementTest {
     }
 
     @Test
-    fun `a kept move comes back as it was, held in a box drawn a little smaller`() {
+    fun `a kept move comes back as it was, with a finger's width left in a box drawn smaller`() {
         val home = IntRect(186, 24, 894, 352)
-        val atBottom = IntOffset(-186, 1946 - 24)
+        val atBottom = IntOffset(-186, 2000)
 
-        assertEquals(IntOffset(-186, 1922), WalPlacement.held(atBottom, home, box))
-        // the same stack where another surface's box ends 9 px higher
-        val smaller = IntRect(0, 24, 1080, 2265)
-        assertEquals(IntOffset(-186, 1913), WalPlacement.held(atBottom, home, smaller))
+        assertEquals(atBottom, WalPlacement.held(atBottom, home, box, KEEP))
+        // the same stack where another surface's box ends far higher
+        val smaller = IntRect(0, 24, 1080, 1500)
+        assertEquals(IntOffset(-186, 1500 - KEEP - 24), WalPlacement.held(atBottom, home, smaller, KEEP))
     }
 
     @Test
-    fun `a stack that grew past the box's edge is held inside it, and goes back where it was moved once it shrinks`() {
-        val home = IntRect(186, 24, 894, 352)
-        val atMiddle = IntOffset(-186, 600)
+    fun `a stack that grows past the box's edge runs past it, as a desktop window does`() {
         val atBottom = IntOffset(-186, 1922)
         // a drawer slid out under the main window
         val grown = IntRect(186, 24, 894, 680)
 
-        assertEquals("it still fits where it was moved", atMiddle, WalPlacement.held(atMiddle, grown, box))
-        assertEquals("its bottom held at the box's", IntOffset(-186, 2274 - 656 - 24), WalPlacement.held(atBottom, grown, box))
-        assertEquals("the drawer closed", atBottom, WalPlacement.held(atBottom, home, box))
-    }
-
-    @Test
-    fun `a kept move is held inside a stack grown to two columns, and comes back with one column`() {
-        // moved to the bottom in one column; a list window opening sets the stack out in two, wider and taller
-        val one = IntRect(186, 24, 894, 352)
-        val atBottom = IntOffset(-186, 1922)
-        val two = IntRect(0, 24, 1080, 1100)
-
-        assertEquals(
-            "across where the engine puts it, down as far as the box allows",
-            IntOffset(0, 1174),
-            WalPlacement.held(atBottom, two, box),
-        )
-        assertEquals("the list window closed: where it was moved", atBottom, WalPlacement.held(atBottom, one, box))
+        assertEquals(atBottom, WalPlacement.held(atBottom, grown, box, KEEP))
     }
 
     @Test
@@ -321,7 +312,14 @@ class WalPlacementTest {
         val compactMove = IntOffset(0, 900)
         val filling = IntRect(0, 24, 1081, 2274)
 
-        assertEquals(IntOffset(0, 0), WalPlacement.held(compactMove, filling, box))
+        assertEquals(IntOffset(0, 0), WalPlacement.held(compactMove, filling, box, KEEP))
+        // moved to the bottom in one column; a list window opening sets the stack out in two, as wide as the box
+        val two = IntRect(0, 24, 1080, 1100)
+        assertEquals(
+            "across where the engine puts it",
+            IntOffset(0, 1922),
+            WalPlacement.held(IntOffset(-186, 1922), two, box, KEEP),
+        )
     }
 
     /** Presses across [placed]'s stack each pop a menu at the press, with [published] in `windowRects[MAIN]`. */
@@ -349,5 +347,6 @@ class WalPlacementTest {
 
         /** The classic windows' snap distance at [SCALE]. */
         const val SNAP = WindowSnap.SNAP_DISTANCE * SCALE
+        const val KEEP = 144
     }
 }

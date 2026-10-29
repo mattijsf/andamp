@@ -236,7 +236,7 @@ internal class WalFitting {
             fit,
             layout?.size ?: size,
             baseW,
-            layout?.contentRight() ?: size.first,
+            layout?.let(::restingWidth) ?: size.first,
             size,
             drawn,
             restingW,

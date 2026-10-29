@@ -84,10 +84,11 @@ internal object WalScale {
     /**
      * Where a stack of [stack] skin px goes in [fit]'s box. Upright, the main window of [mainSize]
      * sets the scale (see [fit], with [baseW]) and the stack hangs from the top, centered by how
-     * far right the main window's content reaches ([contentRight]) and moved left as far as keeps
-     * what the windows show inside the box. A stack that shows [widest] px across, more than the
-     * box holds at that scale (MMD3's drawer slid out, or a docked window its minimum width makes
-     * wider than the main one), is shrunk until it fits across; one taller than the box at that
+     * far right the main window's content reaches at rest ([contentRight]): a window made wider
+     * grows to the right, past the box's edge if need be, as a desktop window does. A stack that
+     * shows [widest] px across, more than the box holds at that scale (MMD3's drawer slid out, or a
+     * docked window its minimum width makes wider than the main one), is shrunk until it fits
+     * across, and moved left as far as keeps it inside the box; one taller than the box at that
      * scale is shrunk to the box's height and centered both ways. Sideways, the whole stack fits
      * the box both ways and is centered both ways. The scale keeps room for the whole stack, so a
      * drawer opening inside it leaves the scale as it is; the centering goes by the part of it the
@@ -122,10 +123,25 @@ internal object WalScale {
                 along(edgeY, height, drawnH, s, left(height, drawnH, s)),
             )
         }
-        val s = across(box.width, widest, fit(box, mainSize, baseW))
+        val base = fit(box, mainSize, baseW)
+        val s = across(box.width, widest, base)
 
+        // a stack shrunk to fit across is held inside the box; one at the main window's scale hangs
+        // from where its main window at rest is centered, and a wider one runs on to the right
         fun across(scale: Float) =
-            along(edgeX, width, drawnW, scale, minOf(left(width, contentRight, scale), end(width, drawnW, scale)))
+            along(
+                edgeX,
+                width,
+                drawnW,
+                scale,
+                if (s <
+                    base
+                ) {
+                    minOf(left(width, contentRight, scale), end(width, drawnW, scale))
+                } else {
+                    left(width, contentRight, scale)
+                },
+            )
 
         fun down(
             scale: Float,

@@ -43,7 +43,7 @@ class WalDragTest {
     /** The next frame: the stack drawn where the drag, or the place kept, has it. */
     private fun frame() {
         drawn = home.topLeft + (drag.shift ?: rest)
-        drag.placedAt(upright, box, home, drawn, SNAP)
+        drag.placedAt(upright, box, home, drawn, SNAP, KEEP)
     }
 
     /** [at], a point on the surface, as a point on the stack drawn now. */
@@ -82,7 +82,7 @@ class WalDragTest {
     }
 
     @Test
-    fun `it snaps to an edge, and stays wholly in the box`() {
+    fun `it snaps to an edge, and goes past the edges with a finger's width left in the box`() {
         dragged(Offset(500f, 40f), listOf(Offset(500f, 60f), Offset(394f, 300f)), lift = false)
         assertEquals("20 px from the left edge: against it", IntOffset(-126, 260), drag.shift)
 
@@ -90,7 +90,11 @@ class WalDragTest {
         frame()
         drag.move(onStack(Offset(100f, 3000f)))
 
-        assertEquals("pushed further, it stops at the edges", IntOffset(-126, 1580), drag.shift)
+        assertEquals(
+            "pushed further, it goes past the edges, stopping with KEEP px in the box",
+            IntOffset(-400, 1764),
+            drag.shift,
+        )
     }
 
     @Test
@@ -122,7 +126,7 @@ class WalDragTest {
 
     @Test
     fun `a drag while the stack has no place in the box moves nothing and keeps nothing`() {
-        drag.placedAt(upright, box, home = null, drawn = null, snapPx = SNAP)
+        drag.placedAt(upright, box, home = null, drawn = null, snapPx = SNAP, keepPx = KEEP)
 
         drag.start(Offset(10f, 10f), Offset(10f, 80f))
         drag.move(Offset(10f, 200f))
@@ -140,9 +144,9 @@ class WalDragTest {
         val sideways = WalFit(2142, 933, 2.25f, sideways = true)
         val wideBox = IntRect(0, 27, 2142, 960)
         val wideHome = IntRect(717, 27, 1425, 355)
-        drag.placedAt(sideways, wideBox, home = null, drawn = null, snapPx = SNAP)
+        drag.placedAt(sideways, wideBox, home = null, drawn = null, snapPx = SNAP, keepPx = KEEP)
         assertNull("the drag ends at the turn", drag.shift)
-        drag.placedAt(sideways, wideBox, wideHome, wideHome.topLeft, SNAP)
+        drag.placedAt(sideways, wideBox, wideHome, wideHome.topLeft, SNAP, KEEP)
         drag.move(Offset(100f, 400f))
         drag.end()
         assertNull(drag.shift)
@@ -158,5 +162,6 @@ class WalDragTest {
     private companion object {
         /** The classic windows' snap distance at three pixels to a virtual pixel. */
         const val SNAP = WindowSnap.SNAP_DISTANCE * 3
+        const val KEEP = 144
     }
 }

@@ -13,7 +13,8 @@ import kotlin.math.abs
 
 /**
  * The listener moving a modern skin's stack by a part that is not a control, once [WalTouch] hands
- * the finger over. The stack follows the finger inside its box and stays wholly in it; once the drag
+ * the finger over. The stack follows the finger, partly past the box's edges as a desktop window
+ * goes, with a finger's width left in it ([WalPlacement.clamp]); once the drag
  * has gone further than the snap distance, the stack snaps to the box's edges and back to the place
  * the engine gives it, as a classic window snaps ([WalPlacement.snap]). When the finger lifts, the
  * place goes to [keep], upright or sideways as the stack was laid out when the drag began: how far
@@ -31,12 +32,16 @@ internal class WalDrag(
     var shift: IntOffset? by mutableStateOf(null)
         private set
 
-    /** The box the stack moves in, its place there unmoved, where it is drawn, and the snap distance in pixels. */
+    /**
+     * The box the stack moves in, its place there unmoved, where it is drawn, the snap distance and
+     * how much of it stays in the box, in pixels.
+     */
     private class Frame(
         val box: IntRect,
         val home: IntRect,
         val drawn: IntOffset,
         val snapPx: Int,
+        val keepPx: Int,
     )
 
     private var frame: Frame? = null
@@ -56,7 +61,8 @@ internal class WalDrag(
 
     /**
      * Where the stack was last drawn: [drawn], its top-left corner on the surface; [home], its rect
-     * where the engine places it for [fit] in [box]; and how close [snapPx] makes a snap. Null
+     * where the engine places it for [fit] in [box]; how close [snapPx] makes a snap; and how much
+     * of it [keepPx] leaves in the box. Null
      * [home] while the stack has no place in the box, which leaves a drag where it is.
      */
     fun placedAt(
@@ -65,10 +71,11 @@ internal class WalDrag(
         home: IntRect?,
         drawn: IntOffset?,
         snapPx: Int,
+        keepPx: Int,
     ) {
         this.fit = fit
         if (shift != null && fit != began) shift = null
-        frame = if (home == null || drawn == null) null else Frame(box, home, drawn, snapPx)
+        frame = if (home == null || drawn == null) null else Frame(box, home, drawn, snapPx, keepPx)
     }
 
     override fun start(
@@ -93,7 +100,7 @@ internal class WalDrag(
         // a stack resting against an edge is inside the snap's pull, which waits until the drag leaves it
         if (!escaped && maxOf(abs(asked.x - start.x), abs(asked.y - start.y)) > f.snapPx) escaped = true
         val snapped = if (escaped) WalPlacement.snap(asked, f.home, f.box, f.snapPx) else asked
-        shift = WalPlacement.clamp(snapped, f.home, f.box) - f.home.topLeft
+        shift = WalPlacement.clamp(snapped, f.home, f.box, f.keepPx) - f.home.topLeft
     }
 
     override fun end() {

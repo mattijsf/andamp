@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -175,9 +176,9 @@ internal fun hidesModernSkin(s: WinampState): Boolean {
  * layout worked out for another box (the phone was turned) leaves the stack where it was last
  * placed, or the companion when it never was.
  *
- * A drag from any part of the skin but a control moves the stack inside the box ([WalDrag]); the skin
- * keeps where it was moved to, upright and sideways apart ([WalSurface.places]). A stack that has
- * grown past the box's edge from there is held inside it ([WalPlacement.held]).
+ * A drag from any part of the skin but a control moves the stack ([WalDrag]); the skin keeps where
+ * it was moved to, upright and sideways apart ([WalSurface.places]). The stack may go partly past
+ * the box's edges, as a desktop window may, with a finger's width left in it ([WalPlacement.held]).
  *
  * The layer fills the surface, but only the stack takes touches: a touch beside it reaches what is
  * under it, which over the floating player is the app behind. There the touch window follows the
@@ -202,7 +203,8 @@ internal fun WalLayer(
         // where the engine puts the stack, and where the listener moved it from there
         val home = fitted?.let { WalPlacement.of(box, it, scale) }
         val move = drag.shift ?: surface.places[fit.sideways]
-        val shift = if (home == null || move == null) null else WalPlacement.held(move, home.stack, box)
+        val keep = with(LocalDensity.current) { WalPlacement.KEEP_DP.dp.roundToPx() }
+        val shift = if (home == null || move == null) null else WalPlacement.held(move, home.stack, box, keep)
         val ready = if (fitted == null || shift == null) home else WalPlacement.of(box, fitted, scale, shift)
         val last = remember(surface) { mutableStateOf<WalPlacement?>(null) }
         SideEffect { if (ready != null) last.value = ready }
@@ -213,12 +215,12 @@ internal fun WalLayer(
         WalTurn(parts, state, fit = { fitNow }, ready = { readyNow }, dragging = { draggingNow })
         val placed = if (layout == null) null else ready ?: last.value
         // the stack snaps as near as a classic window does
-        SideEffect { drag.placedAt(fit, box, home?.stack, placed?.stack?.topLeft, WindowSnap.SNAP_DISTANCE * scale) }
+        SideEffect { drag.placedAt(fit, box, home?.stack, placed?.stack?.topLeft, WindowSnap.SNAP_DISTANCE * scale, keep) }
         if (placed == null) {
             companion()
         } else {
             WalCanvas(parts, state, placed, drag)
-            fitted?.visRect?.let { WalVisualizer(parts, state, placed, it) }
+            fitted?.visRect?.let { WalVisualizer(parts, state, placed, it, drag) }
         }
     }
 }
