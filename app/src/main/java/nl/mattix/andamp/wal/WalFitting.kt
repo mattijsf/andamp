@@ -4,6 +4,7 @@ package nl.mattix.andamp.wal
 
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
+import nl.mattix.andamp.modernskin.skin.Presentation
 import nl.mattix.andamp.modernskin.skin.SkinOptions
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.modernskin.skin.WindowId
@@ -16,7 +17,7 @@ import nl.mattix.andamp.modernskin.skin.WindowInfo
  * it was fitted.
  *
  * Sideways in the app (not the floating player, which is compact), a stack with a list window open
- * goes to two columns ([SkinRuntime.columns]) when that shows the skin larger than one column: the
+ * goes to two columns ([Presentation.columns]) when that shows the skin larger than one column: the
  * main window and the windows that show no list on the left, the list windows on the right, the
  * last one as tall as the box. Both are weighed from the windows' natural sizes
  * ([SkinRuntime.naturalStackSize]), before any layout pass, so deciding sends the skin no events.
@@ -53,7 +54,7 @@ internal class WalFitting {
         val layout = runtime.windowInfo(main)
         windows = runtime.windowIds
         val box = IntSize(fit.widthPx, fit.heightPx)
-        runtime.stretchLast = !fit.sideways && !fit.compact
+        runtime.present { it.copy(stretchLast = !fit.sideways && !fit.compact) }
         if (fillsBox(layout)) {
             // its scale from its minimum size, its size from what the box holds at that scale; in a
             // compact box no taller than its minimum
@@ -67,7 +68,7 @@ internal class WalFitting {
         if (fit.sideways) {
             decideColumns(runtime, fit)
         } else {
-            runtime.columns = 1
+            runtime.present { it.copy(columns = 1) }
             uprightView(runtime, box, baseW)
         }
     }
@@ -103,7 +104,9 @@ internal class WalFitting {
     ) {
         val main = runtime.mainWindow ?: return
         val shown = runtime.shownWidth(restingWidth(runtime, main))
-        runtime.viewSize = view(box, WalScale.across(box.width, shown, WalScale.fit(box, runtime.windowSize(main), baseW)))
+        runtime.present {
+            it.copy(viewSize = view(box, WalScale.across(box.width, shown, WalScale.fit(box, runtime.windowSize(main), baseW))))
+        }
     }
 
     /**
@@ -112,7 +115,7 @@ internal class WalFitting {
      * the skin larger than one (more than [TIE] larger), else in one; and gives it the view at the
      * scale chosen, so the last list window of two columns takes the box's height. A stack in one
      * column keeps each window's height, as the skin gives it. The right column is as wide as the
-     * main window at rest ([restingWidth], [SkinRuntime.columnWidth]).
+     * main window at rest ([restingWidth], [Presentation.columnWidth]).
      */
     private fun decideColumns(
         runtime: SkinRuntime,
@@ -121,7 +124,7 @@ internal class WalFitting {
         val main = runtime.mainWindow ?: return
         val box = IntSize(fit.widthPx, fit.heightPx)
         val width = restingWidth(runtime, main)
-        runtime.columnWidth = width
+        runtime.present { it.copy(columnWidth = width) }
 
         fun scale(columns: Int) =
             checkNotNull(runtime.naturalStackSize(columns, width))
@@ -129,9 +132,13 @@ internal class WalFitting {
         val one = scale(1)
         val two = if (fit.compact || sizedToBox(runtime.windowInfo(main)) || !runtime.listWindowOpen) null else scale(2)
         val wider = two != null && two > one * (1 + TIE)
-        runtime.columns = if (wider) 2 else 1
-        runtime.stretchLast = wider
-        runtime.viewSize = view(box, if (wider) two else one)
+        runtime.present {
+            it.copy(
+                columns = if (wider) 2 else 1,
+                stretchLast = wider,
+                viewSize = view(box, if (wider) two else one),
+            )
+        }
     }
 
     /**
@@ -163,7 +170,7 @@ internal class WalFitting {
             restingFit = fit
         }
         val place = place(runtime, fit, baseW, size, drawn)
-        runtime.touchSlop = kotlin.math.ceil(TOUCH_SLOP_DP * fit.density / place.scale).toInt()
+        runtime.present { it.copy(touchSlop = kotlin.math.ceil(TOUCH_SLOP_DP * fit.density / place.scale).toInt()) }
         val themes = themesOf(runtime)
         return WalLayout(
             fit = fit,
@@ -267,6 +274,11 @@ internal class WalFitting {
          * opening does not set the whole stack out again for a skin hardly any larger.
          */
         private const val TIE = 0.02f
+
+        /** Changes what [change] changes of [this]'s [Presentation]. */
+        private inline fun SkinRuntime.present(change: (Presentation) -> Presentation) {
+            presentation = change(presentation)
+        }
 
         /** The view [box] gives at [scale], in layout pixels. */
         private fun view(

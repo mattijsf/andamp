@@ -9,7 +9,7 @@ package nl.mattix.andamp.wal
  */
 internal interface WalSink {
     /**
-     * A button action the app answers, as `SkinRuntime.onHostAction` sends it: [action] in
+     * A button action the app answers, as the skin host's `hostAction` hears it: [action] in
      * uppercase, with the button's [param].
      *
      * - MINIMIZE, SYSMENU, CONTROLMENU and MENU.

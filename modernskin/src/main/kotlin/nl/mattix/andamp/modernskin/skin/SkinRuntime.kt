@@ -21,6 +21,8 @@ class SkinRuntime(
     val files: SkinFiles,
     val host: SkinHost,
     val player: Player,
+    setup: SkinSetup = SkinSetup(),
+    clock: () -> Long = System::currentTimeMillis,
 ) : MakiHost {
     private val bitmaps = HashMap<String, BitmapDef>()
     private val bitmapFonts = HashMap<String, BitmapFontDef>()
@@ -85,14 +87,14 @@ class SkinRuntime(
     private val configFlags = HashMap<String, Boolean>()
 
     /** What getSkinName() answers: the skin's folder name, set by the host before [load]. */
-    var skinName = ""
+    var skinName = setup.skinName
 
     /**
      * Whether Winamp's Media Library lives inside the skin (`@HAVE_LIBRARY@`). Winamp has it; Andamp's
      * library is a screen of its own, so the app says no and skins such as Bento show their
      * playlist tab instead of an empty library tab. Set before [load].
      */
-    var haveLibrary = true
+    var haveLibrary = setup.haveLibrary
 
     /** The screen a skin may place windows on before the host sets [viewSize]: a Full HD portrait phone. */
     var viewportW = 1080
@@ -111,7 +113,8 @@ class SkinRuntime(
      * Also SHOW of such a window a script opens ([showHostWindow]), and VIS_FS for a maximize a tap
      * asks for ([maximizes]). Gets the action, uppercase, and the param or name.
      */
-    var onHostAction: ((action: String, param: String?) -> Unit)? = null
+    var onHostAction: ((action: String, param: String?) -> Unit)? =
+        if (setup.hostActions) { action, param -> host.hostAction(action, param) } else null
     var lastPointer = 0 to 0
     private var dirty = true
     private var needsLayout = true
@@ -1622,7 +1625,7 @@ class SkinRuntime(
      * The clock every timer, animation and script reads, in ms. The app leaves the wall clock; a
      * test steps its own so animations and timers land on the same frame every run.
      */
-    var clock: () -> Long = System::currentTimeMillis
+    var clock: () -> Long = clock
 
     fun now(): Long = clock()
 
@@ -1920,6 +1923,29 @@ class SkinRuntime(
 
     /** Script steps run since the last [tick] began, across every script. */
     val scriptSteps: Long get() = scripts.sumOf { it.stepsSinceRefill.toLong() }
+
+    /**
+     * How the host shows the windows, as one value ([Presentation]); setting it changes what
+     * differs, as setting [viewSize], [viewportW] / [viewportH], [columns], [columnWidth],
+     * [stretchLast] and [touchSlop] one by one does.
+     */
+    var presentation: Presentation
+        get() = Presentation(viewSize, viewportW to viewportH, columns, columnWidth, stretchLast, touchSlop)
+        set(value) {
+            viewportW = value.viewport.first
+            viewportH = value.viewport.second
+            columns = value.columns
+            columnWidth = value.columnWidth
+            stretchLast = value.stretchLast
+            touchSlop = value.touchSlop
+            viewSize = value.viewSize
+        }
+
+    /** [tick] with the next target slide placed [slideLead] ms ahead of now ([SkinRuntime.slideLead]). */
+    fun tick(slideLead: Long): Boolean {
+        this.slideLead = slideLead
+        return tick()
+    }
 
     /** Timer events fired so far. */
     var timerFires = 0L

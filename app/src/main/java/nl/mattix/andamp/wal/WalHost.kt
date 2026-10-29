@@ -53,14 +53,17 @@ import java.util.concurrent.ConcurrentHashMap
  * [files] are the skin's files as [WalFiles.open] gives them; the pictures Wasabi generates
  * (`$solid`) are answered here. [windowOpen] answers whether a window the app shows in place of
  * the skin's is open, by kind ("ml" the library, "avs" the visualizer); null leaves it to the skin.
+ * [actions] answers the button actions the app handles outside the skin.
  * What the drawing makes is kept as [drawing] says: what the last frame drew, and the rest up to
  * [drawingBudget] bytes.
  */
+@Suppress("TooManyFunctions") // every service SkinHost asks of the app, plus the caches the drawing reads
 internal class WalHost(
     files: SkinFiles,
     private val cacheDir: File,
     windowOpen: (kind: String) -> Boolean? = LIBRARY_CLOSED,
     drawingBudget: Long = WalDrawing.BUDGET,
+    private val actions: (action: String, param: String?) -> Unit = { _, _ -> },
 ) : SkinHost {
     private val files = WithGeneratedImages(files)
 
@@ -434,6 +437,11 @@ internal class WalHost(
     }
 
     override fun chooseFromMenu(menu: SkinMenu): Int? = menus.choose(menu)
+
+    override fun hostAction(
+        action: String,
+        param: String?,
+    ) = actions(action, param)
 
     /**
      * Lets go of what was made for drawing: the decoded pictures, their tinted, cut, stretched and
