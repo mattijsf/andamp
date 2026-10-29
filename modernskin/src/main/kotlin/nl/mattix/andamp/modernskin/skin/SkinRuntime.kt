@@ -30,6 +30,12 @@ class SkinRuntime(
     private val aliases = HashMap<String, String>()
     private val groupDefs = HashMap<String, XmlNode>()
 
+    /** Groupdef ids by their `windowtype`, in the order the skin defined them: what a component bucket shows. */
+    private val windowTypes = HashMap<String, LinkedHashSet<String>>()
+
+    /** Component buckets that have yet to hear onStartup, which they do once a script listens to them. */
+    private val startingBuckets = ArrayList<ComponentBucket>()
+
     /** A groupdef that redefines an id, to the one it replaced: its base when it names none. */
     private val earlierDefs = HashMap<XmlNode, XmlNode>()
     private val xuiTags = HashMap<String, String>()
@@ -181,6 +187,8 @@ class SkinRuntime(
         scriptsStarted = true
         for (s in systems.toList()) startScript(s)
         for (c in containers) c.current?.let { dispatch(it, "onstartup", emptyList()) }
+        // a bucket's script picks its first entry from here (Winamp Modern's options menu)
+        startBuckets()
         // the layouts on screen hear that they are, once every script runs (Bento's pledit.maki lays its panes out from this)
         for (c in containers) if (c.visible) c.current?.announceVisible(true)
         ensureLayout()
@@ -810,6 +818,13 @@ class SkinRuntime(
                     groupDefs.put(id.lowercase(), node)?.let { earlierDefs[node] = it }
                     if (collectingBase) baseGroupDefs.add(node)
                     node["xuitag"]?.let { xuiTags[it.lowercase()] = id.lowercase() }
+                    node["windowtype"]?.let {
+                        windowTypes
+                            .getOrPut(
+                                it.trim().lowercase(),
+                            ) { LinkedHashSet() }
+                            .add(id.lowercase())
+                    }
                 }
             }
 
@@ -1111,7 +1126,23 @@ class SkinRuntime(
                 }
 
                 // a window holder for Winamp's playlist editor is the playlist view as well (Bento)
-                "group", "cfggroup", "groupxfade", "componentbucket" -> {
+                "componentbucket" -> {
+                    val b = ComponentBucket(this)
+                    fillGroup(b, node)
+                    b.fill(windowTypes[b.windowType].orEmpty().mapNotNull { instantiateGroup(it) })
+                    parent.addChild(b)
+                    startingBuckets.add(b)
+                    return
+                }
+
+                "groupxfade" -> {
+                    val g = GroupXFade(this)
+                    fillGroup(g, node)
+                    parent.addChild(g)
+                    return
+                }
+
+                "group", "cfggroup" -> {
                     val g = Group(this, node.name)
                     fillGroup(g, node)
                     parent.addChild(g)
@@ -1302,6 +1333,27 @@ class SkinRuntime(
         }
     }
 
+    /** The bucket a page button's action targets, else one beside the button. */
+    private fun bucketFor(
+        source: GuiObject,
+        target: String?,
+    ): ComponentBucket? =
+        target?.let { t -> windows.firstNotNullOfOrNull { it.findObject(t) } } as? ComponentBucket
+            ?: source.parent?.children?.firstNotNullOfOrNull { it as? ComponentBucket }
+
+    /**
+     * Tells each waiting bucket onStartup once a script listens to it: a bucket's script picks its
+     * first entry from here (Winamp Modern's options menu), and that script may load after the
+     * bucket is made, with the group it sits in.
+     */
+    private fun startBuckets() {
+        if (startingBuckets.isEmpty()) return
+        val ready = startingBuckets.filter { b -> scripts.any { it.listensTo(b) } }
+        if (ready.isEmpty()) return
+        startingBuckets.removeAll(ready.toSet())
+        for (b in ready) dispatch(b, "onstartup", emptyList())
+    }
+
     /** `System.newGroup(id)`: a fresh instance of a groupdef, not yet in any parent. */
     fun instantiateGroup(id: String): Group? {
         if (groupDefs[id.lowercase()] == null) return null
@@ -1466,6 +1518,7 @@ class SkinRuntime(
             // scripts that just started have not heard any sizes yet
             lastRects.clear()
         }
+        if (scriptsStarted) startBuckets()
         for (o in all) if (o is Group) deliverXuiParams(o)
         for (o in all) if (o is Group) o.behavior?.afterLayout()
         // objects whose place or size changed hear about it, as Wasabi calls onResize on every move
@@ -2605,6 +2658,10 @@ class SkinRuntime(
 
             "SWITCH" -> {
                 param?.let { source.layoutObject?.container?.switchTo(it) }
+            }
+
+            "CB_PREVPAGE", "CB_PREV", "CB_NEXTPAGE", "CB_NEXT" -> {
+                bucketFor(source, target)?.page(if (a.startsWith("CB_PREV")) -1 else 1)
             }
 
             // a docked window's close button puts it away, unless canclose="0"; the main window stays
