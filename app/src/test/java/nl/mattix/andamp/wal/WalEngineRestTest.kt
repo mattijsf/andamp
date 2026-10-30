@@ -150,8 +150,8 @@ class WalEngineRestTest {
         }
 
         fun idle(rt: SkinRuntime): WalIdle {
-            if (rt.timerFires != fired) {
-                fired = rt.timerFires
+            if (rt.stats.timerFires != fired) {
+                fired = rt.stats.timerFires
                 if (fired % changesEvery == 0L) rt.invalidate()
             }
             return WalIdle(framesWanted = false, nextDueAt = rt.timers.minOfOrNull { it.nextAt }, stopped = stopped)

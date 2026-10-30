@@ -363,8 +363,8 @@ private class Probe(
         drew: Boolean,
         steps: Long,
     ) {
-        val timers = if (lastTimers < 0) 0 else rt.timerFires - lastTimers
-        lastTimers = rt.timerFires
+        val timers = if (lastTimers < 0) 0 else rt.stats.timerFires - lastTimers
+        lastTimers = rt.stats.timerFires
         ticks += Tick(phase, tickNanos / 1000, drawNanos / 1000, steps, timers, drew)
     }
 
@@ -495,10 +495,10 @@ private fun loadRuntime(
         val loadStart = System.nanoTime()
         it.load()
         probe?.loadMs = (System.nanoTime() - loadStart) / 1e6
-        probe?.loadSteps = it.scriptSteps
+        probe?.loadSteps = it.stats.scriptSteps
         // the color theme picked last time for this skin, as Winamp keeps it per skin
         settings?.restoreTheme(file.name, it)
-        check?.theme?.let { t -> it.selectGammaSet(t) }
+        check?.theme?.let { t -> it.selectColorTheme(t) }
         check?.view?.let { v -> it.presentation = it.presentation.copy(viewSize = v) }
         // a scenario's size for a resizable main window, as ReferenceRenderTest gives it
         check?.mainSize?.let { (w, h) ->
@@ -600,8 +600,8 @@ private fun ModernSkinScreen(
         engine.onTicked = { rt, tickNanos, drawNanos, drew, steps ->
             probe?.ticked(rt, tickNanos, drawNanos, drew, steps)
             // a theme the listener picked is kept at once, as Winamp keeps it per skin
-            if (settings != null && rt.currentGammaSet != keptTheme[0]) {
-                keptTheme[0] = rt.currentGammaSet
+            if (settings != null && rt.colorTheme != keptTheme[0]) {
+                keptTheme[0] = rt.colorTheme
                 settings.save(file.name, rt)
             }
         }
@@ -626,7 +626,7 @@ private fun ModernSkinScreen(
             },
         ) {
             previousSave?.await(1, TimeUnit.SECONDS)
-            loadRuntime(file, files, host, player, settings, check, checkClock, probe).also { keptTheme[0] = it.currentGammaSet }
+            loadRuntime(file, files, host, player, settings, check, checkClock, probe).also { keptTheme[0] = it.colorTheme }
         }
         if (check != null) {
             engine.post { rt ->

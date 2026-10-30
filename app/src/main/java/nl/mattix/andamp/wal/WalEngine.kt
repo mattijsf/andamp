@@ -55,7 +55,7 @@ internal class WalFrame(
      * something moves ([WalIdle.framesWanted]) and the skin has not gone static ([WalRest.wantsFrames]).
      */
     val wantsFrames: Boolean = true,
-    /** The color theme the skin wears ([SkinRuntime.currentGammaSet]), or null when it has none. */
+    /** The color theme the skin wears ([SkinRuntime.colorTheme]), or null when it has none. */
     val themeKey: String? = null,
     /**
      * What the screen may keep of each window of [stack] from earlier frames (see [WalLayers]), in
@@ -502,7 +502,7 @@ internal class WalEngine(
         val t0 = host.menus.workClock
         val changed = runtime.tick(slideLead)
         val tickNanos = host.menus.workClock - t0
-        val steps = runtime.scriptSteps
+        val steps = runtime.stats.scriptSteps
         if (changed) rest.changedAt = now
         val idle = idle(runtime).also { lastIdle = it }
         val shown = published.get()
@@ -745,7 +745,7 @@ internal class WalEngine(
                     },
                 menuTarget = runtime.menuTarget,
                 wantsFrames = wantsFrames,
-                themeKey = runtime.currentGammaSet,
+                themeKey = runtime.colorTheme,
                 plans = plans,
             ),
         )

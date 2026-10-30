@@ -188,7 +188,7 @@ internal class WalFitting {
             dock = dockOf(runtime, drawn),
             edgePlacements = runtime.edgePlacements,
             themes = themes,
-            theme = runtime.currentGammaSet?.let { worn -> themes.firstOrNull { it.equals(worn, ignoreCase = true) } },
+            theme = runtime.colorTheme?.let { worn -> themes.firstOrNull { it.equals(worn, ignoreCase = true) } },
             skinOptions = optionsOf(runtime),
             visRect = runtime.visRect?.let { IntRect(it.left, it.top, it.right, it.bottom) },
         )
@@ -206,7 +206,7 @@ internal class WalFitting {
      */
     private fun themesOf(runtime: SkinRuntime): List<String> =
         themes ?: buildList<String> {
-            for (name in runtime.gammaSetNames()) {
+            for (name in runtime.colorThemes) {
                 if (name.isNotBlank() && none { it.equals(name, ignoreCase = true) }) add(name)
             }
         }.sortedWith(String.CASE_INSENSITIVE_ORDER).also { themes = it }

@@ -90,7 +90,7 @@ class WalLayersCorpusTest {
                 keeps = true,
             )
         val random = Random(name.hashCode())
-        val themes = rt.gammaSetNames()
+        val themes = rt.colorThemes
         var compared = 0
         var records = 0
         layers.onRecord = { _, _ -> records++ }
@@ -100,7 +100,7 @@ class WalLayersCorpusTest {
             t += FRAME
             when (tick) {
                 PLAY_AT -> player.play()
-                THEME_AT -> themes.getOrNull(1)?.let(rt::selectGammaSet)
+                THEME_AT -> themes.getOrNull(1)?.let(rt::selectColorTheme)
                 STOP_AT -> player.stop()
                 REST_AT -> t += DrawPlanner.LIVE_HOLD_MS
                 PLAY_AGAIN_AT -> player.play()
@@ -120,16 +120,16 @@ class WalLayersCorpusTest {
                 ours =
                     bytes(w, h) {
                         assertTrue(layers.suits(stack, planned.plans, SCALE, fractional = true))
-                        host.drawing.begin(rt.currentGammaSet)
+                        host.drawing.begin(rt.colorTheme)
                         layers.draw(this, stack, planned.plans, host, 1f, SCALE)
                         host.drawing.end()
                     }
                 plain = bytes(w, h) { drawStackLayer(stack, host, SCALE) }
             } else {
                 ours =
-                    bytes(w, h) { drawWalStackLayered(stack, planned.plans, host, SCALE.toFloat(), layers, rt.currentGammaSet) }
+                    bytes(w, h) { drawWalStackLayered(stack, planned.plans, host, SCALE.toFloat(), layers, rt.colorTheme) }
                 plain =
-                    bytes(w, h) { drawWalStack(stack, host, SCALE.toFloat(), 0f, layer = null, themeKey = rt.currentGammaSet) }
+                    bytes(w, h) { drawWalStack(stack, host, SCALE.toFloat(), 0f, layer = null, themeKey = rt.colorTheme) }
             }
             assertArrayEquals("$name tick $tick", plain, ours)
             compared++
