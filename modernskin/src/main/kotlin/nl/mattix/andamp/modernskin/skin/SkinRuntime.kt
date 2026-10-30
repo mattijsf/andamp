@@ -1733,6 +1733,112 @@ class SkinRuntime(
     var shapesWorkedOut = 0L
         internal set
 
+    /** Each cell of each bitmap font as a part of its sheet, made once, so a renderer keeps what it cut. */
+    private val glyphs = HashMap<BitmapFontDef, HashMap<Pair<Int, Int>, BitmapDef>>()
+
+    private fun glyph(
+        f: BitmapFontDef,
+        cell: Pair<Int, Int>,
+    ): BitmapDef =
+        glyphs.getOrPut(f) { HashMap() }.getOrPut(cell) {
+            BitmapDef(
+                id = "${f.id}#${cell.first},${cell.second}",
+                file = f.file,
+                x = f.ox + cell.first * f.charWidth,
+                y = f.oy + cell.second * f.charHeight,
+                w = f.charWidth,
+                h = f.charHeight,
+                gammaGroup = f.gammaGroup,
+            )
+        }
+
+    /**
+     * [cmd] as a renderer draws it, added to [out]: inside its rectangle, each character's cell of
+     * the font sheet at its place, [cmd.align]ed by the text's width and less its scroll, a colon
+     * [DrawCmd.BitmapText.colonWidth] wide where the skin narrows it, a space advancing only.
+     */
+    private fun spell(
+        cmd: DrawCmd.BitmapText,
+        out: MutableList<DrawCmd>,
+    ) {
+        val f = cmd.font
+        val r = cmd.rect
+        val advance = f.charWidth + f.hSpacing
+        val colon = cmd.colonWidth ?: advance
+        val total = cmd.text.sumOf { if (it == ':') colon else advance }
+        var x =
+            when (cmd.align) {
+                Align.LEFT -> r.left
+                Align.CENTER -> r.left + (r.width - total) / 2
+                Align.RIGHT -> r.right - total
+            } - cmd.scroll
+        val y =
+            when (cmd.valign) {
+                VAlign.TOP -> r.top
+                VAlign.CENTER -> r.top + (r.height - f.charHeight) / 2
+                VAlign.BOTTOM -> r.bottom - f.charHeight
+            }
+        out.add(DrawCmd.Clip(r).also { it.ownedBy = cmd.ownedBy })
+        for (c in cmd.text) {
+            f.cell(c)?.let { cell ->
+                val img = DrawCmd.Image(glyph(f, cell), Rect(x, y, f.charWidth, f.charHeight), cmd.alpha)
+                img.ownedBy = cmd.ownedBy
+                fitToSheet(img)?.let {
+                    it.gamma = cmd.gamma
+                    out.add(it)
+                }
+            }
+            x += if (c == ':') colon else advance
+        }
+        out.add(DrawCmd.Unclip)
+    }
+
+    private val gdiLines = HashMap<String, GdiLineMetrics?>()
+
+    /**
+     * Ascent and descent in whole pixels as Windows lays [face] out at [size], read from its file;
+     * null when the file gives none (or there is no file).
+     */
+    private fun gdiLine(
+        face: FontFace,
+        size: Int,
+    ): Pair<Int, Int>? {
+        val (key, read) =
+            when (face) {
+                is FontFace.StandIn -> face.file to { AndampDefaultSet.read(face.file) }
+                is FontFace.SkinFile -> face.font.id to { files.read(face.font.file) }
+                is FontFace.Default -> return null
+            }
+        val m = gdiLines.getOrPut(key) { read()?.let { GdiLineMetrics.read(it) } } ?: return null
+        return m.at(Text.emSize(size))
+    }
+
+    /**
+     * Places [cmd] in its rectangle, as every renderer then draws it: across by the width the host
+     * measures, less the ticker's scroll; up and down by the font's line, Windows' where the file
+     * gives it, else the host's.
+     */
+    private fun place(cmd: DrawCmd.Text) {
+        val r = cmd.rect
+        val width = host.textAdvance(cmd.text, cmd.font, cmd.size, cmd.bold)
+        cmd.x =
+            when (cmd.align) {
+                Align.LEFT -> r.left.toFloat()
+                Align.CENTER -> r.left + (r.width - width) / 2f
+                Align.RIGHT -> r.right - width
+            } - cmd.scroll
+        val (asc, desc) =
+            gdiLine(cmd.face, cmd.size)?.let { (a, d) -> a.toFloat() to d.toFloat() }
+                ?: host.lineMetrics(cmd.font, cmd.size, cmd.bold)
+                ?: (Text.emSize(cmd.size) * DEFAULT_ASCENT to Text.emSize(cmd.size) * DEFAULT_DESCENT)
+        cmd.baseline =
+            when (cmd.valign) {
+                VAlign.TOP -> r.top + asc
+                VAlign.CENTER -> r.top + ((r.height - (asc + desc)) / 2f).toInt() + asc
+                VAlign.BOTTOM -> r.bottom - desc
+            }
+    }
+
     /** Lays the main window out now, for a script that asks where something is. */
     fun ensureLayout() {
         if (needsLayout) doLayout()
@@ -2186,6 +2292,11 @@ class SkinRuntime(
 
                 is DrawCmd.BitmapText -> {
                     cmd.gamma = gamma(cmd.font.gammaGroup)
+                    spell(cmd, out)
+                }
+
+                is DrawCmd.Text -> {
+                    place(cmd)
                     out.add(cmd)
                 }
 
@@ -3571,6 +3682,10 @@ class SkinRuntime(
     }
 
     private companion object {
+        /** A line's ascent and descent as shares of the em, for a host that measures no line. */
+        private const val DEFAULT_ASCENT = 0.8f
+        private const val DEFAULT_DESCENT = 0.2f
+
         /** How far the balance reaches either way from the middle. */
         const val PAN_REACH = 127
 

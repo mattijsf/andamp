@@ -2,14 +2,13 @@
 package nl.mattix.andamp.modernskin
 
 import nl.mattix.andamp.modernskin.maki.Value
-import nl.mattix.andamp.modernskin.skin.Align
 import nl.mattix.andamp.modernskin.skin.AndampDefaultSet
 import nl.mattix.andamp.modernskin.skin.DrawCmd
 import nl.mattix.andamp.modernskin.skin.DrawPlanner
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.FontDef
+import nl.mattix.andamp.modernskin.skin.FontFace
 import nl.mattix.andamp.modernskin.skin.Gamma
-import nl.mattix.andamp.modernskin.skin.GdiLineMetrics
 import nl.mattix.andamp.modernskin.skin.ImageLimits
 import nl.mattix.andamp.modernskin.skin.LayeredSkinFiles
 import nl.mattix.andamp.modernskin.skin.Rect
@@ -19,7 +18,6 @@ import nl.mattix.andamp.modernskin.skin.SkinHost
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.modernskin.skin.SkinsFolderFiles
 import nl.mattix.andamp.modernskin.skin.Track
-import nl.mattix.andamp.modernskin.skin.VAlign
 import nl.mattix.andamp.modernskin.skin.WithGeneratedImages
 import nl.mattix.andamp.modernskin.skin.ZipSkinFiles
 import org.json.JSONArray
@@ -160,12 +158,11 @@ class ReferenceRenderTest {
                 def?.let {
                     fonts.getOrPut(it.id) {
                         files.read(it.file)?.let { b ->
-                            GdiLineMetrics.read(b)?.let { m -> gdi[it.id] = m }
                             runCatching { Font.createFont(Font.TRUETYPE_FONT, ByteArrayInputStream(b)) }.getOrNull()
                         }
                     }
                 } ?: Font("Arial", Font.PLAIN, size)
-            return base.deriveFont(if (bold) Font.BOLD else Font.PLAIN, em).also { f -> def?.let { lineOf[f] = gdi[it.id] } }
+            return base.deriveFont(if (bold) Font.BOLD else Font.PLAIN, em)
         }
 
         /**
@@ -184,23 +181,13 @@ class ReferenceRenderTest {
                 fonts.getOrPut(key) {
                     val file =
                         SYS_FONTS?.let { File(it, def.id.replace(" ", "") + (if (bold) "bd" else "") + ".ttf") }
-                            ?: STAND_INS[def.id]?.let { File(APP_FONTS, it + (if (bold) "-Bold" else "") + ".ttf") }
+                            ?: (FontFace.of(def, bold) as? FontFace.StandIn)?.let { File(APP_FONTS.parentFile, it.file) }
                     file?.takeIf { it.exists() }?.let { f ->
-                        GdiLineMetrics.read(f.readBytes())?.let { gdi[key] = it }
                         runCatching { Font.createFont(Font.TRUETYPE_FONT, f) }.getOrNull()
                     }
                 }
-            return sys?.deriveFont(Font.PLAIN, em)?.also { lineOf[it] = gdi[key] }
+            return sys?.deriveFont(Font.PLAIN, em)
         }
-
-        private val gdi = HashMap<String, GdiLineMetrics>()
-        private val lineOf = HashMap<Font, GdiLineMetrics?>()
-
-        /** Ascent and descent as GDI lays the font out, or Java's when the file gave none. */
-        fun line(
-            f: Font,
-            fm: java.awt.FontMetrics,
-        ): Pair<Int, Int> = lineOf[f]?.at(f.size2D) ?: (fm.ascent to fm.descent)
 
         private val scratch = BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB).createGraphics()
 
@@ -218,6 +205,12 @@ class ReferenceRenderTest {
             size: Int,
             bold: Boolean,
         ): Int = scratch.getFontMetrics(font(font, size, bold)).stringWidth(text)
+
+        override fun lineMetrics(
+            font: FontDef?,
+            size: Int,
+            bold: Boolean,
+        ): Pair<Float, Float> = scratch.getFontMetrics(font(font, size, bold)).let { it.ascent.toFloat() to it.descent.toFloat() }
 
         override fun log(message: String) {
             log.add(message)
@@ -681,24 +674,17 @@ class ReferenceRenderTest {
                     drawImageCmd(g, host, cmd, AlphaComposite.SRC_OVER, 0, 0)
                 }
 
+                // the engine hands bitmap text over as images, one for each character
+                is DrawCmd.BitmapText -> {
+                    Unit
+                }
+
                 is DrawCmd.Text -> {
                     val r = cmd.rect
                     val f = host.font(cmd.font, cmd.size, cmd.bold)
-                    val fm = g.getFontMetrics(f)
-                    val tw = fm.stringWidth(cmd.text)
-                    val x =
-                        when (cmd.align) {
-                            Align.LEFT -> r.left
-                            Align.CENTER -> r.left + (r.width - tw) / 2
-                            Align.RIGHT -> r.right - tw
-                        } - cmd.scroll
-                    val (asc, desc) = host.line(f, fm)
-                    val y =
-                        when (cmd.valign) {
-                            VAlign.TOP -> r.top + asc
-                            VAlign.CENTER -> r.top + (r.height - (asc + desc)) / 2 + asc
-                            VAlign.BOTTOM -> r.bottom - desc
-                        }
+                    // the engine placed it, as the phone draws it
+                    val x = cmd.x
+                    val y = cmd.baseline
                     val clip = g.clip
                     g.clipRect(r.left, r.top, r.width, r.height)
                     g.font = f
@@ -709,49 +695,6 @@ class ReferenceRenderTest {
                     }
                     g.color = java.awt.Color(cmd.color.value)
                     g.drawString(cmd.text, x, y)
-                    g.clip = clip
-                }
-
-                is DrawCmd.BitmapText -> {
-                    val src = host.image(cmd.font.file, cmd.gamma) ?: continue
-                    val f = cmd.font
-                    val adv = f.charWidth + f.hSpacing
-                    val colon = cmd.colonWidth ?: adv
-                    val total = cmd.text.sumOf { if (it == ':') colon else adv }
-                    var x =
-                        when (cmd.align) {
-                            Align.LEFT -> cmd.rect.left
-                            Align.CENTER -> cmd.rect.left + (cmd.rect.width - total) / 2
-                            Align.RIGHT -> cmd.rect.right - total
-                        } - cmd.scroll
-                    val y =
-                        when (cmd.valign) {
-                            VAlign.TOP -> cmd.rect.top
-                            VAlign.CENTER -> cmd.rect.top + (cmd.rect.height - f.charHeight) / 2
-                            VAlign.BOTTOM -> cmd.rect.bottom - f.charHeight
-                        }
-                    val clip = g.clip
-                    g.clipRect(cmd.rect.left, cmd.rect.top, cmd.rect.width, cmd.rect.height)
-                    g.composite = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, cmd.alpha / 255f)
-                    for (c in cmd.text) {
-                        f.cell(c)?.let { (cx, cy) ->
-                            val sx = f.ox + cx * f.charWidth
-                            val sy = f.oy + cy * f.charHeight
-                            g.drawImage(
-                                src,
-                                x,
-                                y,
-                                x + f.charWidth,
-                                y + f.charHeight,
-                                sx,
-                                sy,
-                                sx + f.charWidth,
-                                sy + f.charHeight,
-                                null,
-                            )
-                        }
-                        x += if (c == ':') colon else adv
-                    }
                     g.clip = clip
                 }
 
@@ -985,9 +928,8 @@ class ReferenceRenderTest {
         /** -Dsysfonts=<dir>: Windows fonts by file name, e.g. the reference VM's (Microsoft's; local only, never committed). */
         val SYS_FONTS: File? = System.getProperty("sysfonts")?.let { File(it) }
 
-        /** The stand-ins for Windows fonts a skin names without a file (ModernSkinActivity's STAND_INS), from the default set. */
+        /** The stand-ins for Windows fonts a skin names without a file ([FontFace.StandIn]), from the default set. */
         val APP_FONTS = File("src/main/resources/nl/mattix/andamp/modernskin/defaultset/fonts")
-        val STAND_INS = mapOf("tahoma" to "DejaVuSansCondensed", "arial" to "LiberationSans")
 
         /** A command owns a pixel only when it changed it by more than this (0-255 per channel, root mean square). */
         const val OWNER_DELTA = 12.0

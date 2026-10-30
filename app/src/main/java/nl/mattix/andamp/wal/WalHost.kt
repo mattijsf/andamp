@@ -21,8 +21,8 @@ import nl.mattix.andamp.modernskin.skin.AndampDefaultSet
 import nl.mattix.andamp.modernskin.skin.BitmapDef
 import nl.mattix.andamp.modernskin.skin.DrawCmd
 import nl.mattix.andamp.modernskin.skin.FontDef
+import nl.mattix.andamp.modernskin.skin.FontFace
 import nl.mattix.andamp.modernskin.skin.Gamma
-import nl.mattix.andamp.modernskin.skin.GdiLineMetrics
 import nl.mattix.andamp.modernskin.skin.ImageLimits
 import nl.mattix.andamp.modernskin.skin.Region
 import nl.mattix.andamp.modernskin.skin.SkinFiles
@@ -95,7 +95,6 @@ internal class WalHost(
     val drawing = WalDrawing(drawingBudget)
 
     // the main thread's
-    private val gdiLines = HashMap<String, GdiLineMetrics?>()
 
     /** Filled to look a picture up in [drawing]; a copy is what is kept. */
     private val probe = WalDrawing.Key()
@@ -328,16 +327,15 @@ internal class WalHost(
         }
 
     /**
-     * A font a skin names without a file is a Windows system font; the app carries free stand-ins
-     * whose widths match closely (DejaVu Sans Condensed for Tahoma: Bento's tabs are sized by the
-     * measured text; Liberation Sans, metric-compatible, for Arial). Bold has a separate file there,
-     * so no fake bold.
+     * The free font the engine picks for a Windows system font a skin names without a file
+     * ([FontFace.StandIn]), from Andamp's default set; null for any other font. Bold has a separate
+     * file there, so no fake bold.
      */
     private fun standIn(
         font: FontDef?,
         bold: Boolean,
     ): Typeface? {
-        val path = standInPath(font, bold) ?: return null
+        val path = (FontFace.of(font, bold) as? FontFace.StandIn)?.file ?: return null
         return cached(typefaces, path) { AndampDefaultSet.read(path)?.let(::typefaceOf) }
     }
 
@@ -349,22 +347,6 @@ internal class WalHost(
     /** A typeface from a font file's bytes, read from the file [fontFile] keeps them in. */
     private fun typefaceOf(bytes: ByteArray): Typeface? =
         runCatching { Typeface.createFromFile(fontFile(cacheDir, bytes)) }.getOrNull()
-
-    /** Ascent and descent in whole pixels as Windows lays the font out; null when its file gives none. */
-    fun gdiLine(
-        font: FontDef?,
-        size: Int,
-        bold: Boolean,
-    ): Pair<Int, Int>? {
-        val f = font ?: return null
-        val standIn = standInPath(f, bold)
-        val m =
-            gdiLines.getOrPut(standIn ?: f.id) {
-                val bytes = if (standIn != null) AndampDefaultSet.read(standIn) else files.read(f.file)
-                bytes?.let { GdiLineMetrics.read(it) }
-            }
-        return m?.at(Text.emSize(size))
-    }
 
     /** The paint the renderer draws [font] with; it sets the color itself. */
     fun drawingPaint(
@@ -398,6 +380,19 @@ internal class WalHost(
         size: Int,
         bold: Boolean,
     ): Int = setUp(measurePaint, font, size, bold).measureText(text).toInt()
+
+    override fun textAdvance(
+        text: String,
+        font: FontDef?,
+        size: Int,
+        bold: Boolean,
+    ): Float = setUp(measurePaint, font, size, bold).measureText(text)
+
+    override fun lineMetrics(
+        font: FontDef?,
+        size: Int,
+        bold: Boolean,
+    ): Pair<Float, Float> = setUp(measurePaint, font, size, bold).fontMetrics.let { -it.ascent to it.descent }
 
     override fun log(message: String) {
         Log.i(TAG, message)
@@ -451,7 +446,6 @@ internal class WalHost(
     fun trimDrawing() {
         drawing.clear()
         shapeKeys.clear()
-        gdiLines.clear()
         synchronized(shared) { images.clear() }
     }
 
@@ -472,21 +466,10 @@ internal class WalHost(
          */
         val LIBRARY_CLOSED: (String) -> Boolean? = { kind -> if (kind == "ml") false else null }
 
-        /** Windows fonts skins name without a file, and the free font in Andamp's default set that stands in. */
-        private val STAND_INS = mapOf("tahoma" to "DejaVuSansCondensed", "arial" to "LiberationSans")
-
         private const val MAX_LOG = 12
         private const val MAX_IMAGES = 256
 
         private const val OPAQUE_BLACK = 0xFF000000.toInt()
-
-        private fun standInPath(
-            font: FontDef?,
-            bold: Boolean,
-        ): String? {
-            val base = STAND_INS[font?.takeIf { it.file.isEmpty() }?.id ?: return null] ?: return null
-            return "fonts/$base${if (bold) "-Bold" else ""}.ttf"
-        }
 
         private fun mapPixels(
             src: Bitmap,

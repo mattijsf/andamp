@@ -240,7 +240,22 @@ sealed class DrawCmd {
         /** Where the shadow sits from the text. */
         val shadowDx: Int = 1,
         val shadowDy: Int = 1,
-    ) : DrawCmd()
+    ) : DrawCmd() {
+        /** The face it is drawn with ([FontFace.of]). */
+        val face: FontFace get() = FontFace.of(font, bold)
+
+        /**
+         * Where the text starts across, in layout pixels: [align]ed in [rect] by its measured width,
+         * less [scroll]. The engine fills it in when the frame is drawn; the shadow sits [shadowDx]
+         * from it.
+         */
+        var x: Float = 0f
+            internal set
+
+        /** The baseline, in layout pixels: placed in [rect] by [valign] and the font's line ([SkinRuntime]). */
+        var baseline: Float = 0f
+            internal set
+    }
 
     class BitmapText(
         val text: String,
@@ -422,7 +437,7 @@ private fun DrawCmd.Image.sameAs(o: DrawCmd.Image) =
 private fun DrawCmd.Text.sameAs(o: DrawCmd.Text) =
     text == o.text && size == o.size && color == o.color && rect == o.rect && align == o.align && scroll == o.scroll &&
         alpha == o.alpha && valign == o.valign && bold == o.bold && shadow == o.shadow && shadowDx == o.shadowDx &&
-        shadowDy == o.shadowDy && font.sameAs(o.font)
+        shadowDy == o.shadowDy && font.sameAs(o.font) && x == o.x && baseline == o.baseline
 
 private fun DrawCmd.BitmapText.sameAs(o: DrawCmd.BitmapText) =
     text == o.text && rect == o.rect && align == o.align && alpha == o.alpha && valign == o.valign &&

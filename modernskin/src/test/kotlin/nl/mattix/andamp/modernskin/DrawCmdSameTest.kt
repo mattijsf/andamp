@@ -163,6 +163,10 @@ class DrawCmdSameTest {
                 v + 1
             }
 
+            is Float -> {
+                v + 0.5f
+            }
+
             is Boolean -> {
                 !v
             }
