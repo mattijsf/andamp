@@ -1733,6 +1733,52 @@ class SkinRuntime(
     var shapesWorkedOut = 0L
         internal set
 
+    private val gdiLines = HashMap<String, GdiLineMetrics?>()
+
+    /**
+     * Ascent and descent in whole pixels as Windows lays [face] out at [size], read from its file;
+     * null when the file gives none (or there is no file).
+     */
+    private fun gdiLine(
+        face: FontFace,
+        size: Int,
+    ): Pair<Int, Int>? {
+        val (key, read) =
+            when (face) {
+                is FontFace.StandIn -> face.file to { AndampDefaultSet.read(face.file) }
+                is FontFace.SkinFile -> face.font.id to { files.read(face.font.file) }
+                is FontFace.Default -> return null
+            }
+        val m = gdiLines.getOrPut(key) { read()?.let { GdiLineMetrics.read(it) } } ?: return null
+        return m.at(Text.emSize(size))
+    }
+
+    /**
+     * Places [cmd] in its rectangle, as every renderer then draws it: across by the width the host
+     * measures, less the ticker's scroll; up and down by the font's line, Windows' where the file
+     * gives it, else the host's.
+     */
+    private fun place(cmd: DrawCmd.Text) {
+        val r = cmd.rect
+        val width = host.textAdvance(cmd.text, cmd.font, cmd.size, cmd.bold)
+        cmd.x =
+            when (cmd.align) {
+                Align.LEFT -> r.left.toFloat()
+                Align.CENTER -> r.left + (r.width - width) / 2f
+                Align.RIGHT -> r.right - width
+            } - cmd.scroll
+        val (asc, desc) =
+            gdiLine(cmd.face, cmd.size)?.let { (a, d) -> a.toFloat() to d.toFloat() }
+                ?: host.lineMetrics(cmd.font, cmd.size, cmd.bold)
+                ?: (Text.emSize(cmd.size) * DEFAULT_ASCENT to Text.emSize(cmd.size) * DEFAULT_DESCENT)
+        cmd.baseline =
+            when (cmd.valign) {
+                VAlign.TOP -> r.top + asc
+                VAlign.CENTER -> r.top + ((r.height - (asc + desc)) / 2f).toInt() + asc
+                VAlign.BOTTOM -> r.bottom - desc
+            }
+    }
+
     /** Lays the main window out now, for a script that asks where something is. */
     fun ensureLayout() {
         if (needsLayout) doLayout()
@@ -2186,6 +2232,11 @@ class SkinRuntime(
 
                 is DrawCmd.BitmapText -> {
                     cmd.gamma = gamma(cmd.font.gammaGroup)
+                    out.add(cmd)
+                }
+
+                is DrawCmd.Text -> {
+                    place(cmd)
                     out.add(cmd)
                 }
 
@@ -3571,6 +3622,10 @@ class SkinRuntime(
     }
 
     private companion object {
+        /** A line's ascent and descent as shares of the em, for a host that measures no line. */
+        private const val DEFAULT_ASCENT = 0.8f
+        private const val DEFAULT_DESCENT = 0.2f
+
         /** How far the balance reaches either way from the middle. */
         const val PAN_REACH = 127
 

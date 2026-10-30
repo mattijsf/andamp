@@ -410,23 +410,9 @@ private fun DrawScope.drawText(
     clipRect(r.left.toFloat(), r.top.toFloat(), r.right.toFloat(), r.bottom.toFloat()) {
         drawIntoCanvas { canvas ->
             val paint = host.drawingPaint(cmd.font, cmd.size, cmd.bold)
-            val width = paint.measureText(cmd.text)
-            val x =
-                when (cmd.align) {
-                    Align.LEFT -> r.left.toFloat()
-                    Align.CENTER -> r.left + (r.width - width) / 2f
-                    Align.RIGHT -> r.right - width
-                } - cmd.scroll
-            val fm = paint.fontMetrics
-            val (asc, desc) =
-                host.gdiLine(cmd.font, cmd.size, cmd.bold)?.let { (a, d) -> a.toFloat() to d.toFloat() }
-                    ?: (-fm.ascent to fm.descent)
-            val y =
-                when (cmd.valign) {
-                    VAlign.TOP -> r.top + asc
-                    VAlign.CENTER -> r.top + ((r.height - (asc + desc)) / 2f).toInt() + asc
-                    VAlign.BOTTOM -> r.bottom - desc
-                }
+            // the engine placed it ([DrawCmd.Text.x], [DrawCmd.Text.baseline])
+            val x = cmd.x
+            val y = cmd.baseline
             cmd.shadow?.let {
                 paint.color = it.value or OPAQUE
                 paint.alpha = cmd.alpha

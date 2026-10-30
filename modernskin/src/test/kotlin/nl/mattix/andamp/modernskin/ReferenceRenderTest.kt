@@ -10,7 +10,6 @@ import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.FontDef
 import nl.mattix.andamp.modernskin.skin.FontFace
 import nl.mattix.andamp.modernskin.skin.Gamma
-import nl.mattix.andamp.modernskin.skin.GdiLineMetrics
 import nl.mattix.andamp.modernskin.skin.ImageLimits
 import nl.mattix.andamp.modernskin.skin.LayeredSkinFiles
 import nl.mattix.andamp.modernskin.skin.Rect
@@ -161,12 +160,11 @@ class ReferenceRenderTest {
                 def?.let {
                     fonts.getOrPut(it.id) {
                         files.read(it.file)?.let { b ->
-                            GdiLineMetrics.read(b)?.let { m -> gdi[it.id] = m }
                             runCatching { Font.createFont(Font.TRUETYPE_FONT, ByteArrayInputStream(b)) }.getOrNull()
                         }
                     }
                 } ?: Font("Arial", Font.PLAIN, size)
-            return base.deriveFont(if (bold) Font.BOLD else Font.PLAIN, em).also { f -> def?.let { lineOf[f] = gdi[it.id] } }
+            return base.deriveFont(if (bold) Font.BOLD else Font.PLAIN, em)
         }
 
         /**
@@ -187,21 +185,11 @@ class ReferenceRenderTest {
                         SYS_FONTS?.let { File(it, def.id.replace(" ", "") + (if (bold) "bd" else "") + ".ttf") }
                             ?: (FontFace.of(def, bold) as? FontFace.StandIn)?.let { File(APP_FONTS.parentFile, it.file) }
                     file?.takeIf { it.exists() }?.let { f ->
-                        GdiLineMetrics.read(f.readBytes())?.let { gdi[key] = it }
                         runCatching { Font.createFont(Font.TRUETYPE_FONT, f) }.getOrNull()
                     }
                 }
-            return sys?.deriveFont(Font.PLAIN, em)?.also { lineOf[it] = gdi[key] }
+            return sys?.deriveFont(Font.PLAIN, em)
         }
-
-        private val gdi = HashMap<String, GdiLineMetrics>()
-        private val lineOf = HashMap<Font, GdiLineMetrics?>()
-
-        /** Ascent and descent as GDI lays the font out, or Java's when the file gave none. */
-        fun line(
-            f: Font,
-            fm: java.awt.FontMetrics,
-        ): Pair<Int, Int> = lineOf[f]?.at(f.size2D) ?: (fm.ascent to fm.descent)
 
         private val scratch = BufferedImage(1, 1, BufferedImage.TYPE_INT_ARGB).createGraphics()
 
@@ -219,6 +207,12 @@ class ReferenceRenderTest {
             size: Int,
             bold: Boolean,
         ): Int = scratch.getFontMetrics(font(font, size, bold)).stringWidth(text)
+
+        override fun lineMetrics(
+            font: FontDef?,
+            size: Int,
+            bold: Boolean,
+        ): Pair<Float, Float> = scratch.getFontMetrics(font(font, size, bold)).let { it.ascent.toFloat() to it.descent.toFloat() }
 
         override fun log(message: String) {
             log.add(message)
@@ -685,21 +679,9 @@ class ReferenceRenderTest {
                 is DrawCmd.Text -> {
                     val r = cmd.rect
                     val f = host.font(cmd.font, cmd.size, cmd.bold)
-                    val fm = g.getFontMetrics(f)
-                    val tw = fm.stringWidth(cmd.text)
-                    val x =
-                        when (cmd.align) {
-                            Align.LEFT -> r.left
-                            Align.CENTER -> r.left + (r.width - tw) / 2
-                            Align.RIGHT -> r.right - tw
-                        } - cmd.scroll
-                    val (asc, desc) = host.line(f, fm)
-                    val y =
-                        when (cmd.valign) {
-                            VAlign.TOP -> r.top + asc
-                            VAlign.CENTER -> r.top + (r.height - (asc + desc)) / 2 + asc
-                            VAlign.BOTTOM -> r.bottom - desc
-                        }
+                    // the engine placed it, as the phone draws it
+                    val x = cmd.x
+                    val y = cmd.baseline
                     val clip = g.clip
                     g.clipRect(r.left, r.top, r.width, r.height)
                     g.font = f

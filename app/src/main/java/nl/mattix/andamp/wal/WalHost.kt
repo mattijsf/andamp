@@ -23,7 +23,6 @@ import nl.mattix.andamp.modernskin.skin.DrawCmd
 import nl.mattix.andamp.modernskin.skin.FontDef
 import nl.mattix.andamp.modernskin.skin.FontFace
 import nl.mattix.andamp.modernskin.skin.Gamma
-import nl.mattix.andamp.modernskin.skin.GdiLineMetrics
 import nl.mattix.andamp.modernskin.skin.ImageLimits
 import nl.mattix.andamp.modernskin.skin.Region
 import nl.mattix.andamp.modernskin.skin.SkinFiles
@@ -96,7 +95,6 @@ internal class WalHost(
     val drawing = WalDrawing(drawingBudget)
 
     // the main thread's
-    private val gdiLines = HashMap<String, GdiLineMetrics?>()
 
     /** Filled to look a picture up in [drawing]; a copy is what is kept. */
     private val probe = WalDrawing.Key()
@@ -350,22 +348,6 @@ internal class WalHost(
     private fun typefaceOf(bytes: ByteArray): Typeface? =
         runCatching { Typeface.createFromFile(fontFile(cacheDir, bytes)) }.getOrNull()
 
-    /** Ascent and descent in whole pixels as Windows lays the font out; null when its file gives none. */
-    fun gdiLine(
-        font: FontDef?,
-        size: Int,
-        bold: Boolean,
-    ): Pair<Int, Int>? {
-        val f = font ?: return null
-        val standIn = (FontFace.of(f, bold) as? FontFace.StandIn)?.file
-        val m =
-            gdiLines.getOrPut(standIn ?: f.id) {
-                val bytes = if (standIn != null) AndampDefaultSet.read(standIn) else files.read(f.file)
-                bytes?.let { GdiLineMetrics.read(it) }
-            }
-        return m?.at(Text.emSize(size))
-    }
-
     /** The paint the renderer draws [font] with; it sets the color itself. */
     fun drawingPaint(
         font: FontDef?,
@@ -398,6 +380,19 @@ internal class WalHost(
         size: Int,
         bold: Boolean,
     ): Int = setUp(measurePaint, font, size, bold).measureText(text).toInt()
+
+    override fun textAdvance(
+        text: String,
+        font: FontDef?,
+        size: Int,
+        bold: Boolean,
+    ): Float = setUp(measurePaint, font, size, bold).measureText(text)
+
+    override fun lineMetrics(
+        font: FontDef?,
+        size: Int,
+        bold: Boolean,
+    ): Pair<Float, Float> = setUp(measurePaint, font, size, bold).fontMetrics.let { -it.ascent to it.descent }
 
     override fun log(message: String) {
         Log.i(TAG, message)
@@ -451,7 +446,6 @@ internal class WalHost(
     fun trimDrawing() {
         drawing.clear()
         shapeKeys.clear()
-        gdiLines.clear()
         synchronized(shared) { images.clear() }
     }
 

@@ -91,6 +91,28 @@ interface SkinHost {
         bold: Boolean,
     ): Int = textWidth(text, font, size)
 
+    /**
+     * How wide [text] draws, in fractional layout pixels, as this host's renderer draws it: the
+     * engine places text by it. The whole-pixel [textWidth] by default.
+     */
+    fun textAdvance(
+        text: String,
+        font: FontDef?,
+        size: Int,
+        bold: Boolean,
+    ): Float = textWidth(text, font, size, bold).toFloat()
+
+    /**
+     * Ascent and descent in layout pixels as this host's renderer lays the font out, for a font
+     * whose file gives Windows' line ([GdiLineMetrics]) no figures; null leaves it to a share of
+     * the em.
+     */
+    fun lineMetrics(
+        font: FontDef?,
+        size: Int,
+        bold: Boolean,
+    ): Pair<Float, Float>? = null
+
     fun log(message: String)
 
     fun invalidate()
