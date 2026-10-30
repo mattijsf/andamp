@@ -105,7 +105,7 @@
     <string name="prefs_notice_projectm_eval_what">计算 AVS 预设脚本中的表达式，内置于 AVS 库中。</string>
     <string name="prefs_notice_milkdrop_what">Ryan Geiss 的原作，projectM 渲染的正是它的 .milk 预设。</string>
     <string name="prefs_notice_webamp_what">它的精灵图坐标是面板窗口中每个坐标的依据。它对 std.mi 的转录列出了现代面板引擎所响应的脚本调用，它对脚本字节码的描述就是引擎读取的格式。</string>
-    <string name="prefs_notice_liberation_sans_what">播放列表的字体，与 PLEDIT.TXT 指定的 Arial 度量兼容。</string>
+    <string name="prefs_notice_liberation_sans_what">代替 Arial，度量兼容：PLEDIT.TXT 指定的播放列表字体，以及 Winamp 现代面板中的 Arial。</string>
     <string name="prefs_notice_liberation_sans_obligation">未经修改地打包，使用许可证允许的名称。</string>
     <string name="prefs_notice_dejavu_what">代替 Winamp 现代面板指定但未附带的 Windows 字体。</string>
     <string name="prefs_notice_dejavu_obligation">未经修改地打包，并附带许可证文本。</string>

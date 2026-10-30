@@ -987,7 +987,7 @@ class ReferenceRenderTest {
 
         /** The stand-ins for Windows fonts a skin names without a file (ModernSkinActivity's STAND_INS), from the default set. */
         val APP_FONTS = File("src/main/resources/nl/mattix/andamp/modernskin/defaultset/fonts")
-        val STAND_INS = mapOf("tahoma" to "DejaVuSansCondensed")
+        val STAND_INS = mapOf("tahoma" to "DejaVuSansCondensed", "arial" to "LiberationSans")
 
         /** A command owns a pixel only when it changed it by more than this (0-255 per channel, root mean square). */
         const val OWNER_DELTA = 12.0

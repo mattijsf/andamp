@@ -124,7 +124,7 @@
     <string name="prefs_notice_projectm_eval_what">Evaluates the expressions AVS presets are scripted in, built into the AVS library.</string>
     <string name="prefs_notice_milkdrop_what">Ryan Geiss\'s original, whose .milk presets projectM renders.</string>
     <string name="prefs_notice_webamp_what">Its sprite maps are the ground truth for every coordinate in the skinned windows. Its transcription of std.mi lists the script calls the modern-skin engine answers, and its description of the script bytecode is the layout the engine reads.</string>
-    <string name="prefs_notice_liberation_sans_what">The playlist\'s font, metric-compatible with the Arial that PLEDIT.TXT names.</string>
+    <string name="prefs_notice_liberation_sans_what">Stands in for Arial, metric-compatible: the playlist font that PLEDIT.TXT names, and in Winamp modern skins.</string>
     <string name="prefs_notice_liberation_sans_obligation">Bundled unmodified, under a name the license permits.</string>
     <string name="prefs_notice_dejavu_what">Stands in for the Windows fonts that Winamp modern skins name without carrying them.</string>
     <string name="prefs_notice_dejavu_obligation">Bundled unmodified, with its license text.</string>

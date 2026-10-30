@@ -134,8 +134,8 @@ val bundledSkins =
  *
  * LGPL-2.1, the OFL and the Bitstream Vera license ask that their text
  * accompany what they cover, and the app ships projectM as a native library,
- * Liberation Sans as an asset and the DejaVu fonts inside the modern skin
- * engine. The asset paths are under `licenses/`, and Notices names them.
+ * Liberation Sans as an asset, and Liberation Sans and the DejaVu fonts
+ * inside the modern skin engine. The asset paths are under `licenses/`, and Notices names them.
  */
 abstract class BundleLicenses : DefaultTask() {
     @get:InputFile

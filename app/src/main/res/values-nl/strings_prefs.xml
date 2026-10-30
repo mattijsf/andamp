@@ -108,7 +108,7 @@
     <string name="prefs_notice_projectm_eval_what">Rekent de expressies uit waarin AVS-presets zijn geschreven, ingebouwd in de AVS-bibliotheek.</string>
     <string name="prefs_notice_milkdrop_what">Het origineel van Ryan Geiss, waarvan projectM de .milk-presets weergeeft.</string>
     <string name="prefs_notice_webamp_what">De sprite-kaarten ervan zijn de maatstaf voor elke coördinaat in de vensters met een skin. Uit Webamp komen ook de transcriptie van std.mi, met de scriptaanroepen die de engine voor moderne skins beantwoordt, en de beschrijving van de scriptbytecode, de indeling die de engine leest.</string>
-    <string name="prefs_notice_liberation_sans_what">Het lettertype van de afspeellijst, met dezelfde maten als de Arial die PLEDIT.TXT noemt.</string>
+    <string name="prefs_notice_liberation_sans_what">Vervangt Arial, met dezelfde maten: het lettertype van de afspeellijst dat PLEDIT.TXT noemt, en in moderne Winamp-skins.</string>
     <string name="prefs_notice_liberation_sans_obligation">Ongewijzigd meegeleverd, onder een naam die de licentie toestaat.</string>
     <string name="prefs_notice_dejavu_what">Vervangt de Windows-lettertypen die moderne Winamp-skins noemen maar niet meeleveren.</string>
     <string name="prefs_notice_dejavu_obligation">Ongewijzigd meegeleverd, met de licentietekst.</string>
