@@ -1733,6 +1733,66 @@ class SkinRuntime(
     var shapesWorkedOut = 0L
         internal set
 
+    /** Each cell of each bitmap font as a part of its sheet, made once, so a renderer keeps what it cut. */
+    private val glyphs = HashMap<BitmapFontDef, HashMap<Pair<Int, Int>, BitmapDef>>()
+
+    private fun glyph(
+        f: BitmapFontDef,
+        cell: Pair<Int, Int>,
+    ): BitmapDef =
+        glyphs.getOrPut(f) { HashMap() }.getOrPut(cell) {
+            BitmapDef(
+                id = "${f.id}#${cell.first},${cell.second}",
+                file = f.file,
+                x = f.ox + cell.first * f.charWidth,
+                y = f.oy + cell.second * f.charHeight,
+                w = f.charWidth,
+                h = f.charHeight,
+                gammaGroup = f.gammaGroup,
+            )
+        }
+
+    /**
+     * [cmd] as a renderer draws it, added to [out]: inside its rectangle, each character's cell of
+     * the font sheet at its place, [cmd.align]ed by the text's width and less its scroll, a colon
+     * [DrawCmd.BitmapText.colonWidth] wide where the skin narrows it, a space advancing only.
+     */
+    private fun spell(
+        cmd: DrawCmd.BitmapText,
+        out: MutableList<DrawCmd>,
+    ) {
+        val f = cmd.font
+        val r = cmd.rect
+        val advance = f.charWidth + f.hSpacing
+        val colon = cmd.colonWidth ?: advance
+        val total = cmd.text.sumOf { if (it == ':') colon else advance }
+        var x =
+            when (cmd.align) {
+                Align.LEFT -> r.left
+                Align.CENTER -> r.left + (r.width - total) / 2
+                Align.RIGHT -> r.right - total
+            } - cmd.scroll
+        val y =
+            when (cmd.valign) {
+                VAlign.TOP -> r.top
+                VAlign.CENTER -> r.top + (r.height - f.charHeight) / 2
+                VAlign.BOTTOM -> r.bottom - f.charHeight
+            }
+        out.add(DrawCmd.Clip(r).also { it.ownedBy = cmd.ownedBy })
+        for (c in cmd.text) {
+            f.cell(c)?.let { cell ->
+                val img = DrawCmd.Image(glyph(f, cell), Rect(x, y, f.charWidth, f.charHeight), cmd.alpha)
+                img.ownedBy = cmd.ownedBy
+                fitToSheet(img)?.let {
+                    it.gamma = cmd.gamma
+                    out.add(it)
+                }
+            }
+            x += if (c == ':') colon else advance
+        }
+        out.add(DrawCmd.Unclip)
+    }
+
     private val gdiLines = HashMap<String, GdiLineMetrics?>()
 
     /**
@@ -2232,7 +2292,7 @@ class SkinRuntime(
 
                 is DrawCmd.BitmapText -> {
                     cmd.gamma = gamma(cmd.font.gammaGroup)
-                    out.add(cmd)
+                    spell(cmd, out)
                 }
 
                 is DrawCmd.Text -> {

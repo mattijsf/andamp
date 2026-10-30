@@ -21,11 +21,9 @@ import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
-import nl.mattix.andamp.modernskin.skin.Align
 import nl.mattix.andamp.modernskin.skin.DrawCmd
 import nl.mattix.andamp.modernskin.skin.LiveRun
 import nl.mattix.andamp.modernskin.skin.Rect
-import nl.mattix.andamp.modernskin.skin.VAlign
 
 /**
  * How skins are drawn. [direct] follows the listener's sharp pixels setting ([WalSharp]); tests, and
@@ -342,12 +340,13 @@ private fun DrawScope.drawCmd(
             }
         }
 
-        is DrawCmd.Text -> {
-            drawText(cmd, host)
+        // the engine hands bitmap text over as images, one for each character
+        is DrawCmd.BitmapText -> {
+            Unit
         }
 
-        is DrawCmd.BitmapText -> {
-            drawBitmapText(cmd, host, at.hard)
+        is DrawCmd.Text -> {
+            drawText(cmd, host)
         }
 
         is DrawCmd.Pixels -> {
@@ -421,49 +420,6 @@ private fun DrawScope.drawText(
             paint.color = cmd.color.value or OPAQUE
             paint.alpha = cmd.alpha
             canvas.nativeCanvas.drawText(cmd.text, x, y, paint)
-        }
-    }
-}
-
-/** Text in a skin's bitmap font: one cell of the font sheet per character, with [hard] edges when given. */
-private fun DrawScope.drawBitmapText(
-    cmd: DrawCmd.BitmapText,
-    host: WalHost,
-    hard: Paint?,
-) {
-    val img = host.image(cmd.font.file, cmd.gamma) ?: return
-    val f = cmd.font
-    val advance = f.charWidth + f.hSpacing
-    val colon = cmd.colonWidth ?: advance
-    val total = cmd.text.sumOf { if (it == ':') colon else advance }
-    var x =
-        when (cmd.align) {
-            Align.LEFT -> cmd.rect.left
-            Align.CENTER -> cmd.rect.left + (cmd.rect.width - total) / 2
-            Align.RIGHT -> cmd.rect.right - total
-        } - cmd.scroll
-    val y =
-        when (cmd.valign) {
-            VAlign.TOP -> cmd.rect.top
-            VAlign.CENTER -> cmd.rect.top + (cmd.rect.height - f.charHeight) / 2
-            VAlign.BOTTOM -> cmd.rect.bottom - f.charHeight
-        }
-    val r = cmd.rect
-    clipRect(r.left.toFloat(), r.top.toFloat(), r.right.toFloat(), r.bottom.toFloat()) {
-        for (c in cmd.text) {
-            f.cell(c)?.let { cell ->
-                drawPicture(
-                    img,
-                    srcOffset = IntOffset(f.ox + cell.first * f.charWidth, f.oy + cell.second * f.charHeight),
-                    srcSize = IntSize(f.charWidth, f.charHeight),
-                    dstOffset = IntOffset(x, y),
-                    dstSize = IntSize(f.charWidth, f.charHeight),
-                    alpha = cmd.alpha / 255f,
-                    blend = BlendMode.SrcOver,
-                    hard = hard,
-                )
-            }
-            x += if (c == ':') colon else advance
         }
     }
 }

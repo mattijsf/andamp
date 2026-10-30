@@ -2,7 +2,6 @@
 package nl.mattix.andamp.modernskin
 
 import nl.mattix.andamp.modernskin.maki.Value
-import nl.mattix.andamp.modernskin.skin.Align
 import nl.mattix.andamp.modernskin.skin.AndampDefaultSet
 import nl.mattix.andamp.modernskin.skin.DrawCmd
 import nl.mattix.andamp.modernskin.skin.DrawPlanner
@@ -19,7 +18,6 @@ import nl.mattix.andamp.modernskin.skin.SkinHost
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.modernskin.skin.SkinsFolderFiles
 import nl.mattix.andamp.modernskin.skin.Track
-import nl.mattix.andamp.modernskin.skin.VAlign
 import nl.mattix.andamp.modernskin.skin.WithGeneratedImages
 import nl.mattix.andamp.modernskin.skin.ZipSkinFiles
 import org.json.JSONArray
@@ -676,6 +674,11 @@ class ReferenceRenderTest {
                     drawImageCmd(g, host, cmd, AlphaComposite.SRC_OVER, 0, 0)
                 }
 
+                // the engine hands bitmap text over as images, one for each character
+                is DrawCmd.BitmapText -> {
+                    Unit
+                }
+
                 is DrawCmd.Text -> {
                     val r = cmd.rect
                     val f = host.font(cmd.font, cmd.size, cmd.bold)
@@ -692,49 +695,6 @@ class ReferenceRenderTest {
                     }
                     g.color = java.awt.Color(cmd.color.value)
                     g.drawString(cmd.text, x, y)
-                    g.clip = clip
-                }
-
-                is DrawCmd.BitmapText -> {
-                    val src = host.image(cmd.font.file, cmd.gamma) ?: continue
-                    val f = cmd.font
-                    val adv = f.charWidth + f.hSpacing
-                    val colon = cmd.colonWidth ?: adv
-                    val total = cmd.text.sumOf { if (it == ':') colon else adv }
-                    var x =
-                        when (cmd.align) {
-                            Align.LEFT -> cmd.rect.left
-                            Align.CENTER -> cmd.rect.left + (cmd.rect.width - total) / 2
-                            Align.RIGHT -> cmd.rect.right - total
-                        } - cmd.scroll
-                    val y =
-                        when (cmd.valign) {
-                            VAlign.TOP -> cmd.rect.top
-                            VAlign.CENTER -> cmd.rect.top + (cmd.rect.height - f.charHeight) / 2
-                            VAlign.BOTTOM -> cmd.rect.bottom - f.charHeight
-                        }
-                    val clip = g.clip
-                    g.clipRect(cmd.rect.left, cmd.rect.top, cmd.rect.width, cmd.rect.height)
-                    g.composite = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, cmd.alpha / 255f)
-                    for (c in cmd.text) {
-                        f.cell(c)?.let { (cx, cy) ->
-                            val sx = f.ox + cx * f.charWidth
-                            val sy = f.oy + cy * f.charHeight
-                            g.drawImage(
-                                src,
-                                x,
-                                y,
-                                x + f.charWidth,
-                                y + f.charHeight,
-                                sx,
-                                sy,
-                                sx + f.charWidth,
-                                sy + f.charHeight,
-                                null,
-                            )
-                        }
-                        x += if (c == ':') colon else adv
-                    }
                     g.clip = clip
                 }
 
