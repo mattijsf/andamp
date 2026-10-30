@@ -1412,6 +1412,10 @@ class Layout(
     rt: SkinRuntime,
 ) : Group(rt, "layout") {
     override val className: String get() = "Layout"
+
+    /** How the host names this window; see [WindowId]. */
+    val windowId: WindowId = rt.newWindowId(this)
+
     var container: Container? = null
     var minW = 0
     var minH = 0
