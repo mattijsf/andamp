@@ -227,6 +227,8 @@ object AndampDefaultSet : SkinFiles {
             "groups.xml",
             "fonts/DejaVuSansCondensed.ttf",
             "fonts/DejaVuSansCondensed-Bold.ttf",
+            "fonts/LiberationSans.ttf",
+            "fonts/LiberationSans-Bold.ttf",
         )
 
     // paths reach a SkinFiles normalized to lower case; resources keep their own spelling
