@@ -4,6 +4,36 @@ What changed for somebody who uses Andamp, newest first. It is written from the 
 messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `docs:` and
 `chore:` commits do not appear here.
 
+## [0.17.0](https://github.com/mattijsf/andamp/compare/v0.16.0...v0.17.0) (2026-10-30)
+
+
+### New
+
+* a long press on a modern skin's own menu opens it straight away ([#166](https://github.com/mattijsf/andamp/issues/166)) ([dd89abe](https://github.com/mattijsf/andamp/commit/dd89abef6bfcf505dc1b6ce6cd96f9b12769753d))
+* a modern skin moves and resizes as a desktop window ([#171](https://github.com/mattijsf/andamp/issues/171)) ([4ea7f2c](https://github.com/mattijsf/andamp/commit/4ea7f2c548cfb5734108ef28d902ad4ea3fa6de5))
+* a modern skin moves by a drag that starts on its buttons and menu bar too ([#168](https://github.com/mattijsf/andamp/issues/168)) ([0072795](https://github.com/mattijsf/andamp/commit/0072795be27a6916a89ee91056b7fa4ca821909f))
+* a modern skin's menu bar opens the matching Andamp menu ([#160](https://github.com/mattijsf/andamp/issues/160)) ([4241b0a](https://github.com/mattijsf/andamp/commit/4241b0a3e39091f1121c5e4e675482f368eae8d5))
+* a modern skin's X stops the music and closes the player, as the classic X does ([#169](https://github.com/mattijsf/andamp/issues/169)) ([3b86667](https://github.com/mattijsf/andamp/commit/3b86667a18c13376e487c890b28f10ba8a983b71))
+* open Winamp skins from a file manager or a download ([#115](https://github.com/mattijsf/andamp/issues/115)) ([18f5bb9](https://github.com/mattijsf/andamp/commit/18f5bb953e54cfe5e41811d0772bb647a74a2c60))
+* Options has a Skin Settings menu with the settings a modern skin offers ([#158](https://github.com/mattijsf/andamp/issues/158)) ([8d191f8](https://github.com/mattijsf/andamp/commit/8d191f80b32148cf5f5dc61064feea57a0dc787f))
+* Skin Settings opens a dialog with a modern skin's options grouped under headings ([#159](https://github.com/mattijsf/andamp/issues/159)) ([5044f34](https://github.com/mattijsf/andamp/commit/5044f34f8a3d11c76897086d21472ed74b032d26))
+* the balance and preamp snap with a tick, in modern skins too ([#165](https://github.com/mattijsf/andamp/issues/165)) ([d9a667a](https://github.com/mattijsf/andamp/commit/d9a667a7bfaf4d2e05a01a5dcf00ade57f2ee866))
+* wear Winamp modern skins (.wal), in beta ([#150](https://github.com/mattijsf/andamp/issues/150)) ([6f585fe](https://github.com/mattijsf/andamp/commit/6f585fed6db597d26bf89e89bd9e80f74f56b179))
+* Winamp Modern's drawer shows the visualizer, and its Maximize fills the screen with it ([#170](https://github.com/mattijsf/andamp/issues/170)) ([1b58266](https://github.com/mattijsf/andamp/commit/1b58266cfd7e37769bfc0f005030fcd73ac28316))
+
+
+### Fixed
+
+* a modern skin's balance slider moves the sound left and right ([#163](https://github.com/mattijsf/andamp/issues/163)) ([ad4647a](https://github.com/mattijsf/andamp/commit/ad4647abf7ee5c8dd2b60900ba794bdfd35816b7))
+* a modern skin's equalizer shows the preamp and bands in the right dB ([#162](https://github.com/mattijsf/andamp/issues/162)) ([8a63219](https://github.com/mattijsf/andamp/commit/8a63219518dbad108f195c218138d728bc14c02b))
+* modern skins that ask for Arial get a font with the same widths ([#172](https://github.com/mattijsf/andamp/issues/172)) ([123d84e](https://github.com/mattijsf/andamp/commit/123d84eaea4962f607c5af7eabe3b488ba204a73))
+* pick a skin for the home screen widget in Preferences ([#113](https://github.com/mattijsf/andamp/issues/113)) ([3dfe252](https://github.com/mattijsf/andamp/commit/3dfe252a582ce493d3fdbb1d53000c69e82e3747))
+* picking a Winamp modern skin now says why it can't be added ([#96](https://github.com/mattijsf/andamp/issues/96)) ([ae71efa](https://github.com/mattijsf/andamp/commit/ae71efaa110723a464602c05d74eb4b693360a0d))
+* the floating player plays on the first tap of Play ([#138](https://github.com/mattijsf/andamp/issues/138)) ([154a4f9](https://github.com/mattijsf/andamp/commit/154a4f9a7c4f06b94b685f9c9dc33cd44ca47f24))
+* the O button's Skins menu loads a skin and opens the museum again ([#161](https://github.com/mattijsf/andamp/issues/161)) ([67e3621](https://github.com/mattijsf/andamp/commit/67e3621c0a7f48cc7fe138e06da891c39f048705))
+* the volume slider shows the right level after switching between Bluetooth and the speaker ([#142](https://github.com/mattijsf/andamp/issues/142)) ([3c93dac](https://github.com/mattijsf/andamp/commit/3c93dac7c0a613b02e6a7688ad2681b8b3ec046f))
+* Winamp Modern's Options tab shows its settings pages ([#164](https://github.com/mattijsf/andamp/issues/164)) ([ebb69a1](https://github.com/mattijsf/andamp/commit/ebb69a17d881bfd00d61281b862d06c386374808))
+
 ## [0.16.0](https://github.com/mattijsf/andamp/compare/v0.15.0...v0.16.0) (2026-10-21)
 
 
