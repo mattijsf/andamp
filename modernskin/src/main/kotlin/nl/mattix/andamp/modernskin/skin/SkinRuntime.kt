@@ -84,6 +84,19 @@ class SkinRuntime(
         settingsVersion++
     }
 
+    /** What the host keeps of the skin between runs, as it is now; the color theme is [currentGammaSet]. */
+    fun savedSettings(): SavedSettings = SavedSettings(storedSettings.toMap(), privateStrings.toMap(), privateInts.toMap())
+
+    /**
+     * Puts back what [savedSettings] gave in an earlier run, before [load], so the scripts read it
+     * as they start. It counts as no change ([settingsVersion]).
+     */
+    fun restoreSettings(saved: SavedSettings) {
+        storedSettings.putAll(saved.attributes)
+        privateStrings.putAll(saved.strings)
+        privateInts.putAll(saved.ints)
+    }
+
     private val configFlags = HashMap<String, Boolean>()
 
     /** What getSkinName() answers: the skin's folder name, set by the host before [load]. */
