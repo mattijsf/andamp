@@ -77,6 +77,9 @@ internal const val WAL_INPUT_FRAMES_MS = 2_000L
 
 private const val NANOS_PER_MS = 1_000_000L
 
+/** The shortest display frame the frame loop counts with: a 240 Hz display's. */
+private const val MIN_FRAME_NANOS = 4_166_667L
+
 /**
  * For each player state, the layer whose rect `windowRects[MAIN]` holds; read and written on the
  * main thread only. `windowRects` keeps the rect it has when an equal one is put, so the rect alone
@@ -340,13 +343,16 @@ private data class FrameAsk(
     val awake: Boolean,
     val wantsFrames: Boolean,
     val inputAt: Long,
+    val sliding: Boolean,
 )
 
 /**
  * Asks [surface] for a tick on display frames, as [WalTickPace] paces them, while it shows ([awake])
  * and its frames want them ([WalLayout.wantsFrames]), and for [WAL_INPUT_FRAMES_MS] after each of
- * the listener's inputs ([WalSurface.lastInputAt]), so what a touch sets moving runs smoothly. Else
- * it asks for none: the engine wakes the skin itself when something is due.
+ * the listener's inputs ([WalSurface.lastInputAt]), so what a touch sets moving runs smoothly; on
+ * every display frame while a slide runs ([WalLayout.sliding]). Else it asks for none: the engine
+ * wakes the skin itself when something is due. Each ask says when its frame reaches the screen:
+ * two display frames on, as the engine ticks after this one and the next draws what it made.
  */
 private suspend fun frameLoop(
     surface: WalSurface,
@@ -356,10 +362,13 @@ private suspend fun frameLoop(
     var seenInput = surface.lastInputAt
     // the display frame time, in ns, until which the last input keeps the loop running
     var inputUntil = Long.MIN_VALUE
-    snapshotFlow { FrameAsk(awake(), surface.layout?.wantsFrames == true, surface.lastInputAt) }.collectLatest { ask ->
+    snapshotFlow {
+        FrameAsk(awake(), surface.layout?.wantsFrames == true, surface.lastInputAt, surface.layout?.sliding == true)
+    }.collectLatest { ask ->
         var input = ask.inputAt != seenInput
         seenInput = ask.inputAt
         if (!ask.awake) return@collectLatest
+        var last = Long.MIN_VALUE
         while (true) {
             val now = withFrameNanos { it }
             if (input) {
@@ -367,7 +376,16 @@ private suspend fun frameLoop(
                 input = false
             }
             if (!ask.wantsFrames && now >= inputUntil) break
-            if (pace.due(now)) surface.requestTick()
+            val period =
+                if (last ==
+                    Long.MIN_VALUE
+                ) {
+                    WalTickPace.TICK_PERIOD_NANOS
+                } else {
+                    (now - last).coerceIn(MIN_FRAME_NANOS, WalTickPace.TICK_PERIOD_NANOS)
+                }
+            last = now
+            if (pace.due(now) || ask.sliding) surface.requestTick(WalCause.TICK, showAt = now + 2 * period)
         }
     }
 }

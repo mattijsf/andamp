@@ -1748,6 +1748,9 @@ class SkinRuntime(
 
     // ---- per frame ---------------------------------------------------------------------------
 
+    /** Whether a target slide runs now. */
+    val sliding: Boolean get() = moving.isNotEmpty()
+
     /** Whether something moves by itself right now: a target slide, or an animation playing and not paused. */
     val animating: Boolean get() = moving.isNotEmpty() || animations.any { it.running }
 
@@ -1799,17 +1802,18 @@ class SkinRuntime(
 
     /**
      * Whether something on the skin moves smoothly by itself now and wants a frame on every display
-     * frame: a visualizer that shows while the music plays, and while it falls to rest after; while
-     * the music plays or is paused, also a target slide or an animation playing and not paused.
-     * Stopped, a slide or an animation steps when [nextDueAt] says. Tickers, timers, the time and
-     * progress grids never want frames: they change at the moments [nextDueAt] gives.
+     * frame: a target slide, which ends by itself; a visualizer that shows while the music plays,
+     * and while it falls to rest after; while the music plays or is paused, also an animation
+     * playing and not paused. Stopped, an animation steps when [nextDueAt] says. Tickers, timers,
+     * the time and progress grids never want frames: they change at the moments [nextDueAt] gives.
      */
     val framesWanted: Boolean
         get() {
+            if (moving.isNotEmpty()) return true
             val status = player.status
             for (v in visObjects) if (v.moving(status) && shows(v)) return true
             if (status == Player.Status.STOPPED) return false
-            return moving.isNotEmpty() || animations.any { it.running && shows(it) }
+            return animations.any { it.running && shows(it) }
         }
 
     /**
@@ -1878,7 +1882,16 @@ class SkinRuntime(
     private val dueSlides = ArrayList<GuiObject>()
     private val dueTimers = ArrayList<Timer>()
 
-    /** Refills every script's step budget, then moves animations and target slides and fires due timers, at [t]. */
+    /**
+     * How far ahead of [now], in ms, the next [tick] places a target slide: when the frame it makes
+     * reaches the screen, so the slide moves by the frames shown rather than by when the tick ran.
+     */
+    var slideLead = 0L
+
+    /**
+     * Refills every script's step budget, then moves animations and target slides ([slideLead]
+     * ahead) and fires due timers, at [t].
+     */
     private fun advanceClocks(t: Long) {
         for (s in scripts) s.refill()
         dueAnimations.clear()
@@ -1886,7 +1899,7 @@ class SkinRuntime(
         for (a in dueAnimations) a.advance()
         dueSlides.clear()
         for (o in moving) dueSlides.add(o)
-        for (o in dueSlides) o.stepTarget(t)
+        for (o in dueSlides) o.stepTarget(t + slideLead)
         dueTimers.clear()
         for (timer in timers) if (timer.running && t >= timer.nextAt) dueTimers.add(timer)
         for (timer in dueTimers) {

@@ -176,6 +176,7 @@ internal class WalFitting {
             stackH = drawn.second,
             windowOpen = windowOpen,
             animating = runtime.animating,
+            sliding = runtime.sliding,
             menuTarget = runtime.menuTarget,
             moveTarget = runtime.moveTarget,
             wantsFrames = wantsFrames,

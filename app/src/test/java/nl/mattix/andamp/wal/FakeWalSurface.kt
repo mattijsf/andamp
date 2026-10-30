@@ -117,7 +117,10 @@ internal class FakeWalSurface : WalSurface {
         }
     }
 
-    override fun requestTick(cause: WalCause) {
+    override fun requestTick(
+        cause: WalCause,
+        showAt: Long?,
+    ) {
         ticks++
         tickCauses += cause
     }
