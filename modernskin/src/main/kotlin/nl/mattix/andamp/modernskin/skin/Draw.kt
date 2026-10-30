@@ -240,7 +240,10 @@ sealed class DrawCmd {
         /** Where the shadow sits from the text. */
         val shadowDx: Int = 1,
         val shadowDy: Int = 1,
-    ) : DrawCmd()
+    ) : DrawCmd() {
+        /** The face it is drawn with ([FontFace.of]). */
+        val face: FontFace get() = FontFace.of(font, bold)
+    }
 
     class BitmapText(
         val text: String,

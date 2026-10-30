@@ -8,6 +8,7 @@ import nl.mattix.andamp.modernskin.skin.DrawCmd
 import nl.mattix.andamp.modernskin.skin.DrawPlanner
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.FontDef
+import nl.mattix.andamp.modernskin.skin.FontFace
 import nl.mattix.andamp.modernskin.skin.Gamma
 import nl.mattix.andamp.modernskin.skin.GdiLineMetrics
 import nl.mattix.andamp.modernskin.skin.ImageLimits
@@ -184,7 +185,7 @@ class ReferenceRenderTest {
                 fonts.getOrPut(key) {
                     val file =
                         SYS_FONTS?.let { File(it, def.id.replace(" ", "") + (if (bold) "bd" else "") + ".ttf") }
-                            ?: STAND_INS[def.id]?.let { File(APP_FONTS, it + (if (bold) "-Bold" else "") + ".ttf") }
+                            ?: (FontFace.of(def, bold) as? FontFace.StandIn)?.let { File(APP_FONTS.parentFile, it.file) }
                     file?.takeIf { it.exists() }?.let { f ->
                         GdiLineMetrics.read(f.readBytes())?.let { gdi[key] = it }
                         runCatching { Font.createFont(Font.TRUETYPE_FONT, f) }.getOrNull()
@@ -985,9 +986,8 @@ class ReferenceRenderTest {
         /** -Dsysfonts=<dir>: Windows fonts by file name, e.g. the reference VM's (Microsoft's; local only, never committed). */
         val SYS_FONTS: File? = System.getProperty("sysfonts")?.let { File(it) }
 
-        /** The stand-ins for Windows fonts a skin names without a file (ModernSkinActivity's STAND_INS), from the default set. */
+        /** The stand-ins for Windows fonts a skin names without a file ([FontFace.StandIn]), from the default set. */
         val APP_FONTS = File("src/main/resources/nl/mattix/andamp/modernskin/defaultset/fonts")
-        val STAND_INS = mapOf("tahoma" to "DejaVuSansCondensed", "arial" to "LiberationSans")
 
         /** A command owns a pixel only when it changed it by more than this (0-255 per channel, root mean square). */
         const val OWNER_DELTA = 12.0

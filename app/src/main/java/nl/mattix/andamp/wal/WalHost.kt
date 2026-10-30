@@ -21,6 +21,7 @@ import nl.mattix.andamp.modernskin.skin.AndampDefaultSet
 import nl.mattix.andamp.modernskin.skin.BitmapDef
 import nl.mattix.andamp.modernskin.skin.DrawCmd
 import nl.mattix.andamp.modernskin.skin.FontDef
+import nl.mattix.andamp.modernskin.skin.FontFace
 import nl.mattix.andamp.modernskin.skin.Gamma
 import nl.mattix.andamp.modernskin.skin.GdiLineMetrics
 import nl.mattix.andamp.modernskin.skin.ImageLimits
@@ -328,16 +329,15 @@ internal class WalHost(
         }
 
     /**
-     * A font a skin names without a file is a Windows system font; the app carries free stand-ins
-     * whose widths match closely (DejaVu Sans Condensed for Tahoma: Bento's tabs are sized by the
-     * measured text; Liberation Sans, metric-compatible, for Arial). Bold has a separate file there,
-     * so no fake bold.
+     * The free font the engine picks for a Windows system font a skin names without a file
+     * ([FontFace.StandIn]), from Andamp's default set; null for any other font. Bold has a separate
+     * file there, so no fake bold.
      */
     private fun standIn(
         font: FontDef?,
         bold: Boolean,
     ): Typeface? {
-        val path = standInPath(font, bold) ?: return null
+        val path = (FontFace.of(font, bold) as? FontFace.StandIn)?.file ?: return null
         return cached(typefaces, path) { AndampDefaultSet.read(path)?.let(::typefaceOf) }
     }
 
@@ -357,7 +357,7 @@ internal class WalHost(
         bold: Boolean,
     ): Pair<Int, Int>? {
         val f = font ?: return null
-        val standIn = standInPath(f, bold)
+        val standIn = (FontFace.of(f, bold) as? FontFace.StandIn)?.file
         val m =
             gdiLines.getOrPut(standIn ?: f.id) {
                 val bytes = if (standIn != null) AndampDefaultSet.read(standIn) else files.read(f.file)
@@ -472,21 +472,10 @@ internal class WalHost(
          */
         val LIBRARY_CLOSED: (String) -> Boolean? = { kind -> if (kind == "ml") false else null }
 
-        /** Windows fonts skins name without a file, and the free font in Andamp's default set that stands in. */
-        private val STAND_INS = mapOf("tahoma" to "DejaVuSansCondensed", "arial" to "LiberationSans")
-
         private const val MAX_LOG = 12
         private const val MAX_IMAGES = 256
 
         private const val OPAQUE_BLACK = 0xFF000000.toInt()
-
-        private fun standInPath(
-            font: FontDef?,
-            bold: Boolean,
-        ): String? {
-            val base = STAND_INS[font?.takeIf { it.file.isEmpty() }?.id ?: return null] ?: return null
-            return "fonts/$base${if (bold) "-Bold" else ""}.ttf"
-        }
 
         private fun mapPixels(
             src: Bitmap,
