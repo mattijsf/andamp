@@ -86,7 +86,7 @@ class WalPlayerEchoTest {
             post = { posted += it },
             clock = { controls.now },
         )
-    private val rt = SkinRuntime(files, WalHost(files, app.cacheDir), player).apply { clock = { controls.now } }
+    private val rt = SkinRuntime(files, WalHost(files, app.cacheDir), player, clock = { controls.now })
 
     /** What the recorder script heard, in order: the event and its arguments. */
     private val heard = ArrayList<Pair<String, List<Int>>>()
@@ -258,7 +258,7 @@ class WalPlayerEchoTest {
         state.volume = 20
         state.eqBands[0] = 10
         state.preamp = 50
-        val fresh = SkinRuntime(files, WalHost(files, app.cacheDir), player).apply { clock = { controls.now } }
+        val fresh = SkinRuntime(files, WalHost(files, app.cacheDir), player, clock = { controls.now })
 
         // the engine publishes the skin's first frame right after the load
         fresh.load()

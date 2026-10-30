@@ -385,7 +385,7 @@ internal class WalLook(
             val files = OpenedOnRead { WalFiles.open(file, siblings) }
             // an import has no player surface to show a menu its scripts open as the skin loads:
             // such a menu is answered at once with nothing picked
-            val host = WalHost(files, cacheDir, windowOpen).apply { menus.unattended = awaited }
+            val host = WalHost(files, cacheDir, windowOpen, actions = ::hostAction).apply { menus.unattended = awaited }
             val engine = WalEngine(id, host, onFrame = ::frameChanged)
             engine.onBroken = { toMain(Runnable { failed(stoppedWorking = true) }) }
             engine.onTask = ::keepLater
@@ -404,8 +404,7 @@ internal class WalLook(
         files: SkinFiles,
         host: WalHost,
     ): SkinRuntime =
-        SkinRuntime(files, host, player).apply {
-            WalPrepare.prepare(this, name, ::hostAction)
+        SkinRuntime(files, host, player, WalPrepare.setup(name)).apply {
             settings?.restoreBeforeLoad(id, this)
             load()
             settings?.restoreTheme(id, this)

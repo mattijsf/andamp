@@ -54,6 +54,7 @@ import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinMenu
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
+import nl.mattix.andamp.modernskin.skin.SkinSetup
 import nl.mattix.andamp.modernskin.skin.ZipSkinFiles
 import nl.mattix.andamp.wal.WalBuild
 import nl.mattix.andamp.wal.WalEngine
@@ -478,15 +479,18 @@ private fun loadRuntime(
     checkClock: LongArray,
     probe: Probe?,
 ): SkinRuntime =
-    SkinRuntime(files, host, player).also {
+    SkinRuntime(
+        files,
+        host,
+        player,
+        setupOf(file, check),
+        clock = if (check != null) ({ checkClock[0] }) else System::currentTimeMillis,
+    ).also {
         if (check != null) {
-            it.clock = { checkClock[0] }
             player.clock = { checkClock[0] }
             // the reference VM's screen: scripts that size a window from the viewport (Bento) then agree
-            it.viewportW = CHECK_VIEWPORT_W
-            it.viewportH = CHECK_VIEWPORT_H
+            it.presentation = it.presentation.copy(viewport = CHECK_VIEWPORT_W to CHECK_VIEWPORT_H)
         }
-        prepare(it, file, check)
         settings?.restoreBeforeLoad(file.name, it)
         val loadStart = System.nanoTime()
         it.load()
@@ -495,7 +499,7 @@ private fun loadRuntime(
         // the color theme picked last time for this skin, as Winamp keeps it per skin
         settings?.restoreTheme(file.name, it)
         check?.theme?.let { t -> it.selectGammaSet(t) }
-        check?.view?.let { v -> it.viewSize = v }
+        check?.view?.let { v -> it.presentation = it.presentation.copy(viewSize = v) }
         // a scenario's size for a resizable main window, as ReferenceRenderTest gives it
         check?.mainSize?.let { (w, h) ->
             it.mainLayout?.makiCall("resize", listOf(Value.Int(0), Value.Int(0), Value.Int(w), Value.Int(h)))
@@ -695,8 +699,8 @@ private fun ModernSkinScreen(
             val loaded = kotlinx.coroutines.CompletableDeferred<Unit>()
             engine.post(publish = false) {
                 val warmFiles = WalFiles.open(file, siblings, base)
-                val again = SkinRuntime(warmFiles, WalHost(warmFiles, context.cacheDir, windowOpen), FakePlayer())
-                prepare(again, file, check)
+                val again =
+                    SkinRuntime(warmFiles, WalHost(warmFiles, context.cacheDir, windowOpen), FakePlayer(), setupOf(file, check))
                 val t0 = System.nanoTime()
                 runCatching { again.load() }
                 probe.warmLoadMs = (System.nanoTime() - t0) / 1e6
@@ -789,7 +793,7 @@ private fun ModernSkinScreen(
                                 if (at == null) {
                                     // 24 dp beside a control still counts: every control answers across 48 dp
                                     val slop = kotlin.math.ceil(24.dp.toPx() / scale).toInt()
-                                    engine.post(publish = false) { it.touchSlop = slop }
+                                    engine.post(publish = false) { it.presentation = it.presentation.copy(touchSlop = slop) }
                                 }
                                 val downAt = System.currentTimeMillis()
                                 var moved = false
@@ -972,17 +976,14 @@ private const val MEASURE_BUDGET_MS = 60_000L
  * What a runtime for [file] is given before it loads, the same for every load of it: in use what the
  * player gives a skin ([WalPrepare]), named by its file; in a check the reference VM's setup.
  */
-private fun prepare(
-    rt: SkinRuntime,
+private fun setupOf(
     file: File,
     check: Check?,
-) {
+): SkinSetup =
     if (check == null) {
-        WalPrepare.prepare(rt, file.nameWithoutExtension)
-        return
+        WalPrepare.setup(file.nameWithoutExtension)
+    } else {
+        // Winamp's getSkinName() is the skin's folder name: here the file's; the reference VM has
+        // Winamp's library inside the skin, and nothing outside it answers host actions
+        SkinSetup(skinName = file.nameWithoutExtension, haveLibrary = true)
     }
-    // Winamp's getSkinName() is the skin's folder name: here the file's
-    rt.skinName = file.nameWithoutExtension
-    // the reference VM has Winamp's library inside the skin, and nothing outside it answers host actions
-    rt.haveLibrary = true
-}

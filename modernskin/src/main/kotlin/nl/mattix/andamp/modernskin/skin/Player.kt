@@ -127,6 +127,16 @@ interface SkinHost {
      * script hears 0, and the touch shows no more menus.
      */
     fun chooseFromMenu(menu: SkinMenu): Int? = 0
+
+    /**
+     * A button action the host answers, as Winamp answered it outside the skin, when the skin was
+     * set up with [SkinSetup.hostActions]: the action uppercase and its param or window name; see
+     * [SkinRuntime.onHostAction].
+     */
+    fun hostAction(
+        action: String,
+        param: String?,
+    ) = Unit
 }
 
 /** A player that plays nothing, for tests and for a first look at a skin. */

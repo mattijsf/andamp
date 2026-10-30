@@ -71,7 +71,7 @@ class WalLayersCorpusTest {
                 lengthMs = 600_000
                 title = "Andamp - a title long enough to scroll in every ticker"
             }
-        val rt = SkinRuntime(files, host, player).apply { clock = { t } }
+        val rt = SkinRuntime(files, host, player, clock = { t })
         rt.load()
         if (name.contains(
                 "Bento",
@@ -79,7 +79,7 @@ class WalLayersCorpusTest {
         ) {
             rt.mainLayout?.makiCall("resize", listOf(Value.Int(0), Value.Int(0), Value.Int(633), Value.Int(1258)))
         }
-        rt.viewSize = 633 to 1258
+        rt.presentation = rt.presentation.copy(viewSize = 633 to 1258)
         val planner = DrawPlanner()
         val layers =
             WalLayers(

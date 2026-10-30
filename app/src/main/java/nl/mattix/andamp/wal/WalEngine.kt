@@ -11,6 +11,7 @@ import androidx.compose.ui.unit.IntSize
 import nl.mattix.andamp.modernskin.skin.DrawCmd
 import nl.mattix.andamp.modernskin.skin.DrawPlanner
 import nl.mattix.andamp.modernskin.skin.Player
+import nl.mattix.andamp.modernskin.skin.Presentation
 import nl.mattix.andamp.modernskin.skin.Rect
 import nl.mattix.andamp.modernskin.skin.SkinMenu
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
@@ -427,10 +428,10 @@ internal class WalEngine(
     /**
      * The box the skin goes in, on the screen. On the engine thread it makes a window the listener
      * resizes both ways (Bento) fill the box, as maximized; gives the skin the box in skin pixels
-     * ([SkinRuntime.viewSize]); while upright stretches the last window under the main one to the
+     * ([Presentation.viewSize]); while upright stretches the last window under the main one to the
      * height left, and sideways keeps the height each window has; a compact box ([WalFit.compact])
      * keeps every height, and the window that resizes both ways at its smallest height; and lets a
-     * touch 24 dp beside an object still mean it ([SkinRuntime.touchSlop]). Each frame then carries
+     * touch 24 dp beside an object still mean it ([Presentation.touchSlop]). Each frame then carries
      * a [WalLayout] for this box (see [WalScale.place]). A box asked for before the skin has loaded
      * is applied before its first frame. A fit equal to the one applied, or a box with no area, does
      * nothing.
@@ -462,7 +463,7 @@ internal class WalEngine(
      * player before the change, and a display frame, as a slide that takes longer than a display
      * frame to step would otherwise step only on every other frame, unevenly. A display frame
      * passes [showAt], when the frame its tick makes reaches the screen: the tick places a slide
-     * for then ([SkinRuntime.slideLead]).
+     * for then (`SkinRuntime.tick(slideLead)`).
      */
     fun requestTick(
         cause: WalCause = WalCause.TICK,
@@ -492,14 +493,14 @@ internal class WalEngine(
         val runtime = rt ?: return
         val now = SystemClock.uptimeMillis()
         rest.ticked(now, fromScreen = cause == WalCause.TICK)
-        runtime.slideLead =
+        val slideLead =
             showAt?.takeIf { cause == WalCause.TICK }?.let { (it - System.nanoTime()) / NANOS_PER_MS }?.coerceIn(
                 0,
                 MAX_SLIDE_LEAD_MS,
             )
                 ?: 0
         val t0 = host.menus.workClock
-        val changed = runtime.tick()
+        val changed = runtime.tick(slideLead)
         val tickNanos = host.menus.workClock - t0
         val steps = runtime.scriptSteps
         if (changed) rest.changedAt = now

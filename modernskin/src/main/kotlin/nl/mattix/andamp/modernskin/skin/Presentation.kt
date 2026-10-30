@@ -1,0 +1,34 @@
+// SPDX-License-Identifier: GPL-3.0-or-later
+package nl.mattix.andamp.modernskin.skin
+
+/**
+ * What the host tells a skin before it loads ([SkinRuntime]'s constructor). [skinName] is what
+ * getSkinName() answers: the skin's folder name, which scripts key what they remember by.
+ * [haveLibrary] says whether Winamp's Media Library lives inside the skin (`@HAVE_LIBRARY@`).
+ * With [hostActions] the host answers the button actions Winamp answered outside the skin
+ * ([SkinHost.hostAction]) and shows the library, the visualizer and video itself, so the skin's
+ * frames for them stay shut.
+ */
+data class SkinSetup(
+    val skinName: String = "",
+    val haveLibrary: Boolean = true,
+    val hostActions: Boolean = false,
+)
+
+/**
+ * How the host shows a skin's windows ([SkinRuntime.presentation]), in layout pixels:
+ * - [viewSize]: the space the host has for the stack; null leaves each window at the size it has;
+ * - [viewport]: the screen scripts may place windows on before there is a [viewSize];
+ * - [columns]: 2 sets the windows that show a list out right of the main window, anything else docks every window under it;
+ * - [columnWidth]: how wide that right column is, 0 for as wide as what shows of the main window;
+ * - [stretchLast]: whether the last docked list window takes the height left under the others;
+ * - [touchSlop]: how far beside an object a finger may land and still mean it.
+ */
+data class Presentation(
+    val viewSize: Pair<Int, Int>? = null,
+    val viewport: Pair<Int, Int> = 1080 to 1920,
+    val columns: Int = 1,
+    val columnWidth: Int = 0,
+    val stretchLast: Boolean = true,
+    val touchSlop: Int = 6,
+)
