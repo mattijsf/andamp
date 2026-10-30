@@ -9,7 +9,6 @@ import androidx.compose.ui.res.stringResource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nl.mattix.andamp.R
-import nl.mattix.andamp.wal.WalBeta
 import nl.mattix.andamp.wal.WalGate
 import nl.mattix.andamp.wal.WalSharp
 
@@ -18,8 +17,6 @@ import nl.mattix.andamp.wal.WalSharp
  * worn, and whether they are drawn with sharp pixels.
  */
 data class ModernSkinPrefs(
-    /** Whether this build offers modern skins; the section is absent without it. */
-    val offered: Boolean = false,
     /** Mirrors [nl.mattix.andamp.wal.WalGate.on]. */
     val enabled: Boolean = false,
     val onEnabled: (Boolean) -> Unit = {},
@@ -43,7 +40,6 @@ internal fun modernSkinPrefsOf(context: Context): ModernSkinPrefs {
         }
     }
     return ModernSkinPrefs(
-        offered = WalBeta.offered,
         enabled = WalGate.on,
         onEnabled = { on -> WalGate.change(app, on) },
         sharp = WalSharp.on,
@@ -53,11 +49,10 @@ internal fun modernSkinPrefsOf(context: Context): ModernSkinPrefs {
 
 /**
  * The last section of Preferences > Player: the modern skins switch, a note on what wears a modern
- * skin, and Sharp pixels while modern skins are on. Absent in a build that does not offer them.
+ * skin, and Sharp pixels while modern skins are on.
  */
 @Composable
 internal fun ModernSkinsSection(prefs: ModernSkinPrefs) {
-    if (!prefs.offered) return
     Section(stringResource(R.string.prefs_player_skins_section))
     Group { ModernSkinsRow(prefs) }
     Note(stringResource(R.string.prefs_modern_skins_note))

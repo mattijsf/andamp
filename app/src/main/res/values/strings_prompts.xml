@@ -93,8 +93,6 @@
     <string name="prompt_jump_to_time_confirm">Jump</string>
 
     <!-- SkinOps.kt: a picked skin file that cannot be added; %1$s is the picked file's name -->
-    <string name="skin_modern_title">“%1$s” is a modern skin</string>
-    <string name="skin_modern_body">Andamp loads classic Winamp skins (.wsz). Modern skins (.wal) can\'t be added in this version.</string>
     <string name="skin_too_large_title">“%1$s” is too large</string>
     <string name="skin_too_large_body">This file is too large to load as a skin.</string>
     <string name="skin_modern_failed_title">“%1$s” couldn\'t be opened</string>
@@ -104,8 +102,8 @@
     <string name="skin_modern_stopped_title">“%1$s” stopped working</string>
     <string name="skin_modern_stopped_body">Andamp shows your last classic skin instead for now. This modern skin is tried again the next time Andamp starts. To stop that, pick another skin in Skins or remove this one in the Skin Browser.</string>
 
-    <!-- AmpModals.kt: a modern skin picked while modern skins are off; %1$s is the picked file's name -->
+    <!-- AmpModals.kt: a modern skin picked while modern skins are off; %1$s is the picked file's name. No-break spaces (&#160;) around > keep the Preferences path on one line. -->
     <string name="skin_modern_offer_title">Turn on modern skins?</string>
-    <string name="skin_modern_offer_body">“%1$s” is a Winamp modern skin. Modern skins are in beta. Turn them on and add this skin? Press and hold a modern skin to open Andamp\'s menu. You can turn modern skins off in Preferences &gt; Player.</string>
+    <string name="skin_modern_offer_body">“%1$s” is a Winamp modern skin. Modern skins are in beta. Turn them on and add this skin? Press and hold a modern skin to open Andamp\'s menu. You can turn modern skins off in Preferences&#160;&gt;&#160;Player.</string>
     <string name="skin_modern_offer_accept">Turn on and add</string>
 </resources>

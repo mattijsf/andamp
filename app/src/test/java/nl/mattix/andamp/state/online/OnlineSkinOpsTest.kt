@@ -9,9 +9,11 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import nl.mattix.andamp.state.EnglishWords
 import nl.mattix.andamp.state.SkinEntry
+import nl.mattix.andamp.state.SkinKind
 import nl.mattix.andamp.state.SkinLibrary
 import nl.mattix.andamp.state.SkinOps
 import nl.mattix.andamp.state.WinampState
+import nl.mattix.andamp.state.loadingModernSkin
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -133,6 +135,26 @@ class OnlineSkinOpsTest {
         assertTrue("the tile stays unticked", !ops.isInstalled(museumSkin.md5))
         assertNull(installed.libraryId(museumSkin.md5))
         assertEquals("Could not read Zelda_Amp_3.wsz", ops.message)
+    }
+
+    /**
+     * The museum adds classic skins only. A modern skin it sends is not added, and no offer to turn
+     * modern skins on shows, as it would for a modern skin picked from the phone.
+     */
+    @Test
+    fun `a modern skin from the museum is not added, offers nothing and says it could not be read`() {
+        val ops = ops { loadingModernSkin() }
+
+        ops.install(museumSkin)
+        awaitUntil("a message is reported") { ops.message != null }
+
+        assertEquals("Could not read Zelda_Amp_3.wsz", ops.message)
+        assertTrue("the tile stays unticked", !ops.isInstalled(museumSkin.md5))
+        assertNull(installed.libraryId(museumSkin.md5))
+        assertNull("no offer to turn modern skins on", state.modernOffer)
+        assertNull("no notice besides the message", state.prompt)
+        assertTrue("nothing is listed", state.skinEntries.none { it.kind == SkinKind.MODERN })
+        assertEquals(SkinEntry.BASE_ID, skinOps.currentId)
     }
 
     /** The Skin Manager's REM column removes the same file. */

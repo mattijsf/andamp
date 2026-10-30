@@ -12,7 +12,7 @@ import javax.xml.parsers.DocumentBuilderFactory
 
 /**
  * Every text a listener meets around modern skins, in each language Andamp ships: the switch and
- * its notes on Preferences > Player, the offer, the notices, the skin menu title, Color themes, Skin
+ * its notes on Preferences > Player, the offer, the notices, the skin menu title, Color Themes, Skin
  * Settings and the row suffix. Another translation may be incomplete (see `TranslationsTest`), but a gap here
  * would show English in the middle of a translated screen about modern skins.
  */
@@ -43,7 +43,8 @@ class ModernSkinTranslationsTest {
         val wrong =
             (listOf("values") + LANGUAGES).mapNotNull { dir ->
                 val strings = stringsIn(dir)
-                val path = "${strings.getValue("prefs_title")} > ${strings.getValue("prefs_page_player")}"
+                // no-break spaces around > keep the path on one line
+                val path = "${strings.getValue("prefs_title")}\u00A0>\u00A0${strings.getValue("prefs_page_player")}"
                 "$dir: the offer does not name \"$path\"".takeUnless { path in strings.getValue("skin_modern_offer_body") }
             }
         assertEquals(emptyList<String>(), wrong)
@@ -87,7 +88,7 @@ class ModernSkinTranslationsTest {
         val LANGUAGES = listOf("values-de", "values-fr", "values-nl", "values-zh-rCN")
 
         /**
-         * Keys of modern-skin text: the prompts and the row suffix, the skin menu title, Color themes and
+         * Keys of modern-skin text: the prompts and the row suffix, the skin menu title, Color Themes and
          * Skin Settings, and the Skins section on Preferences > Player with its lines in the Player row's summary.
          */
         val MODERN =

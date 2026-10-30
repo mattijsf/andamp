@@ -17,6 +17,8 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.AmpMenuItem
+import nl.mattix.andamp.state.AmpPrompt
+import nl.mattix.andamp.state.ModernSkinOffer
 import nl.mattix.andamp.state.NamePrompt
 import nl.mattix.andamp.state.WinampState
 import org.junit.Assert.assertEquals
@@ -226,6 +228,21 @@ class AmpContextMenuTest {
         compose.onNodeWithText("Nope").performClick()
         compose.waitForIdle()
         assertEquals(false, fired)
+    }
+
+    @Test
+    fun `the offer to add a modern skin waits until the prompt on screen is answered`() {
+        state.prompt = AmpPrompt("First", "", "OK", null) { state.prompt = null }
+        state.modernOffer = ModernSkinOffer("Bento.wal", accept = {}, decline = {})
+        compose.setContent {
+            AmpModals(state, anchorBounds = { IntRect(IntOffset.Zero, IntSize.Zero) })
+        }
+
+        compose.onNodeWithTag("modern.offer.accept").assertDoesNotExist()
+        compose.onNodeWithTag("prompt.confirm").performClick()
+        compose.waitForIdle()
+
+        compose.onNodeWithTag("modern.offer.accept").assertIsDisplayed()
     }
 
     @Test

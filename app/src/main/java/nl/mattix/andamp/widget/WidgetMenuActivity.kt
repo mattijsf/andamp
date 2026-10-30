@@ -124,14 +124,14 @@ class WidgetMenuActivity : ComponentActivity() {
                 anchorBounds = { IntRect(ANCHOR_X, ANCHOR_Y, ANCHOR_X, ANCHOR_Y) },
                 skin = skin,
                 // an added modern skin shows in the player, not in this window, so the player opens
-                onModernOfferTaken = { open(null) },
+                onModernOfferTaken = { open(Screen.PLAYER) },
             )
         }
     }
 
     /**
-     * The skin picker's answer. The window stays until the load is done, so a notice about the
-     * pick has a window to show in; it closes once nothing shows.
+     * The skin picker's answer. The window stays until the load is done, so a notice or an offer
+     * about the pick has a window to show in; it closes once nothing shows.
      */
     internal fun skinPicked(uri: Uri?) {
         picking = false
@@ -167,7 +167,7 @@ class WidgetMenuActivity : ComponentActivity() {
     /** True while the document picker is in front, waiting for an answer. */
     private var picking by mutableStateOf(false)
 
-    /** True while a picked skin is loading, which may end in a notice. */
+    /** True while a picked skin is loading, which may end in a notice or an offer. */
     private var importing by mutableStateOf(false)
 
     /** This window's own menu, kept out of the state every other host draws. */

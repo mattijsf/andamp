@@ -9,13 +9,15 @@ import androidx.lifecycle.ViewModelProvider
 import nl.mattix.andamp.state.AppViewModels
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.displayNameOf
+import nl.mattix.andamp.ui.Screen
 
 /**
  * A Winamp skin (.wsz, or a modern .wal) opened or shared from another app: a file manager, a
  * download, a chat.
  *
  * It shows nothing of its own. It hands the file to the process's one player, as Load skin does,
- * and brings the player forward, where the skin goes on or a notice says why it did not.
+ * and brings the player forward, where the skin goes on, a notice says why it did not, or a modern
+ * skin picked while modern skins are off is offered with them turned on.
  *
  * It is a separate activity and not a filter on [MainActivity] for the reason [PluginImportActivity]
  * gives: another app's VIEW starts its target in that app's task, so the player would open a
@@ -39,6 +41,8 @@ class SkinImportActivity : Activity() {
         if (file != null && stream != null) {
             player.skinOps.load(stream, displayNameOf(file) ?: getString(R.string.skin_picked_name))
         }
+        // the skin goes on in the player, so the app comes forward there and not on a screen over it
+        player.state.arrivalDestination = Screen.PLAYER
         startActivity(
             Intent(this, MainActivity::class.java)
                 .putExtra(MainActivity.SHOW_THE_APP, true)

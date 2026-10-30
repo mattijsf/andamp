@@ -144,10 +144,8 @@
     <string name="prefs_player_lists_section">列表</string>
     <string name="prefs_player_touch_section">触控</string>
     <string name="prefs_player_colors_section">颜色</string>
-    <string name="prefs_player_summary_all">窗口、列表、触控和颜色</string>
     <string name="prefs_player_skins_section">面板</string>
     <string name="prefs_player_summary_all_skins">窗口、列表、触控、颜色和面板</string>
-    <string name="prefs_player_summary_no_colors">窗口、列表和触控</string>
     <string name="prefs_player_summary_no_colors_skins">窗口、列表、触控和面板</string>
 
     <!-- ModernSkinPrefs.kt -->

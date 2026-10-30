@@ -40,7 +40,7 @@ class MenuLabelConventionTest {
             mainMenu(vm, {}, {}, {}, {}),
             // with a modern skin worn whose color themes are listed under Skins, and its options under Options
             mainMenu(modern, {}, {}, {}, {}, modernPlayer = true).also { menu ->
-                assertTrue("Color themes is listed", submenuLabels(menu.items).contains("Color themes"))
+                assertTrue("Color Themes is listed", submenuLabels(menu.items).contains("Color Themes"))
                 assertTrue("Skin Settings is listed", actionLabels(menu.items).contains("Skin Settings..."))
             },
             visualizationMenu(vm),

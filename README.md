@@ -35,6 +35,7 @@ What works:
 - Android Auto: its own player with the playlist to pick from. With Autoamp beside it,
   Andamp also puts its skinned main window on the car's screen. Android Auto shows an app with a screen of its own in a car only when the
   phone records Google Play as its installer.
+- Classic `.wsz` skins, and Winamp modern skins (`.wal`) in beta.
 - A browser for the Winamp Skin Museum.
 - Jellyfin, Plex and Subsonic servers, through music sources that install as separate apps
   beside the player. See [docs/source-packs.md](docs/source-packs.md).
@@ -58,16 +59,18 @@ Min SDK is 26. It turns with the phone, and remembers one window arrangement for
 
 Three skins ship with the app: AndAmp Dark (the default), Light and Spot. To load another,
 tap the menu button in the top-left corner of the titlebar and pick Skins > Load skin...
-for any classic `.wsz` file, or Skins > << Get more skins! >> to browse the
+for a classic `.wsz` file, or Skins > << Get more skins! >> to browse the
 [Winamp Skin Museum](https://skins.webamp.org). Loaded skins are kept and listed under
-Skins. Modern `.wal` skins are not supported.
+Skins. Winamp modern skins (`.wal`) can be worn too, in beta: turn on Preferences > Player >
+Modern skins (beta), or load a `.wal` and accept the offer to turn them on.
 
 ## Project layout
 
-Everything draws in a 275 pixel wide virtual space, like real Winamp, scaled by a whole
+The classic windows draw in a 275 pixel wide virtual space, like real Winamp, scaled by a whole
 number. With Double Size on, the finished picture is then drawn a little smaller, so it is
 exactly as large as the screen takes: as wide as a phone's. Sprite coordinates come from [webamp](https://github.com/captbaritone/webamp)'s
-`skinSprites.ts`.
+`skinSprites.ts`. A modern skin is drawn at the size its XML gives, scaled by a whole number
+from 2x up, or by a smaller in-between scale when it is too large for that.
 
 ```
 core/model       Track, Transport, BackendState, Capabilities
@@ -82,11 +85,13 @@ backend/media3   playback through ExoPlayer
 backend/pack     the client side of a music source
 pack/common      the source side of that contract
 visualizer/      AVS, and Milkdrop through projectM
+modernskin/      the Winamp modern skin engine: skin XML, MAKI scripts, drawing
 androidauto/     the app Android Auto talks to, which lends the car's screen to the player
 app/
   skin/          .wsz loader, sprite tables, bitmap font, PLEDIT/VISCOLOR/REGION parsers
   state/         render state and the ViewModel
   ui/            the canvas layer, widgets, and the windows
+  wal/           hosts a modern skin on the player
   widget/        the home-screen widget
 ```
 
@@ -158,8 +163,9 @@ license.
 
 **Plug-ins, presets and skins are yours.** As an additional permission under section 7 of
 the GPL, you may create and distribute effect plug-ins (`.lua`), visualizer presets
-(`.milk`, `.avs`) and skins (`.wsz`) under any terms you choose. This covers files loaded
-through those formats, not modified versions of Andamp itself.
+(`.milk`, `.avs`) and skins (`.wsz`, and `.wal` with the scripts inside them) under any terms
+you choose. This covers files loaded through those formats, not modified versions of Andamp
+itself.
 
 **The tip jar uses Google Play's library.** As an additional permission under section 7
 of the GPL, you may combine Andamp with the Google Play Billing Library

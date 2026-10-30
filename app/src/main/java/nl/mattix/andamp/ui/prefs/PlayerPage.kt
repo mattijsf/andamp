@@ -38,16 +38,8 @@ internal fun PlayerPage(
 
 /**
  * What the page holds, for the Player row's line, by the sections this phone shows: Colors where
- * it can take them from the wallpaper, Skins where modern skins are offered.
+ * it can take them from the wallpaper.
  */
 @StringRes
-internal fun PrefsSections.playerSummary(): Int {
-    val colors = palette.offered
-    val skins = modern.offered
-    return when {
-        colors && skins -> R.string.prefs_player_summary_all_skins
-        colors -> R.string.prefs_player_summary_all
-        skins -> R.string.prefs_player_summary_no_colors_skins
-        else -> R.string.prefs_player_summary_no_colors
-    }
-}
+internal fun PrefsSections.playerSummary(): Int =
+    if (palette.offered) R.string.prefs_player_summary_all_skins else R.string.prefs_player_summary_no_colors_skins
