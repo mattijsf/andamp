@@ -327,7 +327,8 @@ internal class WalHost(
     /**
      * A font a skin names without a file is a Windows system font; the app carries free stand-ins
      * whose widths match closely (DejaVu Sans Condensed for Tahoma: Bento's tabs are sized by the
-     * measured text). Bold has a separate file there, so no fake bold.
+     * measured text; Liberation Sans, metric-compatible, for Arial). Bold has a separate file there,
+     * so no fake bold.
      */
     private fun standIn(
         font: FontDef?,
@@ -464,7 +465,7 @@ internal class WalHost(
         val LIBRARY_CLOSED: (String) -> Boolean? = { kind -> if (kind == "ml") false else null }
 
         /** Windows fonts skins name without a file, and the free font in Andamp's default set that stands in. */
-        private val STAND_INS = mapOf("tahoma" to "DejaVuSansCondensed")
+        private val STAND_INS = mapOf("tahoma" to "DejaVuSansCondensed", "arial" to "LiberationSans")
 
         private const val MAX_LOG = 12
         private const val MAX_IMAGES = 256

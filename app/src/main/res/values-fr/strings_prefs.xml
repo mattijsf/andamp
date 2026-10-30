@@ -108,7 +108,7 @@
     <string name="prefs_notice_projectm_eval_what">Évalue les expressions qui servent de scripts aux préréglages AVS ; intégré à la bibliothèque AVS.</string>
     <string name="prefs_notice_milkdrop_what">L’original de Ryan Geiss, dont projectM affiche les préréglages .milk.</string>
     <string name="prefs_notice_webamp_what">Ses tables de sprites servent de référence pour chaque coordonnée des fenêtres à skin. Sa transcription de std.mi liste les appels de script auxquels répond le moteur des skins modernes, et sa description du bytecode des scripts est le format que lit le moteur.</string>
-    <string name="prefs_notice_liberation_sans_what">La police de la liste de lecture, aux métriques compatibles avec l’Arial que nomme PLEDIT.TXT.</string>
+    <string name="prefs_notice_liberation_sans_what">Remplace l’Arial, aux métriques compatibles : la police de la liste de lecture que nomme PLEDIT.TXT, et dans les skins modernes de Winamp.</string>
     <string name="prefs_notice_liberation_sans_obligation">Fournie sans modification, sous un nom que la licence autorise.</string>
     <string name="prefs_notice_dejavu_what">Remplace les polices Windows que les skins modernes de Winamp nomment sans les fournir.</string>
     <string name="prefs_notice_dejavu_obligation">Fournie sans modification, avec le texte de sa licence.</string>
