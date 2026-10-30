@@ -18,7 +18,7 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.modernskin.maki.Value
+import nl.mattix.andamp.modernskin.fixtures.resizeAsScript
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.Player
 import nl.mattix.andamp.modernskin.skin.SkinMenu
@@ -660,8 +660,9 @@ class WalLookTest {
     ) = look.engine!!.post { rt ->
         rt.gesture(fresh = true) {
             if (rt.menuChoice(menu) != 0) {
-                val (w, h) = checkNotNull(rt.mainLayout).size
-                checkNotNull(rt.mainLayout).makiCall("resize", listOf(Value.Int(0), Value.Int(0), Value.Int(w), Value.Int(h)))
+                val main = checkNotNull(rt.mainWindow)
+                val (w, h) = rt.windowSize(main)
+                rt.resizeAsScript(main, 0, 0, w, h)
             }
         }
     }

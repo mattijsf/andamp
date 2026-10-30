@@ -499,8 +499,50 @@ class SkinRuntime(
     /** What [id] is like now; see [WindowInfo]. */
     fun windowInfo(id: WindowId): WindowInfo {
         val l = layoutOf(id)
-        return WindowInfo(id, l.size, l.minW, l.minH, l.maxW, l.maxH, l.declaredResizableBothWays(), l.edgeX, l.edgeY)
+        return WindowInfo(
+            id,
+            l.size,
+            l.minW,
+            l.minH,
+            l.maxW,
+            l.maxH,
+            l.declaredResizableBothWays(),
+            l.edgeX,
+            l.edgeY,
+            container = l.container?.id.orEmpty(),
+            layout = l.id,
+        )
     }
+
+    /**
+     * The object with id [id] in the windows on screen, the top one first, as a host or a check
+     * finds what to tap; null when none has it. See [ObjectInfo].
+     */
+    fun objectInfo(id: String): ObjectInfo? {
+        val o = windows.asReversed().firstNotNullOfOrNull { it.findObject(id) } ?: return null
+        val layout = o.layoutObject ?: return null
+        val origin = windowRect(layout)
+        val r = o.rect
+        return ObjectInfo(
+            window = layout.windowId,
+            rect = r,
+            stackRect = Rect(origin.left + r.left, origin.top + r.top, r.width, r.height),
+            visible = o.visible,
+            className = o.className,
+        )
+    }
+
+    /** The window container [container] shows now (its current layout), or null when the skin has no such container. */
+    fun windowOf(container: String): WindowId? = container(container)?.current?.windowId
+
+    /** Where [id] sits in the stack, in layout pixels ([windowRect]). */
+    fun windowRect(id: WindowId): Rect = windowRect(layoutOf(id))
+
+    /** Opens the window of [container] in the stack; false when the skin has no such container. */
+    fun openWindow(container: String): Boolean = container(container)?.also { openWindow(it) } != null
+
+    /** Closes the window of [container]; false when the skin has no such container. */
+    fun closeWindow(container: String): Boolean = container(container)?.also { closeWindow(it) } != null
 
     /** [id]'s size as it shows now, in layout pixels ([Layout.size]). */
     fun windowSize(id: WindowId): Pair<Int, Int> = layoutOf(id).size

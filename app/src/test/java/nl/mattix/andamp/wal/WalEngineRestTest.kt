@@ -6,13 +6,13 @@ import android.app.Application
 import android.os.Looper
 import android.os.SystemClock
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.modernskin.maki.Value
+import nl.mattix.andamp.modernskin.fixtures.nextTimerAt
+import nl.mattix.andamp.modernskin.fixtures.popScriptMenu
+import nl.mattix.andamp.modernskin.fixtures.startScriptTimer
 import nl.mattix.andamp.modernskin.skin.FakePlayer
-import nl.mattix.andamp.modernskin.skin.PopupMenu
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinMenu
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
-import nl.mattix.andamp.modernskin.skin.Timer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -117,8 +117,7 @@ class WalEngineRestTest {
     private fun openMenu(on: WalEngine): CompletableFuture<Int> {
         val heard = CompletableFuture<Int>()
         on.post { rt ->
-            val menu = PopupMenu(rt).apply { makiCall("addcommand", listOf(Value.Str("Item"), Value.Int(1))) }
-            heard.complete(rt.gesture(fresh = true) { menu.makiCall("popatmouse", emptyList())!!.asInt })
+            heard.complete(rt.popScriptMenu("Item" to 1))
         }
         return heard
     }
@@ -143,10 +142,7 @@ class WalEngineRestTest {
         var fired = 0L
 
         fun startOn(rt: SkinRuntime) {
-            Timer(rt).apply {
-                delay = periodMs
-                start()
-            }
+            rt.startScriptTimer(periodMs)
         }
 
         fun idle(rt: SkinRuntime): WalIdle {
@@ -154,7 +150,7 @@ class WalEngineRestTest {
                 fired = rt.stats.timerFires
                 if (fired % changesEvery == 0L) rt.invalidate()
             }
-            return WalIdle(framesWanted = false, nextDueAt = rt.timers.minOfOrNull { it.nextAt }, stopped = stopped)
+            return WalIdle(framesWanted = false, nextDueAt = rt.nextTimerAt, stopped = stopped)
         }
     }
 

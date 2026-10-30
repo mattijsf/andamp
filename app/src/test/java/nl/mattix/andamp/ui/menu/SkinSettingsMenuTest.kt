@@ -4,7 +4,8 @@ package nl.mattix.andamp.ui.menu
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.modernskin.maki.Value
+import nl.mattix.andamp.modernskin.fixtures.newConfigItem
+import nl.mattix.andamp.modernskin.fixtures.optionsItem
 import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.AmpMenuItem
@@ -203,7 +204,7 @@ class SkinSettingsMenuTest {
         val none = wear("None")
         assertFalse("lists none", "Skin Settings..." in shape(options(none)))
         seedSkinOptions(none.skinOps.wal!!) { rt ->
-            rt.optionsItem().makiCall("getattribute", listOf(Value.Str("Only read")))
+            rt.optionsItem().read("Only read")
         }
         assertFalse("an attribute only read", "Skin Settings..." in shape(options(none)))
     }

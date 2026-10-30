@@ -6,14 +6,19 @@ import android.app.Application
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.modernskin.maki.Value
+import nl.mattix.andamp.modernskin.fixtures.beginSlideAsScript
+import nl.mattix.andamp.modernskin.fixtures.endSlidesAsScript
+import nl.mattix.andamp.modernskin.fixtures.placeAsScript
+import nl.mattix.andamp.modernskin.fixtures.resizeAsScript
+import nl.mattix.andamp.modernskin.fixtures.setParamAsScript
+import nl.mattix.andamp.modernskin.fixtures.switchLayoutAsScript
 import nl.mattix.andamp.modernskin.skin.FakePlayer
-import nl.mattix.andamp.modernskin.skin.Layout
 import nl.mattix.andamp.modernskin.skin.Player
 import nl.mattix.andamp.modernskin.skin.Rect
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.modernskin.skin.Track
+import nl.mattix.andamp.modernskin.skin.WindowId
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -141,16 +146,16 @@ class WalFittingTest {
         }
 
         fun open(id: String) {
-            rt.openWindow(checkNotNull(rt.container(id)))
+            check(rt.openWindow(id))
             refit()
         }
 
         fun close(id: String) {
-            rt.closeWindow(checkNotNull(rt.container(id)))
+            check(rt.closeWindow(id))
             refit()
         }
 
-        fun window(id: String): Layout = checkNotNull(rt.container(id)?.current)
+        fun window(id: String): WindowId = checkNotNull(rt.windowOf(id))
 
         fun layout(): WalLayout = fitting.layout(rt, fit, baseW, rt.stackSize, rt.drawnSize, rt.topWindow != null, true)
 
@@ -159,8 +164,8 @@ class WalFittingTest {
             x: Int,
             y: Int,
         ) {
-            val (w, h) = window("main").size
-            window("main").makiCall("resize", listOf(Value.Int(x), Value.Int(y), Value.Int(w), Value.Int(h)))
+            val (w, h) = rt.windowSize(window("main"))
+            rt.resizeAsScript(window("main"), x, y, w, h)
             rt.ensureLayout()
         }
 
@@ -169,7 +174,7 @@ class WalFittingTest {
             right: Boolean,
             down: Boolean,
         ) {
-            val (w, h) = window("main").size
+            val (w, h) = rt.windowSize(window("main"))
             val (vw, vh) = rt.viewport
             moveMain(if (right) vw - w else 0, if (down) vh - h else 0)
         }
@@ -252,7 +257,6 @@ class WalFittingTest {
     @Test
     fun `sideways, a drawer sliding out of the main window leaves the columns and the scale as they are`() {
         val skin = Fitted(mmd3, pixel).apply { open("pl") }
-        val drawer = checkNotNull(skin.window("main").findObject("drawer"))
         assertEquals(2, skin.rt.presentation.columns)
         assertEquals(2f, skin.layout().scale)
         val playlist = Rect(583, 0, 381, 870 / 2)
@@ -262,10 +266,10 @@ class WalFittingTest {
             skin.rt.windowRect(skin.window("pl")),
         )
 
-        skin.rt.moving.add(drawer)
-        drawer.setXmlParam("x", "383")
+        skin.rt.beginSlideAsScript("drawer")
+        skin.rt.setParamAsScript("drawer", "x", "383")
         assertEquals("while it slides", 2f, skin.layout().scale)
-        skin.rt.moving.clear()
+        skin.rt.endSlidesAsScript()
         assertEquals("once it rests", 2f, skin.layout().scale)
         assertEquals("the playlist keeps its width", playlist, skin.rt.windowRect(skin.window("pl")))
 
@@ -274,7 +278,7 @@ class WalFittingTest {
         skin.open("pl")
         assertEquals(2, skin.rt.presentation.columns)
         assertEquals(2f, skin.layout().scale)
-        drawer.setXmlParam("x", "181")
+        skin.rt.setParamAsScript("drawer", "x", "181")
         assertEquals("closed again", 2f, skin.layout().scale)
         assertEquals(playlist, skin.rt.windowRect(skin.window("pl")))
     }
@@ -338,7 +342,7 @@ class WalFittingTest {
     @Test
     fun `deciding the columns sends the skin no resize events`() {
         val corner = Fitted(cornerAmp, taller)
-        corner.rt.openWindow(checkNotNull(corner.rt.container("pl")))
+        check(corner.rt.openWindow("pl"))
         val passes = corner.rt.stats.layoutPasses
 
         corner.fitting.refit(corner.rt, corner.fit, corner.baseW)
@@ -356,20 +360,19 @@ class WalFittingTest {
     fun `upright, a drawer that runs past the screen shrinks the skin once its slide ends, and grows back after`() {
         val upright = WalFit(720, 1066, 2f, sideways = false)
         val skin = Fitted(mmd3, upright)
-        val drawer = checkNotNull(skin.window("main").findObject("drawer"))
         assertEquals(720f / 381, skin.layout().scale)
 
-        skin.rt.moving.add(drawer)
-        drawer.setXmlParam("x", "383")
+        skin.rt.beginSlideAsScript("drawer")
+        skin.rt.setParamAsScript("drawer", "x", "383")
         assertEquals("while it slides the scale holds", 720f / 381, skin.layout().scale)
-        skin.rt.moving.clear()
+        skin.rt.endSlidesAsScript()
         assertEquals("once it rests the whole drawer fits", 720f / 583, skin.layout().scale)
         assertEquals(0f, skin.layout().left)
 
-        skin.rt.moving.add(drawer)
-        drawer.setXmlParam("x", "181")
+        skin.rt.beginSlideAsScript("drawer")
+        skin.rt.setParamAsScript("drawer", "x", "181")
         assertEquals("closing, the scale holds", 720f / 583, skin.layout().scale)
-        skin.rt.moving.clear()
+        skin.rt.endSlidesAsScript()
         assertEquals("closed, it grows back", 720f / 381, skin.layout().scale)
     }
 
@@ -377,15 +380,14 @@ class WalFittingTest {
     fun `upright, a window opened while the drawer is out still lets the skin grow back when it closes`() {
         val upright = WalFit(720, 1066, 2f, sideways = false)
         val skin = Fitted(mmd3, upright)
-        val drawer = checkNotNull(skin.window("main").findObject("drawer"))
-        drawer.setXmlParam("x", "383")
+        skin.rt.setParamAsScript("drawer", "x", "383")
         assertEquals("the drawer out", 720f / 583, skin.layout().scale)
 
         skin.open("pl")
         assertEquals("the view the closed drawer gives", 381 to 564, skin.rt.presentation.viewSize)
         assertEquals(720f / 583, skin.layout().scale)
 
-        drawer.setXmlParam("x", "181")
+        skin.rt.setParamAsScript("drawer", "x", "181")
         assertEquals("closed, it grows back", 720f / 381, skin.layout().scale)
         assertEquals(
             "and the playlist reaches the bottom",
@@ -399,13 +401,13 @@ class WalFittingTest {
         val upright = WalFit(720, 1066, 2f, sideways = false)
         val skin = Fitted(mmd3, upright).apply { open("pl") }
 
-        checkNotNull(skin.rt.container("main")).switchTo("shade")
+        skin.rt.switchLayoutAsScript("main", "shade")
         skin.refit()
         assertEquals("800 px across at 0.9x", 720f / 800, skin.layout().scale)
         assertEquals(800 to 1184, skin.rt.presentation.viewSize)
         assertEquals(Rect(0, 23, 800, 1184 - 23), skin.rt.windowRect(skin.window("pl")))
 
-        checkNotNull(skin.rt.container("main")).switchTo("normal")
+        skin.rt.switchLayoutAsScript("main", "normal")
         skin.refit()
         assertEquals("back at the main window's scale", 720f / 381, skin.layout().scale)
         assertEquals(Rect(0, 216, 381, 564 - 216), skin.rt.windowRect(skin.window("pl")))
@@ -469,7 +471,7 @@ class WalFittingTest {
         assertEquals(
             "a script finds the window in the corner of the new viewport",
             vw - 246 to vh - 228,
-            window.viewX to window.viewY,
+            corner.rt.placeAsScript(window),
         )
 
         corner.refit(upright.copy(compact = true))
@@ -516,15 +518,13 @@ class WalFittingTest {
             val skin = Fitted(mmd3, fit)
             val centered = skin.layout()
             val normal = skin.window("main")
-            val left = checkNotNull(normal.makiCall("getleft", emptyList())).asInt
-            val top = checkNotNull(normal.makiCall("gettop", emptyList())).asInt
-            val main = checkNotNull(skin.rt.container("main"))
+            val (left, top) = skin.rt.placeAsScript(normal)
 
-            main.switchTo("shade")
+            skin.rt.switchLayoutAsScript("main", "shade")
             skin.moveMain(16, 0)
             skin.refit()
             assertEquals("$fit: the bar against the top", 0f, skin.layout().top)
-            main.switchTo("normal")
+            skin.rt.switchLayoutAsScript("main", "normal")
             skin.moveMain(left, top)
             skin.refit()
             assertEquals("$fit", centered, skin.layout())
@@ -542,7 +542,7 @@ class WalFittingTest {
             assertEquals("$fit", unmoved.layout(), moved.layout())
 
             for (skin in listOf(unmoved, moved)) {
-                checkNotNull(skin.rt.container("main")).switchTo("shade")
+                skin.rt.switchLayoutAsScript("main", "shade")
                 skin.refit()
             }
             val shade = moved.layout()

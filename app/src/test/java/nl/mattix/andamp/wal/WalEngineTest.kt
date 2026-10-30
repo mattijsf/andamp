@@ -6,10 +6,10 @@ import android.app.Application
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.modernskin.maki.Value
+import nl.mattix.andamp.modernskin.fixtures.popScriptMenu
+import nl.mattix.andamp.modernskin.fixtures.resizeAsScript
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.Player
-import nl.mattix.andamp.modernskin.skin.PopupMenu
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinMenu
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
@@ -119,8 +119,7 @@ class WalEngineTest {
     private fun openMenu(): CompletableFuture<Int> {
         val heard = CompletableFuture<Int>()
         engine.post { rt ->
-            val menu = PopupMenu(rt).apply { makiCall("addcommand", listOf(Value.Str("Item"), Value.Int(1))) }
-            heard.complete(rt.gesture(fresh = true) { menu.makiCall("popatmouse", emptyList())!!.asInt })
+            heard.complete(rt.popScriptMenu("Item" to 1))
         }
         return heard
     }
@@ -307,7 +306,13 @@ class WalEngineTest {
         assertFalse("post runs nothing with no skin", skipped.isDone)
         val withSkin = CompletableFuture<SkinRuntime?>()
         engine.postAlways { withSkin.complete(it) }
-        assertEquals("with a skin on, it gets that skin", 200 to 100, withSkin.get(5, TimeUnit.SECONDS)?.mainLayout?.size)
+        assertEquals(
+            "with a skin on, it gets that skin",
+            200 to 100,
+            withSkin.get(5, TimeUnit.SECONDS)?.let { rt ->
+                rt.mainWindow?.let(rt::windowSize)
+            },
+        )
     }
 
     @Test(timeout = 20_000)
@@ -370,7 +375,7 @@ class WalEngineTest {
 
         repeat(WalEngine.MAX_FAILURES) {
             engine.post { rt ->
-                rt.mainLayout!!.makiCall("resize", listOf(Value.Int(0), Value.Int(0), Value.Int(10_000), Value.Int(100)))
+                rt.resizeAsScript(rt.mainWindow!!, 0, 0, 10_000, 100)
             }
         }
 
@@ -394,7 +399,7 @@ class WalEngineTest {
     fun `a double tap on the title bar switches to the shade`() {
         engine.doubleTap(100, 70)
 
-        assertEquals("shade", onEngine { it.mainLayout?.id })
+        assertEquals("shade", onEngine { rt -> rt.mainWindow?.let { rt.windowInfo(it).layout } })
         awaitThat("the shade's frame is published") { engine.frame?.mainSize == (200 to 14) }
     }
 

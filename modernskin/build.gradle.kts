@@ -5,6 +5,7 @@
 plugins {
     alias(libs.plugins.kotlin.jvm)
     alias(libs.plugins.detekt)
+    `java-test-fixtures`
 }
 
 kotlin {
@@ -12,6 +13,8 @@ kotlin {
 }
 
 dependencies {
+    // helpers that drive the engine as a skin's scripts do, for this module's tests and the app's
+    testFixturesApi(libs.junit)
     testImplementation(libs.junit)
     // the reference scenarios (~/Development/winamp-vm/scenarios.json), shared with the VM and Android scripts
     testImplementation("org.json:json:20240303")

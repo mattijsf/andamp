@@ -4,6 +4,7 @@ package nl.mattix.andamp.modernskin
 import nl.mattix.andamp.modernskin.maki.Value
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.Layout
+import nl.mattix.andamp.modernskin.skin.Rect
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.modernskin.skin.StackArrange
@@ -130,5 +131,37 @@ class WindowInfoTest {
         rt.columns = 2
         assertFalse(rt.listWindowOpen)
         assertNull(rt.leftColumn())
+    }
+
+    @Test
+    fun `windows open, close and are found by their container's id`() {
+        assertFalse("no such container", rt.openWindow("none"))
+        assertTrue(rt.openWindow("pl"))
+        val pl = checkNotNull(rt.windowOf("pl"))
+        assertTrue(pl in rt.windowIds)
+        assertEquals(rt.windowRect(window("pl")), rt.windowRect(pl))
+        assertEquals("pl" to "normal", rt.windowInfo(pl).let { it.container to it.layout })
+
+        assertTrue(rt.closeWindow("pl"))
+        assertFalse(pl in rt.windowIds)
+        assertEquals("a closed window keeps its id", pl, rt.windowOf("pl"))
+        assertNull(rt.windowOf("none"))
+    }
+
+    @Test
+    fun `an object is found in the windows on screen, with where it sits in its window and in the stack`() {
+        rt.presentation = rt.presentation.copy(viewSize = 300 to 1000)
+        open("pl")
+        rt.ensureLayout()
+
+        val list = checkNotNull(rt.objectInfo("list"))
+        val pl = rt.windowRect(window("pl"))
+        assertEquals(window("pl").windowId, list.window)
+        assertEquals(Rect(0, 0, 290, 70), list.rect)
+        assertEquals(Rect(pl.left, pl.top, 290, 70), list.stackRect)
+        assertTrue(list.visible)
+
+        assertEquals("Group", rt.objectInfo("body")?.className)
+        assertNull(rt.objectInfo("none"))
     }
 }
