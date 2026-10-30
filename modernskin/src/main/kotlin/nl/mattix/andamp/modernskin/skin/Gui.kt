@@ -88,6 +88,13 @@ open class GuiObject(
     var padRight = 0
     val attrs = LinkedHashMap<String, String>()
 
+    /**
+     * `resize` as the skin's XML writes it, before any script changes it: Winamp Modern's script
+     * turns its drawer's grip into a corner one while the drawer is open.
+     */
+    var declaredResize: String? = null
+        private set
+
     /** Where it was last laid out, in layout pixels. */
     var rect: Rect = Rect.EMPTY
         protected set
@@ -153,6 +160,7 @@ open class GuiObject(
     ): Boolean {
         val k = key.lowercase()
         attrs[k] = value
+        if (k == "resize" && !rt.scriptsRunning) declaredResize = value
         val placedBefore = if (k in GEOMETRY) placement() else null
         when (k) {
             "id" -> {
@@ -1727,9 +1735,20 @@ class Layout(
     /** Whether the user can change the window's width: a handle on a left or right edge. */
     fun resizesHorizontally(): Boolean = hasHandle("left", "right")
 
-    private fun hasHandle(vararg edges: String): Boolean {
+    /**
+     * Whether the skin's XML gives the window handles both ways ([declaredResize]), whatever its
+     * scripts set later: Winamp Modern's main window, whose drawer's grip turns into a corner one
+     * while the drawer is open, is not one.
+     */
+    fun declaredResizableBothWays(): Boolean =
+        hasHandle("left", "right", declared = true) && hasHandle("top", "bottom", declared = true)
+
+    private fun hasHandle(
+        vararg edges: String,
+        declared: Boolean = false,
+    ): Boolean {
         fun walk(o: GuiObject): Boolean {
-            val r = o.attrs["resize"]?.lowercase()
+            val r = (if (declared) o.declaredResize else o.attrs["resize"])?.lowercase()
             if (r != null && edges.any { it in r }) return true
             return o is Group && o.children.any { walk(it) }
         }
@@ -1781,8 +1800,11 @@ class Layout(
             }
 
             "resize" -> {
-                moveTo(args[0].asInt, args[1].asInt, args[2].asInt, args[3].asInt)
-                resizeTo(args[2].asInt, args[3].asInt)
+                val to = Rect(args[0].asInt, args[1].asInt, args[2].asInt, args[3].asInt)
+                if (!rt.maximizes(this, to)) {
+                    moveTo(to.left, to.top, to.width, to.height)
+                    resizeTo(to.width, to.height)
+                }
                 Value.Null
             }
 

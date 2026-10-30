@@ -371,7 +371,7 @@ internal fun PlayerSurface(
     Box(Modifier.fillMaxSize().then(if (locked) Modifier.background(Color.Black) else Modifier)) {
         // the fullscreen visualizer is drawn over every window and outside the insets the
         // windows are held inside
-        val fullscreen = vm.state.milkdropOn && vm.state.milkdropFullscreen
+        val fullscreen = vm.state.visualizerFullscreen
         ImmersiveWhile(fullscreen)
         CompositionLocalProvider(LocalSurfaceScreen provides surfaceScreen) {
             BoxWithConstraints(

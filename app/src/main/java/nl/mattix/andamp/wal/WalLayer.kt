@@ -51,6 +51,7 @@ import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.ui.menu.MenuBarSection
+import nl.mattix.andamp.ui.window.MilkdropSurface
 import nl.mattix.andamp.ui.window.PlaylistMenuActions
 import nl.mattix.andamp.ui.window.WindowSnap
 import nl.mattix.andamp.ui.window.windowScreen
@@ -100,6 +101,8 @@ internal class WalLayerParts(
     val menuTitle: String,
     /** Whether the stack keeps to its natural size, as over other apps; see [WalFit.compact]. */
     val compact: Boolean = false,
+    /** The visualizer, drawn where the skin shows it ([WalLayout.visRect]) and filling the modifier's bounds. */
+    val visualizer: @Composable (Modifier) -> Unit = {},
 )
 
 /**
@@ -137,6 +140,7 @@ internal fun rememberWalLayerParts(
             openMenu = { anchor, section -> openMenuNow(anchor, section) },
             menuTitle = vm.words.get(R.string.menu_skin_menu),
             compact = compact,
+            visualizer = { MilkdropSurface(vm, it) },
         )
     }
 }
@@ -147,7 +151,7 @@ internal fun rememberWalLayerParts(
  * Skin Browser window over all of the stack. Read in a snapshot.
  */
 internal fun hidesModernSkin(s: WinampState): Boolean {
-    if (s.milkdropOn && s.milkdropFullscreen) return true
+    if (s.visualizerFullscreen) return true
     val stack = s.windowRects[WindowStore.MAIN] ?: return false
 
     fun over(
@@ -210,7 +214,12 @@ internal fun WalLayer(
         val placed = if (layout == null) null else ready ?: last.value
         // the stack snaps as near as a classic window does
         SideEffect { drag.placedAt(fit, box, home?.stack, placed?.stack?.topLeft, WindowSnap.SNAP_DISTANCE * scale) }
-        if (placed == null) companion() else WalCanvas(parts, state, placed, drag)
+        if (placed == null) {
+            companion()
+        } else {
+            WalCanvas(parts, state, placed, drag)
+            fitted?.visRect?.let { WalVisualizer(parts, state, placed, it) }
+        }
     }
 }
 
@@ -298,6 +307,8 @@ private fun CoroutineScope.holdTurn(
         }
     }
     launch { snapshotFlow(fit).collect { surface.fit(it) } }
+    launch { followSkinVisualizer(parts, state) }
+    launch { reattachOnClose(surface, state) }
     // the rect goes out as the turn is taken; a drawer sliding open moves it once more, when it stops
     launch {
         var first = true

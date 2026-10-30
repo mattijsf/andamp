@@ -46,6 +46,7 @@ class WalHostActionsTest {
             exit = { on("exit") },
             toggleLibrary = { on("library") },
             toggleVisualizer = { on("visualizer") },
+            showVisualizer = { on("show visualizer") },
             visualizationMenu = {
                 anchors += it
                 on("visualization menu")
@@ -80,6 +81,9 @@ class WalHostActionsTest {
         assertEquals(listOf("next preset"), reaches("VIS_NEXT"))
         assertEquals(listOf("previous preset"), reaches("VIS_PREV"))
         assertEquals(listOf("file info"), reaches("TRACKINFO"))
+        assertEquals("Detach Visualizer", listOf("show visualizer"), reaches("SHOW", "avs"))
+        assertEquals("Detach Video, which the visualizer fills", listOf("show visualizer"), reaches("SHOW", "video"))
+        assertEquals("the video's fullscreen", listOf("fullscreen"), reaches("VID_FS"))
     }
 
     @Test
@@ -96,6 +100,7 @@ class WalHostActionsTest {
         assertEquals(emptyList<String>(), reaches("TOGGLE", "pl"))
         assertEquals(emptyList<String>(), reaches("TOGGLE", "guid:something"))
         assertEquals(emptyList<String>(), reaches("TOGGLE", null))
+        assertEquals(emptyList<String>(), reaches("SHOW", "ml"))
         assertEquals(emptyList<String>(), reaches("SOMETHING_ELSE"))
     }
 
@@ -158,7 +163,30 @@ class WalHostActionsTest {
     }
 
     @Test
-    fun `the preset buttons step the visualizer only while its window is open`() {
+    fun `fullscreen fills the screen with the visualizer the skin shows, leaving its window shut`() {
+        val vm = testViewModel()
+        val actions = WalHostActions.of(vm, openMenu = { _, _ -> }, onMinimize = {}, openFile = {})
+        vm.state.visInSkin = true
+
+        actions.hostAction("VIS_FS", null)
+
+        assertFalse(vm.state.milkdropOn)
+        assertTrue(vm.state.visualizerFullscreen)
+    }
+
+    @Test
+    fun `Detach Visualizer opens the visualizer window, and again leaves it open`() {
+        val vm = testViewModel()
+        val actions = WalHostActions.of(vm, openMenu = { _, _ -> }, onMinimize = {}, openFile = {})
+
+        actions.hostAction("SHOW", "avs")
+        actions.hostAction("SHOW", "avs")
+
+        assertTrue(vm.state.milkdropOn)
+    }
+
+    @Test
+    fun `the preset buttons step the visualizer only while its window or the skin shows it`() {
         val vm = testViewModel()
         val stepped = mutableListOf<String>()
         vm.state.visualCommands =
@@ -182,6 +210,11 @@ class WalHostActionsTest {
         actions.hostAction("VIS_NEXT", null)
         actions.hostAction("VIS_PREV", null)
         assertEquals(listOf("next", "previous"), stepped)
+
+        vm.state.milkdropOn = false
+        vm.state.visInSkin = true
+        actions.hostAction("VIS_NEXT", null)
+        assertEquals("the skin shows it", listOf("next", "previous", "next"), stepped)
     }
 
     @Test

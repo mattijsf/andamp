@@ -474,9 +474,18 @@ class SystemObject(
             // links, downloads, the clipboard and files stay shut: a skin's script reaches only the skin
             "lockui", "unlockui", "ddesend", "setcurrenttrackrating", "navigateurl", "enqueuefile", "playfile",
             "navigateurlbrowser", "popmainbrowser", "getmainbrowser", "downloadurl", "downloadmedia", "setdownloadpath",
-            "showwindow", "hidewindow", "selectfile", "selectfolder", "selectfilestart", "selectfileend",
+            "hidewindow", "selectfile", "selectfolder", "selectfilestart", "selectfileend",
             "setclipboardtext", "setmenutransparency", "systemmenu", "windowmenu", "triggeraction", "popupmenu",
             -> {
+                Value.Null
+            }
+
+            "isnamedwindowvisible" -> {
+                Value.Bool(rt.namedWindowVisible(args[0].asString))
+            }
+
+            "showwindow" -> {
+                rt.showHostWindow(args[0].asString)
                 Value.Null
             }
 

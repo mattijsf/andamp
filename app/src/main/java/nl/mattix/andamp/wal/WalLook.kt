@@ -252,6 +252,10 @@ internal class WalLook(
         engine?.post(cause = WalCause.TOUCH) { it.closeTopWindow() }
     }
 
+    override fun visualizerWindowClosed() {
+        engine?.post(cause = WalCause.TOUCH) { it.visualizerWindowClosed() }
+    }
+
     override fun answerMenu(
         menu: SkinMenu,
         id: Int,

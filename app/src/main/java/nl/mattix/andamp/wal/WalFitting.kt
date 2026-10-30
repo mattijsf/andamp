@@ -184,6 +184,7 @@ internal class WalFitting {
             themes = themes,
             theme = runtime.currentGammaSet?.let { worn -> themes.firstOrNull { it.equals(worn, ignoreCase = true) } },
             skinOptions = optionsOf(runtime),
+            visRect = runtime.visRect?.let { IntRect(it.left, it.top, it.right, it.bottom) },
         )
     }
 
@@ -212,7 +213,7 @@ internal class WalFitting {
      */
     private fun restingWidth(main: Layout): Int {
         main.layoutRoot()
-        if (main.resizesHorizontally() && main.resizesVertically()) return main.contentRight()
+        if (main.declaredResizableBothWays()) return main.contentRight()
         return firstWidths.getOrPut(main) { main.contentRight() }
     }
 
@@ -274,8 +275,7 @@ internal class WalFitting {
         ) = (box.width / scale).toInt() to (box.height / scale).toInt()
 
         /** Whether [apply] sizes [layout] to the box (Bento): it has a minimum size and resizes both ways. */
-        private fun fillsBox(layout: Layout): Boolean =
-            layout.minW > 0 && layout.minH > 0 && layout.resizesHorizontally() && layout.resizesVertically()
+        private fun fillsBox(layout: Layout): Boolean = layout.minW > 0 && layout.minH > 0 && layout.declaredResizableBothWays()
 
         /**
          * Whether [layout] is a main window that fills the box ([fillsBox]) and is not held at its
@@ -291,7 +291,7 @@ internal class WalFitting {
          * A window the user resizes both ways (Bento) is sized to the screen and scales from its size: 0.
          */
         fun baseWOf(runtime: SkinRuntime): Int =
-            runtime.mainLayout?.takeUnless { it.resizesHorizontally() && it.resizesVertically() }?.contentRight() ?: 0
+            runtime.mainLayout?.takeUnless { it.declaredResizableBothWays() }?.contentRight() ?: 0
 
         /** Throws unless the screen can show [runtime]: it has a main window, and a stack a phone can draw. */
         fun requireShowable(

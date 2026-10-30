@@ -88,6 +88,12 @@ internal data class WalLayout(
     val theme: String? = null,
     /** The options the skin lists for Winamp's Options menu, as of this frame. */
     val skinOptions: SkinOptions = SkinOptions.EMPTY,
+    /**
+     * Where the skin shows Winamp's visualizer, in skin px from the stack's top-left corner
+     * (`SkinRuntime.visRect`), as Winamp Modern's drawer shows it in its visualizer mode; null when
+     * it shows none. The player draws its visualizer there.
+     */
+    val visRect: IntRect? = null,
 )
 
 /**
@@ -218,6 +224,12 @@ internal interface WalSurface {
 
     /** Closes the topmost skin window over the main one, as Back does. */
     fun closeTopWindow()
+
+    /**
+     * The visualizer window closed: what the skin moved out into it goes back into the skin
+     * (`SkinRuntime.visualizerWindowClosed`).
+     */
+    fun visualizerWindowClosed()
 
     /**
      * The listener's answer to [menu]: the picked command's [id], or 0 for Back, a tap outside or
