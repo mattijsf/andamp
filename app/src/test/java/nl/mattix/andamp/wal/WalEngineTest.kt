@@ -30,6 +30,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 /**
@@ -414,6 +415,32 @@ class WalEngineTest {
         assertEquals("none of the five ran in a burst after the menu", before, ticks.get())
         engine.requestTick()
         awaitThat("a tick asked for after the menu runs") { ticks.get() == before + 1 }
+    }
+
+    @Test(timeout = 20_000)
+    fun `display frames that ask while a tick runs get one more tick after it, not one each`() {
+        assertNull(main.failure())
+        val inTick = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val hold = AtomicBoolean(true)
+        engine.onTicked = { _, _, _, _, _ ->
+            ticks.incrementAndGet()
+            if (hold.getAndSet(false)) {
+                inTick.countDown()
+                release.await()
+            }
+        }
+        val before = ticks.get()
+
+        engine.requestTick()
+        inTick.await()
+        repeat(3) { engine.requestTick() }
+        release.countDown()
+
+        awaitThat("the tick asked for while the first ran runs") { ticks.get() == before + 2 }
+        onEngine { }
+        onEngine { }
+        assertEquals("one more, not three", before + 2, ticks.get())
     }
 
     private val phone = WalFit(1080, 2000, 3f, sideways = false)

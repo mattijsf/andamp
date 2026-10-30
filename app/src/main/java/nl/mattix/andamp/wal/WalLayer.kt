@@ -33,6 +33,7 @@ import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -75,6 +76,9 @@ internal const val WAL_RECT_SETTLE_MS = 200L
 internal const val WAL_INPUT_FRAMES_MS = 2_000L
 
 private const val NANOS_PER_MS = 1_000_000L
+
+/** The shortest display frame the frame loop counts with: a 240 Hz display's. */
+private const val MIN_FRAME_NANOS = 4_166_667L
 
 /**
  * For each player state, the layer whose rect `windowRects[MAIN]` holds; read and written on the
@@ -175,9 +179,9 @@ internal fun hidesModernSkin(s: WinampState): Boolean {
  * layout worked out for another box (the phone was turned) leaves the stack where it was last
  * placed, or the companion when it never was.
  *
- * A drag from any part of the skin but a control moves the stack inside the box ([WalDrag]); the skin
- * keeps where it was moved to, upright and sideways apart ([WalSurface.places]). A stack that has
- * grown past the box's edge from there is held inside it ([WalPlacement.held]).
+ * A drag from any part of the skin but a control moves the stack ([WalDrag]); the skin keeps where
+ * it was moved to, upright and sideways apart ([WalSurface.places]). The stack may go partly past
+ * the box's edges, as a desktop window may, with a finger's width left in it ([WalPlacement.held]).
  *
  * The layer fills the surface, but only the stack takes touches: a touch beside it reaches what is
  * under it, which over the floating player is the app behind. There the touch window follows the
@@ -202,7 +206,8 @@ internal fun WalLayer(
         // where the engine puts the stack, and where the listener moved it from there
         val home = fitted?.let { WalPlacement.of(box, it, scale) }
         val move = drag.shift ?: surface.places[fit.sideways]
-        val shift = if (home == null || move == null) null else WalPlacement.held(move, home.stack, box)
+        val keep = with(LocalDensity.current) { WalPlacement.KEEP_DP.dp.roundToPx() }
+        val shift = if (home == null || move == null) null else WalPlacement.held(move, home.stack, box, keep)
         val ready = if (fitted == null || shift == null) home else WalPlacement.of(box, fitted, scale, shift)
         val last = remember(surface) { mutableStateOf<WalPlacement?>(null) }
         SideEffect { if (ready != null) last.value = ready }
@@ -213,12 +218,12 @@ internal fun WalLayer(
         WalTurn(parts, state, fit = { fitNow }, ready = { readyNow }, dragging = { draggingNow })
         val placed = if (layout == null) null else ready ?: last.value
         // the stack snaps as near as a classic window does
-        SideEffect { drag.placedAt(fit, box, home?.stack, placed?.stack?.topLeft, WindowSnap.SNAP_DISTANCE * scale) }
+        SideEffect { drag.placedAt(fit, box, home?.stack, placed?.stack?.topLeft, WindowSnap.SNAP_DISTANCE * scale, keep) }
         if (placed == null) {
             companion()
         } else {
             WalCanvas(parts, state, placed, drag)
-            fitted?.visRect?.let { WalVisualizer(parts, state, placed, it) }
+            fitted?.visRect?.let { WalVisualizer(parts, state, placed, it, drag) }
         }
     }
 }
@@ -338,13 +343,16 @@ private data class FrameAsk(
     val awake: Boolean,
     val wantsFrames: Boolean,
     val inputAt: Long,
+    val sliding: Boolean,
 )
 
 /**
  * Asks [surface] for a tick on display frames, as [WalTickPace] paces them, while it shows ([awake])
  * and its frames want them ([WalLayout.wantsFrames]), and for [WAL_INPUT_FRAMES_MS] after each of
- * the listener's inputs ([WalSurface.lastInputAt]), so what a touch sets moving runs smoothly. Else
- * it asks for none: the engine wakes the skin itself when something is due.
+ * the listener's inputs ([WalSurface.lastInputAt]), so what a touch sets moving runs smoothly; on
+ * every display frame while a slide runs ([WalLayout.sliding]). Else it asks for none: the engine
+ * wakes the skin itself when something is due. Each ask says when its frame reaches the screen:
+ * two display frames on, as the engine ticks after this one and the next draws what it made.
  */
 private suspend fun frameLoop(
     surface: WalSurface,
@@ -354,10 +362,13 @@ private suspend fun frameLoop(
     var seenInput = surface.lastInputAt
     // the display frame time, in ns, until which the last input keeps the loop running
     var inputUntil = Long.MIN_VALUE
-    snapshotFlow { FrameAsk(awake(), surface.layout?.wantsFrames == true, surface.lastInputAt) }.collectLatest { ask ->
+    snapshotFlow {
+        FrameAsk(awake(), surface.layout?.wantsFrames == true, surface.lastInputAt, surface.layout?.sliding == true)
+    }.collectLatest { ask ->
         var input = ask.inputAt != seenInput
         seenInput = ask.inputAt
         if (!ask.awake) return@collectLatest
+        var last = Long.MIN_VALUE
         while (true) {
             val now = withFrameNanos { it }
             if (input) {
@@ -365,7 +376,16 @@ private suspend fun frameLoop(
                 input = false
             }
             if (!ask.wantsFrames && now >= inputUntil) break
-            if (pace.due(now)) surface.requestTick()
+            val period =
+                if (last ==
+                    Long.MIN_VALUE
+                ) {
+                    WalTickPace.TICK_PERIOD_NANOS
+                } else {
+                    (now - last).coerceIn(MIN_FRAME_NANOS, WalTickPace.TICK_PERIOD_NANOS)
+                }
+            last = now
+            if (pace.due(now) || ask.sliding) surface.requestTick(WalCause.TICK, showAt = now + 2 * period)
         }
     }
 }

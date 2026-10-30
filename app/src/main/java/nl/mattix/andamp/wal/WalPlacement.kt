@@ -112,24 +112,25 @@ internal data class WalPlacement(
 
         /**
          * Where a stack whose unmoved rect is [home] may have its top-left corner, asked for [at]:
-         * wholly inside [box] on an axis it is smaller than the box on, and where [home] has it on
-         * an axis it fills.
+         * anywhere a desktop window may go, partly past the edges of [box], as long as [keep]
+         * pixels of it stay in the box across and down (all of it when it is smaller) and its top
+         * stays below the box's top, so its title bar can still be dragged; and where [home] has it
+         * on an axis it fills.
          */
         fun clamp(
             at: IntOffset,
             home: IntRect,
             box: IntRect,
+            keep: Int,
         ): IntOffset {
-            fun axis(
-                at: Int,
-                home: Int,
-                start: Int,
-                room: Int,
-            ) = if (room > 0) at.coerceIn(start, start + room) else home
-            return IntOffset(
-                axis(at.x, home.left, box.left, box.width - home.width),
-                axis(at.y, home.top, box.top, box.height - home.height),
-            )
+            val x =
+                if (home.width >= box.width) {
+                    home.left
+                } else {
+                    at.x.coerceIn(box.left - home.width + minOf(keep, home.width), box.right - minOf(keep, home.width))
+                }
+            val y = if (home.height >= box.height) home.top else at.y.coerceIn(box.top, box.bottom - minOf(keep, home.height))
+            return IntOffset(x, y)
         }
 
         /**
@@ -156,16 +157,19 @@ internal data class WalPlacement(
 
         /**
          * How far a stack whose unmoved rect is [home] is drawn from there when it was moved
-         * [move]: as far, but held wholly inside [box] (see [clamp]). A stack that grew, as when a
-         * drawer slides out, stays inside the box this way and goes back to where it was moved
-         * once it shrinks again; a box drawn a little smaller on another surface holds it the
-         * same way.
+         * [move]: as far, but with [keep] pixels of it left in [box] (see [clamp]), as a box drawn
+         * smaller on another surface or after a turn may need. A stack that grows, as when a drawer
+         * slides out, grows past the box's edge as a desktop window does.
          */
         fun held(
             move: IntOffset,
             home: IntRect,
             box: IntRect,
-        ): IntOffset = clamp(home.topLeft + move, home, box) - home.topLeft
+            keep: Int,
+        ): IntOffset = clamp(home.topLeft + move, home, box, keep) - home.topLeft
+
+        /** How much of a moved stack stays on screen across and down ([clamp]): enough for a finger, in dp. */
+        const val KEEP_DP = 48
 
         /**
          * How tall the classic stack holds the main window while a modern skin is worn, so the

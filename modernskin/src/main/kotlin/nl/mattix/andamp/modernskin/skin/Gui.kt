@@ -1418,6 +1418,12 @@ class Layout(
     var maxW = 0
     var maxH = 0
 
+    /**
+     * The size the listener gave the window by dragging its resize grip, which the stack keeps from
+     * then on instead of fitting the window to its column; null until then.
+     */
+    var userSize: Pair<Int, Int>? = null
+
     /** `desktopalpha="1"`: Winamp draws the window with per-pixel transparency and no region (CornerAmp). */
     var desktopAlpha = false
 
@@ -1557,7 +1563,7 @@ class Layout(
     /**
      * Size for the screen: its own, a width (height) not written taken from the layout it links to
      * (Winamp2000SP4's playlist from its 550 px shade layout), then kept within the minimum and
-     * maximum.
+     * maximum, except while it moves to a target size (`gotoTarget`).
      */
     val size: Pair<Int, Int>
         get() {
@@ -1566,10 +1572,14 @@ class Layout(
             fun linked(id: String?) = id?.let { container?.layout(it) }?.takeIf { it !== this }?.ownSize()
             var width = if (w == null) linked(linkWidth)?.first ?: own.first else own.first
             var height = if (h == null) linked(linkHeight)?.second ?: own.second else own.second
-            if (minW > 0) width = maxOf(width, minW)
-            if (minH > 0) height = maxOf(height, minH)
-            if (maxW > 0) width = minOf(width, maxW)
-            if (maxH > 0) height = minOf(height, maxH)
+            // a window on its way to a target size goes there in even steps from where it was:
+            // Winamp Modern raises the minimum height to its drawer's just before sliding it open
+            if (this !in rt.moving) {
+                if (minW > 0) width = maxOf(width, minW)
+                if (minH > 0) height = maxOf(height, minH)
+                if (maxW > 0) width = minOf(width, maxW)
+                if (maxH > 0) height = minOf(height, maxH)
+            }
             // a window no screen could show is cut to the largest picture size (its shape and
             // drawing are made at this size)
             return width.coerceIn(0, ImageLimits.MAX_SIDE) to height.coerceIn(0, ImageLimits.MAX_SIDE)

@@ -308,7 +308,7 @@ class IdleRuleTest {
         box.makiCall("settargetspeed", listOf(Value.Num(1.0)))
         box.makiCall("gototarget", emptyList())
         assertEquals(t, rt.nextDueAt())
-        assertFalse("stopped, a slide steps when due, with no frame loop", rt.framesWanted)
+        assertTrue("stopped too, a slide wants every display frame", rt.framesWanted)
 
         run(rt, 750, every = 250)
         assertTrue("on its way", box.laidOut().left in 1 until 100)
@@ -316,6 +316,26 @@ class IdleRuleTest {
         assertEquals("there after its second", 100, box.laidOut().left)
         assertFalse(rt.animating)
         assertNull(rt.nextDueAt())
+    }
+
+    @Test
+    fun `a slide steps to where it is when the frame reaches the screen`() {
+        val rt = runtime("""<layer id="box" x="0" y="0" w="10" h="10"/>""")
+        val box = rt.find("box")
+        box.makiCall("settargetx", listOf(Value.Int(100)))
+        box.makiCall("settargetspeed", listOf(Value.Num(1.0)))
+        box.makiCall("gototarget", emptyList())
+        assertTrue(rt.sliding)
+
+        rt.slideLead = 500
+        rt.tick()
+        assertEquals("halfway, half a second ahead", 50, box.laidOut().left)
+
+        rt.slideLead = 0
+        t += 1_000
+        rt.tick()
+        assertEquals(100, box.laidOut().left)
+        assertFalse(rt.sliding)
     }
 
     @Test

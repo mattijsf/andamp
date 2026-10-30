@@ -78,7 +78,8 @@ object StackArrange {
      * docked window is as wide as its column (under the main window, what shows of it,
      * [Layout.contentRight]; MMD3 keeps room on its right for a panel) and as tall as
      * [naturalHeight] says; the last one of a column takes the height left when [Ask.stretchLast]
-     * is on, room is left, it can be made taller and it shows a list. Without a view (the
+     * is on, room is left, it can be made taller and it shows a list. A window resized by its grip
+     * keeps the size it was given ([Layout.userSize]). Without a view (the
      * reference tests) every window keeps the size it has, in one column.
      */
     internal fun arrange(ask: Ask): Map<Layout, Rect> {
@@ -101,6 +102,16 @@ object StackArrange {
         for (column in columnsOf(main, ask.others, ask.columns, ask.showsList, ask.columnWidth)) {
             var y = column.top
             column.windows.forEachIndexed { i, l ->
+                val sized = l.userSize
+                if (sized != null) {
+                    // resized by its grip: the size the finger gave it
+                    l.w = sized.first
+                    l.h = sized.second
+                    val (w, h) = l.size
+                    placed[l] = Rect(column.x, y, w, h)
+                    y += h
+                    return@forEachIndexed
+                }
                 l.w = column.width
                 val natural = naturalHeight(l)
                 val left = view.second - y
@@ -191,8 +202,9 @@ object StackArrange {
     ): Pair<Int, Int> {
         val keptW = window.w
         val keptH = window.h
-        window.w = width
-        window.h = skinHeight(window)
+        val sized = window.userSize
+        window.w = sized?.first ?: width
+        window.h = sized?.second ?: skinHeight(window)
         try {
             return window.size
         } finally {

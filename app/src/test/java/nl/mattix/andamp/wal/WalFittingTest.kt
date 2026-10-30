@@ -490,7 +490,7 @@ class WalFittingTest {
 
         val home = WalPlacement.of(box, corner.layout(), 3).stack
         assertEquals("right down", IntRect(222, 1316, 960, 2000), home)
-        val shift = WalPlacement.held(move, home, box)
+        val shift = WalPlacement.held(move, home, box, 144)
         assertEquals(
             "moved up and left from there",
             IntRect(162, 1276, 900, 1960),
@@ -501,7 +501,11 @@ class WalFittingTest {
         val up = WalPlacement.of(box, corner.layout(), 3).stack
         assertEquals("right up", IntRect(222, 100, 960, 784), up)
         assertEquals("the kept move stays as it was", IntOffset(-60, -40), places[false])
-        assertEquals("taken from the new corner, and held inside the box", IntOffset(-60, 0), WalPlacement.held(move, up, box))
+        assertEquals(
+            "taken from the new corner, with its top kept in the box",
+            IntOffset(-60, 0),
+            WalPlacement.held(move, up, box, 144),
+        )
     }
 
     @Test

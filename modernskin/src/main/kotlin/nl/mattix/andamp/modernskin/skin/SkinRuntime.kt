@@ -1748,6 +1748,9 @@ class SkinRuntime(
 
     // ---- per frame ---------------------------------------------------------------------------
 
+    /** Whether a target slide runs now. */
+    val sliding: Boolean get() = moving.isNotEmpty()
+
     /** Whether something moves by itself right now: a target slide, or an animation playing and not paused. */
     val animating: Boolean get() = moving.isNotEmpty() || animations.any { it.running }
 
@@ -1799,17 +1802,18 @@ class SkinRuntime(
 
     /**
      * Whether something on the skin moves smoothly by itself now and wants a frame on every display
-     * frame: a visualizer that shows while the music plays, and while it falls to rest after; while
-     * the music plays or is paused, also a target slide or an animation playing and not paused.
-     * Stopped, a slide or an animation steps when [nextDueAt] says. Tickers, timers, the time and
-     * progress grids never want frames: they change at the moments [nextDueAt] gives.
+     * frame: a target slide, which ends by itself; a visualizer that shows while the music plays,
+     * and while it falls to rest after; while the music plays or is paused, also an animation
+     * playing and not paused. Stopped, an animation steps when [nextDueAt] says. Tickers, timers,
+     * the time and progress grids never want frames: they change at the moments [nextDueAt] gives.
      */
     val framesWanted: Boolean
         get() {
+            if (moving.isNotEmpty()) return true
             val status = player.status
             for (v in visObjects) if (v.moving(status) && shows(v)) return true
             if (status == Player.Status.STOPPED) return false
-            return moving.isNotEmpty() || animations.any { it.running && shows(it) }
+            return animations.any { it.running && shows(it) }
         }
 
     /**
@@ -1878,7 +1882,16 @@ class SkinRuntime(
     private val dueSlides = ArrayList<GuiObject>()
     private val dueTimers = ArrayList<Timer>()
 
-    /** Refills every script's step budget, then moves animations and target slides and fires due timers, at [t]. */
+    /**
+     * How far ahead of [now], in ms, the next [tick] places a target slide: when the frame it makes
+     * reaches the screen, so the slide moves by the frames shown rather than by when the tick ran.
+     */
+    var slideLead = 0L
+
+    /**
+     * Refills every script's step budget, then moves animations and target slides ([slideLead]
+     * ahead) and fires due timers, at [t].
+     */
     private fun advanceClocks(t: Long) {
         for (s in scripts) s.refill()
         dueAnimations.clear()
@@ -1886,7 +1899,7 @@ class SkinRuntime(
         for (a in dueAnimations) a.advance()
         dueSlides.clear()
         for (o in moving) dueSlides.add(o)
-        for (o in dueSlides) o.stepTarget(t)
+        for (o in dueSlides) o.stepTarget(t + slideLead)
         dueTimers.clear()
         for (timer in timers) if (timer.running && t >= timer.nextAt) dueTimers.add(timer)
         for (timer in dueTimers) {
@@ -2132,7 +2145,73 @@ class SkinRuntime(
     /** Whether a touch on [o] does something: a control, or an object a script listens to. */
     private fun reacts(o: GuiObject): Boolean = isControl(o) || scripts.any { it.listensTo(o) }
 
-    private fun isControl(o: GuiObject): Boolean = o is Button || o is Slider || o is ColorThemeList || o is PlaylistView
+    private fun isControl(o: GuiObject): Boolean =
+        o is Button || o is Slider || o is ColorThemeList || o is PlaylistView || isGrip(o)
+
+    /**
+     * Whether [o] is a window's resize grip: its `resize`, as a script last set it, names an edge
+     * (Winamp Modern turns its frame's edges off with "0"), and it lies in a window.
+     */
+    private fun isGrip(o: GuiObject): Boolean {
+        val edges = o.attrs["resize"]?.lowercase() ?: return false
+        return o.layoutObject != null && GRIP_EDGES.any { it in edges }
+    }
+
+    /**
+     * A drag on a resize grip: the window it resizes, the edges it moves (`resize`, such as
+     * "bottomright"), and where the finger went down and the window's size then, in the window's pixels.
+     */
+    private class Resize(
+        val window: Layout,
+        val edges: String,
+        val x: Int,
+        val y: Int,
+        val size: Pair<Int, Int>,
+    )
+
+    /** The grip drag going on, or null. */
+    private var resizing: Resize? = null
+
+    /**
+     * Sizes the window as the finger at [x], [y] drags its grip, as Winamp sizes it: by as much as
+     * the finger traveled, kept within the window's minimum and maximum and within the phone's view.
+     */
+    private fun dragGrip(
+        r: Resize,
+        x: Int,
+        y: Int,
+    ) {
+        val l = r.window
+        var (w, h) = r.size
+        if ("right" in r.edges) w += x - r.x
+        if ("left" in r.edges) w -= x - r.x
+        if ("bottom" in r.edges) h += y - r.y
+        if ("top" in r.edges) h -= y - r.y
+        val (vw, vh) = viewport
+        val size = within(w, l.minW, l.maxW, vw) to within(h, l.minH, l.maxH, vh)
+        if (l !== mainLayout) l.userSize = size
+        if (size != l.size) l.resizeTo(size.first, size.second)
+    }
+
+    /** [v] kept to at least [min] and at most [max] (none when 0) and [view], the view's side winning over a minimum. */
+    private fun within(
+        v: Int,
+        min: Int,
+        max: Int,
+        view: Int,
+    ): Int {
+        val top = if (max > 0) minOf(max, view) else view
+        return v.coerceAtMost(top).coerceAtLeast(minOf(min, top)).coerceAtLeast(1)
+    }
+
+    /** The grip drag ends: the window hears that the user resized it (`onUserResize`), as Winamp says at the end of a resize. */
+    private fun endGrip() {
+        val r = resizing ?: return
+        resizing = null
+        val l = r.window
+        val (w, h) = l.size
+        dispatch(l, "onuserresize", listOf(Value.Int(l.viewX), Value.Int(l.viewY), Value.Int(w), Value.Int(h)))
+    }
 
     /**
      * Whether a script hears a tap on [o]: one listens to it for [TAP_EVENTS], or to the group that
@@ -2329,6 +2408,10 @@ class SkinRuntime(
         val y = sy - capturedOrigin.top
         lastPointer = x to y
         captured = target
+        val window = target.layoutObject
+        if (window != null && isGrip(target)) {
+            resizing = Resize(window, target.attrs.getValue("resize").lowercase(), x, y, window.size)
+        }
         target.pointerDown(x, y)
         // a menu the press opened has let go of it already
         if (captured === target) {
@@ -2371,6 +2454,7 @@ class SkinRuntime(
         val x = sx - capturedOrigin.left
         val y = sy - capturedOrigin.top
         lastPointer = x to y
+        resizing?.let { dragGrip(it, x, y) }
         captured?.pointerMove(x, y)
     }
 
@@ -2387,6 +2471,8 @@ class SkinRuntime(
         val x = sx - capturedOrigin.left
         val y = sy - capturedOrigin.top
         lastPointer = x to y
+        resizing?.let { dragGrip(it, x, y) }
+        endGrip()
         val target = captured ?: return
         captured = null
         // a finger that drifts a little still counts as on the control
@@ -2451,9 +2537,11 @@ class SkinRuntime(
      * the window once the finger travels past its touch slop, and the press is let go without a
      * click. A slider or a list never moves it, as a drag works it, and neither does an object a
      * script follows the finger across ([followsFinger]), unless it is a move area ([isMoveArea]).
+     * A window's resize grip ([isGrip]) resizes it instead.
      */
     internal fun movesWindow(o: GuiObject): Boolean {
         if (o is Slider || o is ColorThemeList || o is PlaylistView) return false
+        if (isGrip(o)) return false
         if (o is Button || o is MenuButton) return !followsFinger(o)
         return isMoveArea(o) || !followsFinger(o)
     }
@@ -2670,6 +2758,7 @@ class SkinRuntime(
     private fun endPress() {
         pressEnded = true
         dropDeferred()
+        endGrip()
         val held = captured ?: return
         captured = null
         cancelPress(held)
@@ -3125,12 +3214,25 @@ class SkinRuntime(
     /**
      * A config attribute a script made (Bento's "Show Playlist Tab"): a cfgattrib names it, and the
      * button and the script then share one value, so a tap is heard as onDataChanged and a script's
-     * setData shows on the button (Wasabi SDK guiobjwnd, cfgitemi).
+     * setData shows on the button (Wasabi SDK guiobjwnd, cfgitemi). With none of that name, the one
+     * attribute whose name differs only in a note in brackets at its end: Winamp Modern's config
+     * drawer names "Animate Video/Vis Drawer (disabled if opacity = 100%)", its script makes it
+     * "... (disabled if opacity < 100%)", and the checkbox would otherwise change nothing.
      */
     private fun scriptAttribute(name: String): ConfigAttributeObj? {
         val k = name.lowercase()
-        return configItems.values.firstNotNullOfOrNull { it.attributes[k] }
+        configItems.values.firstNotNullOfOrNull { it.attributes[k] }?.let { return it }
+        val bare = withoutNote(k).takeIf { it != k } ?: return null
+        // an item is kept under its name and its GUID both
+        return configItems.values
+            .distinct()
+            .flatMap { it.attributes.values }
+            .filter { it.made && withoutNote(it.name.lowercase()) == bare }
+            .singleOrNull()
     }
+
+    /** [name] without a note in brackets at its end ("animate (disabled if ...)" to "animate"). */
+    private fun withoutNote(name: String): String = name.replace(NOTE_AT_END, "")
 
     fun setConfigValue(
         name: String,
@@ -3394,6 +3496,12 @@ class SkinRuntime(
 
         /** The windows the app shows when a host answers [onHostAction], by [windowKind]. */
         val HOST_WINDOWS = setOf("ml", "avs", "video")
+
+        /** A note in brackets at the end of a setting's name, with the space before it. */
+        val NOTE_AT_END = Regex("""\s*\([^()]*\)\s*$""")
+
+        /** The edges a resize grip's `resize` names. */
+        val GRIP_EDGES = listOf("left", "right", "top", "bottom")
 
         /** The actions whose state [actionState] reads. */
         val STATE_ACTIONS = setOf("TOGGLE", "EQ_TOGGLE", "EQ_AUTO")

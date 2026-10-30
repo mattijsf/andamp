@@ -222,18 +222,33 @@ internal class WalEngine(
     /** Counts the ticks asked for a change the skin shows ([WalCause.KEY]); see [runTick]. */
     private val keyAsks = AtomicInteger()
 
+    /** Whether a tick runs on the engine thread now; see [requestTick]. */
+    private val tickRunning = AtomicBoolean(false)
+
+    /** A display frame asked for a tick while one ran; see [requestTick]. */
+    private val frameAskedWhileRunning = AtomicBoolean(false)
+
+    /** When the frame the latest display frame's tick makes reaches the screen, in [System.nanoTime]; see [requestTick]. */
+    @Volatile
+    private var showAt: Long? = null
+
     /**
      * Runs the tick that holds [tickWaiting] for a cause, then lets it go. A tick asked for a change
      * the skin shows after this one started asks for one more, so a resting skin, which nothing
-     * else ticks, still shows the change.
+     * else ticks, still shows the change; so does a display frame that asked while it ran.
      */
     private val runTick: (WalCause) -> Unit = { cause ->
         val asked = keyAsks.get()
+        tickRunning.set(true)
         try {
             guarded("tick") { tick(cause) }
         } finally {
             tickWaiting.set(false)
-            if (keyAsks.get() != asked) requestTick(WalCause.KEY)
+            tickRunning.set(false)
+            when {
+                keyAsks.get() != asked -> requestTick(WalCause.KEY)
+                frameAskedWhileRunning.getAndSet(false) -> requestTick(WalCause.TICK)
+            }
         }
     }
 
@@ -441,16 +456,26 @@ internal class WalEngine(
     }
 
     /**
-     * Asks for a tick, which the timing log names by [cause]. One running or waiting covers this
-     * request, so a slow tick has none queued behind it, and none is asked while a menu is up. A
-     * change the skin shows ([WalCause.KEY]) that comes while a tick runs gets one more tick after
-     * it, as that tick may have read the player before the change.
+     * Asks for a tick, which the timing log names by [cause]. One waiting covers this request, and
+     * none is asked while a menu is up. One that comes while a tick runs gets one more tick after
+     * it, never more: a change the skin shows ([WalCause.KEY]), as that tick may have read the
+     * player before the change, and a display frame, as a slide that takes longer than a display
+     * frame to step would otherwise step only on every other frame, unevenly. A display frame
+     * passes [showAt], when the frame its tick makes reaches the screen: the tick places a slide
+     * for then ([SkinRuntime.slideLead]).
      */
-    fun requestTick(cause: WalCause = WalCause.TICK) {
+    fun requestTick(
+        cause: WalCause = WalCause.TICK,
+        showAt: Long? = null,
+    ) {
         // the skin stands still under its menu, and no ticks wait to run in a burst after it
         if (host.menus.menu != null) return
         if (cause == WalCause.KEY) keyAsks.incrementAndGet()
-        if (!tickWaiting.compareAndSet(false, true)) return
+        if (showAt != null) this.showAt = showAt
+        if (!tickWaiting.compareAndSet(false, true)) {
+            if (cause == WalCause.TICK && tickRunning.get()) frameAskedWhileRunning.set(true)
+            return
+        }
         publishersWaiting.incrementAndGet()
         handler.post {
             publishersWaiting.decrementAndGet()
@@ -467,6 +492,12 @@ internal class WalEngine(
         val runtime = rt ?: return
         val now = SystemClock.uptimeMillis()
         rest.ticked(now, fromScreen = cause == WalCause.TICK)
+        runtime.slideLead =
+            showAt?.takeIf { cause == WalCause.TICK }?.let { (it - System.nanoTime()) / NANOS_PER_MS }?.coerceIn(
+                0,
+                MAX_SLIDE_LEAD_MS,
+            )
+                ?: 0
         val t0 = host.menus.workClock
         val changed = runtime.tick()
         val tickNanos = host.menus.workClock - t0
@@ -731,6 +762,9 @@ internal class WalEngine(
         const val MAX_FAILURES = 3
 
         private const val NANOS_PER_MS = 1_000_000L
+
+        /** How far ahead a tick places a slide at most, in ms: a few display frames. */
+        private const val MAX_SLIDE_LEAD_MS = 50L
 
         private fun overrunFailure(budgetMs: Long) = TimeoutException("took longer than $budgetMs ms to load")
 

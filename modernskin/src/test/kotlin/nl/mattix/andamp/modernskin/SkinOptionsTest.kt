@@ -403,6 +403,29 @@ class SkinOptionsTest {
         assertEquals(8, rt.skinOptions().entries.size)
     }
 
+    @Test
+    fun `a checkbox naming a setting with another note in brackets at its end works the setting the script made`() {
+        val drawers = newItem("Drawers", "{C338B30F-2A04-4b10-871F-4E9D52D62806}")
+        val animate = drawers.add("Animate Video/Vis Drawer (disabled if opacity < 100%)", "0")
+        val asWritten = "animate video/vis drawer (disabled if opacity = 100%)"
+
+        rt.setConfigFlag(asWritten, true)
+
+        assertEquals("1", animate.data)
+        assertTrue(rt.configFlag(asWritten))
+    }
+
+    @Test
+    fun `a name that fits two settings once their notes are left out works neither`() {
+        val drawers = newItem("Drawers", "{C338B30F-2A04-4b10-871F-4E9D52D62806}")
+        val one = drawers.add("Animate (fast)", "0")
+        val two = drawers.add("Animate (slow)", "0")
+
+        rt.setConfigFlag("animate (medium)", true)
+
+        assertEquals(listOf("0", "0"), listOf(one.data, two.data))
+    }
+
     private companion object {
         const val RECORDER = "recorder"
     }

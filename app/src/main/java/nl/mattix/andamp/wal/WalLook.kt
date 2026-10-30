@@ -195,8 +195,11 @@ internal class WalLook(
         start(IntSize(fit.widthPx, fit.heightPx), fit)
     }
 
-    override fun requestTick(cause: WalCause) {
-        engine?.requestTick(cause)
+    override fun requestTick(
+        cause: WalCause,
+        showAt: Long?,
+    ) {
+        engine?.requestTick(cause, showAt)
     }
 
     override fun wakeKey(): Any = wake()

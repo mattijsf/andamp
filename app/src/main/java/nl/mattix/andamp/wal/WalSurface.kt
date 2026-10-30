@@ -52,6 +52,8 @@ internal data class WalLayout(
     val windowOpen: Boolean,
     /** Whether something slides or animates, so a stack changing size may not have come to rest yet. */
     val animating: Boolean,
+    /** Whether a target slide runs, which the screen ticks on every display frame ([SkinRuntime.sliding]). */
+    val sliding: Boolean = false,
     /** The seq of the down whose object has a skin menu, or null; see [WalSurface.pointerDown]. */
     val menuTarget: Int?,
     /**
@@ -179,9 +181,14 @@ internal interface WalSurface {
      * Asks for one tick of the skin's timers and animations; at most one waits at a time. [cause]
      * is what the timing log names it by: a display frame, or a change the skin shows ([wakeKey]).
      * The surface holding [turn] asks on display frames only while [layout] wants frames
-     * ([WalLayout.wantsFrames]) or the listener's last input is recent, at most sixty a second.
+     * ([WalLayout.wantsFrames]) or the listener's last input is recent, at most sixty a second,
+     * and on every display frame while it slides ([WalLayout.sliding]). A display frame passes
+     * [showAt], when in [System.nanoTime] the frame the tick makes will reach the screen.
      */
-    fun requestTick(cause: WalCause = WalCause.TICK)
+    fun requestTick(
+        cause: WalCause = WalCause.TICK,
+        showAt: Long? = null,
+    )
 
     /**
      * A value that changes when app state the skin shows changes, such as the volume, the track or
