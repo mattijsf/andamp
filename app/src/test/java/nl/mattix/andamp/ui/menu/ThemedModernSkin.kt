@@ -5,8 +5,6 @@ package nl.mattix.andamp.ui.menu
 import android.app.Application
 import android.os.Looper
 import androidx.compose.runtime.snapshots.Snapshot
-import nl.mattix.andamp.modernskin.maki.Value
-import nl.mattix.andamp.modernskin.skin.ConfigItemObj
 import nl.mattix.andamp.modernskin.skin.SkinOptions
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.state.SkinLibrary
@@ -128,21 +126,4 @@ internal fun seedSkinOptions(
         seeded.set(rt.skinOptions())
     }
     awaitModern("a frame carries the seeded options") { seeded.get()?.let { it == look.skinOptions } == true }
-}
-
-/** The Config item a skin lists its options for Winamp's Options menu in, made as getItem makes it. */
-internal fun SkinRuntime.optionsItem(): ConfigItemObj = configItem(SkinOptions.OPTIONS_MENU, SkinOptions.OPTIONS_MENU)!!
-
-/** A Config item made as newItem([name], [guid]) makes it. */
-internal fun SkinRuntime.newConfigItem(
-    name: String,
-    guid: String,
-): ConfigItemObj = configItem(name, guid)!!
-
-/** An attribute made as newAttribute([name], [default]) makes it. */
-internal fun ConfigItemObj.option(
-    name: String,
-    default: String,
-) {
-    makiCall("newattribute", listOf(Value.Str(name), Value.Str(default)))
 }

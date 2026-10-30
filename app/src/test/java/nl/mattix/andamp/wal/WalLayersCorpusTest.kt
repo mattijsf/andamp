@@ -14,7 +14,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.modernskin.maki.Value
+import nl.mattix.andamp.modernskin.fixtures.resizeAsScript
 import nl.mattix.andamp.modernskin.skin.DrawPlanner
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
@@ -77,7 +77,7 @@ class WalLayersCorpusTest {
                 "Bento",
             )
         ) {
-            rt.mainLayout?.makiCall("resize", listOf(Value.Int(0), Value.Int(0), Value.Int(633), Value.Int(1258)))
+            rt.mainWindow?.let { rt.resizeAsScript(it, 0, 0, 633, 1258) }
         }
         rt.presentation = rt.presentation.copy(viewSize = 633 to 1258)
         val planner = DrawPlanner()

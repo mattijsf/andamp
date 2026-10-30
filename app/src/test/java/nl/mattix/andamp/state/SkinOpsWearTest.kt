@@ -12,9 +12,8 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import nl.mattix.andamp.modernskin.maki.Value
+import nl.mattix.andamp.modernskin.fixtures.popScriptMenu
 import nl.mattix.andamp.modernskin.skin.FakePlayer
-import nl.mattix.andamp.modernskin.skin.PopupMenu
 import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.skin.FakePalette
 import nl.mattix.andamp.skin.LiveSkins
@@ -773,8 +772,7 @@ class SkinOpsWearTest {
         assertTrue("a player surface holds it", look.turn.tryLock())
         val heard = java.util.concurrent.CompletableFuture<Int>()
         look.engine!!.post { rt ->
-            val menu = PopupMenu(rt).apply { makiCall("addcommand", listOf(Value.Str("Item"), Value.Int(1))) }
-            heard.complete(rt.gesture(fresh = true) { menu.makiCall("popatmouse", emptyList())!!.asInt })
+            heard.complete(rt.popScriptMenu("Item" to 1))
         }
         await { look.menu != null }
 

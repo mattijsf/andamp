@@ -15,8 +15,9 @@ value class WindowId(
  * What the host reads of a window at one moment ([SkinRuntime.windowInfo]): its size as it shows
  * now, the minimum and maximum the skin sets (0 for none), whether the skin declares resize
  * handles across and up and down ([Layout.declaredResizableBothWays]), and the edges of the
- * viewport a script last moved it against ([Layout.edgeX], [Layout.edgeY]). Read it on the engine
- * thread where it is needed: it does not follow later changes.
+ * viewport a script last moved it against ([Layout.edgeX], [Layout.edgeY]), and the ids of its
+ * [container] and [layout] in the skin's XML. Read it on the engine thread where it is needed: it
+ * does not follow later changes.
  */
 data class WindowInfo(
     val id: WindowId,
@@ -28,4 +29,20 @@ data class WindowInfo(
     val resizableBothWays: Boolean,
     val edgeX: Edge?,
     val edgeY: Edge?,
+    val container: String = "",
+    val layout: String = "",
+)
+
+/**
+ * What the host reads of one object of a skin ([SkinRuntime.objectInfo]): the window it is in,
+ * where it sits in that window ([rect]) and in the stack ([stackRect]), in layout pixels, whether
+ * it shows, and its class as scripts name it (Button, Slider, Text, ...). A snapshot, like
+ * [WindowInfo].
+ */
+data class ObjectInfo(
+    val window: WindowId,
+    val rect: Rect,
+    val stackRect: Rect,
+    val visible: Boolean,
+    val className: String,
 )

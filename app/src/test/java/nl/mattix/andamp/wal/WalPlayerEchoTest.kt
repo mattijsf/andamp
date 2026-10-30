@@ -6,21 +6,12 @@ import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.model.Transport
-import nl.mattix.andamp.modernskin.maki.Binding
-import nl.mattix.andamp.modernskin.maki.Kind
-import nl.mattix.andamp.modernskin.maki.MakiObject
-import nl.mattix.andamp.modernskin.maki.MakiProgram
-import nl.mattix.andamp.modernskin.maki.MethodRef
-import nl.mattix.andamp.modernskin.maki.Op
-import nl.mattix.andamp.modernskin.maki.Opcodes
-import nl.mattix.andamp.modernskin.maki.Script
-import nl.mattix.andamp.modernskin.maki.StdApi
-import nl.mattix.andamp.modernskin.maki.Value
-import nl.mattix.andamp.modernskin.maki.VarDecl
-import nl.mattix.andamp.modernskin.skin.GuiObject
+import nl.mattix.andamp.modernskin.fixtures.Listen
+import nl.mattix.andamp.modernskin.fixtures.recordEvents
+import nl.mattix.andamp.modernskin.fixtures.sliderPosition
+import nl.mattix.andamp.modernskin.skin.Rect
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
-import nl.mattix.andamp.modernskin.skin.Slider
 import nl.mattix.andamp.state.WinampState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -91,89 +82,33 @@ class WalPlayerEchoTest {
     /** What the recorder script heard, in order: the event and its arguments. */
     private val heard = ArrayList<Pair<String, List<Int>>>()
 
-    private val recorder =
-        object : MakiObject {
-            override val makiGuid = RECORDER
+    /** An object of the main window by id, read through the engine each time. */
+    private inner class Obj(
+        val id: String,
+    ) {
+        val rect: Rect get() = checkNotNull(rt.objectInfo(id)) { "no object $id" }.rect
+        val position: Int get() = rt.sliderPosition(id)
+    }
 
-            override fun makiCall(
-                name: String,
-                args: List<Value>,
-            ): Value = Value.Null.also { heard += name to args.map { it.asInt } }
-        }
-
-    private lateinit var volume: Slider
-    private lateinit var band: Slider
-    private lateinit var preamp: Slider
-    private lateinit var seek: Slider
+    private val volume = Obj("volume")
+    private val band = Obj("band")
+    private val preamp = Obj("preamp")
+    private val seek = Obj("seek")
 
     @Before
     fun load() {
         controls.place(50_000)
         rt.load()
-        val layout = checkNotNull(rt.mainLayout)
-        volume = layout.findObject("volume") as Slider
-        band = layout.findObject("band") as Slider
-        preamp = layout.findObject("preamp") as Slider
-        seek = layout.findObject("seek") as Slider
-        listen(layout.systemObjects.single())
+        rt.recordEvents(
+            listOf(
+                Listen(null, "onvolumechanged", "volume", 1),
+                Listen(null, "oneqbandchanged", "band", 2),
+                Listen(null, "oneqpreampchanged", "preamp", 1),
+            ) + SLIDERS.map { Listen(it, "onsetposition", "$it.position", 1) },
+        ) { name, args -> heard += name to args }
         // the load placed the thumbs on the player's values, which scripts do not hear
         frame()
         heard.clear()
-    }
-
-    /**
-     * A script that records the volume, band and preamp events of [system], and every slider's
-     * onSetPosition, with their arguments.
-     */
-    private fun listen(system: MakiObject) {
-        val methods = ArrayList<MethodRef>()
-
-        fun method(
-            cls: Int,
-            name: String,
-        ): Int = methods.size.also { methods += MethodRef(cls, name) }
-        val code = ArrayList<Op>()
-        val bindings = ArrayList<Binding>()
-
-        // a handler that hands its [argc] arguments to the recorder under [name]
-        fun record(
-            variable: Int,
-            event: String,
-            name: String,
-            argc: Int,
-        ) {
-            bindings += Binding(variable, method(SOURCE_CLASS, event), code.size)
-            val call = method(RECORDER_CLASS, name)
-            val temps = listOf(FIRST_VAR, SECOND_VAR).take(argc)
-            for (t in temps) code += Op(Opcodes.POP_TO, t, -1, code.size)
-            code += Op(Opcodes.PUSH, RECORDER_VAR, -1, code.size)
-            for (t in temps.asReversed()) code += Op(Opcodes.PUSH, t, -1, code.size)
-            code += Op(Opcodes.CALL, call, argc, code.size)
-            code += Op(Opcodes.POP, 0, -1, code.size)
-            code += Op(Opcodes.PUSH, ZERO_VAR, -1, code.size)
-            code += Op(Opcodes.RETURN, 0, -1, code.size)
-        }
-        record(SYSTEM_VAR, "onvolumechanged", "volume", 1)
-        record(SYSTEM_VAR, "oneqbandchanged", "band", 2)
-        record(SYSTEM_VAR, "oneqpreampchanged", "preamp", 1)
-        for ((i, id) in SLIDERS.withIndex()) record(SLIDER_VARS + i, "onsetposition", "$id.position", 1)
-
-        fun obj(o: MakiObject) = VarDecl(Kind.OBJECT, guid = null, classVar = null, global = true, initial = Value.Obj(o))
-
-        fun int() = VarDecl(Kind.INT, guid = null, classVar = null, global = true, initial = Value.Int(0))
-        val program =
-            MakiProgram(
-                id = "recorder",
-                version = 0,
-                classes = listOf(StdApi.guidOf("GuiObject")!!, RECORDER),
-                methods = methods,
-                variables =
-                    listOf(obj(system), obj(recorder), int(), int(), int()) +
-                        listOf(volume, band, preamp, seek).map(::obj),
-                bindings = bindings,
-                code = code,
-            )
-        rt.scripts += Script(program, system, rt)
     }
 
     /** One display frame: the engine ticks, main runs what was posted, the clock moves on. */
@@ -198,18 +133,18 @@ class WalPlayerEchoTest {
 
     /** A press on [s] at its step [position]. */
     private fun x(
-        s: Slider,
+        s: Obj,
         position: Int,
     ) = s.rect.left + 4 * position + 1
 
-    private fun y(s: GuiObject) = s.rect.top + 5
+    private fun y(s: Obj) = s.rect.top + 5
 
     /**
      * Drags [s] through [positions], a frame each, and lets go at the last. The backend reports each
      * value only once the next one is set, so the engine sees the values on the way.
      */
     private fun drag(
-        s: Slider,
+        s: Obj,
         positions: List<Int>,
     ) {
         rt.pointerDown(x(s, positions.first()), y(s))
@@ -263,9 +198,7 @@ class WalPlayerEchoTest {
         // the engine publishes the skin's first frame right after the load
         fresh.load()
 
-        val layout = checkNotNull(fresh.mainLayout)
-
-        fun thumbs() = SLIDERS.map { (layout.findObject(it) as Slider).position }
+        fun thumbs() = SLIDERS.map { fresh.sliderPosition(it) }
         val first = thumbs()
         // an equalizer slider runs from -128 to 127, flat at 0
         assertEquals(listOf(WalPlayer.fromPercent(20), WalPlayer.fromEq(10) - 128, WalPlayer.fromEq(50) - 128, 50), first)
@@ -354,7 +287,7 @@ class WalPlayerEchoTest {
 
     @Test
     fun `volume up twice before main runs adds twenty, heard once`() {
-        val up = checkNotNull(rt.mainLayout?.findObject("up"))
+        val up = Obj("up")
         val start = player.volume
 
         repeat(2) {
@@ -427,15 +360,6 @@ class WalPlayerEchoTest {
 
     private companion object {
         const val FRAME_MS = 16L
-        const val RECORDER = "recorder"
-        const val SOURCE_CLASS = 0
-        const val RECORDER_CLASS = 1
-        const val SYSTEM_VAR = 0
-        const val RECORDER_VAR = 1
-        const val FIRST_VAR = 2
-        const val SECOND_VAR = 3
-        const val ZERO_VAR = 4
-        const val SLIDER_VARS = 5
         val SLIDERS = listOf("volume", "band", "preamp", "seek")
 
         /** A song whose length makes every seek bar step a whole second: 255 steps over 255 s. */

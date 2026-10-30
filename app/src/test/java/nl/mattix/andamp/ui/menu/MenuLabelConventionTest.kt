@@ -4,6 +4,7 @@ package nl.mattix.andamp.ui.menu
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
+import nl.mattix.andamp.modernskin.fixtures.optionsItem
 import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.WinampViewModel

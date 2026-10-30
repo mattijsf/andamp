@@ -48,7 +48,7 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
-import nl.mattix.andamp.modernskin.maki.Value
+import nl.mattix.andamp.modernskin.fixtures.resizeAsScript
 import nl.mattix.andamp.modernskin.skin.AndampDefaultSet
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.SkinFiles
@@ -501,11 +501,9 @@ private fun loadRuntime(
         check?.theme?.let { t -> it.selectColorTheme(t) }
         check?.view?.let { v -> it.presentation = it.presentation.copy(viewSize = v) }
         // a scenario's size for a resizable main window, as ReferenceRenderTest gives it
-        check?.mainSize?.let { (w, h) ->
-            it.mainLayout?.makiCall("resize", listOf(Value.Int(0), Value.Int(0), Value.Int(w), Value.Int(h)))
-        }
+        check?.mainSize?.let { (w, h) -> it.mainWindow?.let { main -> it.resizeAsScript(main, 0, 0, w, h) } }
         // windows the skin opens by itself at start in Winamp, as ReferenceRenderTest opens them
-        check?.show?.forEach { id -> it.container(id)?.let { c -> it.openWindow(c) } }
+        check?.show?.forEach { id -> it.openWindow(id) }
     }
 
 /** The reference sequence, as ReferenceRenderTest runs it, on the check's stepped clock. */
@@ -528,14 +526,13 @@ private fun runCheck(
     player.stop()
     step(3_000)
     for (id in check.taps) {
-        val target = rt.windows.asReversed().firstNotNullOfOrNull { it.findObject(id) }
+        val target = rt.objectInfo(id)?.stackRect
         if (target == null) {
             rt.host.log("check: no object $id")
             continue
         }
-        val origin = target.layoutObject?.let { rt.windowRect(it) }
-        val cx = target.rect.left + target.rect.width / 2 + (origin?.left ?: 0)
-        val cy = target.rect.top + target.rect.height / 2 + (origin?.top ?: 0)
+        val cx = target.left + target.width / 2
+        val cy = target.top + target.height / 2
         rt.pointerDown(cx, cy)
         rt.pointerUp(cx, cy)
         step(3_000)
@@ -639,7 +636,7 @@ private fun ModernSkinScreen(
                         Log.e(WalHost.TAG, "check failed", e)
                         return@post
                     }
-                val windows = rt.windows.size
+                val windows = rt.windowIds.size
                 main.post {
                     writeCheckImages(stack, host, File(context.filesDir, "check"))
                     Log.i(WalHost.TAG, "check done: $windows windows")

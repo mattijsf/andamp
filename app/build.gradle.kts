@@ -419,6 +419,9 @@ dependencies {
     detektPlugins(libs.detekt.compose.rules)
     testImplementation(libs.junit)
     testImplementation(testFixtures(project(":core:playback")))
+    testImplementation(testFixtures(project(":modernskin")))
+    // the debug activity's check mode replays the reference scenarios with the same helpers
+    debugImplementation(testFixtures(project(":modernskin")))
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)
