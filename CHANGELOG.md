@@ -4,6 +4,13 @@ What changed for somebody who uses Andamp, newest first. It is written from the 
 messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `docs:` and
 `chore:` commits do not appear here.
 
+## [0.17.1](https://github.com/mattijsf/andamp/compare/v0.17.0...v0.17.1) (2026-10-30)
+
+
+### Fixed
+
+* modern skins that ask for Arial get the matching font on the phone too ([#180](https://github.com/mattijsf/andamp/issues/180)) ([decefe5](https://github.com/mattijsf/andamp/commit/decefe5fd08e6cb00e8ab02e1cf9887805d3cf13))
+
 ## [0.17.0](https://github.com/mattijsf/andamp/compare/v0.16.0...v0.17.0) (2026-10-30)
 
 

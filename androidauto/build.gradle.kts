@@ -44,7 +44,7 @@ android {
         applicationId = "$player.androidauto"
         targetSdk = 36
         // release-please owns this line; it is the player's version, which this app is released with
-        versionName = "0.17.0" // x-release-please-version
+        versionName = "0.17.1" // x-release-please-version
         versionCode = versionCodeOf(versionName!!)
         // the runner for the on-device test that lends a surface to the installed player
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
