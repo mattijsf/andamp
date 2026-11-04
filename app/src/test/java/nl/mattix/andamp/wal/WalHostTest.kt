@@ -71,7 +71,7 @@ class WalHostTest {
         val cmds =
             (from until from + count).map { i ->
                 val part = BitmapDef("p$i", "sheet.png", (i % 8) * 8, (i / 8) * 8, 8, 8, "g")
-                DrawCmd.Image(part, Rect(i * 8, 0, 8, 8), 255).also { it.gamma = gamma }
+                DrawCmd.Image(part, Rect(i * 8, 0, 8, 8), 255, gamma)
             }
         return listOf(Rect(0, 0, 8 * (from + count), 8) to cmds)
     }
@@ -176,7 +176,7 @@ class WalHostTest {
         // a window that draws the whole sheet tinted, shaped by the whole sheet as a mask: each
         // piece is its sheet, the tinted one and the cut mask
         val shape = Region.Op(Region.Box(box), emptyList(), listOf(Region.Pic(DrawCmd.Image(whole, box, 255))), emptyList())
-        val image = DrawCmd.Image(whole, box, 255).also { it.gamma = gamma(0) }
+        val image = DrawCmd.Image(whole, box, 255, gamma(0))
         host.frame(listOf(box to listOf(DrawCmd.WindowStart(shape), image, DrawCmd.WindowEnd)))
 
         assertEquals("the tinted sheet and the cut mask", 2 * sheet, host.drawing.bytes)
