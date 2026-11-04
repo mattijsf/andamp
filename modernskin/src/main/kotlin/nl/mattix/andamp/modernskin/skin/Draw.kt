@@ -151,7 +151,7 @@ sealed class DrawCmd {
                 ownerNamesBuilt++
                 it.toString()
             }
-        set(value) {
+        internal set(value) {
             ownedBy = value
         }
 
@@ -160,12 +160,15 @@ sealed class DrawCmd {
         val bitmap: BitmapDef,
         val dst: Rect,
         val alpha: Int,
+        gamma: Gamma? = null,
     ) : DrawCmd() {
         /** The color theme's tint for this bitmap, filled in when the frame is drawn. */
-        var gamma: Gamma? = null
+        var gamma: Gamma? = gamma
+            internal set
 
         /** Scale with filtering instead of nearest pixels: Winamp shrinks a list's thumb picture that way. */
         var smooth = false
+            internal set
     }
 
     class Fill(
@@ -269,7 +272,9 @@ sealed class DrawCmd {
         /** Pixels to shift the text left by, for a ticker. */
         val scroll: Int = 0,
     ) : DrawCmd() {
+        /** The color theme's tint for the font sheet, filled in when the frame is drawn. */
         var gamma: Gamma? = null
+            internal set
     }
 
     /** Clip the commands that follow, until the matching [Unclip]. */
