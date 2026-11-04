@@ -130,7 +130,7 @@ class SliderCancelTest {
                 bindings = bindings,
                 code = code,
             )
-        rt.scripts += Script(program, recorder, rt)
+        rt.scripts += Script(program, recorder, rt.makiHost)
     }
 
     private fun tick(ms: Long) {

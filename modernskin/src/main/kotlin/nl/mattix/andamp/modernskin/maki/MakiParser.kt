@@ -4,7 +4,7 @@ package nl.mattix.andamp.modernskin.maki
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
-class MakiFormatException(
+internal class MakiFormatException(
     message: String,
     cause: Throwable? = null,
 ) : Exception(message, cause)
@@ -16,12 +16,12 @@ class MakiFormatException(
  * header, class GUIDs, method imports, variables, string constants, event bindings, code, then
  * optional debug data this reader ignores.
  */
-object MakiParser {
+internal object MakiParser {
     private const val MAGIC = "FG"
     private const val MAX_TABLE = 1 shl 16
 
     @Suppress("TooGenericExceptionCaught") // any read can fail on a damaged file; each failure becomes a MakiFormatException
-    fun parse(
+    internal fun parse(
         bytes: ByteArray,
         id: String,
     ): MakiProgram =

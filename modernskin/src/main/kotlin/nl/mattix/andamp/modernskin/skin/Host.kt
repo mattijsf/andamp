@@ -2,11 +2,11 @@
 package nl.mattix.andamp.modernskin.skin
 
 /** The pictures of a skin as the host decodes them: sizes and pixels, for shapes and taps. */
-interface ImageHost {
-    fun imageSize(file: String): Pair<Int, Int>?
+public interface ImageHost {
+    public fun imageSize(file: String): Pair<Int, Int>?
 
     /** ARGB of one pixel of a skin image, or null when it cannot be read. */
-    fun pixel(
+    public fun pixel(
         file: String,
         x: Int,
         y: Int,
@@ -16,7 +16,7 @@ interface ImageHost {
      * ARGB of the [w] x [h] block of a skin image at [x], [y], row by row, or null when a pixel of
      * it cannot be read; one [pixel] at a time unless the host reads a block at once.
      */
-    fun pixels(
+    public fun pixels(
         file: String,
         x: Int,
         y: Int,
@@ -26,14 +26,14 @@ interface ImageHost {
 }
 
 /** Text as the host's renderer draws it: widths, and the font's line where its file gives none. */
-interface TextHost {
-    fun textWidth(
+public interface TextHost {
+    public fun textWidth(
         text: String,
         font: FontDef?,
         size: Int,
     ): Int
 
-    fun textWidth(
+    public fun textWidth(
         text: String,
         font: FontDef?,
         size: Int,
@@ -44,7 +44,7 @@ interface TextHost {
      * How wide [text] draws, in fractional layout pixels, as this host's renderer draws it: the
      * engine places text by it. The whole-pixel [textWidth] by default.
      */
-    fun textAdvance(
+    public fun textAdvance(
         text: String,
         font: FontDef?,
         size: Int,
@@ -56,7 +56,7 @@ interface TextHost {
      * whose file gives Windows' line ([GdiLineMetrics]) no figures; null leaves it to a share of
      * the em.
      */
-    fun lineMetrics(
+    public fun lineMetrics(
         font: FontDef?,
         size: Int,
         bold: Boolean,
@@ -64,16 +64,16 @@ interface TextHost {
 }
 
 /** The rest of what the engine asks of the host: the log, redraws, the app's windows, menus and actions. */
-interface WindowHost {
-    fun log(message: String)
+public interface WindowHost {
+    public fun log(message: String)
 
-    fun invalidate()
+    public fun invalidate()
 
     /**
      * Whether one of the app's own windows is open: "pl" (playlist), "ml" (library), "eq",
      * "video" or "vis". Null leaves it to the skin's container. Buttons that toggle these light up.
      */
-    fun windowOpen(kind: String): Boolean? = null
+    public fun windowOpen(kind: String): Boolean? = null
 
     /**
      * Shows a skin's popup menu and returns the id of the command the listener picked, or 0 for
@@ -81,27 +81,27 @@ interface WindowHost {
      * means the menu closed without the listener (the app went away or the wait ran out): the
      * script hears 0, and the touch shows no more menus.
      */
-    fun chooseFromMenu(menu: SkinMenu): Int? = 0
+    public fun chooseFromMenu(menu: SkinMenu): Int? = 0
 
     /**
      * The windows on screen changed ([SkinRuntime.windowIds], main first): one opened, closed or
      * switched layout (a shade). A host that shows each window apart makes or drops its windows here.
      */
-    fun windowsChanged(windows: List<WindowId>) = Unit
+    public fun windowsChanged(windows: List<WindowId>): Unit = Unit
 
     /**
      * A button action the host answers, as Winamp answered it outside the skin, when the skin was
      * set up with [SkinSetup.hostActions]: the action uppercase and its param or window name; see
      * [SkinRuntime.onHostAction].
      */
-    fun hostAction(
+    public fun hostAction(
         action: String,
         param: String?,
-    ) = Unit
+    ): Unit = Unit
 }
 
 /** Services the app supplies to the skin: its pictures, its text and its windows. */
-interface SkinHost :
+public interface SkinHost :
     ImageHost,
     TextHost,
     WindowHost

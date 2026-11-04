@@ -8,7 +8,7 @@ package nl.mattix.andamp.modernskin.skin
  * scrollbar at the right edge. A tap selects a row, a second tap plays it, a double tap plays the
  * row under it, a drag scrolls.
  */
-class PlaylistView(
+internal class PlaylistView(
     rt: SkinRuntime,
 ) : GuiObject(rt, "component") {
     override val className: String get() = "GuiObject"

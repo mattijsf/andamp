@@ -7,7 +7,7 @@ package nl.mattix.andamp.modernskin.skin
  * from (`gradient_x1`, `gradient_y1`) to (`gradient_x2`, `gradient_y2`), given as shares of the
  * object's size; the result takes its `gammagroup`'s tint. One stop fills the object with it.
  */
-class Gradient(
+internal class Gradient(
     rt: SkinRuntime,
 ) : GuiObject(rt, "gradient") {
     private var x1 = 0f

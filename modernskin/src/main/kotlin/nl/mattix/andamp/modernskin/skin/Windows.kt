@@ -7,8 +7,8 @@ package nl.mattix.andamp.modernskin.skin
  * the skin is loaded, and no other window of that skin gets it.
  */
 @JvmInline
-value class WindowId(
-    val raw: Int,
+public value class WindowId(
+    internal val raw: Int,
 )
 
 /**
@@ -19,7 +19,7 @@ value class WindowId(
  * [container] and [layout] in the skin's XML. Read it on the engine thread where it is needed: it
  * does not follow later changes.
  */
-data class WindowInfo(
+public data class WindowInfo(
     val id: WindowId,
     val size: Pair<Int, Int>,
     val minW: Int,
@@ -39,7 +39,7 @@ data class WindowInfo(
  * it shows, and its class as scripts name it (Button, Slider, Text, ...). A snapshot, like
  * [WindowInfo].
  */
-data class ObjectInfo(
+public data class ObjectInfo(
     val window: WindowId,
     val rect: Rect,
     val stackRect: Rect,

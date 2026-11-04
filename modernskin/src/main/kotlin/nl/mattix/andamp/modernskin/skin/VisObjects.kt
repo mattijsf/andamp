@@ -14,7 +14,7 @@ import kotlin.math.floor
  * and peaks hang, then drop faster and faster, one step every 25 ms. In mode 2 the same picture
  * holds an oscilloscope of the waveform being heard (see [paintScope]).
  */
-class Vis(
+internal class Vis(
     rt: SkinRuntime,
 ) : GuiObject(rt, "vis") {
     override val className: String get() = "Vis"
@@ -422,7 +422,7 @@ internal fun flip(
  * column's height; each row in its own color, from `colortop` to `colormiddle` in the upper half
  * and on to `colorbottom` below. The preamp first, as a full row in `colorpreamp`. A boost goes up.
  */
-class EqVis(
+internal class EqVis(
     rt: SkinRuntime,
 ) : GuiObject(rt, "eqvis") {
     override val className: String get() = "EqVis"

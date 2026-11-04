@@ -725,7 +725,7 @@ internal class WalEngine(
         val mainSize = main?.let(runtime::windowSize)
         val size = sizeOf(stack)
         if (mainSize != null) WalScale.unfit(mainSize, size, baseW, box = null)?.let { error(it) }
-        val windowOpen = runtime.topWindow != null
+        val windowOpen = runtime.windowOpen
         val idle = idleNow ?: idle(runtime)
         lastIdle = idle
         val wantsFrames = rest.wantsFrames(idle, now)

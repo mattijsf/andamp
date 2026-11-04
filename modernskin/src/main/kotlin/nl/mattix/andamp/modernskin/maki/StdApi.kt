@@ -3,26 +3,26 @@
 package nl.mattix.andamp.modernskin.maki
 
 /** Return kinds: I int, F float, D double, B boolean, S string, V void, O object, A any. */
-class ApiMethod(
-    val params: Int,
-    val ret: Char,
+internal class ApiMethod(
+    internal val params: Int,
+    internal val ret: Char,
 )
 
-class ApiClass(
-    val name: String,
-    val parent: String?,
-    val methods: Map<String, ApiMethod>,
+internal class ApiClass(
+    internal val name: String,
+    internal val parent: String?,
+    internal val methods: Map<String, ApiMethod>,
 )
 
 /** The MAKI standard library: class GUIDs, their parents and each method's arity and return kind. */
 @Suppress("LargeClass", "LongMethod", "MaxLineLength") // a table of the standard library, one line per class
-object StdApi {
+internal object StdApi {
     private fun m(
         params: Int,
         ret: Char,
     ) = ApiMethod(params, ret)
 
-    val byGuid: Map<String, ApiClass> =
+    internal val byGuid: Map<String, ApiClass> =
         mapOf(
             "516549710d874a5191e3a6b53235f3e7" to
                 ApiClass("Object", null, mapOf("getclassname" to m(0, 'S'), "getid" to m(0, 'S'), "onnotify" to m(4, 'I'))),
@@ -2227,12 +2227,12 @@ object StdApi {
                 ),
         )
 
-    val byName: Map<String, ApiClass> = byGuid.values.associateBy { it.name.lowercase() }
+    internal val byName: Map<String, ApiClass> = byGuid.values.associateBy { it.name.lowercase() }
 
-    fun guidOf(name: String): String? = byGuid.entries.firstOrNull { it.value.name.equals(name, ignoreCase = true) }?.key
+    internal fun guidOf(name: String): String? = byGuid.entries.firstOrNull { it.value.name.equals(name, ignoreCase = true) }?.key
 
     /** Looks a method up on a class or any ancestor. */
-    fun method(
+    internal fun method(
         guid: String,
         name: String,
     ): ApiMethod? {
@@ -2245,7 +2245,7 @@ object StdApi {
         return null
     }
 
-    fun isA(
+    internal fun isA(
         guid: String,
         ancestorName: String,
     ): Boolean {

@@ -43,72 +43,70 @@ internal fun parseRgb(v: String): Rgb? {
  * edge, so a negative value hugs the right or bottom.
  */
 @Suppress("TooManyFunctions") // the methods every Wasabi GUI object answers to
-open class GuiObject(
-    val rt: SkinRuntime,
-    val tag: String,
+internal open class GuiObject(
+    internal val rt: SkinRuntime,
+    internal val tag: String,
 ) : MakiObject {
-    open val className: String get() = "GuiObject"
+    internal open val className: String get() = "GuiObject"
     override val makiGuid: String get() = StdApi.guidOf(className) ?: ""
 
-    var id: String = ""
-    var parent: Group? = null
-    var x: Int? = null
-    var y: Int? = null
-    var w: Int? = null
-    var h: Int? = null
+    internal var id: String = ""
+    internal var parent: Group? = null
+    internal var x: Int? = null
+    internal var y: Int? = null
+    internal var w: Int? = null
+    internal var h: Int? = null
 
     /** `relat*`: 0 the value itself, 1 the value plus the parent's size, 2 a percentage of the parent's size. */
-    var relatX = 0
-    var relatY = 0
-    var relatW = 0
-    var relatH = 0
-    var visible = true
+    internal var relatX = 0
+    internal var relatY = 0
+    internal var relatW = 0
+    internal var relatH = 0
+    internal var visible = true
 
     /** `alpha` sets the alpha with and without focus together. */
-    var alpha: Int
+    internal var alpha: Int
         get() = activeAlpha
         set(v) {
             activeAlpha = v
             inactiveAlpha = v
         }
-    var ghost = false
-    var enabled = true
-    var sysregion = 0
+    internal var ghost = false
+    internal var enabled = true
+    internal var sysregion = 0
 
     /** Whether the XML wrote sysregion: a group that did not takes one from its children. */
-    var sysregionSet = false
-    var tooltip: String? = null
-    var dblClickAction: String? = null
+    internal var sysregionSet = false
+    internal var tooltip: String? = null
+    internal var dblClickAction: String? = null
 
     /** `move`: whether a drag that starts on it moves the window; null when not written (see [SkinRuntime.movesWindow]). */
-    var move: Boolean? = null
+    internal var move: Boolean? = null
 
     /** A title bar's insets from the frame's `padtitleleft`/`padtitleright`. */
-    var padLeft = 0
-    var padRight = 0
-    val attrs = LinkedHashMap<String, String>()
+    internal var padLeft = 0
+    internal var padRight = 0
+    internal val attrs = LinkedHashMap<String, String>()
 
     /**
      * `resize` as the skin's XML writes it, before any script changes it: Winamp Modern's script
      * turns its drawer's grip into a corner one while the drawer is open.
      */
-    var declaredResize: String? = null
+    internal var declaredResize: String? = null
         private set
 
     /** Where it was last laid out, in layout pixels. */
-    var rect: Rect = Rect.EMPTY
-        protected set
+    internal var rect: Rect = Rect.EMPTY
 
     /** The alpha the ancestors leave, 0..255. */
-    var effectiveAlpha = 255
-        protected set
+    internal var effectiveAlpha = 255
 
     /** `rectrgn="1"`: the object's region is its rectangle, for the window shape and for taps. */
-    var rectRgn = false
+    internal var rectRgn = false
 
     /** `activealpha` / `inactivealpha`: opacity while the window has focus, and while it has not. */
-    var activeAlpha = 255
-    var inactiveAlpha = 255
+    internal var activeAlpha = 255
+    internal var inactiveAlpha = 255
 
     /**
      * The alpha it paints with: the one for the window's focus, times the parent's, 254 shown as 255
@@ -149,12 +147,12 @@ open class GuiObject(
     /** `relat*` as written: "%..." is a percentage. */
     private fun relat(value: String): Int = if (value.trimStart().startsWith("%")) 2 else value.toIntLenient() ?: 0
 
-    fun setParams(map: Map<String, String>) {
+    internal fun setParams(map: Map<String, String>) {
         for ((k, v) in map) if (!setParam(k, v)) rt.unhandledParams.merge("$tag ${k.lowercase()}", 1, Int::plus)
     }
 
     @Suppress("CyclomaticComplexMethod") // one arm per XML attribute
-    open fun setParam(
+    internal open fun setParam(
         key: String,
         value: String,
     ): Boolean {
@@ -303,13 +301,13 @@ open class GuiObject(
         listOf(x, y, w, h, defaultW, defaultH, relatX, relatY, relatW, relatH, padLeft, padRight)
 
     /** `default_w` / `default_h`: the size of a group that writes none. */
-    var defaultW: Int? = null
-    var defaultH: Int? = null
+    internal var defaultW: Int? = null
+    internal var defaultH: Int? = null
 
     /** The natural size when the XML gives none: an image's size, mostly. */
-    open fun intrinsicSize(): Pair<Int, Int>? = null
+    internal open fun intrinsicSize(): Pair<Int, Int>? = null
 
-    open fun layout(
+    internal open fun layout(
         parentRect: Rect,
         parentAlpha: Int,
     ) {
@@ -336,22 +334,22 @@ open class GuiObject(
         effectiveAlpha = paintAlpha(parentAlpha)
     }
 
-    open fun draw(out: MutableList<DrawCmd>) = Unit
+    internal open fun draw(out: MutableList<DrawCmd>) = Unit
 
     /** How its region joins its parent's: 1 added, 2 intersected, -1 cut, -2 cut from the whole window. */
-    open fun regionOp(): Int = sysregion
+    internal open fun regionOp(): Int = sysregion
 
     /** Its own region before its children's: its rectangle (Wasabi SDK basewnd, rectrgn on by default). */
-    open fun ownRegion(): Region? = if (rect.width > 0 && rect.height > 0) Region.Box(rect) else null
+    internal open fun ownRegion(): Region? = if (rect.width > 0 && rect.height > 0) Region.Box(rect) else null
 
     /**
      * Its region with its children's joined in by their [regionOp]; children's whole-window cuts go
      * to [windowCuts]. Null when it is empty.
      */
-    open fun composedRegion(windowCuts: MutableList<Region>): Region? = ownRegion()
+    internal open fun composedRegion(windowCuts: MutableList<Region>): Region? = ownRegion()
 
     /** The topmost object under a point, or null. Ghost objects let touches through. */
-    open fun hitTest(
+    internal open fun hitTest(
         px: Int,
         py: Int,
     ): GuiObject? = if (visible && takesTouchAt(px, py)) this else null
@@ -390,7 +388,7 @@ open class GuiObject(
     }
 
     /** Moves one frame toward the target; at the end the object sits there and hears `onTargetReached`. */
-    fun stepTarget(now: Long) {
+    internal fun stepTarget(now: Long) {
         val start = moveStart ?: return
         val from = moveFrom ?: return
         val to = moveTo ?: return
@@ -421,38 +419,38 @@ open class GuiObject(
     }
 
     /** The rectangle after any pending layout, for scripts that read it right after a change. */
-    fun laidOut(): Rect {
+    internal fun laidOut(): Rect {
         rt.ensureLayout()
         return rect
     }
 
-    val layoutObject: Layout?
+    internal val layoutObject: Layout?
         get() {
             var o: GuiObject? = this
             while (o != null && o !is Layout) o = o.parent
             return o as? Layout
         }
 
-    fun dispatch(
+    internal fun dispatch(
         event: String,
         vararg args: Value,
     ): Int = rt.dispatch(this, event, args.toList())
 
-    open fun pointerDown(
+    internal open fun pointerDown(
         px: Int,
         py: Int,
     ) {
         dispatch("onleftbuttondown", Value.Int(px), Value.Int(py))
     }
 
-    open fun pointerMove(
+    internal open fun pointerMove(
         px: Int,
         py: Int,
     ) {
         dispatch("onmousemove", Value.Int(px), Value.Int(py))
     }
 
-    open fun pointerUp(
+    internal open fun pointerUp(
         px: Int,
         py: Int,
         inside: Boolean,
@@ -464,10 +462,10 @@ open class GuiObject(
      * The press ends without a release (a menu or the host took the touch): the object lets go
      * with no click or final position, and scripts hear nothing; a Slider's hear the button go up.
      */
-    open fun pointerCancel() = Unit
+    internal open fun pointerCancel() = Unit
 
     /** A right click at a point of its window: the right button goes down and up. */
-    open fun rightClick(
+    internal open fun rightClick(
         px: Int,
         py: Int,
     ) {
@@ -475,7 +473,7 @@ open class GuiObject(
         dispatch("onrightbuttonup", Value.Int(px), Value.Int(py))
     }
 
-    open fun doubleTap(
+    internal open fun doubleTap(
         px: Int,
         py: Int,
     ) {
@@ -484,18 +482,18 @@ open class GuiObject(
     }
 
     /** `action;param;target` as a button or a double click does it. */
-    fun runAction(spec: String) {
+    internal fun runAction(spec: String) {
         val parts = spec.split(';')
         rt.action(this, parts[0].trim(), parts.getOrNull(1)?.trim(), parts.getOrNull(2)?.trim())
     }
 
     /** Puts this object into [group], as a script does with `obj.init(group)`. */
-    fun init(group: Group) {
+    internal fun init(group: Group) {
         group.addChild(this)
         rt.relayout()
     }
 
-    fun show() {
+    internal fun show() {
         if (!visible) {
             visible = true
             shownChanged()
@@ -503,7 +501,7 @@ open class GuiObject(
         }
     }
 
-    fun hide() {
+    internal fun hide() {
         if (visible) {
             visible = false
             shownChanged()
@@ -522,7 +520,7 @@ open class GuiObject(
     }
 
     /** onSetVisible for this object and, down the tree, every child whose own flag is set. */
-    fun announceVisible(shown: Boolean) {
+    internal fun announceVisible(shown: Boolean) {
         dispatch("onsetvisible", Value.Int(if (shown) 1 else 0))
         if (this is Group) for (c in children.toList()) if (c.visible) c.announceVisible(shown)
     }
@@ -534,7 +532,7 @@ open class GuiObject(
      * `findObject(id)` as Wasabi's windows do it: this object's children, then their subtrees,
      * then up one parent at a time, so any object in the window is found from anywhere in it.
      */
-    fun findObjectChain(id: String): GuiObject? {
+    internal fun findObjectChain(id: String): GuiObject? {
         (this as? Group)?.findObject(id)?.let { return it }
         var p = parent
         while (p != null) {
@@ -545,7 +543,7 @@ open class GuiObject(
     }
 
     /** `setXmlParam(key, value)` from a script; a group keeps what it cannot use for its scripts. */
-    open fun setXmlParam(
+    internal open fun setXmlParam(
         key: String,
         value: String,
     ) {
@@ -819,26 +817,26 @@ private const val UNSIZED_W = 320
 private const val UNSIZED_H = 200
 
 /** Gui objects that hold others. A `<group>` whose id names a `<groupdef>` takes that definition's children. */
-open class Group(
+internal open class Group(
     rt: SkinRuntime,
     tag: String = "group",
 ) : GuiObject(rt, tag) {
     override val className: String get() = "Group"
-    val children = ArrayList<GuiObject>()
-    var background: String? = null
+    internal val children = ArrayList<GuiObject>()
+    internal var background: String? = null
 
     /** Off until `background=` turns it on, so a later `drawbackground="0"` wins. */
-    var drawBackground = false
-    var instanceId: String? = null
-    var autoWidthSource: String? = null
-    var autoHeightSource: String? = null
-    val systemObjects = ArrayList<SystemObject>()
+    internal var drawBackground = false
+    internal var instanceId: String? = null
+    internal var autoWidthSource: String? = null
+    internal var autoHeightSource: String? = null
+    internal val systemObjects = ArrayList<SystemObject>()
 
     /** What the engine does for this group where Winamp's default set runs a script. */
     internal var behavior: GroupBehavior? = null
 
     /** Attributes a xui tag got that are no GUI attributes; sent to its scripts as `onSetXuiParam`. */
-    val xuiParams = LinkedHashMap<String, String>()
+    internal val xuiParams = LinkedHashMap<String, String>()
 
     /**
      * `embed_xui` on a group definition: the id of the child the xui object exposes to scripts
@@ -847,10 +845,10 @@ open class Group(
      * methods and parameters the group has no use for go to that child, and the child's events
      * also fire on the group.
      */
-    var embedXui: String? = null
+    internal var embedXui: String? = null
 
     /** The child named by [embedXui], if any. */
-    val embedded: GuiObject? get() = embedXui?.let { e -> children.firstOrNull { it.id == e } ?: findObject(e) }
+    internal val embedded: GuiObject? get() = embedXui?.let { e -> children.firstOrNull { it.id == e } ?: findObject(e) }
 
     override fun setXmlParam(
         key: String,
@@ -915,14 +913,14 @@ open class Group(
         return true
     }
 
-    fun addChild(child: GuiObject) {
+    internal fun addChild(child: GuiObject) {
         child.parent?.children?.remove(child)
         child.parent = this
         children.add(child)
         rt.invalidate()
     }
 
-    fun findObject(wanted: String): GuiObject? {
+    internal fun findObject(wanted: String): GuiObject? {
         val lower = wanted.lowercase()
         for (c in children) {
             if (c.id == lower || (c is Group && c.instanceId == lower)) return c
@@ -978,7 +976,7 @@ open class Group(
     }
 
     /** Lays this group out to fill [area] exactly, as a frame pane; its own position attributes do not apply. */
-    fun layoutIn(
+    internal fun layoutIn(
         area: Rect,
         parentAlpha: Int,
     ) {
@@ -1134,7 +1132,7 @@ open class Group(
  * `maxwidth` (a negative maximum counts from the far edge), and takes 8 px. Bento's main window
  * is built from these.
  */
-class FrameSplitter(
+internal class FrameSplitter(
     rt: SkinRuntime,
 ) : Group(rt, "wasabi:frame") {
     private var vertical = true
@@ -1318,7 +1316,7 @@ class FrameSplitter(
  * `<AlbumArt>`: the current song's cover. Nothing plays with art here, so it shows the skin's
  * `notfoundImage` at its own size, centered, as Winamp 5.666 does (Bento's llama).
  */
-class AlbumArt(
+internal class AlbumArt(
     rt: SkinRuntime,
 ) : GuiObject(rt, "albumart") {
     override val className: String get() = "GuiObject"
@@ -1357,7 +1355,7 @@ class AlbumArt(
 }
 
 /** `<rect>`: a rectangle in one color, filled or as a 1 px outline (Bento's video pane). */
-class RectObj(
+internal class RectObj(
     rt: SkinRuntime,
 ) : GuiObject(rt, "rect") {
     override val className: String get() = "GuiObject"
@@ -1408,28 +1406,28 @@ class RectObj(
 }
 
 /** One look of a container: the window at its normal size, or shaded. */
-class Layout(
+internal class Layout(
     rt: SkinRuntime,
 ) : Group(rt, "layout") {
     override val className: String get() = "Layout"
 
     /** How the host names this window; see [WindowId]. */
-    val windowId: WindowId = rt.newWindowId(this)
+    internal val windowId: WindowId = rt.newWindowId(this)
 
-    var container: Container? = null
-    var minW = 0
-    var minH = 0
-    var maxW = 0
-    var maxH = 0
+    internal var container: Container? = null
+    internal var minW = 0
+    internal var minH = 0
+    internal var maxW = 0
+    internal var maxH = 0
 
     /**
      * The size the listener gave the window by dragging its resize grip, which the stack keeps from
      * then on instead of fitting the window to its column; null until then.
      */
-    var userSize: Pair<Int, Int>? = null
+    internal var userSize: Pair<Int, Int>? = null
 
     /** `desktopalpha="1"`: Winamp draws the window with per-pixel transparency and no region (CornerAmp). */
-    var desktopAlpha = false
+    internal var desktopAlpha = false
 
     /**
      * `snapadjustleft`, `top`, `right` and `bottom`: how far in from each edge Winamp docks and
@@ -1437,10 +1435,10 @@ class Layout(
      * main window); a script changes them with snapAdjust. The right and bottom ones trim
      * [snappedSize]; the left and top ones are kept for scripts to read.
      */
-    var snapLeft = 0
-    var snapTop = 0
-    var snapRight = 0
-    var snapBottom = 0
+    internal var snapLeft = 0
+    internal var snapTop = 0
+    internal var snapRight = 0
+    internal var snapBottom = 0
 
     /**
      * Where the window sits in the viewport ([SkinRuntime.viewport]) while it shows this layout, as
@@ -1448,9 +1446,9 @@ class Layout(
      * as each layout is a separate window in Winamp: MMD3 keeps one place for its main window and
      * one for each of its shade bars.
      */
-    var viewX = 0
+    internal var viewX = 0
         private set
-    var viewY = 0
+    internal var viewY = 0
         private set
 
     /**
@@ -1459,11 +1457,11 @@ class Layout(
      * null when that move put it against neither, or no script moved it. A phone puts the stack
      * against the same edge of its box as the main window's.
      */
-    var edgeX: Edge? = null
+    internal var edgeX: Edge? = null
         private set
 
     /** As [edgeX], up and down: the top edge at y 0, the bottom one with its bottom at the viewport's height. */
-    var edgeY: Edge? = null
+    internal var edgeY: Edge? = null
         private set
 
     /** Puts the window at [x], [y] in this layout with no script moving it: no edges are noted. */
@@ -1510,7 +1508,7 @@ class Layout(
     }
 
     /** Sizes the window to [width] by [height] where it is, as the phone sizes a window to its box. */
-    fun resizeTo(
+    internal fun resizeTo(
         width: Int,
         height: Int,
     ) {
@@ -1569,7 +1567,7 @@ class Layout(
      * (Winamp2000SP4's playlist from its 550 px shade layout), then kept within the minimum and
      * maximum, except while it moves to a target size (`gotoTarget`).
      */
-    val size: Pair<Int, Int>
+    internal val size: Pair<Int, Int>
         get() {
             val own = ownSize()
 
@@ -1595,7 +1593,7 @@ class Layout(
      * leave room for its drawer, and an outer frame group spans all of it, while the window itself
      * ends at 164 px until the drawer slides out. The layout's height when it has none.
      */
-    fun contentBottom(): Int {
+    internal fun contentBottom(): Int {
         val at = rt.changeCount
         if (bottomAt != at) {
             bottomNow = workOutBottom()
@@ -1672,7 +1670,7 @@ class Layout(
      * 583 px wide with room on the right for a panel that slides out; its body ends at about 380.
      * Its shade bar is 800 px wide, and only its background reaches past the drawers ending at 677.
      */
-    fun contentRight(): Int {
+    internal fun contentRight(): Int {
         val at = rt.changeCount
         if (rightAt != at) {
             rightNow = if (desktopAlpha) size.first else workOutRight(composed() as? Region.Op, size.first)
@@ -1704,7 +1702,7 @@ class Layout(
      * shows while its drawer is closed. The window keeps its top left corner: [snapLeft] and
      * [snapTop] trim nothing.
      */
-    fun snappedSize(): Pair<Int, Int> {
+    internal fun snappedSize(): Pair<Int, Int> {
         val (width, height) = size
         val right = if (snapRight > 0) maxOf(width - snapRight, contentRight()) else width
         val bottom = if (snapBottom > 0) maxOf(height - snapBottom, contentBottom()) else height
@@ -1744,17 +1742,17 @@ class Layout(
      * top or bottom edge (`resize="bottomright"` and so on). Shade layouts have left and right
      * handles only, so they keep their height.
      */
-    fun resizesVertically(): Boolean = hasHandle("top", "bottom")
+    internal fun resizesVertically(): Boolean = hasHandle("top", "bottom")
 
     /** Whether the user can change the window's width: a handle on a left or right edge. */
-    fun resizesHorizontally(): Boolean = hasHandle("left", "right")
+    internal fun resizesHorizontally(): Boolean = hasHandle("left", "right")
 
     /**
      * Whether the skin's XML gives the window handles both ways ([declaredResize]), whatever its
      * scripts set later: Winamp Modern's main window, whose drawer's grip turns into a corner one
      * while the drawer is open, is not one.
      */
-    fun declaredResizableBothWays(): Boolean =
+    internal fun declaredResizableBothWays(): Boolean =
         hasHandle("left", "right", declared = true) && hasHandle("top", "bottom", declared = true)
 
     private fun hasHandle(
@@ -1769,7 +1767,7 @@ class Layout(
         return children.any { walk(it) }
     }
 
-    fun layoutRoot() {
+    internal fun layoutRoot() {
         val (width, height) = size
         rect = Rect(0, 0, width, height)
         effectiveAlpha = alpha
@@ -1853,7 +1851,7 @@ class Layout(
 }
 
 /** An edge of the viewport on one axis: the left or top one ([START]), or the right or bottom one ([END]). */
-enum class Edge { START, END }
+public enum class Edge { START, END }
 
 /** The edge a window starting at [at], [size] long, sits against in a viewport [extent] long; null for neither. */
 private fun edgeAt(
@@ -1893,16 +1891,16 @@ private fun clearOf(
 }
 
 /** A window: the main player, the playlist editor, the equalizer. It shows one of its layouts. */
-class Container(
-    val rt: SkinRuntime,
-    val id: String,
-    val attrs: Map<String, String>,
+internal class Container(
+    internal val rt: SkinRuntime,
+    internal val id: String,
+    internal val attrs: Map<String, String>,
 ) : MakiObject {
     override val makiGuid: String get() = StdApi.guidOf("Container") ?: ""
-    val layouts = ArrayList<Layout>()
-    var current: Layout? = null
-    var visible = attrs["default_visible"]?.toBool() ?: true
-    val name = attrs["name"] ?: id
+    internal val layouts = ArrayList<Layout>()
+    internal var current: Layout? = null
+    internal var visible = attrs["default_visible"]?.toBool() ?: true
+    internal val name = attrs["name"] ?: id
 
     /** Where each layout sits in the viewport at the start (`default_x`, `default_y`); see [Layout.viewX]. */
     internal val defaultX = attrs["default_x"]?.toIntLenient() ?: 0
@@ -1917,17 +1915,17 @@ class Container(
         for (l in layouts) l.fitViewport(middle)
     }
 
-    fun layout(id: String): Layout? = layouts.firstOrNull { it.id.equals(id, ignoreCase = true) }
+    internal fun layout(id: String): Layout? = layouts.firstOrNull { it.id.equals(id, ignoreCase = true) }
 
     /** `canclose="0"`: a close leaves it open. */
-    val canClose: Boolean get() = attrs["canclose"]?.toBool() ?: true
+    internal val canClose: Boolean get() = attrs["canclose"]?.toBool() ?: true
 
     /**
      * Shows layout [id], or the first one when there is none by that id (Winamp3's eq shade asks
      * for "eq"); the new layout hears onSetVisible(1) before the container's onSwitchToLayout, and
      * takes the focus.
      */
-    fun switchTo(id: String) {
+    internal fun switchTo(id: String) {
         val target = layout(id) ?: layouts.firstOrNull() ?: return
         if (target === current) return
         // the two layouts themselves, not their ids (Wasabi SDK c_container)
@@ -1940,7 +1938,7 @@ class Container(
         rt.dispatch(this, "onswitchtolayout", listOf(Value.Obj(target)))
     }
 
-    fun show() {
+    internal fun show() {
         if (!visible) {
             visible = true
             rt.invalidate()
@@ -1948,7 +1946,7 @@ class Container(
         }
     }
 
-    fun hide() {
+    internal fun hide() {
         if (visible) {
             visible = false
             rt.invalidate()
@@ -2056,18 +2054,18 @@ class Container(
 }
 
 /** A picture. With `move="1"` dragging it moves the window, which the phone does not do. */
-open class Layer(
+internal open class Layer(
     rt: SkinRuntime,
     tag: String = "layer",
 ) : GuiObject(rt, tag) {
     override val className: String get() = "Layer"
-    var image: String? = null
+    internal var image: String? = null
 
     /** `tile="1"` repeats the picture across the layer; otherwise it is stretched to fit. */
-    var tile = false
+    internal var tile = false
 
     /** `inactiveimage`: drawn instead of the image while the window has no focus. */
-    var inactiveImage: String? = null
+    internal var inactiveImage: String? = null
 
     /** The picture it draws now. */
     protected val shownImage: String? get() = inactiveImage?.takeIf { !rt.hasFocus(layoutObject) } ?: image
@@ -2149,29 +2147,29 @@ open class Layer(
  * A strip of frames, stacked vertically unless the XML gives a frame width. Scripts step it with
  * gotoFrame, or play it from a start frame to an end frame at `speed` milliseconds a frame.
  */
-class AnimatedLayer(
+internal class AnimatedLayer(
     rt: SkinRuntime,
 ) : Layer(rt, "animatedlayer") {
     override val className: String get() = "AnimatedLayer"
-    var frameW: Int? = null
-    var frameH: Int? = null
-    var frame = 0
+    internal var frameW: Int? = null
+    internal var frameH: Int? = null
+    internal var frame = 0
 
     /** Set by frameheight (true) or framewidth (false), the last one written; else from the picture. */
     private var verticalSet: Boolean? = null
     private var startFrame = 0
     private var endFrame: Int? = null
-    var speed = 200
+    internal var speed = 200
     private var autoReplay = true
     private var autoPlay = false
-    var playing = false
+    internal var playing = false
         private set
     private var paused = false
     private var step = 1
-    var nextAt = 0L
+    internal var nextAt = 0L
 
     /** Playing and not paused: it steps on at [nextAt]. A paused strip shows one frame until it resumes. */
-    val running: Boolean get() = playing && !paused
+    internal val running: Boolean get() = playing && !paused
 
     override fun setParam(
         key: String,
@@ -2253,7 +2251,7 @@ class AnimatedLayer(
     }
 
     /** How many frames the strip holds. */
-    val length: Int
+    internal val length: Int
         get() {
             val full = fullSize() ?: return 0
             val (fw, fh) = frameSize()
@@ -2283,7 +2281,7 @@ class AnimatedLayer(
      * Shows frame [n], and scripts hear `onFrame`. Going to the frame it already shows asks for no
      * new picture: a VU script sends a resting strip to frame 0 on every timer (MMD3, DeClassified).
      */
-    fun gotoFrame(n: Int) {
+    internal fun gotoFrame(n: Int) {
         val moved = n != frame
         frame = n
         if (moved) frameChanged()
@@ -2301,7 +2299,7 @@ class AnimatedLayer(
         }
     }
 
-    fun play() {
+    internal fun play() {
         val end = endFrame ?: (length - 1)
         step = if (startFrame < end) 1 else -1
         paused = false
@@ -2316,7 +2314,7 @@ class AnimatedLayer(
         rt.animations.add(this)
     }
 
-    fun stop() {
+    internal fun stop() {
         if (playing) {
             playing = false
             rt.animations.remove(this)
@@ -2325,7 +2323,7 @@ class AnimatedLayer(
     }
 
     /** One step of a playing strip; called by the runtime when [nextAt] is due. */
-    fun advance() {
+    internal fun advance() {
         if (paused) return
         val end = endFrame ?: (length - 1)
         if (frame == end) {
@@ -2345,7 +2343,7 @@ class AnimatedLayer(
         if (nextAt < rt.now() - maxOf(1, speed) * MAX_CATCH_UP) nextAt = rt.now()
     }
 
-    fun startIfAuto() {
+    internal fun startIfAuto() {
         if (autoPlay && !playing) play()
     }
 
@@ -2449,25 +2447,25 @@ class AnimatedLayer(
 }
 
 /** A push button with an action, such as PLAY, or a script listening to `onLeftClick`. */
-open class Button(
+internal open class Button(
     rt: SkinRuntime,
     tag: String = "button",
 ) : GuiObject(rt, tag) {
     override val className: String get() = "Button"
-    var image: String? = null
-    var downImage: String? = null
-    var hoverImage: String? = null
-    var activeImage: String? = null
-    var action: String? = null
-    var param: String? = null
-    var actionTarget: String? = null
-    var pressed = false
-    var activated = false
-    var borders = false
-    var centerImage = false
+    internal var image: String? = null
+    internal var downImage: String? = null
+    internal var hoverImage: String? = null
+    internal var activeImage: String? = null
+    internal var action: String? = null
+    internal var param: String? = null
+    internal var actionTarget: String? = null
+    internal var pressed = false
+    internal var activated = false
+    internal var borders = false
+    internal var centerImage = false
 
     /** `text`: a label Winamp draws on the button, in its own Arial at 11 px (Wasabi:Button "Switch"). */
-    var label: String? = null
+    internal var label: String? = null
 
     override fun setParam(
         key: String,
@@ -2507,7 +2505,7 @@ open class Button(
         image?.let { rt.bitmapSize(it) } ?: label?.let { (rt.host.textWidth(it, LABEL_FONT, LABEL_SIZE) + LABEL_PAD) to 0 }
 
     /** Whether the thing this button toggles is on: an open window, a player switch. */
-    open val isActive: Boolean
+    internal open val isActive: Boolean
         get() = activated || rt.actionState(action, param)
 
     /**
@@ -2612,7 +2610,7 @@ open class Button(
         rt.repaint()
     }
 
-    open fun click() {
+    internal open fun click() {
         dispatch("onleftclick")
         action?.let { rt.action(this, it, param, actionTarget) }
     }
@@ -2662,14 +2660,14 @@ private const val LABEL_SIZE = 15
 private const val LABEL_PAD = 8
 
 /** A button that stays down: shuffle, repeat, EQ on. Its state lives in a config attribute. */
-class ToggleButton(
+internal class ToggleButton(
     rt: SkinRuntime,
 ) : Button(rt, "togglebutton") {
     override val className: String get() = "ToggleButton"
-    var cfgAttrib: String? = null
+    internal var cfgAttrib: String? = null
 
     /** `cfgval`: the config value that means on (default 1). */
-    var cfgVal = 1
+    internal var cfgVal = 1
 
     /** `autotoggle="0"`: a tap does not flip it; scripts do. */
     private var autoToggle = true
@@ -2743,7 +2741,7 @@ class ToggleButton(
  * (Winamp3x's playlist and equalizer lights), EQ on or EQ auto takes its state from that: on while
  * the window is open or the switch is on.
  */
-class NStatesButton(
+internal class NStatesButton(
     rt: SkinRuntime,
 ) : Button(rt, "nstatesbutton") {
     override val className: String get() = "Button"
@@ -2795,7 +2793,7 @@ class NStatesButton(
      * The current state: from the config value when the button has one; for a window, EQ on or EQ
      * auto, the first state that means on while that is on and the first that means off while not.
      */
-    val state: Int
+    internal val state: Int
         get() {
             val attrib = cfgAttrib
             if (attrib != null) {
@@ -2836,7 +2834,7 @@ class NStatesButton(
 }
 
 /** The stop, play and pause light. */
-class Status(
+internal class Status(
     rt: SkinRuntime,
 ) : GuiObject(rt, "status") {
     override val className: String get() = "Status"
@@ -2871,7 +2869,7 @@ class Status(
  * length; from the left unless `orientation` says right, top or bottom. Nothing while stopped.
  * Bento's and Winamp Modern's seek bars light up with it (Wasabi SDK xuiprogressgrid, zlib).
  */
-class ProgressGrid(
+internal class ProgressGrid(
     rt: SkinRuntime,
 ) : Grid(rt, "progressgrid") {
     private var orientation = "right"
@@ -2891,7 +2889,7 @@ class ProgressGrid(
     private val upright: Boolean get() = orientation == "top" || orientation == "bottom"
 
     /** The length of its filled part, in layout pixels; -1 while it shows none (stopped, no length). */
-    fun filled(): Int {
+    internal fun filled(): Int {
         val p = rt.player
         if (p.status == Player.Status.STOPPED || p.lengthMs <= 0) return -1
         val f = (p.positionMs.toFloat() / p.lengthMs).coerceIn(0f, 1f)
@@ -2960,7 +2958,7 @@ class ProgressGrid(
  * A stretchable background: corners and edges at their natural size, the middle stretched. A
  * one-row grid only has left, middle and right.
  */
-open class Grid(
+internal open class Grid(
     rt: SkinRuntime,
     tag: String = "grid",
 ) : GuiObject(rt, tag) {
@@ -3061,13 +3059,13 @@ open class Grid(
  * Help): a tap asks the player for the menu it names. It draws nothing itself; the objects its
  * `normal` and `down` name are its pictures, the one shown while pressed and the other otherwise.
  */
-class MenuButton(
+internal class MenuButton(
     rt: SkinRuntime,
 ) : GuiObject(rt, "menu") {
     override val className: String get() = "Menu"
 
     /** The menu it opens, as Winamp names it: `WA5:File`, `WA5:PE_Playlist`. */
-    var menu: String? = null
+    internal var menu: String? = null
     private var normal: String? = null
     private var down: String? = null
 
@@ -3127,7 +3125,7 @@ class MenuButton(
 }
 
 /** Objects the skin names that this runtime does not draw. They still answer scripts. */
-class Unknown(
+internal class Unknown(
     rt: SkinRuntime,
     tag: String,
     override val className: String,

@@ -17,13 +17,13 @@ import nl.mattix.andamp.modernskin.xml.XmlParser
  * something changed.
  */
 @Suppress("TooManyFunctions", "LargeClass") // the one host every object and script of a skin calls into
-class SkinRuntime(
-    val files: SkinFiles,
-    val host: SkinHost,
-    val player: Player,
+public class SkinRuntime(
+    internal val files: SkinFiles,
+    public val host: SkinHost,
+    public val player: Player,
     setup: SkinSetup = SkinSetup(),
     clock: () -> Long = System::currentTimeMillis,
-) : MakiHost {
+) {
     private val bitmaps = HashMap<String, BitmapDef>()
     private val bitmapFonts = HashMap<String, BitmapFontDef>()
     private val fonts = HashMap<String, FontDef>()
@@ -42,22 +42,22 @@ class SkinRuntime(
     private val earlierDefs = HashMap<XmlNode, XmlNode>()
     private val xuiTags = HashMap<String, String>()
     private val programs = HashMap<String, nl.mattix.andamp.modernskin.maki.MakiProgram?>()
-    val containers = ArrayList<Container>()
-    val scripts = ArrayList<Script>()
+    internal val containers = ArrayList<Container>()
+    internal val scripts = ArrayList<Script>()
     private val systems = ArrayList<SystemObject>()
-    val timers = ArrayList<Timer>()
-    val animations = ArrayList<AnimatedLayer>()
+    internal val timers = ArrayList<Timer>()
+    internal val animations = ArrayList<AnimatedLayer>()
 
     /** Objects on their way to a target set with `setTarget*` and `gotoTarget`. */
-    val moving = LinkedHashSet<GuiObject>()
-    val privateInts = HashMap<String, Int>()
-    val privateStrings = HashMap<String, String>()
+    internal val moving = LinkedHashSet<GuiObject>()
+    internal val privateInts = HashMap<String, Int>()
+    internal val privateStrings = HashMap<String, String>()
 
     /**
      * Keeps a script's private setting, within bounds: at most [MAX_SETTINGS] names per kind and
      * strings of [MAX_SETTING_LENGTH] characters, so a skin cannot fill memory or storage with them.
      */
-    fun <T> storePrivate(
+    internal fun <T> storePrivate(
         map: HashMap<String, T>,
         key: String,
         value: T,
@@ -77,7 +77,7 @@ class SkinRuntime(
      * values, the config attributes ([storedSettings]) and the color theme. Writing a value that is
      * already there changes nothing.
      */
-    var settingsVersion = 0
+    public var settingsVersion: Int = 0
         private set
 
     internal fun settingsChanged() {
@@ -85,13 +85,13 @@ class SkinRuntime(
     }
 
     /** What the host keeps of the skin between runs, as it is now; the color theme is [currentGammaSet]. */
-    fun savedSettings(): SavedSettings = SavedSettings(storedSettings.toMap(), privateStrings.toMap(), privateInts.toMap())
+    public fun savedSettings(): SavedSettings = SavedSettings(storedSettings.toMap(), privateStrings.toMap(), privateInts.toMap())
 
     /**
      * Puts back what [savedSettings] gave in an earlier run, before [load], so the scripts read it
      * as they start. It counts as no change ([settingsVersion]).
      */
-    fun restoreSettings(saved: SavedSettings) {
+    public fun restoreSettings(saved: SavedSettings) {
         storedSettings.putAll(saved.attributes)
         privateStrings.putAll(saved.strings)
         privateInts.putAll(saved.ints)
@@ -100,21 +100,21 @@ class SkinRuntime(
     private val configFlags = HashMap<String, Boolean>()
 
     /** What getSkinName() answers: the skin's folder name, set by the host before [load]. */
-    var skinName = setup.skinName
+    public var skinName: String = setup.skinName
 
     /**
      * Whether Winamp's Media Library lives inside the skin (`@HAVE_LIBRARY@`). Winamp has it; Andamp's
      * library is a screen of its own, so the app says no and skins such as Bento show their
      * playlist tab instead of an empty library tab. Set before [load].
      */
-    var haveLibrary = setup.haveLibrary
+    internal var haveLibrary = setup.haveLibrary
 
     /** The screen a skin may place windows on before the host sets [viewSize]: a Full HD portrait phone. */
-    var viewportW = 1080
-    var viewportH = 1920
+    internal var viewportW = 1080
+    internal var viewportH = 1920
 
     /** The screen as scripts ask for it (`getViewportWidth`): the phone's view in layout pixels once known. */
-    val viewport: Pair<Int, Int> get() = viewSize ?: (viewportW to viewportH)
+    public val viewport: Pair<Int, Int> get() = viewSize ?: (viewportW to viewportH)
 
     /**
      * Called for a button action the app answers, as Winamp answered it outside the skin: MINIMIZE,
@@ -126,25 +126,25 @@ class SkinRuntime(
      * Also SHOW of such a window a script opens ([showHostWindow]), and VIS_FS for a maximize a tap
      * asks for ([maximizes]). Gets the action, uppercase, and the param or name.
      */
-    var onHostAction: ((action: String, param: String?) -> Unit)? =
+    internal var onHostAction: ((action: String, param: String?) -> Unit)? =
         if (setup.hostActions) { action, param -> host.hostAction(action, param) } else null
-    var lastPointer = 0 to 0
+    internal var lastPointer = 0 to 0
     private var dirty = true
     private var needsLayout = true
     private var scriptsStarted = false
 
     /** Whether the skin's scripts have started: what is set from here on is set by them. */
-    val scriptsRunning: Boolean get() = scriptsStarted
+    internal val scriptsRunning: Boolean get() = scriptsStarted
     private var lastStatus = player.status
 
     /**
      * Skin settings by attribute name, as Winamp keeps them in studio.xnf: read when a script makes
      * the attribute, written when it changes. Fill before [load] to start with stored values.
      */
-    val storedSettings = mutableMapOf<String, String>()
+    internal val storedSettings = mutableMapOf<String, String>()
 
     /** XML attributes no object handled, as "tag attribute" with a count: what this runtime still lacks. */
-    val unhandledParams = sortedMapOf<String, Int>()
+    internal val unhandledParams = sortedMapOf<String, Int>()
     private var lastTitle = player.title
     private var lastVolume = player.volume
 
@@ -173,11 +173,11 @@ class SkinRuntime(
      * The skin format version from skin.xml (`WinampAbstractionLayer version="0.8"`, Winamp Modern
      * 1.35). Winamp draws its built-in list in two ways by it (see [ColorThemeList]).
      */
-    var walVersion = 1.0
+    internal var walVersion = 1.0
         private set
 
     /** Loads `skin.xml` and everything it includes, builds the windows and starts the scripts. */
-    fun load() {
+    public fun load() {
         // Winamp's default element set first, when the app has it (files under wasabi-base/): a
         // skin's own definitions then override it, as they do in Winamp
         val baseXml = files.read(LayeredSkinFiles.BASE_PREFIX + "wasabi.xml")?.toString(Charsets.UTF_8)
@@ -230,11 +230,11 @@ class SkinRuntime(
      * What of the default element set this skin used so far: "bitmap:", "color:", "group:" and
      * "script:" entries. For replacing the default set with our own.
      */
-    val baseUsage = sortedSetOf<String>()
+    internal val baseUsage = sortedSetOf<String>()
     private val baseColors = HashSet<String>()
     private var collectingBase = false
 
-    fun bitmap(id: String): BitmapDef? {
+    internal fun bitmap(id: String): BitmapDef? {
         var fromBase: BitmapDef? = null
         for (name in namesFor(id)) {
             val (key, def) = aliasedBitmap(name) ?: continue
@@ -282,7 +282,7 @@ class SkinRuntime(
         }
     }
 
-    fun bitmapSize(id: String): Pair<Int, Int>? {
+    internal fun bitmapSize(id: String): Pair<Int, Int>? {
         val def = bitmap(id) ?: return null
         if (def.w != null && def.h != null) return def.w to def.h
         val full = host.imageSize(def.file) ?: return null
@@ -295,7 +295,7 @@ class SkinRuntime(
      * Whether the bitmap drawn into [rect] is not fully transparent at a point. Unknown pixels
      * count as opaque, so a host that cannot read pixels keeps rectangle hit testing.
      */
-    fun opaqueAt(
+    internal fun opaqueAt(
         image: String?,
         rect: Rect,
         px: Int,
@@ -319,7 +319,7 @@ class SkinRuntime(
      * shows. A picture whose pixels cannot be read counts as showing to [dst]'s right edge, as
      * unknown pixels count as opaque in [opaqueAt]. The column is looked up once per bitmap part.
      */
-    fun opaqueRight(
+    internal fun opaqueRight(
         image: BitmapDef,
         dst: Rect,
     ): Int {
@@ -344,7 +344,7 @@ class SkinRuntime(
     }
 
     /** A bitmap font; its `file` may name a bitmap element, which then gives the file and the offset. */
-    fun bitmapFont(id: String): BitmapFontDef? =
+    internal fun bitmapFont(id: String): BitmapFontDef? =
         resolvedFonts.getOrPut(id.lowercase()) {
             val def = bitmapFonts[id.lowercase()] ?: return@getOrPut null
             val element = bitmaps[def.file.lowercase()]
@@ -368,27 +368,27 @@ class SkinRuntime(
             }
         }
 
-    fun font(id: String): FontDef? = fonts[id.lowercase()]
+    internal fun font(id: String): FontDef? = fonts[id.lowercase()]
 
     private val colorGroups = HashMap<String, String>()
     private val gammaSets = LinkedHashMap<String, Map<String, Gamma>>()
 
     /** The color theme in use: the skin's first gammaset until a script or the user picks another. */
-    var currentGammaSet: String? = null
+    internal var currentGammaSet: String? = null
         private set
 
-    fun gammaSetNames(): List<String> = gammaSets.keys.toList()
+    internal fun gammaSetNames(): List<String> = gammaSets.keys.toList()
 
     /** The skin's color themes (gammasets), in the order the skin defines them. */
-    val colorThemes: List<String> get() = gammaSetNames()
+    public val colorThemes: List<String> get() = gammaSetNames()
 
     /** The color theme in use ([currentGammaSet]). */
-    val colorTheme: String? get() = currentGammaSet
+    public val colorTheme: String? get() = currentGammaSet
 
     /** Wears the color theme named [name], matched ignoring case; an unknown name changes nothing. */
-    fun selectColorTheme(name: String) = selectGammaSet(name)
+    public fun selectColorTheme(name: String): Unit = selectGammaSet(name)
 
-    fun selectGammaSet(name: String) {
+    internal fun selectGammaSet(name: String) {
         val match = gammaSets.keys.firstOrNull { it.equals(name, ignoreCase = true) } ?: return
         if (match != currentGammaSet) settingsChanged()
         currentGammaSet = match
@@ -399,7 +399,7 @@ class SkinRuntime(
     /** Each gamma group's tint in the color theme worn now, as [gamma] answered it. */
     private val gammas = HashMap<String, Gamma?>()
 
-    fun gamma(group: String?): Gamma? {
+    internal fun gamma(group: String?): Gamma? {
         if (group == null) return null
         if (gammas.containsKey(group)) return gammas[group]
         val g = currentGammaSet?.let { gammaSets[it] }?.get(group.lowercase())?.takeUnless { it.isIdentity }
@@ -407,7 +407,7 @@ class SkinRuntime(
         return g
     }
 
-    fun color(
+    internal fun color(
         id: String,
         depth: Int = 0,
     ): Rgb? {
@@ -439,10 +439,10 @@ class SkinRuntime(
         return names.firstOrNull { it !in baseColors } ?: names.firstOrNull()
     }
 
-    fun container(id: String): Container? = containers.firstOrNull { it.id.equals(id, ignoreCase = true) }
+    internal fun container(id: String): Container? = containers.firstOrNull { it.id.equals(id, ignoreCase = true) }
 
-    val mainContainer: Container? get() = container("main") ?: containers.firstOrNull()
-    val mainLayout: Layout? get() = mainContainer?.current
+    internal val mainContainer: Container? get() = container("main") ?: containers.firstOrNull()
+    internal val mainLayout: Layout? get() = mainContainer?.current
 
     /**
      * Windows a skin button opened (playlist, color themes, ...), in the order they opened. A phone
@@ -453,7 +453,7 @@ class SkinRuntime(
     private val opened = ArrayList<Container>()
 
     /** The windows on screen, top to bottom: the main one first. */
-    val windows: List<Layout>
+    internal val windows: List<Layout>
         get() {
             if (windowsAt != changeCount) {
                 windowsNow = listOfNotNull(mainLayout) + opened.mapNotNull { it.current }
@@ -480,7 +480,7 @@ class SkinRuntime(
     private fun layoutOf(id: WindowId): Layout = layoutsById[id.raw] ?: error("no window ${id.raw}")
 
     /** The windows on screen, top to bottom, as [windows] has them: the main one first. */
-    val windowIds: List<WindowId>
+    public val windowIds: List<WindowId>
         get() {
             val now = windows
             if (windowIdsOf !== now) {
@@ -494,10 +494,10 @@ class SkinRuntime(
     private var windowIdsOf: List<Layout>? = null
 
     /** The main window as it shows now (its normal layout or its shade), or null when the skin has none. */
-    val mainWindow: WindowId? get() = mainLayout?.windowId
+    public val mainWindow: WindowId? get() = mainLayout?.windowId
 
     /** What [id] is like now; see [WindowInfo]. */
-    fun windowInfo(id: WindowId): WindowInfo {
+    public fun windowInfo(id: WindowId): WindowInfo {
         val l = layoutOf(id)
         return WindowInfo(
             id,
@@ -518,7 +518,7 @@ class SkinRuntime(
      * The object with id [id] in the windows on screen, the top one first, as a host or a check
      * finds what to tap; null when none has it. See [ObjectInfo].
      */
-    fun objectInfo(id: String): ObjectInfo? {
+    public fun objectInfo(id: String): ObjectInfo? {
         val o = windows.asReversed().firstNotNullOfOrNull { it.findObject(id) } ?: return null
         val layout = o.layoutObject ?: return null
         val origin = windowRect(layout)
@@ -533,32 +533,32 @@ class SkinRuntime(
     }
 
     /** The window container [container] shows now (its current layout), or null when the skin has no such container. */
-    fun windowOf(container: String): WindowId? = container(container)?.current?.windowId
+    public fun windowOf(container: String): WindowId? = container(container)?.current?.windowId
 
     /** Where [id] sits in the stack, in layout pixels ([windowRect]). */
-    fun windowRect(id: WindowId): Rect = windowRect(layoutOf(id))
+    public fun windowRect(id: WindowId): Rect = windowRect(layoutOf(id))
 
     /** Opens the window of [container] in the stack; false when the skin has no such container. */
-    fun openWindow(container: String): Boolean = container(container)?.also { openWindow(it) } != null
+    public fun openWindow(container: String): Boolean = container(container)?.also { openWindow(it) } != null
 
     /** Closes the window of [container]; false when the skin has no such container. */
-    fun closeWindow(container: String): Boolean = container(container)?.also { closeWindow(it) } != null
+    public fun closeWindow(container: String): Boolean = container(container)?.also { closeWindow(it) } != null
 
     /** [id]'s size as it shows now, in layout pixels ([Layout.size]). */
-    fun windowSize(id: WindowId): Pair<Int, Int> = layoutOf(id).size
+    public fun windowSize(id: WindowId): Pair<Int, Int> = layoutOf(id).size
 
     /** Sizes [id] to [width] by [height] where it is, as the host sizes a window to its box ([Layout.resizeTo]). */
-    fun resizeWindow(
+    public fun resizeWindow(
         id: WindowId,
         width: Int,
         height: Int,
-    ) = layoutOf(id).resizeTo(width, height)
+    ): Unit = layoutOf(id).resizeTo(width, height)
 
     /**
      * Where [id] visibly ends on the right ([Layout.contentRight]); with [layOutFirst] after laying
      * it out at its size, as the stack is measured.
      */
-    fun contentRight(
+    public fun contentRight(
         id: WindowId,
         layOutFirst: Boolean = false,
     ): Int {
@@ -568,35 +568,41 @@ class SkinRuntime(
     }
 
     /** Whether a window docked under the main one shows a list ([showsList]). */
-    val listWindowOpen: Boolean get() = windows.drop(1).any(::showsList)
+    public val listWindowOpen: Boolean get() = windows.drop(1).any(::showsList)
 
     /**
      * How far right the stack shows in one column while the main window shows [width] across (0 for
      * what it shows now); see [StackArrange.shownWidth]. 0 without a main window.
      */
-    fun shownWidth(width: Int = 0): Int = mainLayout?.let { StackArrange.shownWidth(it, windows.drop(1), width) } ?: 0
+    public fun shownWidth(width: Int = 0): Int = mainLayout?.let { StackArrange.shownWidth(it, windows.drop(1), width) } ?: 0
 
     /**
      * How large the stack is in [columns] at every window's natural height, with a right column
      * [columnWidth] wide; see [StackArrange.naturalSize]. Null without a main window.
      */
-    fun naturalStackSize(
+    public fun naturalStackSize(
         columns: Int,
         columnWidth: Int = 0,
     ): Pair<Int, Int>? = mainLayout?.let { StackArrange.naturalSize(it, windows.drop(1), columns, ::showsList, columnWidth) }
 
     /** The left column of the stack in two columns, as [columns] sets it out; see [StackArrange.leftColumn]. */
-    fun leftColumn(): Rect? = mainLayout?.let { StackArrange.leftColumn(it, windows.drop(1), columns, ::showsList, ::windowRect) }
+    public fun leftColumn(): Rect? =
+        mainLayout?.let {
+            StackArrange.leftColumn(it, windows.drop(1), columns, ::showsList, ::windowRect)
+        }
 
     /** The window opened last, which Back puts away; null when only the main window is open. */
-    val topWindow: Container? get() = opened.lastOrNull()
+    internal val topWindow: Container? get() = opened.lastOrNull()
+
+    /** Whether a window besides the main one is open, which Back would put away. */
+    public val windowOpen: Boolean get() = opened.isNotEmpty()
 
     /**
      * The space the app has for the stack, in layout pixels; null leaves each window at the size it
      * has. A new one puts each window where the phone draws it in the new viewport
      * ([Container.fitViewport]): against the edges a script moved it to, or in the middle.
      */
-    var viewSize: Pair<Int, Int>? = null
+    public var viewSize: Pair<Int, Int>? = null
         set(value) {
             if (value != field) {
                 field = value
@@ -612,7 +618,7 @@ class SkinRuntime(
      * wherever the listener dragged it. A move as the skin starts, on a timer or on a tap does not
      * count, as MMD3 puts its shade bar against the top edge when a button switches to it.
      */
-    var edgePlacements = 0
+    public var edgePlacements: Int = 0
         private set
 
     /** The main window was moved against an edge of the viewport; see [edgePlacements]. */
@@ -626,7 +632,7 @@ class SkinRuntime(
      * equalizer or a visualizer frame keeps the height the skin gives it. Off, every window keeps
      * the height the skin gives it (a phone held sideways).
      */
-    var stretchLast = true
+    internal var stretchLast = true
         set(value) {
             if (value != field) {
                 field = value
@@ -639,10 +645,10 @@ class SkinRuntime(
     /** The window with the focus: the one touched last, the main one at the start. */
     private var focused: Layout? = null
 
-    fun hasFocus(l: Layout?): Boolean = l != null && l === (focused?.takeIf { it in windows } ?: mainLayout)
+    internal fun hasFocus(l: Layout?): Boolean = l != null && l === (focused?.takeIf { it in windows } ?: mainLayout)
 
     /** Where [layout] sits in the stack, in layout pixels. */
-    fun windowRect(layout: Layout): Rect = placed[layout] ?: Rect(0, 0, layout.size.first, layout.size.second)
+    internal fun windowRect(layout: Layout): Rect = placed[layout] ?: Rect(0, 0, layout.size.first, layout.size.second)
 
     /**
      * Where the visualizer shows in the stack, in layout pixels: a shown window holder for Winamp's
@@ -651,7 +657,7 @@ class SkinRuntime(
      * them. Null when none shows, or none of it is left uncut (a drawer shut). The app draws its
      * visualizer there.
      */
-    val visRect: Rect?
+    public val visRect: Rect?
         get() {
             if (needsLayout) doLayout()
 
@@ -736,7 +742,7 @@ class SkinRuntime(
      * skin's own window's Reattach button puts it (Winamp Modern's `button.vis.reattach`), the
      * button in the skin's window for it whose id says "attach". The skin's window stays shut.
      */
-    fun visualizerWindowClosed() {
+    public fun visualizerWindowClosed() {
         for (kind in listOf("avs", "video")) {
             if (!shownForSkin.remove(kind)) continue
             val guid = TOGGLE_GUIDS[kind] ?: continue
@@ -758,12 +764,12 @@ class SkinRuntime(
      * its own visibility says (Winamp3's playlist window starts visible, as a window beside the
      * main one); without one, as the window itself says.
      */
-    fun isOpen(c: Container): Boolean = if (viewSize == null) c.visible else c === mainContainer || c in opened
+    internal fun isOpen(c: Container): Boolean = if (viewSize == null) c.visible else c === mainContainer || c in opened
 
     /** Containers shown at least once: showing one again gives it the focus. */
     private val shownBefore = HashSet<Container>()
 
-    fun openWindow(c: Container) {
+    internal fun openWindow(c: Container) {
         if (c === mainContainer || c in opened) return
         opened.add(c)
         shownBefore.add(c)
@@ -771,25 +777,25 @@ class SkinRuntime(
         relayout()
     }
 
-    fun closeWindow(c: Container) {
+    internal fun closeWindow(c: Container) {
         if (!opened.remove(c)) return
         c.hide()
         relayout()
     }
 
     /** Gives [l] the focus: a layout switched to takes it. */
-    fun focus(l: Layout) {
+    internal fun focus(l: Layout) {
         focused = l
     }
 
     /** Gives [window] the focus as a touch on it does: its alphas and pictures for focus show on the next frame. */
-    fun focus(window: WindowId) = takeFocus(layoutOf(window))
+    internal fun focus(window: WindowId) = takeFocus(layoutOf(window))
 
     /**
      * Puts [window] at [x], [y] of the viewport, where a host that shows each window apart placed
      * it: scripts read it there (getLeft, getTop). No edge is noted, as when no script moved it.
      */
-    fun moveWindow(
+    internal fun moveWindow(
         window: WindowId,
         x: Int,
         y: Int,
@@ -813,7 +819,7 @@ class SkinRuntime(
     }
 
     /** A script's Container.show / hide: the same as a button's, into the phone's stack and out. */
-    fun showContainer(
+    internal fun showContainer(
         c: Container,
         show: Boolean,
     ) {
@@ -825,7 +831,7 @@ class SkinRuntime(
         }
     }
 
-    fun closeTopWindow() {
+    public fun closeTopWindow() {
         topWindow?.let { closeWindow(it) }
     }
 
@@ -834,7 +840,7 @@ class SkinRuntime(
      * windows out again. At 2 [StackArrange] puts the windows that show a list in a column right of
      * the main window, else every window docks under the main one.
      */
-    var columns = 1
+    internal var columns = 1
         set(value) {
             if (value != field) {
                 field = value
@@ -846,7 +852,7 @@ class SkinRuntime(
      * How wide the windows in the right column of two [columns] are, in layout pixels; 0 for as
      * wide as what shows of the main window. A change lays the windows out again.
      */
-    var columnWidth = 0
+    internal var columnWidth = 0
         set(value) {
             if (value != field) {
                 field = value
@@ -869,7 +875,7 @@ class SkinRuntime(
      * list. Equalizers, visualizer frames and windows of fixed controls show none. [StackArrange]
      * stretches only such a window.
      */
-    fun showsList(l: Layout): Boolean {
+    internal fun showsList(l: Layout): Boolean {
         fun holdsList(attrs: Map<String, String>) = LIST_GUIDS.any { holds(attrs, it) }
 
         fun walk(o: GuiObject): Boolean =
@@ -882,7 +888,7 @@ class SkinRuntime(
     }
 
     /** The stack's size, in layout pixels. */
-    val stackSize: Pair<Int, Int>
+    public val stackSize: Pair<Int, Int>
         get() {
             if (needsLayout) doLayout()
             if (stackAt != changeCount) {
@@ -906,7 +912,7 @@ class SkinRuntime(
      * ([Layout.snappedSize]), as Winamp Modern's without the room its closed drawer keeps. A drawer
      * sliding out counts as far as it shows.
      */
-    val drawnSize: Pair<Int, Int>
+    public val drawnSize: Pair<Int, Int>
         get() {
             if (needsLayout) doLayout()
             if (drawnAt != changeCount) {
@@ -924,7 +930,7 @@ class SkinRuntime(
         }
 
     /** Total length of the playlist entries selected in the playlist editor, for `display="pe_info"`. */
-    var playlistSelectedMs = 0
+    internal var playlistSelectedMs = 0
 
     // ---- XML -------------------------------------------------------------------------------
 
@@ -1601,7 +1607,7 @@ class SkinRuntime(
                 }
             } ?: return
         val system = SystemObject(this, group, node["param"] ?: "", file)
-        val script = Script(program, system, this)
+        val script = Script(program, system, makiHost)
         scripts.add(script)
         systems.add(system)
         group?.systemObjects?.add(system)
@@ -1634,7 +1640,7 @@ class SkinRuntime(
     }
 
     /** `System.newGroup(id)`: a fresh instance of a groupdef, not yet in any parent. */
-    fun instantiateGroup(id: String): Group? {
+    internal fun instantiateGroup(id: String): Group? {
         if (groupDefs[id.lowercase()] == null) return null
         val g = Group(this, "group")
         fillGroup(g, XmlNode("group", mapOf("id" to id), emptyList()))
@@ -1643,10 +1649,24 @@ class SkinRuntime(
 
     // ---- MakiHost ----------------------------------------------------------------------------
 
+    /** What the scripts' VM asks of the skin, kept out of the engine's API. */
+    internal val makiHost: MakiHost =
+        object : MakiHost {
+            override fun create(guid: String): MakiObject? = this@SkinRuntime.create(guid)
+
+            override fun log(message: String) = host.log(message)
+
+            override fun dispatchEvent(
+                target: MakiObject,
+                event: String,
+                args: List<Value>,
+            ): Value = dispatchForResult(target, event, args)
+        }
+
     /** Objects scripts made with `new` (timers, lists, ...), cut off at [MAX_CREATED]. */
     private var created = 0
 
-    override fun create(guid: String): MakiObject? {
+    internal fun create(guid: String): MakiObject? {
         val cls = StdApi.byGuid[guid.lowercase()] ?: return null
         if (++created > MAX_CREATED) {
             if (created == MAX_CREATED + 1) host.log("scripts made more than $MAX_CREATED objects; no more")
@@ -1666,16 +1686,16 @@ class SkinRuntime(
         }
     }
 
-    override fun log(message: String) = host.log(message)
+    internal fun log(message: String) = host.log(message)
 
-    override fun dispatchEvent(
+    internal fun dispatchEvent(
         target: MakiObject,
         event: String,
         args: List<Value>,
     ): Value = dispatchForResult(target, event, args)
 
     /** Fires [event] and gives back what the last handler that ran returned (Null when none ran). */
-    fun dispatchForResult(
+    internal fun dispatchForResult(
         target: MakiObject,
         event: String,
         args: List<Value>,
@@ -1704,18 +1724,18 @@ class SkinRuntime(
      * The clock every timer, animation and script reads, in ms. The app leaves the wall clock; a
      * test steps its own so animations and timers land on the same frame every run.
      */
-    var clock: () -> Long = clock
+    public var clock: () -> Long = clock
 
-    fun now(): Long = clock()
+    public fun now(): Long = clock()
 
     /** How far the phone's local time is from UTC at a moment of [clock], in ms: the time of day scripts read is local. */
-    var zoneOffset: (Long) -> Int = {
+    internal var zoneOffset: (Long) -> Int = {
         java.util.TimeZone
             .getDefault()
             .getOffset(it)
     }
 
-    fun invalidate() {
+    public fun invalidate() {
         dirty = true
         changeCount++
     }
@@ -1725,11 +1745,11 @@ class SkinRuntime(
      * strip's next picture, a slider's thumb, a text, a pressed button, an alpha that stays above 0.
      * What is worked out from the windows and their shapes (see [changeCount]) is kept.
      */
-    fun repaint() {
+    internal fun repaint() {
         dirty = true
     }
 
-    fun relayout() {
+    internal fun relayout() {
         needsLayout = true
         dirty = true
         changeCount++
@@ -1741,11 +1761,11 @@ class SkinRuntime(
      * until it moves on. A visualizer, a ticker, a time or anything else that asks with [repaint]
      * changes none of these, and gets its frame without it.
      */
-    var changeCount = 0L
+    internal var changeCount = 0L
         private set
 
     /** Window shapes worked out so far (see [changeCount]). */
-    var shapesWorkedOut = 0L
+    internal var shapesWorkedOut = 0L
         internal set
 
     /** Each cell of each bitmap font as a part of its sheet, made once, so a renderer keeps what it cut. */
@@ -1825,7 +1845,7 @@ class SkinRuntime(
                 is FontFace.Default -> return null
             }
         val m = gdiLines.getOrPut(key) { read()?.let { GdiLineMetrics.read(it) } } ?: return null
-        return m.at(Text.emSize(size))
+        return m.at(FontFace.emSize(size))
     }
 
     /**
@@ -1845,7 +1865,7 @@ class SkinRuntime(
         val (asc, desc) =
             gdiLine(cmd.face, cmd.size)?.let { (a, d) -> a.toFloat() to d.toFloat() }
                 ?: host.lineMetrics(cmd.font, cmd.size, cmd.bold)
-                ?: (Text.emSize(cmd.size) * DEFAULT_ASCENT to Text.emSize(cmd.size) * DEFAULT_DESCENT)
+                ?: (FontFace.emSize(cmd.size) * DEFAULT_ASCENT to FontFace.emSize(cmd.size) * DEFAULT_DESCENT)
         cmd.baseline =
             when (cmd.valign) {
                 VAlign.TOP -> r.top + asc
@@ -1855,7 +1875,7 @@ class SkinRuntime(
     }
 
     /** Lays the main window out now, for a script that asks where something is. */
-    fun ensureLayout() {
+    public fun ensureLayout() {
         if (needsLayout) doLayout()
     }
 
@@ -1879,7 +1899,7 @@ class SkinRuntime(
     private var toldWindows: List<WindowId> = emptyList()
 
     /** Layout passes run so far. */
-    var layoutPasses = 0L
+    internal var layoutPasses = 0L
         private set
 
     private fun layoutPass() {
@@ -1938,7 +1958,7 @@ class SkinRuntime(
      * A xui element's parameters reach its scripts once they all ran onScriptLoaded, where they
      * look their objects up.
      */
-    fun deliverXuiParams(g: Group) {
+    internal fun deliverXuiParams(g: Group) {
         if (g.xuiParams.isEmpty()) return
         // a default-set group the engine runs hears its parameters at once
         g.behavior?.let { b ->
@@ -1993,7 +2013,7 @@ class SkinRuntime(
     }
 
     /** Fires [event] on [target] in every script. */
-    fun dispatch(
+    internal fun dispatch(
         target: MakiObject,
         event: String,
         args: List<Value>,
@@ -2025,10 +2045,10 @@ class SkinRuntime(
     // ---- per frame ---------------------------------------------------------------------------
 
     /** Whether a target slide runs now. */
-    val sliding: Boolean get() = moving.isNotEmpty()
+    public val sliding: Boolean get() = moving.isNotEmpty()
 
     /** Whether something moves by itself right now: a target slide, or an animation playing and not paused. */
-    val animating: Boolean get() = moving.isNotEmpty() || animations.any { it.running }
+    public val animating: Boolean get() = moving.isNotEmpty() || animations.any { it.running }
 
     /** Every object of a window, in drawing order, and apart those that move with the player or the clock. */
     private class Found {
@@ -2083,7 +2103,7 @@ class SkinRuntime(
      * playing and not paused. Stopped, an animation steps when [nextDueAt] says. Tickers, timers,
      * the time and progress grids never want frames: they change at the moments [nextDueAt] gives.
      */
-    val framesWanted: Boolean
+    public val framesWanted: Boolean
         get() {
             if (moving.isNotEmpty()) return true
             val status = player.status
@@ -2099,7 +2119,7 @@ class SkinRuntime(
      * grid's next pixel while playing, or a moving visualizer's next 25 ms step. Null when nothing
      * will. A time due already comes back as it is.
      */
-    fun nextDueAt(): Long? {
+    public fun nextDueAt(): Long? {
         val now = now()
         if (moving.isNotEmpty()) return now
         val status = player.status
@@ -2115,14 +2135,14 @@ class SkinRuntime(
     }
 
     /** Script steps run since the last [tick] began, across every script. */
-    val scriptSteps: Long get() = scripts.sumOf { it.stepsSinceRefill.toLong() }
+    internal val scriptSteps: Long get() = scripts.sumOf { it.stepsSinceRefill.toLong() }
 
     /**
      * How the host shows the windows, as one value ([Presentation]); setting it changes what
      * differs, as setting [viewSize], [viewportW] / [viewportH], [columns], [columnWidth],
      * [stretchLast] and [touchSlop] one by one does.
      */
-    var presentation: Presentation
+    public var presentation: Presentation
         get() = Presentation(viewSize, viewportW to viewportH, columns, columnWidth, stretchLast, touchSlop)
         set(value) {
             viewportW = value.viewport.first
@@ -2135,23 +2155,23 @@ class SkinRuntime(
         }
 
     /** [tick] with the next target slide placed [slideLead] ms ahead of now ([SkinRuntime.slideLead]). */
-    fun tick(slideLead: Long): Boolean {
+    public fun tick(slideLead: Long): Boolean {
         this.slideLead = slideLead
         return tick()
     }
 
     /** Timer events fired so far. */
-    var timerFires = 0L
+    internal var timerFires = 0L
         private set
 
     /** What the engine has done so far, for a host's timing log or probe; see [EngineStats]. */
-    val stats: EngineStats get() = EngineStats(scriptSteps, timerFires, layoutPasses, shapesWorkedOut)
+    public val stats: EngineStats get() = EngineStats(scriptSteps, timerFires, layoutPasses, shapesWorkedOut)
 
     /**
      * Advances timers, tickers and player-driven objects. Returns true when a redraw is due: when
      * something that shows changed, a visualizer that moves only once its 25 ms step has passed.
      */
-    fun tick(): Boolean {
+    public fun tick(): Boolean {
         val t = now()
         tickChanged.clear()
         advanceClocks(t)
@@ -2188,7 +2208,7 @@ class SkinRuntime(
      * How far ahead of [now], in ms, the next [tick] places a target slide: when the frame it makes
      * reaches the screen, so the slide moves by the frames shown rather than by when the tick ran.
      */
-    var slideLead = 0L
+    internal var slideLead = 0L
 
     /**
      * Refills every script's step budget, then moves animations and target slides ([slideLead]
@@ -2286,15 +2306,15 @@ class SkinRuntime(
     }
 
     /** The main window's drawing. */
-    fun draw(): List<DrawCmd> = mainLayout?.let { draw(it) } ?: emptyList()
+    internal fun draw(): List<DrawCmd> = mainLayout?.let { draw(it) } ?: emptyList()
 
     /** Every window's drawing with its place in the stack; draw each translated to its rectangle. */
-    fun drawWindows(): List<Pair<Rect, List<DrawCmd>>> {
+    public fun drawWindows(): List<Pair<Rect, List<DrawCmd>>> {
         if (needsLayout) doLayout()
         return windows.map { windowRect(it) to draw(it) }
     }
 
-    fun draw(layout: Layout): List<DrawCmd> {
+    internal fun draw(layout: Layout): List<DrawCmd> {
         if (needsLayout) doLayout()
         dirty = false
         val drawn = ArrayList<DrawCmd>()
@@ -2467,37 +2487,37 @@ class SkinRuntime(
     }
 
     /** [pointerDown] at a point of [window], in its own pixels; see [inWindow]. */
-    fun pointerDown(
+    public fun pointerDown(
         window: WindowId,
         x: Int,
         y: Int,
         seq: Int = 0,
-    ) = inWindow(window, x, y) { sx, sy -> pointerDown(sx, sy, seq) }
+    ): Unit = inWindow(window, x, y) { sx, sy -> pointerDown(sx, sy, seq) }
 
     /** [pointerMove] at a point of [window], in its own pixels; see [inWindow]. */
-    fun pointerMove(
+    public fun pointerMove(
         window: WindowId,
         x: Int,
         y: Int,
-    ) = inWindow(window, x, y) { sx, sy -> pointerMove(sx, sy) }
+    ): Unit = inWindow(window, x, y) { sx, sy -> pointerMove(sx, sy) }
 
     /** [pointerUp] at a point of [window], in its own pixels; see [inWindow]. */
-    fun pointerUp(
+    public fun pointerUp(
         window: WindowId,
         x: Int,
         y: Int,
-    ) = inWindow(window, x, y) { sx, sy -> pointerUp(sx, sy) }
+    ): Unit = inWindow(window, x, y) { sx, sy -> pointerUp(sx, sy) }
 
     /** [doubleTap] at a point of [window], in its own pixels; see [inWindow]. */
-    fun doubleTap(
+    public fun doubleTap(
         window: WindowId,
         x: Int,
         y: Int,
         seq: Int = 0,
-    ) = inWindow(window, x, y) { sx, sy -> doubleTap(sx, sy, seq) }
+    ): Unit = inWindow(window, x, y) { sx, sy -> doubleTap(sx, sy, seq) }
 
     /** The topmost object at a point of the stack. */
-    fun hitTest(
+    internal fun hitTest(
         x: Int,
         y: Int,
     ): GuiObject? {
@@ -2595,7 +2615,7 @@ class SkinRuntime(
      * How far, in layout pixels, a finger may land beside an object and still mean it. The app sets
      * it from the screen: 24 dp, so even a tiny button answers across Android's 48 dp touch target.
      */
-    var touchSlop = 6
+    internal var touchSlop = 6
 
     /**
      * Whether [o] can take a touch at all. [faded] also lets in one drawn fully transparent, which
@@ -2661,7 +2681,7 @@ class SkinRuntime(
      * A menu bar entry takes a touch right on it only: it lies close under a title bar, which a
      * drag beside it must still move.
      */
-    fun touchTarget(
+    internal fun touchTarget(
         sx: Int,
         sy: Int,
     ): GuiObject? {
@@ -2718,19 +2738,20 @@ class SkinRuntime(
      * Pointer events take points of the stack (see [windowRect]); objects hear points of their
      * window. [seq] names this touch for [menuTarget], [moveTarget] and [rightClick].
      */
-    fun pointerDown(
+    public fun pointerDown(
         sx: Int,
         sy: Int,
         seq: Int = 0,
-    ) = gesture(fresh = true) {
-        aimMenu(sx, sy, seq)
-        moveSeq = null
-        val touched = pointerDownAt(sx, sy)
-        // a press on no object moves the window; a press that opened a menu has been let go of, and
-        // moves nothing; a press held back from an object with a skin menu moves the window as a
-        // press on that object would
-        if (touched == null || (captured ?: deferred?.target)?.let(::movesWindow) == true) moveSeq = seq
-    }
+    ): Unit =
+        gesture(fresh = true) {
+            aimMenu(sx, sy, seq)
+            moveSeq = null
+            val touched = pointerDownAt(sx, sy)
+            // a press on no object moves the window; a press that opened a menu has been let go of, and
+            // moves nothing; a press held back from an object with a skin menu moves the window as a
+            // press on that object would
+            if (touched == null || (captured ?: deferred?.target)?.let(::movesWindow) == true) moveSeq = seq
+        }
 
     /** Presses what a finger at a point of the stack means (see [touchTarget]), and returns it; null for nothing. */
     private fun pointerDownAt(
@@ -2784,10 +2805,10 @@ class SkinRuntime(
         }
     }
 
-    fun pointerMove(
+    public fun pointerMove(
         sx: Int,
         sy: Int,
-    ) = gesture { pointerMoveAt(sx, sy) }
+    ): Unit = gesture { pointerMoveAt(sx, sy) }
 
     /** Sends the deferred press where the finger went down, unless its object has gone from the skin. */
     private fun sendDeferred() {
@@ -2822,10 +2843,10 @@ class SkinRuntime(
         captured?.pointerMove(x, y)
     }
 
-    fun pointerUp(
+    public fun pointerUp(
         sx: Int,
         sy: Int,
-    ) = gesture { pointerUpAt(sx, sy) }
+    ): Unit = gesture { pointerUpAt(sx, sy) }
 
     private fun pointerUpAt(
         sx: Int,
@@ -2847,15 +2868,16 @@ class SkinRuntime(
     }
 
     /** A second tap of a double tap, at a point of the stack; [seq] names it as [pointerDown]'s does. */
-    fun doubleTap(
+    public fun doubleTap(
         sx: Int,
         sy: Int,
         seq: Int = 0,
-    ) = gesture(fresh = true) {
-        aimMenu(sx, sy, seq)
-        moveSeq = null
-        doubleTapAt(sx, sy)
-    }
+    ): Unit =
+        gesture(fresh = true) {
+            aimMenu(sx, sy, seq)
+            moveSeq = null
+            doubleTapAt(sx, sy)
+        }
 
     private fun doubleTapAt(
         sx: Int,
@@ -2882,7 +2904,7 @@ class SkinRuntime(
      * The seq of the last [pointerDown] or [doubleTap] when it landed on an object with a skin menu
      * (see [hasSkinMenu]), else null: [rightClick] with that seq opens the menu.
      */
-    val menuTarget: Int? get() = menuAim?.seq
+    public val menuTarget: Int? get() = menuAim?.seq
 
     private var moveSeq: Int? = null
 
@@ -2891,7 +2913,7 @@ class SkinRuntime(
      * the window (see [movesWindow]), else null; a [doubleTap] clears it. The host moves the skin
      * when such a press turns into a drag.
      */
-    val moveTarget: Int? get() = moveSeq
+    public val moveTarget: Int? get() = moveSeq
 
     /**
      * Whether a drag that starts on [o] moves the window. It moves it from every part where a drag
@@ -3014,7 +3036,7 @@ class SkinRuntime(
      * [pointerCancel]. Nothing happens for an older touch's seq, or when the object is no longer on
      * screen (its window closed or its layout switched away).
      */
-    fun rightClick(seq: Int) =
+    public fun rightClick(seq: Int): Unit =
         gesture(fresh = true) {
             menuAim?.takeIf { it.seq == seq }?.let(::rightClickAt)
         }
@@ -3062,7 +3084,7 @@ class SkinRuntime(
      * calls run in it; a host that opens the skin's menu itself wraps that call in it too. [fresh]
      * starts a new touch, whose menu count starts over.
      */
-    fun <T> gesture(
+    public fun <T> gesture(
         fresh: Boolean = false,
         block: () -> T,
     ): T {
@@ -3088,7 +3110,7 @@ class SkinRuntime(
      * Windows hands the mouse to the menu: the control is let go without a release, and gives no
      * click or final position for this touch, even when its release handler opened the menu.
      */
-    fun menuChoice(menu: SkinMenu): Int {
+    public fun menuChoice(menu: SkinMenu): Int {
         val refusal =
             when {
                 gestureDepth == 0 -> "outside a touch"
@@ -3116,7 +3138,7 @@ class SkinRuntime(
      * `onEnterArea` of [pointerDown]. The rest of this touch goes nowhere.
      * For a host that takes the touch, such as a long press that opens the app's menu.
      */
-    fun pointerCancel() = gesture { endPress() }
+    public fun pointerCancel(): Unit = gesture { endPress() }
 
     /** Lets go of the pressed object without a release, and tells it the finger left. */
     private fun endPress() {
@@ -3152,7 +3174,7 @@ class SkinRuntime(
     // ---- actions -----------------------------------------------------------------------------
 
     @Suppress("CyclomaticComplexMethod") // one arm per Winamp action name
-    fun action(
+    internal fun action(
         source: GuiObject,
         action: String,
         param: String?,
@@ -3315,7 +3337,7 @@ class SkinRuntime(
     }
 
     /** Whether the window or switch a button's action names is on, for its active image. */
-    fun actionState(
+    internal fun actionState(
         action: String?,
         param: String?,
     ): Boolean =
@@ -3369,7 +3391,7 @@ class SkinRuntime(
      * when it does not exist yet, so getItem(GUID) and newItem(name, GUID) give one item in either order.
      * An item getItem made under a name takes the GUID a later newItem of that name gives it.
      */
-    fun configItem(
+    internal fun configItem(
         key: String,
         guid: String?,
     ): ConfigItemObj? {
@@ -3416,7 +3438,7 @@ class SkinRuntime(
      * newAttribute, or a value changed. A host compares it to [SkinOptions.version] to know whether
      * [skinOptions] would read differently.
      */
-    var configVersion = 0
+    public var configVersion: Int = 0
         private set
 
     internal fun configChanged() {
@@ -3431,7 +3453,7 @@ class SkinRuntime(
      * A toggle is a radio button when a toggle button of the skin set to that attribute draws a
      * picture whose id says "radio", as Winamp Modern's config drawer draws its choices.
      */
-    fun skinOptions(): SkinOptions {
+    public fun skinOptions(): SkinOptions {
         val root = configItemByGuid(SkinOptions.OPTIONS_MENU) ?: return SkinOptions(configVersion, emptyList())
         return SkinOptions(configVersion, optionEntries(root, 0, listOf(root), intArrayOf(PopupMenu.MAX_ITEMS)))
     }
@@ -3555,7 +3577,7 @@ class SkinRuntime(
      * value is kept with the skin's settings. False for an unknown key, a separator, or a value that
      * is a GUID, a submenu's or not.
      */
-    fun toggleSkinOption(key: SkinOptions.Key): Boolean {
+    public fun toggleSkinOption(key: SkinOptions.Key): Boolean {
         val a = configItemByGuid(key.item)?.attributes?.get(key.attribute) ?: return false
         if (!a.made || a.data == "-" || isGuid(a.data)) return false
         a.makiCall("setdata", listOf(Value.Str(if (attributeOn(a.data)) "0" else "1")))
@@ -3563,7 +3585,7 @@ class SkinRuntime(
     }
 
     /** A numeric config attribute; repeat is 0 off, 1 the playlist, -1 the song. */
-    fun configValue(name: String): Int =
+    internal fun configValue(name: String): Int =
         when (name.lowercase()) {
             "repeat" -> {
                 if (player.repeat) 1 else 0
@@ -3598,7 +3620,7 @@ class SkinRuntime(
     /** [name] without a note in brackets at its end ("animate (disabled if ...)" to "animate"). */
     private fun withoutNote(name: String): String = name.replace(NOTE_AT_END, "")
 
-    fun setConfigValue(
+    internal fun setConfigValue(
         name: String,
         value: Int,
     ) {
@@ -3618,7 +3640,7 @@ class SkinRuntime(
         }
     }
 
-    fun configFlag(name: String): Boolean =
+    internal fun configFlag(name: String): Boolean =
         when (name.lowercase()) {
             "shuffle" -> player.shuffle
             "repeat" -> player.repeat
@@ -3627,7 +3649,7 @@ class SkinRuntime(
             else -> scriptAttribute(name)?.let { wtoi(it.data) == 1 } ?: configFlags[name.lowercase()] ?: false
         }
 
-    fun setConfigFlag(
+    internal fun setConfigFlag(
         name: String,
         on: Boolean,
     ) {
@@ -3659,7 +3681,7 @@ class SkinRuntime(
      * Where the player says a slider should sit, or null for one the player does not drive. It
      * rounds, as [sliderMoved] does, so a thumb let go stays where it was let go.
      */
-    fun sliderTarget(s: Slider): Int? =
+    internal fun sliderTarget(s: Slider): Int? =
         when (s.action) {
             "seek" -> {
                 if (player.lengthMs >
@@ -3712,7 +3734,7 @@ class SkinRuntime(
      * where the thumb belongs when the player took another value than the slider's (the balance
      * near the middle, the preamp near 0 dB), or null when it took the slider's.
      */
-    fun sliderMoved(
+    internal fun sliderMoved(
         s: Slider,
         final: Boolean,
     ): Int? {

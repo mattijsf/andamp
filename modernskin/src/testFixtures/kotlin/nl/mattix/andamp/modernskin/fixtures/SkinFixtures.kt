@@ -204,7 +204,7 @@ fun SkinRuntime.recordEvents(
             bindings = bindings,
             code = code,
         )
-    scripts += Script(program, system, this)
+    scripts += Script(program, system, makiHost)
 }
 
 private const val RECORDER = "0000000000000000000000000000beef"

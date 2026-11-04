@@ -175,7 +175,7 @@ class RightClickTest {
                         Op(op, arg, argc, i)
                     },
             )
-        rt.scripts += Script(program, recorder, rt)
+        rt.scripts += Script(program, recorder, rt.makiHost)
     }
 
     /** The three right-click events, each recorded, the release also popping the menu. */

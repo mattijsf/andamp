@@ -10,6 +10,10 @@ plugins {
 // implements it can sit under both skin systems; it depends on nothing.
 kotlin {
     jvmToolchain(17)
+    // every public name is part of the contract; the dump in api/ makes a change to it a visible one
+    explicitApi()
+    @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
+    abiValidation()
 }
 
 dependencies {

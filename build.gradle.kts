@@ -101,6 +101,9 @@ val gate =
             ":visualizer:avs:testDebugUnitTest",
             ":visualizer:projectm:testDebugUnitTest",
             ":modernskin:test",
+            ":modernskin:checkKotlinAbi",
+            ":core:skinplayer:test",
+            ":core:skinplayer:checkKotlinAbi",
         )
     }
 

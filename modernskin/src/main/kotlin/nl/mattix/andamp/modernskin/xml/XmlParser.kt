@@ -2,16 +2,16 @@
 package nl.mattix.andamp.modernskin.xml
 
 /** An element of a skin XML file. Names and attribute keys are lowercase; values are as written. */
-class XmlNode(
-    val name: String,
-    val attrs: Map<String, String>,
-    val children: List<XmlNode>,
+public class XmlNode(
+    public val name: String,
+    internal val attrs: Map<String, String>,
+    public val children: List<XmlNode>,
     /** The element's own text, between its tags and outside its children, trimmed: `<name>Bento</name>`. */
-    val text: String = "",
+    public val text: String = "",
 ) {
-    operator fun get(key: String): String? = attrs[key]
+    public operator fun get(key: String): String? = attrs[key]
 
-    override fun toString() = "<$name ${attrs.entries.joinToString(" ") { "${it.key}=\"${it.value}\"" }}>"
+    override fun toString(): String = "<$name ${attrs.entries.joinToString(" ") { "${it.key}=\"${it.value}\"" }}>"
 }
 
 /**
@@ -22,8 +22,8 @@ class XmlNode(
  * Unknown entities are left as they are, an unclosed element ends at its parent's close tag, and a
  * close tag that matches nothing is dropped.
  */
-object XmlParser {
-    fun parse(text: String): List<XmlNode> = Reader(text.removePrefix(BYTE_ORDER_MARK)).parseAll()
+public object XmlParser {
+    public fun parse(text: String): List<XmlNode> = Reader(text.removePrefix(BYTE_ORDER_MARK)).parseAll()
 
     /** U+FEFF, which a UTF-8 file saved by some Windows editors starts with. */
     private const val BYTE_ORDER_MARK = "\uFEFF"

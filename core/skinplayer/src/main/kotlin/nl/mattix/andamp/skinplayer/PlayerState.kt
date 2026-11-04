@@ -2,10 +2,10 @@
 package nl.mattix.andamp.skinplayer
 
 /** Whether the player plays. [CONNECTING] is playing that has not sounded yet, as a station being reached. */
-enum class Transport { STOPPED, PLAYING, PAUSED, CONNECTING }
+public enum class Transport { STOPPED, PLAYING, PAUSED, CONNECTING }
 
 /** One entry of the playlist: what a skin shows for it. [tags] by lowercase field name (artist, album, ...). */
-data class Entry(
+public data class Entry(
     val title: String,
     val lengthMs: Long,
     val tags: Map<String, String> = emptyMap(),
@@ -16,7 +16,7 @@ data class Entry(
  * the sample rate, the channels (1 lights a skin's mono lamp, 2 or more its stereo lamp) and the
  * name of what decodes it.
  */
-data class StreamInfo(
+public data class StreamInfo(
     val bitrateKbps: Int? = null,
     val sampleRateKhz: Int? = null,
     val channels: Int? = null,
@@ -31,7 +31,7 @@ data class StreamInfo(
  * Units are Winamp 2's, as Andamp keeps them: [volume] 0..100, [balance] -100 (left) .. 100
  * (right), [preamp] and each of the ten [eqBands] 0..63 with [EQ_CENTER] at 0 dB.
  */
-data class PlayerState(
+public data class PlayerState(
     val version: Long = 0,
     val transport: Transport = Transport.STOPPED,
     val playlist: List<Entry> = emptyList(),
@@ -50,11 +50,11 @@ data class PlayerState(
     /** The entry playing or to play, or null with an empty playlist. */
     val current: Entry? get() = playlist.getOrNull(currentIndex)
 
-    companion object {
-        const val VOLUME_MAX = 100
-        const val BALANCE_MAX = 100
-        const val EQ_BANDS = 10
-        const val EQ_MAX = 63
-        const val EQ_CENTER = 32
+    public companion object {
+        public const val VOLUME_MAX: Int = 100
+        public const val BALANCE_MAX: Int = 100
+        public const val EQ_BANDS: Int = 10
+        public const val EQ_MAX: Int = 63
+        public const val EQ_CENTER: Int = 32
     }
 }

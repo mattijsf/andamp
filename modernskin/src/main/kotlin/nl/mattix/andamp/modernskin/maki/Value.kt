@@ -2,30 +2,30 @@
 package nl.mattix.andamp.modernskin.maki
 
 /** A MAKI value. Integers and floats are kept apart because assignment to an Int variable truncates. */
-sealed class Value {
-    class Int(
-        val v: kotlin.Int,
+internal sealed class Value {
+    internal class Int(
+        internal val v: kotlin.Int,
     ) : Value()
 
-    class Num(
-        val v: Double,
+    internal class Num(
+        internal val v: Double,
     ) : Value()
 
-    class Bool(
-        val v: Boolean,
+    internal class Bool(
+        internal val v: Boolean,
     ) : Value()
 
-    class Str(
-        val v: String,
+    internal class Str(
+        internal val v: String,
     ) : Value()
 
-    class Obj(
-        val o: MakiObject,
+    internal class Obj(
+        internal val o: MakiObject,
     ) : Value()
 
-    object Null : Value()
+    internal object Null : Value()
 
-    val truthy: Boolean
+    internal val truthy: Boolean
         get() =
             when (this) {
                 is Int -> v != 0
@@ -36,7 +36,7 @@ sealed class Value {
                 Null -> false
             }
 
-    val asDouble: Double
+    internal val asDouble: Double
         get() =
             when (this) {
                 is Int -> v.toDouble()
@@ -46,7 +46,7 @@ sealed class Value {
                 else -> 0.0
             }
 
-    val asInt: kotlin.Int
+    internal val asInt: kotlin.Int
         get() =
             when (this) {
                 is Int -> v
@@ -56,7 +56,7 @@ sealed class Value {
                 else -> 0
             }
 
-    val asString: String
+    internal val asString: String
         get() =
             when (this) {
                 is Str -> v
@@ -67,10 +67,10 @@ sealed class Value {
                 Null -> ""
             }
 
-    val asObject: MakiObject?
+    internal val asObject: MakiObject?
         get() = (this as? Obj)?.o
 
-    val isNumber: Boolean
+    internal val isNumber: Boolean
         get() = this is Int || this is Num || this is Bool
 
     override fun toString(): String =
@@ -80,28 +80,28 @@ sealed class Value {
             else -> asString
         }
 
-    companion object {
-        fun of(b: Boolean) = Bool(b)
+    internal companion object {
+        internal fun of(b: Boolean) = Bool(b)
 
-        fun of(i: kotlin.Int) = Int(i)
+        internal fun of(i: kotlin.Int) = Int(i)
 
-        fun of(d: Double) = Num(d)
+        internal fun of(d: Double) = Num(d)
 
-        fun of(s: String?) = if (s == null) Null else Str(s)
+        internal fun of(s: String?) = if (s == null) Null else Str(s)
 
-        fun of(o: MakiObject?) = if (o == null) Null else Obj(o)
+        internal fun of(o: MakiObject?) = if (o == null) Null else Obj(o)
     }
 }
 
 /** A variable slot. Assignment coerces to the declared kind, as the compiler assumes. */
-class Cell(
-    val kind: Kind,
+internal class Cell(
+    internal val kind: Kind,
     initial: Value,
 ) {
-    var value: Value = initial
+    internal var value: Value = initial
         private set
 
-    fun assign(v: Value) {
+    internal fun assign(v: Value) {
         value =
             when (kind) {
                 Kind.INT -> if (v is Value.Int) v else Value.Int(v.asInt)
@@ -116,21 +116,21 @@ class Cell(
 }
 
 /** An object that stands in for one the runtime lacks; its object-returning methods hand out more of them. */
-interface LenientObject : MakiObject {
-    fun another(): MakiObject
+internal interface LenientObject : MakiObject {
+    public fun another(): MakiObject
 }
 
 /** Anything a script can hold in an object variable and call methods on. */
-interface MakiObject {
+internal interface MakiObject {
     /** The class GUID, lowercase hex without dashes, so the VM can check what the object is. */
-    val makiGuid: String
+    public val makiGuid: String
 
     /** Runs a method named in `std.mi` (lowercase). Returns null when the method is unknown here. */
-    fun makiCall(
+    public fun makiCall(
         name: String,
         args: List<Value>,
     ): Value?
 
     /** A script's `delete`: the object stops what it does (a timer no longer fires). */
-    fun delete() = Unit
+    public fun delete() = Unit
 }

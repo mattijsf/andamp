@@ -6,7 +6,7 @@ package nl.mattix.andamp.skinplayer
  * position runs on [clock] while it plays. A capability left out of [capabilities] makes its
  * commands do nothing. [stream] is what it says of every song, as a demo shows a bitrate.
  */
-class FakeSkinPlayer(
+public class FakeSkinPlayer(
     playlist: List<Entry> = emptyList(),
     override val capabilities: Capabilities = Capabilities(),
     private val clock: () -> Long = System::currentTimeMillis,
@@ -23,7 +23,7 @@ class FakeSkinPlayer(
     private var since: Long? = null
 
     /** How many times [requestOpen] was called, and with what. */
-    val openRequests = ArrayList<Boolean>()
+    public val openRequests: MutableList<Boolean> = ArrayList()
 
     override fun positionMs(): Long = at + (since?.let { clock() - it } ?: 0L)
 
@@ -62,9 +62,9 @@ class FakeSkinPlayer(
         change { it.copy(transport = Transport.STOPPED) }
     }
 
-    override fun next() = step(1)
+    override fun next(): Unit = step(1)
 
-    override fun previous() = step(-1)
+    override fun previous(): Unit = step(-1)
 
     private fun step(by: Int) {
         val n = state.playlist.size
@@ -89,14 +89,14 @@ class FakeSkinPlayer(
         change { it.copy(version = it.version) }
     }
 
-    override fun setVolume(volume: Int) = change { it.copy(volume = volume.coerceIn(0, PlayerState.VOLUME_MAX)) }
+    override fun setVolume(volume: Int): Unit = change { it.copy(volume = volume.coerceIn(0, PlayerState.VOLUME_MAX)) }
 
-    override fun setBalance(balance: Int) =
+    override fun setBalance(balance: Int): Unit =
         change { it.copy(balance = balance.coerceIn(-PlayerState.BALANCE_MAX, PlayerState.BALANCE_MAX)) }
 
-    override fun setShuffle(on: Boolean) = change { it.copy(shuffle = on) }
+    override fun setShuffle(on: Boolean): Unit = change { it.copy(shuffle = on) }
 
-    override fun setRepeat(on: Boolean) = change { it.copy(repeat = on) }
+    override fun setRepeat(on: Boolean): Unit = change { it.copy(repeat = on) }
 
     override fun setCrossfade(on: Boolean) {
         if (capabilities.crossfade) change { it.copy(crossfade = on) }

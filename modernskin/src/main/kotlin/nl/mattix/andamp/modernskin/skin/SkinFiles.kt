@@ -6,15 +6,15 @@ import java.io.File
 import java.util.zip.ZipFile
 
 /** The files of one skin, looked up by path without regard to case or slash direction. */
-interface SkinFiles {
-    fun read(path: String): ByteArray?
+public interface SkinFiles {
+    public fun read(path: String): ByteArray?
 
-    fun exists(path: String): Boolean = read(path) != null
+    public fun exists(path: String): Boolean = read(path) != null
 
-    fun names(): List<String>
+    public fun names(): List<String>
 
-    companion object {
-        fun normalize(path: String): String =
+    public companion object {
+        public fun normalize(path: String): String =
             path
                 .replace(
                     '\\',
@@ -28,7 +28,7 @@ interface SkinFiles {
 }
 
 /** A `.wal`, which is a zip. The whole archive is read into memory once; skins are a few megabytes. */
-class ZipSkinFiles(
+public class ZipSkinFiles(
     file: File,
 ) : SkinFiles {
     private val entries: Map<String, ByteArray> =
@@ -66,7 +66,7 @@ class ZipSkinFiles(
      * archive stays open until [close], so a file deleted meanwhile reads on as it was; after it,
      * an entry not read before reads as missing. Two threads may read at once.
      */
-    class OnDemand(
+    public class OnDemand(
         file: File,
     ) : SkinFiles,
         Closeable {
@@ -79,11 +79,11 @@ class ZipSkinFiles(
         private val kept = HashMap<String, ByteArray?>()
 
         /** The bytes [kept] holds. */
-        var heldBytes = 0L
+        public var heldBytes: Long = 0L
             private set
 
         /** How many reads went to the archive. */
-        var archiveReads = 0
+        public var archiveReads: Int = 0
             private set
 
         override fun read(path: String): ByteArray? {
@@ -108,7 +108,7 @@ class ZipSkinFiles(
 
         override fun names(): List<String> = index.keys.toList()
 
-        override fun close() = zip.close()
+        override fun close(): Unit = zip.close()
 
         private companion object {
             /** [zip]'s entry names by path, as [ZipSkinFiles] would name them; [zip] is closed when they do not read. */
@@ -165,7 +165,7 @@ class ZipSkinFiles(
  * from [base] (the `Plugins\freeform\xml\wasabi` folder, zipped), everything else from [skin].
  * Winamp draws lists, scrollbars and frames a skin does not define from that set.
  */
-class LayeredSkinFiles(
+public class LayeredSkinFiles(
     private val skin: SkinFiles,
     private val base: SkinFiles,
 ) : SkinFiles {
@@ -176,8 +176,8 @@ class LayeredSkinFiles(
 
     override fun names(): List<String> = skin.names() + base.names().map { BASE_PREFIX + it }
 
-    companion object {
-        const val BASE_PREFIX = "wasabi-base/"
+    internal companion object {
+        internal const val BASE_PREFIX = "wasabi-base/"
     }
 }
 
@@ -187,12 +187,12 @@ class LayeredSkinFiles(
  * Siblings are named by their folder name lowercased without spaces ("bigbento"); [siblings] gives
  * the one by that name, or null, so a host can open a sibling only when a path names it.
  */
-class SkinsFolderFiles(
+public class SkinsFolderFiles(
     private val skin: SkinFiles,
     private val siblings: (String) -> SkinFiles?,
 ) : SkinFiles {
     /** Siblings opened beforehand, by folder name. */
-    constructor(skin: SkinFiles, siblings: Map<String, SkinFiles>) : this(skin, siblings::get)
+    public constructor(skin: SkinFiles, siblings: Map<String, SkinFiles>) : this(skin, siblings::get)
 
     private fun sibling(path: String): Pair<SkinFiles, String>? {
         val n = SkinFiles.normalize(path).removePrefix("@skinspath@/")
@@ -217,7 +217,7 @@ class SkinsFolderFiles(
  * [LayeredSkinFiles] in place of Winamp's: the frames, title bar and widgets skins build on, in
  * plain pictures of our own. Its `$solid` pictures are answered by [GeneratedImages].
  */
-object AndampDefaultSet : SkinFiles {
+public object AndampDefaultSet : SkinFiles {
     private const val ROOT = "/nl/mattix/andamp/modernskin/defaultset/"
     private val FILES =
         listOf(

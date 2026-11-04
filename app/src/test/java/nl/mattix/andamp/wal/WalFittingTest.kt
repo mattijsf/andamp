@@ -157,7 +157,7 @@ class WalFittingTest {
 
         fun window(id: String): WindowId = checkNotNull(rt.windowOf(id))
 
-        fun layout(): WalLayout = fitting.layout(rt, fit, baseW, rt.stackSize, rt.drawnSize, rt.topWindow != null, true)
+        fun layout(): WalLayout = fitting.layout(rt, fit, baseW, rt.stackSize, rt.drawnSize, rt.windowOpen, true)
 
         /** Moves the main window to [x], [y] at the size it has, as a script's resize does. */
         fun moveMain(

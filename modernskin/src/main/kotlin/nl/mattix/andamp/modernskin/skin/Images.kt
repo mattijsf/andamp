@@ -7,7 +7,7 @@ package nl.mattix.andamp.modernskin.skin
  * from the middle) or the seek position (frame 0 while stopped). The frame is drawn unscaled,
  * from the strip's left edge.
  */
-class Images(
+internal class Images(
     rt: SkinRuntime,
 ) : GuiObject(rt, "images") {
     private var image: String? = null

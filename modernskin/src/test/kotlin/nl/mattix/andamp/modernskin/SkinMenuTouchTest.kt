@@ -190,7 +190,7 @@ class SkinMenuTouchTest {
                 bindings = bindings,
                 code = code,
             )
-        rt.scripts += Script(program, recorder, rt)
+        rt.scripts += Script(program, recorder, rt.makiHost)
     }
 
     private fun variable(v: Value) = VarDecl(Kind.OBJECT, guid = null, classVar = null, global = true, initial = v)
