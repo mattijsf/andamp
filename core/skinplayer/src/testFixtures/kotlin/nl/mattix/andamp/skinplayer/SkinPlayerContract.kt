@@ -41,7 +41,7 @@ abstract class SkinPlayerContract {
         val s = p.after { playTrack(2) }
         assertEquals(2, s.currentIndex)
         assertEquals(Transport.PLAYING, s.transport)
-        assertEquals(songs[2], s.current)
+        assertEquals("a player may show its own row text, so the entry at the index", s.playlist[2], s.current)
     }
 
     @Test
@@ -122,9 +122,10 @@ abstract class SkinPlayerContract {
     }
 
     @Test
-    fun `a seek moves the position within the song`() {
+    fun `a seek moves the position within the playing song`() {
         val p = fresh()
         if (!p.capabilities.seek) return
+        p.after { play() }
         p.after { seekTo(5_000) }
         assertTrue(p.positionMs() >= 5_000)
         p.after { seekTo(-10) }

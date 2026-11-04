@@ -297,7 +297,7 @@ class WalPlayerEchoTest {
         frames(10)
 
         assertEquals(listOf(listOf(start + 20)), heard("volume"))
-        assertEquals(listOf("setVolume(${(start + 20) / 255f})"), controls.calls)
+        assertEquals(listOf("setVolume(${WalPlayer.toPercent(start + 20) / 100f})"), controls.calls)
         assertEquals(start + 20, volume.position)
     }
 

@@ -3,30 +3,27 @@
 package nl.mattix.andamp.wal
 
 import android.os.SystemClock
-import nl.mattix.andamp.core.model.Track
-import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.core.playback.AudioTap
 import nl.mattix.andamp.modernskin.skin.Player
+import nl.mattix.andamp.skinplayer.Entry
+import nl.mattix.andamp.skinplayer.PlayerState
+import nl.mattix.andamp.skinplayer.SkinPlayer
+import nl.mattix.andamp.skinplayer.Transport
+import nl.mattix.andamp.state.AndampSkinPlayer
 import nl.mattix.andamp.state.EqOps
-import nl.mattix.andamp.state.SpectrumColumns
-import nl.mattix.andamp.state.SpectrumPhysics
 import nl.mattix.andamp.state.WinampState
-import nl.mattix.andamp.state.rowLabel
 import nl.mattix.andamp.ui.window.SliderMath
 import nl.mattix.andamp.ui.window.WindowControls
-import nl.mattix.andamp.ui.window.playOrOpen
 import kotlin.math.abs
 import kotlin.math.roundToInt
 import nl.mattix.andamp.modernskin.skin.Track as SkinTrack
 
 /**
- * The player a modern skin drives: the modernskin [Player] over the app's [WindowControls], its
- * [WinampState] and the backend's audio tap.
+ * The player a modern skin drives: the modernskin [Player], on Winamp 5's scales, over a
+ * [SkinPlayer] on Winamp 2's (Andamp's: [AndampSkinPlayer]).
  *
- * The engine calls it on the engine thread. Reads are getters over the state, which any thread
- * can read, and they never throw. Writes are posted to main with [post]: the volume, the
- * equalizer and the switches are merged, so only the latest value waits, and the transport, seeks
- * and playlist picks keep their order.
+ * The engine calls it on the engine thread. Reads go to the player's snapshot and never throw;
+ * writes go to the player's commands, which take effect later.
  *
  * The state follows a write only once the backend reports back, and the engine reads a value
  * back at once and tells the scripts about any change. So a written value is held: it reads as
@@ -35,149 +32,49 @@ import nl.mattix.andamp.modernskin.skin.Track as SkinTrack
  * (the volume keys, the notification) and reads at once. When the slider moves the phone's
  * volume, a volume write becomes the nearest of the phone's steps, so it may land up to
  * [VOLUME_SLACK] from the percent it asked for.
- *
- * @param positionMs the backend's place in the song, read on the engine thread
- * @param openFile the file picker, called on main: true when Play opens it on an empty playlist,
- *   false for eject
- * @param post runs a task on main
  */
 internal class WalPlayer(
-    private val controls: WindowControls,
-    private val state: WinampState,
-    private val tapOf: () -> AudioTap?,
-    positionMs: () -> Long,
-    private val openFile: (andPlay: Boolean) -> Unit,
-    private val post: (Runnable) -> Unit,
+    private val player: SkinPlayer,
     private val clock: () -> Long = SystemClock::uptimeMillis,
 ) : Player {
-    private val backendMs = positionMs
+    /** The modern skin player over Andamp's: see [AndampSkinPlayer] for the arguments. */
+    constructor(
+        controls: WindowControls,
+        state: WinampState,
+        tapOf: () -> AudioTap?,
+        positionMs: () -> Long,
+        openFile: (andPlay: Boolean) -> Unit,
+        post: (Runnable) -> Unit,
+        clock: () -> Long = SystemClock::uptimeMillis,
+    ) : this(AndampSkinPlayer(controls, state, tapOf, positionMs, openFile, post, clock), clock)
+
+    private val state: PlayerState get() = player.state
 
     // ---- reads -----------------------------------------------------------------------------
 
     override val status: Player.Status
         get() =
             when (state.transport) {
-                Transport.Playing -> Player.Status.PLAYING
-                Transport.Paused -> Player.Status.PAUSED
-                Transport.Stopped -> Player.Status.STOPPED
+                Transport.PLAYING, Transport.CONNECTING -> Player.Status.PLAYING
+                Transport.PAUSED -> Player.Status.PAUSED
+                Transport.STOPPED -> Player.Status.STOPPED
             }
 
-    override val lengthMs: Int get() = lengthOf(state.currentTrack)
+    override val lengthMs: Int get() = toInt(state.current?.lengthMs ?: 0)
 
     /** The current row as the playlist writes it. */
-    override val title: String
-        get() {
-            val index = state.currentIndex
-            return state.playlist
-                .getOrNull(index)
-                ?.let { state.rowLabel(it, index) }
-                .orEmpty()
-        }
+    override val title: String get() = state.current?.title.orEmpty()
 
-    override val bitrateKbps: Int get() = state.bitrateKbps ?: 0
+    override val bitrateKbps: Int get() = state.stream.bitrateKbps ?: 0
 
-    override val sampleRateKhz: Int get() = state.sampleRateKhz ?: 0
+    override val sampleRateKhz: Int get() = state.stream.sampleRateKhz ?: 0
 
     /** Stereo when the backend does not say, as the classic window's lamps. */
-    override val channels: Int get() = state.streamChannels ?: 2
+    override val channels: Int get() = state.stream.channels ?: 2
 
-    override val tags: Map<String, String>
-        get() {
-            val track = state.currentTrack ?: return emptyMap()
-            return buildMap {
-                if (track.artist.isNotBlank()) put("artist", track.artist)
-                if (track.title.isNotBlank()) put("title", track.title)
-            }
-        }
+    override val tags: Map<String, String> get() = state.current?.tags.orEmpty()
 
-    // ---- the place in the song -------------------------------------------------------------
-
-    /** The backend's last place, and when this player first saw it. */
-    private var lastRaw = -1L
-    private var rawAt = 0L
-    private var lastTransport = Transport.Stopped
-
-    /** The place last read out, and the track it belongs to; [NOT_SHOWN] after a stop or a new track. */
-    private var shownMs = NOT_SHOWN
-    private var shownFor: String? = null
-
-    /** A seek on its way: where to, when it was asked, and the backend's place then. */
-    private class SeekHold(
-        val trackId: String,
-        val target: Long,
-        val at: Long,
-        val oldMs: Long,
-        val oldAt: Long,
-    )
-
-    private var seekHold: SeekHold? = null
-
-    /**
-     * The backend's place, carried on with [clock] while playing, since the backend reports it a
-     * few times a second: never more than [MAX_LEAD_MS] past its last report and never past the
-     * length. Paused, it holds. A step back of up to a second (a report that trails the carried
-     * place, a seek landing a little short) holds the place until the song catches up, so a seek
-     * bar's thumb never jumps back by itself.
-     */
-    override val positionMs: Int
-        get() {
-            val track = state.currentTrack
-            val transport = state.transport
-            if (track == null || transport == Transport.Stopped) {
-                seekHold = null
-                shownMs = NOT_SHOWN
-                lastTransport = Transport.Stopped
-                return 0
-            }
-            val now = clock()
-            val raw = observe(transport, now)
-            if (track.id != shownFor) {
-                shownFor = track.id
-                shownMs = NOT_SHOWN
-            }
-            val playing = transport == Transport.Playing
-            val place = heldSeek(track, playing, now) ?: (raw + if (playing) minOf(now - rawAt, MAX_LEAD_MS) else 0)
-            if (place >= shownMs || shownMs - place > MAX_LEAD_MS) shownMs = place
-            val length = lengthOf(track).toLong()
-            return (if (length > 0) minOf(shownMs, length) else shownMs).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-        }
-
-    /** Reads the backend's place; the carried place starts again from each new report and from each change of [transport]. */
-    private fun observe(
-        transport: Transport,
-        now: Long,
-    ): Long {
-        val raw = backendMs().coerceAtLeast(0)
-        if (raw != lastRaw || transport != lastTransport) {
-            lastRaw = raw
-            rawAt = now
-            lastTransport = transport
-        }
-        return raw
-    }
-
-    /**
-     * Where a seek on its way shows: at its target until the backend's place lands within a second
-     * of it, for up to [HOLD_MS] while the backend is still where the song was. A place that is
-     * neither ends it at once. Null when no seek waits.
-     */
-    private fun heldSeek(
-        track: Track,
-        playing: Boolean,
-        now: Long,
-    ): Long? {
-        val hold = seekHold ?: return null
-        val oldCourse = hold.oldMs + if (playing) rawAt - hold.oldAt else 0
-        val toTarget = abs(lastRaw - hold.target)
-        val toOld = abs(lastRaw - oldCourse)
-        val landed = toTarget <= SEEK_NEAR_MS && toTarget < toOld
-        val waiting = toOld <= SEEK_NEAR_MS && now - hold.at < HOLD_MS
-        if (hold.trackId != track.id || landed || !waiting) {
-            seekHold = null
-            return null
-        }
-        return hold.target
-    }
+    override val positionMs: Int get() = toInt(player.positionMs())
 
     // ---- the volume, the equalizer and the switches -----------------------------------------
 
@@ -249,7 +146,7 @@ internal class WalPlayer(
     }
 
     private val volumeHeld = Held(VOLUME_SLACK)
-    private val bandsHeld = Array(EQ_BANDS) { Held() }
+    private val bandsHeld = Array(PlayerState.EQ_BANDS) { Held() }
     private val preampHeld = Held()
     private val panHeld = Held()
     private val shuffleHeld = Held()
@@ -260,16 +157,18 @@ internal class WalPlayer(
         get() = volumeHeld.read(state.volume, ::fromPercent)
         set(value) {
             val v = value.coerceIn(0, SKIN_TOP)
-            volumeHeld.write(v, toPercent(v), state.volume)
-            merge { it.volume = v }
+            val percent = toPercent(v)
+            volumeHeld.write(v, percent, state.volume)
+            player.setVolume(percent)
         }
 
-    private val bands = IntArray(EQ_BANDS)
+    private val bands = IntArray(PlayerState.EQ_BANDS)
 
     /** The bands on the skin's scale; the same array each time, filled on every read. */
     override val eqBands: IntArray
         get() {
-            for (i in bands.indices) bands[i] = bandsHeld[i].read(state.eqBands.getOrElse(i) { EqOps.CENTER }, ::fromEq)
+            val now = state.eqBands
+            for (i in bands.indices) bands[i] = bandsHeld[i].read(now.getOrElse(i) { EqOps.CENTER }, ::fromEq)
             return bands
         }
 
@@ -277,10 +176,10 @@ internal class WalPlayer(
         band: Int,
         value: Int,
     ) {
-        if (band !in 0 until EQ_BANDS) return
+        if (band !in 0 until PlayerState.EQ_BANDS) return
         val v = value.coerceIn(0, SKIN_TOP)
         bandsHeld[band].write(v, toEq(v), state.eqBands.getOrElse(band) { EqOps.CENTER })
-        merge { it.bands[band] = v }
+        player.setEqBand(band, toEq(v))
     }
 
     /** The preamp on the skin's scale; near 0 dB it snaps to 0 dB, as the classic window's does. */
@@ -289,7 +188,7 @@ internal class WalPlayer(
         set(value) {
             val v = value.coerceIn(0, SKIN_TOP).let { if (SliderMath.stickyPreamp(toEq(it)) == EqOps.CENTER) SKIN_FLAT else it }
             preampHeld.write(v, toEq(v), state.preamp)
-            merge { it.preamp = v }
+            player.setPreamp(toEq(v))
         }
 
     /**
@@ -301,264 +200,84 @@ internal class WalPlayer(
         set(value) {
             val v = value.coerceIn(-PAN_REACH, PAN_REACH).let { if (SliderMath.stickyBalance(toBalance(it)) == 0) 0 else it }
             panHeld.write(v, toBalance(v), state.balance)
-            merge { it.pan = v }
+            player.setBalance(toBalance(v))
         }
 
     override var shuffle: Boolean
         get() = shuffleHeld.read(state.shuffle.bit) { it } == 1
         set(value) {
             shuffleHeld.write(value.bit, value.bit, state.shuffle.bit)
-            merge { it.shuffle = value }
+            player.setShuffle(value)
         }
 
     override var repeat: Boolean
         get() = repeatHeld.read(state.repeat.bit) { it } == 1
         set(value) {
             repeatHeld.write(value.bit, value.bit, state.repeat.bit)
-            merge { it.repeat = value }
+            player.setRepeat(value)
         }
 
     override var eqEnabled: Boolean
         get() = eqOnHeld.read(state.eqOn.bit) { it } == 1
         set(value) {
             eqOnHeld.write(value.bit, value.bit, state.eqOn.bit)
-            merge { it.eqOn = value }
+            player.setEqEnabled(value)
         }
 
-    /** The player has no crossfade: it reads off, and turning it on does nothing. */
+    /** Read off the player; turning it on does nothing where the player has no crossfade. */
     override var crossfade: Boolean
-        get() = false
-        set(value) = Unit
-
-    /** Merged writes on their way to main; guarded by itself. */
-    private class Pending {
-        var volume: Int? = null
-        val bands = arrayOfNulls<Int>(EQ_BANDS)
-        var preamp: Int? = null
-        var pan: Int? = null
-        var shuffle: Boolean? = null
-        var repeat: Boolean? = null
-        var eqOn: Boolean? = null
-
-        /** Whether a task to apply these is posted and has not run yet. */
-        var posted = false
-
-        /** These values, leaving this one empty. */
-        fun take(): Pending =
-            Pending().also { out ->
-                out.volume = volume
-                bands.copyInto(out.bands)
-                out.preamp = preamp
-                out.pan = pan
-                out.shuffle = shuffle
-                out.repeat = repeat
-                out.eqOn = eqOn
-                volume = null
-                bands.fill(null)
-                preamp = null
-                pan = null
-                shuffle = null
-                repeat = null
-                eqOn = null
-                posted = false
-            }
-    }
-
-    private val pending = Pending()
-
-    /** Records a merged write, and posts the task that applies them unless one waits already. */
-    private fun merge(change: (Pending) -> Unit) {
-        val first =
-            synchronized(pending) {
-                change(pending)
-                val was = pending.posted
-                pending.posted = true
-                !was
-            }
-        if (first) onMain(::applyMerged)
-    }
-
-    /** Applies the merged writes, on main. A switch is pressed only when the state differs from what the skin asked. */
-    private fun applyMerged() {
-        val p = synchronized(pending) { pending.take() }
-        p.volume?.let { controls.setVolume(it / SKIN_TOP.toFloat()) }
-        p.bands.forEachIndexed { band, v -> v?.let { controls.setBand(band, toEq(it)) } }
-        p.preamp?.let { controls.setPreamp(toEq(it)) }
-        p.pan?.let { controls.setBalance(toBalance(it)) }
-        p.eqOn?.let { if (state.eqOn != it) controls.toggleEq() }
-        p.shuffle?.let { if (state.shuffle != it) controls.toggleShuffle() }
-        p.repeat?.let { if (state.repeat != it) controls.toggleRepeat() }
-    }
-
-    private fun onMain(task: () -> Unit) = post(Runnable(task))
+        get() = player.capabilities.crossfade && state.crossfade
+        set(value) = player.setCrossfade(value)
 
     // ---- the transport and the playlist ----------------------------------------------------
 
     /** Plays, or on an empty playlist opens the file picker, as the classic Play does. */
-    override fun play() = onMain { playOrOpen(state.playlist, controls::play) { openFile(true) } }
+    override fun play() = player.play()
 
-    override fun pause() = onMain { controls.pause() }
+    override fun pause() = player.pause()
 
-    override fun stop() = onMain { controls.stop() }
+    override fun stop() = player.stop()
 
-    override fun next() = onMain { controls.next() }
+    override fun next() = player.next()
 
-    override fun previous() = onMain { controls.previous() }
+    override fun previous() = player.previous()
 
-    override fun eject() = onMain { openFile(false) }
+    override fun eject() = player.requestOpen(andPlay = false)
 
-    /**
-     * Seeks within the current song. A station, a song of unknown length and a stopped player do
-     * not seek, as on the classic seek bar. The place reads as [ms] until the backend gets there.
-     */
-    override fun seekTo(ms: Int) {
-        val track = state.currentTrack ?: return
-        val length = lengthOf(track)
-        val transport = state.transport
-        if (length <= 0 || transport == Transport.Stopped) return
-        val target = ms.coerceIn(0, length).toLong()
-        val now = clock()
-        observe(transport, now)
-        seekHold = SeekHold(track.id, target, now, lastRaw, rawAt)
-        shownFor = track.id
-        shownMs = target
-        onMain { if (state.currentTrack?.id == track.id) controls.seekTo(target / length.toFloat()) }
-    }
+    /** Seeks within the current song; see [SkinPlayer.seekTo]. */
+    override fun seekTo(ms: Int) = player.seekTo(ms.toLong())
 
-    /**
-     * The rows a skin's playlist shows, and what their text came from: the playlist, the row format,
-     * what the library knows of the rows and which sources are reachable, each compared by identity,
-     * and the row being connected to.
-     */
-    private class Rows(
-        val playlist: List<Track>,
-        val from: List<Any?>,
-        val connectingAt: Int,
-        val tracks: List<SkinTrack>,
-    ) {
-        fun madeFrom(
-            from: List<Any?>,
-            connectingAt: Int,
-        ): Boolean = connectingAt == this.connectingAt && from.indices.all { from[it] === this.from[it] }
-    }
+    /** The playlist's rows as the skin shows them, and the entries they were made from. */
+    private var rowsOf: List<Entry>? = null
+    private var rows: List<SkinTrack> = emptyList()
 
-    private var rows: Rows? = null
-
-    /** The playlist's rows as it writes them; the same list until something their text comes from changes. */
+    /** The playlist's rows as it writes them; the same list until the entries change. */
     override val tracks: List<SkinTrack>
         get() {
-            val playlist = state.playlist
-            val from = listOf(playlist, state.rowFormat, state.rowInfo, state.reach)
-            val connectingAt = if (state.connecting) state.currentIndex else -1
-            rows?.takeIf { it.madeFrom(from, connectingAt) }?.let { return it.tracks }
-            val tracks = playlist.mapIndexed { i, track -> SkinTrack(state.rowLabel(track, i), lengthOf(track)) }
-            rows = Rows(playlist, from, connectingAt, tracks)
-            return tracks
+            val entries = state.playlist
+            if (entries !== rowsOf) {
+                rows = entries.map { SkinTrack(it.title, toInt(it.lengthMs)) }
+                rowsOf = entries
+            }
+            return rows
         }
 
     override val trackIndex: Int get() = state.currentIndex.coerceIn(0, maxOf(0, state.playlist.size - 1))
 
-    /**
-     * Plays row [index] of the playlist the skin last read. On main the row is checked by its id
-     * and address: when it still sits at [index] that row plays, and when it moved, the row with
-     * the same id and address nearest [index], so a song queued twice plays the copy picked.
-     */
-    override fun playTrack(index: Int) {
-        val track = (rows?.playlist ?: state.playlist).getOrNull(index) ?: return
-        onMain {
-            val playlist = state.playlist
-            val at =
-                if (playlist.getOrNull(index)?.isRow(track) == true) {
-                    index
-                } else {
-                    playlist.indices.filter { playlist[it].isRow(track) }.minByOrNull { abs(it - index) }
-                }
-            if (at != null) controls.playTrack(at)
-        }
-    }
-
-    private fun Track.isRow(track: Track) = id == track.id && uri == track.uri
+    override fun playTrack(index: Int) = player.playTrack(index)
 
     // ---- the spectrum, the waveform and the VU ------------------------------------------------
 
-    private var columns: SpectrumColumns? = null
-    private val levels = FloatArray(SPECTRUM_BANDS)
-    private val wave = FloatArray(WAVE_SAMPLES)
-    private var meter = 0 to 0
-    private var steppedAt = NEVER
+    override fun spectrum(): FloatArray = player.spectrum()
 
-    /** [SPECTRUM_BANDS] levels 0..1 from the audio being heard, or empty while nothing plays or there is no tap. */
-    override fun spectrum(): FloatArray = if (step()) levels else EMPTY
+    override fun waveform(): FloatArray = player.waveform()
 
-    /**
-     * The newest [WAVE_SAMPLES] samples of the audio being heard, -1..1, or empty while nothing
-     * plays or there is no tap; silence while the tap has nothing to give.
-     */
-    override fun waveform(): FloatArray = if (step()) wave else EMPTY
-
-    /** The loudest sample of the window being heard, 0..255, the same for both sides. */
-    override fun vu(): Pair<Int, Int> = if (step()) meter else SILENT
-
-    /**
-     * Reads the tap again once [FRAME_MS] or more have passed, with the time that really went by,
-     * and keeps the last read in between. The tap is taken the first time there is one. False while
-     * nothing plays or there is no tap.
-     */
-    private fun step(): Boolean {
-        if (state.transport != Transport.Playing) return false
-        val c =
-            columns ?: tapOf()?.let { SpectrumColumns(it, FRAME_MS, SPECTRUM_BANDS, WAVE_SAMPLES) }?.also { columns = it }
-                ?: return false
-        val now = clock()
-        val elapsed = if (steppedAt == NEVER) FRAME_MS else now - steppedAt
-        if (elapsed >= FRAME_MS) {
-            steppedAt = now
-            if (c.read(elapsed)) {
-                for (i in levels.indices) levels[i] = (c.values[i] / SpectrumPhysics.MAX).coerceIn(0f, 1f)
-                c.wave.copyInto(wave)
-            } else {
-                levels.fill(0f)
-                wave.fill(0f)
-            }
-            val level = (c.peak * SKIN_TOP).roundToInt().coerceIn(0, SKIN_TOP)
-            if (level != meter.first) meter = level to level
-        }
-        return true
-    }
+    override fun vu(): Pair<Int, Int> = player.vu()
 
     // ---- the wake ----------------------------------------------------------------------------
 
-    /** Every field of the state the getters read, as one value. */
-    private data class Watched(
-        val transport: Transport,
-        val timeSec: Int,
-        val index: Int,
-        val playlist: List<Track>,
-        val rows: List<Any?>,
-        val stream: List<Int?>,
-        val volume: Int,
-        val switches: List<Boolean>,
-        val bands: List<Int>,
-        val preamp: Int,
-    )
-
-    /**
-     * What the skin shows of the player, as a value that changes when the state behind any getter
-     * changes; read on main to wake the engine.
-     */
-    fun watched(): Any =
-        Watched(
-            transport = state.transport,
-            timeSec = state.currentTimeSec,
-            index = state.currentIndex,
-            playlist = state.playlist,
-            rows = listOf(state.rowFormat, state.rowInfo, state.reach, state.connecting),
-            stream = listOf(state.streamBitrateKbps, state.streamSampleRateKhz, state.streamChannels),
-            volume = state.volume,
-            switches = listOf(state.shuffle, state.repeat, state.eqOn),
-            bands = state.eqBands.toList(),
-            preamp = state.preamp,
-        )
+    /** What the skin shows of the player, as a value that changes when it does; see [AndampSkinPlayer.watched]. */
+    fun watched(): Any = (player as? AndampSkinPlayer)?.watched() ?: state
 
     internal companion object {
         /** How long a written value outlasts a state that still shows the old one. */
@@ -569,21 +288,6 @@ internal class WalPlayer(
          * volume step at 15 steps, and the rounding on both sides.
          */
         private const val VOLUME_SLACK = 4
-
-        /** How far the place may run past the backend's last report. */
-        private const val MAX_LEAD_MS = 1_000L
-
-        /** How near the backend's place must come to a seek's target for the seek to count as done. */
-        private const val SEEK_NEAR_MS = 1_000L
-
-        /** How often the spectrum and the waveform are read at most. */
-        private const val FRAME_MS = 16L
-
-        /** Winamp's vis has 75 bands. */
-        private const val SPECTRUM_BANDS = 75
-
-        /** Winamp hands a visualizer 576 samples of the waveform. */
-        private const val WAVE_SAMPLES = 576
 
         /** The top of the skin's scale for the volume, the equalizer and the VU. */
         private const val SKIN_TOP = 255
@@ -599,13 +303,10 @@ internal class WalPlayer(
         private const val EQ_TOP = 63
 
         private const val PERCENT = 100
-        private const val EQ_BANDS = WinampState.EQ_BANDS
-        private const val NOT_SHOWN = -1L
-        private const val NEVER = Long.MIN_VALUE
-        private val EMPTY = FloatArray(0)
-        private val SILENT = 0 to 0
 
         private val Boolean.bit: Int get() = if (this) 1 else 0
+
+        private fun toInt(ms: Long): Int = ms.coerceIn(0, Int.MAX_VALUE.toLong()).toInt()
 
         /** The state's volume, 0..100, on the skin's 0..255. */
         fun fromPercent(percent: Int): Int = (percent * SKIN_TOP / PERCENT.toFloat()).roundToInt()
@@ -640,8 +341,5 @@ internal class WalPlayer(
 
         /** A skin balance as the state shows it, -100..100. */
         fun toBalance(pan: Int): Int = (pan * BALANCE_TOP / PAN_REACH.toFloat()).roundToInt()
-
-        private fun lengthOf(track: Track?): Int =
-            if (track == null || track.isStream) 0 else track.durationMs.coerceIn(0, Int.MAX_VALUE.toLong()).toInt()
     }
 }

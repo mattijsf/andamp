@@ -269,7 +269,8 @@ class WalPlayerTest {
         assertEquals("one task on main", 1, posted.size)
         drain()
 
-        assertEquals(listOf("setVolume(${110 / 255f})"), controls.calls)
+        // the player takes whole percents
+        assertEquals(listOf("setVolume(${WalPlayer.toPercent(110) / 100f})"), controls.calls)
     }
 
     @Test
@@ -309,7 +310,7 @@ class WalPlayerTest {
 
         assertEquals(start + 20, player.volume)
         drain()
-        assertEquals(listOf("setVolume(${(start + 20) / 255f})"), controls.calls)
+        assertEquals(listOf("setVolume(${WalPlayer.toPercent(start + 20) / 100f})"), controls.calls)
         controls.apply()
         assertEquals(start + 20, player.volume)
     }
