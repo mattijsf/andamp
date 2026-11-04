@@ -12,11 +12,11 @@ import kotlin.math.ceil
  * scrolled to, by a script's setScroll or by buttons with the `cb_prevpage`/`cb_nextpage` actions.
  * Winamp Modern's options menu in the config drawer is one.
  */
-class ComponentBucket(
+internal class ComponentBucket(
     rt: SkinRuntime,
 ) : Group(rt, "componentbucket") {
     override val className: String get() = "ComponentBucket"
-    var windowType: String? = null
+    internal var windowType: String? = null
         private set
     private var vertical = false
     private var spacing = 0
@@ -24,7 +24,7 @@ class ComponentBucket(
     private var rightMargin = 0
 
     /** How far the entries are scrolled, in pixels along the strip. */
-    var scroll = 0
+    internal var scroll = 0
         private set
 
     override fun setParam(
@@ -44,7 +44,7 @@ class ComponentBucket(
     }
 
     /** Puts [entries] in the strip, from its start. */
-    fun fill(entries: List<Group>) {
+    internal fun fill(entries: List<Group>) {
         for (e in entries) addChild(e)
         place()
     }
@@ -76,7 +76,7 @@ class ComponentBucket(
         rt.relayout()
     }
 
-    fun scrollTo(to: Int) {
+    internal fun scrollTo(to: Int) {
         val s = to.coerceIn(0, maxScroll())
         if (s == scroll) return
         scroll = s
@@ -84,7 +84,7 @@ class ComponentBucket(
     }
 
     /** One page on ([direction] 1) or back (-1): as many whole entries as the strip shows. */
-    fun page(direction: Int) {
+    internal fun page(direction: Int) {
         val one = children.firstOrNull()?.let { length(it) + spacing }?.takeIf { it > 0 } ?: return
         val shown = ceil(viewLength().toDouble() / one).toInt().coerceAtLeast(1)
         scrollTo(scroll + direction * shown * one)
@@ -115,7 +115,7 @@ class ComponentBucket(
  * are shown in one, a script setting `groupid` when an entry of the options menu is tapped.
  * A page made once is kept for when it is shown again.
  */
-class GroupXFade(
+internal class GroupXFade(
     rt: SkinRuntime,
 ) : Group(rt, "groupxfade") {
     private var speed = 0.25

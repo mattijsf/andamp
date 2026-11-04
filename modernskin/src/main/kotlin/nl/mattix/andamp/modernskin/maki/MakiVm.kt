@@ -5,17 +5,17 @@ import java.util.BitSet
 import java.util.IdentityHashMap
 
 /** What the VM needs from the player: new objects and a log. */
-interface MakiHost {
+internal interface MakiHost {
     /** `new Timer`, `new PopupMenu`, and so on. Null when the class cannot be made here. */
-    fun create(guid: String): MakiObject?
+    public fun create(guid: String): MakiObject?
 
-    fun log(message: String)
+    public fun log(message: String)
 
     /**
      * Fires an event on every script listening to it; a script calling `x.onSomething()` does this
      * and gets the handler's return value (Wasabi SDK makiapi: the event's result goes back).
      */
-    fun dispatchEvent(
+    public fun dispatchEvent(
         target: MakiObject,
         event: String,
         args: List<Value>,
@@ -26,12 +26,12 @@ interface MakiHost {
  * One loaded script: its program, its variable cells and the bindings that turn player events into
  * runs of the bytecode. Variables of type System are filled with [system] when the script is made.
  */
-class Script(
-    val program: MakiProgram,
-    val system: MakiObject,
+internal class Script(
+    internal val program: MakiProgram,
+    internal val system: MakiObject,
     private val host: MakiHost,
 ) {
-    val cells: List<Cell> =
+    internal val cells: List<Cell> =
         program.variables.map { decl ->
             val initial =
                 when {
@@ -54,10 +54,10 @@ class Script(
         program.bindings.groupBy { program.methods[it.method].name }
 
     /** Whether a handler here is bound to [target]: a variable holding it, or a class it belongs to. */
-    fun listensTo(target: MakiObject): Boolean = program.bindings.any { b -> binds(b, target) }
+    internal fun listensTo(target: MakiObject): Boolean = program.bindings.any { b -> binds(b, target) }
 
     /** Whether a handler here is bound to [target] for one of [events]. */
-    fun listensTo(
+    internal fun listensTo(
         target: MakiObject,
         events: Set<String>,
     ): Boolean = program.bindings.any { b -> program.methods[b.method].name in events && binds(b, target) }
@@ -74,13 +74,13 @@ class Script(
      * onRightButtonDown or onRightButtonUp, and also onRightClick when [isButton]. Read from the
      * bytecode (see [reachFrom]); no script runs.
      */
-    fun rightClickMenu(
+    internal fun rightClickMenu(
         target: MakiObject,
         isButton: Boolean,
     ): Boolean = reachesMenu(target, rightClickEvents(isButton))
 
     /** Whether a handler here for one of [events] bound to [target] can reach a popup menu, read from the bytecode. */
-    fun reachesMenu(
+    internal fun reachesMenu(
         target: MakiObject,
         events: Set<String>,
     ): Boolean = !disabled && handlerStarts(target, events).any { reach(it).popsMenu }
@@ -89,7 +89,7 @@ class Script(
      * The events the handlers here for [events] bound to [target] fire by calling them:
      * `x.onLeftClick()`, or a Button's `x.leftClick()`.
      */
-    fun eventsCalled(
+    internal fun eventsCalled(
         target: MakiObject,
         events: Set<String>,
     ): Set<String> = if (disabled) emptySet() else handlerStarts(target, events).flatMapTo(HashSet()) { reach(it).calls }
@@ -99,7 +99,7 @@ class Script(
      * (`getMousePosX`, `getMousePosY`), read from the bytecode: MMD3's knobs turn with the mouse
      * that way while the button is down, from a timer the press starts.
      */
-    fun readsMouse(
+    internal fun readsMouse(
         target: MakiObject,
         events: Set<String>,
     ): Boolean = !disabled && handlerStarts(target, events).any { reach(it).readsMouse }
@@ -211,7 +211,7 @@ class Script(
     }
 
     /** The events this script listens to, for a quick check before dispatching: none once it is [disabled]. */
-    val events: Set<String> get() = if (disabled) emptySet() else bindingsByEvent.keys
+    internal val events: Set<String> get() = if (disabled) emptySet() else bindingsByEvent.keys
 
     /**
      * Steps the script may still run before the host's next [refill] (each frame): a script that
@@ -219,7 +219,7 @@ class Script(
      */
     internal var budget = STEPS_PER_FRAME
 
-    fun refill() {
+    internal fun refill() {
         budget = STEPS_PER_FRAME
     }
 
@@ -240,10 +240,10 @@ class Script(
     }
 
     /** Steps run since the last [refill]. */
-    val stepsSinceRefill: Int get() = STEPS_PER_FRAME - budget
+    internal val stepsSinceRefill: Int get() = STEPS_PER_FRAME - budget
 
     /** A script that failed [MAX_FAILURES] times is switched off: its handlers no longer run. */
-    var disabled = false
+    internal var disabled = false
         private set
     private var failures = 0
 
@@ -251,7 +251,7 @@ class Script(
      * Fires [event] on [target]: every binding whose variable holds the target runs. Returns the
      * number of handlers that ran.
      */
-    fun dispatch(
+    internal fun dispatch(
         target: MakiObject,
         event: String,
         args: List<Value>,
@@ -287,7 +287,7 @@ class Script(
     }
 
     /** What the last handler this script ran returned. */
-    var lastReturn: Value = Value.Null
+    internal var lastReturn: Value = Value.Null
 
     /** The member variables this script keeps on objects (`EQ_p12.setTo`), by object and lowercase name. */
     private val members = IdentityHashMap<MakiObject, HashMap<String, Cell>>()
@@ -318,7 +318,7 @@ class Script(
     }
 
     @Suppress("TooGenericExceptionCaught") // whatever a handler throws is logged and ends that run, not the player
-    fun run(
+    internal fun run(
         start: Int,
         args: List<Value>,
         what: String,
@@ -348,7 +348,7 @@ class Script(
         return Value.Null
     }
 
-    companion object {
+    internal companion object {
         private const val STEPS_PER_FRAME = 4_000_000
         private const val MAX_FAILURES = 20
         private const val MAX_MEMBERS = 65_536
@@ -363,11 +363,11 @@ class Script(
         private val RIGHT_BUTTON_AND_CLICK = RIGHT_BUTTON + "onrightclick"
 
         /** The events a right click fires: the right button going down and up, and on a Button also onRightClick. */
-        fun rightClickEvents(isButton: Boolean): Set<String> = if (isButton) RIGHT_BUTTON_AND_CLICK else RIGHT_BUTTON
+        internal fun rightClickEvents(isButton: Boolean): Set<String> = if (isButton) RIGHT_BUTTON_AND_CLICK else RIGHT_BUTTON
     }
 }
 
-class MakiRuntimeException(
+internal class MakiRuntimeException(
     message: String,
 ) : Exception(message)
 

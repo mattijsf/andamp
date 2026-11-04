@@ -8,7 +8,7 @@ package nl.mattix.andamp.modernskin.skin
  * - [layoutPasses]: layout passes run;
  * - [shapesWorkedOut]: window shapes worked out.
  */
-data class EngineStats(
+public data class EngineStats(
     val scriptSteps: Long = 0,
     val timerFires: Long = 0,
     val layoutPasses: Long = 0,

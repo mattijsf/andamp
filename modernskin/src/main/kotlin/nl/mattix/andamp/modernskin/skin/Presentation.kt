@@ -9,7 +9,7 @@ package nl.mattix.andamp.modernskin.skin
  * ([SkinHost.hostAction]) and shows the library, the visualizer and video itself, so the skin's
  * frames for them stay shut.
  */
-data class SkinSetup(
+public data class SkinSetup(
     val skinName: String = "",
     val haveLibrary: Boolean = true,
     val hostActions: Boolean = false,
@@ -24,7 +24,7 @@ data class SkinSetup(
  * - [stretchLast]: whether the last docked list window takes the height left under the others;
  * - [touchSlop]: how far beside an object a finger may land and still mean it.
  */
-data class Presentation(
+public data class Presentation(
     val viewSize: Pair<Int, Int>? = null,
     val viewport: Pair<Int, Int> = 1080 to 1920,
     val columns: Int = 1,
@@ -39,7 +39,7 @@ data class Presentation(
  * - [strings], [ints]: its scripts' private and public values (setPrivateString, setPublicInt and
  *   the like), by lowercase "section/item" or "public/item".
  */
-data class SavedSettings(
+public data class SavedSettings(
     val attributes: Map<String, String> = emptyMap(),
     val strings: Map<String, String> = emptyMap(),
     val ints: Map<String, Int> = emptyMap(),

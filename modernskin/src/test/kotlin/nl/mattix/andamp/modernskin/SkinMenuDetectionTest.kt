@@ -165,7 +165,7 @@ class SkinMenuDetectionTest {
                 bindings = handlers.map { h -> Binding(h.variable, METHODS.indexOfFirst { it.name == h.event }, h.start) },
                 code = code.mapIndexed { i, (op, arg) -> Op(op, arg, if (op == Opcodes.CALL && arg == HEARD) 0 else -1, i) },
             )
-        return Script(program, recorder, rt).also { rt.scripts += it }
+        return Script(program, recorder, rt.makiHost).also { rt.scripts += it }
     }
 
     @Test

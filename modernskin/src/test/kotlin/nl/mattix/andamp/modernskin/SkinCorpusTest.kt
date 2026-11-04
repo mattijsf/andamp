@@ -55,7 +55,7 @@ class SkinCorpusTest {
 }
 
 /** The object tree of a group, for reading a skin's structure in a test log. */
-fun dump(
+internal fun dump(
     o: nl.mattix.andamp.modernskin.skin.GuiObject,
     rt: SkinRuntime,
     depth: Int = 0,

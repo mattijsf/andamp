@@ -7,9 +7,9 @@ package nl.mattix.andamp.modernskin.skin
  * never changes after, so any thread may read it. Two are equal when they list the same entries,
  * whatever their versions.
  */
-class SkinOptions(
-    val version: Int,
-    val entries: List<Entry>,
+public class SkinOptions(
+    public val version: Int,
+    public val entries: List<Entry>,
 ) {
     override fun equals(other: Any?): Boolean = other is SkinOptions && other.entries == entries
 
@@ -17,38 +17,40 @@ class SkinOptions(
 
     override fun toString(): String = "SkinOptions(version=$version, entries=$entries)"
 
-    sealed interface Entry
+    /** One line of the skin's options menu. */
+    public sealed interface Entry
 
     /**
      * A checkable option; [checked] as Winamp ticks it: the value read as a number is not 0.
      * [radio] when the skin's own page shows it as one of a set of radio buttons, which Winamp's
      * menu does not tell apart (see [SkinRuntime.skinOptions]).
      */
-    data class Toggle(
+    public data class Toggle(
         val key: Key,
         val text: String,
         val checked: Boolean,
         val radio: Boolean = false,
     ) : Entry
 
-    data object Separator : Entry
+    /** A line between groups of options. */
+    public data object Separator : Entry
 
     /** An attribute whose value is another item's GUID; [text] is the attribute's name. */
-    data class Submenu(
+    public data class Submenu(
         val text: String,
         val entries: List<Entry>,
     ) : Entry
 
     /** An option by item GUID and lowercased attribute name; stays valid across snapshots. */
-    data class Key(
+    public data class Key(
         val item: String,
         val attribute: String,
     )
 
-    companion object {
+    public companion object {
         /** The Config item whose attributes Winamp lists in its Options menu (CUSTOM_OPTIONSMENU_ITEMS). */
-        const val OPTIONS_MENU = "{1828D28F-78DD-4647-8532-EBA504B8FC04}"
+        internal const val OPTIONS_MENU = "{1828D28F-78DD-4647-8532-EBA504B8FC04}"
 
-        val EMPTY = SkinOptions(0, emptyList())
+        public val EMPTY: SkinOptions = SkinOptions(0, emptyList())
     }
 }

@@ -8,15 +8,15 @@ import nl.mattix.andamp.modernskin.maki.StdApi
 import nl.mattix.andamp.modernskin.maki.Value
 
 /** `new Timer`: fires `onTimer` every `delay` milliseconds while started. */
-class Timer(
+internal class Timer(
     private val rt: SkinRuntime,
 ) : MakiObject {
     override val makiGuid: String get() = StdApi.guidOf("Timer") ?: ""
-    var delay = 0
-    var running = false
-    var nextAt = 0L
+    internal var delay = 0
+    internal var running = false
+    internal var nextAt = 0L
 
-    fun start() {
+    internal fun start() {
         if (delay <= 0) return
         running = true
         nextAt = rt.now() + delay
@@ -24,7 +24,7 @@ class Timer(
         if (this !in rt.timers) rt.timers.add(this)
     }
 
-    fun stop() {
+    internal fun stop() {
         running = false
         rt.timers.remove(this)
     }
@@ -80,7 +80,7 @@ class Timer(
  * `new PopupMenu`: commands, separators and submenus the script adds. Popping it up asks the host
  * through [SkinRuntime.menuChoice] and answers the picked command's id, or 0.
  */
-class PopupMenu(
+internal class PopupMenu(
     private val rt: SkinRuntime,
 ) : MakiObject {
     override val makiGuid: String get() = StdApi.guidOf("PopupMenu") ?: ""
@@ -108,7 +108,7 @@ class PopupMenu(
      * The menu as the host shows it, as it stands now. It holds at most [MAX_ITEMS] items in all and
      * [MAX_DEPTH] levels of submenus, so a menu that holds itself ends.
      */
-    fun toMenu(): SkinMenu = snapshot(0, intArrayOf(MAX_ITEMS))
+    internal fun toMenu(): SkinMenu = snapshot(0, intArrayOf(MAX_ITEMS))
 
     /** This menu's items while [left] (the items still allowed in the whole tree) lasts. */
     private fun snapshot(
@@ -229,7 +229,7 @@ class PopupMenu(
 }
 
 /** `new Map`: reads values from a greyscale bitmap, as knob skins use to turn a touch into a level. */
-class MakiMap(
+internal class MakiMap(
     private val rt: SkinRuntime,
 ) : MakiObject {
     override val makiGuid: String get() = StdApi.guidOf("Map") ?: ""
@@ -305,7 +305,7 @@ class MakiMap(
 }
 
 /** `new List`: a plain list of values. */
-class MakiList : MakiObject {
+internal class MakiList : MakiObject {
     override val makiGuid: String get() = StdApi.guidOf("List") ?: ""
     private val items = ArrayList<Value>()
 
@@ -370,7 +370,7 @@ class MakiList : MakiObject {
 }
 
 /** Anything else a script makes: every call answers nothing, so the script keeps running. */
-class Stub(
+internal class Stub(
     override val makiGuid: String,
     private val name: String,
 ) : LenientObject {
@@ -401,7 +401,7 @@ class Stub(
  * attribute is made with a default, and the same item and attribute come back for the same names,
  * so every script that changes one is heard by the others through `onDataChanged`.
  */
-class ConfigObj(
+internal class ConfigObj(
     private val rt: SkinRuntime,
 ) : MakiObject {
     override val makiGuid: String get() = StdApi.guidOf("Config") ?: ""
@@ -424,16 +424,16 @@ class ConfigObj(
         }
 }
 
-class ConfigItemObj(
+internal class ConfigItemObj(
     private val rt: SkinRuntime,
-    val name: String,
+    internal val name: String,
     guid: String?,
 ) : MakiObject {
     override val makiGuid: String get() = StdApi.guidOf("ConfigItem") ?: ""
 
-    var guid: String? = guid
+    internal var guid: String? = guid
         internal set
-    val attributes = LinkedHashMap<String, ConfigAttributeObj>()
+    internal val attributes = LinkedHashMap<String, ConfigAttributeObj>()
 
     override fun makiCall(
         name: String,
@@ -486,18 +486,18 @@ class ConfigItemObj(
 }
 
 /** A skin setting; a value in [SkinRuntime.storedSettings] wins over the script's default, as Winamp's studio.xnf does. */
-class ConfigAttributeObj(
+internal class ConfigAttributeObj(
     private val rt: SkinRuntime,
     private val item: ConfigItemObj,
-    val name: String,
+    internal val name: String,
     default: String,
 ) : MakiObject {
     override val makiGuid: String get() = StdApi.guidOf("ConfigAttribute") ?: ""
-    var data: String = rt.storedSettings[name] ?: default
+    internal var data: String = rt.storedSettings[name] ?: default
         private set
 
     /** Whether a script made this attribute with newAttribute; one only read with getAttribute is not. */
-    var made = false
+    internal var made = false
         private set
 
     /** Marks it made by newAttribute with [default]; a stored value still wins over it. */
@@ -567,7 +567,7 @@ class ConfigAttributeObj(
 }
 
 /** Winamp's own settings, grouped by GUID; unknown values read as zero, false or empty. */
-class WinampConfigObj(
+internal class WinampConfigObj(
     private val rt: SkinRuntime,
 ) : MakiObject {
     override val makiGuid: String get() = StdApi.guidOf("WinampConfig") ?: ""
@@ -585,7 +585,7 @@ class WinampConfigObj(
         }
 }
 
-class WinampConfigGroupObj : MakiObject {
+internal class WinampConfigGroupObj : MakiObject {
     override val makiGuid: String get() = StdApi.guidOf("WinampConfigGroup") ?: ""
     private val values = HashMap<String, String>()
 
@@ -632,7 +632,7 @@ class WinampConfigGroupObj : MakiObject {
  * made for (Winamp3x and Winamp2000SP4 put "Winamp " + getVersionNumberString() in their title
  * bars, and turn themselves off for "5.8").
  */
-class ApplicationObj : MakiObject {
+internal class ApplicationObj : MakiObject {
     override val makiGuid: String get() = StdApi.guidOf("Application") ?: ""
 
     override fun makiCall(

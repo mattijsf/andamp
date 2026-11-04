@@ -8,7 +8,7 @@ package nl.mattix.andamp.modernskin.skin
  * the left and List on the right; a window without commands shows the field alone (measured
  * against Winamp 5.666).
  */
-class LayoutStatus(
+internal class LayoutStatus(
     rt: SkinRuntime,
 ) : GuiObject(rt, "layoutstatus") {
     override val className: String get() = "LayoutStatus"

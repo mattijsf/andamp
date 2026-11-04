@@ -14,13 +14,13 @@ package nl.mattix.andamp.modernskin.skin
  * A tap selects a row, a second tap on it (or the skin's Switch button) switches to it, and a
  * drag scrolls.
  */
-class ColorThemeList(
+internal class ColorThemeList(
     rt: SkinRuntime,
 ) : GuiObject(rt, "colorthemes:list") {
     override val className: String get() = "GuiObject"
 
     /** The highlighted row's theme: the one in use until the user taps another. */
-    var selected: String? = null
+    internal var selected: String? = null
         private set
 
     private var header = true
@@ -282,13 +282,13 @@ class ColorThemeList(
         rt.invalidate()
     }
 
-    fun switchToSelected() {
+    internal fun switchToSelected() {
         selected?.let { rt.selectGammaSet(it) }
         shownFor = rt.currentGammaSet
     }
 
     /** Previous and next switch straight to the neighboring theme, with wraparound. */
-    fun step(delta: Int) {
+    internal fun step(delta: Int) {
         val all = names
         if (all.isEmpty()) return
         val index = all.indexOfFirst { it.equals(rt.currentGammaSet, ignoreCase = true) }

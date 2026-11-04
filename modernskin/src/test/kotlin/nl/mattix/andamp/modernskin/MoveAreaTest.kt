@@ -133,7 +133,7 @@ class MoveAreaTest {
                 bindings = bindings,
                 code = code,
             )
-        rt.scripts += Script(program, recorder, rt)
+        rt.scripts += Script(program, recorder, rt.makiHost)
     }
 
     @Test

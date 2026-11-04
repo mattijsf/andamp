@@ -20,13 +20,13 @@ import kotlin.math.tan
  * [started] once its onScriptLoaded ran: xui parameters wait for that.
  */
 @Suppress("TooManyFunctions") // the System object's script API, method by method
-class SystemObject(
+internal class SystemObject(
     private val rt: SkinRuntime,
-    val group: Group?,
-    val param: String,
-    val scriptId: String,
+    internal val group: Group?,
+    internal val param: String,
+    internal val scriptId: String,
 ) : MakiObject {
-    var started = false
+    internal var started = false
 
     override val makiGuid: String get() = StdApi.guidOf("System") ?: ""
 

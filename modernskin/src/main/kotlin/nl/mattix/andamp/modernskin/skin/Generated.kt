@@ -11,11 +11,11 @@ import java.util.zip.Deflater
  * The bitmap element is given a made-up file name that holds everything needed, and [read]
  * answers it with PNG bytes, so every renderer loads it like any skin file.
  */
-object GeneratedImages {
+internal object GeneratedImages {
     private const val SOLID = "\$solid/"
 
     /** The file name for a `$solid` element. */
-    fun solidName(
+    internal fun solidName(
         w: Int?,
         h: Int?,
         color: String?,
@@ -32,7 +32,7 @@ object GeneratedImages {
     }
 
     /** PNG bytes for a made-up name, or null for a real file. */
-    fun read(path: String): ByteArray? {
+    internal fun read(path: String): ByteArray? {
         if (!path.startsWith(SOLID)) return null
         val (spec, size) =
             path
@@ -93,7 +93,7 @@ object GeneratedImages {
 }
 
 /** [files] that also answer [GeneratedImages]' made-up names. */
-class WithGeneratedImages(
+public class WithGeneratedImages(
     private val files: SkinFiles,
 ) : SkinFiles by files {
     override fun read(path: String): ByteArray? = GeneratedImages.read(path) ?: files.read(path)

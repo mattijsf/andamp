@@ -8,17 +8,18 @@ import kotlin.math.ceil
  * usWinAscent and usWinDescent, each rounded up to whole pixels, where Java and Android use the
  * hhea table (a pixel less for Microsoft Sans Serif at 11 px). Renderers read it from the font file.
  */
-class GdiLineMetrics private constructor(
+internal class GdiLineMetrics private constructor(
     private val unitsPerEm: Int,
     private val winAscent: Int,
     private val winDescent: Int,
 ) {
     /** Ascent and descent in pixels at an em of [px]. */
-    fun at(px: Float): Pair<Int, Int> = ceil(winAscent * px / unitsPerEm).toInt() to ceil(winDescent * px / unitsPerEm).toInt()
+    internal fun at(px: Float): Pair<Int, Int> =
+        ceil(winAscent * px / unitsPerEm).toInt() to ceil(winDescent * px / unitsPerEm).toInt()
 
-    companion object {
+    internal companion object {
         /** From a TrueType file's bytes; null when it has no head or OS/2 table. */
-        fun read(bytes: ByteArray): GdiLineMetrics? {
+        internal fun read(bytes: ByteArray): GdiLineMetrics? {
             fun u16(o: Int) =
                 if (o + 2 <=
                     bytes.size

@@ -330,7 +330,7 @@ class SkinOptionsTest {
                 bindings = listOf(Binding(0, 0, 0)),
                 code = code.mapIndexed { i, (op, arg) -> Op(op, arg, if (op == Opcodes.CALL) 0 else -1, i) },
             )
-        rt.scripts += Script(program, recorder, rt)
+        rt.scripts += Script(program, recorder, rt.makiHost)
 
         rt.toggleSkinOption(options().toggle("Heard").key)
 

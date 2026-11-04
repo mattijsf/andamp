@@ -8,23 +8,23 @@ import nl.mattix.andamp.modernskin.maki.Value
  * `ticker="1"` a string wider than the box scrolls.
  */
 @Suppress("LargeClass") // every display Winamp's text object shows, its two tickers and how each draws
-class Text(
+internal class Text(
     rt: SkinRuntime,
     tag: String = "text",
 ) : GuiObject(rt, tag) {
     override val className: String get() = "Text"
-    var staticText: String? = null
-    var display: String? = null
-    var font: String? = null
-    var fontSize: Int = 0
+    internal var staticText: String? = null
+    internal var display: String? = null
+    internal var font: String? = null
+    internal var fontSize: Int = 0
 
     // a text that names no color draws white
-    var color: Rgb = Rgb(0xffffff)
+    internal var color: Rgb = Rgb(0xffffff)
     private var colorId: String? = null
 
     // Winamp centers text vertically unless the skin says otherwise
-    var valign = VAlign.CENTER
-    var bold = false
+    internal var valign = VAlign.CENTER
+    internal var bold = false
     private var shadow: Rgb? = null
 
     /** `shadowx` / `shadowy`: a shadow is drawn only when one is not 0, at that offset. */
@@ -44,20 +44,20 @@ class Text(
     private var rightPadding = 0
     private var shadowId: String? = null
     private var timerOffStyle = 0
-    var align = Align.LEFT
-    var ticker = false
+    internal var align = Align.LEFT
+    internal var ticker = false
 
     /**
      * A `<songticker>`: its `ticker` is "scroll" (the default, a loop with " *** " between the
      * repeats), "bounce" or "off", and it moves 1 px every 39 ms.
      */
-    var songTicker = false
+    internal var songTicker = false
     private var bounce = false
     private var tickerStep = 1
-    var timeColonWidth: Int? = null
-    var showLen = false
-    var forceUpper = false
-    var alternateText: String? = null
+    internal var timeColonWidth: Int? = null
+    internal var showLen = false
+    internal var forceUpper = false
+    internal var alternateText: String? = null
 
     /** Text a script set, shown instead of the display until it sets "" again. */
     private var scriptText: String? = null
@@ -224,7 +224,7 @@ class Text(
     }
 
     /** What is shown now. */
-    val currentText: String
+    internal val currentText: String
         get() {
             alternateText?.takeIf { it.isNotEmpty() }?.let { return it }
             scriptText?.takeIf { it.isNotEmpty() }?.let { return cased(it) }
@@ -338,7 +338,7 @@ class Text(
     /** Widths measured for the last few strings, in the font as set now; a ticker asks for the same ones on every step. */
     private val widths = LinkedHashMap<String, Int>()
 
-    fun textWidth(text: String = currentText): Int {
+    internal fun textWidth(text: String = currentText): Int {
         widths[text]?.let { return it }
         val w = measure(text)
         if (widths.size >= MAX_WIDTHS) widths.remove(widths.keys.first())
@@ -409,7 +409,7 @@ class Text(
         }
 
     /** Moves a wide ticker by the time passed since [now] last came; true when something changed. */
-    fun tick(now: Long): Boolean {
+    internal fun tick(now: Long): Boolean {
         if (alternateText != null && now >= alternateUntil) {
             alternateText = null
             rt.repaint()
@@ -843,30 +843,23 @@ class Text(
             }
         }
 
-    companion object {
-        /**
-         * The em size to draw a TrueType font at for a skin's `fontsize`. Winamp 5.666 draws text
-         * at three quarters of it, rounded to whole pixels as Windows sizes fonts (Big Bento's
-         * fontsize 14 draws at 11 px; measured against its screenshots).
-         */
-        fun emSize(fontsize: Int): Float = Math.round(fontsize * 0.75f).toFloat()
-
+    public companion object {
         /** A text that names no size. */
         private const val DEFAULT_SIZE = 14
         private const val PAD = 2
 
         /** A text ticker moves on every third poll tick: the default "Text Ticker Speed" of 1/3. */
-        const val TEXT_SKIP = 2
+        internal const val TEXT_SKIP = 2
 
         /** Strings whose width a text keeps. */
         private const val MAX_WIDTHS = 4
-        const val ALTERNATE_MS = 1000L
-        const val EMPTY_WIDTH = 32
+        internal const val ALTERNATE_MS = 1000L
+        internal const val EMPTY_WIDTH = 32
 
         /** A songticker's step: "Text Ticker Increment" 1 x 13 / speed 1/3 ms. */
-        const val SONG_STEP_MS = 39L
-        const val BOUNCE_PAUSE_MS = 2000
-        const val LOOP_GAP = " *** "
-        val TIME_DISPLAYS = setOf("time", "timeelapsed", "timeremaining")
+        internal const val SONG_STEP_MS = 39L
+        internal const val BOUNCE_PAUSE_MS = 2000
+        internal const val LOOP_GAP = " *** "
+        internal val TIME_DISPLAYS = setOf("time", "timeelapsed", "timeremaining")
     }
 }

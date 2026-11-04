@@ -60,6 +60,8 @@ after a toolchain upgrade.
   `:core:plugin`, `:core:packapi`, `:backend:media3` (release variant, because its
   benchmarks measure that one), `:backend:pack`, `:pack:common`, `:androidauto`,
   `:visualizer:avs` and `:visualizer:projectm`
+- the JVM unit tests of `:modernskin` and `:core:skinplayer`, and the check of their API
+  dumps (`checkKotlinAbi`, see The skin engine's boundary)
 
 It is a single task so the hook, CI and this file cannot disagree about what it contains.
 A module that gains tests is added to it. The push hook also runs
@@ -193,6 +195,11 @@ ui  ──▶  player domain  ◀──  backends  ──▶  dsp        skin (s
 :visualizer:core     the TextureView every engine renders through: thread, gate, commands
 :visualizer:projectm libprojectM through JNI. The only module that sees GL.
 :visualizer:avs      AVS: parser, pipeline, and the ns-eel evaluator through JNI
+:modernskin          the modern (.wal) skin engine: the MAKI VM, the skin's objects,
+                     layout, input and the draw list. Plain JVM, no Android.
+:core:skinplayer     the player as a skin, classic or modern, drives it: a state
+                     snapshot, the live position, commands and signals. Its contract
+                     tests and FakeSkinPlayer ship with it. Plain Kotlin.
 :app                 the rest: skin engine, UI, state, the home-screen widget
 :androidauto         the app Android Auto talks to: one screen that lends its surface to
                      the player. It holds no skin and no player
@@ -378,6 +385,26 @@ Rules:
 - **One `Track` model.** Fields a backend cannot supply (bitrate, sample rate, artwork)
   are null, and the UI hides or blanks the readout, as Winamp did for streams.
 - **Backends are held to the shared contract test** (see Testing).
+
+### The skin engine's boundary
+
+`:modernskin` and `:core:skinplayer` are written to be used by hosts other than this app,
+so what they show is fixed on purpose:
+
+- Both build in Kotlin's explicit API mode: every public declaration says it is public,
+  and everything else is `internal`. The app reaches the engine through `SkinRuntime`,
+  the host interfaces (`SkinHost`, made of `ImageHost`, `TextHost` and `WindowHost`), the
+  engine's `Player`, the draw list (`DrawCmd`, `Region`, `WindowPlan`) and plain values
+  (`WindowId`, `WindowInfo`, `Presentation`, `SkinSetup`, `SavedSettings`, `EngineStats`).
+  The VM and the skin's object tree are internal; a host names windows and objects by id
+  and reads snapshots.
+- Each module keeps a dump of its public API in `api/` (Kotlin's ABI validation). The
+  gate runs `checkKotlinAbi`, which fails when the API differs from the dump. A change
+  meant to change the API runs `./gradlew :modernskin:updateKotlinAbi` (or
+  `:core:skinplayer:updateKotlinAbi`) and commits the new dump with it, so the change
+  shows in review.
+- The engine's tests and test fixtures see `internal`. The fixtures in `:modernskin`
+  (`SkinFixtures`) drive the engine as a skin's scripts do, for the app's tests.
 
 ### In Android Auto
 
@@ -608,6 +635,10 @@ gets at least one. Before a release, also run a smoke test on an emulator.
   album order with ten after nine, that every row is playable, and that a source without
   `canSearch` stays silent and does not throw. `IndexedPhoneLibraryTest` passes it
   under Robolectric against a real content provider over SQLite (`FakeMediaStore`).
+- **`SkinPlayerContract`** (test fixtures of `:core:skinplayer`) is what any player under
+  the skins must do: the transport, playlist picks, the version moving on each change and
+  only then, clamped units, merged slider writes, listeners and seeking.
+  `FakeSkinPlayerTest` and `AndampSkinPlayerContractTest` pass it.
 - **`WindowParityTest`** lists every floating window (player, equalizer, playlist,
   plug-in, skin browser, library) in one parameterized suite. Each must publish a
   rectangle and a handle, measure the same screen as its neighbors, close on a near-miss

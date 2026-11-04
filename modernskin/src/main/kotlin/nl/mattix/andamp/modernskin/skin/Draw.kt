@@ -2,34 +2,34 @@
 package nl.mattix.andamp.modernskin.skin
 
 /** A rectangle in layout pixels. */
-data class Rect(
+public data class Rect(
     val left: Int,
     val top: Int,
     val width: Int,
     val height: Int,
 ) {
-    val right get() = left + width
-    val bottom get() = top + height
+    val right: Int get() = left + width
+    val bottom: Int get() = top + height
 
-    operator fun contains(p: Pair<Int, Int>) = p.first >= left && p.first < right && p.second >= top && p.second < bottom
+    internal operator fun contains(p: Pair<Int, Int>) = p.first >= left && p.first < right && p.second >= top && p.second < bottom
 
     /** Whether this rectangle and [r] share at least one pixel. */
-    fun overlaps(r: Rect) = r.left < right && left < r.right && r.top < bottom && top < r.bottom
+    internal fun overlaps(r: Rect) = r.left < right && left < r.right && r.top < bottom && top < r.bottom
 
-    companion object {
-        val EMPTY = Rect(0, 0, 0, 0)
+    internal companion object {
+        internal val EMPTY = Rect(0, 0, 0, 0)
     }
 }
 
 /** A part of a skin image: the file and the source rectangle inside it, or null size for the whole file. */
-class BitmapDef(
-    val id: String,
-    val file: String,
-    val x: Int,
-    val y: Int,
-    val w: Int?,
-    val h: Int?,
-    val gammaGroup: String? = null,
+public class BitmapDef(
+    internal val id: String,
+    public val file: String,
+    public val x: Int,
+    public val y: Int,
+    public val w: Int?,
+    public val h: Int?,
+    internal val gammaGroup: String? = null,
 ) {
     /**
      * This part cut to what its file holds (see [SkinRuntime.draw]), worked out once: [FIT_UNKNOWN]
@@ -55,7 +55,7 @@ class BitmapDef(
  * optional grey conversion first (1 = brightest channel, 2 = average). `boost` brightens before
  * the tint (see [apply]), with or without a tint.
  */
-data class Gamma(
+public data class Gamma(
     val r: Int,
     val g: Int,
     val b: Int,
@@ -66,7 +66,7 @@ data class Gamma(
     // default theme, and Winamp 5.666 draws the component bucket lifted there
     val isIdentity: Boolean get() = r == 0 && g == 0 && b == 0 && gray == 0 && boost == 0
 
-    fun apply(argb: Int): Int {
+    public fun apply(argb: Int): Int {
         var red = (argb shr 16) and 0xff
         var green = (argb shr 8) and 0xff
         var blue = argb and 0xff
@@ -95,20 +95,20 @@ data class Gamma(
     }
 }
 
-class BitmapFontDef(
-    val id: String,
-    val file: String,
-    val charWidth: Int,
-    val charHeight: Int,
-    val hSpacing: Int,
-    val vSpacing: Int,
+internal class BitmapFontDef(
+    internal val id: String,
+    internal val file: String,
+    internal val charWidth: Int,
+    internal val charHeight: Int,
+    internal val hSpacing: Int,
+    internal val vSpacing: Int,
     /** Where the glyph sheet starts inside [file], when the font names a bitmap element. */
-    val ox: Int = 0,
-    val oy: Int = 0,
-    val gammaGroup: String? = null,
+    internal val ox: Int = 0,
+    internal val oy: Int = 0,
+    internal val gammaGroup: String? = null,
 ) {
     /** Which cell a character sits in: the rows of a Winamp bitmap font. */
-    fun cell(c: Char): Pair<Int, Int>? {
+    internal fun cell(c: Char): Pair<Int, Int>? {
         // a space advances but draws nothing; its cell is not blank in every skin
         if (c == ' ') return null
         val lower = c.lowercaseChar()
@@ -124,28 +124,29 @@ class BitmapFontDef(
     }
 }
 
-class FontDef(
-    val id: String,
-    val file: String,
+/** A font a skin declares: its [id], and the TrueType [file] in the skin, empty for a system font. */
+public class FontDef(
+    public val id: String,
+    public val file: String,
 )
 
 /** RGB color as 0xRRGGBB. */
 @JvmInline
-value class Rgb(
-    val value: Int,
+public value class Rgb(
+    public val value: Int,
 )
 
-enum class Align { LEFT, CENTER, RIGHT }
+internal enum class Align { LEFT, CENTER, RIGHT }
 
-enum class VAlign { TOP, CENTER, BOTTOM }
+internal enum class VAlign { TOP, CENTER, BOTTOM }
 
 /** What the renderer draws, in order, in layout pixels. */
-sealed class DrawCmd {
+public sealed class DrawCmd {
     /** The object that drew this; its name is made only when [owner] is read. */
     internal open var ownedBy: Any? = null
 
     /** The object that drew this, for tracing a wrong pixel back to the skin's XML. */
-    var owner: String?
+    internal var owner: String?
         get() =
             ownedBy?.let {
                 ownerNamesBuilt++
@@ -156,36 +157,38 @@ sealed class DrawCmd {
         }
 
     /** A bitmap, or the part of it [src] names, stretched to [dst]. */
-    class Image(
-        val bitmap: BitmapDef,
-        val dst: Rect,
-        val alpha: Int,
+    public class Image(
+        public val bitmap: BitmapDef,
+        public val dst: Rect,
+        public val alpha: Int,
         gamma: Gamma? = null,
     ) : DrawCmd() {
         /** The color theme's tint for this bitmap, filled in when the frame is drawn. */
-        var gamma: Gamma? = gamma
+        public var gamma: Gamma? = gamma
             internal set
 
         /** Scale with filtering instead of nearest pixels: Winamp shrinks a list's thumb picture that way. */
-        var smooth = false
+        public var smooth: Boolean = false
             internal set
     }
 
-    class Fill(
-        val rect: Rect,
-        val color: Rgb,
-        val alpha: Int,
+    /** A [rect] filled with [color] at [alpha], 0..255. */
+    public class Fill(
+        public val rect: Rect,
+        public val color: Rgb,
+        public val alpha: Int,
     ) : DrawCmd()
 
     /**
      * Start of a shaped window: what follows until [WindowEnd] shows only inside [region]. Renderers
      * evaluate it with [Region.eval].
      */
-    class WindowStart(
-        val region: Region,
+    public class WindowStart(
+        public val region: Region,
     ) : DrawCmd()
 
-    object WindowEnd : DrawCmd() {
+    /** End of the shaped window [WindowStart] began. */
+    public object WindowEnd : DrawCmd() {
         // one object shared by every window of every skin: it keeps no owner, which would keep
         // that object's skin in memory for as long as the app runs
         override var ownedBy: Any?
@@ -213,77 +216,85 @@ sealed class DrawCmd {
             is Pixels -> other is Pixels && sameAs(other)
         }
 
-    companion object {
+    public companion object {
         /** Owner names made so far, by reading [owner]. */
         @Volatile
-        var ownerNamesBuilt = 0L
+        internal var ownerNamesBuilt = 0L
             internal set
 
         /**
          * Whether a pixel of a region picture marks a cut: opaque, whatever its color. Winamp
          * Modern's main window marks its corners in black, its shaded playlist in white.
          */
-        fun isCutPixel(argb: Int): Boolean = (argb ushr 24) >= 128
+        public fun isCutPixel(argb: Int): Boolean = (argb ushr 24) >= 128
     }
 
+    /**
+     * A run of [text] in [font] at [size], drawn at [x] and [baseline] in [color] at [alpha], with a
+     * [shadow] when set. [rect] is the box it is clipped to.
+     */
     @Suppress("LongParameterList") // a run of text: its words, font, color, box, ticker offset and shadow
-    class Text(
-        val text: String,
-        val font: FontDef?,
-        val size: Int,
-        val color: Rgb,
-        val rect: Rect,
-        val align: Align,
+    public class Text internal constructor(
+        public val text: String,
+        public val font: FontDef?,
+        public val size: Int,
+        public val color: Rgb,
+        public val rect: Rect,
+        internal val align: Align,
         /** Pixels to shift the text left by, for a ticker. */
-        val scroll: Int,
-        val alpha: Int,
-        val valign: VAlign = VAlign.TOP,
-        val bold: Boolean = false,
-        val shadow: Rgb? = null,
+        internal val scroll: Int,
+        public val alpha: Int,
+        internal val valign: VAlign = VAlign.TOP,
+        public val bold: Boolean = false,
+        public val shadow: Rgb? = null,
         /** Where the shadow sits from the text. */
-        val shadowDx: Int = 1,
-        val shadowDy: Int = 1,
+        public val shadowDx: Int = 1,
+        public val shadowDy: Int = 1,
     ) : DrawCmd() {
         /** The face it is drawn with ([FontFace.of]). */
-        val face: FontFace get() = FontFace.of(font, bold)
+        internal val face: FontFace get() = FontFace.of(font, bold)
 
         /**
          * Where the text starts across, in layout pixels: [align]ed in [rect] by its measured width,
          * less [scroll]. The engine fills it in when the frame is drawn; the shadow sits [shadowDx]
          * from it.
          */
-        var x: Float = 0f
+        public var x: Float = 0f
             internal set
 
         /** The baseline, in layout pixels: placed in [rect] by [valign] and the font's line ([SkinRuntime]). */
-        var baseline: Float = 0f
+        public var baseline: Float = 0f
             internal set
     }
 
-    class BitmapText(
-        val text: String,
-        val font: BitmapFontDef,
-        val rect: Rect,
-        val align: Align,
-        val alpha: Int,
-        val valign: VAlign = VAlign.TOP,
+    /**
+     * Text in a skin's bitmap font. The engine spells it out as [Clip] and [Image] commands before a
+     * host sees the list, so a renderer draws nothing for it.
+     */
+    public class BitmapText internal constructor(
+        internal val text: String,
+        internal val font: BitmapFontDef,
+        internal val rect: Rect,
+        internal val align: Align,
+        internal val alpha: Int,
+        internal val valign: VAlign = VAlign.TOP,
         /** The advance of a colon in a time display, when the skin narrows it. */
-        val colonWidth: Int? = null,
+        internal val colonWidth: Int? = null,
         /** Pixels to shift the text left by, for a ticker. */
-        val scroll: Int = 0,
+        internal val scroll: Int = 0,
     ) : DrawCmd() {
         /** The color theme's tint for the font sheet, filled in when the frame is drawn. */
-        var gamma: Gamma? = null
+        internal var gamma: Gamma? = null
             internal set
     }
 
     /** Clip the commands that follow, until the matching [Unclip]. */
-    class Clip(
-        val rect: Rect,
+    public class Clip(
+        public val rect: Rect,
     ) : DrawCmd()
 
     /** The end of the last [Clip]; like [WindowEnd], one shared object that keeps no owner. */
-    object Unclip : DrawCmd() {
+    public object Unclip : DrawCmd() {
         override var ownedBy: Any?
             get() = null
             set(value) = Unit
@@ -294,13 +305,13 @@ sealed class DrawCmd {
      * vis, the EQ graph and gradients. [stable] means the same [argb] array comes back unchanged in
      * later frames until the picture changes, so a host may keep what it made from it.
      */
-    class Pixels(
-        val rect: Rect,
-        val w: Int,
-        val h: Int,
-        val argb: IntArray,
-        val alpha: Int,
-        val stable: Boolean = false,
+    public class Pixels(
+        public val rect: Rect,
+        public val w: Int,
+        public val h: Int,
+        public val argb: IntArray,
+        public val alpha: Int,
+        public val stable: Boolean = false,
     ) : DrawCmd()
 }
 
@@ -308,25 +319,27 @@ sealed class DrawCmd {
  * A window's shape as Winamp composes it: a picture's opaque pixels, a
  * rectangle, or an object's own region with its children's added, intersected and cut away.
  */
-sealed class Region {
-    class Pic(
-        val image: DrawCmd.Image,
+public sealed class Region {
+    /** The opaque pixels of [image]. */
+    public class Pic(
+        public val image: DrawCmd.Image,
     ) : Region()
 
-    class Box(
-        val rect: Rect,
+    /** The whole of [rect]. */
+    public class Box(
+        public val rect: Rect,
     ) : Region()
 
     /** [base] (nothing when null), kept only where [keep] is when that is not empty, plus [add], less [cut]. */
-    class Op(
-        val base: Region?,
-        val add: List<Region>,
-        val keep: List<Region>,
-        val cut: List<Region>,
+    public class Op(
+        public val base: Region?,
+        public val add: List<Region>,
+        public val keep: List<Region>,
+        public val cut: List<Region>,
     ) : Region()
 
     /** The same region with every picture passed through [f] (dropped when it gives null). */
-    fun mapPics(f: (DrawCmd.Image) -> DrawCmd.Image?): Region? =
+    internal fun mapPics(f: (DrawCmd.Image) -> DrawCmd.Image?): Region? =
         when (this) {
             is Pic -> {
                 f(image)?.let { Pic(it) }
@@ -349,7 +362,7 @@ sealed class Region {
         }
 
     /** Every picture in it. */
-    fun pics(): List<DrawCmd.Image> =
+    internal fun pics(): List<DrawCmd.Image> =
         when (this) {
             is Pic -> listOf(image)
             is Box -> emptyList()
@@ -357,7 +370,7 @@ sealed class Region {
         }
 
     /** The box around it, or null when it holds nothing. */
-    fun bounds(): Rect? =
+    public fun bounds(): Rect? =
         when (this) {
             is Pic -> {
                 image.dst
@@ -381,7 +394,7 @@ sealed class Region {
      * own, composed with the matching blend. A picture that cuts counts every opaque pixel
      * ([DrawCmd.isCutPixel]), one that adds keeps its alpha.
      */
-    fun eval(
+    public fun eval(
         c: Canvas,
         hard: Boolean = false,
     ) {
@@ -418,18 +431,19 @@ sealed class Region {
         }
     }
 
-    enum class Blend { ADD, KEEP, CUT }
+    /** How a layer merges into what is under it: added, kept only where both are, or cut away. */
+    public enum class Blend { ADD, KEEP, CUT }
 
     /** What a renderer gives [eval]: draw a picture or a black box, and run [body] in a layer merged with a blend. */
-    interface Canvas {
-        fun picture(
+    public interface Canvas {
+        public fun picture(
             image: DrawCmd.Image,
             hard: Boolean,
         )
 
-        fun box(rect: Rect)
+        public fun box(rect: Rect)
 
-        fun layer(
+        public fun layer(
             blend: Blend,
             body: () -> Unit,
         )

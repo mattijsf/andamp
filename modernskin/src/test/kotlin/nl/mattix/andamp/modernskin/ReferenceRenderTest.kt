@@ -148,7 +148,7 @@ class ReferenceRenderTest {
             bold: Boolean = false,
         ): Font {
             val em =
-                nl.mattix.andamp.modernskin.skin.Text
+                nl.mattix.andamp.modernskin.skin.FontFace
                     .emSize(size)
             if (def != null && def.file.isEmpty()) {
                 val sys = systemFont(def, bold, em)

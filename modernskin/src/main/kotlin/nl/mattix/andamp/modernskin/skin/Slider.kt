@@ -9,25 +9,25 @@ import nl.mattix.andamp.modernskin.maki.Value
  * runs from -128 to 127, flat at 0, as Winamp's does: Winamp Modern's EQ display divides a
  * position by 10.5 for the dB it shows, and the thumb sits where 0..255 puts it.
  */
-class Slider(
+internal class Slider(
     rt: SkinRuntime,
 ) : GuiObject(rt, "slider") {
     override val className: String get() = "Slider"
-    var action: String? = null
-    var param: String? = null
-    var thumb: String? = null
-    var downThumb: String? = null
-    var barLeft: String? = null
-    var barMiddle: String? = null
-    var barRight: String? = null
-    var vertical = false
-    var low = 0
-    var high = 255
+    internal var action: String? = null
+    internal var param: String? = null
+    internal var thumb: String? = null
+    internal var downThumb: String? = null
+    internal var barLeft: String? = null
+    internal var barMiddle: String? = null
+    internal var barRight: String? = null
+    internal var vertical = false
+    internal var low = 0
+    internal var high = 255
     private var lowSet = false
     private var highSet = false
-    var position = 0
+    internal var position = 0
         private set
-    var dragging = false
+    internal var dragging = false
         private set
     private var locked = false
 
@@ -164,7 +164,7 @@ class Slider(
      * Sets the position and tells the script; [fromUser] also drives the player first, and the
      * thumb goes where the player snapped to, so the script shows the snapped value.
      */
-    fun setPosition(
+    internal fun setPosition(
         p: Int,
         fromUser: Boolean,
     ) {
@@ -239,13 +239,13 @@ class Slider(
      * layout shows for the first time, so that frame already shows it there. Scripts hear nothing
      * of it, nor of the first [sync] after it.
      */
-    fun placeIfUnsynced() {
+    internal fun placeIfUnsynced() {
         if (dragging || synced) return
         rt.sliderTarget(this)?.let { position = it.coerceIn(low, high) }
     }
 
     /** Follows the player when the user is not holding the thumb. */
-    fun sync() {
+    internal fun sync() {
         if (dragging) return
         val target = rt.sliderTarget(this) ?: return
         if (target != position || !synced) {

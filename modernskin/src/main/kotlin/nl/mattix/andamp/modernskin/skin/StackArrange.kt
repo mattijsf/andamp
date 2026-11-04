@@ -16,7 +16,7 @@ package nl.mattix.andamp.modernskin.skin
  * app says ([Ask.columnWidth]), so a drawer sliding does not change the stack's size. With no list
  * window open, two columns are one.
  */
-object StackArrange {
+internal object StackArrange {
     /** What [arrange] sets out. */
     internal class Ask(
         /** The main window, which sits at the stack's corner at the size it has. */
@@ -137,7 +137,7 @@ object StackArrange {
      * no window's size and runs no layout pass, so the skin hears nothing: the app weighs one
      * column against two with it.
      */
-    fun naturalSize(
+    internal fun naturalSize(
         main: Layout,
         others: List<Layout>,
         columns: Int,
@@ -166,7 +166,7 @@ object StackArrange {
      * ([Layout.snappedSize], so Winamp Modern's closed drawer is left out). Null for a stack in one
      * column: [columns] is not 2, or no list window is open.
      */
-    fun leftColumn(
+    internal fun leftColumn(
         main: Layout,
         others: List<Layout>,
         columns: Int,
@@ -185,7 +185,7 @@ object StackArrange {
      * [Layout.contentRight]): that width, or a docked window its minimum width makes wider, in
      * layout pixels. It changes no window's size and runs no layout pass.
      */
-    fun shownWidth(
+    internal fun shownWidth(
         main: Layout,
         others: List<Layout>,
         width: Int = 0,
@@ -219,7 +219,7 @@ object StackArrange {
      * size falls back on, within its minimum and maximum ([Layout.size]), in layout pixels. It
      * leaves [window] the height it has, and sends it no events.
      */
-    fun naturalHeight(window: Layout): Int {
+    internal fun naturalHeight(window: Layout): Int {
         val kept = window.h
         window.h = skinHeight(window)
         try {

@@ -27,11 +27,11 @@ import java.util.concurrent.atomic.AtomicLong
  *
  * Used on one thread (the engine's), one planner for one runtime.
  */
-class DrawPlanner {
+public class DrawPlanner {
     /** A frame's windows as [SkinRuntime.drawWindows] gives them, and the plan of each, in the same order. */
-    class Planned(
-        val stack: List<Pair<Rect, List<DrawCmd>>>,
-        val plans: List<WindowPlan>,
+    public class Planned(
+        public val stack: List<Pair<Rect, List<DrawCmd>>>,
+        public val plans: List<WindowPlan>,
     )
 
     private val owners = IdentityHashMap<Any, Owned>()
@@ -41,20 +41,20 @@ class DrawPlanner {
     private val quick = QuickLook()
 
     /** Nanoseconds spent planning, the drawing itself left out; for timing runs. */
-    var planNanos = 0L
+    public var planNanos: Long = 0L
         private set
 
     /** Windows planned from the start, and windows that took the quick look; for tests and timing runs. */
-    var fullPlans = 0L
+    public var fullPlans: Long = 0L
         private set
-    var quickPlans = 0L
+    internal var quickPlans = 0L
         private set
 
     /**
      * [rt]'s windows, drawn as [SkinRuntime.drawWindows] draws them, with a plan for each, at
      * [nowMs] in any clock that only moves forward.
      */
-    fun draw(
+    public fun draw(
         rt: SkinRuntime,
         nowMs: Long,
     ): Planned {
@@ -119,37 +119,37 @@ class DrawPlanner {
         for (rec in owners.values) while (rec.atoms.size > maxOf(1, rec.used)) rec.atoms.removeAt(rec.atoms.size - 1)
     }
 
-    companion object {
+    public companion object {
         /**
          * A change this soon after an object's last one makes it live: the time once a second, and
          * a seek thumb that moves a pixel every few seconds on a long track.
          */
-        const val LIVE_GAP_MS = 5_000L
+        internal const val LIVE_GAP_MS = 5_000L
 
         /**
          * How long a live object stays live after its last change: through a ticker's pause at
          * the end of its text, so the window is not recorded again as it stops and starts.
          */
-        const val LIVE_HOLD_MS = 10_000L
+        public const val LIVE_HOLD_MS: Long = 10_000L
 
         /**
          * A window is drawn in one piece once its shape, clips or resting objects changed in this
          * many of its last four frames.
          */
-        const val FLAT_MOVES = 3
+        internal const val FLAT_MOVES = 3
 
         /** A window drawn in one piece for that is kept apart again once those rested this long. */
-        const val FLAT_EXIT_MS = 1_000L
+        internal const val FLAT_EXIT_MS = 1_000L
 
         /** More runs than this, and a window is drawn in one piece. */
-        const val MAX_RUNS = 12
+        internal const val MAX_RUNS = 12
 
         /** Objects and windows not drawn for this many frames are forgotten. */
-        const val PRUNE_EVERY = 64L
+        internal const val PRUNE_EVERY = 64L
 
         private val ids = AtomicLong()
 
         /** An id or version no planner in the process has handed out. */
-        fun nextId(): Long = ids.incrementAndGet()
+        internal fun nextId(): Long = ids.incrementAndGet()
     }
 }

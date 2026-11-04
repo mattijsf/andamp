@@ -28,7 +28,6 @@ import nl.mattix.andamp.modernskin.skin.Region
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinHost
 import nl.mattix.andamp.modernskin.skin.SkinMenu
-import nl.mattix.andamp.modernskin.skin.Text
 import nl.mattix.andamp.modernskin.skin.WithGeneratedImages
 import nl.mattix.andamp.state.Flush
 import nl.mattix.andamp.state.forceToDisk
@@ -364,7 +363,7 @@ internal class WalHost(
         val standIn = standIn(font, bold)
         paint.typeface = standIn ?: typeface(font) ?: Typeface.DEFAULT
         paint.isFakeBoldText = bold && standIn == null
-        paint.textSize = Text.emSize(size)
+        paint.textSize = FontFace.emSize(size)
         return paint
     }
 

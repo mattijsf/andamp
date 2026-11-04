@@ -1,0 +1,204 @@
+public final class nl/mattix/andamp/skinplayer/Capabilities {
+	public fun <init> ()V
+	public fun <init> (ZZZZZZZ)V
+	public synthetic fun <init> (ZZZZZZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Z
+	public final fun component2 ()Z
+	public final fun component3 ()Z
+	public final fun component4 ()Z
+	public final fun component5 ()Z
+	public final fun component6 ()Z
+	public final fun component7 ()Z
+	public final fun copy (ZZZZZZZ)Lnl/mattix/andamp/skinplayer/Capabilities;
+	public static synthetic fun copy$default (Lnl/mattix/andamp/skinplayer/Capabilities;ZZZZZZZILjava/lang/Object;)Lnl/mattix/andamp/skinplayer/Capabilities;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCrossfade ()Z
+	public final fun getEq ()Z
+	public final fun getPlaylist ()Z
+	public final fun getSeek ()Z
+	public final fun getSpectrum ()Z
+	public final fun getVu ()Z
+	public final fun getWaveform ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/mattix/andamp/skinplayer/Entry {
+	public fun <init> (Ljava/lang/String;JLjava/util/Map;)V
+	public synthetic fun <init> (Ljava/lang/String;JLjava/util/Map;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()J
+	public final fun component3 ()Ljava/util/Map;
+	public final fun copy (Ljava/lang/String;JLjava/util/Map;)Lnl/mattix/andamp/skinplayer/Entry;
+	public static synthetic fun copy$default (Lnl/mattix/andamp/skinplayer/Entry;Ljava/lang/String;JLjava/util/Map;ILjava/lang/Object;)Lnl/mattix/andamp/skinplayer/Entry;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getLengthMs ()J
+	public final fun getTags ()Ljava/util/Map;
+	public final fun getTitle ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/mattix/andamp/skinplayer/FakeSkinPlayer : nl/mattix/andamp/skinplayer/SkinPlayer {
+	public fun <init> ()V
+	public fun <init> (Ljava/util/List;Lnl/mattix/andamp/skinplayer/Capabilities;Lkotlin/jvm/functions/Function0;Lnl/mattix/andamp/skinplayer/StreamInfo;)V
+	public synthetic fun <init> (Ljava/util/List;Lnl/mattix/andamp/skinplayer/Capabilities;Lkotlin/jvm/functions/Function0;Lnl/mattix/andamp/skinplayer/StreamInfo;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun addListener (Lkotlin/jvm/functions/Function0;)Ljava/lang/AutoCloseable;
+	public fun getCapabilities ()Lnl/mattix/andamp/skinplayer/Capabilities;
+	public final fun getOpenRequests ()Ljava/util/List;
+	public fun getState ()Lnl/mattix/andamp/skinplayer/PlayerState;
+	public fun next ()V
+	public fun pause ()V
+	public fun play ()V
+	public fun playTrack (I)V
+	public fun positionMs ()J
+	public fun previous ()V
+	public fun requestOpen (Z)V
+	public fun resetEq ()V
+	public fun seekTo (J)V
+	public fun setBalance (I)V
+	public fun setCrossfade (Z)V
+	public fun setEqAuto (Z)V
+	public fun setEqBand (II)V
+	public fun setEqEnabled (Z)V
+	public fun setPreamp (I)V
+	public fun setRepeat (Z)V
+	public fun setShuffle (Z)V
+	public fun setVolume (I)V
+	public fun spectrum ()[F
+	public fun stop ()V
+	public fun vu ()Lkotlin/Pair;
+	public fun waveform ()[F
+}
+
+public abstract interface class nl/mattix/andamp/skinplayer/PlayerCommands : nl/mattix/andamp/skinplayer/SoundCommands, nl/mattix/andamp/skinplayer/TransportCommands {
+}
+
+public abstract interface class nl/mattix/andamp/skinplayer/PlayerSignals {
+	public fun spectrum ()[F
+	public fun vu ()Lkotlin/Pair;
+	public fun waveform ()[F
+}
+
+public final class nl/mattix/andamp/skinplayer/PlayerSignals$DefaultImpls {
+	public static fun spectrum (Lnl/mattix/andamp/skinplayer/PlayerSignals;)[F
+	public static fun vu (Lnl/mattix/andamp/skinplayer/PlayerSignals;)Lkotlin/Pair;
+	public static fun waveform (Lnl/mattix/andamp/skinplayer/PlayerSignals;)[F
+}
+
+public final class nl/mattix/andamp/skinplayer/PlayerState {
+	public static final field BALANCE_MAX I
+	public static final field Companion Lnl/mattix/andamp/skinplayer/PlayerState$Companion;
+	public static final field EQ_BANDS I
+	public static final field EQ_CENTER I
+	public static final field EQ_MAX I
+	public static final field VOLUME_MAX I
+	public fun <init> ()V
+	public fun <init> (JLnl/mattix/andamp/skinplayer/Transport;Ljava/util/List;ILnl/mattix/andamp/skinplayer/StreamInfo;IIZZZZZILjava/util/List;)V
+	public synthetic fun <init> (JLnl/mattix/andamp/skinplayer/Transport;Ljava/util/List;ILnl/mattix/andamp/skinplayer/StreamInfo;IIZZZZZILjava/util/List;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()J
+	public final fun component10 ()Z
+	public final fun component11 ()Z
+	public final fun component12 ()Z
+	public final fun component13 ()I
+	public final fun component14 ()Ljava/util/List;
+	public final fun component2 ()Lnl/mattix/andamp/skinplayer/Transport;
+	public final fun component3 ()Ljava/util/List;
+	public final fun component4 ()I
+	public final fun component5 ()Lnl/mattix/andamp/skinplayer/StreamInfo;
+	public final fun component6 ()I
+	public final fun component7 ()I
+	public final fun component8 ()Z
+	public final fun component9 ()Z
+	public final fun copy (JLnl/mattix/andamp/skinplayer/Transport;Ljava/util/List;ILnl/mattix/andamp/skinplayer/StreamInfo;IIZZZZZILjava/util/List;)Lnl/mattix/andamp/skinplayer/PlayerState;
+	public static synthetic fun copy$default (Lnl/mattix/andamp/skinplayer/PlayerState;JLnl/mattix/andamp/skinplayer/Transport;Ljava/util/List;ILnl/mattix/andamp/skinplayer/StreamInfo;IIZZZZZILjava/util/List;ILjava/lang/Object;)Lnl/mattix/andamp/skinplayer/PlayerState;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBalance ()I
+	public final fun getCrossfade ()Z
+	public final fun getCurrent ()Lnl/mattix/andamp/skinplayer/Entry;
+	public final fun getCurrentIndex ()I
+	public final fun getEqAuto ()Z
+	public final fun getEqBands ()Ljava/util/List;
+	public final fun getEqOn ()Z
+	public final fun getPlaylist ()Ljava/util/List;
+	public final fun getPreamp ()I
+	public final fun getRepeat ()Z
+	public final fun getShuffle ()Z
+	public final fun getStream ()Lnl/mattix/andamp/skinplayer/StreamInfo;
+	public final fun getTransport ()Lnl/mattix/andamp/skinplayer/Transport;
+	public final fun getVersion ()J
+	public final fun getVolume ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/mattix/andamp/skinplayer/PlayerState$Companion {
+}
+
+public abstract interface class nl/mattix/andamp/skinplayer/SkinPlayer : nl/mattix/andamp/skinplayer/PlayerCommands, nl/mattix/andamp/skinplayer/PlayerSignals {
+	public abstract fun addListener (Lkotlin/jvm/functions/Function0;)Ljava/lang/AutoCloseable;
+	public fun getCapabilities ()Lnl/mattix/andamp/skinplayer/Capabilities;
+	public abstract fun getState ()Lnl/mattix/andamp/skinplayer/PlayerState;
+	public abstract fun positionMs ()J
+}
+
+public final class nl/mattix/andamp/skinplayer/SkinPlayer$DefaultImpls {
+	public static fun getCapabilities (Lnl/mattix/andamp/skinplayer/SkinPlayer;)Lnl/mattix/andamp/skinplayer/Capabilities;
+	public static fun spectrum (Lnl/mattix/andamp/skinplayer/SkinPlayer;)[F
+	public static fun vu (Lnl/mattix/andamp/skinplayer/SkinPlayer;)Lkotlin/Pair;
+	public static fun waveform (Lnl/mattix/andamp/skinplayer/SkinPlayer;)[F
+}
+
+public abstract interface class nl/mattix/andamp/skinplayer/SoundCommands {
+	public abstract fun resetEq ()V
+	public abstract fun setBalance (I)V
+	public abstract fun setCrossfade (Z)V
+	public abstract fun setEqAuto (Z)V
+	public abstract fun setEqBand (II)V
+	public abstract fun setEqEnabled (Z)V
+	public abstract fun setPreamp (I)V
+	public abstract fun setRepeat (Z)V
+	public abstract fun setShuffle (Z)V
+	public abstract fun setVolume (I)V
+}
+
+public final class nl/mattix/andamp/skinplayer/StreamInfo {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Ljava/lang/Integer;
+	public final fun component2 ()Ljava/lang/Integer;
+	public final fun component3 ()Ljava/lang/Integer;
+	public final fun component4 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;)Lnl/mattix/andamp/skinplayer/StreamInfo;
+	public static synthetic fun copy$default (Lnl/mattix/andamp/skinplayer/StreamInfo;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/Integer;Ljava/lang/String;ILjava/lang/Object;)Lnl/mattix/andamp/skinplayer/StreamInfo;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getBitrateKbps ()Ljava/lang/Integer;
+	public final fun getChannels ()Ljava/lang/Integer;
+	public final fun getDecoder ()Ljava/lang/String;
+	public final fun getSampleRateKhz ()Ljava/lang/Integer;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/mattix/andamp/skinplayer/Transport : java/lang/Enum {
+	public static final field CONNECTING Lnl/mattix/andamp/skinplayer/Transport;
+	public static final field PAUSED Lnl/mattix/andamp/skinplayer/Transport;
+	public static final field PLAYING Lnl/mattix/andamp/skinplayer/Transport;
+	public static final field STOPPED Lnl/mattix/andamp/skinplayer/Transport;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lnl/mattix/andamp/skinplayer/Transport;
+	public static fun values ()[Lnl/mattix/andamp/skinplayer/Transport;
+}
+
+public abstract interface class nl/mattix/andamp/skinplayer/TransportCommands {
+	public abstract fun next ()V
+	public abstract fun pause ()V
+	public abstract fun play ()V
+	public abstract fun playTrack (I)V
+	public abstract fun previous ()V
+	public abstract fun requestOpen (Z)V
+	public abstract fun seekTo (J)V
+	public abstract fun stop ()V
+}
+

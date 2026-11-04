@@ -10,6 +10,10 @@ plugins {
 
 kotlin {
     jvmToolchain(17)
+    // the engine shows only what a host needs; the dump in api/ makes a change to that a visible one
+    explicitApi()
+    @OptIn(org.jetbrains.kotlin.gradle.dsl.abi.ExperimentalAbiValidation::class)
+    abiValidation()
 }
 
 dependencies {

@@ -5,9 +5,9 @@ package nl.mattix.andamp.modernskin.skin
  * Where the glyphs of a text come from, as the engine chooses them ([FontFace.of]); every
  * renderer and every text measure goes by the same choice.
  */
-sealed interface FontFace {
+public sealed interface FontFace {
     /** The skin's font [font] ([FontDef.file]); the renderer makes it bold itself when [fakeBold]. */
-    data class SkinFile(
+    public data class SkinFile(
         val font: FontDef,
         val fakeBold: Boolean,
     ) : FontFace
@@ -18,7 +18,7 @@ sealed interface FontFace {
      * cut when [bold], so it is never made bold by the renderer. [file] is where Andamp's default
      * set keeps it ([AndampDefaultSet]); a host may carry it elsewhere.
      */
-    data class StandIn(
+    public data class StandIn(
         val family: String,
         val bold: Boolean,
     ) : FontFace {
@@ -26,16 +26,23 @@ sealed interface FontFace {
     }
 
     /** No font named: the platform's default, made bold by the renderer when [fakeBold]. */
-    data class Default(
+    public data class Default(
         val fakeBold: Boolean,
     ) : FontFace
 
-    companion object {
+    public companion object {
+        /**
+         * The em size to draw a TrueType font at for a skin's `fontsize`. Winamp 5.666 draws text
+         * at three quarters of it, rounded to whole pixels as Windows sizes fonts (Big Bento's
+         * fontsize 14 draws at 11 px; measured against its screenshots).
+         */
+        public fun emSize(fontsize: Int): Float = Math.round(fontsize * 0.75f).toFloat()
+
         /** Windows fonts skins name without a file, and the free font that stands in. */
-        val STAND_INS: Map<String, String> = mapOf("tahoma" to "DejaVuSansCondensed", "arial" to "LiberationSans")
+        internal val STAND_INS: Map<String, String> = mapOf("tahoma" to "DejaVuSansCondensed", "arial" to "LiberationSans")
 
         /** The face [font] is drawn and measured with, [bold] or not. */
-        fun of(
+        public fun of(
             font: FontDef?,
             bold: Boolean,
         ): FontFace {

@@ -6,17 +6,17 @@ package nl.mattix.andamp.modernskin.skin
  * decoding: a file that claims 50000 x 50000 pixels would take gigabytes. PNG, BMP, GIF and JPEG
  * headers are read; anything else passes and is left to the decoder.
  */
-object ImageLimits {
-    const val MAX_SIDE = 8_192
-    const val MAX_PIXELS = 16L * 1024 * 1024
+public object ImageLimits {
+    internal const val MAX_SIDE = 8_192
+    public const val MAX_PIXELS: Long = 16L * 1024 * 1024
 
-    fun tooLarge(bytes: ByteArray): Boolean {
+    public fun tooLarge(bytes: ByteArray): Boolean {
         val (w, h) = size(bytes) ?: return false
         return w <= 0 || h <= 0 || w > MAX_SIDE || h > MAX_SIDE || w.toLong() * h > MAX_PIXELS
     }
 
     /** Width and height from the header, or null when the format is not one of the four. */
-    fun size(b: ByteArray): Pair<Int, Int>? =
+    internal fun size(b: ByteArray): Pair<Int, Int>? =
         when {
             b.size >= 24 && b.u8(0) == 0x89 && b.u8(1) == 'P'.code && b.u8(2) == 'N'.code && b.u8(3) == 'G'.code -> {
                 b.be32(16) to b.be32(20)

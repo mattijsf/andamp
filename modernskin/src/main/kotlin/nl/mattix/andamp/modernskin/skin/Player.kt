@@ -2,84 +2,85 @@
 package nl.mattix.andamp.modernskin.skin
 
 /** One playlist entry. */
-data class Track(
+public data class Track(
     val title: String,
     val lengthMs: Int,
 )
 
 /** The player as a modern skin sees it. Positions and lengths are milliseconds; volume is 0..255. */
-interface Player {
-    enum class Status { STOPPED, PLAYING, PAUSED }
+public interface Player {
+    /** What the transport is doing. */
+    public enum class Status { STOPPED, PLAYING, PAUSED }
 
-    val status: Status
-    val positionMs: Int
-    val lengthMs: Int
-    val title: String
-    val bitrateKbps: Int
-    val sampleRateKhz: Int
-    val channels: Int
+    public val status: Status
+    public val positionMs: Int
+    public val lengthMs: Int
+    public val title: String
+    public val bitrateKbps: Int
+    public val sampleRateKhz: Int
+    public val channels: Int
 
     /** The current file's tags by lowercase field name (artist, album, ...); a file without tags has none. */
-    val tags: Map<String, String> get() = emptyMap()
+    public val tags: Map<String, String> get() = emptyMap()
 
     /** The input plug-in's name for the current file, as Winamp's `getDecoderName` reports it; empty when unknown. */
-    val decoderName: String get() = ""
-    var volume: Int
-    var shuffle: Boolean
-    var repeat: Boolean
-    var crossfade: Boolean
-    var eqEnabled: Boolean
-    val eqBands: IntArray
-    var eqPreamp: Int
+    public val decoderName: String get() = ""
+    public var volume: Int
+    public var shuffle: Boolean
+    public var repeat: Boolean
+    public var crossfade: Boolean
+    public var eqEnabled: Boolean
+    public val eqBands: IntArray
+    public var eqPreamp: Int
 
     /** The balance: -127 hard left, 0 the middle, 127 hard right. */
-    var pan: Int
+    public var pan: Int
 
-    fun play()
+    public fun play()
 
-    fun pause()
+    public fun pause()
 
-    fun stop()
+    public fun stop()
 
-    fun next()
+    public fun next()
 
-    fun previous()
+    public fun previous()
 
-    fun eject()
+    public fun eject()
 
-    fun seekTo(ms: Int)
+    public fun seekTo(ms: Int)
 
-    fun setEqBand(
+    public fun setEqBand(
         band: Int,
         value: Int,
     )
 
     /** The playlist, and which entry is current; a player without one has just the current song. */
-    val tracks: List<Track> get() = listOf(Track(title, lengthMs))
-    val trackIndex: Int get() = 0
+    public val tracks: List<Track> get() = listOf(Track(title, lengthMs))
+    public val trackIndex: Int get() = 0
 
     /** Makes entry [index] current and plays it. */
-    fun playTrack(index: Int) = play()
+    public fun playTrack(index: Int): Unit = play()
 
     /** Spectrum levels 0..1, 75 bands like Winamp's vis, or empty when nothing plays. */
-    fun spectrum(): FloatArray
+    public fun spectrum(): FloatArray
 
     /**
      * The waveform being heard: samples -1..1, oldest first, 576 of them as Winamp hands a
      * visualizer, or empty when nothing plays.
      */
-    fun waveform(): FloatArray = FloatArray(0)
+    public fun waveform(): FloatArray = FloatArray(0)
 
     /** Left and right VU 0..255. */
-    fun vu(): Pair<Int, Int>
+    public fun vu(): Pair<Int, Int>
 }
 
 /** A player that plays nothing, for tests and for a first look at a skin. */
-class FakePlayer : Player {
+public class FakePlayer : Player {
     /** The clock positions, the demo spectrum and the demo wave follow; a test gives it the runtime's. */
-    var clock: () -> Long = System::currentTimeMillis
+    public var clock: () -> Long = System::currentTimeMillis
 
-    override var status = Player.Status.STOPPED
+    override var status: Player.Status = Player.Status.STOPPED
     private var startedAt = 0L
     private var pausedAt = 0
     override val positionMs: Int
@@ -91,7 +92,7 @@ class FakePlayer : Player {
             }
 
     /** Set to show several entries; empty means the playlist is the current song alone. */
-    var playlist: List<Track> = emptyList()
+    public var playlist: List<Track> = emptyList()
     private var index = 0
     override val tracks: List<Track> get() = playlist.ifEmpty { listOf(Track(title, lengthMs)) }
     override val trackIndex: Int get() = index.coerceIn(0, tracks.size - 1)
@@ -105,20 +106,20 @@ class FakePlayer : Player {
         play()
     }
 
-    override var lengthMs = 215_000
-    override var title = "Andamp - Modern skin demo"
-    override var decoderName = ""
-    override var bitrateKbps = 192
-    override var sampleRateKhz = 44
-    override var channels = 2
-    override var volume = 200
-    override var shuffle = false
-    override var repeat = false
-    override var crossfade = false
-    override var eqEnabled = false
-    override val eqBands = IntArray(10) { 128 }
-    override var eqPreamp = 128
-    override var pan = 0
+    override var lengthMs: Int = 215_000
+    override var title: String = "Andamp - Modern skin demo"
+    override var decoderName: String = ""
+    override var bitrateKbps: Int = 192
+    override var sampleRateKhz: Int = 44
+    override var channels: Int = 2
+    override var volume: Int = 200
+    override var shuffle: Boolean = false
+    override var repeat: Boolean = false
+    override var crossfade: Boolean = false
+    override var eqEnabled: Boolean = false
+    override val eqBands: IntArray = IntArray(10) { 128 }
+    override var eqPreamp: Int = 128
+    override var pan: Int = 0
 
     override fun play() {
         if (status == Player.Status.PLAYING) return
@@ -157,7 +158,7 @@ class FakePlayer : Player {
         seekTo(0)
     }
 
-    override fun eject() = Unit
+    override fun eject(): Unit = Unit
 
     override fun seekTo(ms: Int) {
         pausedAt = ms.coerceIn(0, lengthMs)
