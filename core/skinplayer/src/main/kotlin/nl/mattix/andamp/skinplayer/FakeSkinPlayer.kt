@@ -4,15 +4,16 @@ package nl.mattix.andamp.skinplayer
 /**
  * A player that plays nothing, for demos and tests: every command takes effect at once, and the
  * position runs on [clock] while it plays. A capability left out of [capabilities] makes its
- * commands do nothing.
+ * commands do nothing. [stream] is what it says of every song, as a demo shows a bitrate.
  */
 class FakeSkinPlayer(
     playlist: List<Entry> = emptyList(),
     override val capabilities: Capabilities = Capabilities(),
     private val clock: () -> Long = System::currentTimeMillis,
+    stream: StreamInfo = StreamInfo(),
 ) : SkinPlayer {
     @Volatile
-    override var state: PlayerState = PlayerState(playlist = playlist)
+    override var state: PlayerState = PlayerState(playlist = playlist, stream = stream)
         private set
 
     private val listeners = java.util.concurrent.CopyOnWriteArrayList<() -> Unit>()
