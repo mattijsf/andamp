@@ -401,6 +401,7 @@ dependencies {
     // Winamp modern skins (.wal). A picked skin file is sniffed with it; proguard-rules.pro keeps
     // the whole engine in every release, including the parts no screen reaches
     implementation(project(":modernskin"))
+    implementation(project(":core:skinplayer"))
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.foundation)
@@ -419,6 +420,7 @@ dependencies {
     detektPlugins(libs.detekt.compose.rules)
     testImplementation(libs.junit)
     testImplementation(testFixtures(project(":core:playback")))
+    testImplementation(testFixtures(project(":core:skinplayer")))
     testImplementation(testFixtures(project(":modernskin")))
     // the debug activity's check mode replays the reference scenarios with the same helpers
     debugImplementation(testFixtures(project(":modernskin")))
