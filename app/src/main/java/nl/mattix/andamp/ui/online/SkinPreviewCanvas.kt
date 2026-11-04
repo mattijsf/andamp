@@ -39,7 +39,7 @@ import nl.mattix.andamp.ui.window.playlistWidgets
 
 /**
  * A skin on a running demo player: the app's own windows, widgets and draw functions over a
- * [SkinDemo] state, with no audio and no backend behind it.
+ * [SkinDemo], with no audio and no backend behind it.
  *
  * The stack is the museum's composition, main over equalizer over playlist, each window drawn at
  * one whole-number scale.
@@ -54,8 +54,9 @@ internal fun SkinPreviewCanvas(
     val context = LocalContext.current
     // the demo playlist looks the way the listener's own does
     val lists = remember { ListStyleStore(context) }
-    val state = remember { SkinDemo.state().apply { listFont = lists.font } }
-    val player = remember(state) { SkinDemo.Player(state) }
+    val demo = remember { SkinDemo().apply { state.listFont = lists.font } }
+    val state = demo.state
+    val player = demo.controls
     val text = remember { PlaylistTextRasterizer(Typeface.createFromAsset(context.assets, PlaylistTextRasterizer.ASSET_PATH)) }
     val layout = remember { PlaylistLayout(height = PLAYLIST_H, width = PL_W, rowH = lists.rowHeight.px) }
     var frame by remember { mutableLongStateOf(0L) }
@@ -66,7 +67,7 @@ internal fun SkinPreviewCanvas(
         val began = withInfiniteAnimationFrameMillis { it }
         while (true) {
             withInfiniteAnimationFrameMillis { now ->
-                SkinDemo.frame(state, now - began)
+                demo.frame(now - began)
                 frame = now
             }
         }

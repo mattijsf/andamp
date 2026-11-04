@@ -291,11 +291,12 @@ class SkinPreviewTest {
     @Test
     fun `the preview draws the same signal as the app's fake spectrum and wave`() {
         // run for many frames: two frames are not enough to tell two signals apart
-        val preview = SkinDemo.state()
+        val demo = SkinDemo()
+        val preview = demo.state
         val shared = WinampState()
         var millis = 0L
         repeat(FRAMES) {
-            SkinDemo.frame(preview, millis)
+            demo.frame(millis)
             FakeSpectrum.step(shared, millis / 1000.0)
             FakeWave.step(shared, millis / 1000.0)
             millis += FRAME_MS
@@ -308,17 +309,18 @@ class SkinPreviewTest {
 
     @Test
     fun `stopping clears the window and pausing holds the last frame`() {
-        val state = SkinDemo.state()
-        SkinDemo.frame(state, 1_000)
+        val demo = SkinDemo()
+        val state = demo.state
+        demo.frame(1_000)
         val held = state.visLevels.toList()
 
-        state.transport = Transport.Paused
-        SkinDemo.frame(state, 2_000)
+        demo.controls.pause()
+        demo.frame(2_000)
 
         assertEquals("pause holds the last frame", held, state.visLevels.toList())
 
-        state.transport = Transport.Stopped
-        SkinDemo.frame(state, 3_000)
+        demo.controls.stop()
+        demo.frame(3_000)
 
         assertTrue("stop clears the bars", state.visLevels.all { it == 0f })
         assertTrue("stop flattens the trace", state.visWave.all { it == RealOscilloscope.CENTER_ROW })
@@ -388,8 +390,9 @@ class SkinPreviewTest {
 
     @Test
     fun `every control changes the demo state`() {
-        val state = SkinDemo.state()
-        val player = SkinDemo.Player(state)
+        val demo = SkinDemo()
+        val state = demo.state
+        val player = demo.controls
 
         player.stop()
         assertEquals(Transport.Stopped, state.transport)
@@ -414,17 +417,18 @@ class SkinPreviewTest {
 
     @Test
     fun `stopping stops the clock, and playing starts it again`() {
-        val state = SkinDemo.state()
-        val player = SkinDemo.Player(state)
-        SkinDemo.frame(state, 9_000)
+        val demo = SkinDemo()
+        val state = demo.state
+        val player = demo.controls
+        demo.frame(9_000)
         val whilePlaying = state.currentTimeSec
 
         player.stop()
-        SkinDemo.frame(state, 15_000)
+        demo.frame(15_000)
         assertEquals("stop resets the clock to zero", 0, state.currentTimeSec)
 
         player.play()
-        SkinDemo.frame(state, 21_000)
+        demo.frame(21_000)
         assertTrue("play starts the clock again", state.currentTimeSec != whilePlaying)
     }
 
@@ -453,12 +457,12 @@ class SkinPreviewTest {
         // the picture the preview fades out of was taken in webamp's
         // screenshotInitialState: the same four tracks, lengths and bitrate,
         // the third one selected, three seconds in, and that EQ curve
-        val state = SkinDemo.state()
+        val state = SkinDemo().state
 
         assertEquals(listOf(5, 191, 240, 300), state.playlist.map { (it.durationMs / 1000).toInt() })
         assertEquals("Llama Whipping Intro", state.playlist.first().title)
-        assertEquals(listOf(128), state.playlist.map { it.bitrateKbps }.distinct())
-        assertEquals(listOf(44), state.playlist.map { it.sampleRateKhz }.distinct())
+        assertEquals(128, state.bitrateKbps)
+        assertEquals(44, state.sampleRateKhz)
         assertEquals(setOf(2), state.selectedRows)
         assertEquals(3, state.currentTimeSec)
         // 52, 74, 83, 91, 80, 54, 23, 19, 34, 75 and a preamp of 56 on
@@ -469,14 +473,15 @@ class SkinPreviewTest {
 
     @Test
     fun `the demo is playing and its frames move`() {
-        val state = SkinDemo.state()
+        val demo = SkinDemo()
+        val state = demo.state
 
         assertEquals(Transport.Playing, state.transport)
         assertTrue("the demo has songs", state.playlist.isNotEmpty())
 
-        SkinDemo.frame(state, millis = 4_000)
+        demo.frame(millis = 4_000)
         val moved = state.visLevels.toList()
-        SkinDemo.frame(state, millis = 4_500)
+        demo.frame(millis = 4_500)
 
         assertTrue("the bars move between frames", moved != state.visLevels.toList())
         assertTrue("the clock runs", state.currentTimeSec > 0)
