@@ -151,6 +151,12 @@ interface SkinHost {
     fun chooseFromMenu(menu: SkinMenu): Int? = 0
 
     /**
+     * The windows on screen changed ([SkinRuntime.windowIds], main first): one opened, closed or
+     * switched layout (a shade). A host that shows each window apart makes or drops its windows here.
+     */
+    fun windowsChanged(windows: List<WindowId>) = Unit
+
+    /**
      * A button action the host answers, as Winamp answered it outside the skin, when the skin was
      * set up with [SkinSetup.hostActions]: the action uppercase and its param or window name; see
      * [SkinRuntime.onHostAction].

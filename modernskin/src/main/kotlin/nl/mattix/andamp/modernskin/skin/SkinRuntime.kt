@@ -782,6 +782,21 @@ class SkinRuntime(
         focused = l
     }
 
+    /** Gives [window] the focus as a touch on it does: its alphas and pictures for focus show on the next frame. */
+    fun focus(window: WindowId) = takeFocus(layoutOf(window))
+
+    /**
+     * Puts [window] at [x], [y] of the viewport, where a host that shows each window apart placed
+     * it: scripts read it there (getLeft, getTop). No edge is noted, as when no script moved it.
+     */
+    fun moveWindow(
+        window: WindowId,
+        x: Int,
+        y: Int,
+    ) {
+        layoutOf(window).placeAt(x, y)
+    }
+
     /**
      * Gives [l] the focus as a touch does: the window losing it and [l] show their alphas and
      * pictures for it (activealpha and inactivealpha, a layer's inactiveimage) on the next frame,
@@ -1853,7 +1868,15 @@ class SkinRuntime(
         do {
             layoutPass()
         } while (needsLayout && ++passes < MAX_LAYOUT_PASSES)
+        val ids = windowIds
+        if (ids != toldWindows) {
+            toldWindows = ids
+            host.windowsChanged(ids)
+        }
     }
+
+    /** The windows on screen as [SkinHost.windowsChanged] last told the host. */
+    private var toldWindows: List<WindowId> = emptyList()
 
     /** Layout passes run so far. */
     var layoutPasses = 0L
@@ -2413,8 +2436,65 @@ class SkinRuntime(
         y: Int,
     ): Layout? {
         if (needsLayout) doLayout()
+        aimed?.let { return it }
         return StackArrange.windowAt(windows, ::windowRect, x to y, touchSlop)
     }
+
+    /** The window a pointer call names ([inWindow]): while it runs, every point is in that window. */
+    private var aimed: Layout? = null
+
+    /**
+     * Runs [block] with the point [x], [y] of [window] as a point of the stack, the touch kept to
+     * that window: no other window takes it, however near. A host that shows each window apart
+     * calls the pointer events this way.
+     */
+    private fun <T> inWindow(
+        window: WindowId,
+        x: Int,
+        y: Int,
+        block: (sx: Int, sy: Int) -> T,
+    ): T {
+        val l = layoutOf(window)
+        if (needsLayout) doLayout()
+        val origin = windowRect(l)
+        val before = aimed
+        aimed = l
+        try {
+            return block(origin.left + x, origin.top + y)
+        } finally {
+            aimed = before
+        }
+    }
+
+    /** [pointerDown] at a point of [window], in its own pixels; see [inWindow]. */
+    fun pointerDown(
+        window: WindowId,
+        x: Int,
+        y: Int,
+        seq: Int = 0,
+    ) = inWindow(window, x, y) { sx, sy -> pointerDown(sx, sy, seq) }
+
+    /** [pointerMove] at a point of [window], in its own pixels; see [inWindow]. */
+    fun pointerMove(
+        window: WindowId,
+        x: Int,
+        y: Int,
+    ) = inWindow(window, x, y) { sx, sy -> pointerMove(sx, sy) }
+
+    /** [pointerUp] at a point of [window], in its own pixels; see [inWindow]. */
+    fun pointerUp(
+        window: WindowId,
+        x: Int,
+        y: Int,
+    ) = inWindow(window, x, y) { sx, sy -> pointerUp(sx, sy) }
+
+    /** [doubleTap] at a point of [window], in its own pixels; see [inWindow]. */
+    fun doubleTap(
+        window: WindowId,
+        x: Int,
+        y: Int,
+        seq: Int = 0,
+    ) = inWindow(window, x, y) { sx, sy -> doubleTap(sx, sy, seq) }
 
     /** The topmost object at a point of the stack. */
     fun hitTest(
