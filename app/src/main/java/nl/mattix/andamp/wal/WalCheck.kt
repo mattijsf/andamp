@@ -21,8 +21,9 @@ import java.io.File
  * Runs the modern skins in a folder once each, off screen, so a debug build can be tried over adb
  * (`--es wal check` to its adb switch): load, [TICKS] ticks on a stepped clock with a demo track
  * playing, and the windows drawn at 1x into a PNG beside the skin. Each skin's name before it
- * loads, then its load time, the p95 of a tick plus its draw list and the drawing time, or its
- * failure, go to the log under [WalHost.TAG].
+ * loads, then its load time, the p95 of a tick plus its draw list (and of each by itself, and of
+ * a tick plus a planned frame), the drawing time and, on the native engine, where a frame's time
+ * goes, or its failure, go to the log under [WalHost.TAG].
  *
  * A run that runs out of time stops between skins, after one skin at least. A file in the folder
  * keeps which skins the run has finished, for the installed build and each skin's size and date, so
@@ -139,14 +140,43 @@ internal object WalCheck {
         rt.load()
         val loadMs = (System.nanoTime() - loadStart) / NANOS_PER_MS
         player.play()
+        val wk = rt as? WalkitEngine
+        val native0 = wk?.nativeDrawNanos ?: 0L
+        val decode0 = wk?.decodeNanos ?: 0L
+        val convert0 = wk?.convertNanos ?: 0L
+        val bytes0 = wk?.frameBytes ?: 0L
+        val ticks = LongArray(TICKS)
+        val lists = LongArray(TICKS)
         val frames =
             LongArray(TICKS) {
                 now += FRAME_MS
                 val t0 = System.nanoTime()
                 rt.tick()
+                val t1 = System.nanoTime()
                 rt.drawWindows()
+                val t2 = System.nanoTime()
+                ticks[it] = t1 - t0
+                lists[it] = t2 - t1
+                t2 - t0
+            }
+        val stages = StringBuilder(", tick p95 ${p95Of(ticks)} ms, draw list p95 ${p95Of(lists)} ms")
+        if (wk != null) {
+            stages.append(
+                ", a native frame: ${perFrameUs(wk.nativeDrawNanos - native0)} us drawn, " +
+                    "${perFrameUs(wk.decodeNanos - decode0)} us read, ${perFrameUs(wk.convertNanos - convert0)} us converted, " +
+                    "${(wk.frameBytes - bytes0) / TICKS} bytes",
+            )
+        }
+        val plan0 = rt.planNanos
+        val planned =
+            LongArray(TICKS) {
+                now += FRAME_MS
+                val t0 = System.nanoTime()
+                rt.tick()
+                rt.drawPlanned(now)
                 System.nanoTime() - t0
             }
+        stages.append(", tick and planned frame p95 ${p95Of(planned)} ms, planned in ${perFrameUs(rt.planNanos - plan0)} us")
         val stack = rt.drawWindows()
         val drawStart = System.nanoTime()
         val drawn = draw(stack, host)
@@ -154,12 +184,21 @@ internal object WalCheck {
         drawn?.let { png ->
             pngOf(skin).outputStream().use { png.asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it) }
         }
-        val p95 = frames.sorted()[(TICKS * P95).toInt()] / NANOS_PER_US / 1000.0
         rt.close()
         val engine = if (WalNative.on) "native" else "kotlin"
-        return "$engine engine, load $loadMs ms, tick and draw list p95 ${"%.1f".format(java.util.Locale.US, p95)} ms, " +
-            "drawn in $drawMs ms, ${stack.size} windows" + if (drawn == null) " (nothing to draw)" else ""
+        return "$engine engine, load $loadMs ms, tick and draw list p95 ${p95Of(frames)} ms, " +
+            "drawn in $drawMs ms, ${stack.size} windows" + (if (drawn == null) " (nothing to draw)" else "") + stages
     }
+
+    /** The 95th percentile of [nanos], in ms with two decimals. */
+    private fun p95Of(nanos: LongArray) =
+        "%.2f".format(
+            java.util.Locale.US,
+            nanos.sorted()[(TICKS * P95).toInt()] / NANOS_PER_US / 1000.0,
+        )
+
+    /** [nanos] over [TICKS] frames, as microseconds per frame. */
+    private fun perFrameUs(nanos: Long) = nanos / TICKS / NANOS_PER_US
 
     /** The stack at 1x, from its corner; null when it has no size. */
     private fun draw(

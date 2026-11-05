@@ -27,10 +27,12 @@ import nl.mattix.andamp.wal.WalkitTypes.menu
 import nl.mattix.andamp.wal.WalkitTypes.plan
 import nl.mattix.andamp.wal.WalkitTypes.rect
 import nl.mattix.andamp.wal.WalkitTypes.wk
-import nl.mattix.walkit.DrawPlanner as WkDrawPlanner
+import java.util.IdentityHashMap
+import nl.mattix.walkit.DrawCmd as WkDrawCmd
 import nl.mattix.walkit.FontDef as WkFontDef
 import nl.mattix.walkit.Player as WkPlayer
 import nl.mattix.walkit.Presentation as WkPresentation
+import nl.mattix.walkit.Rect as WkRect
 import nl.mattix.walkit.SavedSettings as WkSavedSettings
 import nl.mattix.walkit.SkinFiles as WkSkinFiles
 import nl.mattix.walkit.SkinHost as WkSkinHost
@@ -46,8 +48,8 @@ import nl.mattix.walkit.WindowId as WkWindowId
  * app's [SkinEngine]: the same skins, the same members, in the engine module's types. The app's
  * [SkinFiles], [SkinHost] and [Player] are handed to the native runtime through adapters, and what
  * it answers (windows, draw lists, menus, options, settings) is converted back, one value at a
- * time. The frames are planned by the library's own [WkDrawPlanner], which plans over the owners
- * the native frame carries, and its plans are converted like the rest.
+ * time. The native engine plans its frames itself, and hands over only the commands that changed
+ * since the frame before: a command unchanged is the same object, so it is converted once.
  *
  * Everything runs on the engine thread, as with the Kotlin engine; [close] frees the native side.
  */
@@ -67,7 +69,6 @@ internal class WalkitEngine(
             WkSkinSetup(setup.skinName, setup.haveLibrary, setup.hostActions),
             clock,
         )
-    private val planner = WkDrawPlanner()
 
     override var skinName: String
         get() = rt.skinName
@@ -206,15 +207,36 @@ internal class WalkitEngine(
             EngineStats(it.scriptSteps, it.timerFires, it.layoutPasses, it.shapesWorkedOut)
         }
 
-    override fun drawWindows(): List<Pair<Rect, List<DrawCmd>>> = rt.drawWindows().map { (r, cmds) -> rect(r) to cmds.map(::cmd) }
+    override fun drawWindows(): List<Pair<Rect, List<DrawCmd>>> = convert(rt.drawWindows())
 
     override fun drawPlanned(nowMs: Long): DrawPlanner.Planned =
-        planner.draw(rt, nowMs).let { planned ->
-            DrawPlanner.Planned(planned.stack.map { (r, cmds) -> rect(r) to cmds.map(::cmd) }, planned.plans.map(::plan))
-        }
+        rt.drawPlanned(nowMs).let { DrawPlanner.Planned(convert(it.stack), it.plans.map(::plan)) }
 
-    override val planNanos: Long get() = planner.planNanos
-    override val fullPlans: Long get() = planner.fullPlans
+    override val planNanos: Long get() = rt.planNanos
+    override val fullPlans: Long get() = rt.fullPlans
+
+    /** Nanoseconds spent converting the native frames' commands, over every frame so far; for timing runs. */
+    var convertNanos: Long = 0L
+        private set
+
+    /** Nanoseconds in the native draw call, and reading its frames, over every frame so far; for timing runs. */
+    val nativeDrawNanos: Long get() = rt.nativeDrawNanos
+    val decodeNanos: Long get() = rt.decodeNanos
+
+    /** The native frames' bytes, over every frame so far; for timing runs. */
+    val frameBytes: Long get() = rt.frameBytes
+
+    /** The frame before's commands as converted, by the library's object, so a command it kept is converted once. */
+    private var converted = IdentityHashMap<WkDrawCmd, DrawCmd>()
+
+    private fun convert(stack: List<Pair<WkRect, List<WkDrawCmd>>>): List<Pair<Rect, List<DrawCmd>>> {
+        val t0 = System.nanoTime()
+        val next = IdentityHashMap<WkDrawCmd, DrawCmd>(converted.size.coerceAtLeast(MIN_CONVERTED) * 2)
+        val out = stack.map { (r, cmds) -> rect(r) to cmds.map { c -> next.getOrPut(c) { converted[c] ?: cmd(c) } } }
+        converted = next
+        convertNanos += System.nanoTime() - t0
+        return out
+    }
 
     override fun pointerDown(
         x: Int,
@@ -253,6 +275,10 @@ internal class WalkitEngine(
     override fun menuChoice(menu: SkinMenu): Int = rt.menuChoice(wk(menu))
 
     override fun close() = rt.close()
+
+    private companion object {
+        const val MIN_CONVERTED = 64
+    }
 
     /** The app's files as the native runtime reads them. */
     private class FilesAdapter(
