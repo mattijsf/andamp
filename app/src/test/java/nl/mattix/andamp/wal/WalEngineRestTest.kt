@@ -12,6 +12,7 @@ import nl.mattix.andamp.modernskin.fixtures.startScriptTimer
 import nl.mattix.andamp.modernskin.host.WalIdle
 import nl.mattix.andamp.modernskin.host.WalRest
 import nl.mattix.andamp.modernskin.skin.FakePlayer
+import nl.mattix.andamp.modernskin.skin.SkinEngine
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinMenu
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
@@ -71,7 +72,7 @@ class WalEngineRestTest {
     /** An engine on the skin, reading [idle], closed after the test; [report] holds what its start said. */
     private inner class Run(
         label: String,
-        idle: (SkinRuntime) -> WalIdle = WalIdle::of,
+        idle: (SkinEngine) -> WalIdle = WalIdle::of,
     ) {
         // a closed engine's thread may still be ending when the next test starts one
         val name = "$label-${runs.incrementAndGet()}"
@@ -111,7 +112,7 @@ class WalEngineRestTest {
     /** Waits until the work posted to the main run's engine before this is done. */
     private fun onEngine(read: (SkinRuntime) -> Unit) {
         val got = CompletableFuture<Unit>()
-        engine.post(publish = false) { got.complete(read(it)) }
+        engine.post(publish = false) { got.complete(read(it as SkinRuntime)) }
         got.get(5, TimeUnit.SECONDS)
     }
 
@@ -119,7 +120,7 @@ class WalEngineRestTest {
     private fun openMenu(on: WalEngine): CompletableFuture<Int> {
         val heard = CompletableFuture<Int>()
         on.post { rt ->
-            heard.complete(rt.popScriptMenu("Item" to 1))
+            heard.complete((rt as SkinRuntime).popScriptMenu("Item" to 1))
         }
         return heard
     }
@@ -147,12 +148,12 @@ class WalEngineRestTest {
             rt.startScriptTimer(periodMs)
         }
 
-        fun idle(rt: SkinRuntime): WalIdle {
+        fun idle(rt: SkinEngine): WalIdle {
             if (rt.stats.timerFires != fired) {
                 fired = rt.stats.timerFires
                 if (fired % changesEvery == 0L) rt.invalidate()
             }
-            return WalIdle(framesWanted = false, nextDueAt = rt.nextTimerAt, stopped = stopped)
+            return WalIdle(framesWanted = false, nextDueAt = (rt as SkinRuntime).nextTimerAt, stopped = stopped)
         }
     }
 
@@ -163,7 +164,7 @@ class WalEngineRestTest {
     private fun resting(
         label: String,
         setUp: (SkinRuntime) -> Unit = {},
-        idle: (SkinRuntime) -> WalIdle,
+        idle: (SkinEngine) -> WalIdle,
     ): Run {
         val run = Run(label, idle = idle)
         run.start {

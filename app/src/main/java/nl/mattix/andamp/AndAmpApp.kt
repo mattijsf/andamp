@@ -7,6 +7,7 @@ import nl.mattix.andamp.backend.media3.Media3PlaybackHost
 import nl.mattix.andamp.state.PackSources
 import nl.mattix.andamp.state.PlaybackRoot
 import nl.mattix.andamp.wal.WalGate
+import nl.mattix.andamp.wal.WalNative
 import nl.mattix.andamp.wal.WalSharp
 import kotlin.concurrent.thread
 
@@ -29,6 +30,7 @@ class AndAmpApp : Application() {
         thread(name = "wal-gate") {
             WalGate.read(this)
             WalSharp.read(this)
+            WalNative.read(this)
         }
     }
 }

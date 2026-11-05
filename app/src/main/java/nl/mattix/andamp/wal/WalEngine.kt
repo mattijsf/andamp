@@ -15,11 +15,10 @@ import nl.mattix.andamp.modernskin.host.WalLayout
 import nl.mattix.andamp.modernskin.host.WalRest
 import nl.mattix.andamp.modernskin.host.WalScale
 import nl.mattix.andamp.modernskin.skin.DrawCmd
-import nl.mattix.andamp.modernskin.skin.DrawPlanner
 import nl.mattix.andamp.modernskin.skin.Presentation
 import nl.mattix.andamp.modernskin.skin.Rect
+import nl.mattix.andamp.modernskin.skin.SkinEngine
 import nl.mattix.andamp.modernskin.skin.SkinMenu
-import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.modernskin.skin.WindowPlan
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
@@ -32,7 +31,7 @@ import java.util.concurrent.atomic.AtomicReference
  */
 @Suppress("LongParameterList") // one snapshot of all the screen reads of a frame
 internal class WalFrame(
-    /** The windows and their commands, as `SkinRuntime.drawWindows` gives them. */
+    /** The windows and their commands, as `SkinEngine.drawWindows` gives them. */
     val stack: List<Pair<Rect, List<DrawCmd>>>,
     /** The main window's size, or null when the skin has none. */
     val mainSize: Pair<Int, Int>?,
@@ -53,14 +52,14 @@ internal class WalFrame(
     val buildNanos: Long = 0,
     /** Where the stack sits in the box of the last [WalEngine.fit], or null before the first one. */
     val layout: WalLayout? = null,
-    /** The seq of the last touch when it landed on an object with a skin menu, else null; see [SkinRuntime.menuTarget]. */
+    /** The seq of the last touch when it landed on an object with a skin menu, else null; see [SkinEngine.menuTarget]. */
     val menuTarget: Int? = null,
     /**
      * Whether the screen should tick the skin on every display frame: the engine's idle source says
      * something moves ([WalIdle.framesWanted]) and the skin has not gone static ([WalRest.wantsFrames]).
      */
     val wantsFrames: Boolean = true,
-    /** The color theme the skin wears ([SkinRuntime.colorTheme]), or null when it has none. */
+    /** The color theme the skin wears ([SkinEngine.colorTheme]), or null when it has none. */
     val themeKey: String? = null,
     /**
      * What the screen may keep of each window of [stack] from earlier frames (see [WalLayers]), in
@@ -100,7 +99,7 @@ internal class WalFrame(
 internal class WalEngine(
     name: String,
     private val host: WalHost,
-    private val idle: (SkinRuntime) -> WalIdle = WalIdle::of,
+    private val idle: (SkinEngine) -> WalIdle = WalIdle::of,
     private val onFrame: () -> Unit,
 ) {
     private val thread = HandlerThread("wal-$name").apply { start() }
@@ -132,13 +131,10 @@ internal class WalEngine(
     }
 
     // touched only on the engine thread
-    private var rt: SkinRuntime? = null
+    private var rt: SkinEngine? = null
     private var baseW = 0
     private var publishing = false
     private val fitting = WalFitting()
-
-    /** Works out what the screen may keep of each frame; the engine thread's. */
-    private val planner = DrawPlanner()
 
     /** What [idle] said last in the running task, or null when it has not been asked yet. */
     private var lastIdle: WalIdle? = null
@@ -280,7 +276,7 @@ internal class WalEngine(
      * nothing was published), whether a frame was published, and the script steps the tick ran.
      */
     @Volatile
-    var onTicked: ((runtime: SkinRuntime, tickNanos: Long, drawNanos: Long, published: Boolean, steps: Long) -> Unit)? = null
+    var onTicked: ((runtime: SkinEngine, tickNanos: Long, drawNanos: Long, published: Boolean, steps: Long) -> Unit)? = null
 
     /**
      * Called once, on the engine thread, when [MAX_FAILURES] tasks in a row have failed: the skin
@@ -294,7 +290,7 @@ internal class WalEngine(
      * with its runtime; what it throws counts against that task.
      */
     @Volatile
-    var onTask: ((runtime: SkinRuntime) -> Unit)? = null
+    var onTask: ((runtime: SkinEngine) -> Unit)? = null
 
     /**
      * Makes and loads the runtime on the engine thread with [build], then publishes the first frame.
@@ -312,7 +308,7 @@ internal class WalEngine(
         budgetMs: Long = WalBuild.BUDGET_MS,
         box: IntSize? = null,
         onStart: (failure: Throwable?) -> Unit = {},
-        build: () -> SkinRuntime,
+        build: () -> SkinEngine,
     ) {
         this.budgetMs = budgetMs
         this.onStart = onStart
@@ -337,7 +333,7 @@ internal class WalEngine(
      * Puts the loaded [runtime] on, fits it to the box asked for, publishes its first frame and
      * sets its first wake; what that threw, or null.
      */
-    private fun firstFrame(runtime: SkinRuntime): Throwable? {
+    private fun firstFrame(runtime: SkinEngine): Throwable? {
         rt = runtime
         return runCatching {
             baseW = WalFitting.baseWOf(runtime)
@@ -373,7 +369,7 @@ internal class WalEngine(
     fun post(
         publish: Boolean = true,
         cause: WalCause = WalCause.TASK,
-        task: (SkinRuntime) -> Unit,
+        task: (SkinEngine) -> Unit,
     ) {
         val merge = publish && cause == WalCause.TOUCH
         if (merge) publishersWaiting.incrementAndGet()
@@ -393,7 +389,7 @@ internal class WalEngine(
      * with null when the skin is not on (it has not loaded yet, or did not start); publishes nothing.
      * For work a caller waits on either way.
      */
-    fun postAlways(task: (SkinRuntime?) -> Unit) {
+    fun postAlways(task: (SkinEngine?) -> Unit) {
         handler.post { guarded("engine") { task(rt) } }
     }
 
@@ -405,7 +401,7 @@ internal class WalEngine(
     fun postLater(
         token: Any,
         delayMs: Long,
-        task: (SkinRuntime) -> Unit,
+        task: (SkinEngine) -> Unit,
     ) {
         handler.removeCallbacksAndMessages(token)
         handler.postAtTime({ guarded("engine") { rt?.let(task) } }, token, SystemClock.uptimeMillis() + delayMs)
@@ -437,7 +433,7 @@ internal class WalEngine(
     }
 
     /** Applies the box asked for last to [runtime], unless it is the one applied; true when it changed. */
-    private fun applyFit(runtime: SkinRuntime): Boolean {
+    private fun applyFit(runtime: SkinEngine): Boolean {
         val fit = wantedFit ?: return false
         if (fit == appliedFit) return false
         appliedFit = fit
@@ -452,7 +448,7 @@ internal class WalEngine(
      * player before the change, and a display frame, as a slide that takes longer than a display
      * frame to step would otherwise step only on every other frame, unevenly. A display frame
      * passes [showAt], when the frame its tick makes reaches the screen: the tick places a slide
-     * for then (`SkinRuntime.tick(slideLead)`).
+     * for then (`SkinEngine.tick(slideLead)`).
      */
     fun requestTick(
         cause: WalCause = WalCause.TICK,
@@ -565,7 +561,7 @@ internal class WalEngine(
         it.doubleTap(x, y, seq)
     }
 
-    /** Right-clicks the object and point touch [seq] went down on, for its skin menu; see [SkinRuntime.rightClick]. */
+    /** Right-clicks the object and point touch [seq] went down on, for its skin menu; see [SkinEngine.rightClick]. */
     fun rightClick(seq: Int) =
         postTouch("right click") {
             flushMove(it)
@@ -575,7 +571,7 @@ internal class WalEngine(
     /** [post] for a touch; the timing log says how long it waited for the engine thread. */
     private fun postTouch(
         what: String,
-        task: (SkinRuntime) -> Unit,
+        task: (SkinEngine) -> Unit,
     ) {
         val at = System.nanoTime()
         post(cause = WalCause.TOUCH) { runtime ->
@@ -616,11 +612,16 @@ internal class WalEngine(
         rest.cancel()
         if (startDecided.compareAndSet(false, true)) mainHandler.removeCallbacks(overrun)
         host.menus.close()
+        // the runtime goes after the work posted before, with what it holds outside the JVM
+        handler.post {
+            rt?.close()
+            rt = null
+        }
         thread.quitSafely()
     }
 
     /** A move still waiting goes first, so a release lands where the finger last was. */
-    private fun flushMove(runtime: SkinRuntime) {
+    private fun flushMove(runtime: SkinEngine) {
         moveWaiting.getAndSet(null)?.let { (mx, my) -> runtime.pointerMove(mx, my) }
     }
 
@@ -702,11 +703,11 @@ internal class WalEngine(
         val t0 = host.menus.workClock
         appliedFit?.let { fitting.refit(runtime, it, baseW) }
         publishing = true
-        val planned = planner.planNanos
-        val fullPlans = planner.fullPlans
+        val planned = runtime.planNanos
+        val fullPlans = runtime.fullPlans
         val (stack, plans) =
             try {
-                drawPlanned(runtime, planner, now)
+                drawPlanned(runtime, now)
             } finally {
                 publishing = false
             }
@@ -739,8 +740,8 @@ internal class WalEngine(
             ),
         )
         if (WalTiming.on) {
-            val plan = plans?.let { planner.planNanos - planned }
-            val fromStart = planner.fullPlans != fullPlans
+            val plan = plans?.let { runtime.planNanos - planned }
+            val fromStart = runtime.fullPlans != fullPlans
             Log.d(WalTiming.TAG, WalTiming.line(thread.name, work, host.menus.workClock - t0, named, plan, fromStart))
         }
         onFrame()
@@ -765,15 +766,14 @@ internal class WalEngine(
 }
 
 /** How far right [runtime]'s main window visibly reaches; 0 without one. */
-private fun mainContentRight(runtime: SkinRuntime): Int = runtime.mainWindow?.let { runtime.contentRight(it) } ?: 0
+private fun mainContentRight(runtime: SkinEngine): Int = runtime.mainWindow?.let { runtime.contentRight(it) } ?: 0
 
 /**
- * [runtime]'s windows as drawWindows gives them, with a plan of each by [planner] at [now] while
- * [WalRender.layers] is on, so the screen draws again only what changed (see [WalLayers]).
+ * [runtime]'s windows as drawWindows gives them, with a plan of each by the engine's planner at
+ * [now] while [WalRender.layers] is on, so the screen draws again only what changed (see [WalLayers]).
  */
 private fun drawPlanned(
-    runtime: SkinRuntime,
-    planner: DrawPlanner,
+    runtime: SkinEngine,
     now: Long,
 ): Pair<List<Pair<Rect, List<DrawCmd>>>, List<WindowPlan>?> =
-    if (WalRender.layers) planner.draw(runtime, now).let { it.stack to it.plans } else runtime.drawWindows() to null
+    if (WalRender.layers) runtime.drawPlanned(now).let { it.stack to it.plans } else runtime.drawWindows() to null

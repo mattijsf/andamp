@@ -53,6 +53,7 @@ import nl.mattix.andamp.modernskin.host.WalFit
 import nl.mattix.andamp.modernskin.host.WalScale
 import nl.mattix.andamp.modernskin.skin.AndampDefaultSet
 import nl.mattix.andamp.modernskin.skin.FakePlayer
+import nl.mattix.andamp.modernskin.skin.SkinEngine
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinMenu
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
@@ -63,8 +64,10 @@ import nl.mattix.andamp.wal.WalEngine
 import nl.mattix.andamp.wal.WalFiles
 import nl.mattix.andamp.wal.WalFrame
 import nl.mattix.andamp.wal.WalHost
+import nl.mattix.andamp.wal.WalNative
 import nl.mattix.andamp.wal.WalPrepare
 import nl.mattix.andamp.wal.WalSettings
+import nl.mattix.andamp.wal.WalkitEngine
 import nl.mattix.andamp.wal.drawWalStack
 import nl.mattix.andamp.wal.drawWalWindow
 import java.io.File
@@ -357,7 +360,7 @@ private class Probe(
     /** On the engine thread, after each tick. */
     @Synchronized
     fun ticked(
-        rt: SkinRuntime,
+        rt: SkinEngine,
         tickNanos: Long,
         drawNanos: Long,
         drew: Boolean,
@@ -478,8 +481,8 @@ private fun loadRuntime(
     check: Check?,
     checkClock: LongArray,
     probe: Probe?,
-): SkinRuntime =
-    SkinRuntime(
+): SkinEngine =
+    engineFor(
         files,
         host,
         player,
@@ -501,14 +504,19 @@ private fun loadRuntime(
         check?.theme?.let { t -> it.selectColorTheme(t) }
         check?.view?.let { v -> it.presentation = it.presentation.copy(viewSize = v) }
         // a scenario's size for a resizable main window, as ReferenceRenderTest gives it
-        check?.mainSize?.let { (w, h) -> it.mainWindow?.let { main -> it.resizeAsScript(main, 0, 0, w, h) } }
+        check?.mainSize?.let { (w, h) ->
+            it.mainWindow?.let { main ->
+                // the reference sizes the window as a script does; the native engine takes the host's resize
+                if (it is SkinRuntime) it.resizeAsScript(main, 0, 0, w, h) else it.resizeWindow(main, w, h)
+            }
+        }
         // windows the skin opens by itself at start in Winamp, as ReferenceRenderTest opens them
         check?.show?.forEach { id -> it.openWindow(id) }
     }
 
 /** The reference sequence, as ReferenceRenderTest runs it, on the check's stepped clock. */
 private fun runCheck(
-    rt: SkinRuntime,
+    rt: SkinEngine,
     player: FakePlayer,
     check: Check,
     checkClock: LongArray,
@@ -697,7 +705,7 @@ private fun ModernSkinScreen(
             engine.post(publish = false) {
                 val warmFiles = WalFiles.open(file, siblings, base)
                 val again =
-                    SkinRuntime(warmFiles, WalHost(warmFiles, context.cacheDir, windowOpen), FakePlayer(), setupOf(file, check))
+                    engineFor(warmFiles, WalHost(warmFiles, context.cacheDir, windowOpen), FakePlayer(), setupOf(file, check))
                 val t0 = System.nanoTime()
                 runCatching { again.load() }
                 probe.warmLoadMs = (System.nanoTime() - t0) / 1e6
@@ -968,6 +976,16 @@ private const val LOG_POLL_MS = 100L
  * seconds over a large skin's first load, past the player's [WalBuild.START_BUDGET_MS].
  */
 private const val MEASURE_BUDGET_MS = 60_000L
+
+/** A runtime on the engine the listener chose ([WalNative]), as the player makes one. */
+private fun engineFor(
+    files: SkinFiles,
+    host: WalHost,
+    player: FakePlayer,
+    setup: SkinSetup,
+    clock: () -> Long = System::currentTimeMillis,
+): SkinEngine =
+    if (WalNative.on) WalkitEngine(files, host, player, setup, clock) else SkinRuntime(files, host, player, setup, clock)
 
 /**
  * What a runtime for [file] is given before it loads, the same for every load of it: in use what the

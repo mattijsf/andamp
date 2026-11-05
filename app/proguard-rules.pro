@@ -23,5 +23,7 @@
 # set as Java resources by absolute path and uses no reflection; the rule is
 # about reach, not names.
 -keep class nl.mattix.andamp.modernskin.** { *; }
+# the native engine's library: its JNI methods and the bridge objects the native side calls by name
+-keep class nl.mattix.walkit.** { *; }
 
 # Media3 ships its own consumer rules.

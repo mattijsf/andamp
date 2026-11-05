@@ -12,6 +12,7 @@ import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import nl.mattix.andamp.modernskin.skin.FakePlayer
+import nl.mattix.andamp.modernskin.skin.SkinEngine
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import java.io.File
@@ -124,8 +125,16 @@ internal object WalCheck {
         val host = WalHost(files, cacheDir, WalPrepare.windowOpen()).apply { menus.unattended = true }
         var now = 0L
         val player = FakePlayer().apply { clock = { now } }
-        // set up as the player sets a skin up, named by its file
-        val rt = SkinRuntime(files, host, player, WalPrepare.setup(skin.nameWithoutExtension), clock = { now })
+        // set up as the player sets a skin up, named by its file, on the engine the listener chose
+        val setup = WalPrepare.setup(skin.nameWithoutExtension)
+        val rt: SkinEngine =
+            if (WalNative.on) {
+                WalkitEngine(files, host, player, setup, clock = {
+                    now
+                })
+            } else {
+                SkinRuntime(files, host, player, setup, clock = { now })
+            }
         val loadStart = System.nanoTime()
         rt.load()
         val loadMs = (System.nanoTime() - loadStart) / NANOS_PER_MS
@@ -146,7 +155,9 @@ internal object WalCheck {
             pngOf(skin).outputStream().use { png.asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it) }
         }
         val p95 = frames.sorted()[(TICKS * P95).toInt()] / NANOS_PER_US / 1000.0
-        return "load $loadMs ms, tick and draw list p95 ${"%.1f".format(java.util.Locale.US, p95)} ms, " +
+        rt.close()
+        val engine = if (WalNative.on) "native" else "kotlin"
+        return "$engine engine, load $loadMs ms, tick and draw list p95 ${"%.1f".format(java.util.Locale.US, p95)} ms, " +
             "drawn in $drawMs ms, ${stack.size} windows" + if (drawn == null) " (nothing to draw)" else ""
     }
 

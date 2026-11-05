@@ -3,7 +3,7 @@
 package nl.mattix.andamp.modernskin.host
 
 import nl.mattix.andamp.modernskin.skin.Player
-import nl.mattix.andamp.modernskin.skin.SkinRuntime
+import nl.mattix.andamp.modernskin.skin.SkinEngine
 
 /** What a skin says about resting, as a host reads it each time it publishes a frame ([WalRest]). */
 public data class WalIdle(
@@ -16,7 +16,7 @@ public data class WalIdle(
 ) {
     public companion object {
         /** What [runtime] says. */
-        public fun of(runtime: SkinRuntime): WalIdle =
+        public fun of(runtime: SkinEngine): WalIdle =
             WalIdle(runtime.framesWanted, runtime.nextDueAt(), stopped = runtime.player.status == Player.Status.STOPPED)
     }
 }

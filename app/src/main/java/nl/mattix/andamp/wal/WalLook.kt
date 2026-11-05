@@ -17,6 +17,7 @@ import kotlinx.coroutines.sync.Mutex
 import nl.mattix.andamp.modernskin.host.WalFit
 import nl.mattix.andamp.modernskin.host.WalLayout
 import nl.mattix.andamp.modernskin.skin.Player
+import nl.mattix.andamp.modernskin.skin.SkinEngine
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinMenu
 import nl.mattix.andamp.modernskin.skin.SkinOptions
@@ -401,18 +402,33 @@ internal class WalLook(
         }
     }
 
-    /** Makes the runtime and loads the skin, on the engine thread. */
+    /** Makes the runtime on the engine the listener chose ([WalNative]) and loads the skin, on the engine thread. */
     private fun build(
         files: SkinFiles,
         host: WalHost,
-    ): SkinRuntime =
-        SkinRuntime(files, host, player, WalPrepare.setup(name)).apply {
+    ): SkinEngine =
+        engineFor(files, host).apply {
             settings?.restoreBeforeLoad(id, this)
             load()
             settings?.restoreTheme(id, this)
             // putting back the theme it wore is no change to save
             keptVersion = settingsVersion
             loadedName = skinName
+        }
+
+    private fun engineFor(
+        files: SkinFiles,
+        host: WalHost,
+    ): SkinEngine =
+        if (WalNative.on) {
+            WalkitEngine(
+                files,
+                host,
+                player,
+                WalPrepare.setup(name),
+            )
+        } else {
+            SkinRuntime(files, host, player, WalPrepare.setup(name))
         }
 
     private fun startReported(
@@ -454,14 +470,14 @@ internal class WalLook(
     }
 
     /** After each engine task: a change to what the skin keeps is saved once changes rest for [SAVE_DELAY_MS]. */
-    private fun keepLater(rt: SkinRuntime) {
+    private fun keepLater(rt: SkinEngine) {
         if (rt.settingsVersion == keptVersion) return
         keptVersion = rt.settingsVersion
         engine?.postLater(saveToken, SAVE_DELAY_MS, ::keep)
     }
 
     /** Saves what the skin keeps between runs, unless a release without a save came first. On the engine thread. */
-    private fun keep(rt: SkinRuntime) {
+    private fun keep(rt: SkinEngine) {
         val settings = settings ?: return
         val text = settings.snapshot(id, rt) ?: return
         synchronized(saveLock) { if (!savesClosed) settings.keep(id, text) }

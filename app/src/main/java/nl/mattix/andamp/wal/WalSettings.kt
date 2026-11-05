@@ -6,7 +6,7 @@ import android.content.Context
 import android.util.Log
 import androidx.compose.ui.unit.IntOffset
 import nl.mattix.andamp.modernskin.skin.SavedSettings
-import nl.mattix.andamp.modernskin.skin.SkinRuntime
+import nl.mattix.andamp.modernskin.skin.SkinEngine
 import org.json.JSONObject
 
 /**
@@ -23,7 +23,7 @@ internal class WalSettings(
     /** Puts back what [id] kept, into a runtime that has not loaded yet: its scripts read it on start. */
     fun restoreBeforeLoad(
         id: String,
-        rt: SkinRuntime,
+        rt: SkinEngine,
     ) {
         val saved = read(id) ?: return
 
@@ -46,7 +46,7 @@ internal class WalSettings(
     /** Puts back the color theme [id] wore, once its runtime has loaded the skin's themes. */
     fun restoreTheme(
         id: String,
-        rt: SkinRuntime,
+        rt: SkinEngine,
     ) {
         read(id)?.optString(THEME)?.takeIf { it.isNotEmpty() }?.let { rt.selectColorTheme(it) }
     }
@@ -54,7 +54,7 @@ internal class WalSettings(
     /** Keeps what [rt], the runtime of skin [id], holds now. */
     fun save(
         id: String,
-        rt: SkinRuntime,
+        rt: SkinEngine,
     ) {
         snapshot(id, rt)?.let { keep(id, it) }
     }
@@ -65,7 +65,7 @@ internal class WalSettings(
      */
     fun snapshot(
         id: String,
-        rt: SkinRuntime,
+        rt: SkinEngine,
     ): String? {
         val kept = rt.savedSettings()
         val o =

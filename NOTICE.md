@@ -177,6 +177,14 @@ attribution, which this file and the in-app licenses screen give.
 | OkHttp | Apache-2.0 | <https://github.com/square/okhttp> |
 | LuaJ | MIT | <https://github.com/luaj/luaj> |
 
+## walkit: GPL-3.0-or-later
+
+<https://github.com/mattijsf/walkit>
+
+The modern skin engine in native code: the same engine as `:modernskin`, ported to Rust,
+behind the native engine switch in Preferences. It is the same author's work under the same
+license as Andamp, and arrives as the Android library `nl.mattix.walkit:walkit`.
+
 ## The licenses screen
 
 `app/.../ui/prefs/Notices.kt` holds the same list for the in-app licenses screen, because

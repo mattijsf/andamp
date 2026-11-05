@@ -151,6 +151,13 @@ object Notices {
                 url = "https://github.com/square/okhttp",
                 groups = listOf("com.squareup.okhttp3"),
             ),
+            Notice(
+                name = "walkit",
+                licence = "GPL-3.0-or-later",
+                what = res.getString(R.string.prefs_notice_walkit_what),
+                url = "https://github.com/mattijsf/walkit",
+                groups = listOf("nl.mattix.walkit"),
+            ),
         ) + Store.notices(res)
 
     /** Whether [group] is named by some entry, matching on the group or a prefix of it. */
