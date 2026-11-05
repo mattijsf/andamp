@@ -42,8 +42,6 @@ class WalPlayerBalanceTest {
         assertEquals("landed", 64, player.pan)
         state.balance = -100
         assertEquals(-127, player.pan)
-        assertEquals(100, WalPlayer.toBalance(127))
-        for (b in -100..100) assertEquals("balance $b", b, WalPlayer.toBalance(WalPlayer.fromBalance(b)))
     }
 
     @Test

@@ -5,6 +5,9 @@ package nl.mattix.andamp.wal
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
+import nl.mattix.andamp.modernskin.host.WalFit
+import nl.mattix.andamp.modernskin.host.WalLayout
+import nl.mattix.andamp.modernskin.skin.Rect
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.ui.menu.menuAnchorBounds
 import nl.mattix.andamp.ui.window.ClassicStack
@@ -183,7 +186,7 @@ class WalPlacementTest {
         val ask = ClassicStack.Ask(screen, sideways = true, mainH = 116, eq = null, vis = ClassicStack.Member(120, null, false))
         // a 400 by 300 stack drawn as 200 by 150 virtual pixels, whose left column ends 200 skin px down
         val stack = IntRect(10, 8, 210, 158)
-        val dock = WalDock.of(layout(2f, left = 0f, top = 0f, stackW = 400, stackH = 300).copy(dock = IntRect(0, 0, 177, 200)))
+        val dock = WalDock.of(layout(2f, left = 0f, top = 0f, stackW = 400, stackH = 300).copy(dock = Rect(0, 0, 177, 200)))
 
         assertEquals(IntRect(10, 8, 99, 108), dock!!.within(stack))
         val docked = WalPlacement.dockedStack(ask, stack, dock, visH = 120)

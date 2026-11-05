@@ -7,6 +7,7 @@ import android.content.Context
 import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.modernskin.fixtures.optionsItem
+import nl.mattix.andamp.modernskin.host.WalFit
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.SkinOptions
 import nl.mattix.andamp.modernskin.skin.SkinRuntime

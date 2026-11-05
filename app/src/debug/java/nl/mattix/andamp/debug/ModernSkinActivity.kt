@@ -49,6 +49,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
 import nl.mattix.andamp.modernskin.fixtures.resizeAsScript
+import nl.mattix.andamp.modernskin.host.WalFit
+import nl.mattix.andamp.modernskin.host.WalScale
 import nl.mattix.andamp.modernskin.skin.AndampDefaultSet
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.SkinFiles
@@ -59,11 +61,9 @@ import nl.mattix.andamp.modernskin.skin.ZipSkinFiles
 import nl.mattix.andamp.wal.WalBuild
 import nl.mattix.andamp.wal.WalEngine
 import nl.mattix.andamp.wal.WalFiles
-import nl.mattix.andamp.wal.WalFit
 import nl.mattix.andamp.wal.WalFrame
 import nl.mattix.andamp.wal.WalHost
 import nl.mattix.andamp.wal.WalPrepare
-import nl.mattix.andamp.wal.WalScale
 import nl.mattix.andamp.wal.WalSettings
 import nl.mattix.andamp.wal.drawWalStack
 import nl.mattix.andamp.wal.drawWalWindow
@@ -786,7 +786,7 @@ private fun ModernSkinScreen(
                                 val size2 = f?.mainSize ?: return@awaitEachGesture
                                 // in use the frame says where the stack sits; a check draws it from its corner
                                 val at = f.layout
-                                val scale = at?.scale ?: WalScale.fit(size, size2, f.baseW)
+                                val scale = at?.scale ?: WalScale.fit(size.width to size.height, size2, f.baseW)
                                 if (at == null) {
                                     // 24 dp beside a control still counts: every control answers across 48 dp
                                     val slop = kotlin.math.ceil(24.dp.toPx() / scale).toInt()
@@ -830,7 +830,7 @@ private fun ModernSkinScreen(
                     val size2 = f.mainSize ?: return@Canvas
                     val drawStart = System.nanoTime()
                     if (check != null) {
-                        val scale = WalScale.fit(IntSize(size.width.toInt(), size.height.toInt()), size2, f.baseW)
+                        val scale = WalScale.fit(size.width.toInt() to size.height.toInt(), size2, f.baseW)
                         drawWalStack(f.stack, host, scale, 0f, layer)
                     } else {
                         // where the engine placed the stack for this box, as the player places it

@@ -12,6 +12,7 @@ import nl.mattix.andamp.modernskin.fixtures.sliderPosition
 import nl.mattix.andamp.modernskin.skin.Rect
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
+import nl.mattix.andamp.skinplayer.WinampFiveUnits
 import nl.mattix.andamp.state.WinampState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -201,7 +202,10 @@ class WalPlayerEchoTest {
         fun thumbs() = SLIDERS.map { fresh.sliderPosition(it) }
         val first = thumbs()
         // an equalizer slider runs from -128 to 127, flat at 0
-        assertEquals(listOf(WalPlayer.fromPercent(20), WalPlayer.fromEq(10) - 128, WalPlayer.fromEq(50) - 128, 50), first)
+        assertEquals(
+            listOf(WinampFiveUnits.fromPercent(20), WinampFiveUnits.fromEq(10) - 128, WinampFiveUnits.fromEq(50) - 128, 50),
+            first,
+        )
         fresh.tick()
         assertEquals("the first tick finds them in place", first, thumbs())
     }
@@ -233,7 +237,7 @@ class WalPlayerEchoTest {
         assertEquals(positions.map { listOf(0, it - 128) }, heard("band"))
         assertEquals(positions.map { listOf(it - 128) }, heard("band.position"))
         assertEquals(3 - 128, band.position)
-        assertEquals(WalPlayer.toEq(3), state.eqBands[0])
+        assertEquals(WinampFiveUnits.toEq(3), state.eqBands[0])
     }
 
     @Test
@@ -297,7 +301,7 @@ class WalPlayerEchoTest {
         frames(10)
 
         assertEquals(listOf(listOf(start + 20)), heard("volume"))
-        assertEquals(listOf("setVolume(${WalPlayer.toPercent(start + 20) / 100f})"), controls.calls)
+        assertEquals(listOf("setVolume(${WinampFiveUnits.toPercent(start + 20) / 100f})"), controls.calls)
         assertEquals(start + 20, volume.position)
     }
 

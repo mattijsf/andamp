@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package nl.mattix.andamp.wal
+package nl.mattix.andamp.modernskin.host
 
-import androidx.compose.ui.unit.IntSize
 import nl.mattix.andamp.modernskin.skin.Edge
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -12,7 +11,7 @@ import org.junit.Test
 
 /** How large a modern skin is drawn, and which skins are too large to show at all. */
 class WalScaleTest {
-    private val phone = IntSize(1080, 2000)
+    private val phone = (1080 to 2000)
 
     @Test
     fun `skins the size of a desktop window show`() {
@@ -33,20 +32,20 @@ class WalScaleTest {
     @Test
     fun `a skin that fits its box only below the smallest scale does not show`() {
         // 400 wide in 100: a quarter, the smallest scale shown
-        assertEquals(WalScale.MIN_SCALE, WalScale.fit(IntSize(100, 1000), 400 to 100, baseW = 0))
-        assertNull(WalScale.unfit(400 to 100, 400 to 100, baseW = 0, box = IntSize(100, 1000)))
-        assertNotNull(WalScale.unfit(400 to 100, 400 to 100, baseW = 0, box = IntSize(99, 1000)))
+        assertEquals(WalScale.MIN_SCALE, WalScale.fit((100 to 1000), 400 to 100, baseW = 0))
+        assertNull(WalScale.unfit(400 to 100, 400 to 100, baseW = 0, box = (100 to 1000)))
+        assertNotNull(WalScale.unfit(400 to 100, 400 to 100, baseW = 0, box = (99 to 1000)))
         // the visible width at the start sets the scale, not the whole window
-        assertNull(WalScale.unfit(800 to 100, 800 to 100, baseW = 396, box = IntSize(99, 1000)))
+        assertNull(WalScale.unfit(800 to 100, 800 to 100, baseW = 396, box = (99 to 1000)))
     }
 
     @Test
     fun `a box not laid out yet turns no skin down`() {
         // a Winamp-sized skin, before the player's box has a height or a width
-        assertNull(WalScale.unfit(275 to 116, 275 to 116, baseW = 275, box = IntSize(0, 480)))
-        assertNull(WalScale.unfit(275 to 116, 275 to 116, baseW = 275, box = IntSize(1080, 0)))
-        assertNull(WalScale.unfit(275 to 116, 275 to 116, baseW = 275, box = IntSize.Zero))
-        assertNotNull("still too large without a box", WalScale.unfit(5000 to 116, 5000 to 116, baseW = 0, box = IntSize.Zero))
+        assertNull(WalScale.unfit(275 to 116, 275 to 116, baseW = 275, box = (0 to 480)))
+        assertNull(WalScale.unfit(275 to 116, 275 to 116, baseW = 275, box = (1080 to 0)))
+        assertNull(WalScale.unfit(275 to 116, 275 to 116, baseW = 275, box = (0 to 0)))
+        assertNotNull("still too large without a box", WalScale.unfit(5000 to 116, 5000 to 116, baseW = 0, box = (0 to 0)))
     }
 
     @Test
@@ -145,7 +144,7 @@ class WalScaleTest {
         assertEquals((720 - 246 * 2) / 2f, corner.left)
 
         // Bento is sized to the box at the scale its minimum width fits: 633 px in 720
-        val s = WalScale.of(IntSize(720, 1136), 633, 492)
+        val s = WalScale.of((720 to 1136), 633, 492)
         assertEquals(720f / 633, s)
         val w = maxOf(633, (720 / s).toInt())
         val h = maxOf(492, (1136 / s).toInt())

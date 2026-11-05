@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package nl.mattix.andamp.wal
+package nl.mattix.andamp.modernskin.host
 
-import android.util.Log
 import nl.mattix.andamp.modernskin.skin.SkinMenu
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -16,21 +15,21 @@ import java.util.concurrent.TimeUnit
  *
  * [onChange] runs on the engine thread when a menu opens or closes, so the screen redraws.
  */
-internal class WalMenuWait(
+public class WalMenuWait(
     private val timeoutMs: Long = TIMEOUT_MS,
     /** Where a menu that ran out its wait is noted, one line each, so a run can count them. */
-    private val log: (String) -> Unit = { Log.i(WalHost.TAG, it) },
+    private val log: (String) -> Unit = {},
 ) {
     @Volatile
-    var onChange: (() -> Unit)? = null
+    public var onChange: (() -> Unit)? = null
 
     /** Runs on the engine thread just before a menu shows, so the screen has the skin as it stands. */
     @Volatile
-    var beforeShow: (() -> Unit)? = null
+    public var beforeShow: (() -> Unit)? = null
 
     /** Nobody is there to pick (a check): every menu answers 0 at once, without showing. */
     @Volatile
-    var unattended = false
+    public var unattended: Boolean = false
 
     /** An answer as it waits in the queue: a command id, 0, or null for a menu closed without the listener. */
     private class Answer(
@@ -48,7 +47,7 @@ internal class WalMenuWait(
     private var closed = false
 
     /** The menu waiting for a pick, or null. */
-    val menu: SkinMenu? get() = open
+    public val menu: SkinMenu? get() = open
 
     /** The time spent in [choose] so far, in ns; written and read on the engine thread. */
     private var choosingNanos = 0L
@@ -58,10 +57,10 @@ internal class WalMenuWait(
      * [choose], so a span read off it leaves out a menu's redraw and the wait for its answer. Read
      * on the engine thread.
      */
-    val workClock: Long get() = System.nanoTime() - choosingNanos
+    public val workClock: Long get() = System.nanoTime() - choosingNanos
 
     /** Shows [menu] and waits for the answer: a command id, 0, or null. Called on the engine thread. */
-    fun choose(menu: SkinMenu): Int? {
+    public fun choose(menu: SkinMenu): Int? {
         if (unattended) return 0
         val t0 = System.nanoTime()
         try {
@@ -97,7 +96,7 @@ internal class WalMenuWait(
     }
 
     /** The listener picked [id] from [menu], or 0 for nothing; ignored unless [menu] is the one waiting. */
-    fun answer(
+    public fun answer(
         menu: SkinMenu,
         id: Int,
     ) {
@@ -105,12 +104,12 @@ internal class WalMenuWait(
     }
 
     /** Closes the menu waiting now, if any, without the listener (the app leaves the screen). */
-    fun dismiss() {
+    public fun dismiss() {
         synchronized(lock) { if (open != null) answers.offer(Answer(null)) }
     }
 
     /** The skin goes away: the menu waiting now closes, and later ones answer at once without showing. */
-    fun close() {
+    public fun close() {
         synchronized(lock) {
             closed = true
             answers.offer(Answer(null))

@@ -8,9 +8,14 @@ import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
 import androidx.compose.ui.unit.IntSize
+import nl.mattix.andamp.modernskin.host.WalFit
+import nl.mattix.andamp.modernskin.host.WalFitting
+import nl.mattix.andamp.modernskin.host.WalIdle
+import nl.mattix.andamp.modernskin.host.WalLayout
+import nl.mattix.andamp.modernskin.host.WalRest
+import nl.mattix.andamp.modernskin.host.WalScale
 import nl.mattix.andamp.modernskin.skin.DrawCmd
 import nl.mattix.andamp.modernskin.skin.DrawPlanner
-import nl.mattix.andamp.modernskin.skin.Player
 import nl.mattix.andamp.modernskin.skin.Presentation
 import nl.mattix.andamp.modernskin.skin.Rect
 import nl.mattix.andamp.modernskin.skin.SkinMenu
@@ -64,22 +69,6 @@ internal class WalFrame(
     val plans: List<WindowPlan>? = null,
 )
 
-/** What a skin says about resting, as [WalEngine] reads it each time it publishes a frame. */
-internal data class WalIdle(
-    /** Whether something moves that wants a frame on every display frame; see [SkinRuntime.framesWanted]. */
-    val framesWanted: Boolean,
-    /** When, in the runtime's clock ms, something next changes by itself, or null; see [SkinRuntime.nextDueAt]. */
-    val nextDueAt: Long?,
-    /** Whether the music is stopped, so the skin is woken at the resting rate; see [WalRest]. */
-    val stopped: Boolean = false,
-) {
-    companion object {
-        /** What [runtime] says. */
-        fun of(runtime: SkinRuntime): WalIdle =
-            WalIdle(runtime.framesWanted, runtime.nextDueAt(), stopped = runtime.player.status == Player.Status.STOPPED)
-    }
-}
-
 /**
  * Runs one modern skin's runtime on a dedicated thread. The runtime is made, ticked, touched and
  * asked for its windows only there; the screen reads the [frame] the engine publishes after each
@@ -129,7 +118,7 @@ internal class WalEngine(
         }
 
     // the rule the wakes follow, and its clocks; touched on the engine thread, apart from cancel
-    private val rest = WalRest(handler, wake)
+    private val rest = WalRest(WalTimer(handler, wake))
 
     init {
         host.menus.onChange = onFrame
@@ -330,7 +319,7 @@ internal class WalEngine(
         mainHandler.postDelayed(overrun, budgetMs)
         handler.post {
             val t0 = System.nanoTime()
-            val made = runCatching { build().also { WalFitting.requireShowable(it, box) } }
+            val made = runCatching { build().also { WalFitting.requireShowable(it, box?.toPair()) } }
             val loadMs = (System.nanoTime() - t0) / NANOS_PER_MS
             if (WalTiming.on) Log.d(WalTiming.TAG, "load $loadMs ms on ${thread.name}")
             val overran = loadMs > budgetMs

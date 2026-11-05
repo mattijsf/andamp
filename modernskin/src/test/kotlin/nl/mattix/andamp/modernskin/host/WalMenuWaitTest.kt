@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package nl.mattix.andamp.wal
+package nl.mattix.andamp.modernskin.host
 
 import nl.mattix.andamp.modernskin.skin.SkinMenu
 import org.junit.Assert.assertEquals

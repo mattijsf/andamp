@@ -9,6 +9,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
+import nl.mattix.andamp.modernskin.host.WalFit
+import nl.mattix.andamp.modernskin.host.WalLayout
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.ui.window.ClassicStack
@@ -239,7 +241,7 @@ internal data class WalDock(
 
     companion object {
         /** What [layout] gives the classic windows to dock against, or null for a stack in one column. */
-        fun of(layout: WalLayout?): WalDock? = layout?.dock?.let { WalDock(it, layout.stackW, layout.stackH) }
+        fun of(layout: WalLayout?): WalDock? = layout?.dock?.let { WalDock(it.toIntRect(), layout.stackW, layout.stackH) }
     }
 }
 

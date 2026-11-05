@@ -9,6 +9,8 @@ import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.modernskin.fixtures.nextTimerAt
 import nl.mattix.andamp.modernskin.fixtures.popScriptMenu
 import nl.mattix.andamp.modernskin.fixtures.startScriptTimer
+import nl.mattix.andamp.modernskin.host.WalIdle
+import nl.mattix.andamp.modernskin.host.WalRest
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinMenu

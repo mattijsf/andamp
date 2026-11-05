@@ -6,6 +6,7 @@ import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.core.playback.AudioTap
 import nl.mattix.andamp.modernskin.skin.Player
+import nl.mattix.andamp.skinplayer.WinampFiveUnits
 import nl.mattix.andamp.state.WinampState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
@@ -217,21 +218,7 @@ class WalPlayerTest {
     }
 
     @Test
-    fun `the unit maps hold at the ends and the center`() {
-        assertEquals(0, WalPlayer.fromPercent(0))
-        assertEquals(255, WalPlayer.fromPercent(100))
-        assertEquals(0, WalPlayer.toPercent(0))
-        assertEquals(100, WalPlayer.toPercent(255))
-        for (p in 0..100) assertEquals("percent $p", p, WalPlayer.toPercent(WalPlayer.fromPercent(p)))
-
-        assertEquals(0, WalPlayer.fromEq(0))
-        assertEquals(128, WalPlayer.fromEq(32))
-        assertEquals(255, WalPlayer.fromEq(63))
-        assertEquals(0, WalPlayer.toEq(0))
-        assertEquals(32, WalPlayer.toEq(128))
-        assertEquals(63, WalPlayer.toEq(255))
-        for (v in 0..63) assertEquals("band $v", v, WalPlayer.toEq(WalPlayer.fromEq(v)))
-
+    fun `the skin reads the ends and the center on Winamp 5's scale`() {
         state.volume = 100
         state.eqBands[0] = 0
         state.eqBands[9] = 63
@@ -270,7 +257,7 @@ class WalPlayerTest {
         drain()
 
         // the player takes whole percents
-        assertEquals(listOf("setVolume(${WalPlayer.toPercent(110) / 100f})"), controls.calls)
+        assertEquals(listOf("setVolume(${WinampFiveUnits.toPercent(110) / 100f})"), controls.calls)
     }
 
     @Test
@@ -287,7 +274,7 @@ class WalPlayerTest {
 
         // the volume keys
         state.volume = 50
-        assertEquals("a change from elsewhere reads at once", WalPlayer.fromPercent(50), player.volume)
+        assertEquals("a change from elsewhere reads at once", WinampFiveUnits.fromPercent(50), player.volume)
     }
 
     @Test
@@ -298,7 +285,7 @@ class WalPlayerTest {
         controls.advance(999)
         assertEquals(100, player.volume)
         controls.advance(1)
-        assertEquals(WalPlayer.fromPercent(78), player.volume)
+        assertEquals(WinampFiveUnits.fromPercent(78), player.volume)
     }
 
     @Test
@@ -310,7 +297,7 @@ class WalPlayerTest {
 
         assertEquals(start + 20, player.volume)
         drain()
-        assertEquals(listOf("setVolume(${WalPlayer.toPercent(start + 20) / 100f})"), controls.calls)
+        assertEquals(listOf("setVolume(${WinampFiveUnits.toPercent(start + 20) / 100f})"), controls.calls)
         controls.apply()
         assertEquals(start + 20, player.volume)
     }
@@ -337,7 +324,7 @@ class WalPlayerTest {
         assertEquals(199, player.volume)
 
         controls.apply()
-        assertEquals("the first write's answer", WalPlayer.toPercent(100), state.volume)
+        assertEquals("the first write's answer", WinampFiveUnits.toPercent(100), state.volume)
         assertEquals(199, player.volume)
 
         drain()
@@ -371,7 +358,7 @@ class WalPlayerTest {
 
             // the volume keys, one step down
             state.volume = ((step - 1) * 100f / steps).roundToInt()
-            assertEquals("$steps steps, a key press", WalPlayer.fromPercent(state.volume), player.volume)
+            assertEquals("$steps steps, a key press", WinampFiveUnits.fromPercent(state.volume), player.volume)
             controls.advance(5_000)
         }
     }
@@ -394,7 +381,7 @@ class WalPlayerTest {
 
         // the volume keys, one step up
         state.volume = 80
-        assertEquals(WalPlayer.fromPercent(80), player.volume)
+        assertEquals(WinampFiveUnits.fromPercent(80), player.volume)
     }
 
     @Test

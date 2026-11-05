@@ -9,6 +9,9 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.round
+import nl.mattix.andamp.modernskin.host.TouchPoint
+import nl.mattix.andamp.modernskin.host.WalFit
+import nl.mattix.andamp.modernskin.host.WalTouch
 import kotlin.math.abs
 
 /**
@@ -79,8 +82,8 @@ internal class WalDrag(
     }
 
     override fun start(
-        from: Offset,
-        at: Offset,
+        from: TouchPoint,
+        at: TouchPoint,
     ) {
         val f = frame ?: return
         began = fit
@@ -91,7 +94,7 @@ internal class WalDrag(
         move(at)
     }
 
-    override fun move(at: Offset) {
+    override fun move(at: TouchPoint) {
         if (shift == null) return
         val f = frame ?: return
         val finger = Offset(f.drawn.x + at.x, f.drawn.y + at.y)

@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package nl.mattix.andamp.wal
+package nl.mattix.andamp.modernskin.host
 
-import androidx.compose.ui.unit.IntRect
-import androidx.compose.ui.unit.IntSize
 import nl.mattix.andamp.modernskin.skin.Presentation
+import nl.mattix.andamp.modernskin.skin.Rect
 import nl.mattix.andamp.modernskin.skin.SkinOptions
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.modernskin.skin.WindowId
@@ -27,7 +26,7 @@ import nl.mattix.andamp.modernskin.skin.WindowInfo
  * a window opens or the phone turns changes neither the columns nor the size the stack comes back
  * to.
  */
-internal class WalFitting {
+public class WalFitting {
     /** The windows on screen at the last [apply] or [refit]. */
     private var windows: List<WindowId> = emptyList()
 
@@ -44,8 +43,8 @@ internal class WalFitting {
     /** The skin's options as [WalLayout.skinOptions] carries them, read again when they changed; see [optionsOf]. */
     private var options: SkinOptions? = null
 
-    /** Gives [runtime] the box of [fit], as [WalEngine.fit] tells; [baseW] as [baseWOf] gives it. */
-    fun apply(
+    /** Gives [runtime] the box of [fit], as the host has it; [baseW] as [baseWOf] gives it. */
+    public fun apply(
         runtime: SkinRuntime,
         fit: WalFit,
         baseW: Int,
@@ -53,14 +52,14 @@ internal class WalFitting {
         val main = runtime.mainWindow ?: return
         val layout = runtime.windowInfo(main)
         windows = runtime.windowIds
-        val box = IntSize(fit.widthPx, fit.heightPx)
+        val box = (fit.widthPx to fit.heightPx)
         runtime.present { it.copy(stretchLast = !fit.sideways && !fit.compact) }
         if (fillsBox(layout)) {
             // its scale from its minimum size, its size from what the box holds at that scale; in a
             // compact box no taller than its minimum
             val s = WalScale.of(box, layout.minW, layout.minH)
-            val w = maxOf(layout.minW, (box.width / s).toInt())
-            val h = if (fit.compact) layout.minH else maxOf(layout.minH, (box.height / s).toInt())
+            val w = maxOf(layout.minW, (box.first / s).toInt())
+            val h = if (fit.compact) layout.minH else maxOf(layout.minH, (box.second / s).toInt())
             if (layout.size != w to h) runtime.resizeWindow(main, w, h)
         }
         // sideways the whole stack sets the scale, and the windows docked under the main one are
@@ -78,7 +77,7 @@ internal class WalFitting {
      * are not the ones the last [apply] or [refit] saw: one opened or closed, or a window switched
      * layout (a shade). Upright the stack stays in one column.
      */
-    fun refit(
+    public fun refit(
         runtime: SkinRuntime,
         fit: WalFit,
         baseW: Int,
@@ -86,7 +85,7 @@ internal class WalFitting {
         val now = runtime.windowIds
         if (now == windows) return
         windows = now
-        if (fit.sideways) decideColumns(runtime, fit) else uprightView(runtime, IntSize(fit.widthPx, fit.heightPx), baseW)
+        if (fit.sideways) decideColumns(runtime, fit) else uprightView(runtime, (fit.widthPx to fit.heightPx), baseW)
     }
 
     /**
@@ -99,13 +98,13 @@ internal class WalFitting {
      */
     private fun uprightView(
         runtime: SkinRuntime,
-        box: IntSize,
+        box: Pair<Int, Int>,
         baseW: Int,
     ) {
         val main = runtime.mainWindow ?: return
         val shown = runtime.shownWidth(restingWidth(runtime, main))
         runtime.present {
-            it.copy(viewSize = view(box, WalScale.across(box.width, shown, WalScale.fit(box, runtime.windowSize(main), baseW))))
+            it.copy(viewSize = view(box, WalScale.across(box.first, shown, WalScale.fit(box, runtime.windowSize(main), baseW))))
         }
     }
 
@@ -122,7 +121,7 @@ internal class WalFitting {
         fit: WalFit,
     ) {
         val main = runtime.mainWindow ?: return
-        val box = IntSize(fit.widthPx, fit.heightPx)
+        val box = (fit.widthPx to fit.heightPx)
         val width = restingWidth(runtime, main)
         runtime.present { it.copy(columnWidth = width) }
 
@@ -156,7 +155,7 @@ internal class WalFitting {
      * frame of the slide.
      */
     @Suppress("LongParameterList") // the frame's parts the engine has worked out already
-    fun layout(
+    public fun layout(
         runtime: SkinRuntime,
         fit: WalFit,
         baseW: Int,
@@ -190,7 +189,7 @@ internal class WalFitting {
             themes = themes,
             theme = runtime.colorTheme?.let { worn -> themes.firstOrNull { it.equals(worn, ignoreCase = true) } },
             skinOptions = optionsOf(runtime),
-            visRect = runtime.visRect?.let { IntRect(it.left, it.top, it.right, it.bottom) },
+            visRect = runtime.visRect,
         )
     }
 
@@ -259,13 +258,21 @@ internal class WalFitting {
     private fun dockOf(
         runtime: SkinRuntime,
         drawn: Pair<Int, Int>,
-    ): IntRect? {
+    ): Rect? {
         val column = runtime.leftColumn() ?: return null
-        return IntRect(column.left, column.top, minOf(column.right, drawn.first), minOf(column.bottom, drawn.second))
+        return Rect(
+            column.left,
+            column.top,
+            minOf(column.right, drawn.first) - column.left,
+            minOf(column.bottom, drawn.second) - column.top,
+        )
     }
 
-    companion object {
-        /** How far beside an object a finger may land and still mean it: every control then answers across Android's 48 dp. */
+    public companion object {
+        /**
+         * How far beside an object a finger may land and still mean it: every control then answers
+         * across a 48 dp touch target.
+         */
         private const val TOUCH_SLOP_DP = 24f
 
         /**
@@ -282,9 +289,9 @@ internal class WalFitting {
 
         /** The view [box] gives at [scale], in layout pixels. */
         private fun view(
-            box: IntSize,
+            box: Pair<Int, Int>,
             scale: Float,
-        ) = (box.width / scale).toInt() to (box.height / scale).toInt()
+        ) = (box.first / scale).toInt() to (box.second / scale).toInt()
 
         /** Whether [apply] sizes [layout] to the box (Bento): it has a minimum size and resizes both ways. */
         private fun fillsBox(layout: WindowInfo): Boolean = layout.minW > 0 && layout.minH > 0 && layout.resizableBothWays
@@ -302,13 +309,13 @@ internal class WalFitting {
          * right for a panel that slides out); fixed, so the size does not jump when that panel opens.
          * A window the user resizes both ways (Bento) is sized to the screen and scales from its size: 0.
          */
-        fun baseWOf(runtime: SkinRuntime): Int =
+        public fun baseWOf(runtime: SkinRuntime): Int =
             runtime.mainWindow?.takeUnless { runtime.windowInfo(it).resizableBothWays }?.let { runtime.contentRight(it) } ?: 0
 
         /** Throws unless the screen can show [runtime]: it has a main window, and a stack a phone can draw. */
-        fun requireShowable(
+        public fun requireShowable(
             runtime: SkinRuntime,
-            box: IntSize?,
+            box: Pair<Int, Int>?,
         ) {
             val main = runtime.mainWindow ?: error("no main layout")
             WalScale.unfit(runtime.windowSize(main), runtime.stackSize, baseWOf(runtime), box)?.let { error(it) }

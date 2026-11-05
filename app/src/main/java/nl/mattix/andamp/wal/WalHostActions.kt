@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.wal
 
+import nl.mattix.andamp.modernskin.host.HostAction
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
@@ -48,59 +49,55 @@ internal class WalHostActions(
         action: String,
         param: String?,
     ) {
-        when (action) {
-            "MENU" -> {
-                openMenu(MenuBarSection.of(param), pressAt?.invoke())
+        when (val a = HostAction.of(action, param)) {
+            is HostAction.Menu -> {
+                openMenu(MenuBarSection.of(a.section), pressAt?.invoke())
             }
 
-            "SYSMENU", "CONTROLMENU" -> {
-                openMenu(null, pressAt?.invoke())
-            }
-
-            "CLOSE" -> {
+            HostAction.Close -> {
                 exit()
             }
 
-            "MINIMIZE" -> {
+            HostAction.Minimize -> {
                 minimize()
             }
 
-            "VIS_MENU" -> {
+            HostAction.VisualizationMenu -> {
                 visualizationMenu(pressAt?.invoke())
             }
 
-            // the video's fullscreen too: Andamp plays no video, and the skin's video area shows the visualizer
-            "VIS_FS", "VID_FS" -> {
+            // the video's too: Andamp plays no video, and the skin's video area shows the visualizer
+            HostAction.Fullscreen -> {
                 fullscreenVisualizer()
             }
 
-            "VIS_NEXT" -> {
+            HostAction.NextPreset -> {
                 nextPreset()
             }
 
-            "VIS_PREV" -> {
+            HostAction.PreviousPreset -> {
                 previousPreset()
             }
 
-            "TRACKINFO" -> {
+            HostAction.TrackInfo -> {
                 fileInfo()
             }
 
-            "SHOW" -> {
-                // the video too: Andamp plays no video, and the skin's video area shows the visualizer
-                if (param == "avs" || param == "video") showVisualizer()
+            // the video too: Andamp plays no video, and the skin's video area shows the visualizer
+            is HostAction.Show -> {
+                if (a.window == "avs" || a.window == "video") showVisualizer()
             }
 
             // the windows the app shows; video and any other window are not there to show
-            "TOGGLE" -> {
-                when (param) {
+            is HostAction.Toggle -> {
+                when (a.window) {
                     "ml" -> toggleLibrary()
                     "avs" -> toggleVisualizer()
                     else -> Unit
                 }
             }
 
-            else -> {
+            null -> {
                 Unit
             }
         }

@@ -33,6 +33,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.test.core.app.ApplicationProvider
+import nl.mattix.andamp.modernskin.host.WalFit
+import nl.mattix.andamp.modernskin.skin.Rect
 import nl.mattix.andamp.skin.SkinLoader
 import nl.mattix.andamp.state.LibraryAccess
 import nl.mattix.andamp.state.MenuAnchor
@@ -734,7 +736,7 @@ class WalLayerTest {
 
     @Test
     fun `the visualizer shows where the skin shows it, and not while the player is covered`() {
-        surface.layoutFor = { stackOf(300, 100, 2f)(it).copy(visRect = IntRect(10, 20, 110, 70)) }
+        surface.layoutFor = { stackOf(300, 100, 2f)(it).copy(visRect = Rect(10, 20, 100, 50)) }
         layer(partsFor(surface, state, visualizer = { Box(it.testTag(VIS)) }))
 
         // the stack is at x = 150 at twice the size
@@ -754,7 +756,7 @@ class WalLayerTest {
     fun `the skin showing the visualizer closes the visualizer window, which shows it instead while open`() {
         val asked = mutableListOf<String>()
         state.milkdropOn = true
-        surface.layoutFor = { stackOf(300, 100, 2f)(it).copy(visRect = IntRect(10, 20, 110, 70)) }
+        surface.layoutFor = { stackOf(300, 100, 2f)(it).copy(visRect = Rect(10, 20, 100, 50)) }
         layer(partsFor(surface, state, asked, visualizer = { Box(it.testTag(VIS)) }))
 
         assertEquals(listOf("visualizer"), asked)
@@ -764,7 +766,7 @@ class WalLayerTest {
 
     @Test
     fun `fullscreen asked for in the skin ends when the skin stops showing the visualizer`() {
-        surface.layoutFor = { stackOf(300, 100, 2f)(it).copy(visRect = IntRect(10, 20, 110, 70)) }
+        surface.layoutFor = { stackOf(300, 100, 2f)(it).copy(visRect = Rect(10, 20, 100, 50)) }
         layer()
         state.milkdropFullscreen = true
         assertTrue(state.visualizerFullscreen)
