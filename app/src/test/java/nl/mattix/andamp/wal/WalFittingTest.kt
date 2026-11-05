@@ -12,6 +12,9 @@ import nl.mattix.andamp.modernskin.fixtures.placeAsScript
 import nl.mattix.andamp.modernskin.fixtures.resizeAsScript
 import nl.mattix.andamp.modernskin.fixtures.setParamAsScript
 import nl.mattix.andamp.modernskin.fixtures.switchLayoutAsScript
+import nl.mattix.andamp.modernskin.host.WalFit
+import nl.mattix.andamp.modernskin.host.WalFitting
+import nl.mattix.andamp.modernskin.host.WalLayout
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.Player
 import nl.mattix.andamp.modernskin.skin.Rect
@@ -246,7 +249,7 @@ class WalFittingTest {
             "the columns do not overlap",
             corner.rt.windowRect(corner.window("pl")).left >= corner.rt.windowRect(corner.window("eq")).right,
         )
-        assertEquals("the visualizer docks under the left column", IntRect(0, 0, 275, 373), corner.layout().dock)
+        assertEquals("the visualizer docks under the left column", Rect(0, 0, 275, 373), corner.layout().dock)
 
         corner.close("pl")
         assertEquals(1, corner.rt.presentation.columns)

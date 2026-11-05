@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import nl.mattix.andamp.modernskin.host.WalMenuWait
 import nl.mattix.andamp.modernskin.skin.AndampDefaultSet
 import nl.mattix.andamp.modernskin.skin.BitmapDef
 import nl.mattix.andamp.modernskin.skin.DrawCmd
@@ -72,7 +73,7 @@ internal class WalHost(
     private val recentLog = ArrayDeque<String>()
 
     /** The popup menu a script waits on, which the screen shows and answers. */
-    val menus = WalMenuWait()
+    val menus = WalMenuWait(log = { Log.i(TAG, it) })
 
     /** Counts log lines and redraw requests, so the engine can tell it has something new to draw. */
     @Volatile

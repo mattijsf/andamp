@@ -47,6 +47,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import nl.mattix.andamp.R
+import nl.mattix.andamp.modernskin.host.WalFit
+import nl.mattix.andamp.modernskin.host.WalTouch
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WinampViewModel
@@ -223,7 +225,7 @@ internal fun WalLayer(
             companion()
         } else {
             WalCanvas(parts, state, placed, drag)
-            fitted?.visRect?.let { WalVisualizer(parts, state, placed, it, drag) }
+            fitted?.visRect?.let { WalVisualizer(parts, state, placed, it.toIntRect(), drag) }
         }
     }
 }
@@ -506,9 +508,9 @@ private fun WalCanvas(
                             doubleTapMs = viewConfiguration.doubleTapTimeoutMillis,
                             doubleTapSlop = doubleTapSlop,
                         ),
-                        toSkin = { placedNow.toSkin(it) },
+                        toSkin = { placedNow.toSkin(it.toOffset()).let { p -> p.x to p.y } },
                         onPress = { at ->
-                            val point = placedNow.pointAt(at)
+                            val point = placedNow.pointAt(at.toOffset())
                             // measured as the menu opens, from the rect the menus read then
                             parts.actions.pressAt = { placedNow.anchorAt(point, state.windowRects[WindowStore.MAIN]) }
                         },

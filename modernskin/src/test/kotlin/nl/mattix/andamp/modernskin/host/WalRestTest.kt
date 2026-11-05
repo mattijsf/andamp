@@ -1,27 +1,34 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package nl.mattix.andamp.wal
+package nl.mattix.andamp.modernskin.host
 
-import android.os.Handler
-import android.os.Looper
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.robolectric.RobolectricTestRunner
-import org.robolectric.annotation.Config
 
 /**
  * When a modern skin rests: whether the screen ticks it on every display frame, and when the
  * engine wakes it itself. Times in ms; the runtime's clock runs [SKEW] ahead of uptime, as a wall
  * clock does.
  */
-@RunWith(RobolectricTestRunner::class)
-@Config(sdk = [35])
 class WalRestTest {
-    private val rest = WalRest(Handler(Looper.getMainLooper())) {}
+    private val timer =
+        object : WalRest.Timer {
+            var at: Long? = null
+
+            override fun wakeAt(at: Long) {
+                this.at = at
+            }
+
+            override fun cancel() {
+                at = null
+            }
+
+            override val waiting: Boolean get() = at != null
+        }
+    private val rest = WalRest(timer)
 
     private fun idle(
         due: Long?,

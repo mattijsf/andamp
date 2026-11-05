@@ -5,6 +5,8 @@ package nl.mattix.andamp.wal
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
+import nl.mattix.andamp.modernskin.host.TouchPoint
+import nl.mattix.andamp.modernskin.host.WalFit
 import nl.mattix.andamp.ui.window.WindowSnap
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -47,7 +49,7 @@ class WalDragTest {
     }
 
     /** [at], a point on the surface, as a point on the stack drawn now. */
-    private fun onStack(at: Offset) = Offset(at.x - drawn.x, at.y - drawn.y)
+    private fun onStack(at: Offset) = TouchPoint(at.x - drawn.x, at.y - drawn.y)
 
     /**
      * A press at [from] on the surface, past the touch slop to the first of [path], then along the
@@ -128,8 +130,8 @@ class WalDragTest {
     fun `a drag while the stack has no place in the box moves nothing and keeps nothing`() {
         drag.placedAt(upright, box, home = null, drawn = null, snapPx = SNAP, keepPx = KEEP)
 
-        drag.start(Offset(10f, 10f), Offset(10f, 80f))
-        drag.move(Offset(10f, 200f))
+        drag.start(TouchPoint(10f, 10f), TouchPoint(10f, 80f))
+        drag.move(TouchPoint(10f, 200f))
         drag.end()
 
         assertNull(drag.shift)
@@ -147,13 +149,13 @@ class WalDragTest {
         drag.placedAt(sideways, wideBox, home = null, drawn = null, snapPx = SNAP, keepPx = KEEP)
         assertNull("the drag ends at the turn", drag.shift)
         drag.placedAt(sideways, wideBox, wideHome, wideHome.topLeft, SNAP, KEEP)
-        drag.move(Offset(100f, 400f))
+        drag.move(TouchPoint(100f, 400f))
         drag.end()
         assertNull(drag.shift)
         assertEquals("nothing kept for either way round", emptyList<Pair<Boolean, IntOffset?>>(), kept)
 
-        drag.start(Offset(100f, 10f), Offset(100f, 60f))
-        drag.move(Offset(100f, 210f))
+        drag.start(TouchPoint(100f, 10f), TouchPoint(100f, 60f))
+        drag.move(TouchPoint(100f, 210f))
         drag.end()
 
         assertEquals(listOf(true to IntOffset(0, 200)), kept)

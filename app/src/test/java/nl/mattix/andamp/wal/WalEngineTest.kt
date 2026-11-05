@@ -8,6 +8,9 @@ import androidx.compose.ui.unit.IntSize
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.modernskin.fixtures.popScriptMenu
 import nl.mattix.andamp.modernskin.fixtures.resizeAsScript
+import nl.mattix.andamp.modernskin.host.WalFit
+import nl.mattix.andamp.modernskin.host.WalIdle
+import nl.mattix.andamp.modernskin.host.WalScale
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.Player
 import nl.mattix.andamp.modernskin.skin.SkinFiles
@@ -459,7 +462,7 @@ class WalEngineTest {
         awaitThat("a frame with a layout") { engine.frame?.layout != null }
         val frame = engine.frame!!
         val layout = frame.layout!!
-        val scale = WalScale.fit(IntSize(1080, 2000), frame.mainSize!!, frame.baseW)
+        val scale = WalScale.fit(1080 to 2000, frame.mainSize!!, frame.baseW)
         assertEquals(phone, layout.fit)
         assertEquals(scale, layout.scale)
         assertEquals(WalScale.left(1080f, frame.contentRight, scale), layout.left)
@@ -501,7 +504,7 @@ class WalEngineTest {
             )
         run.start()
         assertNull(run.failure())
-        val scale = WalScale.of(IntSize(1080, 2000), 200, 100)
+        val scale = WalScale.of(1080 to 2000, 200, 100)
 
         run.engine.fit(phone)
         awaitThat("a frame for the full box") {

@@ -196,7 +196,8 @@ ui  ──▶  player domain  ◀──  backends  ──▶  dsp        skin (s
 :visualizer:projectm libprojectM through JNI. The only module that sees GL.
 :visualizer:avs      AVS: parser, pipeline, and the ns-eel evaluator through JNI
 :modernskin          the modern (.wal) skin engine: the MAKI VM, the skin's objects,
-                     layout, input and the draw list. Plain JVM, no Android.
+                     layout, input and the draw list, and the host kit any host of
+                     it uses (fitting, touch, rest, menus). Plain JVM, no Android.
 :core:skinplayer     the player as a skin, classic or modern, drives it: a state
                      snapshot, the live position, commands and signals. Its contract
                      tests and FakeSkinPlayer ship with it. Plain Kotlin.
@@ -405,6 +406,16 @@ so what they show is fixed on purpose:
   shows in review.
 - The engine's tests and test fixtures see `internal`. The fixtures in `:modernskin`
   (`SkinFixtures`) drive the engine as a skin's scripts do, for the app's tests.
+- What any host of a modern skin needs, apart from drawing, sits beside the engine in
+  `:modernskin`'s `host` package, in plain Kotlin: fitting the stack to a box
+  (`WalFitting`, `WalScale`, `WalLayout`), one finger's press, drag, double tap and long
+  press (`WalTouch`), when to tick and when to rest (`WalRest`, behind a `Timer`), the
+  popup-menu wait (`WalMenuWait`) and the names of Winamp's host actions (`HostAction`).
+  The app's `wal` package adapts them: Compose's pointer events and geometry, the engine
+  thread's `Handler`, and what each host action does in Andamp.
+- `:core:skinplayer` also carries what a modern skin's player needs over any
+  `SkinPlayer`: Winamp 5's scales (`WinampFiveUnits`) and the hold on a written value
+  until the player shows it (`HeldWrite`).
 
 ### In Android Auto
 

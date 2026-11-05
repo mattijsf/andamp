@@ -6,16 +6,21 @@ import android.os.SystemClock
 import nl.mattix.andamp.core.playback.AudioTap
 import nl.mattix.andamp.modernskin.skin.Player
 import nl.mattix.andamp.skinplayer.Entry
+import nl.mattix.andamp.skinplayer.HeldWrite
 import nl.mattix.andamp.skinplayer.PlayerState
 import nl.mattix.andamp.skinplayer.SkinPlayer
 import nl.mattix.andamp.skinplayer.Transport
+import nl.mattix.andamp.skinplayer.WinampFiveUnits
+import nl.mattix.andamp.skinplayer.WinampFiveUnits.fromBalance
+import nl.mattix.andamp.skinplayer.WinampFiveUnits.fromEq
+import nl.mattix.andamp.skinplayer.WinampFiveUnits.fromPercent
+import nl.mattix.andamp.skinplayer.WinampFiveUnits.toBalance
+import nl.mattix.andamp.skinplayer.WinampFiveUnits.toEq
+import nl.mattix.andamp.skinplayer.WinampFiveUnits.toPercent
 import nl.mattix.andamp.state.AndampSkinPlayer
-import nl.mattix.andamp.state.EqOps
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.ui.window.SliderMath
 import nl.mattix.andamp.ui.window.WindowControls
-import kotlin.math.abs
-import kotlin.math.roundToInt
 import nl.mattix.andamp.modernskin.skin.Track as SkinTrack
 
 /**
@@ -26,10 +31,10 @@ import nl.mattix.andamp.modernskin.skin.Track as SkinTrack
  * writes go to the player's commands, which take effect later.
  *
  * The state follows a write only once the backend reports back, and the engine reads a value
- * back at once and tells the scripts about any change. So a written value is held: it reads as
- * written while the state shows what the write becomes there, and for up to [HOLD_MS] while the
- * state still shows a value from before the write. Any other value is a change made elsewhere
- * (the volume keys, the notification) and reads at once. When the slider moves the phone's
+ * back at once and tells the scripts about any change. So a written value is held ([HeldWrite]):
+ * it reads as written while the state shows what the write becomes there, and for up to
+ * [HeldWrite.HOLD_MS] while the state still shows a value from before the write. Any other value
+ * is a change made elsewhere (the volume keys, the notification) and reads at once. When the slider moves the phone's
  * volume, a volume write becomes the nearest of the phone's steps, so it may land up to
  * [VOLUME_SLACK] from the percent it asked for.
  */
@@ -78,85 +83,18 @@ internal class WalPlayer(
 
     // ---- the volume, the equalizer and the switches -----------------------------------------
 
-    /**
-     * One written value; see the class comment. [before] holds what the state showed at each write
-     * since the last one landed, and [earlier] the images of the writes that had not landed, since
-     * those can still arrive first, each within [slack].
-     *
-     * A write lands within [slack] of its image, or on the image once the state has shown it: the
-     * first such value that is not from before is where it landed, and only that value holds it
-     * from then on. A value from before that is also where the write can land holds it, and after
-     * [HOLD_MS] counts as where it landed, since a write can land on the value the state showed.
-     */
-    private inner class Held(
-        private val slack: Int = 0,
-    ) {
-        private var active = false
-        private var landed = false
-        private var shown = false
-        private var value = 0
-        private var image = 0
-        private var at = 0L
-        private val before = HashSet<Int>()
-        private val earlier = HashSet<Int>()
-
-        fun write(
-            value: Int,
-            image: Int,
-            mirror: Int,
-        ) {
-            if (active && !landed) {
-                earlier += this.image
-            } else {
-                before.clear()
-                earlier.clear()
-            }
-            earlier -= image
-            before += mirror
-            this.value = value
-            this.image = image
-            at = clock()
-            active = true
-            landed = false
-            shown = false
-        }
-
-        /** The held value, or the state's [mirror] through [unheld] once the write no longer holds. */
-        fun read(
-            mirror: Int,
-            unheld: (Int) -> Int,
-        ): Int {
-            if (active && !holds(mirror)) active = false
-            return if (active) value else unheld(mirror)
-        }
-
-        /** Whether the write still holds while the state shows [mirror]; notes where it landed. */
-        private fun holds(mirror: Int): Boolean {
-            if (landed) return mirror == image
-            if (mirror == image) shown = true
-            val lands = abs(mirror - image) <= if (shown) 0 else slack
-            val fromBefore = mirror in before || earlier.any { abs(it - mirror) <= slack }
-            val waited = clock() - at
-            if (lands && (!fromBefore || waited >= HOLD_MS)) {
-                image = mirror
-                landed = true
-            }
-            return lands || (fromBefore && waited < HOLD_MS)
-        }
-    }
-
-    private val volumeHeld = Held(VOLUME_SLACK)
-    private val bandsHeld = Array(PlayerState.EQ_BANDS) { Held() }
-    private val preampHeld = Held()
-    private val panHeld = Held()
-    private val shuffleHeld = Held()
-    private val repeatHeld = Held()
-    private val eqOnHeld = Held()
+    private val volumeHeld = HeldWrite(VOLUME_SLACK, clock = clock)
+    private val bandsHeld = Array(PlayerState.EQ_BANDS) { HeldWrite(clock = clock) }
+    private val preampHeld = HeldWrite(clock = clock)
+    private val panHeld = HeldWrite(clock = clock)
+    private val shuffleHeld = HeldWrite(clock = clock)
+    private val repeatHeld = HeldWrite(clock = clock)
+    private val eqOnHeld = HeldWrite(clock = clock)
 
     override var volume: Int
         get() = volumeHeld.read(state.volume, ::fromPercent)
         set(value) {
-            val v = value.coerceIn(0, SKIN_TOP)
+            val v = value.coerceIn(0, WinampFiveUnits.TOP)
             val percent = toPercent(v)
             volumeHeld.write(v, percent, state.volume)
             player.setVolume(percent)
@@ -168,7 +106,7 @@ internal class WalPlayer(
     override val eqBands: IntArray
         get() {
             val now = state.eqBands
-            for (i in bands.indices) bands[i] = bandsHeld[i].read(now.getOrElse(i) { EqOps.CENTER }, ::fromEq)
+            for (i in bands.indices) bands[i] = bandsHeld[i].read(now.getOrElse(i) { PlayerState.EQ_CENTER }, ::fromEq)
             return bands
         }
 
@@ -177,8 +115,8 @@ internal class WalPlayer(
         value: Int,
     ) {
         if (band !in 0 until PlayerState.EQ_BANDS) return
-        val v = value.coerceIn(0, SKIN_TOP)
-        bandsHeld[band].write(v, toEq(v), state.eqBands.getOrElse(band) { EqOps.CENTER })
+        val v = value.coerceIn(0, WinampFiveUnits.TOP)
+        bandsHeld[band].write(v, toEq(v), state.eqBands.getOrElse(band) { PlayerState.EQ_CENTER })
         player.setEqBand(band, toEq(v))
     }
 
@@ -186,7 +124,16 @@ internal class WalPlayer(
     override var eqPreamp: Int
         get() = preampHeld.read(state.preamp, ::fromEq)
         set(value) {
-            val v = value.coerceIn(0, SKIN_TOP).let { if (SliderMath.stickyPreamp(toEq(it)) == EqOps.CENTER) SKIN_FLAT else it }
+            val v =
+                value.coerceIn(0, WinampFiveUnits.TOP).let {
+                    if (SliderMath.stickyPreamp(toEq(it)) ==
+                        PlayerState.EQ_CENTER
+                    ) {
+                        WinampFiveUnits.FLAT
+                    } else {
+                        it
+                    }
+                }
             preampHeld.write(v, toEq(v), state.preamp)
             player.setPreamp(toEq(v))
         }
@@ -198,7 +145,16 @@ internal class WalPlayer(
     override var pan: Int
         get() = panHeld.read(state.balance, ::fromBalance)
         set(value) {
-            val v = value.coerceIn(-PAN_REACH, PAN_REACH).let { if (SliderMath.stickyBalance(toBalance(it)) == 0) 0 else it }
+            val v =
+                value.coerceIn(-WinampFiveUnits.PAN_REACH, WinampFiveUnits.PAN_REACH).let {
+                    if (SliderMath.stickyBalance(toBalance(it)) ==
+                        0
+                    ) {
+                        0
+                    } else {
+                        it
+                    }
+                }
             panHeld.write(v, toBalance(v), state.balance)
             player.setBalance(toBalance(v))
         }
@@ -280,66 +236,14 @@ internal class WalPlayer(
     fun watched(): Any = (player as? AndampSkinPlayer)?.watched() ?: state
 
     internal companion object {
-        /** How long a written value outlasts a state that still shows the old one. */
-        private const val HOLD_MS = 1_000L
-
         /**
          * How far in percent from what it asked for a volume write may land: half of a phone's
          * volume step at 15 steps, and the rounding on both sides.
          */
         private const val VOLUME_SLACK = 4
 
-        /** The top of the skin's scale for the volume, the equalizer and the VU. */
-        private const val SKIN_TOP = 255
-
-        /** How far the balance reaches either way on the skin's scale, and on the state's. */
-        private const val PAN_REACH = 127
-        private const val BALANCE_TOP = 100
-
-        /** The equalizer's flat on the skin's scale. */
-        private const val SKIN_FLAT = 128
-
-        /** The top of the app's equalizer scale, whose flat is [EqOps.CENTER]. */
-        private const val EQ_TOP = 63
-
-        private const val PERCENT = 100
-
         private val Boolean.bit: Int get() = if (this) 1 else 0
 
         private fun toInt(ms: Long): Int = ms.coerceIn(0, Int.MAX_VALUE.toLong()).toInt()
-
-        /** The state's volume, 0..100, on the skin's 0..255. */
-        fun fromPercent(percent: Int): Int = (percent * SKIN_TOP / PERCENT.toFloat()).roundToInt()
-
-        /**
-         * A skin volume as the state will show it once the backend has it, rounded as the backend
-         * reports it; on the phone's volume steps it lands within [VOLUME_SLACK] of this.
-         */
-        fun toPercent(v: Int): Int = (v / SKIN_TOP.toFloat() * PERCENT).roundToInt()
-
-        /**
-         * The app's 0..63 band, flat at 32, on the skin's 0..255, flat at 128. Below flat and above it
-         * the slopes differ, so the ends and the flat land on each other.
-         */
-        fun fromEq(v: Int): Int =
-            if (v <= EqOps.CENTER) {
-                (v * SKIN_FLAT / EqOps.CENTER.toFloat()).roundToInt()
-            } else {
-                SKIN_FLAT + ((v - EqOps.CENTER) * (SKIN_TOP - SKIN_FLAT) / (EQ_TOP - EqOps.CENTER).toFloat()).roundToInt()
-            }
-
-        /** A skin band on the app's scale; the inverse of [fromEq]. */
-        fun toEq(v: Int): Int =
-            if (v <= SKIN_FLAT) {
-                (v * EqOps.CENTER / SKIN_FLAT.toFloat()).roundToInt()
-            } else {
-                EqOps.CENTER + ((v - SKIN_FLAT) * (EQ_TOP - EqOps.CENTER) / (SKIN_TOP - SKIN_FLAT).toFloat()).roundToInt()
-            }
-
-        /** A balance of -100..100 on the skin's scale. */
-        fun fromBalance(balance: Int): Int = (balance * PAN_REACH / BALANCE_TOP.toFloat()).roundToInt()
-
-        /** A skin balance as the state shows it, -100..100. */
-        fun toBalance(pan: Int): Int = (pan * BALANCE_TOP / PAN_REACH.toFloat()).roundToInt()
     }
 }

@@ -5,6 +5,7 @@ package nl.mattix.andamp.ui.menu
 import android.app.Application
 import android.os.Looper
 import androidx.compose.runtime.snapshots.Snapshot
+import nl.mattix.andamp.modernskin.host.WalFit
 import nl.mattix.andamp.modernskin.skin.SkinOptions
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.state.SkinLibrary
@@ -12,7 +13,6 @@ import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.zipWith
 import nl.mattix.andamp.ui.window.testViewModel
 import nl.mattix.andamp.wal.WalBuild
-import nl.mattix.andamp.wal.WalFit
 import nl.mattix.andamp.wal.WalGate
 import nl.mattix.andamp.wal.WalLook
 import nl.mattix.andamp.wal.switchModernSkinsOn

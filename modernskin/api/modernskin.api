@@ -1,3 +1,326 @@
+public abstract interface class nl/mattix/andamp/modernskin/host/HostAction {
+	public static final field Companion Lnl/mattix/andamp/modernskin/host/HostAction$Companion;
+}
+
+public final class nl/mattix/andamp/modernskin/host/HostAction$Close : nl/mattix/andamp/modernskin/host/HostAction {
+	public static final field INSTANCE Lnl/mattix/andamp/modernskin/host/HostAction$Close;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/mattix/andamp/modernskin/host/HostAction$Companion {
+	public final fun of (Ljava/lang/String;Ljava/lang/String;)Lnl/mattix/andamp/modernskin/host/HostAction;
+}
+
+public final class nl/mattix/andamp/modernskin/host/HostAction$Fullscreen : nl/mattix/andamp/modernskin/host/HostAction {
+	public static final field INSTANCE Lnl/mattix/andamp/modernskin/host/HostAction$Fullscreen;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/mattix/andamp/modernskin/host/HostAction$Menu : nl/mattix/andamp/modernskin/host/HostAction {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lnl/mattix/andamp/modernskin/host/HostAction$Menu;
+	public static synthetic fun copy$default (Lnl/mattix/andamp/modernskin/host/HostAction$Menu;Ljava/lang/String;ILjava/lang/Object;)Lnl/mattix/andamp/modernskin/host/HostAction$Menu;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getSection ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/mattix/andamp/modernskin/host/HostAction$Minimize : nl/mattix/andamp/modernskin/host/HostAction {
+	public static final field INSTANCE Lnl/mattix/andamp/modernskin/host/HostAction$Minimize;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/mattix/andamp/modernskin/host/HostAction$NextPreset : nl/mattix/andamp/modernskin/host/HostAction {
+	public static final field INSTANCE Lnl/mattix/andamp/modernskin/host/HostAction$NextPreset;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/mattix/andamp/modernskin/host/HostAction$PreviousPreset : nl/mattix/andamp/modernskin/host/HostAction {
+	public static final field INSTANCE Lnl/mattix/andamp/modernskin/host/HostAction$PreviousPreset;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/mattix/andamp/modernskin/host/HostAction$Show : nl/mattix/andamp/modernskin/host/HostAction {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lnl/mattix/andamp/modernskin/host/HostAction$Show;
+	public static synthetic fun copy$default (Lnl/mattix/andamp/modernskin/host/HostAction$Show;Ljava/lang/String;ILjava/lang/Object;)Lnl/mattix/andamp/modernskin/host/HostAction$Show;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getWindow ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/mattix/andamp/modernskin/host/HostAction$Toggle : nl/mattix/andamp/modernskin/host/HostAction {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun copy (Ljava/lang/String;)Lnl/mattix/andamp/modernskin/host/HostAction$Toggle;
+	public static synthetic fun copy$default (Lnl/mattix/andamp/modernskin/host/HostAction$Toggle;Ljava/lang/String;ILjava/lang/Object;)Lnl/mattix/andamp/modernskin/host/HostAction$Toggle;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getWindow ()Ljava/lang/String;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/mattix/andamp/modernskin/host/HostAction$TrackInfo : nl/mattix/andamp/modernskin/host/HostAction {
+	public static final field INSTANCE Lnl/mattix/andamp/modernskin/host/HostAction$TrackInfo;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/mattix/andamp/modernskin/host/HostAction$VisualizationMenu : nl/mattix/andamp/modernskin/host/HostAction {
+	public static final field INSTANCE Lnl/mattix/andamp/modernskin/host/HostAction$VisualizationMenu;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/mattix/andamp/modernskin/host/TouchPoint {
+	public fun <init> (FF)V
+	public final fun component1 ()F
+	public final fun component2 ()F
+	public final fun copy (FF)Lnl/mattix/andamp/modernskin/host/TouchPoint;
+	public static synthetic fun copy$default (Lnl/mattix/andamp/modernskin/host/TouchPoint;FFILjava/lang/Object;)Lnl/mattix/andamp/modernskin/host/TouchPoint;
+	public final fun distanceTo (Lnl/mattix/andamp/modernskin/host/TouchPoint;)F
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getX ()F
+	public final fun getY ()F
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/mattix/andamp/modernskin/host/WalFit {
+	public fun <init> (IIFZZ)V
+	public synthetic fun <init> (IIFZZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()I
+	public final fun component2 ()I
+	public final fun component3 ()F
+	public final fun component4 ()Z
+	public final fun component5 ()Z
+	public final fun copy (IIFZZ)Lnl/mattix/andamp/modernskin/host/WalFit;
+	public static synthetic fun copy$default (Lnl/mattix/andamp/modernskin/host/WalFit;IIFZZILjava/lang/Object;)Lnl/mattix/andamp/modernskin/host/WalFit;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getCompact ()Z
+	public final fun getDensity ()F
+	public final fun getHeightPx ()I
+	public final fun getSideways ()Z
+	public final fun getWidthPx ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/mattix/andamp/modernskin/host/WalFitting {
+	public static final field Companion Lnl/mattix/andamp/modernskin/host/WalFitting$Companion;
+	public fun <init> ()V
+	public final fun apply (Lnl/mattix/andamp/modernskin/skin/SkinRuntime;Lnl/mattix/andamp/modernskin/host/WalFit;I)V
+	public final fun layout (Lnl/mattix/andamp/modernskin/skin/SkinRuntime;Lnl/mattix/andamp/modernskin/host/WalFit;ILkotlin/Pair;Lkotlin/Pair;ZZ)Lnl/mattix/andamp/modernskin/host/WalLayout;
+	public final fun refit (Lnl/mattix/andamp/modernskin/skin/SkinRuntime;Lnl/mattix/andamp/modernskin/host/WalFit;I)V
+}
+
+public final class nl/mattix/andamp/modernskin/host/WalFitting$Companion {
+	public final fun baseWOf (Lnl/mattix/andamp/modernskin/skin/SkinRuntime;)I
+	public final fun requireShowable (Lnl/mattix/andamp/modernskin/skin/SkinRuntime;Lkotlin/Pair;)V
+}
+
+public final class nl/mattix/andamp/modernskin/host/WalIdle {
+	public static final field Companion Lnl/mattix/andamp/modernskin/host/WalIdle$Companion;
+	public fun <init> (ZLjava/lang/Long;Z)V
+	public synthetic fun <init> (ZLjava/lang/Long;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Z
+	public final fun component2 ()Ljava/lang/Long;
+	public final fun component3 ()Z
+	public final fun copy (ZLjava/lang/Long;Z)Lnl/mattix/andamp/modernskin/host/WalIdle;
+	public static synthetic fun copy$default (Lnl/mattix/andamp/modernskin/host/WalIdle;ZLjava/lang/Long;ZILjava/lang/Object;)Lnl/mattix/andamp/modernskin/host/WalIdle;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getFramesWanted ()Z
+	public final fun getNextDueAt ()Ljava/lang/Long;
+	public final fun getStopped ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/mattix/andamp/modernskin/host/WalIdle$Companion {
+	public final fun of (Lnl/mattix/andamp/modernskin/skin/SkinRuntime;)Lnl/mattix/andamp/modernskin/host/WalIdle;
+}
+
+public final class nl/mattix/andamp/modernskin/host/WalLayout {
+	public fun <init> (Lnl/mattix/andamp/modernskin/host/WalFit;FFFIIZZZLjava/lang/Integer;Ljava/lang/Integer;ZLnl/mattix/andamp/modernskin/skin/Rect;ILjava/util/List;Ljava/lang/String;Lnl/mattix/andamp/modernskin/skin/SkinOptions;Lnl/mattix/andamp/modernskin/skin/Rect;)V
+	public synthetic fun <init> (Lnl/mattix/andamp/modernskin/host/WalFit;FFFIIZZZLjava/lang/Integer;Ljava/lang/Integer;ZLnl/mattix/andamp/modernskin/skin/Rect;ILjava/util/List;Ljava/lang/String;Lnl/mattix/andamp/modernskin/skin/SkinOptions;Lnl/mattix/andamp/modernskin/skin/Rect;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun component1 ()Lnl/mattix/andamp/modernskin/host/WalFit;
+	public final fun component10 ()Ljava/lang/Integer;
+	public final fun component11 ()Ljava/lang/Integer;
+	public final fun component12 ()Z
+	public final fun component13 ()Lnl/mattix/andamp/modernskin/skin/Rect;
+	public final fun component14 ()I
+	public final fun component15 ()Ljava/util/List;
+	public final fun component16 ()Ljava/lang/String;
+	public final fun component17 ()Lnl/mattix/andamp/modernskin/skin/SkinOptions;
+	public final fun component18 ()Lnl/mattix/andamp/modernskin/skin/Rect;
+	public final fun component2 ()F
+	public final fun component3 ()F
+	public final fun component4 ()F
+	public final fun component5 ()I
+	public final fun component6 ()I
+	public final fun component7 ()Z
+	public final fun component8 ()Z
+	public final fun component9 ()Z
+	public final fun copy (Lnl/mattix/andamp/modernskin/host/WalFit;FFFIIZZZLjava/lang/Integer;Ljava/lang/Integer;ZLnl/mattix/andamp/modernskin/skin/Rect;ILjava/util/List;Ljava/lang/String;Lnl/mattix/andamp/modernskin/skin/SkinOptions;Lnl/mattix/andamp/modernskin/skin/Rect;)Lnl/mattix/andamp/modernskin/host/WalLayout;
+	public static synthetic fun copy$default (Lnl/mattix/andamp/modernskin/host/WalLayout;Lnl/mattix/andamp/modernskin/host/WalFit;FFFIIZZZLjava/lang/Integer;Ljava/lang/Integer;ZLnl/mattix/andamp/modernskin/skin/Rect;ILjava/util/List;Ljava/lang/String;Lnl/mattix/andamp/modernskin/skin/SkinOptions;Lnl/mattix/andamp/modernskin/skin/Rect;ILjava/lang/Object;)Lnl/mattix/andamp/modernskin/host/WalLayout;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAnimating ()Z
+	public final fun getDock ()Lnl/mattix/andamp/modernskin/skin/Rect;
+	public final fun getEdgePlacements ()I
+	public final fun getFit ()Lnl/mattix/andamp/modernskin/host/WalFit;
+	public final fun getLeft ()F
+	public final fun getMenuTarget ()Ljava/lang/Integer;
+	public final fun getMoveTarget ()Ljava/lang/Integer;
+	public final fun getScale ()F
+	public final fun getSkinOptions ()Lnl/mattix/andamp/modernskin/skin/SkinOptions;
+	public final fun getSliding ()Z
+	public final fun getStackH ()I
+	public final fun getStackW ()I
+	public final fun getTheme ()Ljava/lang/String;
+	public final fun getThemes ()Ljava/util/List;
+	public final fun getTop ()F
+	public final fun getVisRect ()Lnl/mattix/andamp/modernskin/skin/Rect;
+	public final fun getWantsFrames ()Z
+	public final fun getWindowOpen ()Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/mattix/andamp/modernskin/host/WalMenuWait {
+	public fun <init> ()V
+	public fun <init> (JLkotlin/jvm/functions/Function1;)V
+	public synthetic fun <init> (JLkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun answer (Lnl/mattix/andamp/modernskin/skin/SkinMenu;I)V
+	public final fun choose (Lnl/mattix/andamp/modernskin/skin/SkinMenu;)Ljava/lang/Integer;
+	public final fun close ()V
+	public final fun dismiss ()V
+	public final fun getBeforeShow ()Lkotlin/jvm/functions/Function0;
+	public final fun getMenu ()Lnl/mattix/andamp/modernskin/skin/SkinMenu;
+	public final fun getOnChange ()Lkotlin/jvm/functions/Function0;
+	public final fun getUnattended ()Z
+	public final fun getWorkClock ()J
+	public final fun setBeforeShow (Lkotlin/jvm/functions/Function0;)V
+	public final fun setOnChange (Lkotlin/jvm/functions/Function0;)V
+	public final fun setUnattended (Z)V
+}
+
+public final class nl/mattix/andamp/modernskin/host/WalRest {
+	public static final field Companion Lnl/mattix/andamp/modernskin/host/WalRest$Companion;
+	public static final field LIVE_GAP_MS J
+	public static final field MAX_AHEAD_MS J
+	public static final field REST_GAP_MS J
+	public static final field SCREEN_GAP_MS J
+	public static final field STATIC_AFTER_MS J
+	public fun <init> (Lnl/mattix/andamp/modernskin/host/WalRest$Timer;)V
+	public final fun cancel ()V
+	public final fun getChangedAt ()J
+	public final fun getTickAt ()J
+	public final fun getWaiting ()Z
+	public final fun plan (Lnl/mattix/andamp/modernskin/host/WalIdle;JJ)V
+	public final fun setChangedAt (J)V
+	public final fun static (J)Z
+	public final fun ticked (JZ)V
+	public final fun wakeAt (Lnl/mattix/andamp/modernskin/host/WalIdle;JJ)Ljava/lang/Long;
+	public final fun wantsFrames (Lnl/mattix/andamp/modernskin/host/WalIdle;J)Z
+}
+
+public final class nl/mattix/andamp/modernskin/host/WalRest$Companion {
+}
+
+public abstract interface class nl/mattix/andamp/modernskin/host/WalRest$Timer {
+	public abstract fun cancel ()V
+	public abstract fun getWaiting ()Z
+	public abstract fun wakeAt (J)V
+}
+
+public final class nl/mattix/andamp/modernskin/host/WalScale {
+	public static final field INSTANCE Lnl/mattix/andamp/modernskin/host/WalScale;
+	public static final field MAX_PX I
+	public static final field MIN_SCALE F
+	public final fun across (IIF)F
+	public final fun fit (Lkotlin/Pair;Lkotlin/Pair;I)F
+	public final fun left (FIF)F
+	public final fun of (Lkotlin/Pair;II)F
+	public final fun place (Lnl/mattix/andamp/modernskin/host/WalFit;Lkotlin/Pair;IILkotlin/Pair;Lkotlin/Pair;ILnl/mattix/andamp/modernskin/skin/Edge;Lnl/mattix/andamp/modernskin/skin/Edge;)Lnl/mattix/andamp/modernskin/host/WalScale$Place;
+	public static synthetic fun place$default (Lnl/mattix/andamp/modernskin/host/WalScale;Lnl/mattix/andamp/modernskin/host/WalFit;Lkotlin/Pair;IILkotlin/Pair;Lkotlin/Pair;ILnl/mattix/andamp/modernskin/skin/Edge;Lnl/mattix/andamp/modernskin/skin/Edge;ILjava/lang/Object;)Lnl/mattix/andamp/modernskin/host/WalScale$Place;
+	public final fun unfit (Lkotlin/Pair;Lkotlin/Pair;ILkotlin/Pair;)Ljava/lang/String;
+}
+
+public final class nl/mattix/andamp/modernskin/host/WalScale$Place {
+	public fun <init> (FFF)V
+	public final fun component1 ()F
+	public final fun component2 ()F
+	public final fun component3 ()F
+	public final fun copy (FFF)Lnl/mattix/andamp/modernskin/host/WalScale$Place;
+	public static synthetic fun copy$default (Lnl/mattix/andamp/modernskin/host/WalScale$Place;FFFILjava/lang/Object;)Lnl/mattix/andamp/modernskin/host/WalScale$Place;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getLeft ()F
+	public final fun getScale ()F
+	public final fun getTop ()F
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class nl/mattix/andamp/modernskin/host/WalTouch {
+	public fun <init> (Lnl/mattix/andamp/modernskin/host/WalTouch$Target;Lnl/mattix/andamp/modernskin/host/WalTouch$Rules;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Lnl/mattix/andamp/modernskin/host/WalTouch$Drag;)V
+	public synthetic fun <init> (Lnl/mattix/andamp/modernskin/host/WalTouch$Target;Lnl/mattix/andamp/modernskin/host/WalTouch$Rules;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Lnl/mattix/andamp/modernskin/host/WalTouch$Drag;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun cancel ()V
+	public final fun down (Lnl/mattix/andamp/modernskin/host/TouchPoint;J)V
+	public final fun longPressDue ()V
+	public final fun longPressIn (J)Ljava/lang/Long;
+	public final fun menuShown ()V
+	public final fun move (Lnl/mattix/andamp/modernskin/host/TouchPoint;)V
+	public final fun up (Lnl/mattix/andamp/modernskin/host/TouchPoint;JZ)V
+}
+
+public abstract interface class nl/mattix/andamp/modernskin/host/WalTouch$Drag {
+	public abstract fun end ()V
+	public abstract fun move (Lnl/mattix/andamp/modernskin/host/TouchPoint;)V
+	public abstract fun start (Lnl/mattix/andamp/modernskin/host/TouchPoint;Lnl/mattix/andamp/modernskin/host/TouchPoint;)V
+}
+
+public final class nl/mattix/andamp/modernskin/host/WalTouch$Rules {
+	public fun <init> (JFJF)V
+	public final fun component1 ()J
+	public final fun component2 ()F
+	public final fun component3 ()J
+	public final fun component4 ()F
+	public final fun copy (JFJF)Lnl/mattix/andamp/modernskin/host/WalTouch$Rules;
+	public static synthetic fun copy$default (Lnl/mattix/andamp/modernskin/host/WalTouch$Rules;JFJFILjava/lang/Object;)Lnl/mattix/andamp/modernskin/host/WalTouch$Rules;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDoubleTapMs ()J
+	public final fun getDoubleTapSlop ()F
+	public final fun getLongPressMs ()J
+	public final fun getTouchSlop ()F
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public abstract interface class nl/mattix/andamp/modernskin/host/WalTouch$Target {
+	public abstract fun doubleTap (II)I
+	public abstract fun getMoveTarget ()Ljava/lang/Integer;
+	public abstract fun pointerCancel ()V
+	public abstract fun pointerDown (II)I
+	public abstract fun pointerMove (II)V
+	public abstract fun pointerUp (II)V
+}
+
 public final class nl/mattix/andamp/modernskin/skin/AndampDefaultSet : nl/mattix/andamp/modernskin/skin/SkinFiles {
 	public static final field INSTANCE Lnl/mattix/andamp/modernskin/skin/AndampDefaultSet;
 	public fun exists (Ljava/lang/String;)Z

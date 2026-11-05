@@ -49,8 +49,8 @@ internal fun WalVisualizer(
             .offset { IntOffset(left, top) }
             .pointerInput(drag) {
                 detectDragGestures(
-                    onDragStart = { at -> drag.start(at + inStackNow, at + inStackNow) },
-                    onDrag = { change, _ -> drag.move(change.position + inStackNow) },
+                    onDragStart = { at -> drag.start((at + inStackNow).toTouch(), (at + inStackNow).toTouch()) },
+                    onDrag = { change, _ -> drag.move((change.position + inStackNow).toTouch()) },
                     onDragEnd = { drag.end() },
                     onDragCancel = { drag.end() },
                 )

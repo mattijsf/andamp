@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package nl.mattix.andamp.wal
-
-import android.os.Handler
+package nl.mattix.andamp.modernskin.host
 
 /**
  * When a modern skin rests, as its engine works it out on the engine thread: whether the screen
@@ -19,26 +17,37 @@ import android.os.Handler
  * delays nothing for long. Right after a tick from a display frame, the next wake waits at least
  * [SCREEN_GAP_MS], so it does not fall between the display frames of a loop that runs on.
  *
- * Times are [android.os.SystemClock.uptimeMillis], apart from the runtime's clock, of which only
- * the distance to [WalIdle.nextDueAt] is read.
+ * Times are the [timer]'s clock in ms (on Android, uptime), apart from the
+ * runtime's clock, of which only the distance to [WalIdle.nextDueAt] is read.
  */
-internal class WalRest(
-    private val handler: Handler,
-    /** The tick a wake runs. */
-    private val wake: Runnable,
+public class WalRest(
+    /** Where the wake is set; it runs the engine's tick when it comes. */
+    private val timer: Timer,
 ) {
+    /** One wake at a time, which runs the engine's tick at the time set; on Android a Handler's. */
+    public interface Timer {
+        /** Sets the wake for [at], on the timer's clock; the one set before is dropped first. */
+        public fun wakeAt(at: Long)
+
+        /** Drops the wake set, if any; from any thread. */
+        public fun cancel()
+
+        /** Whether a wake is set; from any thread. */
+        public val waiting: Boolean
+    }
+
     /** When the last tick began. */
-    var tickAt = 0L
+    public var tickAt: Long = 0L
         private set
 
     /** Whether the last tick came from a display frame. */
     private var fromScreen = false
 
     /** When something the skin shows last changed; a tick that changed nothing leaves it. */
-    var changedAt = 0L
+    public var changedAt: Long = 0L
 
     /** A tick began at [now]; [fromScreen] when a display frame asked for it. */
-    fun ticked(
+    public fun ticked(
         now: Long,
         fromScreen: Boolean,
     ) {
@@ -47,10 +56,10 @@ internal class WalRest(
     }
 
     /** Whether nothing the skin shows has changed for [STATIC_AFTER_MS] at [now]. */
-    fun static(now: Long): Boolean = now - changedAt >= STATIC_AFTER_MS
+    public fun static(now: Long): Boolean = now - changedAt >= STATIC_AFTER_MS
 
     /** Whether the screen should tick the skin on every display frame at [now], as [idle] says it moves. */
-    fun wantsFrames(
+    public fun wantsFrames(
         idle: WalIdle,
         now: Long,
     ): Boolean = idle.framesWanted && !static(now)
@@ -59,7 +68,7 @@ internal class WalRest(
      * When the engine should wake the skin, or null for no wake: [idle] read at [now], when the
      * runtime's clock read [runtimeNow].
      */
-    fun wakeAt(
+    public fun wakeAt(
         idle: WalIdle,
         now: Long,
         runtimeNow: Long,
@@ -73,36 +82,36 @@ internal class WalRest(
     }
 
     /** Sets the next wake for [idle] (see [wakeAt]) in place of the one set before; null only drops that one. */
-    fun plan(
+    public fun plan(
         idle: WalIdle?,
         now: Long,
         runtimeNow: Long,
     ) {
         cancel()
         val at = idle?.let { wakeAt(it, now, runtimeNow) } ?: return
-        handler.postAtTime(wake, this, at)
+        timer.wakeAt(at)
     }
 
     /** Drops the wake set, if any; from any thread. */
-    fun cancel() = handler.removeCallbacksAndMessages(this)
+    public fun cancel(): Unit = timer.cancel()
 
     /** Whether a wake is set; from any thread. */
-    val waiting: Boolean get() = handler.hasMessages(0, this)
+    public val waiting: Boolean get() = timer.waiting
 
-    companion object {
+    public companion object {
         /** How long nothing a skin shows changes before it counts as static. */
-        const val STATIC_AFTER_MS = 1_000L
+        public const val STATIC_AFTER_MS: Long = 1_000L
 
         /** The gap after a tick before a wake while the music is stopped or the skin static: four a second. */
-        const val REST_GAP_MS = 250L
+        public const val REST_GAP_MS: Long = 250L
 
         /** The gap after a tick before a wake while the music plays or is paused: about one display frame. */
-        const val LIVE_GAP_MS = 16L
+        public const val LIVE_GAP_MS: Long = 16L
 
         /** The gap after a tick from a display frame before a wake: about three display frames. */
-        const val SCREEN_GAP_MS = 50L
+        public const val SCREEN_GAP_MS: Long = 50L
 
         /** How far ahead a wake is set at most. */
-        const val MAX_AHEAD_MS = 1_000L
+        public const val MAX_AHEAD_MS: Long = 1_000L
     }
 }
