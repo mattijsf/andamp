@@ -410,9 +410,10 @@ so what they show is fixed on purpose:
   `:modernskin`'s `host` package, in plain Kotlin: fitting the stack to a box
   (`WalFitting`, `WalScale`, `WalLayout`), one finger's press, drag, double tap and long
   press (`WalTouch`), when to tick and when to rest (`WalRest`, behind a `Timer`), the
-  popup-menu wait (`WalMenuWait`) and the names of Winamp's host actions (`HostAction`).
-  The app's `wal` package adapts them: Compose's pointer events and geometry, the engine
-  thread's `Handler`, and what each host action does in Andamp.
+  popup-menu wait (`WalMenuWait`), the names of Winamp's host actions (`HostAction`) and
+  which window and run drawings a frame records again (`KeptFrames`). The app's `wal`
+  package adapts them: Compose's pointer events and geometry, the engine thread's
+  `Handler`, the render nodes, and what each host action does in Andamp.
 - `:core:skinplayer` also carries what a modern skin's player needs over any
   `SkinPlayer`: Winamp 5's scales (`WinampFiveUnits`) and the hold on a written value
   until the player shows it (`HeldWrite`).
