@@ -13,6 +13,7 @@ import nl.mattix.andamp.modernskin.host.WalIdle
 import nl.mattix.andamp.modernskin.host.WalScale
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.Player
+import nl.mattix.andamp.modernskin.skin.SkinEngine
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinMenu
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
@@ -82,7 +83,7 @@ class WalEngineTest {
     private inner class Run(
         label: String,
         val skin: SkinFiles = files,
-        idle: (SkinRuntime) -> WalIdle = WalIdle::of,
+        idle: (SkinEngine) -> WalIdle = WalIdle::of,
         onFrame: () -> Unit = {},
     ) {
         // a closed engine's thread may still be ending when the next test starts one
@@ -122,7 +123,7 @@ class WalEngineTest {
     private fun openMenu(): CompletableFuture<Int> {
         val heard = CompletableFuture<Int>()
         engine.post { rt ->
-            heard.complete(rt.popScriptMenu("Item" to 1))
+            heard.complete((rt as SkinRuntime).popScriptMenu("Item" to 1))
         }
         return heard
     }
@@ -147,7 +148,7 @@ class WalEngineTest {
     /** What [read] gives on the engine thread, once the work posted before it is done. */
     private fun <T> onEngine(read: (SkinRuntime) -> T): T {
         val got = CompletableFuture<T>()
-        engine.post(publish = false) { got.complete(read(it)) }
+        engine.post(publish = false) { got.complete(read(it as SkinRuntime)) }
         return got.get(5, TimeUnit.SECONDS)
     }
 
@@ -302,12 +303,12 @@ class WalEngineTest {
 
         val skipped = CompletableFuture<Unit>()
         run.engine.post { skipped.complete(Unit) }
-        val ran = CompletableFuture<SkinRuntime?>()
+        val ran = CompletableFuture<SkinEngine?>()
         run.engine.postAlways { ran.complete(it) }
 
         assertNull("it runs, with no skin", ran.get(5, TimeUnit.SECONDS))
         assertFalse("post runs nothing with no skin", skipped.isDone)
-        val withSkin = CompletableFuture<SkinRuntime?>()
+        val withSkin = CompletableFuture<SkinEngine?>()
         engine.postAlways { withSkin.complete(it) }
         assertEquals(
             "with a skin on, it gets that skin",
@@ -378,7 +379,7 @@ class WalEngineTest {
 
         repeat(WalEngine.MAX_FAILURES) {
             engine.post { rt ->
-                rt.resizeAsScript(rt.mainWindow!!, 0, 0, 10_000, 100)
+                (rt as SkinRuntime).resizeAsScript(rt.mainWindow!!, 0, 0, 10_000, 100)
             }
         }
 

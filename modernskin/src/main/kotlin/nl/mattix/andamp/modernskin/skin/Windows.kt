@@ -8,7 +8,8 @@ package nl.mattix.andamp.modernskin.skin
  */
 @JvmInline
 public value class WindowId(
-    internal val raw: Int,
+    /** The engine's number for the window; a host that brings its own engine makes ids from its numbers. */
+    public val raw: Int,
 )
 
 /**

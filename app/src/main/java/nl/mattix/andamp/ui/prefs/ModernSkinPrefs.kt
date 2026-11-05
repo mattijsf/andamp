@@ -10,11 +10,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nl.mattix.andamp.R
 import nl.mattix.andamp.wal.WalGate
+import nl.mattix.andamp.wal.WalNative
 import nl.mattix.andamp.wal.WalSharp
 
 /**
  * The Skins section on Preferences > Player: whether Winamp modern skins (.wal) may be added and
- * worn, and whether they are drawn with sharp pixels.
+ * worn, whether they are drawn with sharp pixels, and whether they run on the native engine.
  */
 data class ModernSkinPrefs(
     /** Mirrors [nl.mattix.andamp.wal.WalGate.on]. */
@@ -23,10 +24,13 @@ data class ModernSkinPrefs(
     /** Mirrors [nl.mattix.andamp.wal.WalSharp.on]; its row shows only while [enabled]. */
     val sharp: Boolean = false,
     val onSharp: (Boolean) -> Unit = {},
+    /** Mirrors [nl.mattix.andamp.wal.WalNative.on]; its row shows only while [enabled]. */
+    val native: Boolean = false,
+    val onNative: (Boolean) -> Unit = {},
 )
 
 /**
- * The two switches as the app holds them. A tap changes the value on main at once and stores it in
+ * The three switches as the app holds them. A tap changes the value on main at once and stores it in
  * the background. The stored values are read here too, off main, so the switches show them even
  * when Preferences is the first screen the process draws.
  */
@@ -37,6 +41,7 @@ internal fun modernSkinPrefsOf(context: Context): ModernSkinPrefs {
         withContext(Dispatchers.IO) {
             WalGate.read(app)
             WalSharp.read(app)
+            WalNative.read(app)
         }
     }
     return ModernSkinPrefs(
@@ -44,6 +49,8 @@ internal fun modernSkinPrefsOf(context: Context): ModernSkinPrefs {
         onEnabled = { on -> WalGate.change(app, on) },
         sharp = WalSharp.on,
         onSharp = { on -> WalSharp.change(app, on) },
+        native = WalNative.on,
+        onNative = { on -> WalNative.change(app, on) },
     )
 }
 
@@ -56,8 +63,22 @@ internal fun ModernSkinsSection(prefs: ModernSkinPrefs) {
     Section(stringResource(R.string.prefs_player_skins_section))
     Group { ModernSkinsRow(prefs) }
     Note(stringResource(R.string.prefs_modern_skins_note))
-    // sharp pixels change only how a modern skin is drawn, so the row shows while they can be worn
-    if (prefs.enabled) Group { SharpPixelsRow(prefs) }
+    // sharp pixels and the engine change only how a modern skin is drawn, so the rows show while they can be worn
+    if (prefs.enabled) {
+        Group { SharpPixelsRow(prefs) }
+        Group { NativeEngineRow(prefs) }
+    }
+}
+
+@Composable
+private fun NativeEngineRow(prefs: ModernSkinPrefs) {
+    SwitchRow(
+        title = stringResource(R.string.prefs_native_engine_title),
+        summary = stringResource(if (prefs.native) R.string.prefs_native_engine_on else R.string.prefs_native_engine_off),
+        checked = prefs.native,
+        tag = "prefs.native.switch",
+        onChange = prefs.onNative,
+    )
 }
 
 @Composable

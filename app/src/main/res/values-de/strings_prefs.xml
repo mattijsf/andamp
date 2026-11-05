@@ -118,6 +118,7 @@
     <string name="prefs_notice_material_what">Seine Farb-Engine leitet die Palette der modernen Bildschirme aus dem geladenen Skin ab.</string>
     <string name="prefs_notice_coil_what">Lädt die Vorschaubilder des Skin-Museums und hält sie im Cache.</string>
     <string name="prefs_notice_okhttp_what">Der einzige HTTP-Client, für das Skin-Museum und für Radiostreams.</string>
+    <string name="prefs_notice_walkit_what">Die Engine für moderne Skins in nativem Code, hinter dem Schalter für die native Engine: dieselben Skins, nach Rust portiert.</string>
 
     <!-- Store.kt (storePlay) -->
     <string name="prefs_notice_play_billing_what">Nimmt die Trinkgelder auf der Seite „Andamp unterstützen“ über Google Play entgegen.</string>
@@ -159,6 +160,9 @@
     <string name="prefs_sharp_pixels_title">Scharfe Pixel</string>
     <string name="prefs_sharp_pixels_on">Klare Kanten, aber manche Buchstaben und Linien werden ungleich dick. Das betrifft nur moderne Skins, die Andamp in einer Zwischengröße zeigt, etwa 2,5-fach vergrößert, damit sie auf deinen Bildschirm passen.</string>
     <string name="prefs_sharp_pixels_off">Weich, aber leicht unscharf. Schalte dies für klare Kanten ein; manche Buchstaben und Linien werden dann ungleich dick. Das betrifft nur moderne Skins, die Andamp in einer Zwischengröße zeigt, etwa 2,5-fach vergrößert, damit sie auf deinen Bildschirm passen.</string>
+    <string name="prefs_native_engine_title">Native Engine (Beta)</string>
+    <string name="prefs_native_engine_on">Moderne Skins laufen auf Andamps nativer Engine, die dasselbe zeichnet, aber weniger Akku brauchen kann. Gilt ab dem nächsten modernen Skin, den du anziehst. Schalte es aus, wenn ein Skin sich falsch verhält.</string>
+    <string name="prefs_native_engine_off">Moderne Skins laufen auf der Engine, die Andamp bisher verwendet hat. Schalte dies ein, um die native Engine zu probieren, die dasselbe zeichnet, aber weniger Akku brauchen kann; es gilt ab dem nächsten modernen Skin, den du anziehst.</string>
 
     <!-- PluginsSection.kt -->
     <string name="prefs_plugins_intro">Audio-Plug-ins in Lua. Andamp behält eine eigene Kopie, die Originaldatei kann also verschoben oder gelöscht werden.</string>

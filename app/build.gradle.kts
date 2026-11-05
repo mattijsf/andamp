@@ -401,6 +401,9 @@ dependencies {
     // Winamp modern skins (.wal). A picked skin file is sniffed with it; proguard-rules.pro keeps
     // the whole engine in every release, including the parts no screen reaches
     implementation(project(":modernskin"))
+    // the same engine in native code (walkit), behind the native engine switch; from Maven Local
+    // until it is published
+    implementation(libs.walkit)
     implementation(project(":core:skinplayer"))
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)

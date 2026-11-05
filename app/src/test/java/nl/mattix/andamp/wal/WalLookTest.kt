@@ -149,7 +149,7 @@ class WalLookTest {
         read: (SkinRuntime?) -> T,
     ): T {
         val got = CompletableFuture<T>()
-        look.engine!!.postAlways { got.complete(read(it)) }
+        look.engine!!.postAlways { got.complete(read(it as SkinRuntime?)) }
         return got.get(5, TimeUnit.SECONDS)
     }
 
@@ -663,7 +663,7 @@ class WalLookTest {
             if (rt.menuChoice(menu) != 0) {
                 val main = checkNotNull(rt.mainWindow)
                 val (w, h) = rt.windowSize(main)
-                rt.resizeAsScript(main, 0, 0, w, h)
+                (rt as SkinRuntime).resizeAsScript(main, 0, 0, w, h)
             }
         }
     }

@@ -15,6 +15,7 @@ import kotlinx.coroutines.SupervisorJob
 import nl.mattix.andamp.modernskin.fixtures.popScriptMenu
 import nl.mattix.andamp.modernskin.host.WalFit
 import nl.mattix.andamp.modernskin.skin.FakePlayer
+import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.skin.FakePalette
 import nl.mattix.andamp.skin.LiveSkins
@@ -772,7 +773,7 @@ class SkinOpsWearTest {
         assertTrue("a player surface holds it", look.turn.tryLock())
         val heard = java.util.concurrent.CompletableFuture<Int>()
         look.engine!!.post { rt ->
-            heard.complete(rt.popScriptMenu("Item" to 1))
+            heard.complete((rt as SkinRuntime).popScriptMenu("Item" to 1))
         }
         await { look.menu != null }
 

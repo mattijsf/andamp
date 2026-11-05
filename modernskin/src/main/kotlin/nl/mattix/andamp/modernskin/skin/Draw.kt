@@ -170,6 +170,17 @@ public sealed class DrawCmd {
         /** Scale with filtering instead of nearest pixels: Winamp shrinks a list's thumb picture that way. */
         public var smooth: Boolean = false
             internal set
+
+        public companion object {
+            /** A picture as another engine hands it over: its tint and its scaling filled in. */
+            public fun drawn(
+                bitmap: BitmapDef,
+                dst: Rect,
+                alpha: Int,
+                gamma: Gamma?,
+                smooth: Boolean,
+            ): Image = Image(bitmap, dst, alpha, gamma).also { it.smooth = smooth }
+        }
     }
 
     /** A [rect] filled with [color] at [alpha], 0..255. */
@@ -265,6 +276,29 @@ public sealed class DrawCmd {
         /** The baseline, in layout pixels: placed in [rect] by [valign] and the font's line ([SkinRuntime]). */
         public var baseline: Float = 0f
             internal set
+
+        public companion object {
+            /** A run of text as another engine hands it over: placed already, at [x] and [baseline]. */
+            @Suppress("LongParameterList") // every field of a placed run
+            public fun placed(
+                text: String,
+                font: FontDef?,
+                size: Int,
+                color: Rgb,
+                rect: Rect,
+                alpha: Int,
+                bold: Boolean,
+                shadow: Rgb?,
+                shadowDx: Int,
+                shadowDy: Int,
+                x: Float,
+                baseline: Float,
+            ): Text =
+                Text(text, font, size, color, rect, Align.LEFT, 0, alpha, VAlign.TOP, bold, shadow, shadowDx, shadowDy).also {
+                    it.x = x
+                    it.baseline = baseline
+                }
+        }
     }
 
     /**

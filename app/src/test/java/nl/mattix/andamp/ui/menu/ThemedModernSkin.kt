@@ -122,7 +122,8 @@ internal fun seedSkinOptions(
 ) {
     val seeded = AtomicReference<SkinOptions>()
     look.engine!!.post { rt ->
-        build(rt)
+        // the seeds are the Kotlin engine's Config objects
+        build(rt as SkinRuntime)
         seeded.set(rt.skinOptions())
     }
     awaitModern("a frame carries the seeded options") { seeded.get()?.let { it == look.skinOptions } == true }
