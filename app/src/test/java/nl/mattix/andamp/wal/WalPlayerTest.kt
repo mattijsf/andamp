@@ -170,6 +170,16 @@ class WalPlayerTest {
     }
 
     @Test
+    fun `the playlist's version holds while its entries do and moves when they change`() {
+        val before = player.playlistVersion
+        assertEquals(before, player.playlistVersion)
+        assertSame(player.tracks, player.tracks)
+        state.playlist = state.playlist + song(9)
+        assertNotEquals(before, player.playlistVersion)
+        assertEquals(player.playlistVersion, player.playlistVersion)
+    }
+
+    @Test
     fun `an index past the playlist reads safely`() {
         state.currentIndex = 7
 

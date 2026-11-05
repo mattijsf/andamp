@@ -429,6 +429,7 @@ internal class WalkitEngine(
 
         override val tracks: List<WkTrack> get() = player.tracks.map { WkTrack(it.title, it.lengthMs) }
         override val trackIndex: Int get() = player.trackIndex
+        override val playlistVersion: Long? get() = player.playlistVersion
 
         override fun playTrack(index: Int) = player.playTrack(index)
 

@@ -207,6 +207,21 @@ internal class WalPlayer(
     private var rowsOf: List<Entry>? = null
     private var rows: List<SkinTrack> = emptyList()
 
+    /** The entries the version counts, and the count: one more each time the state holds other entries. */
+    private var versionOf: List<Entry>? = null
+    private var version = 0L
+
+    /** Moves when the state's playlist is another list of entries. */
+    override val playlistVersion: Long
+        get() {
+            val entries = state.playlist
+            if (entries !== versionOf) {
+                versionOf = entries
+                version++
+            }
+            return version
+        }
+
     /** The playlist's rows as it writes them; the same list until the entries change. */
     override val tracks: List<SkinTrack>
         get() {
