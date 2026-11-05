@@ -88,6 +88,37 @@ public final class nl/mattix/andamp/modernskin/host/HostAction$VisualizationMenu
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class nl/mattix/andamp/modernskin/host/KeptFrames {
+	public static final field Companion Lnl/mattix/andamp/modernskin/host/KeptFrames$Companion;
+	public fun <init> (Lkotlin/jvm/functions/Function0;Lkotlin/jvm/functions/Function1;)V
+	public final fun forget ()V
+	public final fun getKeptRuns ()I
+	public final fun getKeptWindows ()I
+	public final fun plan (Ljava/util/List;Ljava/util/List;)Ljava/util/List;
+	public final fun stackAgain (III)Z
+}
+
+public final class nl/mattix/andamp/modernskin/host/KeptFrames$Companion {
+	public final fun fits (Ljava/util/List;Ljava/util/List;Ljava/util/List;I)Z
+}
+
+public final class nl/mattix/andamp/modernskin/host/KeptFrames$Run {
+	public fun <init> (Lnl/mattix/andamp/modernskin/skin/LiveRun;Ljava/lang/Object;Z)V
+	public final fun getAgain ()Z
+	public final fun getDrawing ()Ljava/lang/Object;
+	public final fun getRun ()Lnl/mattix/andamp/modernskin/skin/LiveRun;
+}
+
+public final class nl/mattix/andamp/modernskin/host/KeptFrames$Window {
+	public fun <init> (Lnl/mattix/andamp/modernskin/skin/WindowPlan;Lnl/mattix/andamp/modernskin/skin/Rect;Ljava/lang/Object;ZZLjava/util/List;)V
+	public final fun getAgain ()Z
+	public final fun getDrawing ()Ljava/lang/Object;
+	public final fun getOverClear ()Z
+	public final fun getPlan ()Lnl/mattix/andamp/modernskin/skin/WindowPlan;
+	public final fun getRect ()Lnl/mattix/andamp/modernskin/skin/Rect;
+	public final fun getRuns ()Ljava/util/List;
+}
+
 public final class nl/mattix/andamp/modernskin/host/TouchPoint {
 	public fun <init> (FF)V
 	public final fun component1 ()F

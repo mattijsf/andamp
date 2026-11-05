@@ -21,7 +21,7 @@ import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
-import nl.mattix.andamp.modernskin.host.WalScale
+import nl.mattix.andamp.modernskin.host.KeptFrames
 import nl.mattix.andamp.modernskin.skin.DrawCmd
 import nl.mattix.andamp.modernskin.skin.LiveRun
 import nl.mattix.andamp.modernskin.skin.Rect
@@ -95,22 +95,8 @@ internal class WalLayers(
     /** The layer the stack is drawn into, also by [drawWalStack] for a frame drawn the plain way. */
     val stackLayer: GraphicsLayer get() = stack ?: makeLayer().also { stack = it }
 
-    private class WindowNode(
-        val node: WalNode,
-    ) {
-        val runs = HashMap<Long, WalNode>()
-        var frame = 0L
-        var overClear = false
-    }
-
-    private val windows = HashMap<Long, WindowNode>()
-
-    // the windows drawn this frame, and those the stack layer's content draws, in order
-    private val order = ArrayList<WalNode>()
-    private val recorded = ArrayList<WalNode>()
-    private var recordedWhole = 0
-    private var recordedSize = IntSize.Zero
-    private var frame = 0L
+    /** Which window and run drawings to record again; the drawings are this canvas's nodes. */
+    private val kept = KeptFrames(create = { WalNode(nodes) }, release = WalNode::release)
 
     // what this frame recorded again, for the timing log: windows, runs and the runs' area in skin px
     private var windowsAgain = 0
@@ -118,8 +104,8 @@ internal class WalLayers(
     private var runAreaAgain = 0L
 
     /** Windows and runs kept; for tests. */
-    internal val keptWindows: Int get() = windows.size
-    internal val keptRuns: Int get() = windows.values.sumOf { it.runs.size }
+    internal val keptWindows: Int get() = kept.keptWindows
+    internal val keptRuns: Int get() = kept.keptRuns
 
     /** Told of each recording, by kind ([STACK], [WINDOW], [RUN]) and id; for tests. */
     internal var onRecord: ((kind: String, id: Long) -> Unit)? = null
@@ -138,25 +124,8 @@ internal class WalLayers(
         fractional: Boolean,
     ): Boolean {
         val switched = keeps && WalRender.layers && !(WalRender.direct && fractional) && (fractional || WalRender.wholeOffscreen)
-        if (!switched || stack.isEmpty() || plans.size != stack.size) return false
-        if (stack.any { (r, _) -> r.width <= 0 || r.height <= 0 }) return false
-        val w = stack.maxOf { it.first.right }.toLong() * whole
-        val h = stack.maxOf { it.first.bottom }.toLong() * whole
-        val fits = w in 1..WalScale.MAX_PX && h in 1..WalScale.MAX_PX
-        return fits && (fractional || clearBelow) && stack.indices.all { inOrder(plans[it].runs, stack[it].second.size) }
-    }
-
-    /** Whether [runs] lie in order, apart, inside a list of [size] commands. */
-    private fun inOrder(
-        runs: List<LiveRun>,
-        size: Int,
-    ): Boolean {
-        var at = 0
-        for (run in runs) {
-            if (run.from < at || run.to <= run.from || run.to > size) return false
-            at = run.to
-        }
-        return true
+        if (!switched || !(fractional || clearBelow)) return false
+        return KeptFrames.fits(stack.map { it.first }, plans, stack.map { it.second.size }, whole)
     }
 
     /**
@@ -172,80 +141,52 @@ internal class WalLayers(
         layerScale: Float,
         whole: Int,
     ) {
-        frame++
-        order.clear()
         windowsAgain = 0
         runsAgain = 0
         runAreaAgain = 0L
         // the stack layer starts clear: the first window's shape masks it in place, at any scale
-        for (i in stack.indices) {
-            val (r, cmds) = stack[i]
-            order.add(window(scope, plans[i], r, cmds, host, overClear = i == 0))
-        }
-        windows.values.removeIf { w -> (w.frame != frame).also { if (it) release(w) } }
+        val frame = kept.plan(plans, stack.map { it.first })
+        val drawn = frame.mapIndexed { i, w -> window(scope, w, stack[i].second, host) }
         val size = IntSize(stack.maxOf { it.first.right } * whole, stack.maxOf { it.first.bottom } * whole)
         val layer = stackLayer
         layer.compositingStrategy = CompositingStrategy.Offscreen
         layer.pivotOffset = Offset.Zero
         layer.scaleX = layerScale
         layer.scaleY = layerScale
-        val placed = order == recorded && whole == recordedWhole && size == recordedSize
         // with partial drawing off, the screen draws the whole stack layer again every frame
-        if (!placed || !WalRender.partial) {
-            val drawn = order.toList()
+        if (kept.stackAgain(whole, size.width, size.height) || !WalRender.partial) {
             layer.record(scope, scope.layoutDirection, size) {
                 scale(whole.toFloat(), whole.toFloat(), pivot = Offset.Zero) { for (n in drawn) n.draw(this) }
             }
-            recorded.clear()
-            recorded.addAll(order)
-            recordedWhole = whole
-            recordedSize = size
             onRecord?.invoke(STACK, 0L)
-            if (WalTiming.on) Log.d(WalTiming.TAG, "layers: stack recorded again, ${order.size} windows")
+            if (WalTiming.on) Log.d(WalTiming.TAG, "layers: stack recorded again, ${drawn.size} windows")
         }
         scope.drawLayer(layer)
         if (WalTiming.on) {
             Log.d(
                 WalTiming.TAG,
-                "layers: again $windowsAgain of ${order.size} windows, $runsAgain of $keptRuns runs ($runAreaAgain px)",
+                "layers: again $windowsAgain of ${plans.size} windows, $runsAgain of $keptRuns runs ($runAreaAgain px)",
             )
         }
     }
 
-    /** The node of the window [plan] names, with what changed in it recorded again. */
-    @Suppress("LongParameterList") // the window, its plan and how it is drawn
+    /** The node of window [w], with what changed in it recorded again. */
     private fun window(
         scope: DrawScope,
-        plan: WindowPlan,
-        r: Rect,
+        w: KeptFrames.Window<WalNode>,
         cmds: List<DrawCmd>,
         host: WalHost,
-        overClear: Boolean,
     ): WalNode {
-        val w = windows.getOrPut(plan.id) { WindowNode(WalNode(nodes)) }
-        w.frame = frame
-        val sized = w.node.width != r.width || w.node.height != r.height
-        var again = w.node.version != plan.version || sized || w.overClear != overClear
-        for (run in plan.runs) {
-            val node =
-                w.runs[run.id] ?: WalNode(nodes).also {
-                    w.runs[run.id] = it
-                    again = true
-                }
-            node.frame = frame
-            if (node.version != run.version) recordRun(scope, node, run, cmds, host) else host.drawing.retain(node.kept)
+        for (run in w.runs) {
+            if (run.again) recordRun(scope, run.drawing, run.run, cmds, host) else host.drawing.retain(run.drawing.kept)
         }
-        if (w.runs.size != plan.runs.size) {
-            w.runs.values.removeIf { node -> (node.frame != frame).also { if (it) node.release() } }
-            again = true
-        }
-        if (again) {
-            recordWindow(scope, w, plan, r, cmds, host, overClear)
+        if (w.again) {
+            recordWindow(scope, w, cmds, host)
         } else {
-            host.drawing.retain(w.node.kept)
-            w.node.moveTo(r.left, r.top)
+            host.drawing.retain(w.drawing.kept)
+            w.drawing.moveTo(w.rect.left, w.rect.top)
         }
-        return w.node
+        return w.drawing
     }
 
     private fun recordRun(
@@ -259,7 +200,6 @@ internal class WalLayers(
         val from = run.from
         val to = run.to
         val id = run.id
-        node.version = run.version
         // a run opens no window shape and closes the clips it opens: its commands draw as a window's
         val run = cmds.subList(from, to)
         node.record(b.left, b.top, b.width, b.height, scope, scope.layoutDirection) {
@@ -272,43 +212,27 @@ internal class WalLayers(
         onRecord?.invoke(RUN, id)
     }
 
-    @Suppress("LongParameterList") // the window, its plan and where it goes
     private fun recordWindow(
         scope: DrawScope,
-        w: WindowNode,
-        plan: WindowPlan,
-        r: Rect,
+        w: KeptFrames.Window<WalNode>,
         cmds: List<DrawCmd>,
         host: WalHost,
-        overClear: Boolean,
     ) {
-        val runs = plan.runs
-        val nodes = runs.map { w.runs.getValue(it.id) }
-        w.node.version = plan.version
-        w.overClear = overClear
-        w.node.record(r.left, r.top, r.width, r.height, scope, scope.layoutDirection) {
-            host.drawing.recording(w.node.kept) {
-                drawWalWindow(cmds, host, overClear = overClear, runs = runs) { k -> nodes[k].draw(this) }
+        val r = w.rect
+        val runs = w.plan.runs
+        val nodes = w.runs.map { it.drawing }
+        val node = w.drawing
+        node.record(r.left, r.top, r.width, r.height, scope, scope.layoutDirection) {
+            host.drawing.recording(node.kept) {
+                drawWalWindow(cmds, host, overClear = w.overClear, runs = runs) { k -> nodes[k].draw(this) }
             }
         }
         windowsAgain++
-        onRecord?.invoke(WINDOW, plan.id)
-    }
-
-    private fun release(w: WindowNode) {
-        w.node.release()
-        for (node in w.runs.values) node.release()
-        w.runs.clear()
+        onRecord?.invoke(WINDOW, w.plan.id)
     }
 
     /** Lets go of the kept windows and runs: the next frame drawn this way records everything again. */
-    fun forget() {
-        if (windows.isEmpty() && recorded.isEmpty()) return
-        for (w in windows.values) release(w)
-        windows.clear()
-        recorded.clear()
-        recordedSize = IntSize.Zero
-    }
+    fun forget() = kept.forget()
 
     /** After a draw that threw: nothing kept is trusted, so the next frame starts clean. */
     fun drop() = forget()
@@ -350,12 +274,6 @@ internal class WalNode(
         private set
     var height = 0
         private set
-
-    /** The plan's version of what it holds. */
-    var version = Long.MIN_VALUE
-
-    /** The last frame that drew it; the canvas's to keep. */
-    var frame = 0L
 
     /** What its content holds of the skin's drawing. */
     val kept = WalDrawing.Recorded()
