@@ -417,6 +417,13 @@ so what they show is fixed on purpose:
 - `:core:skinplayer` also carries what a modern skin's player needs over any
   `SkinPlayer`: Winamp 5's scales (`WinampFiveUnits`) and the hold on a written value
   until the player shows it (`HeldWrite`).
+- `EngineTrace`, in `:modernskin`'s test fixtures, writes down everything the engine does
+  in a run of a skin (`TraceScenario`): the lines it logs, its menus and host actions, the
+  script and layout work of each tick, and the whole draw list of every frame that changed.
+  Text is measured by a fixed rule and the clock is stepped, so the trace depends on no
+  platform. A second engine fed the same scenario should write the same trace; the first
+  line that differs is where it parts. `EngineTraceTest` records the reference scenarios
+  of the local skin set into `modernskin/build/traces`.
 
 ### In Android Auto
 
