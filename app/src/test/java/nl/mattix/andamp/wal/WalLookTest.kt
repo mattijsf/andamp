@@ -18,12 +18,11 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.modernskin.fixtures.resizeAsScript
-import nl.mattix.andamp.modernskin.host.WalFit
-import nl.mattix.andamp.modernskin.skin.FakePlayer
-import nl.mattix.andamp.modernskin.skin.Player
-import nl.mattix.andamp.modernskin.skin.SkinMenu
-import nl.mattix.andamp.modernskin.skin.SkinRuntime
+import nl.mattix.walkit.FakePlayer
+import nl.mattix.walkit.Player
+import nl.mattix.walkit.SkinMenu
+import nl.mattix.walkit.SkinRuntime
+import nl.mattix.walkit.fixtures.resizeAsScript
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

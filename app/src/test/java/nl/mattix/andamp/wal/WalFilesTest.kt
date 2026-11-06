@@ -2,7 +2,7 @@
 
 package nl.mattix.andamp.wal
 
-import nl.mattix.andamp.modernskin.skin.ZipSkinFiles
+import nl.mattix.walkit.ZipSkinFiles
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule

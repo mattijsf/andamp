@@ -8,11 +8,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import nl.mattix.andamp.backend.mock.MockBackend
-import nl.mattix.andamp.modernskin.fixtures.optionsItem
 import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.FakeTracks
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.ui.Screen
+import nl.mattix.walkit.fixtures.optionsItem
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

@@ -21,9 +21,9 @@ import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.nativeCanvas
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
-import nl.mattix.andamp.modernskin.skin.DrawCmd
-import nl.mattix.andamp.modernskin.skin.LiveRun
-import nl.mattix.andamp.modernskin.skin.Rect
+import nl.mattix.walkit.DrawCmd
+import nl.mattix.walkit.LiveRun
+import nl.mattix.walkit.Rect
 
 /**
  * How skins are drawn. [direct] follows the listener's sharp pixels setting ([WalSharp]); tests, and

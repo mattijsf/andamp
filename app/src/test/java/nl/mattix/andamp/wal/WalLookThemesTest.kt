@@ -6,8 +6,7 @@ import android.app.Application
 import android.content.Context
 import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.modernskin.host.WalFit
-import nl.mattix.andamp.modernskin.skin.FakePlayer
+import nl.mattix.walkit.FakePlayer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

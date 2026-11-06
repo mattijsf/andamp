@@ -11,10 +11,9 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
-import nl.mattix.andamp.modernskin.skin.FakePlayer
-import nl.mattix.andamp.modernskin.skin.SkinEngine
-import nl.mattix.andamp.modernskin.skin.SkinFiles
-import nl.mattix.andamp.modernskin.skin.SkinRuntime
+import nl.mattix.walkit.FakePlayer
+import nl.mattix.walkit.SkinFiles
+import nl.mattix.walkit.SkinRuntime
 import java.io.File
 
 /**
@@ -22,8 +21,8 @@ import java.io.File
  * (`--es wal check` to its adb switch): load, [TICKS] ticks on a stepped clock with a demo track
  * playing, and the windows drawn at 1x into a PNG beside the skin. Each skin's name before it
  * loads, then its load time, the p95 of a tick plus its draw list (and of each by itself, and of
- * a tick plus a planned frame), the drawing time and, on the native engine, where a frame's time
- * goes, or its failure, go to the log under [WalHost.TAG].
+ * a tick plus a planned frame), the drawing time and where a frame's time goes, or its failure, go
+ * to the log under [WalHost.TAG].
  *
  * A run that runs out of time stops between skins, after one skin at least. A file in the folder
  * keeps which skins the run has finished, for the installed build and each skin's size and date, so
@@ -126,25 +125,15 @@ internal object WalCheck {
         val host = WalHost(files, cacheDir, WalPrepare.windowOpen()).apply { menus.unattended = true }
         var now = 0L
         val player = FakePlayer().apply { clock = { now } }
-        // set up as the player sets a skin up, named by its file, on the engine the listener chose
-        val setup = WalPrepare.setup(skin.nameWithoutExtension)
-        val rt: SkinEngine =
-            if (WalNative.on) {
-                WalkitEngine(files, host, player, setup, clock = {
-                    now
-                })
-            } else {
-                SkinRuntime(files, host, player, setup, clock = { now })
-            }
+        // set up as the player sets a skin up, named by its file
+        val rt = SkinRuntime(files, host, player, WalPrepare.setup(skin.nameWithoutExtension), clock = { now })
         val loadStart = System.nanoTime()
         rt.load()
         val loadMs = (System.nanoTime() - loadStart) / NANOS_PER_MS
         player.play()
-        val wk = rt as? WalkitEngine
-        val native0 = wk?.nativeDrawNanos ?: 0L
-        val decode0 = wk?.decodeNanos ?: 0L
-        val convert0 = wk?.convertNanos ?: 0L
-        val bytes0 = wk?.frameBytes ?: 0L
+        val native0 = rt.nativeDrawNanos
+        val decode0 = rt.decodeNanos
+        val bytes0 = rt.frameBytes
         val ticks = LongArray(TICKS)
         val lists = LongArray(TICKS)
         val frames =
@@ -160,13 +149,10 @@ internal object WalCheck {
                 t2 - t0
             }
         val stages = StringBuilder(", tick p95 ${p95Of(ticks)} ms, draw list p95 ${p95Of(lists)} ms")
-        if (wk != null) {
-            stages.append(
-                ", a native frame: ${perFrameUs(wk.nativeDrawNanos - native0)} us drawn, " +
-                    "${perFrameUs(wk.decodeNanos - decode0)} us read, ${perFrameUs(wk.convertNanos - convert0)} us converted, " +
-                    "${(wk.frameBytes - bytes0) / TICKS} bytes",
-            )
-        }
+        stages.append(
+            ", a frame: ${perFrameUs(rt.nativeDrawNanos - native0)} us drawn, " +
+                "${perFrameUs(rt.decodeNanos - decode0)} us read, ${(rt.frameBytes - bytes0) / TICKS} bytes",
+        )
         val plan0 = rt.planNanos
         val planned =
             LongArray(TICKS) {
@@ -185,8 +171,7 @@ internal object WalCheck {
             pngOf(skin).outputStream().use { png.asAndroidBitmap().compress(Bitmap.CompressFormat.PNG, 100, it) }
         }
         rt.close()
-        val engine = if (WalNative.on) "native" else "kotlin"
-        return "$engine engine, load $loadMs ms, tick and draw list p95 ${p95Of(frames)} ms, " +
+        return "load $loadMs ms, tick and draw list p95 ${p95Of(frames)} ms, " +
             "drawn in $drawMs ms, ${stack.size} windows" + (if (drawn == null) " (nothing to draw)" else "") + stages
     }
 
@@ -202,7 +187,7 @@ internal object WalCheck {
 
     /** The stack at 1x, from its corner; null when it has no size. */
     private fun draw(
-        stack: List<Pair<nl.mattix.andamp.modernskin.skin.Rect, List<nl.mattix.andamp.modernskin.skin.DrawCmd>>>,
+        stack: List<Pair<nl.mattix.walkit.Rect, List<nl.mattix.walkit.DrawCmd>>>,
         host: WalHost,
     ): ImageBitmap? {
         val w = stack.maxOfOrNull { it.first.right } ?: 0

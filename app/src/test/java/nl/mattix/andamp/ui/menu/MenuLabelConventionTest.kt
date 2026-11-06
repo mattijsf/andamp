@@ -4,11 +4,11 @@ package nl.mattix.andamp.ui.menu
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.modernskin.fixtures.optionsItem
 import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.ui.window.testViewModel
+import nl.mattix.walkit.fixtures.optionsItem
 import org.junit.After
 import org.junit.Assert.assertTrue
 import org.junit.Test

@@ -33,8 +33,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.modernskin.host.WalFit
-import nl.mattix.andamp.modernskin.skin.Rect
 import nl.mattix.andamp.skin.SkinLoader
 import nl.mattix.andamp.state.LibraryAccess
 import nl.mattix.andamp.state.MenuAnchor
@@ -49,6 +47,7 @@ import nl.mattix.andamp.ui.window.MAIN_H
 import nl.mattix.andamp.ui.window.MAIN_W
 import nl.mattix.andamp.ui.window.PlaylistMenuActions
 import nl.mattix.andamp.ui.window.testViewModel
+import nl.mattix.walkit.Rect
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull

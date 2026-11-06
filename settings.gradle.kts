@@ -13,8 +13,9 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        // the walkit engine library, published to Maven Local from its own repository until it is on a repository
-        mavenLocal {
+        // the walkit engine library, built from its own repository and kept in app/libs (see the README there)
+        maven {
+            url = uri("app/libs/m2")
             content { includeGroup("nl.mattix.walkit") }
         }
     }

@@ -47,8 +47,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withTimeoutOrNull
 import nl.mattix.andamp.R
-import nl.mattix.andamp.modernskin.host.WalFit
-import nl.mattix.andamp.modernskin.host.WalTouch
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WinampViewModel

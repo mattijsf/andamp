@@ -284,6 +284,8 @@ android {
     // This APK names no service. NamesNothing (wired below) reads the packaged APK back for the
     // word, and NamesNoServiceTest reads what was compiled.
     sourceSets.getByName("main").kotlin.srcDir(storeSources)
+    // the default element set modern skins build on, shared with the reference engine in :modernskin
+    sourceSets.getByName("main").resources.srcDir("../modernskin/src/main/resources")
 
     signingConfigs {
         create("upload") {
@@ -398,11 +400,8 @@ dependencies {
     implementation(project(":core:packapi"))
     implementation(project(":visualizer:avs"))
     implementation(project(":visualizer:projectm"))
-    // Winamp modern skins (.wal). A picked skin file is sniffed with it; proguard-rules.pro keeps
-    // the whole engine in every release, including the parts no screen reaches
-    implementation(project(":modernskin"))
-    // the same engine in native code (walkit), behind the native engine switch; from Maven Local
-    // until it is published
+    // Winamp modern skins (.wal): the walkit engine, in native code, with its Kotlin API. A picked
+    // skin file is sniffed with it. From app/libs, where its README says which build it is
     implementation(libs.walkit)
     implementation(project(":core:skinplayer"))
     implementation(platform(libs.compose.bom))
@@ -424,9 +423,8 @@ dependencies {
     testImplementation(libs.junit)
     testImplementation(testFixtures(project(":core:playback")))
     testImplementation(testFixtures(project(":core:skinplayer")))
-    testImplementation(testFixtures(project(":modernskin")))
-    // the debug activity's check mode replays the reference scenarios with the same helpers
-    debugImplementation(testFixtures(project(":modernskin")))
+    // the engine built for this machine, so the unit tests run modern skins on it
+    testImplementation(testFixtures(libs.walkit))
     testImplementation(libs.kotlinx.coroutines.test)
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)

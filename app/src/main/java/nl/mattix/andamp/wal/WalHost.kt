@@ -17,22 +17,20 @@ import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import nl.mattix.andamp.modernskin.host.WalMenuWait
-import nl.mattix.andamp.modernskin.skin.AndampDefaultSet
-import nl.mattix.andamp.modernskin.skin.BitmapDef
-import nl.mattix.andamp.modernskin.skin.DrawCmd
-import nl.mattix.andamp.modernskin.skin.FontDef
-import nl.mattix.andamp.modernskin.skin.FontFace
-import nl.mattix.andamp.modernskin.skin.Gamma
-import nl.mattix.andamp.modernskin.skin.ImageLimits
-import nl.mattix.andamp.modernskin.skin.Region
-import nl.mattix.andamp.modernskin.skin.SkinFiles
-import nl.mattix.andamp.modernskin.skin.SkinHost
-import nl.mattix.andamp.modernskin.skin.SkinMenu
-import nl.mattix.andamp.modernskin.skin.WithGeneratedImages
 import nl.mattix.andamp.state.Flush
 import nl.mattix.andamp.state.forceToDisk
 import nl.mattix.andamp.state.writeFlushed
+import nl.mattix.walkit.BitmapDef
+import nl.mattix.walkit.DrawCmd
+import nl.mattix.walkit.FontDef
+import nl.mattix.walkit.FontFace
+import nl.mattix.walkit.Gamma
+import nl.mattix.walkit.ImageLimits
+import nl.mattix.walkit.Region
+import nl.mattix.walkit.SkinFiles
+import nl.mattix.walkit.SkinHost
+import nl.mattix.walkit.SkinMenu
+import nl.mattix.walkit.WithGeneratedImages
 import java.io.File
 import java.security.MessageDigest
 import java.util.Collections
@@ -276,7 +274,7 @@ internal class WalHost(
             hard: Boolean,
         ) = scope.drawImageCmd(image, this@WalHost, mask = hard)
 
-        override fun box(rect: nl.mattix.andamp.modernskin.skin.Rect) =
+        override fun box(rect: nl.mattix.walkit.Rect) =
             scope.drawRect(
                 Color.Black,
                 Offset(rect.left.toFloat(), rect.top.toFloat()),

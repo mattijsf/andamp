@@ -3,7 +3,6 @@
 package nl.mattix.andamp.wal
 
 import android.os.Handler
-import nl.mattix.andamp.modernskin.host.WalRest
 
 /** [WalRest]'s wake on the engine thread's [handler], on [android.os.SystemClock.uptimeMillis]: one [wake] at a time. */
 internal class WalTimer(

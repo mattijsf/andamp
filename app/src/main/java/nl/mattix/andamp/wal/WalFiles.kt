@@ -2,14 +2,11 @@
 
 package nl.mattix.andamp.wal
 
-import nl.mattix.andamp.modernskin.skin.AndampDefaultSet
-import nl.mattix.andamp.modernskin.skin.LayeredSkinFiles
-import nl.mattix.andamp.modernskin.skin.SkinFiles
-import nl.mattix.andamp.modernskin.skin.SkinsFolderFiles
-import nl.mattix.andamp.modernskin.skin.WalArchive
-import nl.mattix.andamp.modernskin.skin.ZipSkinFiles
-import nl.mattix.andamp.modernskin.xml.XmlNode
-import nl.mattix.andamp.modernskin.xml.XmlParser
+import nl.mattix.walkit.LayeredSkinFiles
+import nl.mattix.walkit.SkinFiles
+import nl.mattix.walkit.SkinsFolderFiles
+import nl.mattix.walkit.WalArchive
+import nl.mattix.walkit.ZipSkinFiles
 import java.io.Closeable
 import java.io.File
 import java.util.zip.ZipFile

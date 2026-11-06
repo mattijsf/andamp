@@ -29,8 +29,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import nl.mattix.andamp.R
-import nl.mattix.andamp.modernskin.skin.SkinOptions
 import nl.mattix.andamp.wal.WalSurface
+import nl.mattix.walkit.SkinOptions
 
 /**
  * The options a worn modern skin lists for Winamp's Options menu, on one page: each group under a

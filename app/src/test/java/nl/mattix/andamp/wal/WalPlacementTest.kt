@@ -5,14 +5,12 @@ package nl.mattix.andamp.wal
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
-import nl.mattix.andamp.modernskin.host.WalFit
-import nl.mattix.andamp.modernskin.host.WalLayout
-import nl.mattix.andamp.modernskin.skin.Rect
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.ui.menu.menuAnchorBounds
 import nl.mattix.andamp.ui.window.ClassicStack
 import nl.mattix.andamp.ui.window.WindowScreen
 import nl.mattix.andamp.ui.window.WindowSnap
+import nl.mattix.walkit.Rect
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

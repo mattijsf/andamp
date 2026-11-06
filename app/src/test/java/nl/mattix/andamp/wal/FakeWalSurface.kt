@@ -16,14 +16,12 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LifecycleRegistry
 import kotlinx.coroutines.sync.Mutex
-import nl.mattix.andamp.modernskin.host.WalFit
-import nl.mattix.andamp.modernskin.host.WalLayout
-import nl.mattix.andamp.modernskin.skin.SkinMenu
 import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.ui.menu.MenuBarSection
+import nl.mattix.walkit.SkinMenu
 import kotlin.math.floor
 
 /**

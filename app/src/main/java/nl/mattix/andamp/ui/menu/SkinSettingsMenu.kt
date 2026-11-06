@@ -3,9 +3,9 @@
 package nl.mattix.andamp.ui.menu
 
 import nl.mattix.andamp.R
-import nl.mattix.andamp.modernskin.skin.SkinOptions
 import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.WinampViewModel
+import nl.mattix.walkit.SkinOptions
 
 /**
  * "Skin Settings...": opens the dialog with the options a worn modern skin's scripts list for

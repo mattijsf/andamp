@@ -2,7 +2,6 @@
 
 package nl.mattix.andamp.wal
 
-import nl.mattix.andamp.modernskin.host.HostAction
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore

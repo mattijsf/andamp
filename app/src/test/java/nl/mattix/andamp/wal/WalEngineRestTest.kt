@@ -6,16 +6,13 @@ import android.app.Application
 import android.os.Looper
 import android.os.SystemClock
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.modernskin.fixtures.nextTimerAt
-import nl.mattix.andamp.modernskin.fixtures.popScriptMenu
-import nl.mattix.andamp.modernskin.fixtures.startScriptTimer
-import nl.mattix.andamp.modernskin.host.WalIdle
-import nl.mattix.andamp.modernskin.host.WalRest
-import nl.mattix.andamp.modernskin.skin.FakePlayer
-import nl.mattix.andamp.modernskin.skin.SkinEngine
-import nl.mattix.andamp.modernskin.skin.SkinFiles
-import nl.mattix.andamp.modernskin.skin.SkinMenu
-import nl.mattix.andamp.modernskin.skin.SkinRuntime
+import nl.mattix.walkit.FakePlayer
+import nl.mattix.walkit.SkinFiles
+import nl.mattix.walkit.SkinMenu
+import nl.mattix.walkit.SkinRuntime
+import nl.mattix.walkit.fixtures.nextTimerAt
+import nl.mattix.walkit.fixtures.popScriptMenu
+import nl.mattix.walkit.fixtures.startScriptTimer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -72,7 +69,7 @@ class WalEngineRestTest {
     /** An engine on the skin, reading [idle], closed after the test; [report] holds what its start said. */
     private inner class Run(
         label: String,
-        idle: (SkinEngine) -> WalIdle = WalIdle::of,
+        idle: (SkinRuntime) -> WalIdle = WalIdle::of,
     ) {
         // a closed engine's thread may still be ending when the next test starts one
         val name = "$label-${runs.incrementAndGet()}"
@@ -148,7 +145,7 @@ class WalEngineRestTest {
             rt.startScriptTimer(periodMs)
         }
 
-        fun idle(rt: SkinEngine): WalIdle {
+        fun idle(rt: SkinRuntime): WalIdle {
             if (rt.stats.timerFires != fired) {
                 fired = rt.stats.timerFires
                 if (fired % changesEvery == 0L) rt.invalidate()
@@ -164,7 +161,7 @@ class WalEngineRestTest {
     private fun resting(
         label: String,
         setUp: (SkinRuntime) -> Unit = {},
-        idle: (SkinEngine) -> WalIdle,
+        idle: (SkinRuntime) -> WalIdle,
     ): Run {
         val run = Run(label, idle = idle)
         run.start {

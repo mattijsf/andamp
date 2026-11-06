@@ -5,11 +5,11 @@ package nl.mattix.andamp.wal
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.first
-import nl.mattix.andamp.modernskin.skin.SkinMenu
 import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WinampState
+import nl.mattix.walkit.SkinMenu
 
 /**
  * A skin's popup menu as the app's menu: each command an entry, ticked and grayed as the skin

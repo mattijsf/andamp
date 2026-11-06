@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package nl.mattix.andamp.modernskin.host
+package nl.mattix.andamp.wal
 
 /**
  * When a modern skin rests, as its engine works it out on the engine thread: whether the screen
@@ -20,34 +20,34 @@ package nl.mattix.andamp.modernskin.host
  * Times are the [timer]'s clock in ms (on Android, uptime), apart from the
  * runtime's clock, of which only the distance to [WalIdle.nextDueAt] is read.
  */
-public class WalRest(
+internal class WalRest(
     /** Where the wake is set; it runs the engine's tick when it comes. */
     private val timer: Timer,
 ) {
     /** One wake at a time, which runs the engine's tick at the time set; on Android a Handler's. */
-    public interface Timer {
+    interface Timer {
         /** Sets the wake for [at], on the timer's clock; the one set before is dropped first. */
-        public fun wakeAt(at: Long)
+        fun wakeAt(at: Long)
 
         /** Drops the wake set, if any; from any thread. */
-        public fun cancel()
+        fun cancel()
 
         /** Whether a wake is set; from any thread. */
-        public val waiting: Boolean
+        val waiting: Boolean
     }
 
     /** When the last tick began. */
-    public var tickAt: Long = 0L
+    var tickAt: Long = 0L
         private set
 
     /** Whether the last tick came from a display frame. */
     private var fromScreen = false
 
     /** When something the skin shows last changed; a tick that changed nothing leaves it. */
-    public var changedAt: Long = 0L
+    var changedAt: Long = 0L
 
     /** A tick began at [now]; [fromScreen] when a display frame asked for it. */
-    public fun ticked(
+    fun ticked(
         now: Long,
         fromScreen: Boolean,
     ) {
@@ -56,10 +56,10 @@ public class WalRest(
     }
 
     /** Whether nothing the skin shows has changed for [STATIC_AFTER_MS] at [now]. */
-    public fun static(now: Long): Boolean = now - changedAt >= STATIC_AFTER_MS
+    fun static(now: Long): Boolean = now - changedAt >= STATIC_AFTER_MS
 
     /** Whether the screen should tick the skin on every display frame at [now], as [idle] says it moves. */
-    public fun wantsFrames(
+    fun wantsFrames(
         idle: WalIdle,
         now: Long,
     ): Boolean = idle.framesWanted && !static(now)
@@ -68,7 +68,7 @@ public class WalRest(
      * When the engine should wake the skin, or null for no wake: [idle] read at [now], when the
      * runtime's clock read [runtimeNow].
      */
-    public fun wakeAt(
+    fun wakeAt(
         idle: WalIdle,
         now: Long,
         runtimeNow: Long,
@@ -82,7 +82,7 @@ public class WalRest(
     }
 
     /** Sets the next wake for [idle] (see [wakeAt]) in place of the one set before; null only drops that one. */
-    public fun plan(
+    fun plan(
         idle: WalIdle?,
         now: Long,
         runtimeNow: Long,
@@ -93,25 +93,25 @@ public class WalRest(
     }
 
     /** Drops the wake set, if any; from any thread. */
-    public fun cancel(): Unit = timer.cancel()
+    fun cancel(): Unit = timer.cancel()
 
     /** Whether a wake is set; from any thread. */
-    public val waiting: Boolean get() = timer.waiting
+    val waiting: Boolean get() = timer.waiting
 
-    public companion object {
+    companion object {
         /** How long nothing a skin shows changes before it counts as static. */
-        public const val STATIC_AFTER_MS: Long = 1_000L
+        const val STATIC_AFTER_MS: Long = 1_000L
 
         /** The gap after a tick before a wake while the music is stopped or the skin static: four a second. */
-        public const val REST_GAP_MS: Long = 250L
+        const val REST_GAP_MS: Long = 250L
 
         /** The gap after a tick before a wake while the music plays or is paused: about one display frame. */
-        public const val LIVE_GAP_MS: Long = 16L
+        const val LIVE_GAP_MS: Long = 16L
 
         /** The gap after a tick from a display frame before a wake: about three display frames. */
-        public const val SCREEN_GAP_MS: Long = 50L
+        const val SCREEN_GAP_MS: Long = 50L
 
         /** How far ahead a wake is set at most. */
-        public const val MAX_AHEAD_MS: Long = 1_000L
+        const val MAX_AHEAD_MS: Long = 1_000L
     }
 }

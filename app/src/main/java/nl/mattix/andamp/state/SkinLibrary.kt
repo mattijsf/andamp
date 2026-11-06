@@ -5,9 +5,9 @@ package nl.mattix.andamp.state
 import android.content.Context
 import android.content.SharedPreferences
 import nl.mattix.andamp.R
-import nl.mattix.andamp.modernskin.skin.WalArchive
 import nl.mattix.andamp.skin.BundledSkin
 import nl.mattix.andamp.skin.BundledSkins
+import nl.mattix.walkit.WalArchive
 import java.io.File
 import java.io.InputStream
 import java.security.MessageDigest

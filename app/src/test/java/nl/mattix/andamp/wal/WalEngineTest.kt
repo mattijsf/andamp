@@ -6,18 +6,14 @@ import android.app.Application
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.modernskin.fixtures.popScriptMenu
-import nl.mattix.andamp.modernskin.fixtures.resizeAsScript
-import nl.mattix.andamp.modernskin.host.WalFit
-import nl.mattix.andamp.modernskin.host.WalIdle
-import nl.mattix.andamp.modernskin.host.WalScale
-import nl.mattix.andamp.modernskin.skin.FakePlayer
-import nl.mattix.andamp.modernskin.skin.Player
-import nl.mattix.andamp.modernskin.skin.SkinEngine
-import nl.mattix.andamp.modernskin.skin.SkinFiles
-import nl.mattix.andamp.modernskin.skin.SkinMenu
-import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.ui.overlay.OverlayBounds
+import nl.mattix.walkit.FakePlayer
+import nl.mattix.walkit.Player
+import nl.mattix.walkit.SkinFiles
+import nl.mattix.walkit.SkinMenu
+import nl.mattix.walkit.SkinRuntime
+import nl.mattix.walkit.fixtures.popScriptMenu
+import nl.mattix.walkit.fixtures.resizeAsScript
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -83,7 +79,7 @@ class WalEngineTest {
     private inner class Run(
         label: String,
         val skin: SkinFiles = files,
-        idle: (SkinEngine) -> WalIdle = WalIdle::of,
+        idle: (SkinRuntime) -> WalIdle = WalIdle::of,
         onFrame: () -> Unit = {},
     ) {
         // a closed engine's thread may still be ending when the next test starts one
@@ -303,12 +299,12 @@ class WalEngineTest {
 
         val skipped = CompletableFuture<Unit>()
         run.engine.post { skipped.complete(Unit) }
-        val ran = CompletableFuture<SkinEngine?>()
+        val ran = CompletableFuture<SkinRuntime?>()
         run.engine.postAlways { ran.complete(it) }
 
         assertNull("it runs, with no skin", ran.get(5, TimeUnit.SECONDS))
         assertFalse("post runs nothing with no skin", skipped.isDone)
-        val withSkin = CompletableFuture<SkinEngine?>()
+        val withSkin = CompletableFuture<SkinRuntime?>()
         engine.postAlways { withSkin.complete(it) }
         assertEquals(
             "with a skin on, it gets that skin",

@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package nl.mattix.andamp.modernskin.host
+package nl.mattix.andamp.wal
 
-import nl.mattix.andamp.modernskin.skin.Edge
+import nl.mattix.walkit.Edge
 
 /** How large a modern skin is drawn in a host's box, and where; sizes are width to height in px. */
-public object WalScale {
+internal object WalScale {
     /**
      * The most skin pixels the main window or the stack may measure either way. Skins are made for
      * desktop screens, so a size past this is a broken skin, and drawing it whole off screen before
      * it is shrunk would take more memory than a phone has.
      */
-    public const val MAX_PX: Int = 4096
+    const val MAX_PX: Int = 4096
 
     /** The smallest scale a skin is shown at: one that fits its box only smaller is not shown. */
-    public const val MIN_SCALE: Float = 0.25f
+    const val MIN_SCALE: Float = 0.25f
 
     /**
      * Why a skin cannot be shown, or null when it can: its main window of [mainSize] or its stack of
@@ -22,7 +22,7 @@ public object WalScale {
      * there only at a scale below [MIN_SCALE] ([baseW] as for [fit]). A box with no width or no
      * height (not laid out yet) counts as unknown.
      */
-    public fun unfit(
+    fun unfit(
         mainSize: Pair<Int, Int>,
         stack: Pair<Int, Int>,
         baseW: Int,
@@ -36,14 +36,14 @@ public object WalScale {
     }
 
     /** The scale for a main window of [mainSize] in [size]: from its visible width at the start ([baseW]) and its height. */
-    public fun fit(
+    fun fit(
         size: Pair<Int, Int>,
         mainSize: Pair<Int, Int>,
         baseW: Int,
     ): Float = of(size, baseW.takeIf { it > 0 } ?: mainSize.first, mainSize.second)
 
     /** Where a stack [stackW] layout pixels wide starts so it sits centered in [width] at [scale]. */
-    public fun left(
+    fun left(
         width: Float,
         stackW: Int,
         scale: Float,
@@ -74,7 +74,7 @@ public object WalScale {
         }
 
     /** A stack's scale in a box, and where its top-left corner sits there, in device px. */
-    public data class Place(
+    data class Place(
         val scale: Float,
         val left: Float,
         val top: Float,
@@ -98,7 +98,7 @@ public object WalScale {
      * the box instead, upright and sideways.
      */
     @Suppress("LongParameterList") // the stack's sizes as the engine has them, each needed apart
-    public fun place(
+    fun place(
         fit: WalFit,
         mainSize: Pair<Int, Int>,
         baseW: Int,
@@ -156,14 +156,14 @@ public object WalScale {
      * [scale]: whole from 2x up, as [of] gives it. A pixel's slack keeps a window sized to the box
      * at a fractional scale from being shrunk by a rounding.
      */
-    public fun across(
+    fun across(
         width: Int,
         shown: Int,
         scale: Float,
     ): Float = if (shown > 0 && shown * scale > width + 1f) minOf(scale, whole(width.toFloat() / shown)) else scale
 
     /** The scale that fits [lw] x [lh] in [size]: whole numbers from 2x up, so the pixels stay crisp. */
-    public fun of(
+    fun of(
         size: Pair<Int, Int>,
         lw: Int,
         lh: Int,

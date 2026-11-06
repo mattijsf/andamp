@@ -85,7 +85,7 @@ backend/media3   playback through ExoPlayer
 backend/pack     the client side of a music source
 pack/common      the source side of that contract
 visualizer/      AVS, and Milkdrop through projectM
-modernskin/      the Winamp modern skin engine: skin XML, MAKI scripts, drawing
+modernskin/      the reference engine for Winamp modern skins; the app runs them on walkit
 androidauto/     the app Android Auto talks to, which lends the car's screen to the player
 app/
   skin/          .wsz loader, sprite tables, bitmap font, PLEDIT/VISCOLOR/REGION parsers
