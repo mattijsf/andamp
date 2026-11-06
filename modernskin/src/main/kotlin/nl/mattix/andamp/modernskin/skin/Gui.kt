@@ -1014,11 +1014,20 @@ internal open class Group(
             0
         }
 
-    /** Its rectangle with rectrgn, else its background's opaque pixels stretched over it, else nothing. */
+    /**
+     * Its rectangle with rectrgn, else its background's opaque pixels stretched over it, else
+     * nothing. A background stretched to the group (its bitmap another size, in either axis)
+     * gives a region one pixel bigger at the top and the left, right and bottom exact; one at
+     * its own size gives an exact region (Probe-Shape2, 3 and 4).
+     */
     override fun ownRegion(): Region? {
         if (rect.width <= 0 || rect.height <= 0) return null
         if (rectRgn) return Region.Box(rect)
-        return background?.let { rt.bitmap(it) }?.let { Region.Pic(DrawCmd.Image(it, rect, 255)) }
+        val bg = background ?: return null
+        val def = rt.bitmap(bg) ?: return null
+        val stretched = rt.bitmapSize(bg)?.let { it.first != rect.width || it.second != rect.height } ?: false
+        val over = if (stretched) Rect(rect.left - 1, rect.top - 1, rect.width + 1, rect.height + 1) else rect
+        return Region.Pic(DrawCmd.Image(def, over, 255))
     }
 
     override fun composedRegion(windowCuts: MutableList<Region>): Region? {
