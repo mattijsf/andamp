@@ -1727,14 +1727,17 @@ internal class Layout(
 
     override fun draw(out: MutableList<DrawCmd>) {
         if (!visible) return
-        val shape = if (desktopAlpha) null else windowShape()
-        if (shape == null) {
+        if (desktopAlpha) {
             super.draw(out)
             return
         }
-        out.add(DrawCmd.WindowStart(shape).also { it.ownedBy = this })
+        val shape = windowShape()
+        if (shape != null) out.add(DrawCmd.WindowStart(shape).also { it.ownedBy = this })
+        // Winamp fills a window's canvas with black before the objects draw: a pixel inside the
+        // window that no object draws is black, and the shape still cuts the outline
+        out.add(DrawCmd.Fill(Rect(0, 0, size.first, size.second), Rgb(0), 255).also { it.ownedBy = this })
         super.draw(out)
-        out.add(DrawCmd.WindowEnd)
+        if (shape != null) out.add(DrawCmd.WindowEnd)
     }
 
     /**
