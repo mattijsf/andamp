@@ -7,6 +7,6 @@ a copy of `~/.m2/repository/nl/mattix/walkit/walkit/<version>/`. The AAR carries
 `arm64-v8a` and `x86_64`; the test-fixtures AAR carries the engine built for the Mac it was
 published on (`darwin-aarch64`) and the helpers the app's unit tests drive a skin with.
 
-| version | walkit commit | notes |
+| version | walkit tag (commit) | notes |
 |---|---|---|
-| 0.3.0 | 06f5f4f (feat/host-library) | first build kept here: consumer rules, host build and script helpers in the test fixtures |
+| 0.3.0 | v0.3.0 (fce69c9) | first build kept here: consumer rules, host build and script helpers in the test fixtures |
