@@ -10,3 +10,6 @@ published on (`darwin-aarch64`) and the helpers the app's unit tests drive a ski
 | version | walkit tag (commit) | notes |
 |---|---|---|
 | 0.3.0 | v0.3.0 (fce69c9) | first build kept here: consumer rules, host build and script helpers in the test fixtures |
+| 0.3.2 | v0.3.2 (a2b9595) | a window is black where its skin draws nothing; a group with a stretched background reaches one pixel further up and left |
+
+Only the current version's files are kept; the rows above are the log of what was kept here.

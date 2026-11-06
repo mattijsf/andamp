@@ -3,7 +3,7 @@
   "component": {
     "group": "nl.mattix.walkit",
     "module": "walkit",
-    "version": "0.3.0",
+    "version": "0.3.2",
     "attributes": {
       "org.gradle.status": "release"
     }
@@ -33,13 +33,13 @@
       ],
       "files": [
         {
-          "name": "walkit-0.3.0.aar",
-          "url": "walkit-0.3.0.aar",
-          "size": 1842894,
-          "sha512": "40751d6b3cf604c55f466b14f8e857b86152edf9c9644e2165bdd93a65df8587401b16c9419630a5cad2fb6b99108be6f43bd5b2ccfe29c5e2731723807b8c7e",
-          "sha256": "dbf1f333bfd6375a81ae7d315a8f7eae4e60842cf3d8cf2da89f700bbfbaa889",
-          "sha1": "d8d549f81ece756d2ea425f9a3c665b325b3e356",
-          "md5": "e15c79ba4f6cdb99a88cf11b26d6bc77"
+          "name": "walkit-0.3.2.aar",
+          "url": "walkit-0.3.2.aar",
+          "size": 1843484,
+          "sha512": "a2c513a8f1861ac23f6f1148f3a10c22980a47de7642e75b59341818b8e8068130cfc142647501183d37b31d1da93913d77d2f380fc88e744095635e47c83639",
+          "sha256": "268f099fc3cef704c6d1bc8f04534205de4e530de78a250313322d09bfb3b383",
+          "sha1": "83939092e4f14b0742a78d5ef39027402985d78d",
+          "md5": "0b050bc0be9ff3e4f7ca2f6426be0914"
         }
       ]
     },
@@ -62,13 +62,13 @@
       ],
       "files": [
         {
-          "name": "walkit-0.3.0.aar",
-          "url": "walkit-0.3.0.aar",
-          "size": 1842894,
-          "sha512": "40751d6b3cf604c55f466b14f8e857b86152edf9c9644e2165bdd93a65df8587401b16c9419630a5cad2fb6b99108be6f43bd5b2ccfe29c5e2731723807b8c7e",
-          "sha256": "dbf1f333bfd6375a81ae7d315a8f7eae4e60842cf3d8cf2da89f700bbfbaa889",
-          "sha1": "d8d549f81ece756d2ea425f9a3c665b325b3e356",
-          "md5": "e15c79ba4f6cdb99a88cf11b26d6bc77"
+          "name": "walkit-0.3.2.aar",
+          "url": "walkit-0.3.2.aar",
+          "size": 1843484,
+          "sha512": "a2c513a8f1861ac23f6f1148f3a10c22980a47de7642e75b59341818b8e8068130cfc142647501183d37b31d1da93913d77d2f380fc88e744095635e47c83639",
+          "sha256": "268f099fc3cef704c6d1bc8f04534205de4e530de78a250313322d09bfb3b383",
+          "sha1": "83939092e4f14b0742a78d5ef39027402985d78d",
+          "md5": "0b050bc0be9ff3e4f7ca2f6426be0914"
         }
       ]
     },
@@ -82,8 +82,8 @@
       },
       "files": [
         {
-          "name": "walkit-0.3.0-sources.jar",
-          "url": "walkit-0.3.0-sources.jar",
+          "name": "walkit-0.3.2-sources.jar",
+          "url": "walkit-0.3.2-sources.jar",
           "size": 35571,
           "sha512": "19c6fbb954fa69f0aea974ba1b2eea9302f540bbb480cc16da01d8456ea20575761637f4b5ece6345c1e0e257ac41b5b2055d753c9d9e50846b3e03c415d9f71",
           "sha256": "ecfbf4e19061ce2ca85390acb2eb958424c43eebacf01cefa5400e47619b48a6",
@@ -105,26 +105,26 @@
           "group": "nl.mattix.walkit",
           "module": "walkit",
           "version": {
-            "requires": "0.3.0"
+            "requires": "0.3.2"
           }
         }
       ],
       "files": [
         {
-          "name": "walkit-0.3.0-test-fixtures.aar",
-          "url": "walkit-0.3.0-test-fixtures.aar",
-          "size": 766592,
-          "sha512": "eaa7e0e7532bac6a1c61395618ada6e2a393763fbafc4b4771869e94a41c3a0d5aa25a0b404ee7ebe8ec549e18d74b7c634a1cf185aaa04d2015228fb8b42d2b",
-          "sha256": "b57693f494658b78c9898181560a17035f48f340025436ec0f44a99e86258241",
-          "sha1": "0dcab1e617809c85b470b2a8dfdb40d68654e937",
-          "md5": "6a24ac2564bcdf8472e9c2c1935d9328"
+          "name": "walkit-0.3.2-test-fixtures.aar",
+          "url": "walkit-0.3.2-test-fixtures.aar",
+          "size": 766796,
+          "sha512": "a76751e47a070cd847198014679bbe547a01d1fee20368fa5e541db8fb299111f00091c9d56ba6cd5bbf69c29732a0a9b1afedd8611ec1837e203c93846c2193",
+          "sha256": "7413c0bb3202fdc64bfe70fcd36d865b37834857deec88676844abad54567f48",
+          "sha1": "f3b66625e9c8371afa92398da211771adfca09c1",
+          "md5": "cf0a53a20b03393e45e76716f021c4bb"
         }
       ],
       "capabilities": [
         {
           "group": "nl.mattix.walkit",
           "name": "walkit-test-fixtures",
-          "version": "0.3.0"
+          "version": "0.3.2"
         }
       ]
     },
@@ -141,26 +141,26 @@
           "group": "nl.mattix.walkit",
           "module": "walkit",
           "version": {
-            "requires": "0.3.0"
+            "requires": "0.3.2"
           }
         }
       ],
       "files": [
         {
-          "name": "walkit-0.3.0-test-fixtures.aar",
-          "url": "walkit-0.3.0-test-fixtures.aar",
-          "size": 766592,
-          "sha512": "eaa7e0e7532bac6a1c61395618ada6e2a393763fbafc4b4771869e94a41c3a0d5aa25a0b404ee7ebe8ec549e18d74b7c634a1cf185aaa04d2015228fb8b42d2b",
-          "sha256": "b57693f494658b78c9898181560a17035f48f340025436ec0f44a99e86258241",
-          "sha1": "0dcab1e617809c85b470b2a8dfdb40d68654e937",
-          "md5": "6a24ac2564bcdf8472e9c2c1935d9328"
+          "name": "walkit-0.3.2-test-fixtures.aar",
+          "url": "walkit-0.3.2-test-fixtures.aar",
+          "size": 766796,
+          "sha512": "a76751e47a070cd847198014679bbe547a01d1fee20368fa5e541db8fb299111f00091c9d56ba6cd5bbf69c29732a0a9b1afedd8611ec1837e203c93846c2193",
+          "sha256": "7413c0bb3202fdc64bfe70fcd36d865b37834857deec88676844abad54567f48",
+          "sha1": "f3b66625e9c8371afa92398da211771adfca09c1",
+          "md5": "cf0a53a20b03393e45e76716f021c4bb"
         }
       ],
       "capabilities": [
         {
           "group": "nl.mattix.walkit",
           "name": "walkit-test-fixtures",
-          "version": "0.3.0"
+          "version": "0.3.2"
         }
       ]
     }

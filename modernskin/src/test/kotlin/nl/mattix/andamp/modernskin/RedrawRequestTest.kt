@@ -5,6 +5,7 @@ import nl.mattix.andamp.modernskin.maki.Value
 import nl.mattix.andamp.modernskin.skin.DrawCmd
 import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.modernskin.skin.FontDef
+import nl.mattix.andamp.modernskin.skin.Rgb
 import nl.mattix.andamp.modernskin.skin.SkinFiles
 import nl.mattix.andamp.modernskin.skin.SkinHost
 import nl.mattix.andamp.modernskin.skin.SkinRuntime
@@ -200,12 +201,10 @@ class RedrawRequestTest {
         redraws(5, skin)
         val glow = checkNotNull(skin.mainLayout?.findObject("glow"))
 
-        fun drawnAlpha() =
-            skin
-                .draw()
-                .filterIsInstance<DrawCmd.Fill>()
-                .single()
-                .alpha
+        // the box's fill; the window's black under it is not the box
+        fun boxFills() = skin.draw().filterIsInstance<DrawCmd.Fill>().filter { it.color == Rgb(0xFF0000) }
+
+        fun drawnAlpha() = boxFills().single().alpha
         val passes = skin.layoutPasses
         glow.makiCall("setalpha", listOf(Value.Int(128)))
         assertEquals(1, redraws(1, skin))
@@ -218,7 +217,7 @@ class RedrawRequestTest {
         assertTrue("half way: ${drawnAlpha()}", drawnAlpha() in 32..96)
         assertEquals(passes, skin.layoutPasses)
         redraws(40, skin)
-        assertTrue("faded out", skin.draw().filterIsInstance<DrawCmd.Fill>().all { it.alpha == 0 })
+        assertTrue("faded out", boxFills().all { it.alpha == 0 })
     }
 
     @Test
