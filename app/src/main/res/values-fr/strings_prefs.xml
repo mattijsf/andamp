@@ -160,6 +160,9 @@
     <string name="prefs_sharp_pixels_title">Pixels nets</string>
     <string name="prefs_sharp_pixels_on">Contours nets, mais certaines lettres et lignes sont d’épaisseur inégale. Cela ne change que les skins modernes qu’Andamp affiche à une taille intermédiaire, par exemple 2,5 fois leur taille, pour qu’ils tiennent sur votre écran.</string>
     <string name="prefs_sharp_pixels_off">Rendu lisse, mais légèrement flou. Activez cette option pour des contours nets ; certaines lettres et lignes sont alors d’épaisseur inégale. Cela ne change que les skins modernes qu’Andamp affiche à une taille intermédiaire, par exemple 2,5 fois leur taille, pour qu’ils tiennent sur votre écran.</string>
+    <string name="prefs_windows_apart_title">Fenêtres libres</string>
+    <string name="prefs_windows_apart_on">Chaque fenêtre d’un skin moderne reste là où vous la posez, comme sur un bureau : faites glisser une fenêtre par sa barre de titre, et elle s’accroche aux autres et aux bords comme dans Winamp.</string>
+    <string name="prefs_windows_apart_off">Les fenêtres d’un skin moderne forment une pile sous la fenêtre principale. Activez ceci pour poser chaque fenêtre où vous voulez, comme sur un bureau.</string>
 
     <!-- PluginsSection.kt -->
     <string name="prefs_plugins_intro">Plug-ins audio Lua. Andamp en garde sa propre copie, le fichier d’origine peut donc être déplacé ou supprimé.</string>

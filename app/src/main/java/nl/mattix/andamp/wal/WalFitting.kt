@@ -26,9 +26,19 @@ import nl.mattix.walkit.WindowInfo
  * a window opens or the phone turns changes neither the columns nor the size the stack comes back
  * to.
  */
-internal class WalFitting {
+internal class WalFitting(
+    /**
+     * Puts a skin's windows where the host kept them, once the windows are set out apart
+     * ([WalApart]): called on the engine thread each time apart comes on.
+     */
+    private val placer: (SkinRuntime) -> Unit = {},
+) {
     /** The windows on screen at the last [apply] or [refit]. */
     private var windows: List<WindowId> = emptyList()
+
+    /** Whether the runtime was last set out apart ([apart]), and at what scale. */
+    private var apartApplied = false
+    private var apartScale = 1f
 
     /** What each main window showed across the first time it was fitted; see [restingWidth]. */
     private val firstWidths = HashMap<WindowId, Int>()
@@ -53,6 +63,14 @@ internal class WalFitting {
         val layout = runtime.windowInfo(main)
         windows = runtime.windowIds
         val box = (fit.widthPx to fit.heightPx)
+        if (apart(fit)) {
+            setApart(runtime, fit, baseW)
+            return
+        }
+        if (apartApplied) {
+            apartApplied = false
+            runtime.present { it.copy(freeWindows = false) }
+        }
         runtime.present { it.copy(stretchLast = !fit.sideways && !fit.compact) }
         if (fillsBox(layout)) {
             // its scale from its minimum size, its size from what the box holds at that scale; in a
@@ -83,9 +101,38 @@ internal class WalFitting {
         baseW: Int,
     ) {
         val now = runtime.windowIds
-        if (now == windows) return
+        if (apart(fit) != apartApplied) {
+            apply(runtime, fit, baseW)
+            return
+        }
+        if (now == windows || apartApplied) return
         windows = now
         if (fit.sideways) decideColumns(runtime, fit) else uprightView(runtime, (fit.widthPx to fit.heightPx), baseW)
+    }
+
+    /** Whether [fit] shows the windows apart: the switch is on, and the box is not the floating player's. */
+    private fun apart(fit: WalFit): Boolean = WalApart.apart && !fit.compact
+
+    /**
+     * Sets [runtime]'s windows out apart in [fit]'s box: the box is the viewport, in skin px at
+     * the main window's scale ([WalScale.fit], with [baseW]), and the windows go where the host
+     * kept them ([placer]) the first time apart comes on.
+     */
+    private fun setApart(
+        runtime: SkinRuntime,
+        fit: WalFit,
+        baseW: Int,
+    ) {
+        val main = runtime.mainWindow ?: return
+        val box = (fit.widthPx to fit.heightPx)
+        val scale = WalScale.fit(box, runtime.windowSize(main), baseW)
+        apartScale = scale
+        val first = !apartApplied
+        apartApplied = true
+        runtime.present {
+            it.copy(columns = 1, stretchLast = false, viewSize = view(box, scale), freeWindows = true)
+        }
+        if (first) placer(runtime)
     }
 
     /**
@@ -168,7 +215,9 @@ internal class WalFitting {
             restingW = drawn.first
             restingFit = fit
         }
-        val place = place(runtime, fit, baseW, size, drawn)
+        // apart, the whole box is the skin's viewport, at the main window's scale
+        val view = runtime.presentation.viewSize?.takeIf { apartApplied }
+        val place = if (view != null) WalScale.Place(apartScale, 0f, 0f) else place(runtime, fit, baseW, size, drawn)
         runtime.present { it.copy(touchSlop = kotlin.math.ceil(TOUCH_SLOP_DP * fit.density / place.scale).toInt()) }
         val themes = themesOf(runtime)
         return WalLayout(
@@ -176,15 +225,15 @@ internal class WalFitting {
             scale = place.scale,
             left = place.left,
             top = place.top,
-            stackW = drawn.first,
-            stackH = drawn.second,
+            stackW = view?.first ?: drawn.first,
+            stackH = view?.second ?: drawn.second,
             windowOpen = windowOpen,
             animating = runtime.animating,
             sliding = runtime.sliding,
             menuTarget = runtime.menuTarget,
             moveTarget = runtime.moveTarget,
             wantsFrames = wantsFrames,
-            dock = dockOf(runtime, drawn),
+            dock = if (view != null) null else dockOf(runtime, drawn),
             edgePlacements = runtime.edgePlacements,
             themes = themes,
             theme = runtime.colorTheme?.let { worn -> themes.firstOrNull { it.equals(worn, ignoreCase = true) } },

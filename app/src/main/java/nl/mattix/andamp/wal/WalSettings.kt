@@ -5,6 +5,7 @@ package nl.mattix.andamp.wal
 import android.content.Context
 import android.util.Log
 import androidx.compose.ui.unit.IntOffset
+import nl.mattix.walkit.Rect
 import nl.mattix.walkit.SavedSettings
 import nl.mattix.walkit.SkinRuntime
 import org.json.JSONObject
@@ -98,6 +99,7 @@ internal class WalSettings(
             .remove(id)
             .remove(placeKey(id, sideways = false))
             .remove(placeKey(id, sideways = true))
+            .remove(spotsKey(id))
             .apply()
     }
 
@@ -128,6 +130,35 @@ internal class WalSettings(
         prefs.edit().putString(key, o.toString()).apply()
     }
 
+    /**
+     * Where skin [id]'s windows sat apart ([WalApart]) when it was last shown, by container id, in
+     * skin px of the viewport; empty when none were kept.
+     */
+    fun windowSpots(id: String): Map<String, Rect> {
+        val o = prefs.getString(spotsKey(id), null)?.let { runCatching { JSONObject(it) }.getOrNull() } ?: return emptyMap()
+        return buildMap {
+            for (container in o.keys()) {
+                val parts = o.optString(container).split(",").mapNotNull { it.trim().toIntOrNull() }
+                if (parts.size == 4) put(container, Rect(parts[0], parts[1], parts[2], parts[3]))
+            }
+        }
+    }
+
+    /** Keeps where skin [id]'s windows sit apart (see [windowSpots]); empty forgets them. */
+    fun keepWindowSpots(
+        id: String,
+        spots: Map<String, Rect>,
+    ) {
+        val key = spotsKey(id)
+        if (spots.isEmpty()) {
+            if (prefs.contains(key)) prefs.edit().remove(key).apply()
+            return
+        }
+        val o = JSONObject()
+        for ((container, r) in spots) o.put(container, "${r.left},${r.top},${r.width},${r.height}")
+        prefs.edit().putString(key, o.toString()).apply()
+    }
+
     private fun read(id: String): JSONObject? = prefs.getString(id, null)?.let { runCatching { JSONObject(it) }.getOrNull() }
 
     internal companion object {
@@ -143,6 +174,9 @@ internal class WalSettings(
         private const val TAG = "WalSettings"
         private const val DX = "dx"
         private const val DY = "dy"
+
+        /** Where a skin's window spots apart are kept. */
+        private fun spotsKey(id: String) = "$id.windows"
 
         /** Where a skin's place is kept, apart from the value the engine thread writes whole. */
         private fun placeKey(

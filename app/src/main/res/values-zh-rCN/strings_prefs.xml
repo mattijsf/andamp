@@ -157,6 +157,9 @@
     <string name="prefs_sharp_pixels_title">锐利像素</string>
     <string name="prefs_sharp_pixels_on">边缘清晰，但部分文字和线条会粗细不均。此项只影响 Andamp 为适应屏幕而以非整数倍大小（例如 2.5 倍）显示的现代面板。</string>
     <string name="prefs_sharp_pixels_off">平滑，但略显模糊。打开此项可获得清晰的边缘，但部分文字和线条会粗细不均。此项只影响 Andamp 为适应屏幕而以非整数倍大小（例如 2.5 倍）显示的现代面板。</string>
+    <string name="prefs_windows_apart_title">窗口分开</string>
+    <string name="prefs_windows_apart_on">现代面板的每个窗口都停在你放置的位置，如同桌面：拖动窗口的标题栏，它会像在 Winamp 中一样吸附到其他窗口和屏幕边缘。</string>
+    <string name="prefs_windows_apart_off">现代面板的窗口叠放在主窗口下方。打开此项可把每个窗口放到你想要的位置，如同桌面。</string>
 
     <!-- PluginsSection.kt -->
     <string name="prefs_plugins_intro">Lua 音频插件。Andamp 会保留自己的副本，因此原文件可以移动或删除。</string>

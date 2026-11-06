@@ -37,6 +37,7 @@ import nl.mattix.andamp.state.overlay.OverlayOps
 import nl.mattix.andamp.state.overlay.OverlayStore
 import nl.mattix.andamp.state.overlay.OverlaySupport
 import nl.mattix.andamp.ui.menu.promptFor
+import nl.mattix.andamp.wal.WalApart
 import nl.mattix.andamp.wal.WalGate
 import nl.mattix.andamp.wal.WalLook
 import nl.mattix.andamp.wal.WalPlayer
@@ -145,6 +146,7 @@ class WinampViewModel
                 // pixels are read with it, so a modern skin's first frame already wears them
                 modernOn = {
                     WalSharp.read(app)
+                    WalApart.read(app)
                     WalGate.read(app)
                 },
                 // stored in order with the Preferences switch's changes

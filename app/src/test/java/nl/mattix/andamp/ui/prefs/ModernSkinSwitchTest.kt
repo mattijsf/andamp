@@ -32,6 +32,7 @@ import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.addModern
 import nl.mattix.andamp.state.loadingModernSkin
 import nl.mattix.andamp.ui.window.testViewModel
+import nl.mattix.andamp.wal.WalApart
 import nl.mattix.andamp.wal.WalGate
 import nl.mattix.andamp.wal.WalRender
 import nl.mattix.andamp.wal.WalSettings
@@ -79,6 +80,7 @@ class ModernSkinSwitchTest {
     fun fromNothing() {
         WalGate.clear(app)
         WalSharp.forget(app)
+        WalApart.forget(app)
         app
             .getSharedPreferences(WalSettings.PREFS, Context.MODE_PRIVATE)
             .edit()
@@ -98,6 +100,7 @@ class ModernSkinSwitchTest {
         WalGate.clear(app)
         WalGate.forget()
         WalSharp.forget()
+        WalApart.forget()
     }
 
     private fun stopPlayers() {
@@ -114,6 +117,8 @@ class ModernSkinSwitchTest {
     private val modernSwitch get() = tag("prefs.modern.switch")
 
     private val sharpSwitch get() = tag("prefs.sharp.switch")
+
+    private val apartSwitch get() = tag("prefs.apart.switch")
 
     private fun SemanticsNodeInteraction.top() = performScrollTo().getUnclippedBoundsInRoot().top
 
@@ -176,6 +181,7 @@ class ModernSkinSwitchTest {
         val note = compose.onNodeWithText(text(R.string.prefs_modern_skins_note))
         note.performScrollTo().assertIsDisplayed()
         sharpSwitch.assertDoesNotExist()
+        apartSwitch.assertDoesNotExist()
 
         val colors = compose.onNodeWithText(text(R.string.prefs_player_colors_section)).top()
         assertTrue("after Colors, the section that came last before it", heading.top() > colors)
@@ -193,6 +199,9 @@ class ModernSkinSwitchTest {
         compose.onNodeWithText(text(R.string.prefs_sharp_pixels_off)).assertIsDisplayed()
         val note = compose.onNodeWithText(text(R.string.prefs_modern_skins_note)).top()
         assertTrue(sharpSwitch.top() > note)
+        apartSwitch.performScrollTo().assertIsOff()
+        compose.onNodeWithText(text(R.string.prefs_windows_apart_off)).assertIsDisplayed()
+        assertTrue("Windows apart under Sharp pixels", apartSwitch.top() > sharpSwitch.top())
     }
 
     @Test
@@ -306,6 +315,32 @@ class ModernSkinSwitchTest {
         assertFalse(WalRender.direct)
         assertEquals(redraws + 2, WalRender.redraws.intValue)
         assertFalse(stored.getBoolean(WalSharp.KEY, true))
+    }
+
+    @Test
+    fun `the windows apart switch tells its watchers and is stored`() {
+        switchModernSkinsOn(app)
+        showWiredPage()
+        var told = 0
+        WalApart.watch { told++ }
+        val stored = app.getSharedPreferences(WalSettings.PREFS, Context.MODE_PRIVATE)
+
+        apartSwitch.performScrollTo().assertIsOff().performClick()
+
+        apartSwitch.assertIsOn()
+        compose.onNodeWithText(text(R.string.prefs_windows_apart_on)).assertIsDisplayed()
+        assertTrue(WalApart.on)
+        assertTrue(WalApart.apart)
+        assertEquals(1, told)
+        assertTrue(stored.getBoolean(WalApart.KEY, false))
+
+        apartSwitch.performClick()
+
+        apartSwitch.assertIsOff()
+        assertFalse(WalApart.on)
+        assertFalse(WalApart.apart)
+        assertEquals(2, told)
+        assertFalse(stored.getBoolean(WalApart.KEY, true))
     }
 
     @Test
