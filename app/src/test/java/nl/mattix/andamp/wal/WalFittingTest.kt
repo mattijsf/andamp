@@ -20,6 +20,7 @@ import nl.mattix.walkit.fixtures.resizeAsScript
 import nl.mattix.walkit.fixtures.setParamAsScript
 import nl.mattix.walkit.fixtures.switchLayoutAsScript
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -559,6 +560,56 @@ class WalFittingTest {
                     shade.top,
                 )
             }
+        }
+    }
+
+    @Test
+    fun `windows apart make the box the viewport at the main window's scale, and go where the host kept them`() {
+        WalApart.forget(app)
+        try {
+            WalApart.change(app, true)
+            var placed = 0
+            val fitting =
+                WalFitting { rt ->
+                    placed++
+                    rt.placeWindow(checkNotNull(rt.windowOf("pl")), 100, 500)
+                }
+            val rt = SkinRuntime(winampModern, WalHost(winampModern, app.cacheDir), FakePlayer()).apply { load() }
+            val baseW = WalFitting.baseWOf(rt)
+            fitting.apply(rt, upright, baseW)
+            rt.ensureLayout()
+            assertTrue(rt.presentation.freeWindows)
+            assertEquals("placed once, as apart came on", 1, placed)
+            val layout = fitting.layout(rt, upright, baseW, rt.stackSize, rt.drawnSize, rt.windowOpen, true)
+            val scale = layout.scale
+            val view = (960 / scale).toInt() to (1900 / scale).toInt()
+            assertEquals("the box is the viewport", view, rt.presentation.viewSize)
+            assertEquals(view.first, layout.stackW)
+            assertEquals(view.second, layout.stackH)
+            assertEquals(0f, layout.left)
+            assertEquals(0f, layout.top)
+            assertNull(layout.dock)
+
+            check(rt.openWindow("pl"))
+            fitting.refit(rt, upright, baseW)
+            rt.ensureLayout()
+            assertEquals("where the host kept it", Rect(100, 500, 354, 164), rt.windowRect(checkNotNull(rt.windowOf("pl"))))
+            assertEquals(1, placed)
+
+            WalApart.change(app, false)
+            fitting.refit(rt, upright, baseW)
+            rt.ensureLayout()
+            assertFalse("back to the stack", rt.presentation.freeWindows)
+            val stacked = rt.windowRect(checkNotNull(rt.windowOf("pl")))
+            assertEquals("under the main window, stretched to the box's bottom", 0 to 164, stacked.left to stacked.top)
+
+            WalApart.change(app, true)
+            fitting.refit(rt, upright, baseW)
+            rt.ensureLayout()
+            assertTrue(rt.presentation.freeWindows)
+            assertEquals("placed again as apart comes on again", 2, placed)
+        } finally {
+            WalApart.forget()
         }
     }
 }

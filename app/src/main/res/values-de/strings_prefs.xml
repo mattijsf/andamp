@@ -160,6 +160,9 @@
     <string name="prefs_sharp_pixels_title">Scharfe Pixel</string>
     <string name="prefs_sharp_pixels_on">Klare Kanten, aber manche Buchstaben und Linien werden ungleich dick. Das betrifft nur moderne Skins, die Andamp in einer Zwischengröße zeigt, etwa 2,5-fach vergrößert, damit sie auf deinen Bildschirm passen.</string>
     <string name="prefs_sharp_pixels_off">Weich, aber leicht unscharf. Schalte dies für klare Kanten ein; manche Buchstaben und Linien werden dann ungleich dick. Das betrifft nur moderne Skins, die Andamp in einer Zwischengröße zeigt, etwa 2,5-fach vergrößert, damit sie auf deinen Bildschirm passen.</string>
+    <string name="prefs_windows_apart_title">Fenster frei</string>
+    <string name="prefs_windows_apart_on">Jedes Fenster eines modernen Skins steht dort, wo du es hinlegst, wie auf einem Desktop: Zieh ein Fenster an seiner Titelleiste, und es dockt an die anderen und an die Ränder an wie in Winamp.</string>
+    <string name="prefs_windows_apart_off">Die Fenster eines modernen Skins stehen in einem Stapel unter dem Hauptfenster. Schalte dies ein, um jedes Fenster dort hinzulegen, wo du möchtest, wie auf einem Desktop.</string>
 
     <!-- PluginsSection.kt -->
     <string name="prefs_plugins_intro">Audio-Plug-ins in Lua. Andamp behält eine eigene Kopie, die Originaldatei kann also verschoben oder gelöscht werden.</string>

@@ -128,7 +128,16 @@ internal class WalEngine(
     private var rt: SkinRuntime? = null
     private var baseW = 0
     private var publishing = false
-    private val fitting = WalFitting()
+    private val fitting = WalFitting { runtime -> placer?.invoke(runtime) }
+
+    /** Puts the windows where the host kept them when they are set out apart; see [WalFitting]. */
+    var placer: ((SkinRuntime) -> Unit)? = null
+
+    /**
+     * Hears each frame published with the windows apart, with where they are by container id in
+     * skin px of the viewport: the look keeps them between runs. On the engine thread.
+     */
+    var onApart: ((Map<String, Rect>) -> Unit)? = null
 
     /** What [idle] said last in the running task, or null when it has not been asked yet. */
     private var lastIdle: WalIdle? = null
@@ -733,6 +742,7 @@ internal class WalEngine(
                 plans = plans,
             ),
         )
+        if (runtime.presentation.freeWindows) onApart?.invoke(spotsOf(runtime))
         if (WalTiming.on) {
             val plan = plans?.let { runtime.planNanos - planned }
             val fromStart = runtime.fullPlans != fullPlans
@@ -752,6 +762,15 @@ internal class WalEngine(
         private const val MAX_SLIDE_LEAD_MS = 50L
 
         private fun overrunFailure(budgetMs: Long) = TimeoutException("took longer than $budgetMs ms to load")
+
+        /** Where [runtime]'s windows are, by container id; a window of no container is left out. */
+        private fun spotsOf(runtime: SkinRuntime): Map<String, Rect> =
+            buildMap {
+                for (id in runtime.windowIds) {
+                    val container = runtime.windowInfo(id).container
+                    if (container.isNotEmpty()) put(container, runtime.windowRect(id))
+                }
+            }
 
         /** How far right and down the windows of [stack] reach. */
         private fun sizeOf(stack: List<Pair<Rect, List<DrawCmd>>>): Pair<Int, Int> =

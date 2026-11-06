@@ -15,6 +15,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.sync.Mutex
 import nl.mattix.walkit.Player
+import nl.mattix.walkit.Rect
 import nl.mattix.walkit.SkinFiles
 import nl.mattix.walkit.SkinMenu
 import nl.mattix.walkit.SkinOptions
@@ -334,6 +335,7 @@ internal class WalLook(
             synchronized(startLock) {
                 if (released) return
                 released = true
+                WalApart.unwatch(apartChanged)
                 (engine to files).also {
                     engine = null
                     host = null
@@ -389,6 +391,9 @@ internal class WalLook(
             val engine = WalEngine(id, host, onFrame = ::frameChanged)
             engine.onBroken = { toMain(Runnable { failed(stoppedWorking = true) }) }
             engine.onTask = ::keepLater
+            engine.placer = ::placeWindows
+            engine.onApart = ::keepSpots
+            WalApart.watch(apartChanged)
             // what the screen said before the engine started reaches it before the first fit
             engine.awake = awake
             this.host = host
@@ -449,6 +454,30 @@ internal class WalLook(
         layout?.let { places.skinPlaced(it.edgePlacements) }
         menu = engine.menu
         frameCount.intValue++
+    }
+
+    /** The windows apart switch changed: the next tick sets the windows out again (see [WalFitting.refit]). */
+    private val apartChanged: () -> Unit = { engine?.requestTick(WalCause.KEY) }
+
+    /** Where the windows sat apart, as last kept; the engine thread's. */
+    private var keptSpots: Map<String, Rect>? = null
+
+    /** Puts [rt]'s windows where [settings] kept them apart. On the engine thread, as apart comes on. */
+    private fun placeWindows(rt: SkinRuntime) {
+        val spots = keptSpots ?: settings?.windowSpots(id).orEmpty().also { keptSpots = it }
+        for ((container, r) in spots) {
+            val window = rt.windowOf(container) ?: continue
+            if (window != rt.mainWindow) rt.resizeWindow(window, r.width, r.height)
+            rt.placeWindow(window, r.left, r.top)
+        }
+    }
+
+    /** Keeps where the windows sit apart when it changed; on the engine thread, after a frame. */
+    private fun keepSpots(spots: Map<String, Rect>) {
+        if (spots == keptSpots) return
+        val merged = keptSpots.orEmpty() + spots
+        keptSpots = merged
+        synchronized(saveLock) { if (!savesClosed) settings?.keepWindowSpots(id, merged) }
     }
 
     /** After each engine task: a change to what the skin keeps is saved once changes rest for [SAVE_DELAY_MS]. */

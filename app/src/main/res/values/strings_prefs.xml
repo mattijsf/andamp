@@ -189,6 +189,9 @@
     <string name="prefs_sharp_pixels_on">Crisp edges, but some letters and lines come out uneven in width. This changes only modern skins that Andamp shows at an in-between size, such as 2.5 times, to fit your screen.</string>
     <!-- Under the sharp pixels switch while it is off. -->
     <string name="prefs_sharp_pixels_off">Smooth, but slightly blurred. Switch this on for crisp edges; some letters and lines then come out uneven in width. This changes only modern skins that Andamp shows at an in-between size, such as 2.5 times, to fit your screen.</string>
+    <string name="prefs_windows_apart_title">Windows apart</string>
+    <string name="prefs_windows_apart_on">Each window of a modern skin sits where you put it, as on a desktop: drag a window by its title bar, and it docks to the others and to the edges as it does in Winamp.</string>
+    <string name="prefs_windows_apart_off">The windows of a modern skin sit in one stack under the main window. Switch this on to put each window where you like, as on a desktop.</string>
 
     <!-- PluginsSection.kt -->
     <string name="prefs_plugins_intro">Lua audio plug-ins. Andamp keeps its own copy, so the original file can be moved or deleted.</string>
