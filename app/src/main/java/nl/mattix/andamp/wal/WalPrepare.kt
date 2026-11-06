@@ -2,7 +2,7 @@
 
 package nl.mattix.andamp.wal
 
-import nl.mattix.andamp.modernskin.skin.SkinSetup
+import nl.mattix.walkit.SkinSetup
 
 /**
  * What a modern skin the listener uses is given before it loads, the same in the player, in the adb

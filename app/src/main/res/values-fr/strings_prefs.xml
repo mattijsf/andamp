@@ -118,7 +118,7 @@
     <string name="prefs_notice_material_what">Son moteur de couleurs tire du skin chargé la palette des écrans modernes.</string>
     <string name="prefs_notice_coil_what">Charge et met en cache les vignettes du musée des skins.</string>
     <string name="prefs_notice_okhttp_what">L’unique client HTTP, pour le musée des skins et pour les flux radio.</string>
-    <string name="prefs_notice_walkit_what">Le moteur des skins modernes en code natif, derrière l’option du moteur natif : les mêmes skins, portés en Rust.</string>
+    <string name="prefs_notice_walkit_what">Le moteur des skins modernes, en code natif : il fait tourner les skins, écrit en Rust.</string>
 
     <!-- Store.kt (storePlay) -->
     <string name="prefs_notice_play_billing_what">Reçoit les pourboires de la page « Soutenir Andamp », via Google Play.</string>
@@ -160,9 +160,6 @@
     <string name="prefs_sharp_pixels_title">Pixels nets</string>
     <string name="prefs_sharp_pixels_on">Contours nets, mais certaines lettres et lignes sont d’épaisseur inégale. Cela ne change que les skins modernes qu’Andamp affiche à une taille intermédiaire, par exemple 2,5 fois leur taille, pour qu’ils tiennent sur votre écran.</string>
     <string name="prefs_sharp_pixels_off">Rendu lisse, mais légèrement flou. Activez cette option pour des contours nets ; certaines lettres et lignes sont alors d’épaisseur inégale. Cela ne change que les skins modernes qu’Andamp affiche à une taille intermédiaire, par exemple 2,5 fois leur taille, pour qu’ils tiennent sur votre écran.</string>
-    <string name="prefs_native_engine_title">Moteur natif (bêta)</string>
-    <string name="prefs_native_engine_on">Les skins modernes tournent sur le moteur natif d’Andamp, qui dessine la même chose mais peut consommer moins de batterie. S’applique au prochain skin moderne que vous mettez. Désactivez-le si un skin se comporte mal.</string>
-    <string name="prefs_native_engine_off">Les skins modernes tournent sur le moteur qu’Andamp a utilisé jusqu’ici. Activez cette option pour essayer le moteur natif, qui dessine la même chose mais peut consommer moins de batterie ; elle s’applique au prochain skin moderne que vous mettez.</string>
 
     <!-- PluginsSection.kt -->
     <string name="prefs_plugins_intro">Plug-ins audio Lua. Andamp en garde sa propre copie, le fichier d’origine peut donc être déplacé ou supprimé.</string>

@@ -5,11 +5,8 @@ package nl.mattix.andamp.wal
 import androidx.compose.runtime.IntState
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import kotlinx.coroutines.sync.Mutex
-import nl.mattix.andamp.modernskin.host.WalFit
-import nl.mattix.andamp.modernskin.host.WalLayout
-import nl.mattix.andamp.modernskin.host.WalTouch
-import nl.mattix.andamp.modernskin.skin.SkinMenu
-import nl.mattix.andamp.modernskin.skin.SkinOptions
+import nl.mattix.walkit.SkinMenu
+import nl.mattix.walkit.SkinOptions
 
 /**
  * A worn modern skin as the player screen sees it: the frame to draw, where it sits, and where

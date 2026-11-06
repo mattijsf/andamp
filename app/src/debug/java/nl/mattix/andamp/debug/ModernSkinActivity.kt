@@ -48,28 +48,25 @@ import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
-import nl.mattix.andamp.modernskin.fixtures.resizeAsScript
-import nl.mattix.andamp.modernskin.host.WalFit
-import nl.mattix.andamp.modernskin.host.WalScale
-import nl.mattix.andamp.modernskin.skin.AndampDefaultSet
-import nl.mattix.andamp.modernskin.skin.FakePlayer
-import nl.mattix.andamp.modernskin.skin.SkinEngine
-import nl.mattix.andamp.modernskin.skin.SkinFiles
-import nl.mattix.andamp.modernskin.skin.SkinMenu
-import nl.mattix.andamp.modernskin.skin.SkinRuntime
-import nl.mattix.andamp.modernskin.skin.SkinSetup
-import nl.mattix.andamp.modernskin.skin.ZipSkinFiles
+import nl.mattix.andamp.wal.AndampDefaultSet
 import nl.mattix.andamp.wal.WalBuild
 import nl.mattix.andamp.wal.WalEngine
 import nl.mattix.andamp.wal.WalFiles
+import nl.mattix.andamp.wal.WalFit
 import nl.mattix.andamp.wal.WalFrame
 import nl.mattix.andamp.wal.WalHost
-import nl.mattix.andamp.wal.WalNative
 import nl.mattix.andamp.wal.WalPrepare
+import nl.mattix.andamp.wal.WalScale
 import nl.mattix.andamp.wal.WalSettings
-import nl.mattix.andamp.wal.WalkitEngine
 import nl.mattix.andamp.wal.drawWalStack
 import nl.mattix.andamp.wal.drawWalWindow
+import nl.mattix.walkit.FakePlayer
+import nl.mattix.walkit.SkinFiles
+import nl.mattix.walkit.SkinMenu
+import nl.mattix.walkit.SkinRuntime
+import nl.mattix.walkit.SkinSetup
+import nl.mattix.walkit.Track
+import nl.mattix.walkit.ZipSkinFiles
 import java.io.File
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
@@ -261,7 +258,7 @@ private const val CHECK_VIEWPORT_H = 853
  * and window<n>-notext.png without the TrueType text, so score.py can tell text pixels from the rest.
  */
 private fun writeCheckImages(
-    stack: List<Pair<nl.mattix.andamp.modernskin.skin.Rect, List<nl.mattix.andamp.modernskin.skin.DrawCmd>>>,
+    stack: List<Pair<nl.mattix.walkit.Rect, List<nl.mattix.walkit.DrawCmd>>>,
     host: WalHost,
     dir: File,
 ) {
@@ -360,7 +357,7 @@ private class Probe(
     /** On the engine thread, after each tick. */
     @Synchronized
     fun ticked(
-        rt: SkinEngine,
+        rt: SkinRuntime,
         tickNanos: Long,
         drawNanos: Long,
         drew: Boolean,
@@ -481,8 +478,8 @@ private fun loadRuntime(
     check: Check?,
     checkClock: LongArray,
     probe: Probe?,
-): SkinEngine =
-    engineFor(
+): SkinRuntime =
+    SkinRuntime(
         files,
         host,
         player,
@@ -506,8 +503,7 @@ private fun loadRuntime(
         // a scenario's size for a resizable main window, as ReferenceRenderTest gives it
         check?.mainSize?.let { (w, h) ->
             it.mainWindow?.let { main ->
-                // the reference sizes the window as a script does; the native engine takes the host's resize
-                if (it is SkinRuntime) it.resizeAsScript(main, 0, 0, w, h) else it.resizeWindow(main, w, h)
+                it.resizeWindow(main, w, h)
             }
         }
         // windows the skin opens by itself at start in Winamp, as ReferenceRenderTest opens them
@@ -516,7 +512,7 @@ private fun loadRuntime(
 
 /** The reference sequence, as ReferenceRenderTest runs it, on the check's stepped clock. */
 private fun runCheck(
-    rt: SkinEngine,
+    rt: SkinRuntime,
     player: FakePlayer,
     check: Check,
     checkClock: LongArray,
@@ -705,7 +701,7 @@ private fun ModernSkinScreen(
             engine.post(publish = false) {
                 val warmFiles = WalFiles.open(file, siblings, base)
                 val again =
-                    engineFor(warmFiles, WalHost(warmFiles, context.cacheDir, windowOpen), FakePlayer(), setupOf(file, check))
+                    SkinRuntime(warmFiles, WalHost(warmFiles, context.cacheDir, windowOpen), FakePlayer(), setupOf(file, check))
                 val t0 = System.nanoTime()
                 runCatching { again.load() }
                 probe.warmLoadMs = (System.nanoTime() - t0) / 1e6
@@ -942,8 +938,7 @@ private fun demoPlayer(check: Check?): FakePlayer =
             lengthMs = 600_000
             playlist =
                 check.playlist.map {
-                    nl.mattix.andamp.modernskin.skin
-                        .Track(it, 600_000)
+                    Track(it, 600_000)
                 }
             decoderName = "Nullsoft Waveform Decoder v3.25"
             // 8 kHz 8-bit mono: 64 kbps
@@ -959,8 +954,7 @@ private fun demoPlayer(check: Check?): FakePlayer =
                     "Third" to 242_000,
                     "Fourth Track" to 199_000,
                 ).map { (t, ms) ->
-                    nl.mattix.andamp.modernskin.skin
-                        .Track(t, ms)
+                    Track(t, ms)
                 }
         }
     }
@@ -976,16 +970,6 @@ private const val LOG_POLL_MS = 100L
  * seconds over a large skin's first load, past the player's [WalBuild.START_BUDGET_MS].
  */
 private const val MEASURE_BUDGET_MS = 60_000L
-
-/** A runtime on the engine the listener chose ([WalNative]), as the player makes one. */
-private fun engineFor(
-    files: SkinFiles,
-    host: WalHost,
-    player: FakePlayer,
-    setup: SkinSetup,
-    clock: () -> Long = System::currentTimeMillis,
-): SkinEngine =
-    if (WalNative.on) WalkitEngine(files, host, player, setup, clock) else SkinRuntime(files, host, player, setup, clock)
 
 /**
  * What a runtime for [file] is given before it loads, the same for every load of it: in use what the

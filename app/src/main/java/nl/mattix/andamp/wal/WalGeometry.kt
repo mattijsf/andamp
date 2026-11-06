@@ -5,8 +5,7 @@ package nl.mattix.andamp.wal
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
-import nl.mattix.andamp.modernskin.host.TouchPoint
-import nl.mattix.andamp.modernskin.skin.Rect
+import nl.mattix.walkit.Rect
 
 // the skin host kit's plain values as Compose has them, and back
 

@@ -9,10 +9,10 @@ import androidx.test.core.app.ApplicationProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import nl.mattix.andamp.modernskin.skin.FakePlayer
 import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.wal.WalLook
 import nl.mattix.andamp.wal.WalSettings
+import nl.mattix.walkit.FakePlayer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

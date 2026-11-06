@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package nl.mattix.andamp.modernskin.host
+package nl.mattix.andamp.wal
 
-import nl.mattix.andamp.modernskin.skin.LiveRun
-import nl.mattix.andamp.modernskin.skin.Rect
-import nl.mattix.andamp.modernskin.skin.WindowPlan
+import nl.mattix.walkit.LiveRun
+import nl.mattix.walkit.Rect
+import nl.mattix.walkit.WindowPlan
 
 /**
  * What a host keeps of a modern skin's drawing between frames, and what it records again: a
@@ -22,17 +22,17 @@ import nl.mattix.andamp.modernskin.skin.WindowPlan
  * It assumes the host records what it is told to: a drawing that fails to record leaves it
  * wrong, so after a frame that threw the host calls [forget]. On the thread that draws.
  */
-public class KeptFrames<N : Any>(
+internal class KeptFrames<N : Any>(
     /** A new, empty drawing. */
     private val create: () -> N,
     /** Lets go of a drawing no frame shows any more. */
     private val release: (N) -> Unit,
 ) {
     /** A run of a window as its plan gives it: its [drawing], recorded again when [again]. */
-    public class Run<N>(
-        public val run: LiveRun,
-        public val drawing: N,
-        public val again: Boolean,
+    class Run<N>(
+        val run: LiveRun,
+        val drawing: N,
+        val again: Boolean,
     )
 
     /**
@@ -40,13 +40,13 @@ public class KeptFrames<N : Any>(
      * [rect]), and its [runs] in the plan's order. [overClear] for the bottom window, which draws
      * straight into the clear stack layer, so its shape masks the layer there.
      */
-    public class Window<N>(
-        public val plan: WindowPlan,
-        public val rect: Rect,
-        public val drawing: N,
-        public val again: Boolean,
-        public val overClear: Boolean,
-        public val runs: List<Run<N>>,
+    class Window<N>(
+        val plan: WindowPlan,
+        val rect: Rect,
+        val drawing: N,
+        val again: Boolean,
+        val overClear: Boolean,
+        val runs: List<Run<N>>,
     )
 
     private class KeptRun<N>(
@@ -77,16 +77,16 @@ public class KeptFrames<N : Any>(
     private var recordedSize = 0 to 0
 
     /** Windows kept. */
-    public val keptWindows: Int get() = windows.size
+    val keptWindows: Int get() = windows.size
 
     /** Runs kept, in all windows. */
-    public val keptRuns: Int get() = windows.values.sumOf { it.runs.size }
+    val keptRuns: Int get() = windows.values.sumOf { it.runs.size }
 
     /**
      * The frame of [plans], one per window from the bottom up, with the windows at [rects]: what
      * to record again and what to keep. Windows and runs the frame does not show are let go of.
      */
-    public fun plan(
+    fun plan(
         plans: List<WindowPlan>,
         rects: List<Rect>,
     ): List<Window<N>> {
@@ -138,7 +138,7 @@ public class KeptFrames<N : Any>(
      * recorded again after the last [plan]: the windows it draws or its size changed. Once it says
      * so it counts the layer as recorded.
      */
-    public fun stackAgain(
+    fun stackAgain(
         whole: Int,
         width: Int,
         height: Int,
@@ -153,7 +153,7 @@ public class KeptFrames<N : Any>(
     }
 
     /** Lets go of every window and run kept: the next frame records everything again. */
-    public fun forget() {
+    fun forget() {
         if (windows.isEmpty() && recorded.isEmpty()) return
         for (w in windows.values) drop(w)
         windows.clear()
@@ -167,14 +167,14 @@ public class KeptFrames<N : Any>(
         w.runs.clear()
     }
 
-    public companion object {
+    companion object {
         /**
          * Whether a frame of windows at [rects], each with its [plans] and [commands] draw commands,
          * can be kept this way: a plan for each window, every window with a width and a height, a
          * stack layer at [whole] no larger than [WalScale.MAX_PX] either way, and each plan's runs
          * in order, apart, inside its window's commands.
          */
-        public fun fits(
+        fun fits(
             rects: List<Rect>,
             plans: List<WindowPlan>,
             commands: List<Int>,

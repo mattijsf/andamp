@@ -5,8 +5,6 @@ package nl.mattix.andamp.wal
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
-import nl.mattix.andamp.modernskin.host.TouchPoint
-import nl.mattix.andamp.modernskin.host.WalFit
 import nl.mattix.andamp.ui.window.WindowSnap
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

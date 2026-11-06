@@ -70,13 +70,6 @@ import kotlin.concurrent.thread
  * other switches can draw that one frame each way and screenshots compare them; `--ez on false`
  * goes back to the latest frame.
  *
- *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal native
- *     adb shell am broadcast -n <package>/nl.mattix.andamp.wal.WalDevSwitch --es wal native --ez on false
- *
- * `native` runs modern skins on the native engine ([WalNative], as the setting in Preferences
- * does), from the next skin put on and the next `check`; `--ez on false` goes back to the Kotlin
- * engine. It is kept, like the setting.
- *
  * Guarded by android.permission.DUMP in the debug manifest: only the shell, or an app granted DUMP
  * over adb, can send it.
  */
@@ -118,14 +111,10 @@ class WalDevSwitch : BroadcastReceiver() {
                 hold(intent.getBooleanExtra("on", true))
             }
 
-            "native" -> {
-                native(context, intent.getBooleanExtra("on", true))
-            }
-
             else -> {
                 Log.w(
                     WalHost.TAG,
-                    "WalDevSwitch: say --es wal on, off, check, timing, direct, layers, hold or native (got $command)",
+                    "WalDevSwitch: say --es wal on, off, check, timing, direct, layers or hold (got $command)",
                 )
             }
         }
@@ -159,14 +148,6 @@ class WalDevSwitch : BroadcastReceiver() {
     ) {
         WalSharp.change(context, on)
         Log.i(WalHost.TAG, "fractional scales drawn ${if (on) "directly with hard edges" else "whole and shrunk"}")
-    }
-
-    private fun native(
-        context: Context,
-        on: Boolean,
-    ) {
-        WalNative.change(context, on)
-        Log.i(WalHost.TAG, "modern skins run on the ${if (on) "native" else "kotlin"} engine from the next one put on")
     }
 
     private fun layers(intent: Intent) {

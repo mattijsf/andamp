@@ -18,7 +18,6 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import nl.mattix.andamp.R
-import nl.mattix.andamp.modernskin.skin.WalArchive
 import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.skin.LiveSkins
 import nl.mattix.andamp.skin.Skin
@@ -26,6 +25,7 @@ import nl.mattix.andamp.skin.SkinLoader
 import nl.mattix.andamp.wal.WalFiles
 import nl.mattix.andamp.wal.WalLook
 import nl.mattix.andamp.widget.MainWindowWidget
+import nl.mattix.walkit.WalArchive
 import java.io.DataInputStream
 import java.io.File
 import java.io.InputStream

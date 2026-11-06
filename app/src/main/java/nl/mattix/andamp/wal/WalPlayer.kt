@@ -4,7 +4,6 @@ package nl.mattix.andamp.wal
 
 import android.os.SystemClock
 import nl.mattix.andamp.core.playback.AudioTap
-import nl.mattix.andamp.modernskin.skin.Player
 import nl.mattix.andamp.skinplayer.Entry
 import nl.mattix.andamp.skinplayer.HeldWrite
 import nl.mattix.andamp.skinplayer.PlayerState
@@ -21,7 +20,8 @@ import nl.mattix.andamp.state.AndampSkinPlayer
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.ui.window.SliderMath
 import nl.mattix.andamp.ui.window.WindowControls
-import nl.mattix.andamp.modernskin.skin.Track as SkinTrack
+import nl.mattix.walkit.Player
+import nl.mattix.walkit.Track as SkinTrack
 
 /**
  * The player a modern skin drives: the modernskin [Player], on Winamp 5's scales, over a

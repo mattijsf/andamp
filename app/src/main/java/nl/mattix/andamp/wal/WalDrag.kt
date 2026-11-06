@@ -9,9 +9,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.round
-import nl.mattix.andamp.modernskin.host.TouchPoint
-import nl.mattix.andamp.modernskin.host.WalFit
-import nl.mattix.andamp.modernskin.host.WalTouch
 import kotlin.math.abs
 
 /**

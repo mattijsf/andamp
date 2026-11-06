@@ -22,7 +22,6 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import nl.mattix.andamp.modernskin.skin.SkinMenu
 import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.MenuAnchor
@@ -30,6 +29,7 @@ import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.ui.menu.AmpModals
 import nl.mattix.andamp.ui.window.BIG_WINDOW
+import nl.mattix.walkit.SkinMenu
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull

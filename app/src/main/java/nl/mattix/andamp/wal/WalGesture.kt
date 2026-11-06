@@ -8,7 +8,6 @@ import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.positionChanged
-import nl.mattix.andamp.modernskin.host.WalTouch
 
 /**
  * Hands one gesture's first finger to [touch], until it lifts. Other fingers are ignored.
@@ -17,7 +16,7 @@ import nl.mattix.andamp.modernskin.host.WalTouch
  * change goes missing and a loop cancelled before the release each cancel the skin's press.
  * [menuUp] says whether a skin menu is up, which rules the long press out.
  */
-public suspend fun AwaitPointerEventScope.walGesture(
+internal suspend fun AwaitPointerEventScope.walGesture(
     touch: WalTouch,
     menuUp: () -> Boolean,
 ) {

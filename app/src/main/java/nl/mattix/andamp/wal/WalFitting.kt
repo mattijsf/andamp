@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package nl.mattix.andamp.modernskin.host
+package nl.mattix.andamp.wal
 
-import nl.mattix.andamp.modernskin.skin.Presentation
-import nl.mattix.andamp.modernskin.skin.Rect
-import nl.mattix.andamp.modernskin.skin.SkinEngine
-import nl.mattix.andamp.modernskin.skin.SkinOptions
-import nl.mattix.andamp.modernskin.skin.WindowId
-import nl.mattix.andamp.modernskin.skin.WindowInfo
+import nl.mattix.walkit.Presentation
+import nl.mattix.walkit.Rect
+import nl.mattix.walkit.SkinOptions
+import nl.mattix.walkit.SkinRuntime
+import nl.mattix.walkit.WindowId
+import nl.mattix.walkit.WindowInfo
 
 /**
  * How the box a skin goes in on the screen reaches its runtime, and where its stack then sits. One
@@ -26,7 +26,7 @@ import nl.mattix.andamp.modernskin.skin.WindowInfo
  * a window opens or the phone turns changes neither the columns nor the size the stack comes back
  * to.
  */
-public class WalFitting {
+internal class WalFitting {
     /** The windows on screen at the last [apply] or [refit]. */
     private var windows: List<WindowId> = emptyList()
 
@@ -44,8 +44,8 @@ public class WalFitting {
     private var options: SkinOptions? = null
 
     /** Gives [runtime] the box of [fit], as the host has it; [baseW] as [baseWOf] gives it. */
-    public fun apply(
-        runtime: SkinEngine,
+    fun apply(
+        runtime: SkinRuntime,
         fit: WalFit,
         baseW: Int,
     ) {
@@ -77,8 +77,8 @@ public class WalFitting {
      * are not the ones the last [apply] or [refit] saw: one opened or closed, or a window switched
      * layout (a shade). Upright the stack stays in one column.
      */
-    public fun refit(
-        runtime: SkinEngine,
+    fun refit(
+        runtime: SkinRuntime,
         fit: WalFit,
         baseW: Int,
     ) {
@@ -97,7 +97,7 @@ public class WalFitting {
      * the view as it is with the drawer closed.
      */
     private fun uprightView(
-        runtime: SkinEngine,
+        runtime: SkinRuntime,
         box: Pair<Int, Int>,
         baseW: Int,
     ) {
@@ -117,7 +117,7 @@ public class WalFitting {
      * main window at rest ([restingWidth], [Presentation.columnWidth]).
      */
     private fun decideColumns(
-        runtime: SkinEngine,
+        runtime: SkinRuntime,
         fit: WalFit,
     ) {
         val main = runtime.mainWindow ?: return
@@ -155,8 +155,8 @@ public class WalFitting {
      * frame of the slide.
      */
     @Suppress("LongParameterList") // the frame's parts the engine has worked out already
-    public fun layout(
-        runtime: SkinEngine,
+    fun layout(
+        runtime: SkinRuntime,
         fit: WalFit,
         baseW: Int,
         size: Pair<Int, Int>,
@@ -194,7 +194,7 @@ public class WalFitting {
     }
 
     /** [runtime]'s options for Winamp's Options menu, read again only when its Config items changed. */
-    private fun optionsOf(runtime: SkinEngine): SkinOptions =
+    private fun optionsOf(runtime: SkinRuntime): SkinOptions =
         options?.takeIf { it.version == runtime.configVersion } ?: runtime.skinOptions().also { options = it }
 
     /**
@@ -203,7 +203,7 @@ public class WalFitting {
      * puts on), without blank names. A skin reads all its themes as it loads, so they are worked
      * out once.
      */
-    private fun themesOf(runtime: SkinEngine): List<String> =
+    private fun themesOf(runtime: SkinRuntime): List<String> =
         themes ?: buildList<String> {
             for (name in runtime.colorThemes) {
                 if (name.isNotBlank() && none { it.equals(name, ignoreCase = true) }) add(name)
@@ -217,7 +217,7 @@ public class WalFitting {
      * (Bento) has no drawer to leave out and is measured as it is now, since a new box resizes it.
      */
     private fun restingWidth(
-        runtime: SkinEngine,
+        runtime: SkinRuntime,
         main: WindowId,
     ): Int {
         val laidOut = runtime.contentRight(main, layOutFirst = true)
@@ -232,7 +232,7 @@ public class WalFitting {
      * ([fillsBox]), which then sits where the box puts it.
      */
     private fun place(
-        runtime: SkinEngine,
+        runtime: SkinRuntime,
         fit: WalFit,
         baseW: Int,
         size: Pair<Int, Int>,
@@ -256,7 +256,7 @@ public class WalFitting {
 
     /** The left column of [runtime]'s stack in two columns, within the [drawn] stack; null in one column. */
     private fun dockOf(
-        runtime: SkinEngine,
+        runtime: SkinRuntime,
         drawn: Pair<Int, Int>,
     ): Rect? {
         val column = runtime.leftColumn() ?: return null
@@ -268,7 +268,7 @@ public class WalFitting {
         )
     }
 
-    public companion object {
+    companion object {
         /**
          * How far beside an object a finger may land and still mean it: every control then answers
          * across a 48 dp touch target.
@@ -283,7 +283,7 @@ public class WalFitting {
         private const val TIE = 0.02f
 
         /** Changes what [change] changes of [this]'s [Presentation]. */
-        private inline fun SkinEngine.present(change: (Presentation) -> Presentation) {
+        private inline fun SkinRuntime.present(change: (Presentation) -> Presentation) {
             presentation = change(presentation)
         }
 
@@ -309,12 +309,12 @@ public class WalFitting {
          * right for a panel that slides out); fixed, so the size does not jump when that panel opens.
          * A window the user resizes both ways (Bento) is sized to the screen and scales from its size: 0.
          */
-        public fun baseWOf(runtime: SkinEngine): Int =
+        fun baseWOf(runtime: SkinRuntime): Int =
             runtime.mainWindow?.takeUnless { runtime.windowInfo(it).resizableBothWays }?.let { runtime.contentRight(it) } ?: 0
 
         /** Throws unless the screen can show [runtime]: it has a main window, and a stack a phone can draw. */
-        public fun requireShowable(
-            runtime: SkinEngine,
+        fun requireShowable(
+            runtime: SkinRuntime,
             box: Pair<Int, Int>?,
         ) {
             val main = runtime.mainWindow ?: error("no main layout")

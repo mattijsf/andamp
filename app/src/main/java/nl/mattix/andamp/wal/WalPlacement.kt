@@ -9,8 +9,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
-import nl.mattix.andamp.modernskin.host.WalFit
-import nl.mattix.andamp.modernskin.host.WalLayout
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.ui.window.ClassicStack

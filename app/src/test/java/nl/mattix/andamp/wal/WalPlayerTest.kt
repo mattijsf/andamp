@@ -5,9 +5,9 @@ package nl.mattix.andamp.wal
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.core.playback.AudioTap
-import nl.mattix.andamp.modernskin.skin.Player
 import nl.mattix.andamp.skinplayer.WinampFiveUnits
 import nl.mattix.andamp.state.WinampState
+import nl.mattix.walkit.Player
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotSame

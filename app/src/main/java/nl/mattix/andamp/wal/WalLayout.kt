@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package nl.mattix.andamp.modernskin.host
+package nl.mattix.andamp.wal
 
-import nl.mattix.andamp.modernskin.skin.Rect
-import nl.mattix.andamp.modernskin.skin.SkinOptions
+import nl.mattix.walkit.Rect
+import nl.mattix.walkit.SkinOptions
 
 /** The box a host shows a modern skin in, as [WalFitting] fits the skin to it. */
-public data class WalFit(
+internal data class WalFit(
     /** The box's width in device px. */
     val widthPx: Int,
     /** The box's height in device px. */
@@ -28,7 +28,7 @@ public data class WalFit(
  * frame it publishes. Opening a skin window changes the stack's size, so it is worked out again at
  * every publish, from the last fit.
  */
-public data class WalLayout(
+internal data class WalLayout(
     /** The fit this layout was worked out for; a layout for another fit does not match the box on screen. */
     val fit: WalFit,
     /** Device px per skin px: whole at 2x and up, fractional below. */

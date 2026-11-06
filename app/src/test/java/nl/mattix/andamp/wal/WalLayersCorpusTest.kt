@@ -15,9 +15,9 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.modernskin.fixtures.resizeAsScript
-import nl.mattix.andamp.modernskin.skin.DrawPlanner
-import nl.mattix.andamp.modernskin.skin.FakePlayer
-import nl.mattix.andamp.modernskin.skin.SkinRuntime
+import nl.mattix.walkit.DrawPlanner
+import nl.mattix.walkit.FakePlayer
+import nl.mattix.walkit.SkinRuntime
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue

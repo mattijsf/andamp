@@ -5,9 +5,9 @@ package nl.mattix.andamp.wal
 import android.app.Application
 import android.graphics.Bitmap
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.modernskin.skin.FakePlayer
-import nl.mattix.andamp.modernskin.skin.SkinFiles
-import nl.mattix.andamp.modernskin.skin.SkinRuntime
+import nl.mattix.walkit.FakePlayer
+import nl.mattix.walkit.SkinFiles
+import nl.mattix.walkit.SkinRuntime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test

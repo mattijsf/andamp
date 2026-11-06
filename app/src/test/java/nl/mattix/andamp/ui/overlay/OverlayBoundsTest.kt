@@ -3,8 +3,8 @@
 package nl.mattix.andamp.ui.overlay
 
 import androidx.compose.ui.unit.IntRect
-import nl.mattix.andamp.modernskin.host.WalLayout
 import nl.mattix.andamp.ui.window.WindowScreen
+import nl.mattix.andamp.wal.WalLayout
 import nl.mattix.andamp.wal.WalPlacement
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull

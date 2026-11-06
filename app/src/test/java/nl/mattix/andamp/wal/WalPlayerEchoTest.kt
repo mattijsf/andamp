@@ -9,11 +9,11 @@ import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.modernskin.fixtures.Listen
 import nl.mattix.andamp.modernskin.fixtures.recordEvents
 import nl.mattix.andamp.modernskin.fixtures.sliderPosition
-import nl.mattix.andamp.modernskin.skin.Rect
-import nl.mattix.andamp.modernskin.skin.SkinFiles
-import nl.mattix.andamp.modernskin.skin.SkinRuntime
 import nl.mattix.andamp.skinplayer.WinampFiveUnits
 import nl.mattix.andamp.state.WinampState
+import nl.mattix.walkit.Rect
+import nl.mattix.walkit.SkinFiles
+import nl.mattix.walkit.SkinRuntime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before

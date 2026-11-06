@@ -10,7 +10,7 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
-import nl.mattix.andamp.modernskin.skin.SkinOptions
+import nl.mattix.walkit.SkinOptions
 import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test

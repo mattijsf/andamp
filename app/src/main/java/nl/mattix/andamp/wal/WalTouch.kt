@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
-package nl.mattix.andamp.modernskin.host
+package nl.mattix.andamp.wal
 
 import kotlin.math.hypot
 
@@ -15,7 +15,7 @@ import kotlin.math.hypot
  * their times and asks it when the long press is due ([longPressIn]). Positions are surface pixels from the
  * stack's top-left corner; [toSkin] turns them into skin pixels with the placement of the moment.
  */
-public class WalTouch(
+internal class WalTouch(
     private val surface: Target,
     private val rules: Rules,
     private val toSkin: (TouchPoint) -> Pair<Int, Int>,
@@ -27,30 +27,30 @@ public class WalTouch(
     private val drag: Drag? = null,
 ) {
     /** Where the skin hears the finger: the engine's pointer calls, in skin px, as a host passes them on. */
-    public interface Target {
+    interface Target {
         /** A press at ([x], [y]); returns its seq. */
-        public fun pointerDown(
+        fun pointerDown(
             x: Int,
             y: Int,
         ): Int
 
         /** The press moved to ([x], [y]). */
-        public fun pointerMove(
+        fun pointerMove(
             x: Int,
             y: Int,
         )
 
         /** The press lifted at ([x], [y]). */
-        public fun pointerUp(
+        fun pointerUp(
             x: Int,
             y: Int,
         )
 
         /** The press ended without a release. */
-        public fun pointerCancel()
+        fun pointerCancel()
 
         /** A second tap at ([x], [y]); returns its seq, as [pointerDown] does. */
-        public fun doubleTap(
+        fun doubleTap(
             x: Int,
             y: Int,
         ): Int
@@ -59,26 +59,26 @@ public class WalTouch(
          * The seq of the down that landed on a part of the skin a drag moves it by, as the latest
          * layout says ([WalLayout.moveTarget]), or null.
          */
-        public val moveTarget: Int?
+        val moveTarget: Int?
     }
 
     /** Moving the whole stack with the finger; positions as [WalTouch] takes them. */
-    public interface Drag {
+    interface Drag {
         /** The finger that went down at [from] traveled past the touch slop to [at]: the stack follows it from here. */
-        public fun start(
+        fun start(
             from: TouchPoint,
             at: TouchPoint,
         )
 
         /** The finger moved to [at]. */
-        public fun move(at: TouchPoint)
+        fun move(at: TouchPoint)
 
         /** The finger lifted, or the gesture ended without a release: the stack stays where it is. */
-        public fun end()
+        fun end()
     }
 
     /** The platform's gesture thresholds: times in ms, distances in surface pixels. */
-    public data class Rules(
+    data class Rules(
         val longPressMs: Long,
         val touchSlop: Float,
         val doubleTapMs: Long,
@@ -116,7 +116,7 @@ public class WalTouch(
     private var lastTap: Tap? = null
 
     /** A finger went down at [at] at [time]. */
-    public fun down(
+    fun down(
         at: TouchPoint,
         time: Long,
     ) {
@@ -131,7 +131,7 @@ public class WalTouch(
     }
 
     /** The finger moved to [at]. */
-    public fun move(at: TouchPoint) {
+    fun move(at: TouchPoint) {
         val p = press ?: return
         if (p.taken) return
         if (p.dragging) {
@@ -152,7 +152,7 @@ public class WalTouch(
     }
 
     /** The finger lifted at [at] at [time]; [consumed] when the release came already consumed, as a cancelled gesture's does. */
-    public fun up(
+    fun up(
         at: TouchPoint,
         time: Long,
         consumed: Boolean,
@@ -188,7 +188,7 @@ public class WalTouch(
     }
 
     /** The gesture ended without a release: its change went missing, or the pointer loop was cancelled. */
-    public fun cancel() {
+    fun cancel() {
         val p = press ?: return
         press = null
         lastTap = null
@@ -200,19 +200,19 @@ public class WalTouch(
     }
 
     /** A skin menu is up while the finger is down. */
-    public fun menuShown() {
+    fun menuShown() {
         press?.menuSeen = true
     }
 
     /** How long after [now] the long press is due, or null when it cannot fire. */
-    public fun longPressIn(now: Long): Long? {
+    fun longPressIn(now: Long): Long? {
         val p = press ?: return null
         if (p.taken || !p.still || p.menuSeen) return null
         return (p.time + rules.longPressMs - now).coerceAtLeast(0)
     }
 
     /** The long press is due: it fires unless the finger traveled or a skin menu opened since it went down. */
-    public fun longPressDue() {
+    fun longPressDue() {
         val p = press ?: return
         if (p.taken || !p.still || p.menuSeen) return
         p.taken = true
@@ -222,10 +222,10 @@ public class WalTouch(
 }
 
 /** A finger's place, in a host's surface pixels from the stack's top-left corner. */
-public data class TouchPoint(
+internal data class TouchPoint(
     val x: Float,
     val y: Float,
 ) {
     /** How far [other] lies from this point. */
-    public fun distanceTo(other: TouchPoint): Float = hypot(other.x - x, other.y - y)
+    fun distanceTo(other: TouchPoint): Float = hypot(other.x - x, other.y - y)
 }
