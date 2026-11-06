@@ -4,6 +4,21 @@ What changed for somebody who uses Andamp, newest first. It is written from the 
 messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `docs:` and
 `chore:` commits do not appear here.
 
+## [0.18.0](https://github.com/mattijsf/andamp/compare/v0.17.0...v0.18.0) (2026-11-06)
+
+
+### New
+
+* a modern skin's windows can sit apart on the player, as on Winamp's desktop ([#196](https://github.com/mattijsf/andamp/issues/196)) ([c431479](https://github.com/mattijsf/andamp/commit/c431479423d93b68fab9b4a79c5da0f66fb16a30))
+* modern skins can run on Andamp's native engine, behind a switch in Preferences ([8a009ad](https://github.com/mattijsf/andamp/commit/8a009adb42988c5a955206a590a9bcc763bf678c))
+* modern skins run on Andamp's native engine only ([#193](https://github.com/mattijsf/andamp/issues/193)) ([80042c0](https://github.com/mattijsf/andamp/commit/80042c0f0650d69ca4bdab469c298406f585c63e))
+
+
+### Fixed
+
+* modern skin windows are black where the skin draws nothing, and a stretched background reaches one pixel further, as in Winamp ([#194](https://github.com/mattijsf/andamp/issues/194)) ([0de7b30](https://github.com/mattijsf/andamp/commit/0de7b303411006cf710d550cbe28e06d1a6f37a7))
+* modern skins that ask for Arial get the matching font on the phone too ([#180](https://github.com/mattijsf/andamp/issues/180)) ([decefe5](https://github.com/mattijsf/andamp/commit/decefe5fd08e6cb00e8ab02e1cf9887805d3cf13))
+
 ## [0.17.0](https://github.com/mattijsf/andamp/compare/v0.16.0...v0.17.0) (2026-10-30)
 
 
