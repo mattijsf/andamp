@@ -6,11 +6,11 @@ import android.app.Application
 import android.content.Context
 import android.os.Looper
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.modernskin.fixtures.optionsItem
 import nl.mattix.andamp.ui.menu.seedSkinOptions
 import nl.mattix.walkit.FakePlayer
 import nl.mattix.walkit.SkinOptions
 import nl.mattix.walkit.SkinRuntime
+import nl.mattix.walkit.fixtures.optionsItem
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

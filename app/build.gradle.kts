@@ -401,7 +401,7 @@ dependencies {
     implementation(project(":visualizer:avs"))
     implementation(project(":visualizer:projectm"))
     // Winamp modern skins (.wal): the walkit engine, in native code, with its Kotlin API. A picked
-    // skin file is sniffed with it. From Maven Local until it is published
+    // skin file is sniffed with it. From app/libs, where its README says which build it is
     implementation(libs.walkit)
     implementation(project(":core:skinplayer"))
     implementation(platform(libs.compose.bom))

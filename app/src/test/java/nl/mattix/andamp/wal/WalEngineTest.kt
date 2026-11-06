@@ -6,14 +6,14 @@ import android.app.Application
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.modernskin.fixtures.popScriptMenu
-import nl.mattix.andamp.modernskin.fixtures.resizeAsScript
 import nl.mattix.andamp.ui.overlay.OverlayBounds
 import nl.mattix.walkit.FakePlayer
 import nl.mattix.walkit.Player
 import nl.mattix.walkit.SkinFiles
 import nl.mattix.walkit.SkinMenu
 import nl.mattix.walkit.SkinRuntime
+import nl.mattix.walkit.fixtures.popScriptMenu
+import nl.mattix.walkit.fixtures.resizeAsScript
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

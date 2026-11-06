@@ -6,13 +6,13 @@ import android.app.Application
 import android.os.Looper
 import android.os.SystemClock
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.modernskin.fixtures.nextTimerAt
-import nl.mattix.andamp.modernskin.fixtures.popScriptMenu
-import nl.mattix.andamp.modernskin.fixtures.startScriptTimer
 import nl.mattix.walkit.FakePlayer
 import nl.mattix.walkit.SkinFiles
 import nl.mattix.walkit.SkinMenu
 import nl.mattix.walkit.SkinRuntime
+import nl.mattix.walkit.fixtures.nextTimerAt
+import nl.mattix.walkit.fixtures.popScriptMenu
+import nl.mattix.walkit.fixtures.startScriptTimer
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

@@ -4,8 +4,6 @@ package nl.mattix.andamp.ui.menu
 
 import android.app.Application
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.modernskin.fixtures.newConfigItem
-import nl.mattix.andamp.modernskin.fixtures.optionsItem
 import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.AmpMenuItem
@@ -13,6 +11,8 @@ import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.ui.window.testViewModel
 import nl.mattix.andamp.wal.WalLook
 import nl.mattix.andamp.wal.WalSettings
+import nl.mattix.walkit.fixtures.newConfigItem
+import nl.mattix.walkit.fixtures.optionsItem
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

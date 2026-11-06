@@ -399,7 +399,9 @@ The app reaches the modern skin engine through walkit's Kotlin API (package
 `WindowPlan`) and plain values (`WindowId`, `WindowInfo`, `Presentation`, `SkinSetup`,
 `SavedSettings`, `EngineStats`). The VM and the skin's object tree stay inside the engine; a
 host names windows and objects by id and reads snapshots. The library's test fixtures carry
-the engine built for the machine, so the app's unit tests run skins on it.
+the engine built for the machine, so the app's unit tests run skins on it, and the helpers
+(`nl.mattix.walkit.fixtures`) that do to a loaded skin what its scripts would: resize a
+window, switch a layout, set an attribute, pop a menu, start a timer, make a Config item.
 
 `:modernskin` and `:core:skinplayer` are written to be used by hosts other than this app, so
 what they show is fixed on purpose:

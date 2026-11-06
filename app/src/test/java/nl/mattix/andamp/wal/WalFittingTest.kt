@@ -6,12 +6,6 @@ import android.app.Application
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.modernskin.fixtures.beginSlideAsScript
-import nl.mattix.andamp.modernskin.fixtures.endSlidesAsScript
-import nl.mattix.andamp.modernskin.fixtures.placeAsScript
-import nl.mattix.andamp.modernskin.fixtures.resizeAsScript
-import nl.mattix.andamp.modernskin.fixtures.setParamAsScript
-import nl.mattix.andamp.modernskin.fixtures.switchLayoutAsScript
 import nl.mattix.walkit.FakePlayer
 import nl.mattix.walkit.Player
 import nl.mattix.walkit.Rect
@@ -19,6 +13,12 @@ import nl.mattix.walkit.SkinFiles
 import nl.mattix.walkit.SkinRuntime
 import nl.mattix.walkit.Track
 import nl.mattix.walkit.WindowId
+import nl.mattix.walkit.fixtures.beginSlideAsScript
+import nl.mattix.walkit.fixtures.endSlidesAsScript
+import nl.mattix.walkit.fixtures.placeAsScript
+import nl.mattix.walkit.fixtures.resizeAsScript
+import nl.mattix.walkit.fixtures.setParamAsScript
+import nl.mattix.walkit.fixtures.switchLayoutAsScript
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue

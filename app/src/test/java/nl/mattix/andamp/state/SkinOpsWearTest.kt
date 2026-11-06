@@ -12,7 +12,6 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import nl.mattix.andamp.modernskin.fixtures.popScriptMenu
 import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.skin.FakePalette
 import nl.mattix.andamp.skin.LiveSkins
@@ -23,6 +22,7 @@ import nl.mattix.andamp.wal.WalLook
 import nl.mattix.andamp.wal.WalSettings
 import nl.mattix.walkit.FakePlayer
 import nl.mattix.walkit.SkinRuntime
+import nl.mattix.walkit.fixtures.popScriptMenu
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

@@ -14,10 +14,9 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.modernskin.fixtures.resizeAsScript
-import nl.mattix.walkit.DrawPlanner
 import nl.mattix.walkit.FakePlayer
 import nl.mattix.walkit.SkinRuntime
+import nl.mattix.walkit.fixtures.resizeAsScript
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assume.assumeTrue
@@ -80,7 +79,6 @@ class WalLayersCorpusTest {
             rt.mainWindow?.let { rt.resizeAsScript(it, 0, 0, 633, 1258) }
         }
         rt.presentation = rt.presentation.copy(viewSize = 633 to 1258)
-        val planner = DrawPlanner()
         val layers =
             WalLayers(
                 graphics::createGraphicsLayer,
@@ -102,12 +100,12 @@ class WalLayersCorpusTest {
                 PLAY_AT -> player.play()
                 THEME_AT -> themes.getOrNull(1)?.let(rt::selectColorTheme)
                 STOP_AT -> player.stop()
-                REST_AT -> t += DrawPlanner.LIVE_HOLD_MS
+                REST_AT -> t += LIVE_HOLD_MS
                 PLAY_AGAIN_AT -> player.play()
             }
             val forced = tick == 0 || tick == REST_AT
             if (!rt.tick() && !forced) return@repeat
-            val planned = planner.draw(rt, t)
+            val planned = rt.drawPlanned(t)
             // the screen draws some frames and skips others
             if (random.nextInt(3) == 0 && tick != TICKS - 1 && !forced) return@repeat
             if (tick == REST_AT) runsBeforeRest = layers.keptRuns
@@ -173,6 +171,9 @@ class WalLayersCorpusTest {
         const val START = 1_792_324_800_000L
         const val FRAME = 16L
         const val TICKS = 180
+
+        /** How long the engine keeps a run live after its last change, as its planner sets it. */
+        const val LIVE_HOLD_MS = 10_000L
         const val PLAY_AT = 10
         const val THEME_AT = 80
         const val STOP_AT = 120

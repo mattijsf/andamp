@@ -6,14 +6,15 @@ import android.app.Application
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.model.Transport
-import nl.mattix.andamp.modernskin.fixtures.Listen
-import nl.mattix.andamp.modernskin.fixtures.recordEvents
-import nl.mattix.andamp.modernskin.fixtures.sliderPosition
 import nl.mattix.andamp.skinplayer.WinampFiveUnits
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.walkit.Rect
 import nl.mattix.walkit.SkinFiles
 import nl.mattix.walkit.SkinRuntime
+import nl.mattix.walkit.fixtures.Listen
+import nl.mattix.walkit.fixtures.heard
+import nl.mattix.walkit.fixtures.recordEvents
+import nl.mattix.walkit.fixtures.sliderPosition
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -80,8 +81,15 @@ class WalPlayerEchoTest {
         )
     private val rt = SkinRuntime(files, WalHost(files, app.cacheDir), player, clock = { controls.now })
 
-    /** What the recorder script heard, in order: the event and its arguments. */
+    /** What a script listening to the sliders and the player would hear; see [listens]. */
     private val heard = ArrayList<Pair<String, List<Int>>>()
+
+    private val listens =
+        listOf(
+            Listen(null, "onvolumechanged", "volume", 1),
+            Listen(null, "oneqbandchanged", "band", 2),
+            Listen(null, "oneqpreampchanged", "preamp", 1),
+        ) + SLIDERS.map { Listen(it, "onsetposition", "$it.position", 1) }
 
     /** An object of the main window by id, read through the engine each time. */
     private inner class Obj(
@@ -100,16 +108,10 @@ class WalPlayerEchoTest {
     fun load() {
         controls.place(50_000)
         rt.load()
-        rt.recordEvents(
-            listOf(
-                Listen(null, "onvolumechanged", "volume", 1),
-                Listen(null, "oneqbandchanged", "band", 2),
-                Listen(null, "oneqpreampchanged", "preamp", 1),
-            ) + SLIDERS.map { Listen(it, "onsetposition", "$it.position", 1) },
-        ) { name, args -> heard += name to args }
+        rt.recordEvents()
         // the load placed the thumbs on the player's values, which scripts do not hear
         frame()
-        heard.clear()
+        forget()
     }
 
     /** One display frame: the engine ticks, main runs what was posted, the clock moves on. */
@@ -117,6 +119,18 @@ class WalPlayerEchoTest {
         rt.tick()
         while (posted.isNotEmpty()) posted.removeFirst().run()
         controls.advance(FRAME_MS)
+        listen()
+    }
+
+    /** Takes what the engine fired since the last time into [heard]. */
+    private fun listen() {
+        heard += rt.heard(listens)
+    }
+
+    /** Drops everything heard so far. */
+    private fun forget() {
+        listen()
+        heard.clear()
     }
 
     private var frameCount = 0
@@ -158,7 +172,10 @@ class WalPlayerEchoTest {
         rt.pointerUp(x(s, positions.last()), y(s))
     }
 
-    private fun heard(name: String) = heard.filter { it.first == name }.map { it.second }
+    private fun heard(name: String): List<List<Int>> {
+        listen()
+        return heard.filter { it.first == name }.map { it.second }
+    }
 
     /** The slider moves the phone's volume, which has [steps] steps and sits on [step]. */
     private fun phoneVolume(
@@ -168,7 +185,7 @@ class WalPlayerEchoTest {
         controls.volumeSteps = steps
         state.volume = (step * 100f / steps).roundToInt()
         frame()
-        heard.clear()
+        forget()
     }
 
     /** Drags the volume on a phone with [steps] volume steps, and checks each value is heard once and the thumb stays. */
