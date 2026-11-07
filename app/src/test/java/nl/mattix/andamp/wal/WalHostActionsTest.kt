@@ -56,6 +56,7 @@ class WalHostActionsTest {
             previousPreset = { on("previous preset") },
             pickFile = { andPlay -> on(if (andPlay) "file to play" else "file") },
             fileInfo = { on("file info") },
+            alwaysOnTop = { on("always on top") },
         )
 
     private fun reaches(
@@ -81,6 +82,7 @@ class WalHostActionsTest {
         assertEquals(listOf("next preset"), reaches("VIS_NEXT"))
         assertEquals(listOf("previous preset"), reaches("VIS_PREV"))
         assertEquals(listOf("file info"), reaches("TRACKINFO"))
+        assertEquals("a classic skin's clutter bar A", listOf("always on top"), reaches("ALWAYS_ON_TOP"))
         assertEquals("Detach Visualizer", listOf("show visualizer"), reaches("SHOW", "avs"))
         assertEquals("Detach Video, which the visualizer fills", listOf("show visualizer"), reaches("SHOW", "video"))
         assertEquals("the video's fullscreen", listOf("fullscreen"), reaches("VID_FS"))

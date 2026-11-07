@@ -38,6 +38,7 @@ import nl.mattix.andamp.state.overlay.OverlayStore
 import nl.mattix.andamp.state.overlay.OverlaySupport
 import nl.mattix.andamp.ui.menu.promptFor
 import nl.mattix.andamp.wal.WalApart
+import nl.mattix.andamp.wal.WalClassic
 import nl.mattix.andamp.wal.WalGate
 import nl.mattix.andamp.wal.WalLook
 import nl.mattix.andamp.wal.WalPlayer
@@ -151,6 +152,7 @@ class WinampViewModel
                 },
                 // stored in order with the Preferences switch's changes
                 turnModernOn = { WalGate.write(app, true) },
+                classicNative = { WalClassic.read(app) },
                 openModern = { id, file, name, siblings ->
                     // the player is made before its look, and its file picker is the look's sink
                     val opened = arrayOfNulls<WalLook>(1)
@@ -176,8 +178,9 @@ class WinampViewModel
                             WalPrepare.windowOpen(
                                 libraryOpen = { state.libraryOpen },
                                 visualizerOn = { state.milkdropOn },
+                                alwaysOnTop = { overlayOps.gate.wanted },
                             ),
-                        wake = { Triple(player.watched(), state.libraryOpen, state.milkdropOn) },
+                        wake = { listOf(player.watched(), state.libraryOpen, state.milkdropOn, overlayOps.gate.wanted) },
                     ).also { opened[0] = it }
                 },
             )
@@ -510,6 +513,7 @@ class WinampViewModel
             // modern skins turned on or off while the app runs; the first value is skipped,
             // as start reads the switch itself
             viewModelScope.launch { snapshotFlow { WalGate.on }.drop(1).collect(skinOps::betaChanged) }
+            viewModelScope.launch { snapshotFlow { WalClassic.on }.drop(1).collect { skinOps.classicRendererChanged() } }
             // Double Size goes off while a modern skin is on screen and comes back with a classic one
             viewModelScope.launch {
                 snapshotFlow { skinOps.wal != null }.collect { shown ->

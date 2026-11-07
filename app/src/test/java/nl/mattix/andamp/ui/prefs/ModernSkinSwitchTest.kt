@@ -33,6 +33,7 @@ import nl.mattix.andamp.state.addModern
 import nl.mattix.andamp.state.loadingModernSkin
 import nl.mattix.andamp.ui.window.testViewModel
 import nl.mattix.andamp.wal.WalApart
+import nl.mattix.andamp.wal.WalClassic
 import nl.mattix.andamp.wal.WalGate
 import nl.mattix.andamp.wal.WalRender
 import nl.mattix.andamp.wal.WalSettings
@@ -81,6 +82,7 @@ class ModernSkinSwitchTest {
         WalGate.clear(app)
         WalSharp.forget(app)
         WalApart.forget(app)
+        WalClassic.forget(app)
         app
             .getSharedPreferences(WalSettings.PREFS, Context.MODE_PRIVATE)
             .edit()
@@ -101,6 +103,7 @@ class ModernSkinSwitchTest {
         WalGate.forget()
         WalSharp.forget()
         WalApart.forget()
+        WalClassic.forget()
     }
 
     private fun stopPlayers() {
@@ -119,6 +122,8 @@ class ModernSkinSwitchTest {
     private val sharpSwitch get() = tag("prefs.sharp.switch")
 
     private val apartSwitch get() = tag("prefs.apart.switch")
+
+    private val classicSwitch get() = tag("prefs.classic.switch")
 
     private fun SemanticsNodeInteraction.top() = performScrollTo().getUnclippedBoundsInRoot().top
 
@@ -341,6 +346,27 @@ class ModernSkinSwitchTest {
         assertFalse(WalApart.apart)
         assertEquals(2, told)
         assertFalse(stored.getBoolean(WalApart.KEY, true))
+    }
+
+    @Test
+    fun `the new classic renderer switch shows while modern skins are off, and is stored`() {
+        showWiredPage()
+        val stored = app.getSharedPreferences(WalSettings.PREFS, Context.MODE_PRIVATE)
+        modernSwitch.performScrollTo().assertIsOff()
+
+        classicSwitch.performScrollTo().assertIsOff().performClick()
+
+        classicSwitch.assertIsOn()
+        compose.onNodeWithText(text(R.string.prefs_classic_native_on)).assertIsDisplayed()
+        assertTrue(WalClassic.on)
+        assertTrue(stored.getBoolean(WalClassic.KEY, false))
+        assertTrue("below the modern skins switch", classicSwitch.top() > modernSwitch.top())
+
+        classicSwitch.performClick()
+
+        classicSwitch.assertIsOff()
+        assertFalse(WalClassic.on)
+        assertFalse(stored.getBoolean(WalClassic.KEY, true))
     }
 
     @Test

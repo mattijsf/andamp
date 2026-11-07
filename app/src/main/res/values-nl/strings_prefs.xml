@@ -163,6 +163,9 @@
     <string name="prefs_windows_apart_title">Vensters los</string>
     <string name="prefs_windows_apart_on">Elk venster van een moderne skin staat waar je het zet, zoals op een bureaublad: sleep een venster aan zijn titelbalk, en het hecht aan de andere en aan de randen zoals in Winamp.</string>
     <string name="prefs_windows_apart_off">De vensters van een moderne skin staan in één stapel onder het hoofdvenster. Zet dit aan om elk venster neer te zetten waar je wilt, zoals op een bureaublad.</string>
+    <string name="prefs_classic_native_title">Nieuwe klassieke weergave (bèta)</string>
+    <string name="prefs_classic_native_on">Klassieke skins in de speler worden getekend zoals Winamp 5.666 ze tekent. Sommige menuopties van de speler, zoals Dubbele grootte, werken niet zolang dit aan staat.</string>
+    <string name="prefs_classic_native_off">Klassieke skins worden getekend door Andamps eigen weergave. Zet dit aan om de nieuwe te proberen, die een klassieke skin tekent zoals Winamp 5.666.</string>
 
     <!-- PluginsSection.kt -->
     <string name="prefs_plugins_intro">Lua-plug-ins voor geluid. Andamp bewaart een kopie, dus het oorspronkelijke bestand mag worden verplaatst of verwijderd.</string>
