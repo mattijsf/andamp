@@ -25,18 +25,21 @@ internal object WalPrepare {
      * How the skin's host answers whether a window the app shows in place of the skin's is open:
      * the library ("ml") as [libraryOpen] says and the visualizer ("avs") as [visualizerOn] says;
      * every other window is the skin's. A classic skin's clutter bar also asks for Always On Top
-     * ("ontop"), as [alwaysOnTop] says; Double Size ("doublesize") is never on under the engine.
+     * ("ontop"), as [alwaysOnTop] says, and Double Size ("doublesize"), whose D fills the screen
+     * with the skin here, as [filled] says.
      */
     fun windowOpen(
         libraryOpen: () -> Boolean = { false },
         visualizerOn: () -> Boolean = { false },
         alwaysOnTop: () -> Boolean = { false },
+        filled: () -> Boolean = { false },
     ): (String) -> Boolean? =
         { kind ->
             when (kind) {
                 "ml" -> libraryOpen()
                 "avs" -> visualizerOn()
                 "ontop" -> alwaysOnTop()
+                "doublesize" -> filled()
                 else -> null
             }
         }

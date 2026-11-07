@@ -41,13 +41,17 @@ class HostActionNamesTest {
     }
 
     @Test
-    fun `a classic skin's clutter bar reads Always On Top and finds Double Size off`() {
+    fun `a classic skin's clutter bar reads Always On Top, and Double Size as the skin filling the screen`() {
         var onTop = true
-        val open = WalPrepare.windowOpen(alwaysOnTop = { onTop })
+        var filled = false
+        val open = WalPrepare.windowOpen(alwaysOnTop = { onTop }, filled = { filled })
         assertEquals(true, open("ontop"))
         onTop = false
         assertEquals(false, open("ontop"))
-        assertNull(open("doublesize"))
+        assertEquals(false, open("doublesize"))
+        filled = true
+        assertEquals(true, open("doublesize"))
+        assertEquals("the clutter bar's D", HostAction.DoubleSize, HostAction.of("DOUBLESIZE", null))
     }
 
     @Test

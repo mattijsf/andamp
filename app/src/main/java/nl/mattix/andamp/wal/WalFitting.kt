@@ -28,10 +28,11 @@ import nl.mattix.walkit.WindowInfo
  */
 internal class WalFitting(
     /**
-     * Whether the windows are always set out apart, whatever [WalApart] says: a classic skin's,
-     * which move one by one as in Winamp. The floating player still stacks them.
+     * Whether the skin is a classic one, whose windows are set out apart, moving one by one as in
+     * Winamp, unless the clutter bar's D has it fill the screen ([WalFilled]), whatever
+     * [WalApart] says. The floating player still stacks them.
      */
-    private val alwaysApart: Boolean = false,
+    private val classic: Boolean = false,
     /**
      * Puts a skin's windows where the host kept them, once the windows are set out apart
      * ([WalApart]): called on the engine thread each time apart comes on.
@@ -115,8 +116,11 @@ internal class WalFitting(
         if (fit.sideways) decideColumns(runtime, fit) else uprightView(runtime, (fit.widthPx to fit.heightPx), baseW)
     }
 
-    /** Whether [fit] shows the windows apart: [alwaysApart] or the switch, in a box that is not the floating player's. */
-    private fun apart(fit: WalFit): Boolean = (alwaysApart || WalApart.apart) && !fit.compact
+    /**
+     * Whether [fit] shows the windows apart: a [classic] skin's unless it fills the screen, else as
+     * the switch says; never in the floating player's box.
+     */
+    private fun apart(fit: WalFit): Boolean = (if (classic) !WalFilled.filled else WalApart.apart) && !fit.compact
 
     /**
      * Sets [runtime]'s windows out apart in [fit]'s box: the box is the viewport, in skin px at

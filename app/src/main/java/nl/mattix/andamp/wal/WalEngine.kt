@@ -94,8 +94,8 @@ internal class WalEngine(
     name: String,
     private val host: WalHost,
     private val idle: (SkinRuntime) -> WalIdle = WalIdle::of,
-    /** Whether the windows are always set out apart; see [WalFitting]. */
-    alwaysApart: Boolean = false,
+    /** Whether the skin is a classic one, whose windows are apart unless it fills the screen; see [WalFitting]. */
+    classic: Boolean = false,
     private val onFrame: () -> Unit,
 ) {
     private val thread = HandlerThread("wal-$name").apply { start() }
@@ -130,7 +130,7 @@ internal class WalEngine(
     private var rt: SkinRuntime? = null
     private var baseW = 0
     private var publishing = false
-    private val fitting = WalFitting(alwaysApart) { runtime -> placer?.invoke(runtime) }
+    private val fitting = WalFitting(classic) { runtime -> placer?.invoke(runtime) }
 
     /** Puts the windows where the host kept them when they are set out apart; see [WalFitting]. */
     var placer: ((SkinRuntime) -> Unit)? = null

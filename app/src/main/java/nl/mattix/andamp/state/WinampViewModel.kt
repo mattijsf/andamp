@@ -179,6 +179,7 @@ class WinampViewModel
                                 libraryOpen = { state.libraryOpen },
                                 visualizerOn = { state.milkdropOn },
                                 alwaysOnTop = { overlayOps.gate.wanted },
+                                filled = { nl.mattix.andamp.wal.WalFilled.filled },
                             ),
                         wake = { listOf(player.watched(), state.libraryOpen, state.milkdropOn, overlayOps.gate.wanted) },
                     ).also { opened[0] = it }

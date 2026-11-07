@@ -614,8 +614,9 @@ class WalFittingTest {
     }
 
     @Test
-    fun `a classic skin's windows are always apart, but stacked in the floating player`() {
+    fun `a classic skin's windows are apart, stacked in the floating player or once D fills the screen`() {
         WalApart.forget(app)
+        WalFilled.forget(app)
         try {
             val wsz = java.io.File(app.cacheDir, "classic.wsz")
             app.assets.open(nl.mattix.andamp.skin.BundledSkins.SPOT.asset).use { input ->
@@ -623,7 +624,7 @@ class WalFittingTest {
             }
             val files = WalFiles.open(wsz, emptyMap<String, java.io.File>())
             val rt = SkinRuntime(files, WalHost(files, app.cacheDir), FakePlayer()).apply { load() }
-            val fitting = WalFitting(alwaysApart = true)
+            val fitting = WalFitting(classic = true)
             val baseW = WalFitting.baseWOf(rt)
             fitting.apply(rt, upright, baseW)
             rt.ensureLayout()
@@ -632,8 +633,18 @@ class WalFittingTest {
             fitting.apply(rt, upright.copy(compact = true), baseW)
             rt.ensureLayout()
             assertFalse("the floating player stacks them", rt.presentation.freeWindows)
+            fitting.apply(rt, upright, baseW)
+            assertTrue("apart again", rt.presentation.freeWindows)
+            WalFilled.toggle(app)
+            fitting.refit(rt, upright, baseW)
+            rt.ensureLayout()
+            assertFalse("D fills the screen with one stack", rt.presentation.freeWindows)
+            WalFilled.toggle(app)
+            fitting.refit(rt, upright, baseW)
+            assertTrue("and D again sets them apart", rt.presentation.freeWindows)
         } finally {
             WalApart.forget()
+            WalFilled.forget()
         }
     }
 }

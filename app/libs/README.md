@@ -21,5 +21,6 @@ published on (`darwin-aarch64`) and the helpers the app's unit tests drive a ski
 | 0.5.6 | v0.5.6 (ca3219f) | `Presentation.touch`: under it a tap on a classic playlist button leaves its menu open for a second tap |
 | 0.5.7 | v0.5.7 (92e3be2) | a press on a picture of an open playlist menu always closes it |
 | 0.5.8 | v0.5.8 (68198df) | the host hears the classic playlist's selected row (`PLAYLIST_SELECT`) |
+| 0.5.9 | v0.5.9 (29bc396) | a stacked classic playlist stretches down to fill the view in 29-pixel steps |
 
 Only the current version's files are kept; the rows above are the log of what was kept here.

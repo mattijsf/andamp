@@ -40,6 +40,9 @@ internal sealed interface HostAction {
     /** Always On Top on or off: a classic skin's clutter bar A. */
     data object AlwaysOnTop : HostAction
 
+    /** Double Size: a classic skin's clutter bar D, which fills the screen with the skin here. */
+    data object DoubleSize : HostAction
+
     /** A pick from a classic playlist's bottom-button menus ([pick], as `add_dir` or `sort`). */
     data class Playlist(
         val pick: String,
@@ -77,6 +80,7 @@ internal sealed interface HostAction {
                 "VIS_PREV" -> PreviousPreset
                 "TRACKINFO" -> TrackInfo
                 "ALWAYS_ON_TOP" -> AlwaysOnTop
+                "DOUBLESIZE" -> DoubleSize
                 "PLAYLIST" -> param?.let(::Playlist)
                 "PLAYLIST_SELECT" -> PlaylistSelect(param?.toIntOrNull())
                 "SHOW" -> param?.let(::Show)

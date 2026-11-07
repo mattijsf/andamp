@@ -41,6 +41,8 @@ internal class WalHostActions(
     private val fileInfo: () -> Unit,
     /** Always On Top on or off, as the classic clutter bar's A switches it. */
     private val alwaysOnTop: () -> Unit = {},
+    /** The clutter bar's D: the classic skin fills the screen, or its windows go apart again. */
+    private val doubleSize: () -> Unit = {},
     /** A pick from a classic playlist's bottom-button menus, with where the finger went down. */
     private val playlistPick: (pick: String, anchor: MenuAnchor?) -> Unit = { _, _ -> },
     /** The classic playlist's selected row, or null for none. */
@@ -90,8 +92,8 @@ internal class WalHostActions(
                 fileInfo()
             }
 
-            HostAction.AlwaysOnTop -> {
-                alwaysOnTop()
+            HostAction.AlwaysOnTop, HostAction.DoubleSize -> {
+                clutterBar(a)
             }
 
             is HostAction.Playlist, is HostAction.PlaylistSelect -> {
@@ -116,6 +118,11 @@ internal class WalHostActions(
                 Unit
             }
         }
+    }
+
+    /** A classic clutter bar's A (Always On Top) or D (here: fill the screen). */
+    private fun clutterBar(a: HostAction) {
+        if (a == HostAction.DoubleSize) doubleSize() else alwaysOnTop()
     }
 
     /** A classic playlist's pick, at the last press, or the row it selected. */
@@ -174,6 +181,7 @@ internal class WalHostActions(
                 pickFile = openFile,
                 fileInfo = { vm.trackInfoOps.show(s.lastPlayed) },
                 alwaysOnTop = onAlwaysOnTop,
+                doubleSize = { WalFilled.toggle(vm.getApplication()) },
                 playlistPick = { pick, anchor ->
                     val id = PLAYLIST_ENTRIES[pick]
                     val entry = playlistMenus(playlist()).flatMap { it.entries }.firstOrNull { it.id == id }

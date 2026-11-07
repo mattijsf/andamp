@@ -8,6 +8,7 @@ import nl.mattix.andamp.state.PackSources
 import nl.mattix.andamp.state.PlaybackRoot
 import nl.mattix.andamp.wal.WalApart
 import nl.mattix.andamp.wal.WalClassic
+import nl.mattix.andamp.wal.WalFilled
 import nl.mattix.andamp.wal.WalGate
 import nl.mattix.andamp.wal.WalSharp
 import kotlin.concurrent.thread
@@ -35,6 +36,7 @@ class AndAmpApp : Application() {
             WalSharp.read(this)
             WalApart.read(this)
             WalClassic.read(this)
+            WalFilled.read(this)
         }
     }
 }

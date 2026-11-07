@@ -331,6 +331,7 @@ internal class WalLook(
                 if (released) return
                 released = true
                 WalApart.unwatch(apartChanged)
+                WalFilled.unwatch(apartChanged)
                 (engine to files).also {
                     engine = null
                     host = null
@@ -383,14 +384,16 @@ internal class WalLook(
             // an import has no player surface to show a menu its scripts open as the skin loads:
             // such a menu is answered at once with nothing picked
             val host = WalHost(files, cacheDir, windowOpen, actions = ::hostAction).apply { menus.unattended = awaited }
-            // a classic skin's windows move one by one, as in Winamp (the library keeps it as .wsz)
+            // a classic skin's windows move one by one, as in Winamp, unless D has it fill the
+            // screen (the library keeps it as .wsz)
             val classic = file.name.endsWith(".wsz", ignoreCase = true)
-            val engine = WalEngine(id, host, alwaysApart = classic, onFrame = ::frameChanged)
+            val engine = WalEngine(id, host, classic = classic, onFrame = ::frameChanged)
             engine.onBroken = { toMain(Runnable { failed(stoppedWorking = true) }) }
             engine.onTask = ::keepLater
             engine.placer = ::placeWindows
             engine.onApart = ::keepSpots
             WalApart.watch(apartChanged)
+            WalFilled.watch(apartChanged)
             // what the screen said before the engine started reaches it before the first fit
             engine.awake = awake
             this.host = host
