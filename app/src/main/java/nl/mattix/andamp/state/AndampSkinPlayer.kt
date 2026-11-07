@@ -215,8 +215,10 @@ internal class AndampSkinPlayer(
         shownMs =
             when {
                 shownMs < 0 || held != null || abs(gap) > MAX_LEAD_MS -> place.toDouble()
+
                 // the gap closes a little each frame, never so fast the place stops or steps back
                 moving -> predicted + (gap * dt / CATCH_UP_MS).coerceIn(-dt / 2, dt / 2)
+
                 // still: up to a place ahead, never back
                 else -> maxOf(shownMs, minOf(place.toDouble(), shownMs + dt))
             }
