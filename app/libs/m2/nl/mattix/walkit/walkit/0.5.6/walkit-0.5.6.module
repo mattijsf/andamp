@@ -3,7 +3,7 @@
   "component": {
     "group": "nl.mattix.walkit",
     "module": "walkit",
-    "version": "0.5.5",
+    "version": "0.5.6",
     "attributes": {
       "org.gradle.status": "release"
     }
@@ -33,13 +33,13 @@
       ],
       "files": [
         {
-          "name": "walkit-0.5.5.aar",
-          "url": "walkit-0.5.5.aar",
-          "size": 2024084,
-          "sha512": "511350af9fce5ecc388d9fe46167a82e101c07a58c88683a29886c4a7f5a0cf6b0f96149b225a85240fe3778f963d546de50a77724bbea01d344eb196abd27dd",
-          "sha256": "d530fab746474ad60d5eadb650932d665b1bade223393b8035b997864e7e840d",
-          "sha1": "3e625806c20763b0098d5129683f4612d5f42602",
-          "md5": "e33aa6ecd41842eb68e413873dfdddb4"
+          "name": "walkit-0.5.6.aar",
+          "url": "walkit-0.5.6.aar",
+          "size": 2025464,
+          "sha512": "28906a885bdd60cd72a54b357d114b4a42e485497a1b2422500d88f683780a24b7683ff9bcca27c1d750b31b293185cc88df70b556fb1d7b9c5e5383a5dc9291",
+          "sha256": "507704e93f456bfe3ff574de0b1c173d946140f4c91acf5d89f23c46ea58ec3a",
+          "sha1": "5c6636d24cba75202cafb724c0eccb65fa6f305b",
+          "md5": "c23b9a237fe40c29373ed67dfc6b47a2"
         }
       ]
     },
@@ -62,13 +62,13 @@
       ],
       "files": [
         {
-          "name": "walkit-0.5.5.aar",
-          "url": "walkit-0.5.5.aar",
-          "size": 2024084,
-          "sha512": "511350af9fce5ecc388d9fe46167a82e101c07a58c88683a29886c4a7f5a0cf6b0f96149b225a85240fe3778f963d546de50a77724bbea01d344eb196abd27dd",
-          "sha256": "d530fab746474ad60d5eadb650932d665b1bade223393b8035b997864e7e840d",
-          "sha1": "3e625806c20763b0098d5129683f4612d5f42602",
-          "md5": "e33aa6ecd41842eb68e413873dfdddb4"
+          "name": "walkit-0.5.6.aar",
+          "url": "walkit-0.5.6.aar",
+          "size": 2025464,
+          "sha512": "28906a885bdd60cd72a54b357d114b4a42e485497a1b2422500d88f683780a24b7683ff9bcca27c1d750b31b293185cc88df70b556fb1d7b9c5e5383a5dc9291",
+          "sha256": "507704e93f456bfe3ff574de0b1c173d946140f4c91acf5d89f23c46ea58ec3a",
+          "sha1": "5c6636d24cba75202cafb724c0eccb65fa6f305b",
+          "md5": "c23b9a237fe40c29373ed67dfc6b47a2"
         }
       ]
     },
@@ -82,13 +82,13 @@
       },
       "files": [
         {
-          "name": "walkit-0.5.5-sources.jar",
-          "url": "walkit-0.5.5-sources.jar",
-          "size": 35922,
-          "sha512": "fe284e06a4b0ae8eeccb74eea1d80c4489224a2693db10b88e7e26fb8641618bc782e4945aa235cb99c6f469ef5d9cafea3fc4248764e08c9874f04a48fb2d89",
-          "sha256": "2b4ea0c2808b3118c28b2ac6bed7434bf701d06012c4bf655dd09bee83c229d6",
-          "sha1": "f4e420daf76c2740df18a170edf8154a90917d61",
-          "md5": "13d0399996554a0a689449b480020776"
+          "name": "walkit-0.5.6-sources.jar",
+          "url": "walkit-0.5.6-sources.jar",
+          "size": 36044,
+          "sha512": "dadb9aed0210c52899f8744422e08c97b9fa4d9291d780464f11a1c8fca38995e6101d1603663a9b1a395b19607289043e94daf9865d639963026f0ce337321c",
+          "sha256": "875dc46f07390954fdde1f1088fe82208ef06a649ffb5d9e235292c67de8c54c",
+          "sha1": "c6a0f0aeb37809a3eb643ea57813dba861cd3ad4",
+          "md5": "6d895be8e7c38d8b9a6f71bc33aed05d"
         }
       ]
     },
@@ -105,26 +105,26 @@
           "group": "nl.mattix.walkit",
           "module": "walkit",
           "version": {
-            "requires": "0.5.5"
+            "requires": "0.5.6"
           }
         }
       ],
       "files": [
         {
-          "name": "walkit-0.5.5-test-fixtures.aar",
-          "url": "walkit-0.5.5-test-fixtures.aar",
-          "size": 848547,
-          "sha512": "9856fd548abca13bbd3f6bb6da34bb3b4fe69e2fa436365d3a51b618c9b492fecbf64ee6ed65bd120388c50f6b0f3d73830e511c4a4d5299f345dfc9b5d57071",
-          "sha256": "beaa56b7209883de56b417957a765986fb55c62d172f5fe2781b9e767bd26c7b",
-          "sha1": "051cf47ffd5c48ae556e3a2819621999177808d1",
-          "md5": "3cee07953402d97c3f7f7af6bb4a8363"
+          "name": "walkit-0.5.6-test-fixtures.aar",
+          "url": "walkit-0.5.6-test-fixtures.aar",
+          "size": 849282,
+          "sha512": "f1d2269d05f0725fcfbd21edfc10fabdee32c1a13b3720639aef853cadafef8f3c62a412ea64aceadf552bf3f7703efa4a052704302d9ca7474ac7466a65087c",
+          "sha256": "6d028b32231fd4a5c45fd49d41cd5e5b50b7a98c4c3d3783990afc4c1d2250ce",
+          "sha1": "daca4e31a1c74b9df1c369b4a60335d6589df3aa",
+          "md5": "defb076e338df897cc779cb0b89c70bd"
         }
       ],
       "capabilities": [
         {
           "group": "nl.mattix.walkit",
           "name": "walkit-test-fixtures",
-          "version": "0.5.5"
+          "version": "0.5.6"
         }
       ]
     },
@@ -141,26 +141,26 @@
           "group": "nl.mattix.walkit",
           "module": "walkit",
           "version": {
-            "requires": "0.5.5"
+            "requires": "0.5.6"
           }
         }
       ],
       "files": [
         {
-          "name": "walkit-0.5.5-test-fixtures.aar",
-          "url": "walkit-0.5.5-test-fixtures.aar",
-          "size": 848547,
-          "sha512": "9856fd548abca13bbd3f6bb6da34bb3b4fe69e2fa436365d3a51b618c9b492fecbf64ee6ed65bd120388c50f6b0f3d73830e511c4a4d5299f345dfc9b5d57071",
-          "sha256": "beaa56b7209883de56b417957a765986fb55c62d172f5fe2781b9e767bd26c7b",
-          "sha1": "051cf47ffd5c48ae556e3a2819621999177808d1",
-          "md5": "3cee07953402d97c3f7f7af6bb4a8363"
+          "name": "walkit-0.5.6-test-fixtures.aar",
+          "url": "walkit-0.5.6-test-fixtures.aar",
+          "size": 849282,
+          "sha512": "f1d2269d05f0725fcfbd21edfc10fabdee32c1a13b3720639aef853cadafef8f3c62a412ea64aceadf552bf3f7703efa4a052704302d9ca7474ac7466a65087c",
+          "sha256": "6d028b32231fd4a5c45fd49d41cd5e5b50b7a98c4c3d3783990afc4c1d2250ce",
+          "sha1": "daca4e31a1c74b9df1c369b4a60335d6589df3aa",
+          "md5": "defb076e338df897cc779cb0b89c70bd"
         }
       ],
       "capabilities": [
         {
           "group": "nl.mattix.walkit",
           "name": "walkit-test-fixtures",
-          "version": "0.5.5"
+          "version": "0.5.6"
         }
       ]
     }

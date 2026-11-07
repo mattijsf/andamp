@@ -223,7 +223,9 @@ internal class WalFitting(
         // apart, the whole box is the skin's viewport, at the main window's scale
         val view = runtime.presentation.viewSize?.takeIf { apartApplied }
         val place = if (view != null) WalScale.Place(apartScale, 0f, 0f) else place(runtime, fit, baseW, size, drawn)
-        runtime.present { it.copy(touchSlop = kotlin.math.ceil(TOUCH_SLOP_DP * fit.density / place.scale).toInt()) }
+        val slop = kotlin.math.ceil(TOUCH_SLOP_DP * fit.density / place.scale).toInt()
+        // a finger drives the skin: a tap on a classic playlist button leaves its menu open
+        runtime.present { it.copy(touchSlop = slop, touch = true) }
         val themes = themesOf(runtime)
         return WalLayout(
             fit = fit,

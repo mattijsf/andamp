@@ -18,5 +18,6 @@ published on (`darwin-aarch64`) and the helpers the app's unit tests drive a ski
 | 0.5.3 | v0.5.3 (6980e2d) | a classic skin's clutter bar shows a held letter and lights A and D from the host's `ontop` and `doublesize` |
 | 0.5.4 | v0.5.4 (7e5ed19) | windows apart snap to and stay inside the host's view size, not the default viewport, and the stack is that size |
 | 0.5.5 | v0.5.5 (a540673) | a press on a classic window stays on its control while the finger is within the touch slop of where it went down |
+| 0.5.6 | v0.5.6 (ca3219f) | `Presentation.touch`: under it a tap on a classic playlist button leaves its menu open for a second tap |
 
 Only the current version's files are kept; the rows above are the log of what was kept here.
