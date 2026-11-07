@@ -40,6 +40,16 @@ internal sealed interface HostAction {
     /** Always On Top on or off: a classic skin's clutter bar A. */
     data object AlwaysOnTop : HostAction
 
+    /** A pick from a classic playlist's bottom-button menus ([pick], as `add_dir` or `sort`). */
+    data class Playlist(
+        val pick: String,
+    ) : HostAction
+
+    /** The classic playlist's selected [row], or null for none, which the picks act on. */
+    data class PlaylistSelect(
+        val row: Int?,
+    ) : HostAction
+
     /** Shows the [window] named (`avs`, `video`, `ml`), whatever the skin's own view of it. */
     data class Show(
         val window: String,
@@ -67,6 +77,8 @@ internal sealed interface HostAction {
                 "VIS_PREV" -> PreviousPreset
                 "TRACKINFO" -> TrackInfo
                 "ALWAYS_ON_TOP" -> AlwaysOnTop
+                "PLAYLIST" -> param?.let(::Playlist)
+                "PLAYLIST_SELECT" -> PlaylistSelect(param?.toIntOrNull())
                 "SHOW" -> param?.let(::Show)
                 "TOGGLE" -> param?.let(::Toggle)
                 else -> null

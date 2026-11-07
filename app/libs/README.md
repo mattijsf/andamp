@@ -19,5 +19,7 @@ published on (`darwin-aarch64`) and the helpers the app's unit tests drive a ski
 | 0.5.4 | v0.5.4 (7e5ed19) | windows apart snap to and stay inside the host's view size, not the default viewport, and the stack is that size |
 | 0.5.5 | v0.5.5 (a540673) | a press on a classic window stays on its control while the finger is within the touch slop of where it went down |
 | 0.5.6 | v0.5.6 (ca3219f) | `Presentation.touch`: under it a tap on a classic playlist button leaves its menu open for a second tap |
+| 0.5.7 | v0.5.7 (92e3be2) | a press on a picture of an open playlist menu always closes it |
+| 0.5.8 | v0.5.8 (68198df) | the host hears the classic playlist's selected row (`PLAYLIST_SELECT`) |
 
 Only the current version's files are kept; the rows above are the log of what was kept here.

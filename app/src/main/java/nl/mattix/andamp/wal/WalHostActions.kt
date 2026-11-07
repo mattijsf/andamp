@@ -8,6 +8,8 @@ import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.ui.menu.MenuBarSection
 import nl.mattix.andamp.ui.menu.visualizationItems
 import nl.mattix.andamp.ui.menu.visualizationMenu
+import nl.mattix.andamp.ui.window.PlaylistMenuActions
+import nl.mattix.andamp.ui.window.playlistMenus
 
 /**
  * What the player does for a modern skin's buttons that reach outside the skin: each host action
@@ -39,6 +41,10 @@ internal class WalHostActions(
     private val fileInfo: () -> Unit,
     /** Always On Top on or off, as the classic clutter bar's A switches it. */
     private val alwaysOnTop: () -> Unit = {},
+    /** A pick from a classic playlist's bottom-button menus, with where the finger went down. */
+    private val playlistPick: (pick: String, anchor: MenuAnchor?) -> Unit = { _, _ -> },
+    /** The classic playlist's selected row, or null for none. */
+    private val selectRow: (Int?) -> Unit = {},
 ) : WalSink {
     /**
      * Where the last press on the skin went down: it makes the menu anchor there when a menu
@@ -88,6 +94,10 @@ internal class WalHostActions(
                 alwaysOnTop()
             }
 
+            is HostAction.Playlist, is HostAction.PlaylistSelect -> {
+                playlist(a)
+            }
+
             // the video too: Andamp plays no video, and the skin's video area shows the visualizer
             is HostAction.Show -> {
                 if (a.window == "avs" || a.window == "video") showVisualizer()
@@ -108,6 +118,15 @@ internal class WalHostActions(
         }
     }
 
+    /** A classic playlist's pick, at the last press, or the row it selected. */
+    private fun playlist(a: HostAction) {
+        when (a) {
+            is HostAction.Playlist -> playlistPick(a.pick, pressAt?.invoke())
+            is HostAction.PlaylistSelect -> selectRow(a.row)
+            else -> Unit
+        }
+    }
+
     override fun openFile(andPlay: Boolean) = pickFile(andPlay)
 
     companion object {
@@ -115,9 +134,12 @@ internal class WalHostActions(
          * The actions for [vm]'s player: the library and the visualizer window open and close as the
          * main menu opens them, the visualization menu grays the in-player modes a modern skin does
          * not show, fullscreen and the preset buttons reach the visualizer only while its window or
-         * the skin shows it ([WinampState.visInSkin]), and file info shows the song playing, or the
-         * last one that played.
+         * the skin shows it ([WinampState.visInSkin]), file info shows the song playing, or the
+         * last one that played, and a classic playlist's picks do what the same entries of the
+         * app's own playlist menus do ([playlistMenus], with [playlist]'s pickers), on the row the
+         * skin selected.
          */
+        @Suppress("LongParameterList") // one for each thing outside the skin its buttons reach
         fun of(
             vm: WinampViewModel,
             openMenu: (MenuBarSection?, MenuAnchor?) -> Unit,
@@ -125,6 +147,7 @@ internal class WalHostActions(
             openFile: (andPlay: Boolean) -> Unit,
             onExit: () -> Unit = {},
             onAlwaysOnTop: () -> Unit = {},
+            playlist: () -> PlaylistMenuActions = { PlaylistMenuActions() },
         ): WalHostActions {
             val s = vm.state
             return WalHostActions(
@@ -151,7 +174,36 @@ internal class WalHostActions(
                 pickFile = openFile,
                 fileInfo = { vm.trackInfoOps.show(s.lastPlayed) },
                 alwaysOnTop = onAlwaysOnTop,
+                playlistPick = { pick, anchor ->
+                    val id = PLAYLIST_ENTRIES[pick]
+                    val entry = playlistMenus(playlist()).flatMap { it.entries }.firstOrNull { it.id == id }
+                    entry?.action?.invoke(vm)
+                    // a submenu (Sort list) opens where the finger went down on the skin
+                    if (anchor != null && pick == "sort") s.activeMenu = s.activeMenu?.copy(anchor = anchor)
+                },
+                selectRow = { row -> if (row == null) vm.playlistOps.selectZero() else vm.playlistOps.selectTrack(row) },
             )
         }
+
+        /** The entry of the app's own playlist menus ([playlistMenus]) each of walkit's classic playlist picks stands for. */
+        val PLAYLIST_ENTRIES =
+            mapOf(
+                "add_url" to "pl.menu.add.url",
+                "add_dir" to "pl.menu.add.dir",
+                "add_file" to "pl.menu.add.file",
+                "remove_misc" to "pl.menu.rem.misc",
+                "remove_all" to "pl.menu.rem.all",
+                "crop" to "pl.menu.rem.crop",
+                "remove_selected" to "pl.menu.rem.selected",
+                "select_invert" to "pl.menu.sel.invert",
+                "select_none" to "pl.menu.sel.zero",
+                "select_all" to "pl.menu.sel.all",
+                "sort" to "pl.menu.misc.sort",
+                "file_info" to "pl.menu.misc.info",
+                "misc_options" to "pl.menu.misc.opts",
+                "list_new" to "pl.menu.list.new",
+                "list_save" to "pl.menu.list.save",
+                "list_load" to "pl.menu.list.load",
+            )
     }
 }

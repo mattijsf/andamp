@@ -51,6 +51,14 @@ class HostActionNamesTest {
     }
 
     @Test
+    fun `a classic playlist's picks carry the pick, and the selection its row or none`() {
+        assertEquals(HostAction.Playlist("sort"), HostAction.of("PLAYLIST", "sort"))
+        assertNull("a pick needs its name", HostAction.of("PLAYLIST", null))
+        assertEquals(HostAction.PlaylistSelect(3), HostAction.of("PLAYLIST_SELECT", "3"))
+        assertEquals(HostAction.PlaylistSelect(null), HostAction.of("PLAYLIST_SELECT", null))
+    }
+
+    @Test
     fun `an action the host does not answer is none`() {
         assertNull(HostAction.of("PREFS", null))
         assertNull(HostAction.of("menu", "wa5:options"))

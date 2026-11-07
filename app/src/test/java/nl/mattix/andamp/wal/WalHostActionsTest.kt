@@ -9,6 +9,7 @@ import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.VisualCommands
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.ui.menu.MenuBarSection
+import nl.mattix.andamp.ui.window.playlistMenus
 import nl.mattix.andamp.ui.window.testViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -57,6 +58,8 @@ class WalHostActionsTest {
             pickFile = { andPlay -> on(if (andPlay) "file to play" else "file") },
             fileInfo = { on("file info") },
             alwaysOnTop = { on("always on top") },
+            playlistPick = { pick, _ -> on("playlist $pick") },
+            selectRow = { row -> on("select $row") },
         )
 
     private fun reaches(
@@ -86,6 +89,38 @@ class WalHostActionsTest {
         assertEquals("Detach Visualizer", listOf("show visualizer"), reaches("SHOW", "avs"))
         assertEquals("Detach Video, which the visualizer fills", listOf("show visualizer"), reaches("SHOW", "video"))
         assertEquals("the video's fullscreen", listOf("fullscreen"), reaches("VID_FS"))
+        assertEquals("a classic playlist pick", listOf("playlist add_dir"), reaches("PLAYLIST", "add_dir"))
+        assertEquals("the row the skin selected", listOf("select 3"), reaches("PLAYLIST_SELECT", "3"))
+        assertEquals("and none", listOf("select null"), reaches("PLAYLIST_SELECT"))
+    }
+
+    @Test
+    fun `each of a classic playlist's picks stands for an entry of the app's own playlist menus`() {
+        val entries = playlistMenus().flatMap { it.entries }.map { it.id }.toSet()
+        // the picks walkit's classic playlist sends, ADD to LIST OPTS
+        val picks =
+            listOf(
+                "add_url",
+                "add_dir",
+                "add_file",
+                "remove_misc",
+                "remove_all",
+                "crop",
+                "remove_selected",
+                "select_invert",
+                "select_none",
+                "select_all",
+                "sort",
+                "file_info",
+                "misc_options",
+                "list_new",
+                "list_save",
+                "list_load",
+            )
+        for (pick in picks) {
+            val id = WalHostActions.PLAYLIST_ENTRIES[pick]
+            assertTrue("$pick -> $id", id in entries)
+        }
     }
 
     @Test

@@ -142,6 +142,7 @@ internal fun rememberWalLayerParts(
                 onExit = { exitNow() },
                 openFile = { andPlay -> if (andPlay) playlistNow.addFileThenPlay() else playlistNow.addFile() },
                 onAlwaysOnTop = { alwaysOnTopNow() },
+                playlist = { playlistNow },
             ),
             // a window of the app over the whole skin hides it as well as a screen does
             covered = { coveredNow() || hidesModernSkin(vm.state) },
