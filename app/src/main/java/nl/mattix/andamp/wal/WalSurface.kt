@@ -142,9 +142,6 @@ internal interface WalSurface : WalTouch.Target {
     /** Right-clicks the object and point gesture [seq] went down on, for its skin menu. A stale seq does nothing. */
     fun rightClick(seq: Int)
 
-    /** Closes the topmost skin window over the main one, as Back does. */
-    fun closeTopWindow()
-
     /**
      * The visualizer window closed: what the skin moved out into it goes back into the skin
      * (`SkinRuntime.visualizerWindowClosed`).

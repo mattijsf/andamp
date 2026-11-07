@@ -251,11 +251,6 @@ internal class WalLook(
         engine?.rightClick(seq)
     }
 
-    override fun closeTopWindow() {
-        lastInputAt = SystemClock.uptimeMillis()
-        engine?.post(cause = WalCause.TOUCH) { it.closeTopWindow() }
-    }
-
     override fun visualizerWindowClosed() {
         engine?.post(cause = WalCause.TOUCH) { it.visualizerWindowClosed() }
     }

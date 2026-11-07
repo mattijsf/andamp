@@ -401,7 +401,7 @@ class ModernPlayerSurfaceTest {
     }
 
     @Test
-    fun `Back closes a skin window over the main one before it leaves the player`() {
+    fun `Back hides the player even with a skin window open over the main one`() {
         surface.layoutFor = { fit -> stackOf(300, 100, 2f)(fit).copy(windowOpen = true) }
         compose.mainClock.autoAdvance = false
         compose.setContent { WinampScreen(vm, wal = surface) }
@@ -410,19 +410,8 @@ class ModernPlayerSurfaceTest {
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
         frames()
 
-        assertEquals(1, surface.closedWindows)
-    }
-
-    @Test
-    fun `Back leaves the skin alone when no skin window is open`() {
-        compose.mainClock.autoAdvance = false
-        compose.setContent { WinampScreen(vm, wal = surface) }
-        frames()
-
-        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
-        frames()
-
-        assertEquals(0, surface.closedWindows)
+        assertTrue("the player leaves at once", compose.activity.isFinishing)
+        assertFalse("and the skin heard nothing", surface.calls.any { "close" in it })
     }
 
     @Test

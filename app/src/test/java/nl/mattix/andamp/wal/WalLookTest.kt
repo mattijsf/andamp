@@ -748,7 +748,6 @@ class WalLookTest {
                 "double tap" to { look.doubleTap(1, 1) },
                 "right click" to { look.rightClick(1) },
                 "menu answer" to { look.answerMenu(menu, 1) },
-                "Back" to { look.closeTopWindow() },
                 "theme pick" to { look.pickTheme("Two") },
             )
         look.fit(phone)
