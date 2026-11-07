@@ -123,8 +123,11 @@ internal fun rememberWalLayerParts(
     onExit: () -> Unit,
     covered: () -> Boolean,
     compact: Boolean = false,
+    /** Always On Top on or off, for a classic skin's clutter bar A. */
+    onAlwaysOnTop: () -> Unit = {},
 ): WalLayerParts {
     val openMenuNow by rememberUpdatedState(openMenu)
+    val alwaysOnTopNow by rememberUpdatedState(onAlwaysOnTop)
     val minimizeNow by rememberUpdatedState(onMinimize)
     val exitNow by rememberUpdatedState(onExit)
     val playlistNow by rememberUpdatedState(playlistActions)
@@ -138,6 +141,7 @@ internal fun rememberWalLayerParts(
                 onMinimize = { minimizeNow() },
                 onExit = { exitNow() },
                 openFile = { andPlay -> if (andPlay) playlistNow.addFileThenPlay() else playlistNow.addFile() },
+                onAlwaysOnTop = { alwaysOnTopNow() },
             ),
             // a window of the app over the whole skin hides it as well as a screen does
             covered = { coveredNow() || hidesModernSkin(vm.state) },

@@ -178,8 +178,9 @@ class WinampViewModel
                             WalPrepare.windowOpen(
                                 libraryOpen = { state.libraryOpen },
                                 visualizerOn = { state.milkdropOn },
+                                alwaysOnTop = { overlayOps.gate.wanted },
                             ),
-                        wake = { Triple(player.watched(), state.libraryOpen, state.milkdropOn) },
+                        wake = { listOf(player.watched(), state.libraryOpen, state.milkdropOn, overlayOps.gate.wanted) },
                     ).also { opened[0] = it }
                 },
             )

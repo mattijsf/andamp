@@ -415,7 +415,9 @@ internal fun PlayerSurface(
                         walNow != null
                     }
                 val walParts =
-                    wal?.let { rememberWalLayerParts(it, vm, playlistActions, openMenu, onMinimize, quit, covered, compact) }
+                    wal?.let {
+                        rememberWalLayerParts(it, vm, playlistActions, openMenu, onMinimize, quit, covered, compact, alwaysOnTop)
+                    }
                 // the classic main window's V and O, grayed as the main menu grays them while a modern skin is worn
                 val visualizerMenu = { anchor: MenuAnchor ->
                     visualizationMenu(vm, anchor).copy(items = visualizationItems(vm, modernPlayer = walNow != null))

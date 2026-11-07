@@ -37,6 +37,9 @@ internal sealed interface HostAction {
     /** The file info of the song playing. */
     data object TrackInfo : HostAction
 
+    /** Always On Top on or off: a classic skin's clutter bar A. */
+    data object AlwaysOnTop : HostAction
+
     /** Shows the [window] named (`avs`, `video`, `ml`), whatever the skin's own view of it. */
     data class Show(
         val window: String,
@@ -63,6 +66,7 @@ internal sealed interface HostAction {
                 "VIS_NEXT" -> NextPreset
                 "VIS_PREV" -> PreviousPreset
                 "TRACKINFO" -> TrackInfo
+                "ALWAYS_ON_TOP" -> AlwaysOnTop
                 "SHOW" -> param?.let(::Show)
                 "TOGGLE" -> param?.let(::Toggle)
                 else -> null

@@ -37,6 +37,8 @@ internal class WalHostActions(
     private val pickFile: (andPlay: Boolean) -> Unit,
     /** View file info for the song playing, as the classic clutter bar's I opens it. */
     private val fileInfo: () -> Unit,
+    /** Always On Top on or off, as the classic clutter bar's A switches it. */
+    private val alwaysOnTop: () -> Unit = {},
 ) : WalSink {
     /**
      * Where the last press on the skin went down: it makes the menu anchor there when a menu
@@ -82,6 +84,10 @@ internal class WalHostActions(
                 fileInfo()
             }
 
+            HostAction.AlwaysOnTop -> {
+                alwaysOnTop()
+            }
+
             // the video too: Andamp plays no video, and the skin's video area shows the visualizer
             is HostAction.Show -> {
                 if (a.window == "avs" || a.window == "video") showVisualizer()
@@ -118,6 +124,7 @@ internal class WalHostActions(
             onMinimize: () -> Unit,
             openFile: (andPlay: Boolean) -> Unit,
             onExit: () -> Unit = {},
+            onAlwaysOnTop: () -> Unit = {},
         ): WalHostActions {
             val s = vm.state
             return WalHostActions(
@@ -143,6 +150,7 @@ internal class WalHostActions(
                 previousPreset = { if (s.milkdropOn || s.visInSkin) s.visualCommands?.previousPreset() },
                 pickFile = openFile,
                 fileInfo = { vm.trackInfoOps.show(s.lastPlayed) },
+                alwaysOnTop = onAlwaysOnTop,
             )
         }
     }

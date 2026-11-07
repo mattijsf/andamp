@@ -37,6 +37,17 @@ class HostActionNamesTest {
         assertEquals(HostAction.NextPreset, HostAction.of("VIS_NEXT", null))
         assertEquals(HostAction.PreviousPreset, HostAction.of("VIS_PREV", null))
         assertEquals(HostAction.TrackInfo, HostAction.of("TRACKINFO", null))
+        assertEquals("a classic skin's clutter bar A", HostAction.AlwaysOnTop, HostAction.of("ALWAYS_ON_TOP", null))
+    }
+
+    @Test
+    fun `a classic skin's clutter bar reads Always On Top and finds Double Size off`() {
+        var onTop = true
+        val open = WalPrepare.windowOpen(alwaysOnTop = { onTop })
+        assertEquals(true, open("ontop"))
+        onTop = false
+        assertEquals(false, open("ontop"))
+        assertNull(open("doublesize"))
     }
 
     @Test
