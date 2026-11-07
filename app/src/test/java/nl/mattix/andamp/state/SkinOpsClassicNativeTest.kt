@@ -106,6 +106,15 @@ class SkinOpsClassicNativeTest {
     }
 
     @Test
+    fun `a classic skin picked while the switch is on is drawn by the engine at once`() {
+        var stored: String? = null
+        val bytes = app.assets.open(BundledSkins.LIGHT.asset).use { it.readBytes() }
+        ops.load(bytes.inputStream(), "Picked.wsz") { stored = it }
+        await { stored != null && ops.currentId == stored }
+        assertEquals(stored, ops.wal?.id)
+    }
+
+    @Test
     fun `a bundled skin keeps Andamp's own renderer`() {
         ops.apply(BundledSkins.LIGHT.id)
         await { ops.currentId == BundledSkins.LIGHT.id }

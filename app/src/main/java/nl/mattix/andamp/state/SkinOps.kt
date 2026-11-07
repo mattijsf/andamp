@@ -367,8 +367,9 @@ class SkinOps internal constructor(
         val parsed = SkinLoader.load(bytes.inputStream(), fallback = baseSkin, name = name)
         val id = store(bytes, name)
         // a skin that applied but could not be stored has no library row, so no row is
-        // highlighted
-        return Pick.Stored(Worn(parsed, id ?: UNSTORED_ID, id ?: UNSTORED_ID), id)
+        // highlighted, and no file for the engine to draw
+        val look = id?.let { classicLookFor(it) }
+        return Pick.Stored(Worn(parsed, id ?: UNSTORED_ID, id ?: UNSTORED_ID, look), id)
     }
 
     /**
