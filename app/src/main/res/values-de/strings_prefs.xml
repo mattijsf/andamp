@@ -163,6 +163,9 @@
     <string name="prefs_windows_apart_title">Fenster frei</string>
     <string name="prefs_windows_apart_on">Jedes Fenster eines modernen Skins steht dort, wo du es hinlegst, wie auf einem Desktop: Zieh ein Fenster an seiner Titelleiste, und es dockt an die anderen und an die Ränder an wie in Winamp.</string>
     <string name="prefs_windows_apart_off">Die Fenster eines modernen Skins stehen in einem Stapel unter dem Hauptfenster. Schalte dies ein, um jedes Fenster dort hinzulegen, wo du möchtest, wie auf einem Desktop.</string>
+    <string name="prefs_classic_native_title">Neuer klassischer Renderer (Beta)</string>
+    <string name="prefs_classic_native_on">Klassische Skins im Player werden so gezeichnet wie in Winamp 5.666. Einige Menüoptionen des Players, etwa Doppelte Größe, gelten nicht, solange dies an ist.</string>
+    <string name="prefs_classic_native_off">Klassische Skins zeichnet Andamps eigener Renderer. Schalte dies ein, um den neuen auszuprobieren, der einen klassischen Skin so zeichnet wie Winamp 5.666.</string>
 
     <!-- PluginsSection.kt -->
     <string name="prefs_plugins_intro">Audio-Plug-ins in Lua. Andamp behält eine eigene Kopie, die Originaldatei kann also verschoben oder gelöscht werden.</string>

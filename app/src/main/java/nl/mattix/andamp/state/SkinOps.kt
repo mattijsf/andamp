@@ -74,6 +74,12 @@ class SkinOps internal constructor(
      */
     private val openModern: (id: String, file: File, name: String, siblings: Map<String, File>) -> WalLook =
         { _, _, _, _ -> error("no modern skins here") },
+    /**
+     * Whether a classic skin on the player is drawn by the engine modern skins run on, as Winamp
+     * draws it, through a look of its file ([WalClassic]); read on IO. The bundled skins keep
+     * Andamp's own renderer.
+     */
+    private val classicNative: () -> Boolean = { false },
 ) {
     /**
      * The classic skin on screen and in the app's windows and menus. While a modern skin is
@@ -751,7 +757,7 @@ class SkinOps internal constructor(
                 CurrentSkin.stored(context, library, companion, baseSkin, live)
             }
         val modern = companion != id
-        val wal = if (modern) look ?: lookFor(id) else null
+        val wal = if (modern) look ?: lookFor(id) else look ?: classicLookFor(id)
         val fellBack = modern && wal == null && id in failed
         return when {
             drawn != null -> Worn(drawn, if (fellBack) companion else id, companion, wal, source)
@@ -776,6 +782,38 @@ class SkinOps internal constructor(
             Log.w(TAG, "Modern skin $id has no look", e)
             failed += id
             null
+        }
+    }
+
+    /**
+     * The look of the classic skin [id] drawn by the engine: the one on screen or parked, else a
+     * new one of its stored file. Null while the new classic renderer is off, for a bundled skin,
+     * and for a skin whose look failed in this process, so Andamp's own renderer draws it. Call
+     * under the lock.
+     */
+    @Suppress("TooGenericExceptionCaught") // whatever making a look throws, Andamp's own renderer draws the skin
+    private fun classicLookFor(id: String): WalLook? {
+        if (id in failed || !classicNative()) return null
+        listOf(wal, parked).firstOrNull { it != null && it.id == id && !it.released }?.let { return it }
+        val file = library.fileOf(id) ?: return null
+        return try {
+            openLook(id, file, library.nameOf(id))
+        } catch (e: Exception) {
+            Log.w(TAG, "Classic skin $id has no native look", e)
+            failed += id
+            null
+        }
+    }
+
+    /**
+     * The new classic renderer was switched on or off: the skin on screen goes on again, a classic
+     * one now drawn by the engine or by Andamp's own renderer. A modern skin stays as it is.
+     */
+    fun classicRendererChanged() {
+        scope.launch {
+            started.await()
+            if (currentId == UNSTORED_ID) return@launch
+            if (loadAndPut { loadWorn() }) wornSkinChanged()
         }
     }
 
@@ -814,7 +852,14 @@ class SkinOps internal constructor(
         notify(
             AmpPrompt(
                 title = words.get(R.string.skin_modern_stopped_title, library.nameOf(look.id)),
-                body = words.get(R.string.skin_modern_stopped_body),
+                body =
+                    words.get(
+                        if (library.kindOf(look.id) == SkinKind.CLASSIC) {
+                            R.string.skin_classic_stopped_body
+                        } else {
+                            R.string.skin_modern_stopped_body
+                        },
+                    ),
                 confirmLabel = words.get(R.string.prompt_ok),
                 dismissLabel = null,
                 onConfirm = { state.prompt = null },

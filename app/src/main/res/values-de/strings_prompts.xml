@@ -92,6 +92,7 @@
     <string name="skin_modern_failed_body">Dieser moderne Skin ließ sich nicht laden und wurde deshalb nicht hinzugefügt.</string>
     <string name="skin_modern_stopped_title">„%1$s“ funktioniert nicht mehr</string>
     <string name="skin_modern_stopped_body">Andamp zeigt vorerst deinen letzten klassischen Skin. Dieser moderne Skin wird beim nächsten Start von Andamp erneut versucht. Möchtest du das nicht, wähle unter Skins einen anderen Skin oder entferne diesen im Skin-Browser.</string>
+    <string name="skin_classic_stopped_body">Andamp zeichnet diesen Skin vorerst mit seinem eigenen klassischen Renderer. Der neue Renderer versucht es beim nächsten Start von Andamp erneut.</string>
 
     <!-- AmpModals.kt -->
     <string name="skin_modern_offer_title">Moderne Skins einschalten?</string>
