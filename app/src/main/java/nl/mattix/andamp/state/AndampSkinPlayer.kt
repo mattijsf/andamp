@@ -165,6 +165,9 @@ internal class AndampSkinPlayer(
     private var shownMs = NOT_SHOWN
     private var shownFor: String? = null
 
+    /** When [shownMs] was last read out. */
+    private var shownAt = 0L
+
     /** A seek on its way: where to, when it was asked, and the backend's place then. */
     private class SeekHold(
         val trackId: String,
@@ -179,9 +182,10 @@ internal class AndampSkinPlayer(
     /**
      * The backend's place, carried on with [clock] while playing, since the backend reports it a
      * few times a second: never more than [MAX_LEAD_MS] past its last report and never past the
-     * length. Paused, it holds. A step back of up to a second (a report that trails the carried
-     * place, a seek landing a little short) holds the place until the song catches up, so a seek
-     * bar's thumb never jumps back by itself.
+     * length, and not past a report of the very start, which a song that is still starting gives.
+     * Paused, it holds. A report up to a second behind the place shown (one that trails the
+     * carried place, a seek landing a little short) slows the place to half speed until the song
+     * catches up, so a seek bar's thumb neither jumps back nor stops.
      */
     override fun positionMs(): Long {
         val track = winamp.currentTrack
@@ -199,8 +203,16 @@ internal class AndampSkinPlayer(
             shownMs = NOT_SHOWN
         }
         val playing = transport == Transport.Playing
-        val place = heldSeek(track, playing, now) ?: (raw + if (playing) minOf(now - rawAt, MAX_LEAD_MS) else 0)
-        if (place >= shownMs || shownMs - place > MAX_LEAD_MS) shownMs = place
+        val carried = if (playing && raw > 0) minOf(now - rawAt, MAX_LEAD_MS) else 0
+        val place = heldSeek(track, playing, now) ?: (raw + carried)
+        shownMs =
+            when {
+                place >= shownMs || shownMs - place > MAX_LEAD_MS -> place
+                // ahead of the song: on at half speed until the song catches up
+                playing -> maxOf(place, shownMs + (now - shownAt) / 2)
+                else -> shownMs
+            }
+        shownAt = now
         val length = lengthOf(track)
         return if (length > 0) minOf(shownMs, length) else shownMs
     }
@@ -369,6 +381,7 @@ internal class AndampSkinPlayer(
         seekHold = SeekHold(track.id, target, now, lastRaw, rawAt)
         shownFor = track.id
         shownMs = target
+        shownAt = now
         onMain { if (winamp.currentTrack?.id == track.id) controls.seekTo(target / length.toFloat()) }
     }
 

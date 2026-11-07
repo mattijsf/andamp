@@ -122,6 +122,37 @@ class WalPlayerTest {
     }
 
     @Test
+    fun `a report that falls behind slows the place down instead of stopping it`() {
+        // reports every 250 ms of 250 ms each, but one moves only 17 ms on, as a backend's does now and then
+        var reported = 1_000L
+        stalledAt = reported
+        controls.advance(1_000)
+        var last = player.positionMs
+        var glitched = false
+        repeat(120) { frame ->
+            controls.advance(FRAME_MS.toLong())
+            if (controls.now % 250 < FRAME_MS) {
+                reported += if (!glitched && frame > 20) 17 else 250
+                if (reported % 250 == 17L) glitched = true
+                stalledAt = reported
+            }
+            val now = player.positionMs
+            assertTrue("on every frame, never back: $last then $now, frame $frame", now > last)
+            last = now
+        }
+        assertTrue("the glitch happened", glitched)
+    }
+
+    @Test
+    fun `a song still starting is not carried past its first report`() {
+        stalledAt = 0L
+        frames(500)
+        assertEquals("held at the start while the backend says 0", 0, player.positionMs)
+        stalledAt = 25L
+        assertTrue("then carried on from the report", frames(160) in 150..185)
+    }
+
+    @Test
     fun `the place runs at most a second past the backend's last report`() {
         frames(10_000)
         stalledAt = controls.reportedMs
