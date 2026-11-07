@@ -612,4 +612,28 @@ class WalFittingTest {
             WalApart.forget()
         }
     }
+
+    @Test
+    fun `a classic skin's windows are always apart, but stacked in the floating player`() {
+        WalApart.forget(app)
+        try {
+            val wsz = java.io.File(app.cacheDir, "classic.wsz")
+            app.assets.open(nl.mattix.andamp.skin.BundledSkins.SPOT.asset).use { input ->
+                wsz.outputStream().use { input.copyTo(it) }
+            }
+            val files = WalFiles.open(wsz, emptyMap<String, java.io.File>())
+            val rt = SkinRuntime(files, WalHost(files, app.cacheDir), FakePlayer()).apply { load() }
+            val fitting = WalFitting(alwaysApart = true)
+            val baseW = WalFitting.baseWOf(rt)
+            fitting.apply(rt, upright, baseW)
+            rt.ensureLayout()
+            assertFalse("the switch is off", WalApart.apart)
+            assertTrue("apart all the same", rt.presentation.freeWindows)
+            fitting.apply(rt, upright.copy(compact = true), baseW)
+            rt.ensureLayout()
+            assertFalse("the floating player stacks them", rt.presentation.freeWindows)
+        } finally {
+            WalApart.forget()
+        }
+    }
 }

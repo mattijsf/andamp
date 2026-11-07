@@ -388,7 +388,9 @@ internal class WalLook(
             // an import has no player surface to show a menu its scripts open as the skin loads:
             // such a menu is answered at once with nothing picked
             val host = WalHost(files, cacheDir, windowOpen, actions = ::hostAction).apply { menus.unattended = awaited }
-            val engine = WalEngine(id, host, onFrame = ::frameChanged)
+            // a classic skin's windows move one by one, as in Winamp (the library keeps it as .wsz)
+            val classic = file.name.endsWith(".wsz", ignoreCase = true)
+            val engine = WalEngine(id, host, alwaysApart = classic, onFrame = ::frameChanged)
             engine.onBroken = { toMain(Runnable { failed(stoppedWorking = true) }) }
             engine.onTask = ::keepLater
             engine.placer = ::placeWindows
