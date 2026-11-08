@@ -121,6 +121,45 @@ class WalLensTouchTest {
     }
 
     @Test
+    fun `between two controls and past the last one the press stays on the nearest`() {
+        // two letters with a gap of four between them
+        val lens =
+            WalLens.over(
+                listOf(
+                    TouchControl(Rect(11, 24, 9, 8), magnify = false),
+                    TouchControl(Rect(11, 36, 9, 8), magnify = false),
+                ),
+                Offset(15f, 27f),
+                slop = 2f,
+            )!!
+        // 9 skin pixels down, geared down to 6: into the gap, nearer the upper letter
+        assertEquals(true, lens.move(Offset(0f, 9f)))
+        assertEquals(33f, lens.focus.y)
+        assertEquals(
+            androidx.compose.ui.unit
+                .IntRect(11, 24, 20, 32),
+            lens.target,
+        )
+        assertEquals(15 to 31, lens.point)
+        // further on, nearer the lower one
+        lens.move(Offset(0f, 2f))
+        assertEquals(
+            androidx.compose.ui.unit
+                .IntRect(11, 36, 20, 44),
+            lens.target,
+        )
+        assertEquals(15 to 36, lens.point)
+        // into the cluster's padding below the last letter
+        lens.move(Offset(0f, 20f))
+        assertEquals(
+            androidx.compose.ui.unit
+                .IntRect(11, 36, 20, 44),
+            lens.target,
+        )
+        assertEquals(15 to 43, lens.point)
+    }
+
+    @Test
     fun `with Tap assist off a hold is only the long press`() {
         assist = false
         touch.down(TouchPoint(30f, 70f), 0)

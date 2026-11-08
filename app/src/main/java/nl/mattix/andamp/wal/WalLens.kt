@@ -25,12 +25,16 @@ import nl.mattix.walkit.TouchControl
 /**
  * The magnifier over a skin's small controls, as [WalTouch] opens it on a hold: its crosshair
  * ([aim]) steers the skin's press, which the skin draws pressed or lit wherever it goes, and the
- * release lets go where the crosshair is. Positions are the stack's skin pixels.
+ * release lets go where the crosshair is. Between two controls the press stays on the nearest of
+ * the cluster's, so one is always ringed and lit until the lens closes. Positions are the stack's
+ * skin pixels.
  */
 internal class WalLens(
     private val aim: LensAim,
     /** The window's controls, as the skin listed them for the press. */
     private val controls: List<IntRect>,
+    /** The small controls of the cluster the lens opened on. */
+    private val cluster: List<IntRect>,
 ) {
     /** Where the crosshair is. */
     val focus: Offset get() = aim.focus
@@ -38,11 +42,17 @@ internal class WalLens(
     /** The cluster the lens opened on, where the crosshair may go. */
     val roam: IntRect get() = aim.roam
 
-    /** The control the crosshair is on, or null between two. */
-    val target: IntRect? get() = controls.firstOrNull { it.holds(focus) }
+    /** The control the crosshair is on, or between two the cluster's nearest. */
+    val target: IntRect? get() =
+        controls.firstOrNull { it.holds(focus) } ?: cluster.minByOrNull { distance(it, focus) }
 
-    /** The skin pixel the crosshair is on. */
-    val point: Pair<Int, Int> get() = focus.x.toInt() to focus.y.toInt()
+    /** The skin pixel the press is on: the crosshair's, or the point of [target] nearest it. */
+    val point: Pair<Int, Int> get() {
+        val x = focus.x.toInt()
+        val y = focus.y.toInt()
+        val box = target ?: return x to y
+        return x.coerceIn(box.left, box.right - 1) to y.coerceIn(box.top, box.bottom - 1)
+    }
 
     /** Moves the crosshair by a finger movement of [delta] skin pixels; false when that pushed the lens away. */
     fun move(delta: Offset): Boolean = aim.move(delta)
@@ -84,14 +94,9 @@ internal class WalLens(
             val roam = Loupe.clusterAround(box, small)
             val start =
                 Offset(at.x.coerceIn(box.left.toFloat(), box.right - 1f), at.y.coerceIn(box.top.toFloat(), box.bottom - 1f))
-            val centers =
-                (small + box)
-                    .filter {
-                        roam.contains(
-                            it.center,
-                        )
-                    }.map { Offset(it.center.x.toFloat(), it.center.y.toFloat()) }
-            return WalLens(LensAim(start, roam, centers, reach), controls.map { it.rect.toIntRect() })
+            val cluster = (small + box).filter { roam.contains(it.center) }
+            val centers = cluster.map { Offset(it.center.x.toFloat(), it.center.y.toFloat()) }
+            return WalLens(LensAim(start, roam, centers, reach), controls.map { it.rect.toIntRect() }, cluster)
         }
 
         private fun IntRect.holds(at: Offset) = at.x >= left && at.x < right && at.y >= top && at.y < bottom
