@@ -570,10 +570,10 @@ class WalFittingTest {
             WalApart.change(app, true)
             var placed = 0
             val fitting =
-                WalFitting { rt ->
+                WalFitting(placer = { rt ->
                     placed++
                     rt.placeWindow(checkNotNull(rt.windowOf("pl")), 100, 500)
-                }
+                })
             val rt = SkinRuntime(winampModern, WalHost(winampModern, app.cacheDir), FakePlayer()).apply { load() }
             val baseW = WalFitting.baseWOf(rt)
             fitting.apply(rt, upright, baseW)
@@ -624,7 +624,8 @@ class WalFittingTest {
             }
             val files = WalFiles.open(wsz, emptyMap<String, java.io.File>())
             val rt = SkinRuntime(files, WalHost(files, app.cacheDir), FakePlayer()).apply { load() }
-            val fitting = WalFitting(classic = true)
+            var lettered = false
+            val fitting = WalFitting(classic = true, skinListFont = { lettered })
             val baseW = WalFitting.baseWOf(rt)
             fitting.apply(rt, upright, baseW)
             rt.ensureLayout()
@@ -646,6 +647,10 @@ class WalFittingTest {
             assertEquals("as wide as the screen, at a scale that need not be whole", 960f / 275, filled.scale, 1e-4f)
             assertEquals(0f to 0f, filled.left to filled.top)
             assertTrue("nothing moves it", filled.filled)
+            assertFalse("the regular font unless the listener picks the skin's", rt.presentation.skinListFont)
+            lettered = true
+            fitting.layout(rt, upright, baseW, rt.stackSize, rt.drawnSize, rt.windowOpen, true)
+            assertTrue("the skin's letters once the listener picks them", rt.presentation.skinListFont)
             val pl = rt.windowRect(checkNotNull(rt.windowOf("pledit")))
             assertEquals("the playlist reaches the screen's bottom", (1900 / filled.scale).toInt(), pl.top + pl.height)
             WalFilled.toggle(app)

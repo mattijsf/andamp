@@ -181,7 +181,10 @@ class WinampViewModel
                                 alwaysOnTop = { overlayOps.gate.wanted },
                                 filled = { nl.mattix.andamp.wal.WalFilled.filled },
                             ),
-                        wake = { listOf(player.watched(), state.libraryOpen, state.milkdropOn, overlayOps.gate.wanted) },
+                        skinListFont = { state.listFont == ListFont.SKIN },
+                        wake = {
+                            listOf(player.watched(), state.libraryOpen, state.milkdropOn, overlayOps.gate.wanted, state.listFont)
+                        },
                     ).also { opened[0] = it }
                 },
             )

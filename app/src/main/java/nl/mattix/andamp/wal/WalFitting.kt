@@ -38,6 +38,11 @@ internal class WalFitting(
      * ([WalApart]): called on the engine thread each time apart comes on.
      */
     private val placer: (SkinRuntime) -> Unit = {},
+    /**
+     * Whether a classic playlist spells its rows in the skin's TEXT.BMP letters, as the
+     * listener's playlist font choice says ([nl.mattix.andamp.state.ListFont]); read at each frame.
+     */
+    private val skinListFont: () -> Boolean = { false },
 ) {
     /** The windows on screen at the last [apply] or [refit]. */
     private var windows: List<WindowId> = emptyList()
@@ -285,7 +290,7 @@ internal class WalFitting(
             }
         val slop = kotlin.math.ceil(TOUCH_SLOP_DP * fit.density / place.scale).toInt()
         // a finger drives the skin: a tap on a classic playlist button leaves its menu open
-        runtime.present { it.copy(touchSlop = slop, touch = true) }
+        runtime.present { it.copy(touchSlop = slop, touch = true, skinListFont = skinListFont()) }
         val themes = themesOf(runtime)
         return WalLayout(
             fit = fit,

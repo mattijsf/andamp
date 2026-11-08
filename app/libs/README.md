@@ -24,5 +24,6 @@ published on (`darwin-aarch64`) and the helpers the app's unit tests drive a ski
 | 0.5.9 | v0.5.9 (29bc396) | a stacked classic playlist stretches down to fill the view in 29-pixel steps |
 | 0.5.10 | v0.5.10 (4fe4754) | a classic playlist stretched to fill the view reaches its bottom; its grip sizes nothing then |
 | 0.5.11 | v0.5.11 (f95b6a2) | a classic playlist sized apart still fills the view once the windows stack |
+| 0.5.12 | v0.5.12 (1d3c1d4) | `Presentation.skinListFont`: a classic playlist spells its rows in the skin's TEXT.BMP letters |
 
 Only the current version's files are kept; the rows above are the log of what was kept here.

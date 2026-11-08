@@ -44,7 +44,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * A start that fails after a fit, and a skin that stops working, are told to [onFailed] on the main
  * thread.
  */
-@Suppress("TooManyFunctions") // every call of WalSurface, plus the start, park and release of the skin it holds
+@Suppress("TooManyFunctions", "LongParameterList") // WalSurface's calls; what the app tells the skin, apart
 internal class WalLook(
     /** The skin's id in the library. */
     val id: String,
@@ -60,6 +60,8 @@ internal class WalLook(
     private val player: Player,
     /** Whether a window the app shows in place of the skin's is open; see [WalHost]. */
     private val windowOpen: (kind: String) -> Boolean? = WalPrepare.windowOpen(),
+    /** Whether a classic playlist is written in the skin's letters; see [WalFitting]. */
+    private val skinListFont: () -> Boolean = { false },
     /** What [wakeKey] gives. */
     private val wake: () -> Any = { Unit },
     /** The time it has to start; see [WalEngine.start]. */
@@ -387,7 +389,7 @@ internal class WalLook(
             // a classic skin's windows move one by one, as in Winamp, unless D has it fill the
             // screen (the library keeps it as .wsz)
             val classic = file.name.endsWith(".wsz", ignoreCase = true)
-            val engine = WalEngine(id, host, classic = classic, onFrame = ::frameChanged)
+            val engine = WalEngine(id, host, classic = classic, skinListFont = skinListFont, onFrame = ::frameChanged)
             engine.onBroken = { toMain(Runnable { failed(stoppedWorking = true) }) }
             engine.onTask = ::keepLater
             engine.placer = ::placeWindows
