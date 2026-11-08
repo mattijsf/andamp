@@ -32,6 +32,8 @@ internal class WalHostActions(
     /** Opens the visualizer window, as Winamp Modern's Detach Visualizer and Detach Video move it out of the drawer. */
     private val showVisualizer: () -> Unit,
     private val visualizationMenu: (MenuAnchor?) -> Unit,
+    /** The equalizer's presets menu, as its PRESETS button opens it. */
+    private val eqPresets: (MenuAnchor?) -> Unit = {},
     private val fullscreenVisualizer: () -> Unit,
     private val nextPreset: () -> Unit,
     private val previousPreset: () -> Unit,
@@ -71,8 +73,8 @@ internal class WalHostActions(
                 minimize()
             }
 
-            HostAction.VisualizationMenu -> {
-                visualizationMenu(pressAt?.invoke())
+            HostAction.VisualizationMenu, HostAction.EqPresets -> {
+                buttonMenu(a)
             }
 
             // the video's too: Andamp plays no video, and the skin's video area shows the visualizer
@@ -118,6 +120,12 @@ internal class WalHostActions(
                 Unit
             }
         }
+    }
+
+    /** The menu a skin's button opens, at the last press: the visualization menu or the equalizer's presets. */
+    private fun buttonMenu(a: HostAction) {
+        val at = pressAt?.invoke()
+        if (a == HostAction.EqPresets) eqPresets(at) else visualizationMenu(at)
     }
 
     /** A classic clutter bar's A (Always On Top) or D (here: fill the screen). */
@@ -172,6 +180,7 @@ internal class WalHostActions(
                     s.activeMenu = visualizationMenu(vm, anchor).copy(items = visualizationItems(vm, modernPlayer = true))
                 },
                 // fullscreen shows only while the window or the skin shows the visualizer
+                eqPresets = { anchor -> s.activeMenu = vm.eqOps.presetsMenu(anchor) },
                 fullscreenVisualizer = {
                     if (!s.visInSkin) s.setWindowOpen(WindowStore.MILKDROP, true) { vm.presetOps.setWindowOpen(it) }
                     s.milkdropFullscreen = true

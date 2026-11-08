@@ -52,6 +52,10 @@ class WalHostActionsTest {
                 anchors += it
                 on("visualization menu")
             },
+            eqPresets = {
+                anchors += it
+                on("eq presets")
+            },
             fullscreenVisualizer = { on("fullscreen") },
             nextPreset = { on("next preset") },
             previousPreset = { on("previous preset") },
@@ -88,6 +92,7 @@ class WalHostActionsTest {
         assertEquals(listOf("file info"), reaches("TRACKINFO"))
         assertEquals("a classic skin's clutter bar A", listOf("always on top"), reaches("ALWAYS_ON_TOP"))
         assertEquals("and its D", listOf("double size"), reaches("DOUBLESIZE"))
+        assertEquals("the equalizer's PRESETS", listOf("eq presets"), reaches("EQ_PRESETS"))
         assertEquals("Detach Visualizer", listOf("show visualizer"), reaches("SHOW", "avs"))
         assertEquals("Detach Video, which the visualizer fills", listOf("show visualizer"), reaches("SHOW", "video"))
         assertEquals("the video's fullscreen", listOf("fullscreen"), reaches("VID_FS"))
@@ -161,8 +166,9 @@ class WalHostActionsTest {
         actions.pressAt = { press }
         actions.hostAction("SYSMENU", null)
         actions.hostAction("VIS_MENU", null)
+        actions.hostAction("EQ_PRESETS", null)
 
-        assertEquals(listOf(null, press, press), anchors)
+        assertEquals(listOf(null, press, press, press), anchors)
     }
 
     @Test

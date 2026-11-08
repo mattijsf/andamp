@@ -52,6 +52,7 @@ class HostActionNamesTest {
         filled = true
         assertEquals(true, open("doublesize"))
         assertEquals("the clutter bar's D", HostAction.DoubleSize, HostAction.of("DOUBLESIZE", null))
+        assertEquals("the equalizer's PRESETS", HostAction.EqPresets, HostAction.of("EQ_PRESETS", null))
     }
 
     @Test

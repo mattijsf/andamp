@@ -43,6 +43,9 @@ internal sealed interface HostAction {
     /** Double Size: a classic skin's clutter bar D, which fills the screen with the skin here. */
     data object DoubleSize : HostAction
 
+    /** The equalizer's PRESETS button: its menu of presets to load, save and delete. */
+    data object EqPresets : HostAction
+
     /** A pick from a classic playlist's bottom-button menus ([pick], as `add_dir` or `sort`). */
     data class Playlist(
         val pick: String,
@@ -81,6 +84,7 @@ internal sealed interface HostAction {
                 "TRACKINFO" -> TrackInfo
                 "ALWAYS_ON_TOP" -> AlwaysOnTop
                 "DOUBLESIZE" -> DoubleSize
+                "EQ_PRESETS" -> EqPresets
                 "PLAYLIST" -> param?.let(::Playlist)
                 "PLAYLIST_SELECT" -> PlaylistSelect(param?.toIntOrNull())
                 "SHOW" -> param?.let(::Show)
