@@ -60,8 +60,8 @@ internal class WalLook(
     private val player: Player,
     /** Whether a window the app shows in place of the skin's is open; see [WalHost]. */
     private val windowOpen: (kind: String) -> Boolean? = WalPrepare.windowOpen(),
-    /** Whether a classic playlist is written in the skin's letters; see [WalFitting]. */
-    private val skinListFont: () -> Boolean = { false },
+    /** How the listener asked a classic playlist to look; see [WalFitting]. */
+    private val listStyle: () -> WalListStyle = { WalListStyle() },
     /** What [wakeKey] gives. */
     private val wake: () -> Any = { Unit },
     /** The time it has to start; see [WalEngine.start]. */
@@ -393,7 +393,7 @@ internal class WalLook(
                     menus.unattended = awaited
                     if (classic) crispText = WalCrispText(::crispFontBytes)
                 }
-            val engine = WalEngine(id, host, classic = classic, skinListFont = skinListFont, onFrame = ::frameChanged)
+            val engine = WalEngine(id, host, classic = classic, listStyle = listStyle, onFrame = ::frameChanged)
             engine.onBroken = { toMain(Runnable { failed(stoppedWorking = true) }) }
             engine.onTask = ::keepLater
             engine.placer = ::placeWindows

@@ -96,8 +96,8 @@ internal class WalEngine(
     private val idle: (SkinRuntime) -> WalIdle = WalIdle::of,
     /** Whether the skin is a classic one, whose windows are apart unless it fills the screen; see [WalFitting]. */
     classic: Boolean = false,
-    /** Whether a classic playlist is written in the skin's letters; see [WalFitting]. */
-    skinListFont: () -> Boolean = { false },
+    /** How the listener asked a classic playlist to look; see [WalFitting]. */
+    listStyle: () -> WalListStyle = { WalListStyle() },
     private val onFrame: () -> Unit,
 ) {
     private val thread = HandlerThread("wal-$name").apply { start() }
@@ -132,7 +132,7 @@ internal class WalEngine(
     private var rt: SkinRuntime? = null
     private var baseW = 0
     private var publishing = false
-    private val fitting = WalFitting(classic, { runtime -> placer?.invoke(runtime) }, skinListFont)
+    private val fitting = WalFitting(classic, { runtime -> placer?.invoke(runtime) }, listStyle)
 
     /** Puts the windows where the host kept them when they are set out apart; see [WalFitting]. */
     var placer: ((SkinRuntime) -> Unit)? = null
