@@ -19,6 +19,9 @@ import nl.mattix.andamp.ui.window.Loupe.Companion.MIN_GEARING
  * A finger close to a side of the screen cannot travel far toward it, so in that direction the
  * crosshair is geared down less, by as much as it takes to bring the outermost of [centers] within
  * the room the finger has ([reach]).
+ *
+ * In a row or a column of controls the crosshair can stay put across it ([fixed]): the lens then
+ * only slides along the run, and a finger that drifts sideways does not shake it.
  */
 class LensAim(
     start: Offset,
@@ -28,7 +31,12 @@ class LensAim(
     centers: List<Offset>,
     /** How far the finger can travel each way from where it is. */
     reach: Loupe.Reach = Loupe.Reach.UNLIMITED,
+    /** The axis the crosshair stays at [start] on. */
+    private val fixed: Fixed = Fixed.NEITHER,
 ) {
+    /** An axis the crosshair does not move on. */
+    enum class Fixed { NEITHER, X, Y }
+
     /** Where the crosshair is. */
     var focus by mutableStateOf(start)
         private set
@@ -63,7 +71,12 @@ class LensAim(
                 wanted.y.coerceIn(roam.top.toFloat(), (roam.bottom - 1).toFloat()),
             )
         if ((wanted - held).getDistance() > ESCAPE) return false
-        focus = held
+        focus =
+            when (fixed) {
+                Fixed.NEITHER -> held
+                Fixed.X -> Offset(origin.x, held.y)
+                Fixed.Y -> Offset(held.x, origin.y)
+            }
         return true
     }
 

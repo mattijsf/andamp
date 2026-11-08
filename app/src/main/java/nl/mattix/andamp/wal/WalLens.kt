@@ -92,11 +92,30 @@ internal class WalLens(
                             )
                     }.map { it.rect.toIntRect() }
             val roam = Loupe.clusterAround(box, small)
-            val start =
-                Offset(at.x.coerceIn(box.left.toFloat(), box.right - 1f), at.y.coerceIn(box.top.toFloat(), box.bottom - 1f))
             val cluster = (small + box).filter { roam.contains(it.center) }
+            val fixed = fixedAcross(cluster)
+            // across a run the crosshair sits in the middle of the held control
+            val start =
+                Offset(
+                    if (fixed == LensAim.Fixed.X) box.center.x.toFloat() else at.x.coerceIn(box.left.toFloat(), box.right - 1f),
+                    if (fixed == LensAim.Fixed.Y) box.center.y.toFloat() else at.y.coerceIn(box.top.toFloat(), box.bottom - 1f),
+                )
             val centers = cluster.map { Offset(it.center.x.toFloat(), it.center.y.toFloat()) }
-            return WalLens(LensAim(start, roam, centers, reach), controls.map { it.rect.toIntRect() }, cluster)
+            return WalLens(LensAim(start, roam, centers, reach, fixed), controls.map { it.rect.toIntRect() }, cluster)
+        }
+
+        /**
+         * The axis a run of [cluster] lies across: X for a column, whose controls all share some
+         * of their width, Y for a row, whose controls all share some of their height; neither for
+         * one control or a block of them.
+         */
+        internal fun fixedAcross(cluster: List<IntRect>): LensAim.Fixed {
+            if (cluster.size < 2) return LensAim.Fixed.NEITHER
+            return when {
+                cluster.maxOf { it.left } < cluster.minOf { it.right } -> LensAim.Fixed.X
+                cluster.maxOf { it.top } < cluster.minOf { it.bottom } -> LensAim.Fixed.Y
+                else -> LensAim.Fixed.NEITHER
+            }
         }
 
         private fun IntRect.holds(at: Offset) = at.x >= left && at.x < right && at.y >= top && at.y < bottom

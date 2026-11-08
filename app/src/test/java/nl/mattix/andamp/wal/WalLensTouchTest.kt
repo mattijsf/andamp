@@ -160,6 +160,30 @@ class WalLensTouchTest {
     }
 
     @Test
+    fun `in a column the crosshair stays in the middle across it, in a row across that`() {
+        val column =
+            WalLens.over(
+                listOf(TouchControl(Rect(11, 24, 9, 8), magnify = false), TouchControl(Rect(11, 32, 9, 8), magnify = false)),
+                Offset(12f, 27f),
+                slop = 2f,
+            )!!
+        assertEquals(Offset(15f, 27f), column.focus)
+        // a finger that drifts sideways while it goes down moves the crosshair down only
+        column.move(Offset(4f, 6f))
+        assertEquals(Offset(15f, 31f), column.focus)
+
+        val row =
+            WalLens.over(
+                listOf(TouchControl(Rect(40, 2, 9, 9), magnify = false), TouchControl(Rect(49, 2, 9, 9), magnify = false)),
+                Offset(42f, 3f),
+                slop = 2f,
+            )!!
+        assertEquals(Offset(42f, 6f), row.focus)
+        row.move(Offset(9f, -3f))
+        assertEquals(Offset(48f, 6f), row.focus)
+    }
+
+    @Test
     fun `with Tap assist off a hold is only the long press`() {
         assist = false
         touch.down(TouchPoint(30f, 70f), 0)
