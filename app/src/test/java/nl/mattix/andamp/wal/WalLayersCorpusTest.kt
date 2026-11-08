@@ -30,7 +30,7 @@ import java.nio.ByteBuffer
 import kotlin.random.Random
 
 /**
- * The corpus skins (local files in the modernskin module's test resources, skipped without them)
+ * The corpus skins (local files in `app/src/test/corpus`, skipped without them)
  * playing, drawn frame after frame with kept parts ([WalLayers]) as the engine plans them, each
  * frame drawn checked pixel for pixel against [drawWalStack]'s drawing of the same frame: at a
  * whole scale, and the stack layer of a fractional one. The screen skips frames as it does when
@@ -43,7 +43,7 @@ import kotlin.random.Random
 class WalLayersCorpusTest {
     private val app = ApplicationProvider.getApplicationContext<Application>()
     private val graphics = GraphicsContext(FrameLayout(app))
-    private val res = File("../modernskin/src/test/resources")
+    private val res = File("src/test/corpus")
 
     @Test
     fun `corpus skins draw the same pixels with kept parts, at a whole scale`() = SKINS.forEach { play(it, fractional = false) }

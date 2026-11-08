@@ -109,16 +109,16 @@ CSS) are the reference for every sprite rectangle in `SpriteMap.kt` and for the 
 engine's Winamp quirks. The coordinates are facts about the Winamp skin format,
 transcribed with attribution.
 
-The modern skin engine in `:modernskin` takes two more things from Webamp. `StdApi.kt`, the
-table of script calls the engine answers, is generated from Webamp's transcription of
-`std.mi`, Nullsoft's header for the skin script library: class ids, method names and
-parameter counts. `MakiParser.kt` reads compiled skin scripts by the layout that Webamp's
-`maki-bytecode.md` describes. Both say so in the code.
+The modern skin engine, walkit, takes two more things from Webamp. Its table of script calls
+the engine answers is generated from Webamp's transcription of `std.mi`, Nullsoft's header
+for the skin script library: class ids, method names and parameter counts. Its script parser
+reads compiled skin scripts by the layout that Webamp's `maki-bytecode.md` describes. Both
+say so in walkit's code.
 
 ## Wasabi SDK: zlib
 
 Nullsoft's Wasabi SDK (499g), under the zlib license, is a reference for how the modern skin
-engine in `:modernskin` behaves. Comments that name one of its files point at the behavior
+engine, walkit, behaves. Comments that name one of its files point at the behavior
 read there. No SDK source is included.
 
 ## Liberation Sans: SIL OFL 1.1
@@ -134,8 +134,8 @@ APK as the asset `licenses/LiberationSans-OFL-1.1.txt`.
 
 <https://github.com/dejavu-fonts/dejavu-fonts>
 
-Bundled unmodified, regular and bold, as resources of the modern skin engine
-(`modernskin/src/main/resources/nl/mattix/andamp/modernskin/defaultset/fonts/`). It stands
+Bundled unmodified, regular and bold, in the default element set modern skins build on
+(`app/src/main/resources/nl/mattix/andamp/wal/defaultset/fonts/`). It stands
 in for the Windows fonts that Winamp modern skins name without carrying them, with widths
 close to Tahoma's. The fonts are Bitstream Vera with DejaVu's changes, which are in the
 public domain, and glyphs from Arev, under Arev's license, whose terms match Bitstream
@@ -181,8 +181,7 @@ attribution, which this file and the in-app licenses screen give.
 
 <https://github.com/mattijsf/walkit>
 
-The modern skin engine in native code: the same engine as `:modernskin`, ported to Rust,
-behind the native engine switch in Preferences. It is the same author's work under the same
+The modern skin engine, in Rust: it runs every modern skin the app opens. It is the same author's work under the same
 license as Andamp, and arrives as the Android library `nl.mattix.walkit:walkit`.
 
 ## The licenses screen

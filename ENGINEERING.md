@@ -11,8 +11,6 @@ the windows stand in columns (`LockedColumns`), and a drag lifts one and drops i
 slot it is over (`LockedColumns.moved`). Classic `.wsz` skins work, and Winamp modern skins
 (`.wal`) in beta: walkit, the engine in native code (the `nl.mattix.walkit` library, from
 its own repository), runs them, and the app's `wal` package hosts one on the player.
-`:modernskin` is the engine in Kotlin that walkit was ported from, kept as the reference it is
-checked against; the app no longer builds on it.
 
 The skin UI is the front of a real media player. Behind it are several playback backends:
 local files and radio through Media3, and music sources that install as separate APKs
@@ -62,8 +60,8 @@ after a toolchain upgrade.
   `:core:plugin`, `:core:packapi`, `:backend:media3` (release variant, because its
   benchmarks measure that one), `:backend:pack`, `:pack:common`, `:androidauto`,
   `:visualizer:avs` and `:visualizer:projectm`
-- the JVM unit tests of `:modernskin` and `:core:skinplayer`, and the check of their API
-  dumps (`checkKotlinAbi`, see The skin engine's boundary)
+- the JVM unit tests of `:core:skinplayer`, and the check of its API dump
+  (`checkKotlinAbi`, see The skin engine's boundary)
 
 It is a single task so the hook, CI and this file cannot disagree about what it contains.
 A module that gains tests is added to it. The push hook also runs
@@ -197,11 +195,6 @@ ui  ──▶  player domain  ◀──  backends  ──▶  dsp        skin (s
 :visualizer:core     the TextureView every engine renders through: thread, gate, commands
 :visualizer:projectm libprojectM through JNI. The only module that sees GL.
 :visualizer:avs      AVS: parser, pipeline, and the ns-eel evaluator through JNI
-:modernskin          the reference engine for modern (.wal) skins, in Kotlin: the
-                     MAKI VM, the skin's objects, layout, input and the draw list.
-                     Plain JVM, no Android. The app runs skins on walkit, its port
-                     to native code; this one stays for the traces the port is
-                     checked against, and for the default element set both share.
 :core:skinplayer     the player as a skin, classic or modern, drives it: a state
                      snapshot, the live position, commands and signals. Its contract
                      tests and FakeSkinPlayer ship with it. Plain Kotlin.
@@ -403,16 +396,15 @@ the engine built for the machine, so the app's unit tests run skins on it, and t
 (`nl.mattix.walkit.fixtures`) that do to a loaded skin what its scripts would: resize a
 window, switch a layout, set an attribute, pop a menu, start a timer, make a Config item.
 
-`:modernskin` and `:core:skinplayer` are written to be used by hosts other than this app, so
-what they show is fixed on purpose:
+`:core:skinplayer` is written to be used by hosts other than this app, so what it shows is
+fixed on purpose:
 
-- Both build in Kotlin's explicit API mode: every public declaration says it is public,
-  and everything else is `internal`. `:modernskin` shows the same surface walkit mirrors.
-- Each module keeps a dump of its public API in `api/` (Kotlin's ABI validation). The
-  gate runs `checkKotlinAbi`, which fails when the API differs from the dump. A change
-  meant to change the API runs `./gradlew :modernskin:updateKotlinAbi` (or
-  `:core:skinplayer:updateKotlinAbi`) and commits the new dump with it, so the change
-  shows in review.
+- It builds in Kotlin's explicit API mode: every public declaration says it is public,
+  and everything else is `internal`.
+- It keeps a dump of its public API in `api/` (Kotlin's ABI validation). The gate runs
+  `checkKotlinAbi`, which fails when the API differs from the dump. A change meant to
+  change the API runs `./gradlew :core:skinplayer:updateKotlinAbi` and commits the new
+  dump with it, so the change shows in review.
 - What any host of a modern skin needs, apart from drawing, sits in the app's `wal`
   package beside the adapters, in plain Kotlin over walkit's types: fitting the stack to
   a box (`WalFitting`, `WalScale`, `WalLayout`), one finger's press, drag, double tap and
@@ -424,13 +416,9 @@ what they show is fixed on purpose:
 - `:core:skinplayer` also carries what a modern skin's player needs over any
   `SkinPlayer`: Winamp 5's scales (`WinampFiveUnits`) and the hold on a written value
   until the player shows it (`HeldWrite`).
-- `EngineTrace`, in `:modernskin`'s test fixtures, writes down everything the engine does
-  in a run of a skin (`TraceScenario`): the lines it logs, its menus and host actions, the
-  script and layout work of each tick, and the whole draw list of every frame that changed.
-  Text is measured by a fixed rule and the clock is stepped, so the trace depends on no
-  platform. walkit fed the same scenario writes the same trace; the first line that differs
-  is where it parts. `EngineTraceTest` records the reference scenarios of the local skin set
-  into `modernskin/build/traces`.
+- The default element set modern skins build on (`AndampDefaultSet`: frames, title bar and
+  widgets in plain pictures of our own, and the stand-in fonts for Windows' system fonts)
+  lives in the app's resources under `nl/mattix/andamp/wal/defaultset`.
 
 ### In Android Auto
 
