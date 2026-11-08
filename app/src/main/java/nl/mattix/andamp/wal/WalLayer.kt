@@ -7,8 +7,10 @@ import android.os.Build
 import android.util.Log
 import android.view.ViewConfiguration
 import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -25,8 +27,13 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalGraphicsContext
@@ -228,6 +235,17 @@ internal fun WalLayer(
         if (placed == null) {
             companion()
         } else {
+            // a classic stack filling the screen stands on black, up to the window's top so the
+            // status bar's band is black too
+            if (fitted?.filled == true) {
+                var above by remember { mutableStateOf(0f) }
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .onGloballyPositioned { above = it.positionInWindow().y }
+                        .drawBehind { drawRect(Color.Black, Offset(0f, -above), Size(size.width, size.height + above)) },
+                )
+            }
             WalCanvas(parts, state, placed, drag)
             fitted?.visRect?.let { WalVisualizer(parts, state, placed, it.toIntRect(), drag) }
         }
