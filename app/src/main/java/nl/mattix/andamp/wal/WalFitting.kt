@@ -395,7 +395,7 @@ internal class WalFitting(
          * How far beside an object a finger may land and still mean it: every control then answers
          * across a 48 dp touch target.
          */
-        private const val TOUCH_SLOP_DP = 24f
+        internal const val TOUCH_SLOP_DP = 24f
 
         /**
          * How much larger two columns must show the skin to be used, as a share of one column's

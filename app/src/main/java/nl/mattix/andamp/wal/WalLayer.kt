@@ -40,6 +40,7 @@ import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -256,8 +257,11 @@ internal fun WalLayer(
                         .drawBehind { drawRect(Color.Black, Offset(0f, -above), Size(size.width, size.height + above)) },
                 )
             }
-            WalCanvas(parts, state, placed, drag)
+            // the magnifier a hold on a small control opens (Tap assist), over the stack
+            val lens = remember(surface) { mutableStateOf<WalLens?>(null) }
+            WalCanvas(parts, state, placed, drag, IntSize(constraints.maxWidth, constraints.maxHeight)) { lens.value = it }
             fitted?.visRect?.let { WalVisualizer(parts, state, placed, it.toIntRect(), drag) }
+            WalLensLayer(surface, lens.value, placed)
         }
     }
 }
@@ -501,11 +505,14 @@ private class FailedFrame {
  * draws nothing more of that frame and is reported once.
  */
 @Composable
+@Suppress("LongParameterList") // the stack, where it sits, and what its touches reach
 private fun WalCanvas(
     parts: WalLayerParts,
     state: WinampState,
     placed: WalPlacement,
     drag: WalDrag,
+    layer: IntSize,
+    onLens: (WalLens?) -> Unit,
 ) {
     val surface = parts.surface
     val density = LocalDensity.current
@@ -514,6 +521,8 @@ private fun WalCanvas(
     val doubleTapSlop = remember(context) { ViewConfiguration.get(context).scaledDoubleTapSlop.toFloat() }
     // touches are mapped with the placement of the moment, not the one the gesture began with
     val placedNow by rememberUpdatedState(placed)
+    val layerNow by rememberUpdatedState(layer)
+    val onLensNow by rememberUpdatedState(onLens)
     // a menu a skin's button asks for opens against the button, measured as it opens
     SideEffect { parts.actions.anchorFor = { from -> placedNow.anchorFor(from.rect, state.windowRects[WindowStore.MAIN]) } }
     val graphics = LocalGraphicsContext.current
@@ -558,6 +567,7 @@ private fun WalCanvas(
                             }
                         },
                         drag = drag,
+                        lens = WalLensHost({ state.tapAssist }, { placedNow }, { layerNow }, density.density) { onLensNow(it) },
                     )
                 awaitEachGesture { walGesture(touch) { surface.menu != null } }
             }.drawBehind {

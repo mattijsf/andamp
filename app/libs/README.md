@@ -29,5 +29,6 @@ published on (`darwin-aarch64`) and the helpers the app's unit tests drive a ski
 | 0.5.14 | v0.5.14 (138b2fc) | `Presentation.listRowExtra`: taller classic playlist rows |
 | 0.5.15 | v0.5.15 (af1f00d) | host actions carry `ActionFrom`: the sender's rect and the pressed point |
 | 0.5.16 | v0.5.16 (ae5f9e2) | under touch, a press beside a classic control takes the nearest one; the playlist grip takes its whole corner and a finger beside it |
+| 0.5.17 | v0.5.17 (03b8f99) | `pressControls` and `setPointerPrecise`: a magnifier can list a held press's controls and steer it like a mouse |
 
 Only the current version's files are kept; the rows above are the log of what was kept here.

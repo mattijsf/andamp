@@ -20,6 +20,7 @@ import nl.mattix.walkit.SkinFiles
 import nl.mattix.walkit.SkinMenu
 import nl.mattix.walkit.SkinOptions
 import nl.mattix.walkit.SkinRuntime
+import nl.mattix.walkit.TouchControl
 import java.io.File
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
@@ -246,6 +247,30 @@ internal class WalLook(
         val seq = ++lastSeq
         engine?.doubleTap(x, y, seq)
         return seq
+    }
+
+    override fun pointerPrecise() {
+        lastInputAt = SystemClock.uptimeMillis()
+        engine?.pointerPrecise()
+    }
+
+    override fun pressControls(onControls: (List<TouchControl>) -> Unit) {
+        engine?.pressControls(onControls)
+    }
+
+    override fun drawMagnified(
+        scope: DrawScope,
+        zoom: Float,
+    ) {
+        val frame = shown ?: engine?.frame ?: return
+        val host = host ?: return
+        host.drawing.begin(frame.themeKey)
+        try {
+            // hard edges: each screen pixel shows the one skin pixel its center falls on
+            scope.drawWindowsAt(frame.stack, host, zoom, hard = true)
+        } finally {
+            host.drawing.end()
+        }
     }
 
     override fun rightClick(seq: Int) {

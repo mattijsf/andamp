@@ -41,11 +41,13 @@ private suspend fun AwaitPointerEventScope.follow(
     var now = downAt
     while (true) {
         if (menuUp()) touch.menuShown()
-        val event = nextEvent(touch.longPressIn(now))
+        val wait = touch.longPressIn(now)
+        val event = nextEvent(wait)
         if (event == null) {
             // held: the finger is still down
+            now += wait ?: 0
             if (menuUp()) touch.menuShown()
-            touch.longPressDue()
+            touch.due(now)
             continue
         }
         val change = event.changes.firstOrNull { it.id == id } ?: return touch.cancel()

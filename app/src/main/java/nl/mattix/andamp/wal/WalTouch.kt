@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.wal
 
+import nl.mattix.andamp.ui.window.Loupe
 import kotlin.math.hypot
 
 /**
@@ -11,8 +12,13 @@ import kotlin.math.hypot
  * ([WalLayout.moveTarget]) that travels past the touch slop moves the whole stack through [drag]
  * instead: the skin's press is cancelled and it hears nothing more of that finger.
  *
+ * A hold on one of the skin's small controls opens a magnifier ([lens], the app's Tap assist): the
+ * finger then steers the skin's press with a crosshair, geared down, and the press is precise
+ * ([Target.pointerPrecise]), so the skin lights whatever the crosshair is on, and the release lets
+ * go there. Pushed far past the controls the lens shows, it closes and the press is cancelled.
+ *
  * It keeps no clock and reads no events itself: the host hands it the first finger's events with
- * their times and asks it when the long press is due ([longPressIn]). Positions are surface pixels from the
+ * their times and asks it when the hold or the long press is due ([longPressIn], [due]). Positions are surface pixels from the
  * stack's top-left corner; [toSkin] turns them into skin pixels with the placement of the moment.
  */
 internal class WalTouch(
@@ -25,6 +31,8 @@ internal class WalTouch(
     private val onLongPress: (at: TouchPoint, seq: Int) -> Unit,
     /** What moves the stack, or null where it cannot be moved. */
     private val drag: Drag? = null,
+    /** The magnifier a hold opens, or null when Tap assist is off. */
+    private val lens: Lens? = null,
 ) {
     /** Where the skin hears the finger: the engine's pointer calls, in skin px, as a host passes them on. */
     interface Target {
@@ -60,6 +68,30 @@ internal class WalTouch(
          * layout says ([WalLayout.moveTarget]), or null.
          */
         val moveTarget: Int?
+
+        /** The rest of the press lands exactly where it says, as a mouse's does: a magnifier steers it. */
+        fun pointerPrecise() {}
+
+        /** Hands [onControls] the controls of the window the press is on, in the stack's skin pixels, later on main. */
+        fun pressControls(onControls: (List<nl.mattix.walkit.TouchControl>) -> Unit) {}
+    }
+
+    /** The magnifier, as the host shows it. */
+    interface Lens {
+        /** Whether a hold opens it now: Tap assist is on. */
+        val enabled: Boolean
+
+        /** Skin pixels per surface pixel now. */
+        val skinPerPx: Float
+
+        /** The lens a hold at [at] opens from [controls], or null where the press is on no small control. */
+        fun open(
+            at: TouchPoint,
+            controls: List<nl.mattix.walkit.TouchControl>,
+        ): WalLens?
+
+        /** Shows [lens] over the skin, or no lens. */
+        fun show(lens: WalLens?)
     }
 
     /** Moving the whole stack with the finger; positions as [WalTouch] takes them. */
@@ -104,6 +136,21 @@ internal class WalTouch(
 
         /** It moves the stack, so the rest of the finger goes to [drag]. */
         var dragging = false
+
+        /** The hold that may open the lens has yet to come. */
+        var holdAhead = false
+
+        /** The lens it opened, which steers the rest of it. */
+        var lens: WalLens? = null
+
+        /** Where the finger was last seen while the lens is up; null until its first move after the lens opened. */
+        var steeredFrom: TouchPoint? = null
+
+        /**
+         * Still a hold: not taken, within the slop, no skin menu up and no lens open, so the lens
+         * or the long press may come.
+         */
+        val holding: Boolean get() = !taken && still && !menuSeen && lens == null
     }
 
     /** A tap that ended at [upTime], which a second tap near [at] makes a double tap. */
@@ -127,7 +174,7 @@ internal class WalTouch(
         onPress(at)
         val p = toSkin(at)
         val seq = if (second) surface.doubleTap(p.first, p.second) else surface.pointerDown(p.first, p.second)
-        press = Press(at, time, seq, second)
+        press = Press(at, time, seq, second).also { it.holdAhead = lens?.enabled == true && !second }
     }
 
     /** The finger moved to [at]. */
@@ -138,6 +185,7 @@ internal class WalTouch(
             drag?.move(at)
             return
         }
+        p.lens?.let { return steer(p, it, at) }
         if (p.at.distanceTo(at) > rules.touchSlop) p.still = false
         val d = drag
         // the engine names a press that moves the stack once it has handled it: each move asks again
@@ -159,9 +207,19 @@ internal class WalTouch(
     ) {
         val p = press ?: return
         press = null
+        val open = p.lens
         when {
             p.taken -> {
                 Unit
+            }
+
+            open != null -> {
+                lens?.show(null)
+                if (consumed) {
+                    surface.pointerCancel()
+                } else {
+                    open.point.let { (x, y) -> surface.pointerUp(x, y) }
+                }
             }
 
             // the stack lands where the finger lifted, which can be past its last move
@@ -192,6 +250,7 @@ internal class WalTouch(
         val p = press ?: return
         press = null
         lastTap = null
+        if (p.lens != null) lens?.show(null)
         if (p.dragging) {
             drag?.end()
         } else if (!p.taken) {
@@ -204,17 +263,75 @@ internal class WalTouch(
         press?.menuSeen = true
     }
 
-    /** How long after [now] the long press is due, or null when it cannot fire. */
+    /** How long after [now] the hold that opens the lens or the long press is due, or null when neither can come. */
     fun longPressIn(now: Long): Long? {
         val p = press ?: return null
-        if (p.taken || !p.still || p.menuSeen) return null
-        return (p.time + rules.longPressMs - now).coerceAtLeast(0)
+        if (!p.holding) return null
+        val due = if (p.holdAhead) p.time + Loupe.HOLD_MS else p.time + rules.longPressMs
+        return (due - now).coerceAtLeast(0)
+    }
+
+    /**
+     * The wait [longPressIn] gave ran out at [now]: the hold asks the skin for the press's
+     * controls, and opens the lens when the press is on a small one; the long press fires when due.
+     */
+    fun due(now: Long) {
+        val p = press ?: return
+        if (p.holdAhead && now >= p.time + Loupe.HOLD_MS) {
+            p.holdAhead = false
+            if (p.holding) surface.pressControls { controls -> held(p, controls) }
+            return
+        }
+        if (now >= p.time + rules.longPressMs) longPressDue()
+    }
+
+    /** The skin listed [controls] for the press [p] held: the lens opens if it is still held, still and on a small one. */
+    private fun held(
+        p: Press,
+        controls: List<nl.mattix.walkit.TouchControl>,
+    ) {
+        val host = lens ?: return
+        if (press !== p || p.dragging || !p.holding) return
+        val opened = host.open(p.at, controls) ?: return
+        p.lens = opened
+        surface.pointerPrecise()
+        opened.point.let { (x, y) -> surface.pointerMove(x, y) }
+        host.show(opened)
+    }
+
+    /**
+     * The finger moved to [at] while [open] is up: the crosshair moves by what it did since the last
+     * move, geared down, and the skin's press with it. The first move after the lens opens is
+     * measured from itself, so what the finger wandered while the hold timed out does not move it.
+     */
+    private fun steer(
+        p: Press,
+        open: WalLens,
+        at: TouchPoint,
+    ) {
+        val from = p.steeredFrom
+        p.steeredFrom = at
+        if (from == null) return
+        val perPx = lens?.skinPerPx ?: return
+        if (!open.move(
+                androidx.compose.ui.geometry
+                    .Offset((at.x - from.x) * perPx, (at.y - from.y) * perPx),
+            )
+        ) {
+            // pushed away: the lens closes and nothing is pressed
+            p.lens = null
+            p.taken = true
+            lens.show(null)
+            surface.pointerCancel()
+            return
+        }
+        open.point.let { (x, y) -> surface.pointerMove(x, y) }
     }
 
     /** The long press is due: it fires unless the finger traveled or a skin menu opened since it went down. */
     fun longPressDue() {
         val p = press ?: return
-        if (p.taken || !p.still || p.menuSeen) return
+        if (!p.holding) return
         p.taken = true
         surface.pointerCancel()
         onLongPress(p.at, p.seq)
