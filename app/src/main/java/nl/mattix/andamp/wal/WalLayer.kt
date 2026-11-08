@@ -47,6 +47,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -69,6 +70,9 @@ import java.util.WeakHashMap
 
 /** The z-index of [WalLayer]: below every classic window, whose z-indexes run up from 0. */
 internal const val WAL_LAYER_Z = -2f
+
+/** How long a modern skin may take to its first frame before the classic main window stands in for it. */
+internal const val COMPANION_AFTER_MS = 1_500L
 
 /**
  * How long a stack that changed size while the skin animates must hold still before its rect is
@@ -186,10 +190,11 @@ internal fun hidesModernSkin(s: WinampState): Boolean {
  * screen's band, and touches on it sent to the skin. The surface holding the skin's turn also
  * gives it its box, its clock, its menus and its actions, and publishes `windowRects[MAIN]`.
  *
- * Until the engine has laid the stack out for this box, [companion] shows in its place: the
- * classic skin's main window, so the main menu and the long press work while the skin loads. A
- * layout worked out for another box (the phone was turned) leaves the stack where it was last
- * placed, or the companion when it never was.
+ * Until the engine has laid the stack out, nothing shows, so opening the player does not flash
+ * the classic skin before the modern one; a skin still loading after [COMPANION_AFTER_MS] shows
+ * [companion] in its place: the classic skin's main window, so the main menu and the long press
+ * work while it loads. A layout worked out for another box (the phone was turned) leaves the
+ * stack where it was last placed.
  *
  * A drag from any part of the skin but a control moves the stack ([WalDrag]); the skin keeps where
  * it was moved to, upright and sideways apart ([WalSurface.places]). The stack may go partly past
@@ -233,7 +238,12 @@ internal fun WalLayer(
         // the stack snaps as near as a classic window does
         SideEffect { drag.placedAt(fit, box, home?.stack, placed?.stack?.topLeft, WindowSnap.SNAP_DISTANCE * scale, keep) }
         if (placed == null) {
-            companion()
+            var late by remember(surface) { mutableStateOf(false) }
+            LaunchedEffect(surface) {
+                delay(COMPANION_AFTER_MS)
+                late = true
+            }
+            if (late) companion()
         } else {
             // a classic stack filling the screen stands on black, up to the window's top so the
             // status bar's band is black too

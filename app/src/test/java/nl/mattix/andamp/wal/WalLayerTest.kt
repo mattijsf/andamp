@@ -693,7 +693,7 @@ class WalLayerTest {
     }
 
     @Test
-    fun `while the skin has no layout the classic main window stands in, publishes its rect and long-presses to the main menu`() {
+    fun `a skin slow to its first layout has the classic main window stand in, with its rect and long press`() {
         val vm = testViewModel()
         vm.welcome.seen = true
         val skin = SkinLoader.loadBase(ApplicationProvider.getApplicationContext<Application>())
@@ -716,6 +716,9 @@ class WalLayerTest {
                 )
             }
         }
+        frames()
+        assertNull("nothing for a moment, so a quick skin does not flash the classic one", vm.state.windowRects[WindowStore.MAIN])
+        compose.mainClock.advanceTimeBy(COMPANION_AFTER_MS)
         frames()
 
         assertTrue("the engine was asked to start", waiting.fits.isNotEmpty())

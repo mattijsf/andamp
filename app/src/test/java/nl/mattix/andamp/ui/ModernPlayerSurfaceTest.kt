@@ -151,6 +151,12 @@ class ModernPlayerSurfaceTest {
             compose.mainClock.advanceTimeByFrame()
         }
 
+    /** Waits until a skin still loading has the classic main window stand in for it. */
+    private fun standIn() {
+        compose.mainClock.advanceTimeBy(nl.mattix.andamp.wal.COMPANION_AFTER_MS)
+        frames()
+    }
+
     private fun show(
         wal: WalSurface? = surface,
         compact: Boolean = false,
@@ -309,9 +315,18 @@ class ModernPlayerSurfaceTest {
     }
 
     @Test
+    fun `while a skin loads nothing shows for a moment, then the classic main window stands in`() {
+        show(FakeWalSurface())
+        assertNull("no classic flash before the skin", vm.state.windowRects[WindowStore.MAIN])
+        standIn()
+        assertNotNull(vm.state.windowRects[WindowStore.MAIN])
+    }
+
+    @Test
     fun `a skin that animates from its first frame on takes over the rect from the classic main window`() {
         val waiting = FakeWalSurface()
         show(waiting)
+        standIn()
         val classic = vm.state.windowRects[WindowStore.MAIN]
         assertNotNull("the classic main window stands in", classic)
 
@@ -328,6 +343,7 @@ class ModernPlayerSurfaceTest {
     @Test
     fun `while the skin loads, the classic main window's D, O and V leave Double Size and the in-player modes alone`() {
         show(FakeWalSurface())
+        standIn()
         val main = vm.state.windowRects[WindowStore.MAIN]!!
 
         fun tap(button: IntRect) {
