@@ -46,6 +46,9 @@ internal class WalFitting(
     private var apartApplied = false
     private var apartScale = 1f
 
+    /** Where the stack filling the screen ([fills]) was last placed; null when it does not fill it. */
+    private var filledPlace: WalScale.Place? = null
+
     /** What each main window showed across the first time it was fitted; see [restingWidth]. */
     private val firstWidths = HashMap<WindowId, Int>()
 
@@ -77,6 +80,11 @@ internal class WalFitting(
             apartApplied = false
             runtime.present { it.copy(freeWindows = false) }
         }
+        if (fills(fit)) {
+            setFilled(runtime, fit, baseW)
+            return
+        }
+        filledPlace = null
         runtime.present { it.copy(stretchLast = !fit.sideways && !fit.compact) }
         if (fillsBox(layout)) {
             // its scale from its minimum size, its size from what the box holds at that scale; in a
@@ -111,9 +119,19 @@ internal class WalFitting(
             apply(runtime, fit, baseW)
             return
         }
+        if (fills(fit) != (filledPlace != null)) {
+            apply(runtime, fit, baseW)
+            return
+        }
         if (now == windows || apartApplied) return
         windows = now
-        if (fit.sideways) decideColumns(runtime, fit) else uprightView(runtime, (fit.widthPx to fit.heightPx), baseW)
+        if (filledPlace != null) {
+            setFilled(runtime, fit, baseW)
+        } else if (fit.sideways) {
+            decideColumns(runtime, fit)
+        } else {
+            uprightView(runtime, (fit.widthPx to fit.heightPx), baseW)
+        }
     }
 
     /**
@@ -121,6 +139,36 @@ internal class WalFitting(
      * the switch says; never in the floating player's box.
      */
     private fun apart(fit: WalFit): Boolean = (if (classic) !WalFilled.filled else WalApart.apart) && !fit.compact
+
+    /**
+     * Whether [fit] shows a [classic] skin's stack filling the screen ([WalFilled]): upright in the
+     * app, not apart; sideways the stack fits the box as any skin's does.
+     */
+    private fun fills(fit: WalFit): Boolean = classic && !apart(fit) && !fit.compact && !fit.sideways
+
+    /**
+     * Sets [runtime]'s stack to fill [fit]'s box: the main window as wide as the box, at a scale
+     * that need not be whole, and the last window stretched to the box's bottom. A stack whose
+     * windows would not fit the box's height at that scale is shrunk until they do, and centered
+     * across.
+     */
+    private fun setFilled(
+        runtime: SkinRuntime,
+        fit: WalFit,
+        baseW: Int,
+    ) {
+        val main = runtime.mainWindow ?: return
+        windows = runtime.windowIds
+        val across = baseW.takeIf { it > 0 } ?: runtime.windowSize(main).first
+        val tall = runtime.naturalStackSize(1, across)?.second ?: 0
+        val wide = fit.widthPx.toFloat() / across
+        val scale = if (tall > 0) minOf(wide, fit.heightPx.toFloat() / tall) else wide
+        val left = WalScale.left(fit.widthPx.toFloat(), across, scale)
+        filledPlace = WalScale.Place(scale, left, 0f)
+        runtime.present {
+            it.copy(columns = 1, stretchLast = true, viewSize = across to (fit.heightPx / scale).toInt())
+        }
+    }
 
     /**
      * Sets [runtime]'s windows out apart in [fit]'s box: the box is the viewport, in skin px at
@@ -136,6 +184,7 @@ internal class WalFitting(
         val box = (fit.widthPx to fit.heightPx)
         val scale = WalScale.fit(box, runtime.windowSize(main), baseW)
         apartScale = scale
+        filledPlace = null
         val first = !apartApplied
         apartApplied = true
         runtime.present {
@@ -224,9 +273,16 @@ internal class WalFitting(
             restingW = drawn.first
             restingFit = fit
         }
-        // apart, the whole box is the skin's viewport, at the main window's scale
-        val view = runtime.presentation.viewSize?.takeIf { apartApplied }
-        val place = if (view != null) WalScale.Place(apartScale, 0f, 0f) else place(runtime, fit, baseW, size, drawn)
+        // apart, the whole box is the skin's viewport, at the main window's scale; filling the
+        // screen, the view is the stack, as wide as the box
+        val filled = filledPlace
+        val view = runtime.presentation.viewSize?.takeIf { apartApplied || filled != null }
+        val place =
+            when {
+                view == null -> place(runtime, fit, baseW, size, drawn)
+                filled != null -> filled
+                else -> WalScale.Place(apartScale, 0f, 0f)
+            }
         val slop = kotlin.math.ceil(TOUCH_SLOP_DP * fit.density / place.scale).toInt()
         // a finger drives the skin: a tap on a classic playlist button leaves its menu open
         runtime.present { it.copy(touchSlop = slop, touch = true) }
@@ -242,7 +298,8 @@ internal class WalFitting(
             animating = runtime.animating,
             sliding = runtime.sliding,
             menuTarget = runtime.menuTarget,
-            moveTarget = runtime.moveTarget,
+            moveTarget = runtime.moveTarget.takeIf { filled == null },
+            filled = filled != null,
             wantsFrames = wantsFrames,
             dock = if (view != null) null else dockOf(runtime, drawn),
             edgePlacements = runtime.edgePlacements,

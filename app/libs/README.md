@@ -22,5 +22,7 @@ published on (`darwin-aarch64`) and the helpers the app's unit tests drive a ski
 | 0.5.7 | v0.5.7 (92e3be2) | a press on a picture of an open playlist menu always closes it |
 | 0.5.8 | v0.5.8 (68198df) | the host hears the classic playlist's selected row (`PLAYLIST_SELECT`) |
 | 0.5.9 | v0.5.9 (29bc396) | a stacked classic playlist stretches down to fill the view in 29-pixel steps |
+| 0.5.10 | v0.5.10 (4fe4754) | a classic playlist stretched to fill the view reaches its bottom; its grip sizes nothing then |
+| 0.5.11 | v0.5.11 (f95b6a2) | a classic playlist sized apart still fills the view once the windows stack |
 
 Only the current version's files are kept; the rows above are the log of what was kept here.

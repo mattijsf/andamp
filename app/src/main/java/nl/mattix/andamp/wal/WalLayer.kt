@@ -210,7 +210,8 @@ internal fun WalLayer(
         val fitted = layout?.takeIf { it.fit == fit }
         // where the engine puts the stack, and where the listener moved it from there
         val home = fitted?.let { WalPlacement.of(box, it, scale) }
-        val move = drag.shift ?: surface.places[fit.sideways]
+        // a stack filling the screen stays where the engine puts it
+        val move = if (fitted?.filled == true) null else drag.shift ?: surface.places[fit.sideways]
         val keep = with(LocalDensity.current) { WalPlacement.KEEP_DP.dp.roundToPx() }
         val shift = if (home == null || move == null) null else WalPlacement.held(move, home.stack, box, keep)
         val ready = if (fitted == null || shift == null) home else WalPlacement.of(box, fitted, scale, shift)
