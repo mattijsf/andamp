@@ -37,6 +37,7 @@ class HostActionNamesTest {
         assertEquals(HostAction.NextPreset, HostAction.of("VIS_NEXT", null))
         assertEquals(HostAction.PreviousPreset, HostAction.of("VIS_PREV", null))
         assertEquals(HostAction.TrackInfo, HostAction.of("TRACKINFO", null))
+        assertEquals("a classic skin's Winamp logo", HostAction.About, HostAction.of("ABOUT", null))
         assertEquals("a classic skin's clutter bar A", HostAction.AlwaysOnTop, HostAction.of("ALWAYS_ON_TOP", null))
     }
 

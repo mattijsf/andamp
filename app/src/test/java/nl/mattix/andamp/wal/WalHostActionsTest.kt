@@ -61,6 +61,7 @@ class WalHostActionsTest {
             previousPreset = { on("previous preset") },
             pickFile = { andPlay -> on(if (andPlay) "file to play" else "file") },
             fileInfo = { on("file info") },
+            about = { on("about") },
             alwaysOnTop = { on("always on top") },
             doubleSize = { on("double size") },
             playlistPick = { pick, _ -> on("playlist $pick") },
@@ -90,6 +91,7 @@ class WalHostActionsTest {
         assertEquals(listOf("next preset"), reaches("VIS_NEXT"))
         assertEquals(listOf("previous preset"), reaches("VIS_PREV"))
         assertEquals(listOf("file info"), reaches("TRACKINFO"))
+        assertEquals("a classic skin's Winamp logo", listOf("about"), reaches("ABOUT"))
         assertEquals("a classic skin's clutter bar A", listOf("always on top"), reaches("ALWAYS_ON_TOP"))
         assertEquals("and its D", listOf("double size"), reaches("DOUBLESIZE"))
         assertEquals("the equalizer's PRESETS", listOf("eq presets"), reaches("EQ_PRESETS"))

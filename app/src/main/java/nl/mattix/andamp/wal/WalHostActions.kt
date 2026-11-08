@@ -42,6 +42,8 @@ internal class WalHostActions(
     private val pickFile: (andPlay: Boolean) -> Unit,
     /** View file info for the song playing, as the classic clutter bar's I opens it. */
     private val fileInfo: () -> Unit,
+    /** The about box, as a classic skin's Winamp logo opens it. */
+    private val about: () -> Unit = {},
     /** Always On Top on or off, as the classic clutter bar's A switches it. */
     private val alwaysOnTop: () -> Unit = {},
     /** The clutter bar's D: the classic skin fills the screen, or its windows go apart again. */
@@ -93,6 +95,10 @@ internal class WalHostActions(
 
             HostAction.TrackInfo -> {
                 fileInfo()
+            }
+
+            HostAction.About -> {
+                about()
             }
 
             HostAction.AlwaysOnTop, HostAction.DoubleSize -> {
@@ -205,6 +211,7 @@ internal class WalHostActions(
                 previousPreset = { if (s.milkdropOn || s.visInSkin) s.visualCommands?.previousPreset() },
                 pickFile = openFile,
                 fileInfo = { vm.trackInfoOps.show(s.lastPlayed) },
+                about = { s.aboutOpen = true },
                 alwaysOnTop = onAlwaysOnTop,
                 doubleSize = { WalFilled.toggle(vm.getApplication()) },
                 playlistPick = { pick, anchor ->

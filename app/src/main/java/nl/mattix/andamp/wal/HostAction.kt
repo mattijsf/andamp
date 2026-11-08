@@ -37,6 +37,9 @@ internal sealed interface HostAction {
     /** The file info of the song playing. */
     data object TrackInfo : HostAction
 
+    /** The about box: a classic skin's Winamp logo, bottom right of the main window. */
+    data object About : HostAction
+
     /** Always On Top on or off: a classic skin's clutter bar A. */
     data object AlwaysOnTop : HostAction
 
@@ -82,6 +85,7 @@ internal sealed interface HostAction {
                 "VIS_NEXT" -> NextPreset
                 "VIS_PREV" -> PreviousPreset
                 "TRACKINFO" -> TrackInfo
+                "ABOUT" -> About
                 "ALWAYS_ON_TOP" -> AlwaysOnTop
                 "DOUBLESIZE" -> DoubleSize
                 "EQ_PRESETS" -> EqPresets
