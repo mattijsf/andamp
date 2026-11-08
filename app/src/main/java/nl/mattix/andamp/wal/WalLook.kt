@@ -443,8 +443,9 @@ internal class WalLook(
     private fun hostAction(
         action: String,
         param: String?,
+        from: nl.mattix.walkit.ActionFrom?,
     ) {
-        toMain(Runnable { if (!released) sink?.hostAction(action, param) })
+        toMain(Runnable { if (!released) sink?.hostAction(action, param, from) })
     }
 
     /** A new frame, or a menu opened or closed, on the engine thread: one main post takes them all. */

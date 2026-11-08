@@ -172,6 +172,19 @@ class WalHostActionsTest {
     }
 
     @Test
+    fun `a menu a button asks for opens against the button, and at the last press when nothing on screen sent it`() {
+        val press = MenuAnchor(WindowStore.MAIN, 40, 12, 1, 1)
+        val button = MenuAnchor(WindowStore.MAIN, 217, 134, 45, 13)
+        actions.pressAt = { press }
+        actions.anchorFor =
+            { from -> MenuAnchor(WindowStore.MAIN, from.rect.left, from.rect.top, from.rect.width, from.rect.height) }
+        actions.hostAction("EQ_PRESETS", null, nl.mattix.walkit.ActionFrom(nl.mattix.walkit.Rect(217, 134, 45, 13), 230 to 140))
+        actions.hostAction("VIS_MENU", null, null)
+
+        assertEquals(listOf(button, press), anchors)
+    }
+
+    @Test
     fun `the library button opens and closes the library as the main menu does`() {
         val vm = testViewModel()
         val actions = WalHostActions.of(vm, openMenu = { _, _ -> }, onMinimize = {}, openFile = {})

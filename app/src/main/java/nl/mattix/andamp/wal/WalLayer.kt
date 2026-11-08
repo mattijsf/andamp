@@ -504,6 +504,8 @@ private fun WalCanvas(
     val doubleTapSlop = remember(context) { ViewConfiguration.get(context).scaledDoubleTapSlop.toFloat() }
     // touches are mapped with the placement of the moment, not the one the gesture began with
     val placedNow by rememberUpdatedState(placed)
+    // a menu a skin's button asks for opens against the button, measured as it opens
+    SideEffect { parts.actions.anchorFor = { from -> placedNow.anchorFor(from.rect, state.windowRects[WindowStore.MAIN]) } }
     val graphics = LocalGraphicsContext.current
     // nothing is drawn under the stack where the window shows what lies behind it: over other apps,
     // and in the activity from Android 9 on (a translucent window)

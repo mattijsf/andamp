@@ -20,6 +20,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import nl.mattix.andamp.state.Flush
 import nl.mattix.andamp.state.forceToDisk
 import nl.mattix.andamp.state.writeFlushed
+import nl.mattix.walkit.ActionFrom
 import nl.mattix.walkit.BitmapDef
 import nl.mattix.walkit.DrawCmd
 import nl.mattix.walkit.FontDef
@@ -61,7 +62,7 @@ internal class WalHost(
     private val cacheDir: File,
     windowOpen: (kind: String) -> Boolean? = LIBRARY_CLOSED,
     drawingBudget: Long = WalDrawing.BUDGET,
-    private val actions: (action: String, param: String?) -> Unit = { _, _ -> },
+    private val actions: (action: String, param: String?, from: ActionFrom?) -> Unit = { _, _, _ -> },
 ) : SkinHost {
     private val files = WithGeneratedImages(files)
 
@@ -469,7 +470,8 @@ internal class WalHost(
     override fun hostAction(
         action: String,
         param: String?,
-    ) = actions(action, param)
+        from: ActionFrom?,
+    ) = actions(action, param, from)
 
     /**
      * Lets go of what was made for drawing: the decoded pictures, their tinted, cut, stretched and

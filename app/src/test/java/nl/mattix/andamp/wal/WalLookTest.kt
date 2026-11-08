@@ -520,6 +520,7 @@ class WalLookTest {
                 override fun hostAction(
                     action: String,
                     param: String?,
+                    from: nl.mattix.walkit.ActionFrom?,
                 ) {
                     heard += "$action on ${if (Looper.myLooper() == Looper.getMainLooper()) "main" else "another thread"}"
                 }

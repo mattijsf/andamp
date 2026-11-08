@@ -10,6 +10,7 @@ import nl.mattix.andamp.ui.menu.visualizationItems
 import nl.mattix.andamp.ui.menu.visualizationMenu
 import nl.mattix.andamp.ui.window.PlaylistMenuActions
 import nl.mattix.andamp.ui.window.playlistMenus
+import nl.mattix.walkit.ActionFrom
 
 /**
  * What the player does for a modern skin's buttons that reach outside the skin: each host action
@@ -56,15 +57,19 @@ internal class WalHostActions(
      */
     var pressAt: (() -> MenuAnchor)? = null
 
+    /**
+     * The menu anchor over a rect of the skin a host action came from ([ActionFrom]): a menu the
+     * action opens goes against the button that sent it. Null before the skin is placed.
+     */
+    var anchorFor: ((ActionFrom) -> MenuAnchor)? = null
+
     override fun hostAction(
         action: String,
         param: String?,
+        from: ActionFrom?,
     ) {
+        val at = anchorOf(from)
         when (val a = HostAction.of(action, param)) {
-            is HostAction.Menu -> {
-                openMenu(MenuBarSection.of(a.section), pressAt?.invoke())
-            }
-
             HostAction.Close -> {
                 exit()
             }
@@ -73,8 +78,8 @@ internal class WalHostActions(
                 minimize()
             }
 
-            HostAction.VisualizationMenu, HostAction.EqPresets -> {
-                buttonMenu(a)
+            is HostAction.Menu, HostAction.VisualizationMenu, HostAction.EqPresets -> {
+                buttonMenu(a, at)
             }
 
             // the video's too: Andamp plays no video, and the skin's video area shows the visualizer
@@ -82,12 +87,8 @@ internal class WalHostActions(
                 fullscreenVisualizer()
             }
 
-            HostAction.NextPreset -> {
-                nextPreset()
-            }
-
-            HostAction.PreviousPreset -> {
-                previousPreset()
+            HostAction.NextPreset, HostAction.PreviousPreset -> {
+                if (a == HostAction.NextPreset) nextPreset() else previousPreset()
             }
 
             HostAction.TrackInfo -> {
@@ -99,7 +100,7 @@ internal class WalHostActions(
             }
 
             is HostAction.Playlist, is HostAction.PlaylistSelect -> {
-                playlist(a)
+                playlist(a, at)
             }
 
             // the video too: Andamp plays no video, and the skin's video area shows the visualizer
@@ -122,10 +123,22 @@ internal class WalHostActions(
         }
     }
 
-    /** The menu a skin's button opens, at the last press: the visualization menu or the equalizer's presets. */
-    private fun buttonMenu(a: HostAction) {
-        val at = pressAt?.invoke()
-        if (a == HostAction.EqPresets) eqPresets(at) else visualizationMenu(at)
+    /** Where a menu goes: against what sent the action ([from]), else where the finger last went down. */
+    private fun anchorOf(from: ActionFrom?): MenuAnchor? = from?.let { anchorFor?.invoke(it) } ?: pressAt?.invoke()
+
+    /**
+     * The menu a skin's button opens, at [at]: the main menu or a part of it, the visualization
+     * menu or the equalizer's presets.
+     */
+    private fun buttonMenu(
+        a: HostAction,
+        at: MenuAnchor?,
+    ) {
+        when (a) {
+            is HostAction.Menu -> openMenu(MenuBarSection.of(a.section), at)
+            HostAction.EqPresets -> eqPresets(at)
+            else -> visualizationMenu(at)
+        }
     }
 
     /** A classic clutter bar's A (Always On Top) or D (here: fill the screen). */
@@ -133,10 +146,13 @@ internal class WalHostActions(
         if (a == HostAction.DoubleSize) doubleSize() else alwaysOnTop()
     }
 
-    /** A classic playlist's pick, at the last press, or the row it selected. */
-    private fun playlist(a: HostAction) {
+    /** A classic playlist's pick, a submenu of it at [at], or the row it selected. */
+    private fun playlist(
+        a: HostAction,
+        at: MenuAnchor?,
+    ) {
         when (a) {
-            is HostAction.Playlist -> playlistPick(a.pick, pressAt?.invoke())
+            is HostAction.Playlist -> playlistPick(a.pick, at)
             is HostAction.PlaylistSelect -> selectRow(a.row)
             else -> Unit
         }

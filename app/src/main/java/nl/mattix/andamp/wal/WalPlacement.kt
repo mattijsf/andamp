@@ -50,6 +50,29 @@ internal data class WalPlacement(
         IntOffset(((stack.left + at.x) / scale).roundToInt(), ((stack.top + at.y) / scale).roundToInt())
 
     /**
+     * A menu anchor over [skin], a rect of the stack in skin pixels (where a host action came
+     * from, [nl.mattix.walkit.ActionFrom]), as the virtual pixels it covers, relative to
+     * [published] as [anchorAt] gives it: a menu opens against the button that asked for it.
+     */
+    fun anchorFor(
+        skin: nl.mattix.walkit.Rect,
+        published: IntRect?,
+    ): MenuAnchor {
+        val main = published ?: window
+
+        fun virtual(
+            from: Int,
+            at: Int,
+            round: (Int, Int) -> Int,
+        ) = round((from + at * skinScale).roundToInt(), scale)
+        val left = virtual(stack.left, skin.left, Math::floorDiv)
+        val top = virtual(stack.top, skin.top, Math::floorDiv)
+        val right = virtual(stack.left, skin.right) { a, b -> -Math.floorDiv(-a, b) }
+        val bottom = virtual(stack.top, skin.bottom) { a, b -> -Math.floorDiv(-a, b) }
+        return MenuAnchor(WindowStore.MAIN, left - main.left, top - main.top, maxOf(1, right - left), maxOf(1, bottom - top))
+    }
+
+    /**
      * A menu anchor at [point], a virtual pixel, relative to [published] as `menuAnchorBounds`
      * reads an anchor. [published] is the rect `windowRects[MAIN]` holds, which waits for a sliding
      * stack to stop; while it holds none, the anchor is relative to [window].

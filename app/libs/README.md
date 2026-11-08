@@ -27,5 +27,6 @@ published on (`darwin-aarch64`) and the helpers the app's unit tests drive a ski
 | 0.5.12 | v0.5.12 (1d3c1d4) | `Presentation.skinListFont`: a classic playlist spells its rows in the skin's TEXT.BMP letters |
 | 0.5.13 | v0.5.13 (3a0fa9d) | classic playlist text at Winamp's 12-pixel em; `HintedFont` draws text hinted, one bit a pixel, as Windows does |
 | 0.5.14 | v0.5.14 (138b2fc) | `Presentation.listRowExtra`: taller classic playlist rows |
+| 0.5.15 | v0.5.15 (af1f00d) | host actions carry `ActionFrom`: the sender's rect and the pressed point |
 
 Only the current version's files are kept; the rows above are the log of what was kept here.
