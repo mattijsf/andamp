@@ -28,5 +28,6 @@ published on (`darwin-aarch64`) and the helpers the app's unit tests drive a ski
 | 0.5.13 | v0.5.13 (3a0fa9d) | classic playlist text at Winamp's 12-pixel em; `HintedFont` draws text hinted, one bit a pixel, as Windows does |
 | 0.5.14 | v0.5.14 (138b2fc) | `Presentation.listRowExtra`: taller classic playlist rows |
 | 0.5.15 | v0.5.15 (af1f00d) | host actions carry `ActionFrom`: the sender's rect and the pressed point |
+| 0.5.16 | v0.5.16 (ae5f9e2) | under touch, a press beside a classic control takes the nearest one; the playlist grip takes its whole corner and a finger beside it |
 
 Only the current version's files are kept; the rows above are the log of what was kept here.
