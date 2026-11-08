@@ -346,6 +346,41 @@ internal class WalHost(
     private fun typefaceOf(bytes: ByteArray): Typeface? =
         runCatching { Typeface.createFromFile(fontFile(cacheDir, bytes)) }.getOrNull()
 
+    /**
+     * Text drawn as a classic skin's is, one pixel to the skin pixel without smoothing
+     * ([WalCrispText]); null for a modern skin's, drawn smooth at the screen's resolution.
+     */
+    var crispText: WalCrispText? = null
+
+    /**
+     * The bytes of the font [font] is drawn in as a classic skin's text ([WalCrispText]), [bold] or
+     * not: the skin's own file, or the free font Andamp has for a Windows font a skin names; Arial's
+     * stand-in, Liberation Sans, for a font it has neither of, as Windows maps a missing font to
+     * Arial's kind.
+     */
+    fun crispFontBytes(
+        font: FontDef?,
+        bold: Boolean,
+    ): ByteArray? {
+        val own =
+            when (val face = font?.let { FontFace.of(it, bold) }) {
+                is FontFace.StandIn -> {
+                    AndampDefaultSet.read(face.file)
+                }
+
+                is FontFace.SkinFile -> {
+                    face.font.file
+                        .takeIf { it.isNotEmpty() }
+                        ?.let(files::read)
+                }
+
+                else -> {
+                    null
+                }
+            }
+        return own ?: AndampDefaultSet.read(if (bold) LIBERATION_BOLD else LIBERATION)
+    }
+
     /** The paint the renderer draws [font] with; it sets the color itself. */
     fun drawingPaint(
         font: FontDef?,
@@ -377,14 +412,14 @@ internal class WalHost(
         font: FontDef?,
         size: Int,
         bold: Boolean,
-    ): Int = setUp(measurePaint, font, size, bold).measureText(text).toInt()
+    ): Int = crispText?.width(text, font, size, bold) ?: setUp(measurePaint, font, size, bold).measureText(text).toInt()
 
     override fun textAdvance(
         text: String,
         font: FontDef?,
         size: Int,
         bold: Boolean,
-    ): Float = setUp(measurePaint, font, size, bold).measureText(text)
+    ): Float = crispText?.width(text, font, size, bold)?.toFloat() ?: setUp(measurePaint, font, size, bold).measureText(text)
 
     override fun lineMetrics(
         font: FontDef?,
@@ -455,6 +490,10 @@ internal class WalHost(
     }
 
     companion object {
+        /** Arial's stand-in in Andamp's default set, for a classic skin's text in a font it does not have. */
+        private const val LIBERATION = "fonts/LiberationSans.ttf"
+        private const val LIBERATION_BOLD = "fonts/LiberationSans-Bold.ttf"
+
         /** The log tag, also what the debug checks wait for. */
         const val TAG = "ModernSkin"
 

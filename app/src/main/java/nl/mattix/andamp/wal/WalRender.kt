@@ -406,6 +406,16 @@ private fun DrawScope.drawText(
     host: WalHost,
 ) {
     val r = cmd.rect
+    host.crispText?.let { crisp ->
+        val picture = crisp.of(cmd) ?: return
+        drawImage(
+            picture,
+            dstOffset = IntOffset(r.left, r.top),
+            dstSize = IntSize(r.width, r.height),
+            filterQuality = FilterQuality.None,
+        )
+        return
+    }
     clipRect(r.left.toFloat(), r.top.toFloat(), r.right.toFloat(), r.bottom.toFloat()) {
         drawIntoCanvas { canvas ->
             val paint = host.drawingPaint(cmd.font, cmd.size, cmd.bold)
