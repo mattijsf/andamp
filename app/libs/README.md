@@ -30,5 +30,6 @@ published on (`darwin-aarch64`) and the helpers the app's unit tests drive a ski
 | 0.5.15 | v0.5.15 (af1f00d) | host actions carry `ActionFrom`: the sender's rect and the pressed point |
 | 0.5.16 | v0.5.16 (ae5f9e2) | under touch, a press beside a classic control takes the nearest one; the playlist grip takes its whole corner and a finger beside it |
 | 0.5.17 | v0.5.17 (03b8f99) | `pressControls` and `setPointerPrecise`: a magnifier can list a held press's controls and steer it like a mouse |
+| 0.5.18 | v0.5.18 (c95216b) | a modern playlist's status bar buttons fill the bar edge to edge over the skin's own status bar picture; centered and right-aligned text starts on a whole pixel; a raised window apart draws on top |
 
 Only the current version's files are kept; the rows above are the log of what was kept here.
