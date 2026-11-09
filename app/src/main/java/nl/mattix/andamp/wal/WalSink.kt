@@ -2,6 +2,8 @@
 
 package nl.mattix.andamp.wal
 
+import nl.mattix.walkit.ActionFrom
+
 /**
  * Where a worn modern skin sends what the app answers outside the skin: its buttons' host actions
  * and its requests for the file picker. Both calls come on the main thread. While no player surface
@@ -26,6 +28,7 @@ internal interface WalSink {
     fun hostAction(
         action: String,
         param: String?,
+        from: ActionFrom? = null,
     )
 
     /** Opens the file picker: [andPlay] false for the eject button, true for Play on an empty playlist. */

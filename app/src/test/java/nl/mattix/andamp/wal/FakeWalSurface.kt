@@ -65,7 +65,6 @@ internal class FakeWalSurface : WalSurface {
     var draws = 0
     var dismissals = 0
     var saves = 0
-    var closedWindows = 0
 
     /** What every draw throws, or null to draw. */
     var drawThrows: Throwable? = null
@@ -172,11 +171,6 @@ internal class FakeWalSurface : WalSurface {
         input()
         calls += "rightClick $seq"
         rightClicks += seq
-    }
-
-    override fun closeTopWindow() {
-        input()
-        closedWindows++
     }
 
     override fun visualizerWindowClosed() {

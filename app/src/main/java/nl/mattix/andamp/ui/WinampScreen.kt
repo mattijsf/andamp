@@ -33,7 +33,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
@@ -207,14 +206,7 @@ internal fun WinampScreen(
         vm.state.namePrompt = null
     }
 
-    // read through a derived state, so this screen recomposes when a skin window opens or closes, not at every layout
-    val skinWindowOpen by remember(wal) { derivedStateOf { wal?.layout?.windowOpen == true } }
-    BackCloses(
-        vm.state,
-        libraryBack = { vm.libraryOps.back() },
-        skinWindowOpen = skinWindowOpen,
-        closeSkinWindow = { wal?.closeTopWindow() },
-    )
+    BackCloses(vm.state, libraryBack = { vm.libraryOps.back() })
 
     // The player and the Material screens are destinations of one nav host.
     val nav = rememberNavController()
@@ -415,7 +407,9 @@ internal fun PlayerSurface(
                         walNow != null
                     }
                 val walParts =
-                    wal?.let { rememberWalLayerParts(it, vm, playlistActions, openMenu, onMinimize, quit, covered, compact) }
+                    wal?.let {
+                        rememberWalLayerParts(it, vm, playlistActions, openMenu, onMinimize, quit, covered, compact, alwaysOnTop)
+                    }
                 // the classic main window's V and O, grayed as the main menu grays them while a modern skin is worn
                 val visualizerMenu = { anchor: MenuAnchor ->
                     visualizationMenu(vm, anchor).copy(items = visualizationItems(vm, modernPlayer = walNow != null))

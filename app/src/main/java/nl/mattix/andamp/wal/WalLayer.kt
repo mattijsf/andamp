@@ -7,8 +7,10 @@ import android.os.Build
 import android.util.Log
 import android.view.ViewConfiguration
 import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -25,14 +27,20 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalGraphicsContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -40,6 +48,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.repeatOnLifecycle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
@@ -62,6 +71,9 @@ import java.util.WeakHashMap
 
 /** The z-index of [WalLayer]: below every classic window, whose z-indexes run up from 0. */
 internal const val WAL_LAYER_Z = -2f
+
+/** How long a modern skin may take to its first frame before the classic main window stands in for it. */
+internal const val COMPANION_AFTER_MS = 1_500L
 
 /**
  * How long a stack that changed size while the skin animates must hold still before its rect is
@@ -123,8 +135,11 @@ internal fun rememberWalLayerParts(
     onExit: () -> Unit,
     covered: () -> Boolean,
     compact: Boolean = false,
+    /** Always On Top on or off, for a classic skin's clutter bar A. */
+    onAlwaysOnTop: () -> Unit = {},
 ): WalLayerParts {
     val openMenuNow by rememberUpdatedState(openMenu)
+    val alwaysOnTopNow by rememberUpdatedState(onAlwaysOnTop)
     val minimizeNow by rememberUpdatedState(onMinimize)
     val exitNow by rememberUpdatedState(onExit)
     val playlistNow by rememberUpdatedState(playlistActions)
@@ -138,6 +153,8 @@ internal fun rememberWalLayerParts(
                 onMinimize = { minimizeNow() },
                 onExit = { exitNow() },
                 openFile = { andPlay -> if (andPlay) playlistNow.addFileThenPlay() else playlistNow.addFile() },
+                onAlwaysOnTop = { alwaysOnTopNow() },
+                playlist = { playlistNow },
             ),
             // a window of the app over the whole skin hides it as well as a screen does
             covered = { coveredNow() || hidesModernSkin(vm.state) },
@@ -174,10 +191,11 @@ internal fun hidesModernSkin(s: WinampState): Boolean {
  * screen's band, and touches on it sent to the skin. The surface holding the skin's turn also
  * gives it its box, its clock, its menus and its actions, and publishes `windowRects[MAIN]`.
  *
- * Until the engine has laid the stack out for this box, [companion] shows in its place: the
- * classic skin's main window, so the main menu and the long press work while the skin loads. A
- * layout worked out for another box (the phone was turned) leaves the stack where it was last
- * placed, or the companion when it never was.
+ * Until the engine has laid the stack out, nothing shows, so opening the player does not flash
+ * the classic skin before the modern one; a skin still loading after [COMPANION_AFTER_MS] shows
+ * [companion] in its place: the classic skin's main window, so the main menu and the long press
+ * work while it loads. A layout worked out for another box (the phone was turned) leaves the
+ * stack where it was last placed.
  *
  * A drag from any part of the skin but a control moves the stack ([WalDrag]); the skin keeps where
  * it was moved to, upright and sideways apart ([WalSurface.places]). The stack may go partly past
@@ -205,7 +223,8 @@ internal fun WalLayer(
         val fitted = layout?.takeIf { it.fit == fit }
         // where the engine puts the stack, and where the listener moved it from there
         val home = fitted?.let { WalPlacement.of(box, it, scale) }
-        val move = drag.shift ?: surface.places[fit.sideways]
+        // a stack filling the screen stays where the engine puts it
+        val move = if (fitted?.filled == true) null else drag.shift ?: surface.places[fit.sideways]
         val keep = with(LocalDensity.current) { WalPlacement.KEEP_DP.dp.roundToPx() }
         val shift = if (home == null || move == null) null else WalPlacement.held(move, home.stack, box, keep)
         val ready = if (fitted == null || shift == null) home else WalPlacement.of(box, fitted, scale, shift)
@@ -220,10 +239,29 @@ internal fun WalLayer(
         // the stack snaps as near as a classic window does
         SideEffect { drag.placedAt(fit, box, home?.stack, placed?.stack?.topLeft, WindowSnap.SNAP_DISTANCE * scale, keep) }
         if (placed == null) {
-            companion()
+            var late by remember(surface) { mutableStateOf(false) }
+            LaunchedEffect(surface) {
+                delay(COMPANION_AFTER_MS)
+                late = true
+            }
+            if (late) companion()
         } else {
-            WalCanvas(parts, state, placed, drag)
+            // a classic stack filling the screen stands on black, up to the window's top so the
+            // status bar's band is black too
+            if (fitted?.filled == true) {
+                var above by remember { mutableStateOf(0f) }
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .onGloballyPositioned { above = it.positionInWindow().y }
+                        .drawBehind { drawRect(Color.Black, Offset(0f, -above), Size(size.width, size.height + above)) },
+                )
+            }
+            // the magnifier a hold on a small control opens (Tap assist), over the stack
+            val lens = remember(surface) { mutableStateOf<WalLens?>(null) }
+            WalCanvas(parts, state, placed, drag, IntSize(constraints.maxWidth, constraints.maxHeight)) { lens.value = it }
             fitted?.visRect?.let { WalVisualizer(parts, state, placed, it.toIntRect(), drag) }
+            WalLensLayer(surface, lens.value, placed)
         }
     }
 }
@@ -467,11 +505,14 @@ private class FailedFrame {
  * draws nothing more of that frame and is reported once.
  */
 @Composable
+@Suppress("LongParameterList") // the stack, where it sits, and what its touches reach
 private fun WalCanvas(
     parts: WalLayerParts,
     state: WinampState,
     placed: WalPlacement,
     drag: WalDrag,
+    layer: IntSize,
+    onLens: (WalLens?) -> Unit,
 ) {
     val surface = parts.surface
     val density = LocalDensity.current
@@ -480,6 +521,10 @@ private fun WalCanvas(
     val doubleTapSlop = remember(context) { ViewConfiguration.get(context).scaledDoubleTapSlop.toFloat() }
     // touches are mapped with the placement of the moment, not the one the gesture began with
     val placedNow by rememberUpdatedState(placed)
+    val layerNow by rememberUpdatedState(layer)
+    val onLensNow by rememberUpdatedState(onLens)
+    // a menu a skin's button asks for opens against the button, measured as it opens
+    SideEffect { parts.actions.anchorFor = { from -> placedNow.anchorFor(from.rect, state.windowRects[WindowStore.MAIN]) } }
     val graphics = LocalGraphicsContext.current
     // nothing is drawn under the stack where the window shows what lies behind it: over other apps,
     // and in the activity from Android 9 on (a translucent window)
@@ -522,6 +567,7 @@ private fun WalCanvas(
                             }
                         },
                         drag = drag,
+                        lens = WalLensHost({ state.tapAssist }, { placedNow }, { layerNow }, density.density) { onLensNow(it) },
                     )
                 awaitEachGesture { walGesture(touch) { surface.menu != null } }
             }.drawBehind {

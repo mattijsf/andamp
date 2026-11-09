@@ -9,6 +9,7 @@ import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.VisualCommands
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.ui.menu.MenuBarSection
+import nl.mattix.andamp.ui.window.playlistMenus
 import nl.mattix.andamp.ui.window.testViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -51,11 +52,20 @@ class WalHostActionsTest {
                 anchors += it
                 on("visualization menu")
             },
+            eqPresets = {
+                anchors += it
+                on("eq presets")
+            },
             fullscreenVisualizer = { on("fullscreen") },
             nextPreset = { on("next preset") },
             previousPreset = { on("previous preset") },
             pickFile = { andPlay -> on(if (andPlay) "file to play" else "file") },
             fileInfo = { on("file info") },
+            about = { on("about") },
+            alwaysOnTop = { on("always on top") },
+            doubleSize = { on("double size") },
+            playlistPick = { pick, _ -> on("playlist $pick") },
+            selectRow = { row -> on("select $row") },
         )
 
     private fun reaches(
@@ -81,9 +91,45 @@ class WalHostActionsTest {
         assertEquals(listOf("next preset"), reaches("VIS_NEXT"))
         assertEquals(listOf("previous preset"), reaches("VIS_PREV"))
         assertEquals(listOf("file info"), reaches("TRACKINFO"))
+        assertEquals("a classic skin's Winamp logo", listOf("about"), reaches("ABOUT"))
+        assertEquals("a classic skin's clutter bar A", listOf("always on top"), reaches("ALWAYS_ON_TOP"))
+        assertEquals("and its D", listOf("double size"), reaches("DOUBLESIZE"))
+        assertEquals("the equalizer's PRESETS", listOf("eq presets"), reaches("EQ_PRESETS"))
         assertEquals("Detach Visualizer", listOf("show visualizer"), reaches("SHOW", "avs"))
         assertEquals("Detach Video, which the visualizer fills", listOf("show visualizer"), reaches("SHOW", "video"))
         assertEquals("the video's fullscreen", listOf("fullscreen"), reaches("VID_FS"))
+        assertEquals("a classic playlist pick", listOf("playlist add_dir"), reaches("PLAYLIST", "add_dir"))
+        assertEquals("the row the skin selected", listOf("select 3"), reaches("PLAYLIST_SELECT", "3"))
+        assertEquals("and none", listOf("select null"), reaches("PLAYLIST_SELECT"))
+    }
+
+    @Test
+    fun `each of a classic playlist's picks stands for an entry of the app's own playlist menus`() {
+        val entries = playlistMenus().flatMap { it.entries }.map { it.id }.toSet()
+        // the picks walkit's classic playlist sends, ADD to LIST OPTS
+        val picks =
+            listOf(
+                "add_url",
+                "add_dir",
+                "add_file",
+                "remove_misc",
+                "remove_all",
+                "crop",
+                "remove_selected",
+                "select_invert",
+                "select_none",
+                "select_all",
+                "sort",
+                "file_info",
+                "misc_options",
+                "list_new",
+                "list_save",
+                "list_load",
+            )
+        for (pick in picks) {
+            val id = WalHostActions.PLAYLIST_ENTRIES[pick]
+            assertTrue("$pick -> $id", id in entries)
+        }
     }
 
     @Test
@@ -122,8 +168,22 @@ class WalHostActionsTest {
         actions.pressAt = { press }
         actions.hostAction("SYSMENU", null)
         actions.hostAction("VIS_MENU", null)
+        actions.hostAction("EQ_PRESETS", null)
 
-        assertEquals(listOf(null, press, press), anchors)
+        assertEquals(listOf(null, press, press, press), anchors)
+    }
+
+    @Test
+    fun `a menu a button asks for opens against the button, and at the last press when nothing on screen sent it`() {
+        val press = MenuAnchor(WindowStore.MAIN, 40, 12, 1, 1)
+        val button = MenuAnchor(WindowStore.MAIN, 217, 134, 45, 13)
+        actions.pressAt = { press }
+        actions.anchorFor =
+            { from -> MenuAnchor(WindowStore.MAIN, from.rect.left, from.rect.top, from.rect.width, from.rect.height) }
+        actions.hostAction("EQ_PRESETS", null, nl.mattix.walkit.ActionFrom(nl.mattix.walkit.Rect(217, 134, 45, 13), 230 to 140))
+        actions.hostAction("VIS_MENU", null, null)
+
+        assertEquals(listOf(button, press), anchors)
     }
 
     @Test

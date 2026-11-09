@@ -151,6 +151,12 @@ class ModernPlayerSurfaceTest {
             compose.mainClock.advanceTimeByFrame()
         }
 
+    /** Waits until a skin still loading has the classic main window stand in for it. */
+    private fun standIn() {
+        compose.mainClock.advanceTimeBy(nl.mattix.andamp.wal.COMPANION_AFTER_MS)
+        frames()
+    }
+
     private fun show(
         wal: WalSurface? = surface,
         compact: Boolean = false,
@@ -309,9 +315,18 @@ class ModernPlayerSurfaceTest {
     }
 
     @Test
+    fun `while a skin loads nothing shows for a moment, then the classic main window stands in`() {
+        show(FakeWalSurface())
+        assertNull("no classic flash before the skin", vm.state.windowRects[WindowStore.MAIN])
+        standIn()
+        assertNotNull(vm.state.windowRects[WindowStore.MAIN])
+    }
+
+    @Test
     fun `a skin that animates from its first frame on takes over the rect from the classic main window`() {
         val waiting = FakeWalSurface()
         show(waiting)
+        standIn()
         val classic = vm.state.windowRects[WindowStore.MAIN]
         assertNotNull("the classic main window stands in", classic)
 
@@ -328,6 +343,7 @@ class ModernPlayerSurfaceTest {
     @Test
     fun `while the skin loads, the classic main window's D, O and V leave Double Size and the in-player modes alone`() {
         show(FakeWalSurface())
+        standIn()
         val main = vm.state.windowRects[WindowStore.MAIN]!!
 
         fun tap(button: IntRect) {
@@ -401,7 +417,7 @@ class ModernPlayerSurfaceTest {
     }
 
     @Test
-    fun `Back closes a skin window over the main one before it leaves the player`() {
+    fun `Back hides the player even with a skin window open over the main one`() {
         surface.layoutFor = { fit -> stackOf(300, 100, 2f)(fit).copy(windowOpen = true) }
         compose.mainClock.autoAdvance = false
         compose.setContent { WinampScreen(vm, wal = surface) }
@@ -410,19 +426,8 @@ class ModernPlayerSurfaceTest {
         compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
         frames()
 
-        assertEquals(1, surface.closedWindows)
-    }
-
-    @Test
-    fun `Back leaves the skin alone when no skin window is open`() {
-        compose.mainClock.autoAdvance = false
-        compose.setContent { WinampScreen(vm, wal = surface) }
-        frames()
-
-        compose.runOnUiThread { compose.activity.onBackPressedDispatcher.onBackPressed() }
-        frames()
-
-        assertEquals(0, surface.closedWindows)
+        assertTrue("the player leaves at once", compose.activity.isFinishing)
+        assertFalse("and the skin heard nothing", surface.calls.any { "close" in it })
     }
 
     @Test

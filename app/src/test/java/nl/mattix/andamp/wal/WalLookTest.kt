@@ -520,6 +520,7 @@ class WalLookTest {
                 override fun hostAction(
                     action: String,
                     param: String?,
+                    from: nl.mattix.walkit.ActionFrom?,
                 ) {
                     heard += "$action on ${if (Looper.myLooper() == Looper.getMainLooper()) "main" else "another thread"}"
                 }
@@ -748,7 +749,6 @@ class WalLookTest {
                 "double tap" to { look.doubleTap(1, 1) },
                 "right click" to { look.rightClick(1) },
                 "menu answer" to { look.answerMenu(menu, 1) },
-                "Back" to { look.closeTopWindow() },
                 "theme pick" to { look.pickTheme("Two") },
             )
         look.fit(phone)

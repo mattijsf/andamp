@@ -20,6 +20,7 @@ import nl.mattix.walkit.SkinFiles
 import nl.mattix.walkit.SkinMenu
 import nl.mattix.walkit.SkinOptions
 import nl.mattix.walkit.SkinRuntime
+import nl.mattix.walkit.TouchControl
 import java.io.File
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
@@ -44,7 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * A start that fails after a fit, and a skin that stops working, are told to [onFailed] on the main
  * thread.
  */
-@Suppress("TooManyFunctions") // every call of WalSurface, plus the start, park and release of the skin it holds
+@Suppress("TooManyFunctions", "LongParameterList") // WalSurface's calls; what the app tells the skin, apart
 internal class WalLook(
     /** The skin's id in the library. */
     val id: String,
@@ -60,6 +61,8 @@ internal class WalLook(
     private val player: Player,
     /** Whether a window the app shows in place of the skin's is open; see [WalHost]. */
     private val windowOpen: (kind: String) -> Boolean? = WalPrepare.windowOpen(),
+    /** How the listener asked a classic playlist to look; see [WalFitting]. */
+    private val listStyle: () -> WalListStyle = { WalListStyle() },
     /** What [wakeKey] gives. */
     private val wake: () -> Any = { Unit },
     /** The time it has to start; see [WalEngine.start]. */
@@ -246,14 +249,33 @@ internal class WalLook(
         return seq
     }
 
+    override fun pointerPrecise() {
+        lastInputAt = SystemClock.uptimeMillis()
+        engine?.pointerPrecise()
+    }
+
+    override fun pressControls(onControls: (List<TouchControl>) -> Unit) {
+        engine?.pressControls(onControls)
+    }
+
+    override fun drawMagnified(
+        scope: DrawScope,
+        zoom: Float,
+    ) {
+        val frame = shown ?: engine?.frame ?: return
+        val host = host ?: return
+        host.drawing.begin(frame.themeKey)
+        try {
+            // hard edges: each screen pixel shows the one skin pixel its center falls on
+            scope.drawWindowsAt(frame.stack, host, zoom, hard = true)
+        } finally {
+            host.drawing.end()
+        }
+    }
+
     override fun rightClick(seq: Int) {
         lastInputAt = SystemClock.uptimeMillis()
         engine?.rightClick(seq)
-    }
-
-    override fun closeTopWindow() {
-        lastInputAt = SystemClock.uptimeMillis()
-        engine?.post(cause = WalCause.TOUCH) { it.closeTopWindow() }
     }
 
     override fun visualizerWindowClosed() {
@@ -336,6 +358,7 @@ internal class WalLook(
                 if (released) return
                 released = true
                 WalApart.unwatch(apartChanged)
+                WalFilled.unwatch(apartChanged)
                 (engine to files).also {
                     engine = null
                     host = null
@@ -387,13 +410,21 @@ internal class WalLook(
             val files = OpenedOnRead { WalFiles.open(file, siblings) }
             // an import has no player surface to show a menu its scripts open as the skin loads:
             // such a menu is answered at once with nothing picked
-            val host = WalHost(files, cacheDir, windowOpen, actions = ::hostAction).apply { menus.unattended = awaited }
-            val engine = WalEngine(id, host, onFrame = ::frameChanged)
+            // a classic skin's windows move one by one, as in Winamp, unless D has it fill the
+            // screen (the library keeps it as .wsz); its text is drawn as Windows draws it
+            val classic = file.name.endsWith(".wsz", ignoreCase = true)
+            val host =
+                WalHost(files, cacheDir, windowOpen, actions = ::hostAction).apply {
+                    menus.unattended = awaited
+                    if (classic) crispText = WalCrispText(::crispFontBytes)
+                }
+            val engine = WalEngine(id, host, classic = classic, listStyle = listStyle, onFrame = ::frameChanged)
             engine.onBroken = { toMain(Runnable { failed(stoppedWorking = true) }) }
             engine.onTask = ::keepLater
             engine.placer = ::placeWindows
             engine.onApart = ::keepSpots
             WalApart.watch(apartChanged)
+            WalFilled.watch(apartChanged)
             // what the screen said before the engine started reaches it before the first fit
             engine.awake = awake
             this.host = host
@@ -437,8 +468,9 @@ internal class WalLook(
     private fun hostAction(
         action: String,
         param: String?,
+        from: nl.mattix.walkit.ActionFrom?,
     ) {
-        toMain(Runnable { if (!released) sink?.hostAction(action, param) })
+        toMain(Runnable { if (!released) sink?.hostAction(action, param, from) })
     }
 
     /** A new frame, or a menu opened or closed, on the engine thread: one main post takes them all. */

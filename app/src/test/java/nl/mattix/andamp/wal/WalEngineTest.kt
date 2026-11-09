@@ -467,6 +467,7 @@ class WalEngineTest {
         assertEquals(200 to 100, layout.stackW to layout.stackH)
         assertEquals((1080 / scale).toInt() to (2000 / scale).toInt(), onEngine { it.presentation.viewSize })
         assertEquals("24 dp at that scale", kotlin.math.ceil(24 * 3 / scale).toInt(), onEngine { it.presentation.touchSlop })
+        assertTrue("a finger drives the skin", onEngine { it.presentation.touch })
     }
 
     @Test(timeout = 20_000)

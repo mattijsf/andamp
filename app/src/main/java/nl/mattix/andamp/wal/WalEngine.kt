@@ -13,6 +13,7 @@ import nl.mattix.walkit.Presentation
 import nl.mattix.walkit.Rect
 import nl.mattix.walkit.SkinMenu
 import nl.mattix.walkit.SkinRuntime
+import nl.mattix.walkit.TouchControl
 import nl.mattix.walkit.WindowPlan
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicBoolean
@@ -90,10 +91,15 @@ internal class WalFrame(
  * is next due. The frame carries the first, less a skin gone static ([WalRest.wantsFrames]), and a
  * tick that changes it publishes a frame for that alone.
  */
+@Suppress("TooManyFunctions") // every call the player makes into the skin, each posted to the engine thread
 internal class WalEngine(
     name: String,
     private val host: WalHost,
     private val idle: (SkinRuntime) -> WalIdle = WalIdle::of,
+    /** Whether the skin is a classic one, whose windows are apart unless it fills the screen; see [WalFitting]. */
+    classic: Boolean = false,
+    /** How the listener asked a classic playlist to look; see [WalFitting]. */
+    listStyle: () -> WalListStyle = { WalListStyle() },
     private val onFrame: () -> Unit,
 ) {
     private val thread = HandlerThread("wal-$name").apply { start() }
@@ -128,7 +134,7 @@ internal class WalEngine(
     private var rt: SkinRuntime? = null
     private var baseW = 0
     private var publishing = false
-    private val fitting = WalFitting { runtime -> placer?.invoke(runtime) }
+    private val fitting = WalFitting(classic, { runtime -> placer?.invoke(runtime) }, listStyle)
 
     /** Puts the windows where the host kept them when they are set out apart; see [WalFitting]. */
     var placer: ((SkinRuntime) -> Unit)? = null
@@ -563,6 +569,24 @@ internal class WalEngine(
         flushMove(it)
         it.doubleTap(x, y, seq)
     }
+
+    /** The rest of the press lands exactly where it says; see [SkinRuntime.setPointerPrecise]. */
+    fun pointerPrecise() =
+        postTouch("precise") {
+            flushMove(it)
+            it.setPointerPrecise(true)
+        }
+
+    /**
+     * Hands [onControls] the held press's controls on main; see [SkinRuntime.pressControls]. Nothing
+     * comes before the skin is on.
+     */
+    fun pressControls(onControls: (List<TouchControl>) -> Unit) =
+        post(publish = false) {
+            flushMove(it)
+            val controls = it.pressControls()
+            mainHandler.post { onControls(controls) }
+        }
 
     /** Right-clicks the object and point touch [seq] went down on, for its skin menu; see [SkinRuntime.rightClick]. */
     fun rightClick(seq: Int) =

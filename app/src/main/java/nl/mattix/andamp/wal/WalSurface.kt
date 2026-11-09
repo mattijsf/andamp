@@ -84,6 +84,15 @@ internal interface WalSurface : WalTouch.Target {
         layers: WalLayers,
     )
 
+    /**
+     * Draws the frame [draw] drew last piece by piece at [zoom] surface pixels per skin pixel, with
+     * hard edges, its top-left at [scope]'s origin: what the magnifier shows. Nothing before a frame.
+     */
+    fun drawMagnified(
+        scope: DrawScope,
+        zoom: Float,
+    ) {}
+
     /** [draw] threw [error]; called on main. It counts toward the three failures in a row that drop the skin. */
     fun drawFailed(error: Throwable)
 
@@ -141,9 +150,6 @@ internal interface WalSurface : WalTouch.Target {
 
     /** Right-clicks the object and point gesture [seq] went down on, for its skin menu. A stale seq does nothing. */
     fun rightClick(seq: Int)
-
-    /** Closes the topmost skin window over the main one, as Back does. */
-    fun closeTopWindow()
 
     /**
      * The visualizer window closed: what the skin moved out into it goes back into the skin

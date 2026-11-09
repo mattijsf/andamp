@@ -162,8 +162,11 @@ internal class AndampSkinPlayer(
     private var lastTransport = Transport.Stopped
 
     /** The place last read out, and the track it belongs to; [NOT_SHOWN] after a stop or a new track. */
-    private var shownMs = NOT_SHOWN
+    private var shownMs = NOT_SHOWN.toDouble()
     private var shownFor: String? = null
+
+    /** When [shownMs] was last read out. */
+    private var shownAt = 0L
 
     /** A seek on its way: where to, when it was asked, and the backend's place then. */
     private class SeekHold(
@@ -179,16 +182,18 @@ internal class AndampSkinPlayer(
     /**
      * The backend's place, carried on with [clock] while playing, since the backend reports it a
      * few times a second: never more than [MAX_LEAD_MS] past its last report and never past the
-     * length. Paused, it holds. A step back of up to a second (a report that trails the carried
-     * place, a seek landing a little short) holds the place until the song catches up, so a seek
-     * bar's thumb never jumps back by itself.
+     * length, and not past a report of the very start, which a song that is still starting gives.
+     * Paused, it holds. Each report lands a little before or after the carried place; the place
+     * read out runs on at the song's pace and closes that gap a little each frame
+     * ([CATCH_UP_MS]), so a seek bar's thumb glides on, slightly slower or faster, where it would
+     * stop or jump. A gap of more than [MAX_LEAD_MS] (a seek, a new song) is taken at once.
      */
     override fun positionMs(): Long {
         val track = winamp.currentTrack
         val transport = winamp.transport
         if (track == null || transport == Transport.Stopped) {
             seekHold = null
-            shownMs = NOT_SHOWN
+            shownMs = NOT_SHOWN.toDouble()
             lastTransport = Transport.Stopped
             return 0
         }
@@ -196,13 +201,31 @@ internal class AndampSkinPlayer(
         val raw = observe(transport, now)
         if (track.id != shownFor) {
             shownFor = track.id
-            shownMs = NOT_SHOWN
+            shownMs = NOT_SHOWN.toDouble()
         }
         val playing = transport == Transport.Playing
-        val place = heldSeek(track, playing, now) ?: (raw + if (playing) minOf(now - rawAt, MAX_LEAD_MS) else 0)
-        if (place >= shownMs || shownMs - place > MAX_LEAD_MS) shownMs = place
+        val carried = if (playing && raw > 0) minOf(now - rawAt, MAX_LEAD_MS) else 0
+        val held = heldSeek(track, playing, now)
+        val place = held ?: (raw + carried)
+        // the song's place moves on its own only while it is carried
+        val moving = held == null && playing && raw > 0 && now - rawAt < MAX_LEAD_MS
+        val dt = (now - shownAt).coerceAtLeast(0).toDouble()
+        val predicted = shownMs + if (moving) dt else 0.0
+        val gap = place - predicted
+        shownMs =
+            when {
+                shownMs < 0 || held != null || abs(gap) > MAX_LEAD_MS -> place.toDouble()
+
+                // the gap closes a little each frame, never so fast the place stops or steps back
+                moving -> predicted + (gap * dt / CATCH_UP_MS).coerceIn(-dt / 2, dt / 2)
+
+                // still: up to a place ahead, never back
+                else -> maxOf(shownMs, minOf(place.toDouble(), shownMs + dt))
+            }
+        shownAt = now
+        val shown = shownMs.toLong()
         val length = lengthOf(track)
-        return if (length > 0) minOf(shownMs, length) else shownMs
+        return if (length > 0) minOf(shown, length) else shown
     }
 
     /** Reads the backend's place; the carried place starts again from each new report and from each change of [transport]. */
@@ -368,7 +391,8 @@ internal class AndampSkinPlayer(
         observe(transport, now)
         seekHold = SeekHold(track.id, target, now, lastRaw, rawAt)
         shownFor = track.id
-        shownMs = target
+        shownMs = target.toDouble()
+        shownAt = now
         onMain { if (winamp.currentTrack?.id == track.id) controls.seekTo(target / length.toFloat()) }
     }
 
@@ -485,6 +509,9 @@ internal class AndampSkinPlayer(
 
         /** How far the place may run past the backend's last report. */
         private const val MAX_LEAD_MS = 1_000L
+
+        /** How long the place read out takes to close most of a gap to the carried place: a frame closes its share of it. */
+        private const val CATCH_UP_MS = 1_000.0
 
         /** How near the backend's place must come to a seek's target for the seek to count as done. */
         private const val SEEK_NEAR_MS = 1_000L

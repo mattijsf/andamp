@@ -2,9 +2,6 @@
 
 package nl.mattix.andamp.ui.window
 
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.IntRect
@@ -40,21 +37,11 @@ class Loupe(
     /** How far the finger can travel each way from where it is. */
     reach: Reach = Reach.UNLIMITED,
 ) {
-    /** Where the crosshair is, in window-local virtual pixels. */
-    var focus by mutableStateOf(start)
-        private set
-
-    /** How far the finger has moved since the lens opened, in virtual pixels. */
-    private var travelled = Offset.Zero
-
-    private val left: Side
-    private val up: Side
-    private val right: Side
-    private val down: Side
-
-    init {
-        // the centers of the cluster's controls: what the crosshair has to be able to reach
-        val centers =
+    /** The crosshair, steered over the centers of the cluster's controls. */
+    private val aim =
+        LensAim(
+            start,
+            roam,
             widgets()
                 .filter { !it.background && fiddly(it) && roam.contains(it.bounds.center) }
                 .map {
@@ -64,12 +51,12 @@ class Loupe(
                         it.bounds.center.y
                             .toFloat(),
                     )
-                }
-        left = Side.toward(centers.maxOfOrNull { start.x - it.x } ?: 0f, reach.left)
-        up = Side.toward(centers.maxOfOrNull { start.y - it.y } ?: 0f, reach.up)
-        right = Side.toward(centers.maxOfOrNull { it.x - start.x } ?: 0f, reach.right)
-        down = Side.toward(centers.maxOfOrNull { it.y - start.y } ?: 0f, reach.down)
-    }
+                },
+            reach,
+        )
+
+    /** Where the crosshair is, in window-local virtual pixels. */
+    val focus: Offset get() = aim.focus
 
     /** Once canceled, a release presses nothing. */
     private var cancelled = false
@@ -94,27 +81,12 @@ class Loupe(
         delta: Offset,
         state: WinampState,
     ) {
-        travelled += delta
-        // Where the finger has asked the crosshair to be, unclamped. It is worked out from
-        // all the finger has moved, so pushing past the edge and coming back lands where it
-        // started, and how far past the cluster it is can be measured.
-        val wanted =
-            Offset(
-                start.x + if (travelled.x >= 0) right.crosshair(travelled.x) else -left.crosshair(-travelled.x),
-                start.y + if (travelled.y >= 0) down.crosshair(travelled.y) else -up.crosshair(-travelled.y),
-            )
-        val held =
-            Offset(
-                wanted.x.coerceIn(roam.left.toFloat(), (roam.right - 1).toFloat()),
-                wanted.y.coerceIn(roam.top.toFloat(), (roam.bottom - 1).toFloat()),
-            )
-        if ((wanted - held).getDistance() > ESCAPE) {
+        if (!aim.move(delta)) {
             cancelled = true
             state.pressedWidget = null
             state.loupe = null
             return
         }
-        focus = held
         aim(state)
     }
 
@@ -185,35 +157,6 @@ class Loupe(
         }
     }
 
-    /**
-     * One direction the crosshair can go: how far the outermost control is that way
-     * ([needed]), and the gearing that gets the crosshair there.
-     */
-    private class Side(
-        private val needed: Float,
-        private val gearing: Float,
-    ) {
-        /**
-         * How far the crosshair goes for a finger that went [finger] this way. Past the
-         * outermost control it is back to [GEARING], so the lens is no easier to push away.
-         */
-        fun crosshair(finger: Float): Float {
-            val within = needed * gearing
-            return if (finger <= within) finger / gearing else needed + (finger - within) / GEARING
-        }
-
-        companion object {
-            /** The side whose outermost control is [needed] away, for a finger that can travel [room] that way. */
-            fun toward(
-                needed: Float,
-                room: Float,
-            ): Side {
-                val gearing = if (needed <= 0f) GEARING else (room / needed).coerceIn(MIN_GEARING, GEARING)
-                return Side(needed.coerceAtLeast(0f), gearing)
-            }
-        }
-    }
-
     companion object {
         /**
          * A control both of whose sides are this or less, in virtual pixels, gets the lens.
@@ -225,7 +168,13 @@ class Loupe(
          * Whether a hold on [widget] opens the lens: it is [SMALL], or it asks for the lens
          * through [Widget.magnify].
          */
-        fun fiddly(widget: Widget) = widget.magnify || (widget.bounds.width <= SMALL && widget.bounds.height <= SMALL)
+        fun fiddly(widget: Widget) = fiddly(widget.bounds, widget.magnify)
+
+        /** [fiddly] for a control at [bounds] that asks for the lens itself when [magnify]. */
+        fun fiddly(
+            bounds: IntRect,
+            magnify: Boolean,
+        ) = magnify || (bounds.width <= SMALL && bounds.height <= SMALL)
 
         /**
          * The run of small controls [target] belongs to: itself, its close neighbors, and
@@ -237,17 +186,26 @@ class Loupe(
         fun clusterAround(
             target: Widget,
             widgets: List<Widget>,
+        ): IntRect =
+            clusterAround(
+                target.bounds,
+                widgets.filter { it.enabled() && fiddly(it) && it !== target }.map { it.bounds },
+            )
+
+        /** [clusterAround] for a control at [target] among the other small controls' boxes, [small]. */
+        fun clusterAround(
+            target: IntRect,
+            small: List<IntRect>,
         ): IntRect {
-            val small = widgets.filter { it.enabled() && fiddly(it) && it !== target }
-            val taken = mutableSetOf(target)
-            var bounds = target.bounds
+            val taken = BooleanArray(small.size)
+            var bounds = target
             var grew = true
             while (grew) {
                 grew = false
-                small.forEach { widget ->
-                    if (widget in taken || !near(bounds, widget.bounds)) return@forEach
-                    taken += widget
-                    bounds = bounds.union(widget.bounds)
+                small.forEachIndexed { i, other ->
+                    if (taken[i] || !near(bounds, other)) return@forEachIndexed
+                    taken[i] = true
+                    bounds = bounds.union(other)
                     grew = true
                 }
             }

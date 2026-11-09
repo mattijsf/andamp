@@ -37,6 +37,31 @@ class HostActionNamesTest {
         assertEquals(HostAction.NextPreset, HostAction.of("VIS_NEXT", null))
         assertEquals(HostAction.PreviousPreset, HostAction.of("VIS_PREV", null))
         assertEquals(HostAction.TrackInfo, HostAction.of("TRACKINFO", null))
+        assertEquals("a classic skin's Winamp logo", HostAction.About, HostAction.of("ABOUT", null))
+        assertEquals("a classic skin's clutter bar A", HostAction.AlwaysOnTop, HostAction.of("ALWAYS_ON_TOP", null))
+    }
+
+    @Test
+    fun `a classic skin's clutter bar reads Always On Top, and Double Size as the skin filling the screen`() {
+        var onTop = true
+        var filled = false
+        val open = WalPrepare.windowOpen(alwaysOnTop = { onTop }, filled = { filled })
+        assertEquals(true, open("ontop"))
+        onTop = false
+        assertEquals(false, open("ontop"))
+        assertEquals(false, open("doublesize"))
+        filled = true
+        assertEquals(true, open("doublesize"))
+        assertEquals("the clutter bar's D", HostAction.DoubleSize, HostAction.of("DOUBLESIZE", null))
+        assertEquals("the equalizer's PRESETS", HostAction.EqPresets, HostAction.of("EQ_PRESETS", null))
+    }
+
+    @Test
+    fun `a classic playlist's picks carry the pick, and the selection its row or none`() {
+        assertEquals(HostAction.Playlist("sort"), HostAction.of("PLAYLIST", "sort"))
+        assertNull("a pick needs its name", HostAction.of("PLAYLIST", null))
+        assertEquals(HostAction.PlaylistSelect(3), HostAction.of("PLAYLIST_SELECT", "3"))
+        assertEquals(HostAction.PlaylistSelect(null), HostAction.of("PLAYLIST_SELECT", null))
     }
 
     @Test

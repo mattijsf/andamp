@@ -1,5 +1,5 @@
 [versions]
-walkit = "0.4.6"
+walkit = "0.5.18"
 agp = "9.3.1"
 # Gradle Play Publisher: a build can reach the internal track without the console
 playPublisher = "4.1.1"

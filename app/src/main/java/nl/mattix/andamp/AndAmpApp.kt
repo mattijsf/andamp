@@ -7,6 +7,8 @@ import nl.mattix.andamp.backend.media3.Media3PlaybackHost
 import nl.mattix.andamp.state.PackSources
 import nl.mattix.andamp.state.PlaybackRoot
 import nl.mattix.andamp.wal.WalApart
+import nl.mattix.andamp.wal.WalClassic
+import nl.mattix.andamp.wal.WalFilled
 import nl.mattix.andamp.wal.WalGate
 import nl.mattix.andamp.wal.WalSharp
 import kotlin.concurrent.thread
@@ -20,7 +22,8 @@ import kotlin.concurrent.thread
  * session before any window has built a player. So the service is told here how to get one.
  *
  * Whether modern skins may be worn ([WalGate]), whether they are drawn with sharp pixels
- * ([WalSharp]) and whether their windows are set out apart ([WalApart]) are read on a background
+ * ([WalSharp]), whether their windows are set out apart ([WalApart]) and whether classic skins
+ * are drawn by the new classic renderer ([WalClassic]) are read on a background
  * thread, so the first screen does not wait for them.
  */
 class AndAmpApp : Application() {
@@ -32,6 +35,8 @@ class AndAmpApp : Application() {
             WalGate.read(this)
             WalSharp.read(this)
             WalApart.read(this)
+            WalClassic.read(this)
+            WalFilled.read(this)
         }
     }
 }

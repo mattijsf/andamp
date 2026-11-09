@@ -245,8 +245,9 @@ class WalPlayerEchoTest {
 
     @Test
     fun `each band value set is heard once and the thumb stays`() {
-        // 140, 141 and 142 all become 35 on the app's scale
-        val positions = listOf(100, 140, 141, 142, 250, 3)
+        // 160, 161 and 162 all become 40 on the app's scale; values near the middle are left
+        // out, as a band dragged there snaps flat
+        val positions = listOf(100, 160, 161, 162, 250, 3)
 
         drag(band, positions)
         frames(40)

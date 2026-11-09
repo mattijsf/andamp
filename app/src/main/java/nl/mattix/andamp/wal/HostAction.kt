@@ -37,6 +37,28 @@ internal sealed interface HostAction {
     /** The file info of the song playing. */
     data object TrackInfo : HostAction
 
+    /** The about box: a classic skin's Winamp logo, bottom right of the main window. */
+    data object About : HostAction
+
+    /** Always On Top on or off: a classic skin's clutter bar A. */
+    data object AlwaysOnTop : HostAction
+
+    /** Double Size: a classic skin's clutter bar D, which fills the screen with the skin here. */
+    data object DoubleSize : HostAction
+
+    /** The equalizer's PRESETS button: its menu of presets to load, save and delete. */
+    data object EqPresets : HostAction
+
+    /** A pick from a classic playlist's bottom-button menus ([pick], as `add_dir` or `sort`). */
+    data class Playlist(
+        val pick: String,
+    ) : HostAction
+
+    /** The classic playlist's selected [row], or null for none, which the picks act on. */
+    data class PlaylistSelect(
+        val row: Int?,
+    ) : HostAction
+
     /** Shows the [window] named (`avs`, `video`, `ml`), whatever the skin's own view of it. */
     data class Show(
         val window: String,
@@ -63,6 +85,12 @@ internal sealed interface HostAction {
                 "VIS_NEXT" -> NextPreset
                 "VIS_PREV" -> PreviousPreset
                 "TRACKINFO" -> TrackInfo
+                "ABOUT" -> About
+                "ALWAYS_ON_TOP" -> AlwaysOnTop
+                "DOUBLESIZE" -> DoubleSize
+                "EQ_PRESETS" -> EqPresets
+                "PLAYLIST" -> param?.let(::Playlist)
+                "PLAYLIST_SELECT" -> PlaylistSelect(param?.toIntOrNull())
                 "SHOW" -> param?.let(::Show)
                 "TOGGLE" -> param?.let(::Toggle)
                 else -> null

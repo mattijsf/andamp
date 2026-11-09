@@ -57,6 +57,8 @@ internal data class WalLayout(
      * control (`SkinRuntime.movesWindow`), or null; a drag from it moves the stack.
      */
     val moveTarget: Int? = null,
+    /** Whether a classic skin's stack fills the screen ([WalFilled]), where nothing moves it. */
+    val filled: Boolean = false,
     /**
      * Whether the screen ticks the skin on every display frame ([WalRest.wantsFrames]); while it
      * does not, the engine wakes the skin itself when it is due.

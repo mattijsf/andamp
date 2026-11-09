@@ -570,10 +570,10 @@ class WalFittingTest {
             WalApart.change(app, true)
             var placed = 0
             val fitting =
-                WalFitting { rt ->
+                WalFitting(placer = { rt ->
                     placed++
                     rt.placeWindow(checkNotNull(rt.windowOf("pl")), 100, 500)
-                }
+                })
             val rt = SkinRuntime(winampModern, WalHost(winampModern, app.cacheDir), FakePlayer()).apply { load() }
             val baseW = WalFitting.baseWOf(rt)
             fitting.apply(rt, upright, baseW)
@@ -610,6 +610,60 @@ class WalFittingTest {
             assertEquals("placed again as apart comes on again", 2, placed)
         } finally {
             WalApart.forget()
+        }
+    }
+
+    @Test
+    fun `a classic skin's windows are apart, stacked in the floating player or once D fills the screen`() {
+        WalApart.forget(app)
+        WalFilled.forget(app)
+        try {
+            val wsz = java.io.File(app.cacheDir, "classic.wsz")
+            app.assets.open(nl.mattix.andamp.skin.BundledSkins.SPOT.asset).use { input ->
+                wsz.outputStream().use { input.copyTo(it) }
+            }
+            val files = WalFiles.open(wsz, emptyMap<String, java.io.File>())
+            val rt = SkinRuntime(files, WalHost(files, app.cacheDir), FakePlayer()).apply { load() }
+            var lists = WalListStyle()
+            val fitting = WalFitting(classic = true, listStyle = { lists })
+            val baseW = WalFitting.baseWOf(rt)
+            fitting.apply(rt, upright, baseW)
+            rt.ensureLayout()
+            assertFalse("the switch is off", WalApart.apart)
+            assertTrue("apart all the same", rt.presentation.freeWindows)
+            fitting.apply(rt, upright.copy(compact = true), baseW)
+            rt.ensureLayout()
+            assertFalse("the floating player stacks them", rt.presentation.freeWindows)
+            fitting.apply(rt, upright, baseW)
+            assertTrue("apart again", rt.presentation.freeWindows)
+            WalFilled.toggle(app)
+            fitting.refit(rt, upright, baseW)
+            rt.ensureLayout()
+            assertFalse("D fills the screen with one stack", rt.presentation.freeWindows)
+            check(rt.openWindow("pledit"))
+            fitting.refit(rt, upright, baseW)
+            rt.ensureLayout()
+            val filled = fitting.layout(rt, upright, baseW, rt.stackSize, rt.drawnSize, rt.windowOpen, true)
+            assertEquals("as wide as the screen, at a scale that need not be whole", 960f / 275, filled.scale, 1e-4f)
+            assertEquals(0f to 0f, filled.left to filled.top)
+            assertTrue("nothing moves it", filled.filled)
+            assertFalse("the regular font unless the listener picks the skin's", rt.presentation.skinListFont)
+            assertEquals("Winamp's rows unless the listener picks taller ones", 0, rt.presentation.listRowExtra)
+            lists = WalListStyle(skinFont = true, rowExtra = 12)
+            fitting.layout(rt, upright, baseW, rt.stackSize, rt.drawnSize, rt.windowOpen, true)
+            assertTrue("the skin's letters once the listener picks them", rt.presentation.skinListFont)
+            assertEquals("Large rows: 12 pixels taller", 12, rt.presentation.listRowExtra)
+            val pl = rt.windowRect(checkNotNull(rt.windowOf("pledit")))
+            assertEquals("the playlist reaches the screen's bottom", (1900 / filled.scale).toInt(), pl.top + pl.height)
+            WalFilled.toggle(app)
+            fitting.refit(rt, upright, baseW)
+            assertTrue("and D again sets them apart", rt.presentation.freeWindows)
+            val apart = fitting.layout(rt, upright, baseW, rt.stackSize, rt.drawnSize, rt.windowOpen, true)
+            assertEquals("at the main window's whole scale", 3f, apart.scale)
+            assertFalse(apart.filled)
+        } finally {
+            WalApart.forget()
+            WalFilled.forget()
         }
     }
 }

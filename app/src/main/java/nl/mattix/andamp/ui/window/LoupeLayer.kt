@@ -24,7 +24,8 @@ import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
-import androidx.compose.ui.graphics.drawscope.withTransform
+import androidx.compose.ui.graphics.drawscope.scale
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.zIndex
 import nl.mattix.andamp.state.WinampState
@@ -69,14 +70,44 @@ private fun DrawScope.drawLoupe(
     scale: Int,
     grown: Float,
 ) {
-    if (grown <= 0.01f) return
     val s = scale.toFloat()
-    val focusX = (window.left + loupe.focus.x) * s
-    val focusY = (window.top + loupe.focus.y) * s
+    drawLens(
+        origin = Offset(window.left * s, window.top * s),
+        s = s,
+        focus = loupe.focus,
+        roam = loupe.roam,
+        ring = loupe.target?.takeIf { it.id != Loupe.chromeOf(loupe.window) }?.bounds,
+        grown = grown,
+    ) { zoom ->
+        scale(zoom, zoom, pivot = Offset.Zero) { loupe.paint(this) }
+    }
+}
+
+/**
+ * A lens over [focus], grown as far as [grown] says: it sits above the finger on a stalk, takes the
+ * shape of [roam], the cluster it shows, and rings [ring], what a release would press.
+ *
+ * [focus], [roam] and [ring] are in the pixels of what the lens shows, whose origin is at [origin]
+ * on the canvas, [s] canvas pixels to one of them. [paint] draws what the lens shows from that
+ * origin at the zoom it is given, in canvas pixels per pixel.
+ */
+@Suppress("LongParameterList") // where the lens is, what it shows, and how far it has grown
+internal fun DrawScope.drawLens(
+    origin: Offset,
+    s: Float,
+    focus: Offset,
+    roam: IntRect,
+    ring: IntRect?,
+    grown: Float,
+    paint: DrawScope.(zoom: Float) -> Unit,
+) {
+    if (grown <= 0.01f) return
+    val focusX = origin.x + focus.x * s
+    val focusY = origin.y + focus.y * s
     // the lens takes the shape of the cluster it shows: wide for a row of buttons, tall
     // for a column
-    val lensW = (loupe.roam.width * Loupe.ZOOM).coerceIn(Loupe.LENS_MIN, Loupe.LENS_MAX) * s
-    val lensH = (loupe.roam.height * Loupe.ZOOM).coerceIn(Loupe.LENS_MIN, Loupe.LENS_MAX) * s
+    val lensW = (roam.width * Loupe.ZOOM).coerceIn(Loupe.LENS_MIN, Loupe.LENS_MAX) * s
+    val lensH = (roam.height * Loupe.ZOOM).coerceIn(Loupe.LENS_MIN, Loupe.LENS_MAX) * s
     // kept inside the sides of the screen
     val centreX = focusX.coerceIn(lensW / 2 + MARGIN * s, size.width - lensW / 2 - MARGIN * s)
     // Above the finger by LIFT, or against the top edge when the screen has less room.
@@ -98,19 +129,10 @@ private fun DrawScope.drawLoupe(
     stalk(focusX, focusY, centreX, if (overhead) lens.bottom else lens.top, s, grown)
     shadow(lens, corner, s, grown)
 
+    val zoom = s * Loupe.ZOOM * grown
     clipPath(shape) {
-        // the window's own draw block, magnified about the crosshair with the same
-        // nearest-neighbor sprites
-        withTransform({
-            translate(
-                centreX - (window.left + loupe.focus.x) * s * Loupe.ZOOM * grown,
-                centreY - (window.top + loupe.focus.y) * s * Loupe.ZOOM * grown,
-            )
-            scale(s * Loupe.ZOOM * grown, s * Loupe.ZOOM * grown, pivot = Offset.Zero)
-            translate(window.left.toFloat(), window.top.toFloat())
-        }) {
-            loupe.paint(this)
-        }
+        // what the lens shows, magnified about the crosshair with the same nearest-neighbor sprites
+        translate(centreX - focus.x * zoom, centreY - focus.y * zoom) { paint(zoom) }
         // darkens toward the rim
         drawRect(
             brush =
@@ -123,7 +145,7 @@ private fun DrawScope.drawLoupe(
             topLeft = lens.topLeft,
             size = lens.size,
         )
-        ring(loupe, window, centreX, centreY, s, grown)
+        if (ring != null) ring(ring, focus, Offset(centreX, centreY), zoom, s, grown)
     }
     // the rim: a dark line for the edge and a light one just inside it
     drawRoundRect(
@@ -142,20 +164,19 @@ private fun DrawScope.drawLoupe(
     )
 }
 
-/** The ring around the button a release would press, in the lens's own space. */
+/** The ring around [bounds], the button a release would press, in the lens's own space. */
+@Suppress("LongParameterList") // the box, where the lens looks and how it magnifies
 private fun DrawScope.ring(
-    loupe: Loupe,
-    window: IntRect,
-    centreX: Float,
-    centreY: Float,
+    bounds: IntRect,
+    focus: Offset,
+    centre: Offset,
+    zoom: Float,
     s: Float,
     grown: Float,
 ) {
-    val target = loupe.target?.takeIf { it.id != Loupe.chromeOf(loupe.window) } ?: return
-    val zoom = s * Loupe.ZOOM * grown
-    val left = centreX + (target.bounds.left - loupe.focus.x) * zoom
-    val top = centreY + (target.bounds.top - loupe.focus.y) * zoom
-    val size = Size(target.bounds.width * zoom, target.bounds.height * zoom)
+    val left = centre.x + (bounds.left - focus.x) * zoom
+    val top = centre.y + (bounds.top - focus.y) * zoom
+    val size = Size(bounds.width * zoom, bounds.height * zoom)
     val pad = 2 * s
     drawRoundRect(
         color = Color.White.copy(alpha = 0.9f * grown),
