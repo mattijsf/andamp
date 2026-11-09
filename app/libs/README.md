@@ -34,5 +34,6 @@ published on (`darwin-aarch64`) and the helpers the app's unit tests drive a ski
 | 0.6.0 | v0.6.0 (98e6eef) | `classicSwitches` and `setClassicPlaylistSelection`: a host keeps a classic skin's time, equalizer auto, vis mode and playlist selection in step; a long press on a classic playlist row sends `PLAYLIST_MENU` with the row |
 | 0.7.0 | v0.7.0 (2f43935) | `setClassicRowMarks`, `setPointerModifiers` and `setClassicShades`: a classic playlist shows a host's row marks and picks rows with Ctrl and Shift (`PLAYLIST_SELECTION`), and a host can turn window shades off |
 | 0.7.1 | v0.7.1 (ff3136a) | a classic equalizer opens above the playlist, so the playlist stays last and keeps filling the view |
+| 0.7.2 | v0.7.2 (a27a38d) | a classic main window's close and minimize buttons send `CLOSE` and `MINIMIZE` to the host |
 
 Only the current version's files are kept; the rows above are the log of what was kept here.
