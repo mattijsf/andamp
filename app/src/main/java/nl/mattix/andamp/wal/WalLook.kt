@@ -622,8 +622,12 @@ internal class WalLook(
     }
 
     companion object {
-        /** The classic windows besides the main one that the app opens and closes. */
-        val CLASSIC_WINDOWS = listOf("pledit", "equalizer")
+        /**
+         * The classic windows besides the main one that the app opens and closes, in the order
+         * they open: the stack shows them in that order, as Winamp's does, so the playlist comes
+         * last and stretches to the bottom of a stack filling the screen.
+         */
+        val CLASSIC_WINDOWS = listOf("equalizer", "pledit")
 
         /** Opens the classic windows in [open] and closes the others; on the engine thread. */
         private fun SkinRuntime.showClassicWindows(open: Set<String>) {
