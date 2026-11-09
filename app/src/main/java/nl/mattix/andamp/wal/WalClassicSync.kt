@@ -6,8 +6,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import nl.mattix.andamp.state.MarkPlace
 import nl.mattix.andamp.state.SourceForRows
@@ -23,7 +25,8 @@ import nl.mattix.walkit.RowMarks
  * counting down, the equalizer's auto and the vis mode, as the Options and Visualization menus and
  * a press on the skin change them, and the playlist's selection, as the playlist menus change it.
  * The skin's own presses on a row reach the app through its host actions instead. It also follows
- * the app's window shade setting and the marks the playlist shows beside its rows.
+ * the app's window shade setting and the marks the playlist shows beside its rows, and keeps which
+ * of the playlist and equalizer windows show, so they open again as the app comes back.
  */
 @Composable
 internal fun WalClassicSync(
@@ -54,11 +57,35 @@ internal fun WalClassicSync(
         launch {
             snapshotFlow { rowMarksOf(s) }.distinctUntilChanged().collect(look::setClassicRowMarks)
         }
+        launch {
+            // the windows the app keeps open reach the skin, and the skin's own PL, EQ and close
+            // buttons, and the Window menu, change what the app keeps. The first frame may come
+            // before the skin was told, so only a change from one frame to the next is kept
+            launch {
+                snapshotFlow { openClassicWindows(s) }.distinctUntilChanged().collect(look::setClassicWindows)
+            }
+            snapshotFlow { look.layout?.classicWindows?.keys }
+                .filterNotNull()
+                .map { shown -> WalLook.CLASSIC_WINDOWS.filter { it in shown }.toSet() }
+                .distinctUntilChanged()
+                .drop(1)
+                .collect { shown ->
+                    s.plVisible = "pledit" in shown
+                    s.eqVisible = "equalizer" in shown
+                }
+        }
         snapshotFlow { ClassicSwitches(s.timeRemaining, s.eqAuto, s.visMode.toSkin()) }
             .distinctUntilChanged()
             .collect(look::setClassicSwitches)
     }
 }
+
+/** The classic windows besides the main one that the app keeps open. */
+internal fun openClassicWindows(s: WinampState): Set<String> =
+    buildSet {
+        if (s.plVisible) add("pledit")
+        if (s.eqVisible) add("equalizer")
+    }
 
 /**
  * The marks of the playlist's rows as a classic skin shows them: each row's music source's mark,

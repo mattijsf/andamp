@@ -218,4 +218,11 @@ internal interface WalSurface : WalTouch.Target {
 
     /** Puts [marks] on a classic playlist's rows, now or as soon as the skin has loaded. Does nothing for a modern skin. */
     fun setClassicRowMarks(marks: RowMarks) {}
+
+    /**
+     * Shows a classic skin's playlist and equalizer windows that are in [open] (`pledit`,
+     * `equalizer`) and closes the others, now or as soon as the skin has loaded. Does nothing for a
+     * modern skin.
+     */
+    fun setClassicWindows(open: Set<String>) {}
 }

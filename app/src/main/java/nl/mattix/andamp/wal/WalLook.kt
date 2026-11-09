@@ -374,6 +374,16 @@ internal class WalLook(
         engine?.post { it.setClassicRowMarks(marks) }
     }
 
+    /** The classic windows the app keeps open, put on as the skin loads and at each change; null before the app said. */
+    @Volatile
+    private var wantedWindows: Set<String>? = null
+
+    override fun setClassicWindows(open: Set<String>) {
+        if (!classic) return
+        wantedWindows = open
+        engine?.post { it.showClassicWindows(open) }
+    }
+
     override fun save() {
         engine?.post(publish = false, task = ::keep)
     }
@@ -507,6 +517,7 @@ internal class WalLook(
                 setClassicPlaylistSelection(wantedSelection)
                 setClassicShades(wantedShades)
                 setClassicRowMarks(wantedMarks)
+                wantedWindows?.let { showClassicWindows(it) }
             }
             settings?.restoreTheme(id, this)
             // putting back the theme it wore is no change to save
@@ -611,6 +622,14 @@ internal class WalLook(
     }
 
     companion object {
+        /** The classic windows besides the main one that the app opens and closes. */
+        val CLASSIC_WINDOWS = listOf("pledit", "equalizer")
+
+        /** Opens the classic windows in [open] and closes the others; on the engine thread. */
+        private fun SkinRuntime.showClassicWindows(open: Set<String>) {
+            for (container in CLASSIC_WINDOWS) if (container in open) openWindow(container) else closeWindow(container)
+        }
+
         /** How long changes to what a skin keeps rest before they are saved. */
         const val SAVE_DELAY_MS = 1_000L
 

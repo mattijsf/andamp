@@ -29,19 +29,22 @@ class WalClassicSyncTest {
     private val s = WinampState()
     private val look = FakeWalSurface().apply { classic = true }
 
-    private fun layout(pressed: WalPressedSwitches?) =
-        WalLayout(
-            fit = WalFit(1080, 1920, 2.75f, sideways = false),
-            scale = 3f,
-            left = 0f,
-            top = 0f,
-            stackW = 275,
-            stackH = 116,
-            windowOpen = false,
-            animating = false,
-            menuTarget = null,
-            pressedSwitches = pressed,
-        )
+    private fun layout(
+        pressed: WalPressedSwitches?,
+        windows: Set<String> = emptySet(),
+    ) = WalLayout(
+        fit = WalFit(1080, 1920, 2.75f, sideways = false),
+        scale = 3f,
+        left = 0f,
+        top = 0f,
+        stackW = 275,
+        stackH = 116,
+        windowOpen = false,
+        animating = false,
+        menuTarget = null,
+        pressedSwitches = pressed,
+        classicWindows = windows.associateWith { "normal" },
+    )
 
     @Test
     fun `the app's settings reach the skin as they are and at each change`() {
@@ -104,5 +107,27 @@ class WalClassicSyncTest {
         assertEquals(false, s.timeRemaining)
         assertEquals(true, s.eqAuto)
         assertEquals(VisMode.Off, s.visMode)
+    }
+
+    @Test
+    fun `the windows the app kept open reach the skin, and the skin's buttons change what it keeps`() {
+        s.plVisible = true
+        s.eqVisible = false
+        look.layout = layout(null)
+        compose.setContent { WalClassicSync(look, s) }
+        compose.waitForIdle()
+        assertEquals(listOf(setOf("pledit")), look.windows)
+        assertEquals("a frame from before the skin was told keeps nothing", true, s.plVisible)
+
+        look.layout = layout(null, setOf("pledit"))
+        compose.waitForIdle()
+        look.layout = layout(null, setOf("pledit", "equalizer"))
+        compose.waitForIdle()
+        assertEquals(true, s.eqVisible)
+
+        look.layout = layout(null, setOf("equalizer"))
+        compose.waitForIdle()
+        assertEquals(false, s.plVisible)
+        assertEquals(true, s.eqVisible)
     }
 }

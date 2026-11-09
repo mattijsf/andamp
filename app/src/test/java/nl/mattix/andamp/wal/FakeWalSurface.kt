@@ -240,6 +240,13 @@ internal class FakeWalSurface : WalSurface {
         rowMarks += marks
     }
 
+    /** Each set of open classic windows the screen handed it, in order. */
+    val windows = mutableListOf<Set<String>>()
+
+    override fun setClassicWindows(open: Set<String>) {
+        windows += open
+    }
+
     /** The keys each press came with, as "ctrl shift" booleans. */
     val modifiers = mutableListOf<Pair<Boolean, Boolean>>()
 
