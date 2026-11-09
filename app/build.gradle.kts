@@ -173,7 +173,7 @@ val bundledLicenses =
         liberationSans.set(rootProject.layout.projectDirectory.file("docs/LiberationSans-LICENSE.txt"))
         dejaVu.set(
             rootProject.layout.projectDirectory.file(
-                "modernskin/src/main/resources/nl/mattix/andamp/modernskin/defaultset/fonts/DejaVu-LICENSE.txt",
+                "app/src/main/resources/nl/mattix/andamp/wal/defaultset/fonts/DejaVu-LICENSE.txt",
             ),
         )
         projectM.set(
@@ -284,8 +284,6 @@ android {
     // This APK names no service. NamesNothing (wired below) reads the packaged APK back for the
     // word, and NamesNoServiceTest reads what was compiled.
     sourceSets.getByName("main").kotlin.srcDir(storeSources)
-    // the default element set modern skins build on, shared with the reference engine in :modernskin
-    sourceSets.getByName("main").resources.srcDir("../modernskin/src/main/resources")
 
     signingConfigs {
         create("upload") {

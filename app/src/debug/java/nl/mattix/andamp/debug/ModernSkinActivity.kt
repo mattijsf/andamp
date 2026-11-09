@@ -245,10 +245,10 @@ private data class Check(
     }
 }
 
-/** 2026-10-20 12:00:00 UTC, the moment ReferenceRenderTest's clock starts at. */
+/** 2026-10-20 12:00:00 UTC, the moment the walkit trace runner's clock starts at. */
 private const val CHECK_CLOCK_START = 1_792_324_800_000L
 
-/** The Winamp VM's work area, which ReferenceRenderTest uses as the viewport too. */
+/** The Winamp VM's work area, which the walkit trace runner uses as the viewport too. */
 private const val CHECK_VIEWPORT_W = 1248
 
 private const val CHECK_VIEWPORT_H = 853
@@ -500,17 +500,17 @@ private fun loadRuntime(
         settings?.restoreTheme(file.name, it)
         check?.theme?.let { t -> it.selectColorTheme(t) }
         check?.view?.let { v -> it.presentation = it.presentation.copy(viewSize = v) }
-        // a scenario's size for a resizable main window, as ReferenceRenderTest gives it
+        // a scenario's size for a resizable main window, as the walkit trace runner gives it
         check?.mainSize?.let { (w, h) ->
             it.mainWindow?.let { main ->
                 it.resizeWindow(main, w, h)
             }
         }
-        // windows the skin opens by itself at start in Winamp, as ReferenceRenderTest opens them
+        // windows the skin opens by itself at start in Winamp, as the walkit trace runner opens them
         check?.show?.forEach { id -> it.openWindow(id) }
     }
 
-/** The reference sequence, as ReferenceRenderTest runs it, on the check's stepped clock. */
+/** The reference sequence, as the walkit trace runner runs it, on the check's stepped clock. */
 private fun runCheck(
     rt: SkinRuntime,
     player: FakePlayer,
@@ -584,7 +584,7 @@ private fun ModernSkinScreen(
     val player = remember { demoPlayer(check) }
     // what the skin kept from last time, by file name; a check or a probe starts clean
     val settings = remember { WalSettings(context).takeIf { check == null && probe == null } }
-    // the check's stepped clock, as ReferenceRenderTest uses: the same frames every run, and no waiting.
+    // the check's stepped clock, as the walkit trace runner uses: the same frames every run, and no waiting.
     // Set before the skin loads, so the timers its scripts start on loading run on it too.
     val checkClock = remember { longArrayOf(CHECK_CLOCK_START) }
     var frameCount by remember { mutableIntStateOf(0) }

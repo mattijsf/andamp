@@ -15,7 +15,7 @@ internal object AndampDefaultSet : SkinFiles by WithGeneratedImages(DefaultSetRe
 
 /** The default set's files as resources, by name. */
 private object DefaultSetResources : SkinFiles {
-    private const val ROOT = "/nl/mattix/andamp/modernskin/defaultset/"
+    private const val ROOT = "/nl/mattix/andamp/wal/defaultset/"
     private val FILES =
         listOf(
             "wasabi.xml",

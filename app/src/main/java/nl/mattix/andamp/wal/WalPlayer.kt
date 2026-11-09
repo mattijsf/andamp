@@ -24,7 +24,7 @@ import nl.mattix.walkit.Player
 import nl.mattix.walkit.Track as SkinTrack
 
 /**
- * The player a modern skin drives: the modernskin [Player], on Winamp 5's scales, over a
+ * The player a modern skin drives: walkit's [Player], on Winamp 5's scales, over a
  * [SkinPlayer] on Winamp 2's (Andamp's: [AndampSkinPlayer]).
  *
  * The engine calls it on the engine thread. Reads go to the player's snapshot and never throw;
