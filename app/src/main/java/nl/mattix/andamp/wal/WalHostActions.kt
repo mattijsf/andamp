@@ -53,6 +53,8 @@ internal class WalHostActions(
     private val playlistPick: (pick: String, anchor: MenuAnchor?) -> Unit = { _, _ -> },
     /** The classic playlist's selected row, or null for none. */
     private val selectRow: (Int?) -> Unit = {},
+    /** The classic playlist's selected rows, from a press with Ctrl or Shift held. */
+    private val selectRows: (List<Int>) -> Unit = {},
     /** The item menu of a classic playlist's row, from a long press on it, with where the finger held. */
     private val rowMenu: (row: Int, anchor: MenuAnchor?) -> Unit = { _, _ -> },
 ) : WalSink {
@@ -108,7 +110,7 @@ internal class WalHostActions(
                 clutterBar(a)
             }
 
-            is HostAction.Playlist, is HostAction.PlaylistSelect, is HostAction.PlaylistMenu -> {
+            is HostAction.Playlist, is HostAction.PlaylistSelect, is HostAction.PlaylistSelection, is HostAction.PlaylistMenu -> {
                 playlist(a, at)
             }
 
@@ -163,6 +165,7 @@ internal class WalHostActions(
         when (a) {
             is HostAction.Playlist -> playlistPick(a.pick, at)
             is HostAction.PlaylistSelect -> selectRow(a.row)
+            is HostAction.PlaylistSelection -> selectRows(a.rows)
             is HostAction.PlaylistMenu -> rowMenu(a.row, at)
             else -> Unit
         }
@@ -234,6 +237,7 @@ internal class WalHostActions(
                     if (anchor != null && pick == "sort") s.activeMenu = s.activeMenu?.copy(anchor = anchor)
                 },
                 selectRow = { row -> if (row == null) vm.playlistOps.selectZero() else vm.playlistOps.selectTrack(row) },
+                selectRows = { rows -> s.selectedRows = rows.filter { it in s.playlist.indices }.toSet() },
                 rowMenu = { row, anchor ->
                     if (row in s.playlist.indices) {
                         s.activeMenu = playlistRowMenu(vm, row, anchor ?: MenuAnchor(WindowStore.PLAYLIST, 0, 0, 0, 0))

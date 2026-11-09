@@ -66,6 +66,15 @@ class WalTouchTest {
     }
 
     @Test
+    fun `the keys held with a press reach the skin before it`() {
+        touch.down(TouchPoint(20f, 40f), 0, ctrl = true, shift = false)
+        touch.up(TouchPoint(20f, 40f), 90, consumed = false)
+        touch.down(TouchPoint(20f, 40f), 1000)
+
+        assertEquals(listOf(true to false, false to false), surface.keys)
+    }
+
+    @Test
     fun `a move reaches the skin as a move`() {
         touch.down(TouchPoint(20f, 40f), 0)
         touch.move(TouchPoint(60f, 40f))
@@ -355,6 +364,16 @@ private class FakeTarget : WalTouch.Target {
 
     override fun pointerCancel() {
         calls += "cancel"
+    }
+
+    /** The keys each press came with. */
+    val keys = mutableListOf<Pair<Boolean, Boolean>>()
+
+    override fun pointerModifiers(
+        ctrl: Boolean,
+        shift: Boolean,
+    ) {
+        keys += ctrl to shift
     }
 
     override fun doubleTap(

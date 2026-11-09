@@ -6,6 +6,7 @@ import androidx.compose.runtime.IntState
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import kotlinx.coroutines.sync.Mutex
 import nl.mattix.walkit.ClassicSwitches
+import nl.mattix.walkit.RowMarks
 import nl.mattix.walkit.SkinMenu
 import nl.mattix.walkit.SkinOptions
 
@@ -211,4 +212,10 @@ internal interface WalSurface : WalTouch.Target {
 
     /** Shows [rows] as a classic playlist's selection, now or as soon as the skin has loaded. Does nothing for a modern skin. */
     fun setClassicSelection(rows: Set<Int>) {}
+
+    /** Lets a classic skin's windows shade or not, now or as soon as the skin has loaded. Does nothing for a modern skin. */
+    fun setClassicShades(on: Boolean) {}
+
+    /** Puts [marks] on a classic playlist's rows, now or as soon as the skin has loaded. Does nothing for a modern skin. */
+    fun setClassicRowMarks(marks: RowMarks) {}
 }

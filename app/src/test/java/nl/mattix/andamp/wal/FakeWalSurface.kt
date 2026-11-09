@@ -22,6 +22,7 @@ import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.ui.menu.MenuBarSection
 import nl.mattix.walkit.ClassicSwitches
+import nl.mattix.walkit.RowMarks
 import nl.mattix.walkit.SkinMenu
 import kotlin.math.floor
 
@@ -225,6 +226,28 @@ internal class FakeWalSurface : WalSurface {
 
     override fun setClassicSelection(rows: Set<Int>) {
         selections += rows
+    }
+
+    /** Each shade setting and each set of row marks the screen handed it, in order. */
+    val shades = mutableListOf<Boolean>()
+    val rowMarks = mutableListOf<RowMarks>()
+
+    override fun setClassicShades(on: Boolean) {
+        shades += on
+    }
+
+    override fun setClassicRowMarks(marks: RowMarks) {
+        rowMarks += marks
+    }
+
+    /** The keys each press came with, as "ctrl shift" booleans. */
+    val modifiers = mutableListOf<Pair<Boolean, Boolean>>()
+
+    override fun pointerModifiers(
+        ctrl: Boolean,
+        shift: Boolean,
+    ) {
+        modifiers += ctrl to shift
     }
 
     private fun input() {

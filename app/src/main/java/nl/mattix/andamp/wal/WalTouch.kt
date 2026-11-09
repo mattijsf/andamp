@@ -72,6 +72,12 @@ internal class WalTouch(
         /** The rest of the press lands exactly where it says, as a mouse's does: a magnifier steers it. */
         fun pointerPrecise() {}
 
+        /** The keys held with the next press, from a keyboard beside the finger or mouse: Ctrl and Shift. */
+        fun pointerModifiers(
+            ctrl: Boolean,
+            shift: Boolean,
+        ) {}
+
         /** Hands [onControls] the controls of the window the press is on, in the stack's skin pixels, later on main. */
         fun pressControls(onControls: (List<nl.mattix.walkit.TouchControl>) -> Unit) {}
     }
@@ -162,12 +168,15 @@ internal class WalTouch(
     private var press: Press? = null
     private var lastTap: Tap? = null
 
-    /** A finger went down at [at] at [time]. */
+    /** A finger went down at [at] at [time], with Ctrl and Shift held or not ([ctrl], [shift]). */
     fun down(
         at: TouchPoint,
         time: Long,
+        ctrl: Boolean = false,
+        shift: Boolean = false,
     ) {
         cancel()
+        surface.pointerModifiers(ctrl, shift)
         val tap = lastTap
         lastTap = null
         val second = tap != null && time - tap.upTime <= rules.doubleTapMs && tap.at.distanceTo(at) <= rules.doubleTapSlop

@@ -59,6 +59,11 @@ internal sealed interface HostAction {
         val row: Int,
     ) : HostAction
 
+    /** The classic playlist's selected [rows], from a press with Ctrl or Shift held, which the picks act on. */
+    data class PlaylistSelection(
+        val rows: List<Int>,
+    ) : HostAction
+
     /** The classic playlist's selected [row], or null for none, which the picks act on. */
     data class PlaylistSelect(
         val row: Int?,
@@ -94,7 +99,7 @@ internal sealed interface HostAction {
                 "ALWAYS_ON_TOP" -> AlwaysOnTop
                 "DOUBLESIZE" -> DoubleSize
                 "EQ_PRESETS" -> EqPresets
-                "PLAYLIST", "PLAYLIST_SELECT", "PLAYLIST_MENU" -> playlist(action, param)
+                "PLAYLIST", "PLAYLIST_SELECT", "PLAYLIST_SELECTION", "PLAYLIST_MENU" -> playlist(action, param)
                 "SHOW" -> param?.let(::Show)
                 "TOGGLE" -> param?.let(::Toggle)
                 else -> null
@@ -108,6 +113,7 @@ internal sealed interface HostAction {
             when (action) {
                 "PLAYLIST" -> param?.let(::Playlist)
                 "PLAYLIST_SELECT" -> PlaylistSelect(param?.toIntOrNull())
+                "PLAYLIST_SELECTION" -> PlaylistSelection(param.orEmpty().split(',').mapNotNull { it.trim().toIntOrNull() })
                 else -> param?.toIntOrNull()?.let(::PlaylistMenu)
             }
     }

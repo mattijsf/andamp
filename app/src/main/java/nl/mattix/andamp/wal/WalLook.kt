@@ -17,6 +17,7 @@ import kotlinx.coroutines.sync.Mutex
 import nl.mattix.walkit.ClassicSwitches
 import nl.mattix.walkit.Player
 import nl.mattix.walkit.Rect
+import nl.mattix.walkit.RowMarks
 import nl.mattix.walkit.SkinFiles
 import nl.mattix.walkit.SkinMenu
 import nl.mattix.walkit.SkinOptions
@@ -252,6 +253,13 @@ internal class WalLook(
         return seq
     }
 
+    override fun pointerModifiers(
+        ctrl: Boolean,
+        shift: Boolean,
+    ) {
+        engine?.pointerModifiers(ctrl, shift)
+    }
+
     override fun pointerPrecise() {
         lastInputAt = SystemClock.uptimeMillis()
         engine?.pointerPrecise()
@@ -344,6 +352,26 @@ internal class WalLook(
         if (!classic) return
         wantedSelection = rows
         engine?.post { it.setClassicPlaylistSelection(rows) }
+    }
+
+    /** Whether the app lets a classic skin's windows shade, put on as it loads and at each change. */
+    @Volatile
+    private var wantedShades = true
+
+    /** The app's marks on a classic playlist's rows, put on as it loads and at each change. */
+    @Volatile
+    private var wantedMarks = RowMarks.NONE
+
+    override fun setClassicShades(on: Boolean) {
+        if (!classic) return
+        wantedShades = on
+        engine?.post { it.setClassicShades(on) }
+    }
+
+    override fun setClassicRowMarks(marks: RowMarks) {
+        if (!classic) return
+        wantedMarks = marks
+        engine?.post { it.setClassicRowMarks(marks) }
     }
 
     override fun save() {
@@ -477,6 +505,8 @@ internal class WalLook(
             if (classic) {
                 wantedSwitches?.let { classicSwitches = it }
                 setClassicPlaylistSelection(wantedSelection)
+                setClassicShades(wantedShades)
+                setClassicRowMarks(wantedMarks)
             }
             settings?.restoreTheme(id, this)
             // putting back the theme it wore is no change to save

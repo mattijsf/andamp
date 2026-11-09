@@ -571,6 +571,12 @@ internal class WalEngine(
         it.doubleTap(x, y, seq)
     }
 
+    /** The keys held with the next press; see [SkinRuntime.setPointerModifiers]. */
+    fun pointerModifiers(
+        ctrl: Boolean,
+        shift: Boolean,
+    ) = postTouch("keys") { it.setPointerModifiers(ctrl, shift) }
+
     /** The rest of the press lands exactly where it says; see [SkinRuntime.setPointerPrecise]. */
     fun pointerPrecise() =
         postTouch("precise") {
