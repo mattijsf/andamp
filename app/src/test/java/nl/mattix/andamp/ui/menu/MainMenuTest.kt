@@ -15,6 +15,10 @@ import nl.mattix.andamp.state.SkinLibrary
 import nl.mattix.andamp.state.SourceMark
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.ui.window.testViewModel
+import nl.mattix.andamp.wal.FakeWalSurface
+import nl.mattix.andamp.wal.WalFilled
+import nl.mattix.andamp.wal.WalFit
+import nl.mattix.andamp.wal.WalLayout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -550,6 +554,54 @@ class MainMenuTest {
 
         assertEquals(false, actions(menu.items).first { it.label == "Equalizer" }.checked)
         assertEquals(true, actions(menu.items).first { it.label == "Playlist Editor" }.checked)
+    }
+
+    @Test
+    fun `a classic skin walkit draws keeps its windows, Double Size and the modes, and the windows open in the skin`() {
+        val vm = testViewModel()
+        WalFilled.forget(app)
+        val look =
+            FakeWalSurface().apply {
+                classic = true
+                layout =
+                    WalLayout(
+                        fit = WalFit(1080, 1920, 2.75f, sideways = false),
+                        scale = 3f,
+                        left = 0f,
+                        top = 0f,
+                        stackW = 275,
+                        stackH = 232,
+                        windowOpen = false,
+                        animating = false,
+                        menuTarget = null,
+                        classicWindows = mapOf("main" to "normal", "pledit" to "normal"),
+                    )
+            }
+        // the app's own windows read the other way round, so the ticks can only come from the skin
+        vm.state.plVisible = false
+        vm.state.eqVisible = true
+
+        val menu = mainMenu(vm, {}, {}, {}, {}, classicLook = look)
+
+        assertEquals("nothing grayed that the classic player has", grayed(mainMenu(vm, {}, {}, {}, {}).items), grayed(menu.items))
+        val playlist = actions(menu.items).first { it.label == "Playlist Editor" }
+        val equalizer = actions(menu.items).first { it.label == "Equalizer" }
+        assertEquals("the skin's playlist is open", true, playlist.checked)
+        assertEquals("its equalizer is not", false, equalizer.checked)
+        playlist.onClick()
+        equalizer.onClick()
+        assertEquals(listOf("pledit false", "equalizer true"), look.shownWindows)
+        assertEquals("the app's windows stay as they were", false to true, vm.state.plVisible to vm.state.eqVisible)
+        val doubleSize = actions(submenu(menu, "Options")).first { it.label == "Double Size" }
+        assertEquals("Double Size reads the skin's fill switch", false, doubleSize.checked)
+        WalFilled.toggle(app)
+        val filled =
+            actions(submenu(mainMenu(vm, {}, {}, {}, {}, classicLook = look), "Options")).first {
+                it.label ==
+                    "Double Size"
+            }
+        assertEquals(true, filled.checked)
+        WalFilled.forget()
     }
 
     @Test

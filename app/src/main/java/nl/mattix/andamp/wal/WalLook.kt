@@ -14,6 +14,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.sync.Mutex
+import nl.mattix.walkit.ClassicSwitches
 import nl.mattix.walkit.Player
 import nl.mattix.walkit.Rect
 import nl.mattix.walkit.SkinFiles
@@ -73,6 +74,8 @@ internal class WalLook(
     private val frameCount = mutableIntStateOf(0)
 
     override val frames: IntState get() = frameCount
+
+    override val classic: Boolean = file.name.endsWith(".wsz", ignoreCase = true)
 
     override var layout: WalLayout? by mutableStateOf(null)
         private set
@@ -314,6 +317,35 @@ internal class WalLook(
         engine?.post { it.toggleSkinOption(key) }
     }
 
+    /** Opens or closes the window on the engine thread, which publishes the frame that shows it; see [WalSurface]. */
+    override fun showClassicWindow(
+        container: String,
+        open: Boolean,
+    ) {
+        lastInputAt = SystemClock.uptimeMillis()
+        engine?.post { if (open) it.openWindow(container) else it.closeWindow(container) }
+    }
+
+    /** The app's settings for a classic skin's switches, put on as it loads and at each change. */
+    @Volatile
+    private var wantedSwitches: ClassicSwitches? = null
+
+    /** The app's playlist selection, put on as a classic skin loads and at each change. */
+    @Volatile
+    private var wantedSelection: Set<Int> = emptySet()
+
+    override fun setClassicSwitches(switches: ClassicSwitches) {
+        if (!classic) return
+        wantedSwitches = switches
+        engine?.setClassicSwitches(switches)
+    }
+
+    override fun setClassicSelection(rows: Set<Int>) {
+        if (!classic) return
+        wantedSelection = rows
+        engine?.post { it.setClassicPlaylistSelection(rows) }
+    }
+
     override fun save() {
         engine?.post(publish = false, task = ::keep)
     }
@@ -412,7 +444,6 @@ internal class WalLook(
             // such a menu is answered at once with nothing picked
             // a classic skin's windows move one by one, as in Winamp, unless D has it fill the
             // screen (the library keeps it as .wsz); its text is drawn as Windows draws it
-            val classic = file.name.endsWith(".wsz", ignoreCase = true)
             val host =
                 WalHost(files, cacheDir, windowOpen, actions = ::hostAction).apply {
                     menus.unattended = awaited
@@ -443,6 +474,10 @@ internal class WalLook(
         SkinRuntime(files, host, player, WalPrepare.setup(name)).apply {
             settings?.restoreBeforeLoad(id, this)
             load()
+            if (classic) {
+                wantedSwitches?.let { classicSwitches = it }
+                setClassicPlaylistSelection(wantedSelection)
+            }
             settings?.restoreTheme(id, this)
             // putting back the theme it wore is no change to save
             keptVersion = settingsVersion

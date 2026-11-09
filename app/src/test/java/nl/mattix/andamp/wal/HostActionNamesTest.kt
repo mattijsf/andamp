@@ -62,6 +62,8 @@ class HostActionNamesTest {
         assertNull("a pick needs its name", HostAction.of("PLAYLIST", null))
         assertEquals(HostAction.PlaylistSelect(3), HostAction.of("PLAYLIST_SELECT", "3"))
         assertEquals(HostAction.PlaylistSelect(null), HostAction.of("PLAYLIST_SELECT", null))
+        assertEquals("a held row asks for its menu", HostAction.PlaylistMenu(4), HostAction.of("PLAYLIST_MENU", "4"))
+        assertNull("a row menu needs its row", HostAction.of("PLAYLIST_MENU", null))
     }
 
     @Test

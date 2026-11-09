@@ -54,6 +54,11 @@ internal sealed interface HostAction {
         val pick: String,
     ) : HostAction
 
+    /** A long press on a classic playlist's [row], which is in the selection now: Winamp's item menu for it. */
+    data class PlaylistMenu(
+        val row: Int,
+    ) : HostAction
+
     /** The classic playlist's selected [row], or null for none, which the picks act on. */
     data class PlaylistSelect(
         val row: Int?,
@@ -89,11 +94,21 @@ internal sealed interface HostAction {
                 "ALWAYS_ON_TOP" -> AlwaysOnTop
                 "DOUBLESIZE" -> DoubleSize
                 "EQ_PRESETS" -> EqPresets
-                "PLAYLIST" -> param?.let(::Playlist)
-                "PLAYLIST_SELECT" -> PlaylistSelect(param?.toIntOrNull())
+                "PLAYLIST", "PLAYLIST_SELECT", "PLAYLIST_MENU" -> playlist(action, param)
                 "SHOW" -> param?.let(::Show)
                 "TOGGLE" -> param?.let(::Toggle)
                 else -> null
+            }
+
+        /** A classic playlist's pick, selection or row menu. */
+        private fun playlist(
+            action: String,
+            param: String?,
+        ): HostAction? =
+            when (action) {
+                "PLAYLIST" -> param?.let(::Playlist)
+                "PLAYLIST_SELECT" -> PlaylistSelect(param?.toIntOrNull())
+                else -> param?.toIntOrNull()?.let(::PlaylistMenu)
             }
     }
 }

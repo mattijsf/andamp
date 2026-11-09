@@ -5,6 +5,7 @@ package nl.mattix.andamp.wal
 import androidx.compose.runtime.IntState
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import kotlinx.coroutines.sync.Mutex
+import nl.mattix.walkit.ClassicSwitches
 import nl.mattix.walkit.SkinMenu
 import nl.mattix.walkit.SkinOptions
 
@@ -25,6 +26,9 @@ internal interface WalSurface : WalTouch.Target {
 
     /** Bumped on main after each new frame or menu change; changes close together count once. */
     val frames: IntState
+
+    /** Whether the skin is a classic one (.wsz) walkit draws, rather than a modern skin. */
+    val classic: Boolean get() = false
 
     /** Where the stack sits; snapshot state set on main, null until the first frame. */
     val layout: WalLayout?
@@ -188,4 +192,23 @@ internal interface WalSurface : WalTouch.Target {
      * the skin has loaded or for a key the skin no longer lists.
      */
     fun toggleSkinOption(key: SkinOptions.Key) {}
+
+    /**
+     * Opens or closes a classic skin's window of [container] (`equalizer`, `pledit`), as its main
+     * window's EQ and PL buttons do; the next frame's [layout] shows it. Does nothing before the
+     * skin has loaded.
+     */
+    fun showClassicWindow(
+        container: String,
+        open: Boolean,
+    ) {}
+
+    /**
+     * Sets a classic skin's switches to the app's settings, now or as soon as the skin has loaded;
+     * a frame after a press that changed them carries them in [layout]. Does nothing for a modern skin.
+     */
+    fun setClassicSwitches(switches: ClassicSwitches) {}
+
+    /** Shows [rows] as a classic playlist's selection, now or as soon as the skin has loaded. Does nothing for a modern skin. */
+    fun setClassicSelection(rows: Set<Int>) {}
 }

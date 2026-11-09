@@ -21,6 +21,7 @@ import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.ui.menu.MenuBarSection
+import nl.mattix.walkit.ClassicSwitches
 import nl.mattix.walkit.SkinMenu
 import kotlin.math.floor
 
@@ -199,6 +200,31 @@ internal class FakeWalSurface : WalSurface {
     override fun save() {
         calls += "save"
         saves++
+    }
+
+    /** Whether it stands for a classic skin walkit draws; a test sets it. */
+    override var classic = false
+
+    /** Each classic window the screen opened or closed, as "pledit true". */
+    val shownWindows = mutableListOf<String>()
+
+    /** Each set of switches and each selection the screen handed it, in order. */
+    val switches = mutableListOf<ClassicSwitches>()
+    val selections = mutableListOf<Set<Int>>()
+
+    override fun showClassicWindow(
+        container: String,
+        open: Boolean,
+    ) {
+        shownWindows += "$container $open"
+    }
+
+    override fun setClassicSwitches(switches: ClassicSwitches) {
+        this.switches += switches
+    }
+
+    override fun setClassicSelection(rows: Set<Int>) {
+        selections += rows
     }
 
     private fun input() {

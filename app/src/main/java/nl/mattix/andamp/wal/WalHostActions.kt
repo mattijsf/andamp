@@ -6,6 +6,7 @@ import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.ui.menu.MenuBarSection
+import nl.mattix.andamp.ui.menu.playlistRowMenu
 import nl.mattix.andamp.ui.menu.visualizationItems
 import nl.mattix.andamp.ui.menu.visualizationMenu
 import nl.mattix.andamp.ui.window.PlaylistMenuActions
@@ -52,6 +53,8 @@ internal class WalHostActions(
     private val playlistPick: (pick: String, anchor: MenuAnchor?) -> Unit = { _, _ -> },
     /** The classic playlist's selected row, or null for none. */
     private val selectRow: (Int?) -> Unit = {},
+    /** The item menu of a classic playlist's row, from a long press on it, with where the finger held. */
+    private val rowMenu: (row: Int, anchor: MenuAnchor?) -> Unit = { _, _ -> },
 ) : WalSink {
     /**
      * Where the last press on the skin went down: it makes the menu anchor there when a menu
@@ -105,7 +108,7 @@ internal class WalHostActions(
                 clutterBar(a)
             }
 
-            is HostAction.Playlist, is HostAction.PlaylistSelect -> {
+            is HostAction.Playlist, is HostAction.PlaylistSelect, is HostAction.PlaylistMenu -> {
                 playlist(a, at)
             }
 
@@ -152,7 +155,7 @@ internal class WalHostActions(
         if (a == HostAction.DoubleSize) doubleSize() else alwaysOnTop()
     }
 
-    /** A classic playlist's pick, a submenu of it at [at], or the row it selected. */
+    /** A classic playlist's pick, a submenu of it at [at], the row it selected, or a row's menu at [at]. */
     private fun playlist(
         a: HostAction,
         at: MenuAnchor?,
@@ -160,6 +163,7 @@ internal class WalHostActions(
         when (a) {
             is HostAction.Playlist -> playlistPick(a.pick, at)
             is HostAction.PlaylistSelect -> selectRow(a.row)
+            is HostAction.PlaylistMenu -> rowMenu(a.row, at)
             else -> Unit
         }
     }
@@ -199,7 +203,15 @@ internal class WalHostActions(
                 toggleVisualizer = { s.setWindowOpen(WindowStore.MILKDROP, !s.milkdropOn) { vm.presetOps.setWindowOpen(it) } },
                 showVisualizer = { s.setWindowOpen(WindowStore.MILKDROP, true) { vm.presetOps.setWindowOpen(it) } },
                 visualizationMenu = { anchor ->
-                    s.activeMenu = visualizationMenu(vm, anchor).copy(items = visualizationItems(vm, modernPlayer = true))
+                    s.activeMenu =
+                        visualizationMenu(vm, anchor).copy(
+                            items =
+                                visualizationItems(
+                                    vm,
+                                    modernPlayer =
+                                        vm.skinOps.wal?.classic != true,
+                                ),
+                        )
                 },
                 // fullscreen shows only while the window or the skin shows the visualizer
                 eqPresets = { anchor -> s.activeMenu = vm.eqOps.presetsMenu(anchor) },
@@ -222,6 +234,11 @@ internal class WalHostActions(
                     if (anchor != null && pick == "sort") s.activeMenu = s.activeMenu?.copy(anchor = anchor)
                 },
                 selectRow = { row -> if (row == null) vm.playlistOps.selectZero() else vm.playlistOps.selectTrack(row) },
+                rowMenu = { row, anchor ->
+                    if (row in s.playlist.indices) {
+                        s.activeMenu = playlistRowMenu(vm, row, anchor ?: MenuAnchor(WindowStore.PLAYLIST, 0, 0, 0, 0))
+                    }
+                },
             )
         }
 
