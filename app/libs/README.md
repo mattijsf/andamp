@@ -35,5 +35,6 @@ published on (`darwin-aarch64`) and the helpers the app's unit tests drive a ski
 | 0.7.0 | v0.7.0 (2f43935) | `setClassicRowMarks`, `setPointerModifiers` and `setClassicShades`: a classic playlist shows a host's row marks and picks rows with Ctrl and Shift (`PLAYLIST_SELECTION`), and a host can turn window shades off |
 | 0.7.1 | v0.7.1 (ff3136a) | a classic equalizer opens above the playlist, so the playlist stays last and keeps filling the view |
 | 0.7.2 | v0.7.2 (a27a38d) | a classic main window's close and minimize buttons send `CLOSE` and `MINIMIZE` to the host |
+| 0.7.3 | v0.7.3 (18b2440) | a press made precise (`setPointerPrecise`) and steered onto another control is let go as a click on that control |
 
 Only the current version's files are kept; the rows above are the log of what was kept here.
