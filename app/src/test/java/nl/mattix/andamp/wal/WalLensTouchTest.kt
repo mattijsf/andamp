@@ -68,21 +68,9 @@ class WalLensTouchTest {
         touch.move(TouchPoint(30f, 96f))
         touch.up(TouchPoint(30f, 96f), 600, consumed = false)
 
-        // steered onto another letter, the press goes down on that one afresh
-        assertEquals(listOf("move 15,43", "cancel", "down 15,43", "up 15,43"), skin.calls.drop(4))
+        assertEquals(listOf("move 15,43", "up 15,43"), skin.calls.drop(4))
         assertNull("the lens closes", shown.last())
         assertEquals(emptyList<Int>(), longPresses)
-    }
-
-    @Test
-    fun `let go on the control the lens opened on, the press it began lifts there`() {
-        touch.down(TouchPoint(30f, 70f), 0)
-        touch.due(90)
-        touch.move(TouchPoint(30f, 70f))
-        touch.move(TouchPoint(30f, 72f))
-        touch.up(TouchPoint(30f, 72f), 600, consumed = false)
-
-        assertEquals(listOf("move 15,35", "up 15,35"), skin.calls.drop(4))
     }
 
     @Test

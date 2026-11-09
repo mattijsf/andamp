@@ -149,9 +149,6 @@ internal class WalTouch(
         /** The lens it opened, which steers the rest of it. */
         var lens: WalLens? = null
 
-        /** The control the lens opened on, which the skin's press went down on. */
-        var lensStart: androidx.compose.ui.unit.IntRect? = null
-
         /** Where the finger was last seen while the lens is up; null until its first move after the lens opened. */
         var steeredFrom: TouchPoint? = null
 
@@ -230,7 +227,7 @@ internal class WalTouch(
                 if (consumed) {
                     surface.pointerCancel()
                 } else {
-                    letGoUnderLens(p, open)
+                    open.point.let { (x, y) -> surface.pointerUp(x, y) }
                 }
             }
 
@@ -255,24 +252,6 @@ internal class WalTouch(
                 if (p.still) lastTap = Tap(p.at, time)
             }
         }
-    }
-
-    /**
-     * The finger lifted with [open] up: the press lets go where the crosshair is. A skin takes a
-     * press let go over another control than the one it went down on as one that slid off (as a
-     * mouse does), so when the crosshair was steered to another control the press goes down on
-     * that one afresh: the lens is there to pick among small neighbors.
-     */
-    private fun letGoUnderLens(
-        p: Press,
-        open: WalLens,
-    ) {
-        val (x, y) = open.point
-        if (open.target != p.lensStart) {
-            surface.pointerCancel()
-            surface.pointerDown(x, y)
-        }
-        surface.pointerUp(x, y)
     }
 
     /** The gesture ended without a release: its change went missing, or the pointer loop was cancelled. */
@@ -324,7 +303,6 @@ internal class WalTouch(
         if (press !== p || p.dragging || !p.holding) return
         val opened = host.open(p.at, controls) ?: return
         p.lens = opened
-        p.lensStart = opened.target
         surface.pointerPrecise()
         opened.point.let { (x, y) -> surface.pointerMove(x, y) }
         host.show(opened)
