@@ -502,11 +502,13 @@ internal class WalEngine(
         val idle = idle(runtime).also { lastIdle = it }
         val shown = published.get()
         // an animation that ends on a step that moves nothing still changes what the screen paces by,
-        // and so does a skin that starts or stops wanting frames, or goes static
+        // and so does a skin that starts or stops wanting frames, or goes static, and a switch
+        // between apart and filling the screen
         val due =
             changed || pendingCause != null || runtime.animating != shown?.animating ||
                 rest.wantsFrames(idle, now) != shown?.wantsFrames ||
-                shown?.layout?.let { it.skinOptions.version != runtime.configVersion } == true
+                shown?.layout?.let { it.skinOptions.version != runtime.configVersion } == true ||
+                appliedFit?.let(fitting::switched) == true
         val t1 = host.menus.workClock
         val drew = due && publish(cause, tickNanos, merge = true, idleNow = idle)
         val drawNanos = if (drew) host.menus.workClock - t1 else 0L
