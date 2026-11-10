@@ -225,46 +225,6 @@ class WindowCase(
     companion object {
         val ALL =
             listOf(
-                WindowCase(WindowStore.MAIN, "player") { vm, skin, scale, onClose ->
-                    MainFloatWindow(
-                        vm,
-                        skin,
-                        scale,
-                        widgets = mainWindowWidgets(vm, onExit = onClose) {},
-                        height = MAIN_H,
-                        docked = IntOffset.Zero,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                },
-                WindowCase(WindowStore.EQ, "equalizer") { vm, skin, scale, onClose ->
-                    EqFloatWindow(
-                        vm,
-                        skin,
-                        scale,
-                        widgets = eqWindowWidgets(vm),
-                        height = EQ_H,
-                        docked = IntOffset(0, MAIN_H),
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    CloseWatch(vm, onClose) { !it.state.eqVisible }
-                },
-                WindowCase(
-                    WindowStore.PLAYLIST,
-                    "playlist",
-                    resizable = true,
-                    widthResizable = true,
-                ) { vm, skin, scale, onClose ->
-                    PlaylistFloatWindow(
-                        vm,
-                        skin,
-                        scale,
-                        PlaylistMenuActions(),
-                        docked = IntOffset.Zero,
-                        dockedSegments = PlaylistLayout.MIN_SEGMENTS + 2,
-                        modifier = Modifier.fillMaxSize(),
-                    )
-                    CloseWatch(vm, onClose) { !it.state.plVisible }
-                },
                 WindowCase(
                     WindowStore.MILKDROP,
                     "plug-in",

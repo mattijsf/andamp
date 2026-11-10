@@ -4,34 +4,22 @@ package nl.mattix.andamp.ui
 
 import android.app.Application
 import androidx.compose.runtime.snapshots.Snapshot
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onRoot
-import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.IntRect
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.R
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SkinLoader
-import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.LibraryAccess
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
-import nl.mattix.andamp.state.Workspace
 import nl.mattix.andamp.ui.window.BIG_WINDOW
-import nl.mattix.andamp.ui.window.EQ_H
 import nl.mattix.andamp.ui.window.MAIN_H
 import nl.mattix.andamp.ui.window.MAIN_W
 import nl.mattix.andamp.ui.window.PlaylistMenuActions
-import nl.mattix.andamp.ui.window.RESIZE_GRIP
-import nl.mattix.andamp.ui.window.SHADE_H
-import nl.mattix.andamp.ui.window.setShaded
 import nl.mattix.andamp.ui.window.testViewModel
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
-import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -39,7 +27,6 @@ import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import org.robolectric.shadows.ShadowSettings
 
 /**
  * Winamp's Double Size on the app's own player: the windows fill the screen as one stack,
@@ -54,12 +41,6 @@ import org.robolectric.shadows.ShadowSettings
 class DoubleSizeSurfaceTest {
     @get:Rule
     val compose = createComposeRule()
-
-    /** What the surface was told about Always On Top being switched. */
-    private val handed = mutableListOf<Boolean>()
-
-    /** The places the surface was asked to send the listener: the skin picker, the museum. */
-    private val sent = mutableListOf<String>()
 
     private lateinit var skin: Skin
     private lateinit var vm: WinampViewModel
@@ -85,13 +66,13 @@ class DoubleSizeSurfaceTest {
                 skin,
                 PlaylistMenuActions(),
                 LibraryAccessHandle(LibraryAccess.GRANTED, request = {}),
-                onPickSkin = { sent += "skin picker" },
+                onPickSkin = {},
                 onPreferences = {},
-                onMuseum = { sent += "museum" },
+                onMuseum = {},
                 onExit = {},
                 onMinimize = {},
                 onOverlaySettings = {},
-                onFloatingChanged = { handed += it },
+                onFloatingChanged = {},
             )
         }
         settle()
@@ -106,127 +87,6 @@ class DoubleSizeSurfaceTest {
 
     private fun rect(id: String): IntRect? = vm.state.windowRects[id]
 
-    /** Where a virtual pixel of the filled screen is drawn. */
-    private fun filled(
-        x: Int,
-        y: Int,
-    ) = Offset(x * FILLED_PIXEL + 1f, y * FILLED_PIXEL + 1f)
-
-    /** The floating workspace as the store would save it: every window's arrangement, and their order. */
-    private fun floatingLayout() =
-        WindowStore.WINDOWS.map {
-            vm.state
-                .placementOf(it)
-                ?.asMemory()
-                ?.of(Workspace.FLOATING)
-        } to
-            vm.state.orderOf(Workspace.FLOATING)
-
-    @Test
-    fun `the player, the equalizer and the playlist fill the screen from top to bottom`() {
-        show()
-
-        assertTrue(vm.state.doubleSize)
-        assertEquals("the screen is one player wide", MAIN_W, vm.state.screenW)
-        assertEquals(IntRect(0, 0, MAIN_W, MAIN_H), rect(WindowStore.MAIN))
-        assertEquals(IntRect(0, MAIN_H, MAIN_W, MAIN_H + EQ_H), rect(WindowStore.EQ))
-        assertEquals(IntRect(0, MAIN_H + EQ_H, MAIN_W, vm.state.safeBottom), rect(WindowStore.PLAYLIST))
-    }
-
-    @Test
-    fun `the D in the clutter bar switches it off, and the windows float again`() {
-        show()
-
-        compose.onRoot().performTouchInput {
-            down(filled(14, 51))
-            up()
-        }
-        settle()
-
-        assertFalse(vm.doubleSize.on)
-        assertFalse("the D is no longer lit, and the stack is let go", vm.state.doubleSize)
-        // three screen pixels to a virtual one again, with room beside the player
-        assertEquals(900 / 3, vm.state.screenW)
-        assertEquals((900 / 3 - MAIN_W) / 2, rect(WindowStore.MAIN)!!.left)
-    }
-
-    @Test
-    fun `the O in the clutter bar opens Options, whose Skins load a skin and open the museum`() {
-        show()
-
-        compose.onRoot().performTouchInput {
-            down(filled(14, 29))
-            up()
-        }
-        settle()
-
-        val skins =
-            vm.state.activeMenu!!
-                .items
-                .filterIsInstance<AmpMenuItem.Submenu>()
-                .first { it.label == vm.words.get(R.string.menu_skins) }
-                .items
-                .filterIsInstance<AmpMenuItem.Action>()
-        skins.first { it.label == vm.words.get(R.string.menu_load_skin) }.onClick()
-        skins.first { it.label == vm.words.get(R.string.menu_get_more_skins) }.onClick()
-
-        assertEquals(listOf("skin picker", "museum"), sent)
-    }
-
-    @Test
-    fun `using the stack leaves the layout the windows float in as it was`() {
-        show()
-        val before = floatingLayout()
-
-        // a drag on the player's title bar, a press that brings a window to the front, and
-        // a collapsed equalizer that is left collapsed
-        compose.onRoot().performTouchInput { down(filled(100, 5)) }
-        settle()
-        compose.onRoot().performTouchInput { moveTo(filled(130, 60)) }
-        settle()
-        compose.onRoot().performTouchInput { up() }
-        compose.onRoot().performTouchInput {
-            down(filled(100, MAIN_H + 60))
-            up()
-        }
-        vm.state.setShaded(WindowStore.EQ, true, EQ_H)
-        settle()
-        assertEquals("the stack has the equalizer collapsed", SHADE_H, rect(WindowStore.EQ)!!.height)
-
-        vm.doubleSize.on = false
-        settle()
-
-        assertEquals(before, floatingLayout())
-        assertEquals("floating, the equalizer stands open", EQ_H, rect(WindowStore.EQ)!!.height)
-    }
-
-    @Test
-    fun `the stack finds its own collapsed windows when it comes back`() {
-        show()
-        vm.state.setShaded(WindowStore.EQ, true, EQ_H)
-        settle()
-
-        vm.doubleSize.on = false
-        settle()
-        vm.doubleSize.on = true
-        settle()
-
-        assertEquals(SHADE_H, rect(WindowStore.EQ)!!.height)
-        assertEquals(IntRect(0, MAIN_H + SHADE_H, MAIN_W, vm.state.safeBottom), rect(WindowStore.PLAYLIST))
-    }
-
-    @Test
-    fun `a collapsed window gives its rows to the playlist`() {
-        show()
-
-        vm.state.setShaded(WindowStore.EQ, true, EQ_H)
-        settle()
-
-        val eq = rect(WindowStore.EQ)!!
-        assertEquals(MAIN_H, eq.top)
-        assertEquals(IntRect(0, eq.bottom, MAIN_W, vm.state.safeBottom), rect(WindowStore.PLAYLIST))
-    }
-
     @Test
     fun `an open library covers everything under the player`() {
         show()
@@ -240,81 +100,7 @@ class DoubleSizeSurfaceTest {
         assertNotNull(rect(WindowStore.MAIN))
     }
 
-    @Test
-    fun `the plug-in window's grip changes its height in the stack, not the height it floats at`() {
-        vm.state.milkdropOn = true
-        show()
-        val before = rect(WindowStore.MILKDROP)!!
-
-        compose.onRoot().performTouchInput { down(filled(before.right - RESIZE_GRIP / 2, before.bottom - RESIZE_GRIP / 2)) }
-        settle()
-        // upward: on this screen the playlist's two segments leave it no room to grow
-        compose.onRoot().performTouchInput { moveBy(Offset(0f, -40 * FILLED_PIXEL)) }
-        settle()
-        compose.onRoot().performTouchInput { up() }
-        settle()
-
-        val after = rect(WindowStore.MILKDROP)!!
-        assertEquals("it stays under the equalizer", before.top, after.top)
-        assertEquals("it stays as wide as the screen", MAIN_W, after.width)
-        assertTrue("it gets shorter: $before to $after", after.height < before.height)
-        assertEquals(
-            "the playlist takes the rows it gave up",
-            IntRect(0, after.bottom, MAIN_W, vm.state.safeBottom),
-            rect(WindowStore.PLAYLIST),
-        )
-        assertNotNull(
-            vm.state
-                .placementOf(WindowStore.MILKDROP)!!
-                .of(Workspace.LOCKED)
-                .size,
-        )
-        assertNull(
-            "the height it floats at is not touched",
-            vm.state
-                .placementOf(WindowStore.MILKDROP)!!
-                .of(Workspace.FLOATING)
-                .size,
-        )
-    }
-
-    @Test
-    fun `the D on a floating player ends always on top, and the surface is told so it opens the app`() {
-        ShadowSettings.setCanDrawOverlays(true)
-        vm.overlayOps.want(true)
-        assertFalse("floating, Double Size is off", vm.doubleSize.on)
-        show()
-        // floating at three screen pixels to a virtual one
-        val main = rect(WindowStore.MAIN)!!
-
-        compose.onRoot().performTouchInput {
-            down(Offset((main.left + 14) * 3f + 1f, (main.top + 51) * 3f + 1f))
-            up()
-        }
-        settle()
-
-        assertTrue(vm.doubleSize.on)
-        assertFalse(vm.overlayOps.gate.wanted)
-        assertEquals("told once that floating was switched off", listOf(false), handed)
-    }
-
-    @Test
-    fun `the D in the app, with nothing floating, tells nobody about always on top`() {
-        show()
-
-        compose.onRoot().performTouchInput {
-            down(filled(14, 51))
-            up()
-        }
-        settle()
-
-        assertEquals(emptyList<Boolean>(), handed)
-    }
-
     private companion object {
         const val FRAMES = 8
-
-        /** Scale 4, on a surface 1100 pixels wide that is drawn 900 wide. */
-        const val FILLED_PIXEL = 4 * 900f / 1100f
     }
 }

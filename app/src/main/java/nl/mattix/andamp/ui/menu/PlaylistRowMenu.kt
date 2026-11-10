@@ -7,7 +7,6 @@ import nl.mattix.andamp.state.AmpMenu
 import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WinampViewModel
-import nl.mattix.andamp.state.WindowStore
 
 /**
  * Winamp's right click on a playlist row, opened by a long press.
@@ -49,11 +48,3 @@ fun playlistRowMenu(
             ),
     )
 }
-
-/** Where the menu springs from: the row the finger went down on. */
-fun playlistRowAnchor(
-    rowTop: Int,
-    rowH: Int,
-    left: Int,
-    width: Int,
-): MenuAnchor = MenuAnchor(WindowStore.PLAYLIST, left, rowTop, width, rowH)

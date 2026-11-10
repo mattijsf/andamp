@@ -3,7 +3,6 @@
 package nl.mattix.andamp.ui
 
 import android.app.Activity
-import android.os.SystemClock
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Spring
@@ -36,7 +35,6 @@ import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.produceState
-import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
@@ -46,9 +44,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.zIndex
-import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.NavHost
@@ -56,17 +52,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import nl.mattix.andamp.R
-import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.CurrentSkin
 import nl.mattix.andamp.state.MenuAnchor
-import nl.mattix.andamp.state.VisMode
-import nl.mattix.andamp.state.VisualizerFeed
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
@@ -76,9 +67,6 @@ import nl.mattix.andamp.ui.menu.AmpPromptHost
 import nl.mattix.andamp.ui.menu.MenuBarSection
 import nl.mattix.andamp.ui.menu.mainMenu
 import nl.mattix.andamp.ui.menu.menuAnchorBounds
-import nl.mattix.andamp.ui.menu.optionsMenu
-import nl.mattix.andamp.ui.menu.visualizationItems
-import nl.mattix.andamp.ui.menu.visualizationMenu
 import nl.mattix.andamp.ui.online.OnlineSkinsScreen
 import nl.mattix.andamp.ui.prefs.MilkdropScreen
 import nl.mattix.andamp.ui.prefs.PreferencesScreen
@@ -88,35 +76,26 @@ import nl.mattix.andamp.ui.prefs.visualizerPrefsOf
 import nl.mattix.andamp.ui.theme.rememberSkinColorScheme
 import nl.mattix.andamp.ui.welcome.WelcomeChoice
 import nl.mattix.andamp.ui.welcome.WelcomeDialog
-import nl.mattix.andamp.ui.widget.Widget
 import nl.mattix.andamp.ui.window.ClassicStack
 import nl.mattix.andamp.ui.window.EQ_H
-import nl.mattix.andamp.ui.window.EqFloatWindow
 import nl.mattix.andamp.ui.window.LibraryWindow
 import nl.mattix.andamp.ui.window.LocalSurfaceScreen
 import nl.mattix.andamp.ui.window.LockedStack
 import nl.mattix.andamp.ui.window.LoupeLayer
 import nl.mattix.andamp.ui.window.MAIN_H
 import nl.mattix.andamp.ui.window.MILKDROP_MIN_STEPS
-import nl.mattix.andamp.ui.window.MainFloatWindow
 import nl.mattix.andamp.ui.window.MainPlaceholder
 import nl.mattix.andamp.ui.window.MilkdropSurface
 import nl.mattix.andamp.ui.window.MilkdropWindow
-import nl.mattix.andamp.ui.window.PlaylistFloatWindow
 import nl.mattix.andamp.ui.window.PlaylistLayout
 import nl.mattix.andamp.ui.window.PlaylistMenuActions
-import nl.mattix.andamp.ui.window.PlaylistShadeFloatWindow
 import nl.mattix.andamp.ui.window.SkinManagerWindow
 import nl.mattix.andamp.ui.window.SnapTicks
 import nl.mattix.andamp.ui.window.SurfaceScreen
 import nl.mattix.andamp.ui.window.WindowStacking
 import nl.mattix.andamp.ui.window.classicMember
-import nl.mattix.andamp.ui.window.eqShadeWidgets
-import nl.mattix.andamp.ui.window.eqWindowWidgets
 import nl.mattix.andamp.ui.window.frameFor
 import nl.mattix.andamp.ui.window.heightOf
-import nl.mattix.andamp.ui.window.mainShadeWidgets
-import nl.mattix.andamp.ui.window.mainWindowWidgets
 import nl.mattix.andamp.ui.window.milkdropContentH
 import nl.mattix.andamp.ui.window.milkdropHeight
 import nl.mattix.andamp.ui.window.surfaceBottomInset
@@ -132,50 +111,6 @@ import nl.mattix.andamp.wal.WalPlacement
 import nl.mattix.andamp.wal.WalSurface
 import nl.mattix.andamp.wal.rememberWalDock
 import nl.mattix.andamp.wal.rememberWalLayerParts
-
-// 60fps target; the loop self-corrects for scheduling drift
-private const val VIS_FRAME_MS = 16L
-
-/**
- * Drives the in-player visualizer (the 76x16 slot on the main window).
- *
- * Driven by `delay`, not `withFrameNanos`: a state write from a timer invalidates the canvas,
- * and a frame-clock waiter does not reliably schedule frames here. It runs only while the
- * surface is resumed and a track is playing, and on one surface at a time; see
- * [nl.mattix.andamp.state.WinampState.visualizerTurn].
- */
-@Composable
-internal fun InPlayerVisualizerDriver(vm: WinampViewModel) {
-    val s = vm.state
-    val lifecycle = LocalLifecycleOwner.current.lifecycle
-    // switched off, nothing is drawn from a frame, so the loop does not run
-    val off = s.visMode == VisMode.Off
-    LaunchedEffect(s.transport, off) {
-        if (s.transport != Transport.Playing || off) return@LaunchedEffect
-        lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            s.visualizerTurn.withLock {
-                // asked per frame rather than taken once: a backend can hand its
-                // audio over after playback has started. See [VisualizerFeed].
-                val feed = VisualizerFeed(VIS_FRAME_MS) { vm.audioTap }
-                var t = 0.0
-                var next = SystemClock.uptimeMillis()
-                while (true) {
-                    when (s.visMode) {
-                        VisMode.Analyzer -> feed.stepAnalyzer(s, t)
-                        VisMode.Oscilloscope -> feed.stepOscilloscope(s, t)
-                        VisMode.Off -> Unit
-                    }
-                    s.visFrame++
-                    t += VIS_FRAME_MS / 1000.0
-                    // deadline pacing: delay() overshoots a little every tick
-                    next += VIS_FRAME_MS
-                    val wait = next - SystemClock.uptimeMillis()
-                    if (wait > 0) delay(wait) else next = SystemClock.uptimeMillis()
-                }
-            }
-        }
-    }
-}
 
 @Composable
 internal fun WinampScreen(
@@ -339,9 +274,9 @@ internal fun PlayerSurface(
      */
     surfaceScreen: SurfaceScreen? = null,
     /**
-     * The modern skin the player shows in place of the classic main window, equalizer and
-     * playlist, or null for the classic skin. The classic skin still draws the library, the skin
-     * manager and the visualizer window, and the main window while the modern one loads.
+     * The skin the engine draws in place of the main window, equalizer and playlist, or null
+     * while none is ready, when a placeholder holds the main window's place. The classic skin
+     * still draws the library, the skin manager and the visualizer window.
      */
     wal: WalSurface? = null,
     /**
@@ -354,12 +289,12 @@ internal fun PlayerSurface(
 ) {
     // filling the screen, the windows are one locked stack with black around it
     val locked = vm.state.doubleSize
-    // read when the menu is built: the widget lists keep the openMenu of the composition that built them
+    // read when the menu is built, so a menu opened later sees the skin worn then
     val walNow by rememberUpdatedState(wal)
     // The clutter bar's D and the Options menu share this switch. Switching Double Size on
     // switches Always On Top off, and the surface is told as when its own A did that. A classic
-    // skin walkit draws fills the screen instead, as its own D has it. A modern skin has no Double
-    // Size, so the classic main window standing in while it loads switches nothing.
+    // skin walkit draws fills the screen instead, as its D has it. A modern skin has no Double
+    // Size, so the placeholder standing in while it loads switches nothing.
     val doubleSize = {
         val look = walNow
         if (look == null) {
@@ -434,54 +369,6 @@ internal fun PlayerSurface(
                     }
                 // a classic skin walkit draws follows the app's time, vis and selection, and they follow it
                 wal?.takeIf { it.classic }?.let { WalClassicSync(it, vm.state) }
-                // the classic main window's V and O, grayed as the main menu grays them while a modern skin is worn
-                val visualizerMenu = { anchor: MenuAnchor ->
-                    visualizationMenu(vm, anchor).copy(items = visualizationItems(vm, modernPlayer = walNow?.classic == false))
-                }
-                val mainWidgets =
-                    remember(vm, s.mainShaded) {
-                        if (s.mainShaded) {
-                            mainShadeWidgets(
-                                vm,
-                                onOpenFile = { toPlay ->
-                                    if (toPlay) playlistActions.addFileThenPlay() else playlistActions.addFile()
-                                },
-                                onOptions = { openMenu(null, null) },
-                                onExit = quit,
-                                visualizerMenu = visualizerMenu,
-                            )
-                        } else {
-                            mainWindowWidgets(
-                                vm,
-                                onOpenFile = { toPlay ->
-                                    if (toPlay) playlistActions.addFileThenPlay() else playlistActions.addFile()
-                                },
-                                onExit = quit,
-                                onMinimize = onMinimize,
-                                visualizerMenu = visualizerMenu,
-                                optionsMenu = { anchor ->
-                                    optionsMenu(
-                                        vm,
-                                        anchor,
-                                        onPreferences,
-                                        onPickSkin = onPickSkin,
-                                        onMuseum = onMuseum,
-                                        onAlwaysOnTop = alwaysOnTop,
-                                        onDoubleSize = doubleSize,
-                                        modernPlayer = walNow?.classic == false,
-                                        classicLook = walNow?.takeIf { it.classic },
-                                    )
-                                },
-                                onAlwaysOnTop = alwaysOnTop,
-                                onDoubleSize = doubleSize,
-                                // the clutter bar's I: the item playing, or the last one that played
-                                onFileInfo = { vm.trackInfoOps.show(s.lastPlayed) },
-                            ) {
-                                openMenu(null, null)
-                            }
-                        }
-                    }
-                val eqWidgets = remember(vm, s.eqShaded) { if (s.eqShaded) eqShadeWidgets(vm) else eqWindowWidgets(vm) }
                 // the skin is laid out on the viewport's surface, the size of which it sees
                 // as its constraints
                 PlayerViewportBox(viewport) {
@@ -490,10 +377,7 @@ internal fun PlayerSurface(
                         skin,
                         scale,
                         onLongPress = { openMenu(null, null) },
-                        playlistActions,
                         libraryAccess,
-                        mainWidgets,
-                        eqWidgets,
                         walParts,
                     )
                 }
@@ -516,8 +400,8 @@ internal fun PlayerSurface(
 
 /**
  * What opens the main menu, built at tap time so the Skins submenu shows the current skin. A
- * modern skin's long press opens it at the press; the classic windows open it at the options
- * button, with no anchor.
+ * long press on the skin opens it at the press; one with no anchor opens it at the main
+ * window's options button.
  */
 private fun mainMenuOpener(
     vm: WinampViewModel,
@@ -565,10 +449,7 @@ private fun BoxWithConstraintsScope.PlayerWindows(
     skin: Skin,
     scale: Int,
     onLongPress: () -> Unit,
-    playlistActions: PlaylistMenuActions,
     libraryAccess: LibraryAccessHandle,
-    mainWidgets: List<Widget>,
-    eqWidgets: List<Widget>,
     /** The modern skin shown in place of the main window, the equalizer and the playlist, or null. */
     wal: WalLayerParts?,
 ) {
@@ -623,23 +504,16 @@ private fun BoxWithConstraintsScope.PlayerWindows(
             null
         }
 
-    // a modern skin's visualizer is part of the skin
-    if (wal == null) InPlayerVisualizerDriver(vm)
-    // the clocks drive only classic windows: the main window's title and paused time (shown also
-    // while a modern skin loads), the Library's caret, and a list thrown there or in the Skin Browser
-    UiClocks(s, followsScreen = true) { wal == null || wal.surface.layout == null || s.libraryOpen || s.skinManagerOpen }
+    // the clocks drive only the windows Andamp draws: the Library's caret, and a list thrown there
+    // or in the Skin Browser
+    UiClocks(s, followsScreen = true) { s.libraryOpen || s.skinManagerOpen }
 
     FloatingWindows(
         vm,
         skin,
         scale,
         onLongPress,
-        playlistActions,
         libraryAccess,
-        mainWidgets,
-        eqWidgets,
-        mainH,
-        eqH,
         docked,
         held,
         wal,
@@ -665,12 +539,7 @@ private fun FloatingWindows(
     scale: Int,
     /** Winamp's right click on the player or the equalizer: the main menu. */
     onLongPress: () -> Unit,
-    playlistActions: PlaylistMenuActions,
     libraryAccess: LibraryAccessHandle,
-    mainWidgets: List<Widget>,
-    eqWidgets: List<Widget>,
-    mainH: Int,
-    eqH: Int,
     /** Where each window sits until it is moved. */
     docked: ClassicStack.Places,
     held: LockedStack.Places?,
@@ -698,43 +567,14 @@ private fun FloatingWindows(
             val shown = held == null || pin != null
             when (id) {
                 WindowStore.MAIN -> {
-                    val classic: @Composable () -> Unit = {
-                        MainFloatWindow(
-                            vm,
-                            skin,
-                            scale,
-                            widgets = mainWidgets,
-                            height = mainH,
-                            docked = docked.main,
-                            modifier = Modifier.fillMaxSize().zIndex(z),
-                            onLongPress = onLongPress,
-                            pinned = pin,
-                        )
-                    }
-                    // a skin still loading shows the player's place, until its stack is laid out
+                    // a skin still loading, or none drawn, shows the player's place
                     val loading: @Composable () -> Unit = {
                         MainPlaceholder(s, scale, docked.main, onLongPress, pin, Modifier.fillMaxSize().zIndex(z))
                     }
                     if (wal == null) {
-                        classic()
+                        loading()
                     } else {
                         WalLayer(wal, s, scale, Modifier.fillMaxSize().zIndex(WAL_LAYER_Z), companion = loading)
-                    }
-                }
-
-                WindowStore.EQ -> {
-                    if (s.eqVisible && shown && wal == null) {
-                        EqFloatWindow(
-                            vm,
-                            skin,
-                            scale,
-                            widgets = eqWidgets,
-                            height = eqH,
-                            docked = docked.eq,
-                            modifier = Modifier.fillMaxSize().zIndex(z),
-                            onLongPress = onLongPress,
-                            pinned = pin,
-                        )
                     }
                 }
 
@@ -748,32 +588,6 @@ private fun FloatingWindows(
                             modifier = Modifier.fillMaxSize().zIndex(z),
                             pinned = pin,
                             visMaxSteps = held?.visMaxSteps ?: MILKDROP_MIN_STEPS,
-                        )
-                    }
-                }
-
-                WindowStore.PLAYLIST -> {
-                    val open = s.plVisible && shown && wal == null
-                    if (open && s.plShaded) {
-                        PlaylistShadeFloatWindow(
-                            vm,
-                            skin,
-                            scale,
-                            expandedH = plExpandedH,
-                            docked = docked.playlist,
-                            modifier = Modifier.fillMaxSize().zIndex(z),
-                            pinned = pin,
-                        )
-                    } else if (open) {
-                        PlaylistFloatWindow(
-                            vm,
-                            skin,
-                            scale,
-                            playlistActions,
-                            docked = docked.playlist,
-                            dockedSegments = docked.playlistSegments,
-                            modifier = Modifier.fillMaxSize().zIndex(z),
-                            pinned = pin,
                         )
                     }
                 }
