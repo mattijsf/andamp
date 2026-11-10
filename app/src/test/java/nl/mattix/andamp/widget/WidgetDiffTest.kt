@@ -219,21 +219,12 @@ class WidgetDiffTest {
     fun `a silent frame has no signal`() {
         // a silent moment replayed as a loop reads as a broken strip, so a
         // frame says whether it has any signal
-        val silence =
-            nl.mattix.andamp.state
-                .WinampState()
-        assertFalse(VisFrame.of(silence, dropCaps = true).hasSignal)
+        assertFalse(VisFrame(FloatArray(VisFrame.BANDS), FloatArray(VisFrame.WAVE)).hasSignal)
 
-        val bars =
-            nl.mattix.andamp.state
-                .WinampState()
-                .apply { visLevels[3] = 4f }
-        assertTrue("a raised band is signal", VisFrame.of(bars, dropCaps = true).hasSignal)
+        val bars = FloatArray(VisFrame.BANDS).apply { this[3] = 0.4f }
+        assertTrue("a raised band is signal", VisFrame(bars, FloatArray(VisFrame.WAVE)).hasSignal)
 
-        val wave =
-            nl.mattix.andamp.state
-                .WinampState()
-                .apply { visWave[5] = 3 }
-        assertTrue("a waveform that is not a flat line is signal", VisFrame.of(wave, dropCaps = true).hasSignal)
+        val wave = FloatArray(VisFrame.WAVE) { if (it == 10) 0.5f else 0f }
+        assertTrue("a waveform that is not a flat line is signal", VisFrame(FloatArray(VisFrame.BANDS), wave).hasSignal)
     }
 }

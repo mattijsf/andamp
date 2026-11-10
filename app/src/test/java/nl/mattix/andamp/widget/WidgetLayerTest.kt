@@ -4,10 +4,13 @@ package nl.mattix.andamp.widget
 
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.core.model.Transport
-import nl.mattix.andamp.skin.Skin
-import nl.mattix.andamp.skin.SkinLoader
+import nl.mattix.andamp.skin.BundledSkins
+import nl.mattix.andamp.skin.LiveSkins
 import nl.mattix.andamp.ui.window.MAIN_H
 import nl.mattix.andamp.ui.window.MAIN_W
+import nl.mattix.andamp.wal.WalBundled
+import nl.mattix.andamp.wal.WalStill
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -31,12 +34,16 @@ import kotlin.math.abs
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 @Config(sdk = [35])
 class WidgetLayerTest {
-    private lateinit var skin: Skin
+    private lateinit var skin: WalStill
 
     @Before
     fun loadSkin() {
-        skin = SkinLoader.loadBase(ApplicationProvider.getApplicationContext())
+        val app = ApplicationProvider.getApplicationContext<android.app.Application>()
+        skin = WalStill.of(WalBundled.fileOf(app, BundledSkins.BASE, LiveSkins { _, _ -> null }), app.cacheDir)
     }
+
+    @After
+    fun closeSkin() = skin.close()
 
     private fun playing(at: Int) =
         WidgetSnapshot(
@@ -68,7 +75,7 @@ class WidgetLayerTest {
         val layout = WidgetLayout.choose(MAIN_W, MAIN_H)
 
         WidgetLayer.entries.forEach { part ->
-            val bitmap = WidgetRender.layer(skin, layout, playing(at = 10).toState(), part)
+            val bitmap = WidgetRender.layer(skin, layout, playing(at = 10).toState(), part, 0L)
             val at = layout.rect(part.left, part.top, part.width, part.height)
             assertEquals("${part.name} width matches its rectangle", at.w, bitmap.width)
             assertEquals("${part.name} height matches its rectangle", at.h, bitmap.height)
@@ -158,10 +165,10 @@ class WidgetLayerTest {
         // on every partial update
         val layout = WidgetLayout.choose(MAIN_W, MAIN_H)
         val state = playing(at = 10).toState()
-        val window = WidgetRender.bitmap(skin, layout, state)
+        val window = WidgetRender.bitmap(skin, layout, state, 0L)
 
         WidgetLayer.entries.forEach { part ->
-            val patch = WidgetRender.layer(skin, layout, playing(at = 10).toState(), part)
+            val patch = WidgetRender.layer(skin, layout, playing(at = 10).toState(), part, 0L)
             val crop =
                 android.graphics.Bitmap.createBitmap(
                     window,
@@ -185,23 +192,6 @@ class WidgetLayerTest {
     }
 
     @Test
-    fun `no peak cap is frozen into the loop`() {
-        // a cap holds and then falls, and a replayed loop has no fall: a
-        // frozen cap reads as a stuck stripe, so the loop carries none
-        val state = playing(at = 10).toState()
-        state.visLevels[3] = 8f
-        state.visPeaks[3] = 12f
-        state.visPeaks[15] = 12f
-
-        val frame = VisFrame.of(state, dropCaps = true)
-        val replayed = playing(at = 10).toState().also { it.visPeaks[7] = 5f }
-        frame.applyTo(replayed)
-
-        assertEquals("the bars survive the replay", 8f, replayed.visLevels[3])
-        assertTrue("no cap survives the replay", replayed.visPeaks.all { it == 0f })
-    }
-
-    @Test
     fun `the widget's marquee counts the song at the player's own number`() {
         // a queue of one would say "1." while the player says "9."
         val state = playing(at = 10).copy(queueNumber = 9).toState()
@@ -219,7 +209,7 @@ class WidgetLayerTest {
         val layout = WidgetLayout.choose(MAIN_W * 3 + 24, MAIN_H * 4, fill = true)
         assertTrue("this box has a fractional scale: ${layout.factor}", layout.factor % 1f != 0f)
         val state = playing(at = 10).toState()
-        val whole = WidgetRender.bitmap(skin, layout, state)
+        val whole = WidgetRender.bitmap(skin, layout, state, 0L)
 
         fun channels(
             pixel: Int,
@@ -228,7 +218,7 @@ class WidgetLayerTest {
 
         WidgetLayer.entries.forEach { part ->
             val at = layout.rect(part.left, part.top, part.width, part.height)
-            val patch = WidgetRender.layer(skin, layout, state, part)
+            val patch = WidgetRender.layer(skin, layout, state, part, 0L)
             val points = (0 until at.h).flatMap { y -> (0 until at.w).map { x -> x to y } }
             val worst = points.maxOf { (x, y) -> channels(patch.getPixel(x, y), whole.getPixel(at.x + x, at.y + y)) }
             val shifted = points.count { (x, y) -> patch.getPixel(x, y) != whole.getPixel(at.x + x + 1, at.y + y) }

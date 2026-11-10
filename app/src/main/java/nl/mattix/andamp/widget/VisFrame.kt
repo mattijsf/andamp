@@ -2,50 +2,41 @@
 
 package nl.mattix.andamp.widget
 
-import nl.mattix.andamp.state.WinampState
+import nl.mattix.andamp.state.SpectrumColumns
+import nl.mattix.andamp.state.SpectrumPhysics
 
 /**
- * One captured moment of the visualizer, whichever kind it is showing.
- *
- * The widget draws through the player's own visualizer code, which reads its signal from a
- * [WinampState]. A frame is that state's scratch arrays, copied out while the audio is being
- * followed and written back when the picture is drawn. All three arrays are copied whatever the
- * mode, so the peak caps stay with the levels they belong to.
+ * One captured moment of the audio, as the skin's visualizer reads it: the spectrum levels and the
+ * waveform the engine hands a skin, copied out while the audio is being followed and given to the
+ * skin again when the picture is drawn.
  */
-class VisFrame private constructor(
-    private val levels: FloatArray,
-    private val peaks: FloatArray,
-    private val wave: IntArray,
+class VisFrame(
+    /** [BANDS] levels 0..1. */
+    val spectrum: FloatArray,
+    /** [WAVE] samples -1..1. */
+    val waveform: FloatArray,
 ) {
     /**
-     * Whether the frame shows anything: a bar above `QUIET`, or a waveform that is not a flat line.
+     * Whether the frame shows anything: a band above `QUIET`, or a waveform that is not a flat line.
      */
     val hasSignal: Boolean
-        get() = levels.any { it > QUIET } || wave.any { it != wave.firstOrNull() }
-
-    fun applyTo(state: WinampState) {
-        levels.copyInto(state.visLevels)
-        peaks.copyInto(state.visPeaks)
-        wave.copyInto(state.visWave)
-    }
+        get() = spectrum.any { it > QUIET } || waveform.any { it != waveform.firstOrNull() }
 
     companion object {
-        /** The level below which a bar counts as silent. */
+        /** The bands of the spectrum a skin reads, as Winamp's visualizer has them. */
+        const val BANDS = 75
+
+        /** The samples of the waveform a skin reads, as Winamp hands a visualizer. */
+        const val WAVE = 576
+
+        /** The level below which a band counts as silent. */
         private const val QUIET = 0.05f
 
-        /**
-         * [dropCaps] leaves the peak caps out of the frame. A cap holds and then falls, and the
-         * widget's loop replays about 0.4 s, so a cap in it never completes its fall and shows as a
-         * stripe frozen above its bar.
-         */
-        fun of(
-            state: WinampState,
-            dropCaps: Boolean = false,
-        ): VisFrame =
+        /** The frame [columns] read last. */
+        fun of(columns: SpectrumColumns): VisFrame =
             VisFrame(
-                levels = state.visLevels.copyOf(),
-                peaks = if (dropCaps) FloatArray(state.visPeaks.size) else state.visPeaks.copyOf(),
-                wave = state.visWave.copyOf(),
+                spectrum = FloatArray(columns.values.size) { (columns.values[it] / SpectrumPhysics.MAX).coerceIn(0f, 1f) },
+                waveform = columns.wave.copyOf(),
             )
     }
 }
