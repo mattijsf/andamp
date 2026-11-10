@@ -8,21 +8,33 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.withFrameMillis
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.FilterQuality
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.skin.RegionTxt
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.ListFont
+import nl.mattix.andamp.state.SpectrumColumns
+import nl.mattix.andamp.state.SpectrumPhysics
+import nl.mattix.andamp.state.VisMode
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.ui.InPlayerVisualizerDriver
@@ -46,6 +58,10 @@ import nl.mattix.andamp.ui.window.drawEqWindow
 import nl.mattix.andamp.ui.window.drawMainWindow
 import nl.mattix.andamp.ui.window.eqWindowWidgets
 import nl.mattix.andamp.ui.window.mainWindowWidgets
+import nl.mattix.andamp.wal.WalStill
+import nl.mattix.andamp.widget.VisFrame
+import nl.mattix.walkit.ClassicVisMode
+import java.io.File
 import kotlin.math.floor
 import kotlin.math.roundToInt
 
@@ -75,6 +91,8 @@ import kotlin.math.roundToInt
 internal fun RemoteScreen(
     vm: WinampViewModel,
     skin: Skin,
+    /** [skin]'s file, which the engine draws the windows from; null until it is read. */
+    skinFile: File?,
     within: IntRect?,
     scroll: ListScroll,
     sliders: Sliders = Sliders(),
@@ -93,6 +111,9 @@ internal fun RemoteScreen(
     val eq = remember(vm) { eqAlone(vm, onClose = { up = Up.MAIN }) }
     InPlayerVisualizerDriver(vm)
     UiClocks(s)
+    val context = LocalContext.current
+    val still = remember(skinFile) { skinFile?.let { WalStill.of(it, context.cacheDir, WalStill.CAR) } }
+    val picture = rememberStillPicture(still, s, if (up == Up.EQUALIZER) WalStill.EQUALIZER else WalStill.MAIN) { vm.audioTap }
     BoxWithConstraints(Modifier.fillMaxSize().background(Color.Black)) {
         val whole = IntRect(0, 0, constraints.maxWidth, constraints.maxHeight)
         val asked = if (fill) whole else within ?: whole
@@ -109,7 +130,11 @@ internal fun RemoteScreen(
                 val controls = if (up == Up.EQUALIZER) eq else main
                 SideEffect { sliders.at = { x, y -> sliderAt(controls, IntOffset(left, top), fit, x, y) } }
                 Box(Modifier.offset { IntOffset(left, top) }) {
-                    if (up == Up.EQUALIZER) EqualizerAlone(skin, s, fit.scale, eq) else MainAlone(skin, s, fit.scale, main, fill)
+                    if (up == Up.EQUALIZER) {
+                        EqualizerAlone(skin, s, fit.scale, eq, picture)
+                    } else {
+                        MainAlone(skin, s, fit.scale, main, fill, picture)
+                    }
                 }
             }
         }
@@ -123,10 +148,18 @@ private fun MainAlone(
     scale: Int,
     widgets: List<Widget>,
     fill: Boolean,
+    /** The window as the engine draws it, at 1x; null until the first one is drawn. */
+    picture: ImageBitmap?,
 ) {
     ScaledWindowCanvas(MAIN_W, MAIN_H, scale, s, widgets, cut = SkinCut(skin, RegionTxt.Window.MAIN)) {
-        drawMainWindow(skin, s, alwaysOnTop = false, doubleSize = fill, equalizerOpen = false, playlistOpen = false)
+        if (picture != null) {
+            drawImage(picture, dstSize = IntSize(picture.width, picture.height), filterQuality = FilterQuality.None)
+        } else {
+            drawMainWindow(skin, s, alwaysOnTop = false, doubleSize = fill, equalizerOpen = false, playlistOpen = false)
+        }
     }
+    // the engine's picture has the visualizer in it
+    if (picture != null) return
     // the visualizer animates on its own canvas, so a frame repaints only that box
     VisualizerOverlay(
         skin,
@@ -143,9 +176,16 @@ private fun EqualizerAlone(
     s: WinampState,
     scale: Int,
     widgets: List<Widget>,
+    picture: ImageBitmap?,
 ) {
     ScaledWindowCanvas(EQ_W, EQ_H, scale, s, widgets, cut = SkinCut(skin, RegionTxt.Window.EQ)) {
-        drawEqWindow(skin, s)
+        if (picture !=
+            null
+        ) {
+            drawImage(picture, dstSize = IntSize(picture.width, picture.height), filterQuality = FilterQuality.None)
+        } else {
+            drawEqWindow(skin, s)
+        }
     }
 }
 
@@ -314,3 +354,52 @@ internal val MAIN_ALONE =
 
 /** The equalizer's controls that are replaced or need more than the window: see [eqAlone]. */
 private val EQ_NOT_ALONE = setOf(EQ_CLOSE, "eq.shade", "eq.presets")
+
+/**
+ * The window [window] of [still]'s skin as [s] has it, drawn again each display frame off the main
+ * thread, with the audio's spectrum and waveform from [tap] in its visualizer; null until the first
+ * picture is drawn, or without a [still].
+ */
+@Composable
+private fun rememberStillPicture(
+    still: WalStill?,
+    s: WinampState,
+    window: String,
+    tap: () -> nl.mattix.andamp.core.playback.AudioTap?,
+): ImageBitmap? {
+    var picture by remember(still, window) { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(still, window) {
+        still ?: return@LaunchedEffect
+        var columns: SpectrumColumns? = null
+        var last = 0L
+        while (true) {
+            val now = withFrameMillis { it }
+            if (now - last < STILL_FRAME_MS) continue
+            val elapsed = if (last == 0L) STILL_FRAME_MS else now - last
+            last = now
+            columns = columns ?: tap()?.let { SpectrumColumns(it, STILL_FRAME_MS, VisFrame.BANDS, VisFrame.WAVE) }
+            val heard = columns?.takeIf { s.transport == Transport.Playing }?.takeIf { it.read(elapsed) }
+            val moment =
+                WalStill.stillOf(s, now, window = window).copy(
+                    vis = visOf(s.visMode),
+                    spectrum =
+                        heard?.let { c -> FloatArray(c.values.size) { (c.values[it] / SpectrumPhysics.MAX).coerceIn(0f, 1f) } }
+                            ?: FloatArray(0),
+                    waveform = heard?.wave?.copyOf() ?: FloatArray(0),
+                )
+            withContext(Dispatchers.Default) { still.main(moment) }?.let { picture = it }
+        }
+    }
+    return picture
+}
+
+/** The skin's visualizer mode for the app's. */
+private fun visOf(mode: VisMode) =
+    when (mode) {
+        VisMode.Analyzer -> ClassicVisMode.ANALYZER
+        VisMode.Oscilloscope -> ClassicVisMode.SCOPE
+        VisMode.Off -> ClassicVisMode.OFF
+    }
+
+/** How often the engine's picture of the window is drawn again: about 30 times a second. */
+private const val STILL_FRAME_MS = 33L

@@ -72,6 +72,20 @@ class WalStillTest {
     }
 
     @Test
+    fun `the equalizer is drawn alone, and its bands follow the still`() {
+        val flat = still.main(WalStill.Still(window = WalStill.EQUALIZER, eqOn = true))
+        assertNotNull(flat)
+        assertEquals(275 to 116, flat!!.width to flat.height)
+
+        val raised = still.main(WalStill.Still(window = WalStill.EQUALIZER, eqOn = true, bands = List(10) { 63 }))
+        assertFalse("raised bands move the sliders", pixels(flat).contentEquals(pixels(raised!!)))
+
+        val main = still.main(WalStill.Still())
+        assertEquals("the main window again", 275 to 116, main!!.width to main.height)
+        assertFalse("not the equalizer", pixels(main).contentEquals(pixels(flat)))
+    }
+
+    @Test
     fun `one still is kept per skin file`() {
         assertTrue(still === WalStill.of(skin, app.cacheDir))
     }
