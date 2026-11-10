@@ -90,11 +90,14 @@ object SkinLoader {
         )
     }
 
+    /** The members of a .wsz as [load] reads them: keyed by lowercased name, with its limits. */
+    fun members(input: InputStream): Map<String, ByteArray> = readZip(input)
+
     /**
      * The readme the artist packed with the skin: `readme.txt`, or else the first .txt that is not
      * one of the skin format's own files. DOS line endings are normalized.
      */
-    private fun readmeIn(members: Map<String, ByteArray>): String? {
+    fun readmeIn(members: Map<String, ByteArray>): String? {
         val spent = setOf("pledit.txt", "viscolor.txt", "region.txt")
         val bytes =
             members["readme.txt"]

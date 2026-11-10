@@ -62,7 +62,6 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import nl.mattix.andamp.R
-import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.online.OnlineSkin
 import nl.mattix.andamp.ui.BackPull
 
@@ -86,7 +85,7 @@ internal fun SkinViewer(
     /** Whether the skin has arrived and stopped moving; false during the transition. */
     settled: Boolean,
     skin: OnlineSkin,
-    live: Skin?,
+    live: nl.mattix.andamp.state.online.SkinPreview?,
     installed: Boolean,
     busy: Boolean,
     onInstall: () -> Unit,
@@ -326,7 +325,7 @@ private fun Readme(text: String) {
 @Composable
 private fun SkinStage(
     skin: OnlineSkin,
-    live: Skin?,
+    live: nl.mattix.andamp.state.online.SkinPreview?,
     /** The height to keep free of the skin, in dp, out of what this is given; see [wholePlayerWidth]. */
     kept: Int,
     flying: Boolean,
@@ -376,7 +375,7 @@ private fun SkinStage(
                     exit = fadeOut(),
                     modifier = Modifier.fillMaxSize(),
                 ) {
-                    live?.let { SkinPreviewCanvas(it, Modifier.fillMaxSize().testTag("$TAG.live")) }
+                    live?.let { SkinPreviewCanvas(it.file, Modifier.fillMaxSize().testTag("$TAG.live")) }
                 }
             }
         }

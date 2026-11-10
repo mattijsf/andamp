@@ -35,6 +35,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
@@ -54,11 +55,15 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.Transport
+import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.skin.Skin
+import nl.mattix.andamp.state.CurrentSkin
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.VisMode
 import nl.mattix.andamp.state.VisualizerFeed
@@ -117,6 +122,7 @@ import nl.mattix.andamp.ui.window.surfaceBottomInset
 import nl.mattix.andamp.ui.window.unshadeEverything
 import nl.mattix.andamp.ui.window.windowScreen
 import nl.mattix.andamp.wal.WAL_LAYER_Z
+import nl.mattix.andamp.wal.WalBundled
 import nl.mattix.andamp.wal.WalClassicSync
 import nl.mattix.andamp.wal.WalFilled
 import nl.mattix.andamp.wal.WalLayer
@@ -881,6 +887,14 @@ private fun Welcome(
     skin: Skin?,
 ) {
     if (vm.welcome.seen) return
+    val context = LocalContext.current
+    // Andamp's own skin as the engine opens it, in the phone's palette: written off main
+    val own by produceState<java.io.File?>(null, skin) {
+        value =
+            withContext(Dispatchers.IO) {
+                runCatching { WalBundled.fileOf(context, BundledSkins.BASE, CurrentSkin.live) }.getOrNull()
+            }
+    }
     val museum = vm.onlineSkins.museum
     // fetches the museum's first tiles for the dialog
     LaunchedEffect(Unit) { museum.show(0..TILES) }
@@ -889,7 +903,7 @@ private fun Welcome(
     MaterialTheme(colorScheme = skin?.let { rememberSkinColorScheme(it) } ?: darkColorScheme()) {
         WelcomeDialog(
             WelcomeChoice(
-                skin = skin,
+                skin = own,
                 tiles = (0..TILES).mapNotNull { museum.skins[it] },
                 museumCount = museum.total.coerceAtLeast(0),
                 onKeep = done,

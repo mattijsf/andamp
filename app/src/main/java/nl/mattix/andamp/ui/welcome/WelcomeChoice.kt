@@ -2,7 +2,6 @@
 
 package nl.mattix.andamp.ui.welcome
 
-import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.online.OnlineSkin
 
 /**
@@ -13,8 +12,8 @@ import nl.mattix.andamp.state.online.OnlineSkin
  * fetched and shown on the second card.
  */
 data class WelcomeChoice(
-    /** The skin on screen, drawn live on the first card. */
-    val skin: Skin? = null,
+    /** The file of Andamp's own skin, which a first launch wears, drawn live on the first card. */
+    val skin: java.io.File? = null,
     /** The museum's first tiles, in the museum's order. */
     val tiles: List<OnlineSkin> = emptyList(),
     /** How many skins the museum holds; 0 while it has not said. */
