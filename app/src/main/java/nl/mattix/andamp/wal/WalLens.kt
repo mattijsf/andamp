@@ -105,6 +105,23 @@ internal class WalLens(
         }
 
         /**
+         * The lens a hold whose finger is at [finger] but which is aimed at [aimed] opens: on the
+         * small control at [aimed] if there is one, else as [over] opens it at [finger]. Near a side
+         * of the screen a fingertip cannot get as far out as the controls drawn there
+         * ([Loupe.aimedAcross]), so only a small control takes the press from beside it; a large
+         * one is pressed where the finger is.
+         */
+        fun aimed(
+            listed: List<TouchControl>,
+            finger: Offset,
+            aimed: Offset,
+            slop: Float,
+            reach: Loupe.Reach = Loupe.Reach.UNLIMITED,
+        ): WalLens? =
+            (if (aimed != finger) over(listed, aimed, slop, reach) else null)
+                ?: over(listed, finger, slop, reach)
+
+        /**
          * The axis a run of [cluster] lies across: X for a column, whose controls all share some
          * of their width, Y for a row, whose controls all share some of their height; neither for
          * one control or a block of them.
@@ -186,17 +203,21 @@ internal class WalLensHost(
         val p = placed()
         val s = p.skinScale
         val size = layer()
+        val edge = Loupe.Edge.of(density)
         // the finger's room on the screen, in surface pixels, then in skin pixels
         val room =
             Loupe.Reach.on(
                 Offset(p.stack.left + at.x, p.stack.top + at.y),
                 size.width,
                 size.height,
-                Loupe.Edge.of(density),
+                edge,
             )
-        return WalLens.over(
+        // a hold near a side of the screen is aimed further out than the finger got
+        val aimedX = Loupe.aimedAcross(p.stack.left + at.x, size.width, edge) - p.stack.left
+        return WalLens.aimed(
             controls,
-            Offset(at.x / s, at.y / s),
+            finger = Offset(at.x / s, at.y / s),
+            aimed = Offset(aimedX / s, at.y / s),
             slop = WalFitting.TOUCH_SLOP_DP * density / s,
             reach = Loupe.Reach(room.left / s, room.up / s, room.right / s, room.down / s),
         )
