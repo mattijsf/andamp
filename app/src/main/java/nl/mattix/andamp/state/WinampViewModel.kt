@@ -237,6 +237,7 @@ class WinampViewModel
                         .InstalledSkins(app),
                     viewModelScope,
                     words,
+                    java.io.File(app.cacheDir, "previews"),
                 )
 
         init {

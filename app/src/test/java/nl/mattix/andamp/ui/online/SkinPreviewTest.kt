@@ -26,10 +26,12 @@ import nl.mattix.andamp.state.FakeWave
 import nl.mattix.andamp.state.RealOscilloscope
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.online.OnlineSkin
+import nl.mattix.andamp.state.online.SkinPreview
 import nl.mattix.andamp.state.online.SkinPreviews
 import nl.mattix.andamp.ui.rememberBackPull
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
@@ -60,6 +62,13 @@ class SkinPreviewTest {
     private val museumSkin =
         OnlineSkin("abc", "Something.wsz", "https://example.invalid/s.png", "https://example.invalid/s.wsz", null, false)
 
+    /** Where the fetched skins go. */
+    private val dir =
+        java.io.File(app.cacheDir, "previews-test").apply {
+            deleteRecursively()
+            mkdirs()
+        }
+
     @Before
     fun setUp() {
         base = SkinLoader.loadBase(app)
@@ -71,7 +80,7 @@ class SkinPreviewTest {
     fun `asking for a skin fetches it once and keeps it`() {
         var fetches = 0
         val previews =
-            SkinPreviews(scope, fallback = { base }, io = Dispatchers.Unconfined) {
+            SkinPreviews(scope, dir, io = Dispatchers.Unconfined) {
                 fetches++
                 bytes()
             }
@@ -89,7 +98,7 @@ class SkinPreviewTest {
         val started = java.util.concurrent.CountDownLatch(1)
         val release = java.util.concurrent.CountDownLatch(1)
         val previews =
-            SkinPreviews(scope, fallback = { base }, io = Dispatchers.IO) { url ->
+            SkinPreviews(scope, dir, io = Dispatchers.IO) { url ->
                 if (url.endsWith("first.wsz")) {
                     started.countDown()
                     release.await()
@@ -112,7 +121,25 @@ class SkinPreviewTest {
     @Test
     fun `a skin that fails to fetch yields no preview`() {
         val previews =
-            SkinPreviews(scope, fallback = { base }, io = Dispatchers.Unconfined) { throw IOException("no network") }
+            SkinPreviews(scope, dir, io = Dispatchers.Unconfined) { throw IOException("no network") }
+
+        previews.want(museumSkin)
+
+        assertNull(previews.of("abc"))
+    }
+
+    @Test
+    fun `a download that is no classic skin yields no preview`() {
+        val previews =
+            SkinPreviews(scope, dir, io = Dispatchers.Unconfined) {
+                val out = java.io.ByteArrayOutputStream()
+                java.util.zip.ZipOutputStream(out).use { zip ->
+                    zip.putNextEntry(java.util.zip.ZipEntry("notes.txt"))
+                    zip.write("not a skin".toByteArray())
+                    zip.closeEntry()
+                }
+                out.toByteArray()
+            }
 
         previews.want(museumSkin)
 
@@ -121,18 +148,22 @@ class SkinPreviewTest {
 
     @Test
     fun `closing the browser lets go of every skin it was holding`() {
-        val previews = SkinPreviews(scope, fallback = { base }, io = Dispatchers.Unconfined) { bytes() }
+        val previews = SkinPreviews(scope, dir, io = Dispatchers.Unconfined) { bytes() }
         previews.want(museumSkin)
         assertNotNull(previews.of("abc"))
+
+        val file = previews.of("abc")!!.file
+        assertTrue("the skin is a file the engine can open", file.isFile)
 
         previews.forgetAll()
 
         assertNull(previews.of("abc"))
+        assertFalse("its file goes with it", file.exists())
     }
 
     @Test
     fun `the viewer shows the museum's picture until the skin arrives, then the player itself`() {
-        var arrived by mutableStateOf<Skin?>(null)
+        var arrived by mutableStateOf<SkinPreview?>(null)
         compose.setContent {
             MaterialTheme(colorScheme = darkColorScheme()) {
                 SkinViewer(
@@ -152,7 +183,7 @@ class SkinPreviewTest {
         assertEquals(0, compose.onAllNodesWithTag("online.live").fetchSemanticsNodes().size)
         compose.onNodeWithTag("online.enlarged").assertIsDisplayed()
 
-        arrived = base
+        arrived = SkinPreview(lightFile(), null)
         compose.waitUntil(APPEAR_MS) { compose.onAllNodesWithTag("online.live").fetchSemanticsNodes().isNotEmpty() }
 
         compose.onNodeWithTag("online.live").assertIsDisplayed()
@@ -258,7 +289,7 @@ class SkinPreviewTest {
     fun `the note the artist packed is shown, and neither moves nor resizes the skin`() {
         // a readme runs from one line to several hundred, and the skin above it
         // has to be drawn at the same size either way
-        var arrived by mutableStateOf<Skin?>(null)
+        var arrived by mutableStateOf<SkinPreview?>(null)
         compose.setContent {
             MaterialTheme(colorScheme = darkColorScheme()) {
                 SkinViewer(
@@ -327,23 +358,10 @@ class SkinPreviewTest {
     }
 
     /** The bundled skin, with a note packed alongside it. */
-    private fun skinNoted(note: String): Skin {
-        val members = mutableMapOf<String, ByteArray>()
-        java.util.zip.ZipInputStream(bytes().inputStream()).use { zip ->
-            generateSequence { zip.nextEntry }.forEach { entry ->
-                if (!entry.isDirectory) members[entry.name.substringAfterLast('/')] = zip.readBytes()
-            }
-        }
-        val out = java.io.ByteArrayOutputStream()
-        java.util.zip.ZipOutputStream(out).use { zip ->
-            (members + ("readme.txt" to note.toByteArray(Charsets.ISO_8859_1))).forEach { (name, data) ->
-                zip.putNextEntry(java.util.zip.ZipEntry(name))
-                zip.write(data)
-                zip.closeEntry()
-            }
-        }
-        return SkinLoader.load(out.toByteArray().inputStream(), fallback = base, name = "noted")
-    }
+    private fun skinNoted(note: String) = SkinPreview(lightFile(), note)
+
+    /** The bundled Light skin, as a fetched skin's file. */
+    private fun lightFile() = java.io.File(dir, "light.wsz").apply { writeBytes(bytes()) }
 
     @Test
     fun `the player only draws once the skin has stopped moving`() {
@@ -357,7 +375,7 @@ class SkinPreviewTest {
                     pull = rememberBackPull {},
                     settled = landed,
                     skin = museumSkin,
-                    live = base,
+                    live = SkinPreview(lightFile(), null),
                     installed = false,
                     busy = false,
                     onInstall = {},

@@ -148,12 +148,14 @@ class OnlineSkins(
             installed: InstalledSkins,
             scope: CoroutineScope,
             words: Words,
+            /** Where the skins fetched for preview go; see [SkinPreviews]. */
+            previewDir: java.io.File,
         ): OnlineSkins {
             val museum = SkinCatalog(WebampSkins(), scope)
             return OnlineSkins(
                 museum = museum,
                 ops = OnlineSkinOps(skinOps, library, installed, scope, words = words),
-                previews = SkinPreviews(scope, fallback = { skinOps.baseSkin }),
+                previews = SkinPreviews(scope, previewDir),
                 // a smaller page than the museum's list uses: skins within a page come from
                 // one run of museum order
                 shuffling = { seed ->

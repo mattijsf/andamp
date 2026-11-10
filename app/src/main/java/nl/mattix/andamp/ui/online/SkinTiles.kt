@@ -53,7 +53,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import nl.mattix.andamp.R
-import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.online.OnlineSkin
 import nl.mattix.andamp.state.online.SkinCatalog
 
@@ -74,7 +73,7 @@ internal fun SkinGrid(
     isInstalled: (String) -> Boolean,
     isBusy: (String) -> Boolean,
     /** The skin itself, once it has been fetched for a live preview; null until then. */
-    live: (String) -> Skin? = { null },
+    live: (String) -> nl.mattix.andamp.state.online.SkinPreview? = { null },
     onInstall: (OnlineSkin) -> Unit,
     onUninstall: (OnlineSkin) -> Unit,
     onOpen: (OnlineSkin) -> Unit,
@@ -175,7 +174,7 @@ private fun SkinTile(
 @Suppress("LongParameterList") // one skin, and everything that can be done with it
 private fun WideSkin(
     skin: OnlineSkin,
-    live: Skin?,
+    live: nl.mattix.andamp.state.online.SkinPreview?,
     width: Dp,
     height: Dp,
     installed: Boolean,
@@ -220,7 +219,7 @@ private fun WideSkin(
                 enter = fadeIn(),
                 modifier = Modifier.fillMaxSize(),
             ) {
-                live?.let { SkinPreviewCanvas(it, Modifier.fillMaxSize(), interactive = false) }
+                live?.let { SkinPreviewCanvas(it.file, Modifier.fillMaxSize(), interactive = false) }
             }
             if (installed) InstalledMark(Modifier.align(Alignment.BottomEnd))
         }

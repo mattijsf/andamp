@@ -11,7 +11,6 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.height
 import androidx.test.core.app.ApplicationProvider
-import nl.mattix.andamp.skin.SkinLoader
 import nl.mattix.andamp.state.online.OnlineSkin
 import nl.mattix.andamp.ui.online.MuseumTiles
 import org.junit.Assert.assertEquals
@@ -85,7 +84,14 @@ class WelcomeScreenTest {
      */
     @Test
     fun `it draws with a real skin in the card`() {
-        val skin = SkinLoader.loadBase(ApplicationProvider.getApplicationContext())
+        val app = ApplicationProvider.getApplicationContext<android.app.Application>()
+        val skin =
+            nl.mattix.andamp.wal.WalBundled.fileOf(
+                app,
+                nl.mattix.andamp.skin.BundledSkins.BASE,
+                nl.mattix.andamp.skin
+                    .LiveSkins { _, _ -> null },
+            )
 
         compose.setContent {
             WelcomeScreen(WelcomeChoice(skin = skin, tiles = front, museumCount = 93_603))
