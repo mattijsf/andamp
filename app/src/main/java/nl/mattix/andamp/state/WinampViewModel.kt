@@ -38,7 +38,6 @@ import nl.mattix.andamp.state.overlay.OverlayStore
 import nl.mattix.andamp.state.overlay.OverlaySupport
 import nl.mattix.andamp.ui.menu.promptFor
 import nl.mattix.andamp.wal.WalApart
-import nl.mattix.andamp.wal.WalClassic
 import nl.mattix.andamp.wal.WalGate
 import nl.mattix.andamp.wal.WalLook
 import nl.mattix.andamp.wal.WalPlayer
@@ -58,6 +57,8 @@ import kotlin.math.roundToInt
  * [PersistenceOps], and the playlist's file operations are in [PlaylistFileOps].
  */
 class WinampViewModel
+    // the stores tests swap, and whether the engine draws classic skins
+    @Suppress("LongParameterList")
     @JvmOverloads
     constructor(
         app: Application,
@@ -73,6 +74,8 @@ class WinampViewModel
         playlistLibrary: PlaylistLibrary = PlaylistLibrary(java.io.File(app.filesDir, "playlists")),
         stationStore: StationStore = StationStore(java.io.File(app.filesDir, "stations.m3u")),
         bookmarkStore: BookmarkStore = BookmarkStore(java.io.File(app.filesDir, "bookmarks.m3u")),
+        /** Whether the engine draws classic skins; see [SkinOps]. Tests of Andamp's own classic windows turn it off. */
+        classicLooks: Boolean = true,
     ) : AndroidViewModel(app),
         nl.mattix.andamp.ui.window.WindowControls {
         /**
@@ -152,7 +155,7 @@ class WinampViewModel
                 },
                 // stored in order with the Preferences switch's changes
                 turnModernOn = { WalGate.write(app, true) },
-                classicNative = { WalClassic.read(app) },
+                classicLooks = classicLooks,
                 openModern = { id, file, name, siblings ->
                     // the player is made before its look, and its file picker is the look's sink
                     val opened = arrayOfNulls<WalLook>(1)
@@ -529,7 +532,6 @@ class WinampViewModel
             // modern skins turned on or off while the app runs; the first value is skipped,
             // as start reads the switch itself
             viewModelScope.launch { snapshotFlow { WalGate.on }.drop(1).collect(skinOps::betaChanged) }
-            viewModelScope.launch { snapshotFlow { WalClassic.on }.drop(1).collect { skinOps.classicRendererChanged() } }
             // Double Size goes off while a modern skin is on screen and comes back with a classic one
             viewModelScope.launch {
                 snapshotFlow { skinOps.wal != null }.collect { shown ->

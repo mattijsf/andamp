@@ -33,10 +33,10 @@ import org.robolectric.annotation.GraphicsMode
 import java.util.concurrent.CopyOnWriteArrayList
 
 /**
- * The new classic renderer: with it on, a classic skin is drawn by walkit through a look of its
- * file, over the classic skin Andamp still decodes for its menus: the stored file of the
- * listener's own, a file written for a bundled one, in the phone's palette for a live one. With it
- * off, Andamp's own renderer draws it.
+ * A classic skin is drawn by walkit through a look of its file, over the classic skin Andamp
+ * still decodes for its menus: the stored file of the listener's own, a file written for a bundled
+ * one, in the phone's palette for a live one. A skin whose look fails is drawn by Andamp's own
+ * renderer.
  */
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
@@ -48,14 +48,15 @@ class SkinOpsClassicNativeTest {
     private lateinit var ops: SkinOps
     private lateinit var mine: String
 
-    /** The new classic renderer's switch, as [SkinOps] reads it. */
-    private var native = true
-
     /** The phone's palette for the live skins, or null for none. */
     @Volatile
     private var palette: ColorScheme? = null
 
     private val opened = CopyOnWriteArrayList<WalLook>()
+
+    /** Whether making a look throws, as one of a broken file can. */
+    @Volatile
+    private var openFails = false
 
     @Before
     fun setUp() {
@@ -82,10 +83,10 @@ class SkinOpsClassicNativeTest {
                 library,
                 modernOn = { false },
                 openModern = { id, file, name, siblings ->
+                    check(!openFails) { "no look" }
                     WalLook(id, file, name, siblings, app.cacheDir, WalSettings(app), FakePlayer()).also { opened += it }
                 },
                 live = LiveSkins { _, _ -> palette },
-                classicNative = { native },
             )
         ops.start()
         await { ops.skin != null && ops.currentId == mine }
@@ -95,7 +96,7 @@ class SkinOpsClassicNativeTest {
     fun releaseLooks() = opened.forEach { it.release(save = false) }
 
     @Test
-    fun `a classic skin of the listener's own is drawn by the engine while the switch is on`() {
+    fun `a classic skin of the listener's own is drawn by the engine`() {
         val look = ops.wal
         assertNotNull("a look over the classic skin", look)
         assertEquals(mine, look!!.id)
@@ -105,25 +106,23 @@ class SkinOpsClassicNativeTest {
     }
 
     @Test
-    fun `switched off, Andamp's own renderer draws the skin again`() {
-        val look = ops.wal ?: error("a look")
-        native = false
-        ops.classicRendererChanged()
-        await { ops.wal == null }
-        assertEquals(mine, ops.currentId)
-        await { look.released }
-        native = true
-        ops.classicRendererChanged()
-        await { ops.wal != null }
-    }
-
-    @Test
-    fun `a classic skin picked while the switch is on is drawn by the engine at once`() {
+    fun `a classic skin picked is drawn by the engine at once`() {
         var stored: String? = null
         val bytes = app.assets.open(BundledSkins.LIGHT.asset).use { it.readBytes() }
         ops.load(bytes.inputStream(), "Picked.wsz") { stored = it }
         await { stored != null && ops.currentId == stored }
         assertEquals(stored, ops.wal?.id)
+    }
+
+    @Test
+    fun `a classic skin whose look cannot be made is drawn by Andamp's own renderer`() {
+        openFails = true
+        var stored: String? = null
+        val bytes = app.assets.open(BundledSkins.LIGHT.asset).use { it.readBytes() }
+        ops.load(bytes.inputStream(), "Broken look.wsz") { stored = it }
+        await { stored != null && ops.currentId == stored }
+        assertEquals(null, ops.wal)
+        assertNotNull("the classic skin is drawn", ops.skin)
     }
 
     @Test

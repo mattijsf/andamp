@@ -78,9 +78,10 @@ class SkinOps internal constructor(
         { _, _, _, _ -> error("no modern skins here") },
     /**
      * Whether a classic skin on the player is drawn by the engine modern skins run on, as Winamp
-     * draws it, through a look of its file ([WalClassic]); read on IO.
+     * draws it, through a look of its file. Off, Andamp's own classic windows draw it, as they do a
+     * skin whose look fails.
      */
-    private val classicNative: () -> Boolean = { false },
+    private val classicLooks: Boolean = true,
     /** The file the engine opens for a skin that ships with the app, as it looks now; called on IO. */
     private val bundledFile: (BundledSkin) -> File = { WalBundled.fileOf(context, it, live) },
 ) {
@@ -610,7 +611,7 @@ class SkinOps internal constructor(
         scope.launch {
             withContext(Dispatchers.IO) { lock.withLock { library.choose(SkinEntry.BASE_ID) } }
             widgetSkin = library.widgetSkin
-            // with the new classic renderer on, the engine draws the base too, once its file is written
+            // the engine draws the base too, once its file is written
             loadAndPut(keep = { currentId == SkinEntry.BASE_ID && wal == null }) {
                 classicLookFor(SkinEntry.BASE_ID)?.let { Worn(baseSkin, SkinEntry.BASE_ID, SkinEntry.BASE_ID, it) }
             }
@@ -796,13 +797,12 @@ class SkinOps internal constructor(
     /**
      * The look of the classic skin [id] drawn by the engine: the one on screen or parked, else a
      * new one of its file, the stored one or, for a skin that ships with the app, the one
-     * [bundledFile] writes, which for a live skin follows the phone's palette. Null while the new
-     * classic renderer is off and for a skin whose look failed in this process, so Andamp's own
-     * renderer draws it. Call under the lock.
+     * [bundledFile] writes, which for a live skin follows the phone's palette. Null for a skin whose
+     * look failed in this process, so Andamp's own renderer draws it. Call under the lock.
      */
     @Suppress("TooGenericExceptionCaught") // whatever making a look throws, Andamp's own renderer draws the skin
     private fun classicLookFor(id: String): WalLook? {
-        if (id in failed || !classicNative()) return null
+        if (id in failed || !classicLooks) return null
         val file =
             try {
                 library.fileOf(id) ?: BundledSkins.of(id)?.let(bundledFile) ?: return null
@@ -819,18 +819,6 @@ class SkinOps internal constructor(
             Log.w(TAG, "Classic skin $id has no native look", e)
             failed += id
             null
-        }
-    }
-
-    /**
-     * The new classic renderer was switched on or off: the skin on screen goes on again, a classic
-     * one now drawn by the engine or by Andamp's own renderer. A modern skin stays as it is.
-     */
-    fun classicRendererChanged() {
-        scope.launch {
-            started.await()
-            if (currentId == UNSTORED_ID) return@launch
-            if (loadAndPut { loadWorn() }) wornSkinChanged()
         }
     }
 

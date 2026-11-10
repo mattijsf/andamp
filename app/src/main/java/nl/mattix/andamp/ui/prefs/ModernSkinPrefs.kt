@@ -10,14 +10,12 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nl.mattix.andamp.R
 import nl.mattix.andamp.wal.WalApart
-import nl.mattix.andamp.wal.WalClassic
 import nl.mattix.andamp.wal.WalGate
 import nl.mattix.andamp.wal.WalSharp
 
 /**
  * The Skins section on Preferences > Player: whether Winamp modern skins (.wal) may be added and
- * worn, whether they are drawn with sharp pixels, whether their windows are set out apart, and
- * whether classic skins are drawn by the new classic renderer.
+ * worn, whether they are drawn with sharp pixels, and whether their windows are set out apart.
  */
 data class ModernSkinPrefs(
     /** Mirrors [nl.mattix.andamp.wal.WalGate.on]. */
@@ -29,9 +27,6 @@ data class ModernSkinPrefs(
     /** Mirrors [nl.mattix.andamp.wal.WalApart.on]; its row shows only while [enabled]. */
     val apart: Boolean = false,
     val onApart: (Boolean) -> Unit = {},
-    /** Mirrors [nl.mattix.andamp.wal.WalClassic.on]; its row shows whether modern skins are on or not. */
-    val classicNative: Boolean = false,
-    val onClassicNative: (Boolean) -> Unit = {},
 )
 
 /**
@@ -47,7 +42,6 @@ internal fun modernSkinPrefsOf(context: Context): ModernSkinPrefs {
             WalGate.read(app)
             WalSharp.read(app)
             WalApart.read(app)
-            WalClassic.read(app)
         }
     }
     return ModernSkinPrefs(
@@ -57,14 +51,12 @@ internal fun modernSkinPrefsOf(context: Context): ModernSkinPrefs {
         onSharp = { on -> WalSharp.change(app, on) },
         apart = WalApart.on,
         onApart = { on -> WalApart.change(app, on) },
-        classicNative = WalClassic.on,
-        onClassicNative = { on -> WalClassic.change(app, on) },
     )
 }
 
 /**
  * The last section of Preferences > Player: the modern skins switch, a note on what wears a modern
- * skin, Sharp pixels and Windows apart while modern skins are on, and the new classic renderer.
+ * skin, and Sharp pixels and Windows apart while modern skins are on.
  */
 @Composable
 internal fun ModernSkinsSection(prefs: ModernSkinPrefs) {
@@ -78,21 +70,6 @@ internal fun ModernSkinsSection(prefs: ModernSkinPrefs) {
             WindowsApartRow(prefs)
         }
     }
-    Group { ClassicRendererRow(prefs) }
-}
-
-@Composable
-private fun ClassicRendererRow(prefs: ModernSkinPrefs) {
-    SwitchRow(
-        title = stringResource(R.string.prefs_classic_native_title),
-        summary =
-            stringResource(
-                if (prefs.classicNative) R.string.prefs_classic_native_on else R.string.prefs_classic_native_off,
-            ),
-        checked = prefs.classicNative,
-        tag = "prefs.classic.switch",
-        onChange = prefs.onClassicNative,
-    )
 }
 
 @Composable

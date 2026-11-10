@@ -160,9 +160,6 @@
     <string name="prefs_windows_apart_title">窗口分开</string>
     <string name="prefs_windows_apart_on">现代面板的每个窗口都停在你放置的位置，如同桌面：拖动窗口的标题栏，它会像在 Winamp 中一样吸附到其他窗口和屏幕边缘。</string>
     <string name="prefs_windows_apart_off">现代面板的窗口叠放在主窗口下方。打开此项可把每个窗口放到你想要的位置，如同桌面。</string>
-    <string name="prefs_classic_native_title">新经典渲染器（测试版）</string>
-    <string name="prefs_classic_native_on">播放器上的经典面板按 Winamp 5.666 的方式绘制。开启期间，播放器菜单中的部分选项（如双倍大小）不适用。</string>
-    <string name="prefs_classic_native_off">经典面板由 Andamp 自带的渲染器绘制。打开此项可试用新渲染器，它按 Winamp 5.666 的方式绘制经典面板。</string>
 
     <!-- PluginsSection.kt -->
     <string name="prefs_plugins_intro">Lua 音频插件。Andamp 会保留自己的副本，因此原文件可以移动或删除。</string>

@@ -33,12 +33,16 @@ const val GESTURE_BAR = 48
 /** Room for several 25px width steps: BIG_WINDOW only has one to give. */
 const val WIDE_WINDOW = "w1400dp-h1600dp-mdpi"
 
-/** Interaction tests run on the mock backend: fast, deterministic, no ExoPlayer. */
+/**
+ * Interaction tests run on the mock backend: fast, deterministic, no ExoPlayer. They test Andamp's
+ * own classic windows, so a classic skin is drawn by those, not by the engine.
+ */
 fun testViewModel(): WinampViewModel =
     WinampViewModel(
         ApplicationProvider.getApplicationContext<Application>(),
         createBackend = { scope -> MockBackend(FakeTracks.tracks, scope) },
         presetStore = InMemoryEqPresetStore(),
+        classicLooks = false,
     )
 
 fun TouchInjectionScope.tapVirtual(
