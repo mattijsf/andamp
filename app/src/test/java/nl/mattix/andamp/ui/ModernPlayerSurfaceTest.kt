@@ -17,7 +17,6 @@ import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.unit.IntRect
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.R
-import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SkinLoader
@@ -351,16 +350,6 @@ class ModernPlayerSurfaceTest {
         show()
 
         assertTrue(surface.fits.isNotEmpty() && surface.fits.none { it.compact })
-    }
-
-    @Test
-    fun `with the skin worn the in-player visualizer does not run`() {
-        show()
-        vm.play()
-        frames(30)
-
-        assertEquals(Transport.Playing, vm.state.transport)
-        assertEquals(0L, vm.state.visFrame)
     }
 
     @Test

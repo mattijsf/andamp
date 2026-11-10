@@ -690,23 +690,14 @@ class WinampState {
     /** Whether a finger is on the title, which stops the clock from stepping it. */
     var marqueeHeld by mutableStateOf(false)
     var blinkOn by mutableStateOf(true) // pause blink phase
-    var visFrame by mutableLongStateOf(0L) // bumped per vis frame
 
     /**
-     * Held by the surface that is stepping the clocks, and the one that is stepping the
-     * visualizer. The player can be on the phone's screen and on a lent surface at once, and
-     * each would step this state; the second waits here until the first stops.
+     * Held by the surface that is stepping the clocks. The player can be on the phone's screen
+     * and on a lent surface at once, and each would step this state; the second waits here
+     * until the first stops.
      */
     val clocksTurn = Mutex()
-    val visualizerTurn = Mutex()
     var visMode by mutableStateOf(VisMode.Analyzer)
-
-    // visualizer scratch data: plain arrays, invalidated via visFrame
-    val visLevels = FloatArray(19)
-    val visPeaks = FloatArray(19)
-    val visPeakHold = IntArray(19)
-    val visPeakVel = FloatArray(19)
-    val visWave = IntArray(WAVE_COLUMNS)
 
     /**
      * What the marquee shows instead of the track while a slider is held, as in Winamp.
@@ -738,7 +729,6 @@ class WinampState {
     }
 
     companion object {
-        const val WAVE_COLUMNS = 75
         const val EQ_BANDS = 10
 
         /** Band names as the skin prints them under the sliders. */

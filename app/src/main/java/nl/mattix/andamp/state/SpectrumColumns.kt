@@ -14,9 +14,8 @@ import kotlin.math.log10
  * classic analyzer's scale, where [SpectrumPhysics.MAX] fills a bar. Loud audio goes past it,
  * so a reader clamps.
  *
- * The classic window averages 76 columns into its 19 bars ([RealSpectrum]); a modern skin
- * takes 75 as they are, and the newest [wavePoints] samples of each window as they are for its
- * oscilloscope ([wave]).
+ * A skin takes the columns as they are, and the newest [wavePoints] samples of each window as
+ * they are for its oscilloscope ([wave]).
  */
 class SpectrumColumns(
     tap: AudioTap,

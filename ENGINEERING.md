@@ -473,8 +473,7 @@ one of them steps the clocks (`WinampState.clocksTurn`).
   live here; `seekToFraction` does nothing without `canSeek`, for example.
 - **UI.** `WinampState` mirrors render state with one `mutableStateOf` per field, updated
   by a single collector in `WinampViewModel`. Per-field state matters: one large state
-  object would redraw all three canvases on every 60 Hz drag or visualizer tick.
-  Visualizer data stays in plain arrays and is invalidated through the `visFrame` counter.
+  object would redraw every reader on each 60 Hz drag.
 - **Draw code reads state.** It never mutates and never computes business logic. Widget
   callbacks call the ViewModel, which delegates to the facade.
 - **`WinampViewModel` has no playback logic.** It builds the collaborators, runs the

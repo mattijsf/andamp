@@ -558,10 +558,6 @@ class WinampViewModel
                         state.marqueeStep = 0
                         state.marqueePixels = 0
                     }
-                    if (b.transport == Transport.Stopped && state.transport != Transport.Stopped) {
-                        FakeSpectrum.reset(state)
-                        state.visFrame++
-                    }
                     // the last track that played; it is set while playing and not cleared
                     if (b.transport == Transport.Playing) b.currentTrack?.let { state.lastPlayed = it }
                     state.transport = b.transport
