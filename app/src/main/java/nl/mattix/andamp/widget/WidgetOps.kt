@@ -21,11 +21,10 @@ import kotlinx.coroutines.withContext
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.core.player.PlayerFacade
 import nl.mattix.andamp.state.MusicSource
-import nl.mattix.andamp.state.RealOscilloscope
-import nl.mattix.andamp.state.RealSpectrum
 import nl.mattix.andamp.state.SkinLibrary
 import nl.mattix.andamp.state.SourceForRows
 import nl.mattix.andamp.state.SourceSkins
+import nl.mattix.andamp.state.SpectrumColumns
 import nl.mattix.andamp.state.VisMode
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.takesSkin
@@ -143,7 +142,6 @@ class WidgetOps(
      * every third frame.
      */
     private suspend fun analyzer() {
-        val scratch = WinampState()
         combine(
             facade.state,
             WidgetSignals.screenOn(context),
@@ -171,13 +169,13 @@ class WidgetOps(
                     }
                     return@collectLatest
                 }
-                val follower = Follower(following.mode, following.tap)
+                val columns = SpectrumColumns(following.tap, FRAME_MS, VisFrame.BANDS, VisFrame.WAVE)
                 var listening = 0
                 while (currentCoroutineContext().isActive) {
                     val captured = ArrayList<VisFrame>(WidgetVisFrames.COUNT)
                     repeat(WidgetVisFrames.COUNT * KEEP_EVERY) { step ->
-                        follower.step(scratch)
-                        if (step % KEEP_EVERY == 0) captured += VisFrame.of(scratch, dropCaps = true)
+                        columns.read()
+                        if (step % KEEP_EVERY == 0) captured += VisFrame.of(columns)
                         delay(FRAME_MS)
                     }
                     // a loop of silence would stay dark for the whole gap, and the start of a song
@@ -262,19 +260,6 @@ class WidgetOps(
     )
 
     /** Whichever of the two signals the chosen picture is drawn from. */
-    private class Follower(
-        val mode: VisMode,
-        tap: nl.mattix.andamp.core.playback.AudioTap,
-    ) {
-        private val spectrum = if (mode == VisMode.Analyzer) RealSpectrum(tap, FRAME_MS) else null
-        private val wave = if (mode == VisMode.Oscilloscope) RealOscilloscope(tap, FRAME_MS) else null
-
-        fun step(state: WinampState) {
-            spectrum?.step(state)
-            wave?.step(state)
-        }
-    }
-
     private fun stoppedLooksSame(
         old: WidgetSnapshot,
         new: WidgetSnapshot,

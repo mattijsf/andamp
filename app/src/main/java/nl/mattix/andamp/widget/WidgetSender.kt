@@ -14,6 +14,7 @@ import nl.mattix.andamp.R
 import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.state.CurrentSkin
 import nl.mattix.andamp.state.VisMode
+import nl.mattix.andamp.wal.WalStill
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
 
@@ -127,7 +128,10 @@ internal object WidgetSender {
             // the skin and the key it was cached under, from one read of what
             // is worn: a source's skin going on between two reads would pair
             // this picture with the next one's key
-            val (skinKey, skin) = CurrentSkin.widgetKeyed(context) ?: return@execute
+            val (skinKey, file) = CurrentSkin.widgetFile(context) ?: return@execute
+            val skin = WalStill.of(file, context.cacheDir)
+            // one moment of the skin's clock for every picture of this send
+            val at = SystemClock.uptimeMillis()
             val layout = WidgetLayout.choose(width, height, fill = size == WidgetSize.FILL)
             // a snapshot that says it is playing may have been written by a process that has since
             // gone
@@ -168,7 +172,7 @@ internal object WidgetSender {
                 )
             if (wholeWindow || last?.visRunning != visRunning) {
                 val views = RemoteViews(context.packageName, R.layout.widget_main)
-                views.setImageViewBitmap(R.id.widget_player, WidgetRender.bitmap(skin, layout, state))
+                views.setImageViewBitmap(R.id.widget_player, WidgetRender.bitmap(skin, layout, state, at))
                 // the whole picture opens the app unless the listener asked for only the logo to.
                 // Null is set explicitly: a view that carried the intent before has to be told it
                 // no longer does
@@ -178,7 +182,7 @@ internal object WidgetSender {
                 )
                 // the pixels cannot be read aloud; this is the widget in words
                 views.setContentDescription(R.id.widget_player, snapshot.spoken(context.resources))
-                val placement = Placement(context, views, skin, layout)
+                val placement = Placement(context, views, skin, layout, at)
                 placement.base()
                 placement.buttons(snapshot)
                 placement.logo(settings)
@@ -198,13 +202,13 @@ internal object WidgetSender {
             if (moved.isEmpty() && !visMoved) return@execute
             val views = RemoteViews(context.packageName, R.layout.widget_main)
             moved.keys.forEach { part ->
-                views.setImageViewBitmap(idOf(part), WidgetRender.layer(skin, layout, state, part))
+                views.setImageViewBitmap(idOf(part), WidgetRender.layer(skin, layout, state, part, at))
             }
             if (visMoved) {
                 // the flipper keeps its place from the last whole send; only
                 // its pictures change hands here
                 WidgetRender
-                    .visualizerFrames(skin, layout, state, captured, settings.mode)
+                    .visualizerFrames(skin, layout, state, captured, settings.mode, at)
                     .forEachIndexed { at, frame -> VIS_SLOTS.getOrNull(at)?.let { views.setImageViewBitmap(it, frame) } }
             }
             manager.partiallyUpdateAppWidget(id, views)
@@ -216,8 +220,10 @@ internal object WidgetSender {
     private class Placement(
         private val context: Context,
         private val views: RemoteViews,
-        private val skin: nl.mattix.andamp.skin.Skin,
+        private val skin: WalStill,
         private val layout: WidgetLayout,
+        /** The moment of the skin's clock every picture of the send is drawn at. */
+        private val at: Long,
     ) {
         // the stage is the art's size and the framework centers it, so a patch's margins are the
         // art's own coordinates
@@ -291,7 +297,7 @@ internal object WidgetSender {
                 return
             }
             WidgetRender
-                .visualizerFrames(skin, layout, state, captured, mode)
+                .visualizerFrames(skin, layout, state, captured, mode, this.at)
                 .forEachIndexed { at, frame -> VIS_SLOTS.getOrNull(at)?.let { views.setImageViewBitmap(it, frame) } }
             val at = WidgetRender.visualizerRect(layout)
             place(R.id.widget_vis, at.x, at.y, at.w, at.h)
@@ -357,7 +363,7 @@ internal object WidgetSender {
                     return@forEach
                 }
                 val at = layout.rect(part.left, part.top, part.width, part.height)
-                views.setImageViewBitmap(id, WidgetRender.layer(skin, layout, state, part))
+                views.setImageViewBitmap(id, WidgetRender.layer(skin, layout, state, part, this.at))
                 place(id, at.x, at.y, at.w, at.h)
                 views.setViewVisibility(id, View.VISIBLE)
             }

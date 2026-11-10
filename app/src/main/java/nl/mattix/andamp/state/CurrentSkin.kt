@@ -9,6 +9,8 @@ import nl.mattix.andamp.skin.LiveSkins
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SkinLoader
 import nl.mattix.andamp.skin.SystemPalette
+import nl.mattix.andamp.wal.WalBundled
+import java.io.File
 
 /**
  * The skin the app is wearing, for anything that draws without the player's state.
@@ -132,6 +134,24 @@ object CurrentSkin {
     ): Pair<String, Skin>? {
         val id = library.widgetSkin?.takeIf(library::hasClassic) ?: classicOf(library, library.worn)
         return keyedIn(widget, context, library, live, id)
+    }
+
+    /**
+     * The file of the skin [widgetKeyed] chooses, as the engine opens it, with the [cacheKey] it
+     * goes with: the stored file, or for a skin that ships with the app the one [WalBundled]
+     * writes, in the phone's palette for a live one. Null when the skin is gone.
+     */
+    fun widgetFile(
+        context: Context,
+        library: SkinLibrary = SkinLibrary(context),
+        live: LiveSkins = this.live,
+    ): Pair<String, File>? {
+        val id = library.widgetSkin?.takeIf(library::hasClassic) ?: classicOf(library, library.worn)
+        val file =
+            library.fileOf(id)
+                ?: BundledSkins.of(id)?.let { WalBundled.fileOf(context, it, live) }
+                ?: return null
+        return cacheKey(context, library, live, id) to file
     }
 
     private fun keyedIn(
