@@ -117,6 +117,8 @@ import nl.mattix.andamp.ui.window.surfaceBottomInset
 import nl.mattix.andamp.ui.window.unshadeEverything
 import nl.mattix.andamp.ui.window.windowScreen
 import nl.mattix.andamp.wal.WAL_LAYER_Z
+import nl.mattix.andamp.wal.WalClassicSync
+import nl.mattix.andamp.wal.WalFilled
 import nl.mattix.andamp.wal.WalLayer
 import nl.mattix.andamp.wal.WalLayerParts
 import nl.mattix.andamp.wal.WalPlacement
@@ -348,13 +350,17 @@ internal fun PlayerSurface(
     // read when the menu is built: the widget lists keep the openMenu of the composition that built them
     val walNow by rememberUpdatedState(wal)
     // The clutter bar's D and the Options menu share this switch. Switching Double Size on
-    // switches Always On Top off, and the surface is told as when its own A did that. A modern
-    // skin has no Double Size, so the classic main window standing in while it loads switches nothing.
+    // switches Always On Top off, and the surface is told as when its own A did that. A classic
+    // skin walkit draws fills the screen instead, as its own D has it. A modern skin has no Double
+    // Size, so the classic main window standing in while it loads switches nothing.
     val doubleSize = {
-        if (walNow == null) {
+        val look = walNow
+        if (look == null) {
             val floating = vm.overlayOps.gate.wanted
             vm.doubleSize.toggle()
             if (floating && !vm.overlayOps.gate.wanted) onFloatingChanged(false)
+        } else if (look.classic) {
+            WalFilled.toggle(vm.getApplication())
         }
     }
     SnapTicks(vm.state)
@@ -403,16 +409,27 @@ internal fun PlayerSurface(
                     )
                 }
                 val openMenu =
-                    mainMenuOpener(vm, playlistActions, onPickSkin, quit, onPreferences, onMuseum, alwaysOnTop, doubleSize) {
-                        walNow != null
-                    }
+                    mainMenuOpener(
+                        vm,
+                        playlistActions,
+                        onPickSkin,
+                        quit,
+                        onPreferences,
+                        onMuseum,
+                        alwaysOnTop,
+                        doubleSize,
+                        modernPlayer = { walNow?.classic == false },
+                        classicLook = { walNow?.takeIf { it.classic } },
+                    )
                 val walParts =
                     wal?.let {
                         rememberWalLayerParts(it, vm, playlistActions, openMenu, onMinimize, quit, covered, compact, alwaysOnTop)
                     }
+                // a classic skin walkit draws follows the app's time, vis and selection, and they follow it
+                wal?.takeIf { it.classic }?.let { WalClassicSync(it, vm.state) }
                 // the classic main window's V and O, grayed as the main menu grays them while a modern skin is worn
                 val visualizerMenu = { anchor: MenuAnchor ->
-                    visualizationMenu(vm, anchor).copy(items = visualizationItems(vm, modernPlayer = walNow != null))
+                    visualizationMenu(vm, anchor).copy(items = visualizationItems(vm, modernPlayer = walNow?.classic == false))
                 }
                 val mainWidgets =
                     remember(vm, s.mainShaded) {
@@ -444,7 +461,8 @@ internal fun PlayerSurface(
                                         onMuseum = onMuseum,
                                         onAlwaysOnTop = alwaysOnTop,
                                         onDoubleSize = doubleSize,
-                                        modernPlayer = walNow != null,
+                                        modernPlayer = walNow?.classic == false,
+                                        classicLook = walNow?.takeIf { it.classic },
                                     )
                                 },
                                 onAlwaysOnTop = alwaysOnTop,
@@ -505,6 +523,8 @@ private fun mainMenuOpener(
     onDoubleSize: () -> Unit,
     /** Whether a modern skin is worn, asked each time the menu opens. */
     modernPlayer: () -> Boolean,
+    /** The classic skin walkit draws, or null; asked each time the menu opens. */
+    classicLook: () -> WalSurface?,
 ): (anchor: MenuAnchor?, section: MenuBarSection?) -> Unit =
     { anchor, section ->
         val menu =
@@ -521,6 +541,7 @@ private fun mainMenuOpener(
                 onDoubleSize = onDoubleSize,
                 modernPlayer = modernPlayer(),
                 section = section,
+                classicLook = classicLook(),
             )
         vm.state.activeMenu = if (anchor == null) menu else menu.copy(anchor = anchor)
     }

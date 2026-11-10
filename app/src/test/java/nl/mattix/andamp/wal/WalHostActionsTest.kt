@@ -66,6 +66,8 @@ class WalHostActionsTest {
             doubleSize = { on("double size") },
             playlistPick = { pick, _ -> on("playlist $pick") },
             selectRow = { row -> on("select $row") },
+            rowMenu = { row, _ -> on("row menu $row") },
+            selectRows = { rows -> on("select rows $rows") },
         )
 
     private fun reaches(
@@ -101,6 +103,8 @@ class WalHostActionsTest {
         assertEquals("a classic playlist pick", listOf("playlist add_dir"), reaches("PLAYLIST", "add_dir"))
         assertEquals("the row the skin selected", listOf("select 3"), reaches("PLAYLIST_SELECT", "3"))
         assertEquals("and none", listOf("select null"), reaches("PLAYLIST_SELECT"))
+        assertEquals("a held row's menu", listOf("row menu 2"), reaches("PLAYLIST_MENU", "2"))
+        assertEquals("rows picked with Ctrl or Shift", listOf("select rows [1, 4]"), reaches("PLAYLIST_SELECTION", "1,4"))
     }
 
     @Test

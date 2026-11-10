@@ -8,6 +8,7 @@ import android.os.Looper
 import android.os.SystemClock
 import android.util.Log
 import androidx.compose.ui.unit.IntSize
+import nl.mattix.walkit.ClassicSwitches
 import nl.mattix.walkit.DrawCmd
 import nl.mattix.walkit.Presentation
 import nl.mattix.walkit.Rect
@@ -97,7 +98,7 @@ internal class WalEngine(
     private val host: WalHost,
     private val idle: (SkinRuntime) -> WalIdle = WalIdle::of,
     /** Whether the skin is a classic one, whose windows are apart unless it fills the screen; see [WalFitting]. */
-    classic: Boolean = false,
+    private val classic: Boolean = false,
     /** How the listener asked a classic playlist to look; see [WalFitting]. */
     listStyle: () -> WalListStyle = { WalListStyle() },
     private val onFrame: () -> Unit,
@@ -501,11 +502,13 @@ internal class WalEngine(
         val idle = idle(runtime).also { lastIdle = it }
         val shown = published.get()
         // an animation that ends on a step that moves nothing still changes what the screen paces by,
-        // and so does a skin that starts or stops wanting frames, or goes static
+        // and so does a skin that starts or stops wanting frames, or goes static, and a switch
+        // between apart and filling the screen
         val due =
             changed || pendingCause != null || runtime.animating != shown?.animating ||
                 rest.wantsFrames(idle, now) != shown?.wantsFrames ||
-                shown?.layout?.let { it.skinOptions.version != runtime.configVersion } == true
+                shown?.layout?.let { it.skinOptions.version != runtime.configVersion } == true ||
+                appliedFit?.let(fitting::switched) == true
         val t1 = host.menus.workClock
         val drew = due && publish(cause, tickNanos, merge = true, idleNow = idle)
         val drawNanos = if (drew) host.menus.workClock - t1 else 0L
@@ -569,6 +572,12 @@ internal class WalEngine(
         flushMove(it)
         it.doubleTap(x, y, seq)
     }
+
+    /** The keys held with the next press; see [SkinRuntime.setPointerModifiers]. */
+    fun pointerModifiers(
+        ctrl: Boolean,
+        shift: Boolean,
+    ) = postTouch("keys") { it.setPointerModifiers(ctrl, shift) }
 
     /** The rest of the press lands exactly where it says; see [SkinRuntime.setPointerPrecise]. */
     fun pointerPrecise() =
@@ -696,6 +705,44 @@ internal class WalEngine(
         runCatching { onBroken?.invoke() }.onFailure { e -> Log.w(WalHost.TAG, "onBroken", e) }
     }
 
+    /** Where the stack sits in [fit], and for a classic skin its windows on screen and its switches as a press left them. */
+    private fun layoutOf(
+        runtime: SkinRuntime,
+        fit: WalFit,
+        size: Pair<Int, Int>,
+        windowOpen: Boolean,
+        wantsFrames: Boolean,
+    ): WalLayout {
+        val laid = fitting.layout(runtime, fit, baseW, size, runtime.drawnSize, windowOpen, wantsFrames)
+        if (!classic) return laid
+        return laid.copy(classicWindows = classicWindowsOf(runtime), pressedSwitches = pressedSwitches(runtime))
+    }
+
+    /** A classic skin's switches as the app last set them or the last frame showed them; engine thread only. */
+    private var knownSwitches: ClassicSwitches? = null
+
+    /** The switches a press on the skin last changed, numbered; engine thread only. */
+    private var pressed: WalPressedSwitches? = null
+
+    /** Sets a classic skin's switches to the app's settings on the engine thread; see [WalSurface.setClassicSwitches]. */
+    fun setClassicSwitches(switches: ClassicSwitches) =
+        post { runtime ->
+            runtime.classicSwitches = switches
+            knownSwitches = switches
+        }
+
+    /**
+     * [runtime]'s switches as a press last changed them: a change the app did not make counts as
+     * the skin's own. What the skin shows when first published is no change.
+     */
+    private fun pressedSwitches(runtime: SkinRuntime): WalPressedSwitches? {
+        val now = runtime.classicSwitches
+        val known = knownSwitches
+        knownSwitches = now
+        if (known != null && known != now) pressed = WalPressedSwitches((pressed?.serial ?: 0) + 1, now)
+        return pressed
+    }
+
     /**
      * Builds a new frame from the runtime and hands it to the screen; true when one was published.
      * Once the skin has a box, [WalFitting.refit] first notes the windows now open. [workNanos] is
@@ -756,10 +803,7 @@ internal class WalEngine(
                 animating = runtime.animating,
                 log = host.logSnapshot(),
                 buildNanos = work + host.menus.workClock - t0,
-                layout =
-                    appliedFit?.takeIf { mainSize != null }?.let {
-                        fitting.layout(runtime, it, baseW, size, runtime.drawnSize, windowOpen, wantsFrames)
-                    },
+                layout = appliedFit?.takeIf { mainSize != null }?.let { layoutOf(runtime, it, size, windowOpen, wantsFrames) },
                 menuTarget = runtime.menuTarget,
                 wantsFrames = wantsFrames,
                 themeKey = runtime.colorTheme,
@@ -786,6 +830,14 @@ internal class WalEngine(
         private const val MAX_SLIDE_LEAD_MS = 50L
 
         private fun overrunFailure(budgetMs: Long) = TimeoutException("took longer than $budgetMs ms to load")
+
+        /** The layout each of [runtime]'s windows on screen shows, by container id; see [WalLayout.classicWindows]. */
+        private fun classicWindowsOf(runtime: SkinRuntime): Map<String, String> =
+            runtime.windowIds
+                .map(
+                    runtime::windowInfo,
+                ).filter { it.container.isNotEmpty() }
+                .associate { it.container to it.layout }
 
         /** Where [runtime]'s windows are, by container id; a window of no container is left out. */
         private fun spotsOf(runtime: SkinRuntime): Map<String, Rect> =

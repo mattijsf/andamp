@@ -121,6 +121,33 @@ class WalLensTouchTest {
     }
 
     @Test
+    fun `a hold aimed past the finger near a screen side opens on the small control it is aimed at`() {
+        // a close button against the right side, a large slider beside it, the finger short of both
+        val controls =
+            listOf(
+                TouchControl(Rect(264, 3, 9, 9), magnify = false),
+                TouchControl(Rect(200, 30, 70, 10), magnify = false),
+            )
+        val close =
+            WalLens.aimed(controls, finger = Offset(255f, 7f), aimed = Offset(268f, 7f), slop = 2f)!!
+        assertEquals(
+            androidx.compose.ui.unit
+                .IntRect(264, 3, 273, 12),
+            close.target,
+        )
+        assertEquals(268 to 7, close.point)
+        // aimed at the slider, which is pressed where the finger is: no lens
+        assertNull(WalLens.aimed(controls, finger = Offset(240f, 35f), aimed = Offset(262f, 35f), slop = 2f))
+        // aimed at nothing, the finger's own control opens it
+        val held = WalLens.aimed(controls, finger = Offset(266f, 5f), aimed = Offset(290f, 5f), slop = 2f)!!
+        assertEquals(
+            androidx.compose.ui.unit
+                .IntRect(264, 3, 273, 12),
+            held.target,
+        )
+    }
+
+    @Test
     fun `between two controls and past the last one the press stays on the nearest`() {
         // two letters with a gap of four between them
         val lens =

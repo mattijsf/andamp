@@ -21,6 +21,8 @@ import nl.mattix.andamp.state.AmpMenuItem
 import nl.mattix.andamp.state.MenuAnchor
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.ui.menu.MenuBarSection
+import nl.mattix.walkit.ClassicSwitches
+import nl.mattix.walkit.RowMarks
 import nl.mattix.walkit.SkinMenu
 import kotlin.math.floor
 
@@ -199,6 +201,60 @@ internal class FakeWalSurface : WalSurface {
     override fun save() {
         calls += "save"
         saves++
+    }
+
+    /** Whether it stands for a classic skin walkit draws; a test sets it. */
+    override var classic = false
+
+    /** Each classic window the screen opened or closed, as "pledit true". */
+    val shownWindows = mutableListOf<String>()
+
+    /** Each set of switches and each selection the screen handed it, in order. */
+    val switches = mutableListOf<ClassicSwitches>()
+    val selections = mutableListOf<Set<Int>>()
+
+    override fun showClassicWindow(
+        container: String,
+        open: Boolean,
+    ) {
+        shownWindows += "$container $open"
+    }
+
+    override fun setClassicSwitches(switches: ClassicSwitches) {
+        this.switches += switches
+    }
+
+    override fun setClassicSelection(rows: Set<Int>) {
+        selections += rows
+    }
+
+    /** Each shade setting and each set of row marks the screen handed it, in order. */
+    val shades = mutableListOf<Boolean>()
+    val rowMarks = mutableListOf<RowMarks>()
+
+    override fun setClassicShades(on: Boolean) {
+        shades += on
+    }
+
+    override fun setClassicRowMarks(marks: RowMarks) {
+        rowMarks += marks
+    }
+
+    /** Each set of open classic windows the screen handed it, in order. */
+    val windows = mutableListOf<Set<String>>()
+
+    override fun setClassicWindows(open: Set<String>) {
+        windows += open
+    }
+
+    /** The keys each press came with, as "ctrl shift" booleans. */
+    val modifiers = mutableListOf<Pair<Boolean, Boolean>>()
+
+    override fun pointerModifiers(
+        ctrl: Boolean,
+        shift: Boolean,
+    ) {
+        modifiers += ctrl to shift
     }
 
     private fun input() {

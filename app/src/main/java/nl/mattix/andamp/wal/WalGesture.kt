@@ -7,6 +7,8 @@ import androidx.compose.ui.input.pointer.AwaitPointerEventScope
 import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.PointerId
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
+import androidx.compose.ui.input.pointer.isCtrlPressed
+import androidx.compose.ui.input.pointer.isShiftPressed
 import androidx.compose.ui.input.pointer.positionChanged
 
 /**
@@ -22,7 +24,8 @@ internal suspend fun AwaitPointerEventScope.walGesture(
 ) {
     val down = awaitFirstDown()
     down.consume()
-    touch.down(down.position.toTouch(), down.uptimeMillis)
+    val keys = currentEvent.keyboardModifiers
+    touch.down(down.position.toTouch(), down.uptimeMillis, keys.isCtrlPressed, keys.isShiftPressed)
     try {
         follow(down.id, down.uptimeMillis, touch, menuUp)
     } finally {

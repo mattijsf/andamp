@@ -31,5 +31,10 @@ published on (`darwin-aarch64`) and the helpers the app's unit tests drive a ski
 | 0.5.16 | v0.5.16 (ae5f9e2) | under touch, a press beside a classic control takes the nearest one; the playlist grip takes its whole corner and a finger beside it |
 | 0.5.17 | v0.5.17 (03b8f99) | `pressControls` and `setPointerPrecise`: a magnifier can list a held press's controls and steer it like a mouse |
 | 0.5.18 | v0.5.18 (c95216b) | a modern playlist's status bar buttons fill the bar edge to edge over the skin's own status bar picture; centered and right-aligned text starts on a whole pixel; a raised window apart draws on top |
+| 0.6.0 | v0.6.0 (98e6eef) | `classicSwitches` and `setClassicPlaylistSelection`: a host keeps a classic skin's time, equalizer auto, vis mode and playlist selection in step; a long press on a classic playlist row sends `PLAYLIST_MENU` with the row |
+| 0.7.0 | v0.7.0 (2f43935) | `setClassicRowMarks`, `setPointerModifiers` and `setClassicShades`: a classic playlist shows a host's row marks and picks rows with Ctrl and Shift (`PLAYLIST_SELECTION`), and a host can turn window shades off |
+| 0.7.1 | v0.7.1 (ff3136a) | a classic equalizer opens above the playlist, so the playlist stays last and keeps filling the view |
+| 0.7.2 | v0.7.2 (a27a38d) | a classic main window's close and minimize buttons send `CLOSE` and `MINIMIZE` to the host |
+| 0.7.3 | v0.7.3 (18b2440) | a press made precise (`setPointerPrecise`) and steered onto another control is let go as a click on that control |
 
 Only the current version's files are kept; the rows above are the log of what was kept here.

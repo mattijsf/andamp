@@ -13,6 +13,8 @@ import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.state.WindowStore
 import nl.mattix.andamp.state.shown
 import nl.mattix.andamp.ui.prefs.SUPPORT_PAGE
+import nl.mattix.andamp.wal.WalFilled
+import nl.mattix.andamp.wal.WalSurface
 
 /**
  * The titlebar options-button menu, the touch stand-in for Winamp's main menu (the top-left icon):
@@ -20,7 +22,7 @@ import nl.mattix.andamp.ui.prefs.SUPPORT_PAGE
  * and Exit. Media Library is Winamp 5's.
  */
 @Suppress("LongParameterList") // one lambda per place the menu can send you
-fun mainMenu(
+internal fun mainMenu(
     vm: WinampViewModel,
     onOpenFile: () -> Unit,
     onOpenFolder: () -> Unit,
@@ -37,15 +39,21 @@ fun mainMenu(
     /**
      * A modern skin is worn. The player shows none of the classic windows and settings behind
      * Playlist Editor, Equalizer, Double Size and the in-player visualizer modes, so those entries
-     * are grayed and unticked, and none of them changes unseen. The Milkdrop entries stay.
+     * are grayed and unticked, and none of them changes unseen. The Milkdrop entries stay. A
+     * classic skin is not a modern one whichever renderer draws it.
      */
     modernPlayer: Boolean = false,
     /** One part of the menu on its own, for a modern skin's menu bar entry; null for all of it. */
     section: MenuBarSection? = null,
+    /**
+     * The classic skin walkit draws, or null while the app draws the classic windows or a modern
+     * skin is worn: Playlist Editor, Equalizer and Double Size then reach its own windows.
+     */
+    classicLook: WalSurface? = vm.skinOps.wal?.takeIf { it.classic },
 ): AmpMenu {
     val skins = skinItems(vm, onPickSkin, onMuseum)
     val bookmarks = bookmarksMenu(vm)
-    val options = optionsItems(vm, onPreferences, skins, onAlwaysOnTop, onDoubleSize, modernPlayer)
+    val options = optionsItems(vm, onPreferences, skins, onAlwaysOnTop, onDoubleSize, modernPlayer, classicLook)
     val playback = playbackItems(vm)
     when (section) {
         MenuBarSection.OPTIONS -> return AmpMenu(vm.words.get(R.string.menu_options), options, anchor)
@@ -80,20 +88,10 @@ fun mainMenu(
             AmpMenuItem.Divider,
             // Winamp ticks its open windows here. There is no Main Window entry because the player
             // cannot be closed, and no Minibrowser because there is none
-            AmpMenuItem.Action(
-                vm.words.get(R.string.menu_playlist_editor),
-                enabled = !modernPlayer,
-                checked = vm.state.plVisible && !modernPlayer,
-                needsTheApp = true,
-            ) {
+            classicWindowItem(vm, R.string.menu_playlist_editor, "pledit", modernPlayer, classicLook) {
                 vm.state.setWindowOpen(WindowStore.PLAYLIST, !vm.state.plVisible) { vm.state.plVisible = it }
             },
-            AmpMenuItem.Action(
-                vm.words.get(R.string.menu_equalizer),
-                enabled = !modernPlayer,
-                checked = vm.state.eqVisible && !modernPlayer,
-                needsTheApp = true,
-            ) {
+            classicWindowItem(vm, R.string.menu_equalizer, "equalizer", modernPlayer, classicLook) {
                 vm.state.setWindowOpen(WindowStore.EQ, !vm.state.eqVisible) { vm.state.eqVisible = it }
             },
             // a window, ticked while it is on screen like the others here
@@ -294,11 +292,42 @@ private const val OPTIONS_W = 9
 private const val OPTIONS_H = 9
 
 /**
+ * The Window menu's Playlist Editor or Equalizer, ticked while it shows. A classic skin walkit
+ * draws opens and closes its own window of [container], as its main window's PL and EQ buttons do;
+ * the classic windows the app draws switch through [toggle]. A modern skin shows neither, so the
+ * entry is grayed and unticked.
+ */
+private fun classicWindowItem(
+    vm: WinampViewModel,
+    label: Int,
+    container: String,
+    modernPlayer: Boolean,
+    look: WalSurface?,
+    toggle: () -> Unit,
+): AmpMenuItem {
+    val open =
+        when {
+            look != null -> look.layout?.classicWindows?.containsKey(container) == true
+            modernPlayer -> false
+            container == "pledit" -> vm.state.plVisible
+            else -> vm.state.eqVisible
+        }
+    return AmpMenuItem.Action(
+        vm.words.get(label),
+        enabled = !modernPlayer,
+        checked = open,
+        needsTheApp = true,
+    ) {
+        if (look != null) look.showClassicWindow(container, !open) else toggle()
+    }
+}
+
+/**
  * Winamp's Options menu, as the clutter bar's O opens it: the same list the root menu shows under
  * Options.
  */
 @Suppress("LongParameterList") // one lambda per thing only the screen can do
-fun optionsMenu(
+internal fun optionsMenu(
     vm: WinampViewModel,
     anchor: MenuAnchor? = null,
     onPreferences: () -> Unit = {},
@@ -310,10 +339,20 @@ fun optionsMenu(
     onDoubleSize: () -> Unit = {},
     /** Grays Double Size while a modern skin is worn; see [mainMenu]. */
     modernPlayer: Boolean = false,
+    /** See [mainMenu]. */
+    classicLook: WalSurface? = vm.skinOps.wal?.takeIf { it.classic },
 ): AmpMenu =
     AmpMenu(
         vm.words.get(R.string.menu_options),
-        optionsItems(vm, onPreferences, skinItems(vm, onPickSkin, onMuseum), onAlwaysOnTop, onDoubleSize, modernPlayer),
+        optionsItems(
+            vm,
+            onPreferences,
+            skinItems(vm, onPickSkin, onMuseum),
+            onAlwaysOnTop,
+            onDoubleSize,
+            modernPlayer,
+            classicLook,
+        ),
         anchor,
     )
 
@@ -393,9 +432,12 @@ private fun optionsItems(
     onAlwaysOnTop: () -> Unit,
     onDoubleSize: () -> Unit,
     /** Grays Double Size while a modern skin is worn; see [mainMenu]. */
-    modernPlayer: Boolean = false,
-): List<AmpMenuItem> =
-    listOfNotNull(
+    modernPlayer: Boolean,
+    /** A classic skin walkit draws, whose Double Size fills the screen as its clutter bar's D does; see [mainMenu]. */
+    classicLook: WalSurface?,
+): List<AmpMenuItem> {
+    val walkitClassic = classicLook != null
+    return listOfNotNull(
         AmpMenuItem.Action(vm.words.get(R.string.menu_preferences), onClick = onPreferences),
         AmpMenuItem.Submenu(vm.words.get(R.string.menu_skins), skins),
         skinSettingsItem(vm),
@@ -419,7 +461,7 @@ private fun optionsItems(
         AmpMenuItem.Action(
             vm.words.get(R.string.menu_double_size),
             enabled = !modernPlayer,
-            checked = vm.state.doubleSize && !modernPlayer,
+            checked = if (walkitClassic) WalFilled.on else vm.state.doubleSize && !modernPlayer,
             needsTheApp = true,
             onClick = onDoubleSize,
         ),
@@ -427,3 +469,4 @@ private fun optionsItems(
         AmpMenuItem.Action(vm.words.get(R.string.menu_repeat), checked = vm.state.repeat) { vm.toggleRepeat() },
         AmpMenuItem.Action(vm.words.get(R.string.menu_shuffle), checked = vm.state.shuffle) { vm.toggleShuffle() },
     )
+}

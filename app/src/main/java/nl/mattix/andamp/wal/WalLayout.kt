@@ -2,6 +2,7 @@
 
 package nl.mattix.andamp.wal
 
+import nl.mattix.walkit.ClassicSwitches
 import nl.mattix.walkit.Rect
 import nl.mattix.walkit.SkinOptions
 
@@ -94,4 +95,18 @@ internal data class WalLayout(
      * it shows none. The player draws its visualizer there.
      */
     val visRect: Rect? = null,
+    /**
+     * A classic skin's windows on screen, by container id (`main`, `equalizer`, `pledit`), each
+     * with the layout it shows (`normal` or `shade`); empty for a modern skin. The main menu ticks
+     * the Playlist Editor and Equalizer by it.
+     */
+    val classicWindows: Map<String, String> = emptyMap(),
+    /** A classic skin's switches as a press on the skin last changed them; null before any press, and for a modern skin. */
+    val pressedSwitches: WalPressedSwitches? = null,
+)
+
+/** A classic skin's [switches] as a press changed them, the [serial]-th such change since it loaded. */
+internal data class WalPressedSwitches(
+    val serial: Int,
+    val switches: ClassicSwitches,
 )

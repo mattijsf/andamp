@@ -117,11 +117,7 @@ internal class WalFitting(
         baseW: Int,
     ) {
         val now = runtime.windowIds
-        if (apart(fit) != apartApplied) {
-            apply(runtime, fit, baseW)
-            return
-        }
-        if (fills(fit) != (filledPlace != null)) {
+        if (switched(fit)) {
             apply(runtime, fit, baseW)
             return
         }
@@ -135,6 +131,12 @@ internal class WalFitting(
             uprightView(runtime, (fit.widthPx to fit.heightPx), baseW)
         }
     }
+
+    /**
+     * Whether a switch between apart and filling the screen ([WalApart], [WalFilled]) waits for the
+     * next [refit]: the runtime is still set out as before it.
+     */
+    fun switched(fit: WalFit): Boolean = apart(fit) != apartApplied || fills(fit) != (filledPlace != null)
 
     /**
      * Whether [fit] shows the windows apart: a [classic] skin's unless it fills the screen, else as
