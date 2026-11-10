@@ -63,6 +63,23 @@ class LiveSkins(
         }
     }
 
+    /**
+     * The live skin for [bundled] as a `.wsz` archive, with the colors it was built from, or null
+     * when it is not live now; for an engine that reads skins from files.
+     */
+    fun archive(
+        context: Context,
+        bundled: BundledSkin,
+    ): Pair<IntArray, ByteArray>? {
+        val live = bundled.live ?: return null
+        val scheme = palette(context, live.dark) ?: return null
+        return synchronized(this) {
+            val template = template(context, live)
+            val colors = template.colors(scheme)
+            colors to template.wsz(colors)
+        }
+    }
+
     private fun template(
         context: Context,
         live: LiveTemplate,

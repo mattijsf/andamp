@@ -7,8 +7,13 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import org.json.JSONObject
+import java.io.ByteArrayOutputStream
 import java.io.InputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 import kotlin.math.atan2
 import kotlin.math.hypot
 
@@ -148,6 +153,66 @@ class SkinTemplate private constructor(
     }
 
     /**
+     * The skin as a `.wsz` archive: each sheet a 24-bit BMP as the shipped skins hold them, and the
+     * text files of [textFiles]. Bound to the palette a skin shipped with, every sheet is that
+     * skin's BMP byte for byte.
+     */
+    fun wsz(colors: IntArray): ByteArray {
+        val out = ByteArrayOutputStream()
+        ZipOutputStream(out).use { zip ->
+            for (sheet in sheets) {
+                zip.putNextEntry(ZipEntry(sheet.name))
+                zip.write(bmp(sheet, colors))
+                zip.closeEntry()
+            }
+            for ((name, text) in textFiles(colors)) {
+                zip.putNextEntry(ZipEntry(name))
+                zip.write(text.encodeToByteArray())
+                zip.closeEntry()
+            }
+        }
+        return out.toByteArray()
+    }
+
+    /** [sheet] in [colors] as a bottom-up 24-bit BMP. */
+    private fun bmp(
+        sheet: Sheet,
+        colors: IntArray,
+    ): ByteArray {
+        val row = (sheet.w * BMP_PIXEL + BMP_ALIGN - 1) / BMP_ALIGN * BMP_ALIGN
+        val image = row * sheet.h
+        val b = ByteBuffer.allocate(BMP_HEADER + image).order(ByteOrder.LITTLE_ENDIAN)
+        b
+            .put('B'.code.toByte())
+            .put('M'.code.toByte())
+            .putInt(BMP_HEADER + image)
+            .putInt(0)
+            .putInt(BMP_HEADER)
+        b
+            .putInt(BMP_INFO)
+            .putInt(sheet.w)
+            .putInt(sheet.h)
+            .putShort(1)
+            .putShort(BMP_BITS.toShort())
+        b
+            .putInt(0)
+            .putInt(image)
+            .putInt(BMP_PPM)
+            .putInt(BMP_PPM)
+            .putInt(0)
+            .putInt(0)
+        for (y in sheet.h - 1 downTo 0) {
+            val start = b.position()
+            for (x in 0 until sheet.w) {
+                val c = colors[indices[sheet.offset + y * sheet.w + x].toInt() and 0xFF]
+                b.put(blue(c).toByte()).put(green(c).toByte()).put(red(c).toByte())
+            }
+            b.position(start + row)
+        }
+        return b.array()
+    }
+
+    /**
      * `PLEDIT.TXT`, `VISCOLOR.TXT` and `REGION.TXT`. A placeholder names the format it is replaced
      * with: `#RRGGBB` (`hex`) or `r,g,b` (`rgb`).
      */
@@ -169,6 +234,14 @@ class SkinTemplate private constructor(
 
     companion object {
         private const val FORMAT = 1
+
+        // a BMP as the shipped skins hold them: file and info headers, 24 bits, 72 dpi
+        private const val BMP_HEADER = 54
+        private const val BMP_INFO = 40
+        private const val BMP_BITS = 24
+        private const val BMP_PIXEL = 3
+        private const val BMP_ALIGN = 4
+        private const val BMP_PPM = 2835
         private const val HALF_LIGHTNESS = 50.0
         private const val REPAIR_BUDGET = 40
 

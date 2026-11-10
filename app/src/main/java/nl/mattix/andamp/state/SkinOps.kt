@@ -18,10 +18,12 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import nl.mattix.andamp.R
+import nl.mattix.andamp.skin.BundledSkin
 import nl.mattix.andamp.skin.BundledSkins
 import nl.mattix.andamp.skin.LiveSkins
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SkinLoader
+import nl.mattix.andamp.wal.WalBundled
 import nl.mattix.andamp.wal.WalFiles
 import nl.mattix.andamp.wal.WalLook
 import nl.mattix.andamp.widget.MainWindowWidget
@@ -76,10 +78,11 @@ class SkinOps internal constructor(
         { _, _, _, _ -> error("no modern skins here") },
     /**
      * Whether a classic skin on the player is drawn by the engine modern skins run on, as Winamp
-     * draws it, through a look of its file ([WalClassic]); read on IO. The bundled skins keep
-     * Andamp's own renderer.
+     * draws it, through a look of its file ([WalClassic]); read on IO.
      */
     private val classicNative: () -> Boolean = { false },
+    /** The file the engine opens for a skin that ships with the app, as it looks now; called on IO. */
+    private val bundledFile: (BundledSkin) -> File = { WalBundled.fileOf(context, it, live) },
 ) {
     /**
      * The classic skin on screen and in the app's windows and menus. While a modern skin is
@@ -607,6 +610,10 @@ class SkinOps internal constructor(
         scope.launch {
             withContext(Dispatchers.IO) { lock.withLock { library.choose(SkinEntry.BASE_ID) } }
             widgetSkin = library.widgetSkin
+            // with the new classic renderer on, the engine draws the base too, once its file is written
+            loadAndPut(keep = { currentId == SkinEntry.BASE_ID && wal == null }) {
+                classicLookFor(SkinEntry.BASE_ID)?.let { Worn(baseSkin, SkinEntry.BASE_ID, SkinEntry.BASE_ID, it) }
+            }
             wornSkinChanged()
         }
     }
@@ -788,15 +795,24 @@ class SkinOps internal constructor(
 
     /**
      * The look of the classic skin [id] drawn by the engine: the one on screen or parked, else a
-     * new one of its stored file. Null while the new classic renderer is off, for a bundled skin,
-     * and for a skin whose look failed in this process, so Andamp's own renderer draws it. Call
-     * under the lock.
+     * new one of its file, the stored one or, for a skin that ships with the app, the one
+     * [bundledFile] writes, which for a live skin follows the phone's palette. Null while the new
+     * classic renderer is off and for a skin whose look failed in this process, so Andamp's own
+     * renderer draws it. Call under the lock.
      */
     @Suppress("TooGenericExceptionCaught") // whatever making a look throws, Andamp's own renderer draws the skin
     private fun classicLookFor(id: String): WalLook? {
         if (id in failed || !classicNative()) return null
-        listOf(wal, parked).firstOrNull { it != null && it.id == id && !it.released }?.let { return it }
-        val file = library.fileOf(id) ?: return null
+        val file =
+            try {
+                library.fileOf(id) ?: BundledSkins.of(id)?.let(bundledFile) ?: return null
+            } catch (e: Exception) {
+                Log.w(TAG, "Classic skin $id has no file for the engine", e)
+                failed += id
+                return null
+            }
+        // a live skin in another palette is another file, and another look
+        listOf(wal, parked).firstOrNull { it != null && it.id == id && !it.released && it.file == file }?.let { return it }
         return try {
             openLook(id, file, library.nameOf(id))
         } catch (e: Exception) {
