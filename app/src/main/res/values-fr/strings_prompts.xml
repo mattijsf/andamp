@@ -92,7 +92,7 @@
     <string name="skin_modern_failed_body">Ce skin moderne ne s’est pas chargé, il n’a donc pas été ajouté.</string>
     <string name="skin_modern_stopped_title">« %1$s » ne fonctionne plus</string>
     <string name="skin_modern_stopped_body">Andamp affiche pour l’instant votre dernier skin classique à la place. Ce skin moderne sera réessayé au prochain démarrage d’Andamp. Pour que cela cesse, choisissez un autre skin dans « Skins » ou retirez celui-ci dans « Liste des skins ».</string>
-    <string name="skin_classic_stopped_body">Andamp dessine pour l’instant ce skin avec son propre moteur de rendu classique. Le nouveau moteur réessaiera au prochain démarrage d’Andamp.</string>
+    <string name="skin_classic_stopped_body">AndAmp Dark le remplace pour l’instant. Andamp réessaiera ce skin au prochain démarrage.</string>
 
     <!-- AmpModals.kt -->
     <string name="skin_modern_offer_title">Activer les skins modernes ?</string>
