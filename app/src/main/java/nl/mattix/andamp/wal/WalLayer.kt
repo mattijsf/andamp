@@ -192,10 +192,10 @@ internal fun hidesModernSkin(s: WinampState): Boolean {
  * gives it its box, its clock, its menus and its actions, and publishes `windowRects[MAIN]`.
  *
  * Until the engine has laid the stack out, nothing shows, so opening the player does not flash
- * the classic skin before the modern one; a skin still loading after [COMPANION_AFTER_MS] shows
- * [companion] in its place: the classic skin's main window, so the main menu and the long press
- * work while it loads. A layout worked out for another box (the phone was turned) leaves the
- * stack where it was last placed.
+ * a skin before its stack; a skin still loading after [COMPANION_AFTER_MS] shows [companion] in
+ * its place: the player's place ([nl.mattix.andamp.ui.window.MainPlaceholder]), so the main menu
+ * and the long press work while it loads. A layout worked out for another box (the phone was
+ * turned) leaves the stack where it was last placed.
  *
  * A drag from any part of the skin but a control moves the stack ([WalDrag]); the skin keeps where
  * it was moved to, upright and sideways apart ([WalSurface.places]). The stack may go partly past

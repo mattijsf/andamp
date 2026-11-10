@@ -99,6 +99,7 @@ import nl.mattix.andamp.ui.window.LoupeLayer
 import nl.mattix.andamp.ui.window.MAIN_H
 import nl.mattix.andamp.ui.window.MILKDROP_MIN_STEPS
 import nl.mattix.andamp.ui.window.MainFloatWindow
+import nl.mattix.andamp.ui.window.MainPlaceholder
 import nl.mattix.andamp.ui.window.MilkdropSurface
 import nl.mattix.andamp.ui.window.MilkdropWindow
 import nl.mattix.andamp.ui.window.PlaylistFloatWindow
@@ -710,11 +711,14 @@ private fun FloatingWindows(
                             pinned = pin,
                         )
                     }
-                    // a modern skin shows the classic main window until its stack is laid out
+                    // a skin still loading shows the player's place, until its stack is laid out
+                    val loading: @Composable () -> Unit = {
+                        MainPlaceholder(s, scale, docked.main, onLongPress, pin, Modifier.fillMaxSize().zIndex(z))
+                    }
                     if (wal == null) {
                         classic()
                     } else {
-                        WalLayer(wal, s, scale, Modifier.fillMaxSize().zIndex(WAL_LAYER_Z), companion = classic)
+                        WalLayer(wal, s, scale, Modifier.fillMaxSize().zIndex(WAL_LAYER_Z), companion = loading)
                     }
                 }
 

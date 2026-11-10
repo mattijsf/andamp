@@ -83,7 +83,8 @@ class SkinOpsClassicNativeTest {
                 library,
                 modernOn = { false },
                 openModern = { id, file, name, siblings ->
-                    check(!openFails) { "no look" }
+                    // the base still opens: it is what goes on in a broken skin's place
+                    check(!openFails || id == BundledSkins.BASE.id) { "no look" }
                     WalLook(id, file, name, siblings, app.cacheDir, WalSettings(app), FakePlayer()).also { opened += it }
                 },
                 live = LiveSkins { _, _ -> palette },
@@ -115,14 +116,24 @@ class SkinOpsClassicNativeTest {
     }
 
     @Test
-    fun `a classic skin whose look cannot be made is drawn by Andamp's own renderer`() {
+    fun `a classic skin whose look cannot be made gives way to the base, drawn by the engine, and stays chosen`() {
         openFails = true
         var stored: String? = null
         val bytes = app.assets.open(BundledSkins.LIGHT.asset).use { it.readBytes() }
         ops.load(bytes.inputStream(), "Broken look.wsz") { stored = it }
-        await { stored != null && ops.currentId == stored }
-        assertEquals(null, ops.wal)
-        assertNotNull("the classic skin is drawn", ops.skin)
+        await { stored != null && ops.wal?.id == BundledSkins.BASE.id }
+        assertEquals("the base is ticked", BundledSkins.BASE.id, ops.currentId)
+        assertEquals("the choice stays for the next start", stored, library.currentId)
+    }
+
+    @Test
+    fun `a classic skin that stops working gives way to the base and says so`() {
+        val look = ops.wal ?: error("a look")
+        look.onFailed?.invoke(true)
+        await { ops.wal?.id == BundledSkins.BASE.id }
+        assertEquals(BundledSkins.BASE.id, ops.currentId)
+        assertEquals("the choice stays", mine, library.currentId)
+        assertNotNull("a notice says it stopped", state.prompt)
     }
 
     @Test

@@ -373,7 +373,10 @@ class SkinOps internal constructor(
         // a skin that applied but could not be stored has no library row, so no row is
         // highlighted, and no file for the engine to draw
         val look = id?.let { classicLookFor(it) }
-        return Pick.Stored(Worn(parsed, id ?: UNSTORED_ID, id ?: UNSTORED_ID, look), id)
+        // one the engine cannot draw is stored and chosen, and the base goes on in its place
+        val worn =
+            (if (look == null && id != null) baseWorn() else null) ?: Worn(parsed, id ?: UNSTORED_ID, id ?: UNSTORED_ID, look)
+        return Pick.Stored(worn, id)
     }
 
     /**
@@ -767,6 +770,10 @@ class SkinOps internal constructor(
             }
         val modern = companion != id
         val wal = if (modern) look ?: lookFor(id) else look ?: classicLookFor(id)
+        // a classic skin the engine cannot draw: the base goes on, drawn by the engine, ticked,
+        // while the choice stays for the next start
+        val undrawable = !modern && wal == null && id != SkinEntry.BASE_ID
+        if (undrawable && drawn != null) baseWorn(source)?.let { return it }
         val fellBack = modern && wal == null && id in failed
         return when {
             drawn != null -> Worn(drawn, if (fellBack) companion else id, companion, wal, source)
@@ -852,14 +859,23 @@ class SkinOps internal constructor(
         failed += look.id
         look.release(save = false)
         if (parked === look) parked = null
-        if (wal === look) put(Worn(skin, companionId, companionId))
+        val classic = library.kindOf(look.id) == SkinKind.CLASSIC
+        if (wal === look) {
+            if (classic && look.id != SkinEntry.BASE_ID) {
+                // the base goes on in its place, drawn by the engine
+                put(Worn(baseSkin, SkinEntry.BASE_ID, SkinEntry.BASE_ID))
+                scope.launch { loadAndPut(keep = { wal == null && currentId == SkinEntry.BASE_ID }) { baseWorn() } }
+            } else {
+                put(Worn(skin, companionId, companionId))
+            }
+        }
         if (!stoppedWorking) return
         notify(
             AmpPrompt(
                 title = words.get(R.string.skin_modern_stopped_title, library.nameOf(look.id)),
                 body =
                     words.get(
-                        if (library.kindOf(look.id) == SkinKind.CLASSIC) {
+                        if (classic) {
                             R.string.skin_classic_stopped_body
                         } else {
                             R.string.skin_modern_stopped_body
@@ -871,6 +887,10 @@ class SkinOps internal constructor(
             ),
         )
     }
+
+    /** The base skin drawn by the engine, ticked, or null when the engine cannot draw it either. Call under the lock. */
+    private fun baseWorn(source: Boolean = false): Worn? =
+        classicLookFor(SkinEntry.BASE_ID)?.let { Worn(baseSkin, SkinEntry.BASE_ID, SkinEntry.BASE_ID, it, source) }
 
     /** The row ticked while [id] is worn: for a modern skin whose engine failed, the classic skin under it. */
     private fun shownId(id: String): String = if (id in failed) CurrentSkin.classicOf(library, id) else id
