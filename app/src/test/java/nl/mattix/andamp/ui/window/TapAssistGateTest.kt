@@ -10,7 +10,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.unit.IntOffset
 import androidx.test.core.app.ApplicationProvider
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SkinLoader
@@ -47,20 +46,13 @@ class TapAssistGateTest {
     fun setUp() {
         skin = SkinLoader.loadBase(app)
         vm = testViewModel()
+        vm.state.skinManagerOpen = true
     }
 
     private fun show() {
         compose.setContent {
             Box(Modifier.fillMaxSize()) {
-                MainFloatWindow(
-                    vm,
-                    skin,
-                    SCALE,
-                    widgets = mainWindowWidgets(vm, onExit = {}) {},
-                    height = MAIN_H,
-                    docked = IntOffset.Zero,
-                    modifier = Modifier.fillMaxSize(),
-                )
+                SkinManagerWindow(vm, skin, SCALE, Modifier.fillMaxSize())
             }
         }
         compose.waitForIdle()
@@ -68,10 +60,10 @@ class TapAssistGateTest {
 
     /** A hold on the close button, three pixels short of it - inside the hit slop. */
     private fun holdTheCloseButton() {
-        val at = vm.state.windowRects[WindowStore.MAIN]!!
+        val at = vm.state.windowRects[WindowStore.SKINS]!!
         compose.mainClock.autoAdvance = false
         compose.onRoot().performTouchInput {
-            down(Offset((at.left + 261) * SCALE + 1f, (at.top + 7) * SCALE + 1f))
+            down(Offset((at.right - 14) * SCALE + 1f, (at.top + 7) * SCALE + 1f))
         }
         compose.mainClock.advanceTimeBy(600)
     }

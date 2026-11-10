@@ -61,7 +61,7 @@ class VisBoxTest {
     fun `the strip stops short of the shaded clock`() {
         assertTrue(
             "the strip stops short of the clock",
-            MAIN_SHADE_VIS.x + VisBox.SHADE.w <= SHADE_CLOCK_X,
+            MainShade.VIS_X + VisBox.SHADE.w <= SHADE_CLOCK_X,
         )
     }
 

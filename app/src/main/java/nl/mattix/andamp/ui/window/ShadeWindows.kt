@@ -2,7 +2,6 @@
 
 package nl.mattix.andamp.ui.window
 
-import nl.mattix.andamp.core.model.durationSec
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WindowStore
 
@@ -21,30 +20,6 @@ fun heightOf(
     full: Int,
     shaded: Boolean,
 ) = if (shaded) SHADE_H else full
-
-/**
- * Which of the three thumb arts a value shows: one each for the low, middle and high third
- * of a slider's travel (webamp's `segment()`).
- */
-internal fun <T> segmentOf(
-    fraction: Float,
-    low: T,
-    middle: T,
-    high: T,
-): T =
-    when {
-        fraction < 1 / 3f -> low
-        fraction < 2 / 3f -> middle
-        else -> high
-    }
-
-/** The shaded clock: `mm:ss` with padded minutes, so its width is constant. */
-internal fun shadeTime(s: WinampState): String {
-    val duration = s.currentTrack?.durationSec ?: 0
-    val shown = if (s.timeRemaining) duration - s.currentTimeSec else s.currentTimeSec
-    val sec = shown.coerceAtLeast(0)
-    return "%02d:%02d".format(sec / 60, sec % 60)
-}
 
 /**
  * Collapses or expands a window, leaving its title bar where it is.

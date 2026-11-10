@@ -164,64 +164,6 @@ class PinnedWindowParityTest(
 
         private val CASES =
             listOf(
-                PinnedCase(WindowStore.MAIN, "player", height = { MAIN_H }, shades = true) { vm, skin, scale, pinned, _ ->
-                    MainFloatWindow(
-                        vm,
-                        skin,
-                        scale,
-                        widgets = mainWindowWidgets(vm) {},
-                        height = MAIN_H,
-                        docked = IntOffset.Zero,
-                        modifier = Modifier.fillMaxSize(),
-                        pinned = pinned,
-                    )
-                },
-                PinnedCase(WindowStore.EQ, "equalizer", height = { EQ_H }, shades = true) { vm, skin, scale, pinned, _ ->
-                    EqFloatWindow(
-                        vm,
-                        skin,
-                        scale,
-                        widgets = eqWindowWidgets(vm),
-                        height = EQ_H,
-                        docked = IntOffset.Zero,
-                        modifier = Modifier.fillMaxSize(),
-                        pinned = pinned,
-                    )
-                },
-                PinnedCase(
-                    WindowStore.PLAYLIST,
-                    "playlist",
-                    height = { ODD_HEIGHT },
-                    shades = true,
-                ) { vm, skin, scale, pinned, _ ->
-                    PlaylistFloatWindow(
-                        vm,
-                        skin,
-                        scale,
-                        PlaylistMenuActions(),
-                        docked = IntOffset.Zero,
-                        dockedSegments = PlaylistLayout.MIN_SEGMENTS,
-                        modifier = Modifier.fillMaxSize(),
-                        pinned = pinned,
-                    )
-                },
-                PinnedCase(
-                    WindowStore.PLAYLIST,
-                    "playlist bar",
-                    height = { SHADE_H },
-                    shades = true,
-                    open = { it.state.plShaded = true },
-                ) { vm, skin, scale, pinned, _ ->
-                    PlaylistShadeFloatWindow(
-                        vm,
-                        skin,
-                        scale,
-                        expandedH = PlaylistLayout.ofSegments(PlaylistLayout.MIN_SEGMENTS).height,
-                        docked = IntOffset.Zero,
-                        modifier = Modifier.fillMaxSize(),
-                        pinned = pinned,
-                    )
-                },
                 PinnedCase(
                     WindowStore.MILKDROP,
                     "plug-in",

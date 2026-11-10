@@ -364,16 +364,6 @@ class ModernPlayerSurfaceTest {
     }
 
     @Test
-    fun `with the classic skin worn the in-player visualizer runs`() {
-        show(wal = null)
-        vm.play()
-        frames(30)
-
-        assertEquals(Transport.Playing, vm.state.transport)
-        assertTrue(vm.state.visFrame > 0)
-    }
-
-    @Test
     fun `Back hides the player even with a skin window open over the main one`() {
         surface.layoutFor = { fit -> stackOf(300, 100, 2f)(fit).copy(windowOpen = true) }
         compose.mainClock.autoAdvance = false
@@ -475,7 +465,7 @@ class ModernPlayerSurfaceTest {
     }
 
     @Test
-    fun `the app's screen shows the worn modern skin, and a classic skin brings the classic windows back`() {
+    fun `the app's screen shows the worn modern skin, and with no skin drawn a placeholder holds the player's place`() {
         val vm = wearingModern()
         val look = vm.skinOps.wal!!
         vm.state.eqVisible = true
@@ -493,12 +483,11 @@ class ModernPlayerSurfaceTest {
 
         vm.skinOps.apply(BundledSkins.LIGHT.id)
 
-        until("the classic windows are back") {
-            vm.skinOps.wal == null && vm.state.windowRects[WindowStore.EQ] != null &&
-                vm.state.windowRects[WindowStore.PLAYLIST] != null
-        }
-        assertTrue("the skin was let go", look.released)
-        assertEquals("the classic main window", 275, vm.state.windowRects[WindowStore.MAIN]!!.width)
+        until("the skin is let go") { vm.skinOps.wal == null && look.released }
+        frames(5)
+        assertEquals("the placeholder", 275, vm.state.windowRects[WindowStore.MAIN]!!.width)
+        assertNull(vm.state.windowRects[WindowStore.EQ])
+        assertNull(vm.state.windowRects[WindowStore.PLAYLIST])
     }
 
     @Test
