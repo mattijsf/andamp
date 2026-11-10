@@ -69,6 +69,26 @@ class SkinTemplateBitmapsTest {
     fun `every sheet of the light template is the shipped BMP`() = checkSheets("light")
 
     @Test
+    fun `the template written as a wsz holds the shipped BMPs and text files byte for byte`() {
+        SkinDist.THEMES.forEach { theme ->
+            val template = SkinDist.template(app, theme)
+            val shipped = SkinDist.wsz(app, theme)
+            val written = HashMap<String, ByteArray>()
+            java.util.zip.ZipInputStream(template.wsz(template.colors(SkinDist.baselineScheme(theme))).inputStream()).use { zip ->
+                while (true) {
+                    val entry = zip.nextEntry ?: break
+                    written[entry.name] = zip.readBytes()
+                }
+            }
+
+            assertEquals("$theme writes the files the skin ships", shipped.keys - "readme.txt", written.keys)
+            for ((name, bytes) in written) {
+                assertArrayEquals("$theme $name is the shipped file", shipped.getValue(name), bytes)
+            }
+        }
+    }
+
+    @Test
     fun `the text files are the shipped ones byte for byte`() {
         SkinDist.THEMES.forEach { theme ->
             val template = SkinDist.template(app, theme)

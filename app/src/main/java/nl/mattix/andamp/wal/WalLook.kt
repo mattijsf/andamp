@@ -51,7 +51,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 internal class WalLook(
     /** The skin's id in the library. */
     val id: String,
-    private val file: File,
+    /** The skin's file. */
+    val file: File,
     /** The name the listener knows the skin by, which its scripts read; empty takes the name its skininfo gives. */
     private val name: String,
     /** The library's other modern skins it may read from, as [WalFiles.open] takes them. */
