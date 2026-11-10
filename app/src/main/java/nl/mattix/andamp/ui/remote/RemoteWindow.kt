@@ -30,6 +30,7 @@ import kotlinx.coroutines.withContext
 import nl.mattix.andamp.core.remotewindow.IRemoteWindowWatcher
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.CurrentSkin
+import nl.mattix.andamp.state.SkinLibrary
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.ui.overlay.OverlayOwners
 
@@ -127,6 +128,7 @@ internal class RemoteWindow(
                     RemoteScreen(
                         vm,
                         skin,
+                        fileHere(own),
                         kept,
                         list,
                         sliders,
@@ -160,6 +162,24 @@ internal class RemoteWindow(
         val asked = vm.androidAutoStore.worn ?: return own
         val read by produceState<Skin?>(null, asked, own) {
             value = withContext(Dispatchers.IO) { CurrentSkin.load(context, id = asked) } ?: own
+        }
+        return read
+    }
+
+    /**
+     * The file of the skin worn on the surface, as the engine opens it: the one chosen for Android
+     * Auto, or the classic skin the player draws. Null while it is being read or when it is gone.
+     * [own] keys it: the player's skin changing, or the palette under a live one, reads it again.
+     */
+    @Composable
+    private fun fileHere(own: Skin): java.io.File? {
+        val asked = vm.androidAutoStore.worn
+        val read by produceState<java.io.File?>(null, asked, own) {
+            value =
+                withContext(Dispatchers.IO) {
+                    val library = SkinLibrary(context)
+                    runCatching { CurrentSkin.fileOf(context, asked ?: library.worn, library) }.getOrNull()
+                }
         }
         return read
     }

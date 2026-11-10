@@ -10,7 +10,11 @@ import androidx.compose.ui.graphics.drawscope.CanvasDrawScope
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
+import nl.mattix.andamp.core.model.Transport
+import nl.mattix.andamp.core.model.displayName
+import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.skinplayer.WinampFiveUnits
+import nl.mattix.andamp.state.WinampState
 import nl.mattix.walkit.ClassicSwitches
 import nl.mattix.walkit.ClassicVisMode
 import nl.mattix.walkit.DrawCmd
@@ -64,6 +68,14 @@ internal class WalStill private constructor(
         val pressAt: Pair<Int, Int>? = null,
         /** Whether the main window shows its shade. */
         val shaded: Boolean = false,
+        /** The window drawn: [MAIN] or [EQUALIZER], the other windows closed. */
+        val window: String = MAIN,
+        val eqOn: Boolean = false,
+        val eqAuto: Boolean = false,
+        /** 0..63, as Andamp's equalizer keeps it. */
+        val preamp: Int = EQ_FLAT,
+        /** Ten bands, 0..63 each. */
+        val bands: List<Int> = List(EQ_BANDS) { EQ_FLAT },
     )
 
     private val thread: ExecutorService = Executors.newSingleThreadExecutor { Thread(it, "wal-still") }
@@ -76,8 +88,8 @@ internal class WalStill private constructor(
     private var closed = false
 
     /**
-     * The main window as [still] has it, at 1x, or null when the skin has none or does not load.
-     * Blocks until it is drawn.
+     * The window [Still.window] as [still] has it, at 1x, or null when the skin has none or does
+     * not load. Blocks until it is drawn.
      */
     fun main(still: Still): ImageBitmap? = on { draw(still) }
 
@@ -118,7 +130,9 @@ internal class WalStill private constructor(
     private fun draw(still: Still): ImageBitmap? {
         player.still = still
         val rt = runtime() ?: return null
-        rt.classicSwitches = ClassicSwitches(timeRemaining = still.timeRemaining, visMode = still.vis)
+        rt.classicSwitches = ClassicSwitches(timeRemaining = still.timeRemaining, eqAuto = still.eqAuto, visMode = still.vis)
+        // the window shown alone: the main window's EQ and PL buttons light only for an open window
+        if (still.window == EQUALIZER) rt.openWindow(EQUALIZER) else OTHERS.forEach(rt::closeWindow)
         // as a double click on the title bar switches it, in Winamp
         if (shaded(rt) != still.shaded) {
             rt.doubleTap(TITLE_X, TITLE_Y)
@@ -128,7 +142,7 @@ internal class WalStill private constructor(
         still.pressAt?.let { (x, y) -> rt.pointerDown(x, y) }
         val stack = rt.drawWindows()
         if (still.pressAt != null) rt.pointerCancel()
-        val rect = rt.mainWindow?.let(rt::windowRect)
+        val rect = (if (still.window == MAIN) rt.mainWindow else rt.windowOf(still.window))?.let(rt::windowRect)
         val drawHost = host
         return if (rect == null || drawHost == null) null else paint(stack.filter { it.first == rect }, rect, drawHost)
     }
@@ -197,11 +211,14 @@ internal class WalStill private constructor(
             get() = false
             set(_) = Unit
         override var eqEnabled: Boolean
-            get() = false
+            get() = still.eqOn
             set(_) = Unit
-        override val eqBands: IntArray get() = IntArray(EQ_BANDS) { EQ_MIDDLE }
+        override val eqBands: IntArray get() =
+            IntArray(
+                EQ_BANDS,
+            ) { WinampFiveUnits.fromEq(still.bands.getOrElse(it) { EQ_FLAT }) }
         override var eqPreamp: Int
-            get() = EQ_MIDDLE
+            get() = WinampFiveUnits.fromEq(still.preamp)
             set(_) = Unit
 
         override fun play() = Unit
@@ -233,7 +250,18 @@ internal class WalStill private constructor(
     companion object {
         private const val TAG = "WalStill"
         private const val EQ_BANDS = 10
-        private const val EQ_MIDDLE = 128
+
+        /** A band at its middle, on Andamp's 0..63. */
+        private const val EQ_FLAT = 32
+
+        /** The main window's container. */
+        const val MAIN = "main"
+
+        /** The equalizer's container. */
+        const val EQUALIZER = "equalizer"
+
+        /** The windows closed while the main window is drawn alone. */
+        private val OTHERS = listOf(EQUALIZER, "pledit")
 
         // a point of the main window's title bar that is title bar in its shade too, clear of the
         // shade's visualizer and clock
@@ -244,20 +272,114 @@ internal class WalStill private constructor(
         private const val SHADE = "shade"
         private val EMPTY = FloatArray(0)
 
-        private var kept: WalStill? = null
+        private val kept = HashMap<String, WalStill>()
 
         /**
-         * The still of [file], made when the one kept is of another file, which is let go. One is
-         * kept per process: the widget redraws every second, and loading a skin takes longer.
+         * The still of [file] that [user] draws with, made when the one kept for it is of another
+         * file, which is let go. One is kept per user per process: the widget redraws every second,
+         * a car's screen every frame, and loading a skin takes longer.
          */
         @Synchronized
         fun of(
             file: File,
             cacheDir: File,
+            user: String = WIDGET,
         ): WalStill {
-            kept?.takeIf { it.file == file && !it.closed }?.let { return it }
-            kept?.close()
-            return WalStill(file, cacheDir).also { kept = it }
+            kept[user]?.takeIf { it.file == file && !it.closed }?.let { return it }
+            kept[user]?.close()
+            return WalStill(file, cacheDir).also { kept[user] = it }
         }
+
+        /** The home screen widget's still. */
+        const val WIDGET = "widget"
+
+        /** The still of the screen a car lends the player. */
+        const val CAR = "car"
+
+        /**
+         * What [state] shows, at [atMs] on the skin's clock, in [window]: the song, the clock, the
+         * readout, the sliders, the switches, the equalizer, and the control pressed last held down
+         * (see [pressPoint]).
+         */
+        fun stillOf(
+            state: WinampState,
+            atMs: Long,
+            shaded: Boolean = false,
+            window: String = MAIN,
+        ): Still {
+            val track = state.currentTrack
+            return Still(
+                playing = state.transport == Transport.Playing,
+                paused = state.transport == Transport.Paused,
+                title = track?.displayName.orEmpty(),
+                positionMs = state.currentTimeSec * MS_PER_SECOND,
+                lengthMs = (track?.durationMs ?: 0L).toInt(),
+                bitrateKbps = state.bitrateKbps ?: 0,
+                sampleRateKhz = state.sampleRateKhz ?: 0,
+                channels = state.streamChannels ?: 2,
+                volume = state.volume,
+                balance = state.balance,
+                shuffle = state.shuffle,
+                repeat = state.repeat,
+                timeRemaining = state.timeRemaining,
+                atMs = atMs,
+                pressAt = state.pressedWidget?.let { pressPoint(it, state) }.takeIf { window == MAIN },
+                shaded = shaded,
+                window = window,
+                eqOn = state.eqOn,
+                eqAuto = state.eqAuto,
+                preamp = state.preamp,
+                bands = state.eqBands.toList(),
+            )
+        }
+
+        /**
+         * A point inside the main window's control the app's windows name [id], to hold it down
+         * for its flash: a button, or a slider's thumb where [state] has it, so holding it does not
+         * move it.
+         */
+        private fun pressPoint(
+            id: String,
+            state: WinampState,
+        ): Pair<Int, Int>? =
+            when (id) {
+                "main.posbar" -> {
+                    POSBAR_X + (state.positionFraction * (POSBAR_W - POSBAR_THUMB)).toInt() + POSBAR_THUMB / 2 to
+                        POSBAR_Y + INSIDE
+                }
+
+                "main.volume" -> {
+                    VOLUME_X + state.volume * (VOLUME_W - VOLUME_THUMB) / VOLUME_MAX + VOLUME_THUMB / 2 to VOLUME_Y + INSIDE
+                }
+
+                else -> {
+                    when (id) {
+                        "main.prev" -> Dest.PREV
+                        "main.play" -> Dest.PLAY
+                        "main.pause" -> Dest.PAUSE
+                        "main.stop" -> Dest.STOP
+                        "main.next" -> Dest.NEXT
+                        "main.shuffle" -> Dest.SHUFFLE
+                        "main.repeat" -> Dest.REPEAT
+                        else -> null
+                    }?.let { it.x + INSIDE to it.y + INSIDE }
+                }
+            }
+
+        private const val MS_PER_SECOND = 1000
+
+        /** How far inside a button's corner the point that holds it lies. */
+        private const val INSIDE = 5
+
+        // the seek bar and the volume slider of Winamp 2's main window, and their thumbs
+        private const val POSBAR_X = 16
+        private const val POSBAR_Y = 72
+        private const val POSBAR_W = 248
+        private const val POSBAR_THUMB = 29
+        private const val VOLUME_X = 107
+        private const val VOLUME_Y = 57
+        private const val VOLUME_W = 68
+        private const val VOLUME_THUMB = 14
+        private const val VOLUME_MAX = 100
     }
 }

@@ -147,11 +147,23 @@ object CurrentSkin {
         live: LiveSkins = this.live,
     ): Pair<String, File>? {
         val id = library.widgetSkin?.takeIf(library::hasClassic) ?: classicOf(library, library.worn)
-        val file =
-            library.fileOf(id)
-                ?: BundledSkins.of(id)?.let { WalBundled.fileOf(context, it, live) }
-                ?: return null
+        val file = fileOf(context, id, library, live) ?: return null
         return cacheKey(context, library, live, id) to file
+    }
+
+    /**
+     * The file of the classic skin drawn for [id] ([classicOf]), as the engine opens it: the stored
+     * file, or for a skin that ships with the app the one [WalBundled] writes, in the phone's
+     * palette for a live one. Null when the skin is gone. Writes, so it is called off main.
+     */
+    fun fileOf(
+        context: Context,
+        id: String,
+        library: SkinLibrary = SkinLibrary(context),
+        live: LiveSkins = this.live,
+    ): File? {
+        val drawn = classicOf(library, id)
+        return library.fileOf(drawn) ?: BundledSkins.of(drawn)?.let { WalBundled.fileOf(context, it, live) }
     }
 
     private fun keyedIn(

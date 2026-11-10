@@ -7,8 +7,6 @@ import android.graphics.Canvas
 import android.graphics.Matrix
 import android.graphics.Paint
 import androidx.compose.ui.graphics.asAndroidBitmap
-import nl.mattix.andamp.core.model.Transport
-import nl.mattix.andamp.core.model.displayName
 import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.state.VisMode
 import nl.mattix.andamp.state.WinampState
@@ -89,65 +87,13 @@ internal object WidgetRender {
         state: WinampState,
         atMs: Long,
         shaded: Boolean,
-    ): WalStill.Still {
-        val track = state.currentTrack
-        return WalStill.Still(
-            playing = state.transport == Transport.Playing,
-            paused = state.transport == Transport.Paused,
-            title = track?.displayName.orEmpty(),
-            positionMs = state.currentTimeSec * MS_PER_SECOND,
-            lengthMs = (track?.durationMs ?: 0L).toInt(),
-            bitrateKbps = state.bitrateKbps ?: 0,
-            sampleRateKhz = state.sampleRateKhz ?: 0,
-            channels = state.streamChannels ?: 2,
-            volume = state.volume,
-            balance = state.balance,
-            shuffle = state.shuffle,
-            repeat = state.repeat,
-            timeRemaining = state.timeRemaining,
-            vis = ClassicVisMode.ANALYZER,
-            atMs = atMs,
-            pressAt = state.pressedWidget?.let { pressPoint(it, state) },
-            shaded = shaded,
-        )
-    }
+    ): WalStill.Still = WalStill.stillOf(state, atMs, shaded)
 
     private fun visOf(mode: VisMode) =
         when (mode) {
             VisMode.Analyzer -> ClassicVisMode.ANALYZER
             VisMode.Oscilloscope -> ClassicVisMode.SCOPE
             VisMode.Off -> ClassicVisMode.OFF
-        }
-
-    /**
-     * A point inside the control the draw code names [id], to hold it down for its flash: a button,
-     * or a slider's thumb where [state] has it, so holding it does not move it.
-     */
-    private fun pressPoint(
-        id: String,
-        state: WinampState,
-    ): Pair<Int, Int>? =
-        when (id) {
-            "main.posbar" -> {
-                POSBAR_X + (state.positionFraction * (POSBAR_W - POSBAR_THUMB)).toInt() + POSBAR_THUMB / 2 to POSBAR_Y + INSIDE
-            }
-
-            "main.volume" -> {
-                VOLUME_X + state.volume * (VOLUME_W - VOLUME_THUMB) / VOLUME_MAX + VOLUME_THUMB / 2 to VOLUME_Y + INSIDE
-            }
-
-            else -> {
-                when (id) {
-                    "main.prev" -> Dest.PREV
-                    "main.play" -> Dest.PLAY
-                    "main.pause" -> Dest.PAUSE
-                    "main.stop" -> Dest.STOP
-                    "main.next" -> Dest.NEXT
-                    "main.shuffle" -> Dest.SHUFFLE
-                    "main.repeat" -> Dest.REPEAT
-                    else -> null
-                }?.let { it.x + INSIDE to it.y + INSIDE }
-            }
         }
 
     /** The window as [still] has it, the widget's size, or an empty picture when the skin draws nothing. */
@@ -172,20 +118,4 @@ internal object WidgetRender {
         val y = at.y.coerceIn(0, whole.height - 1)
         return Bitmap.createBitmap(whole, x, y, at.w.coerceAtMost(whole.width - x), at.h.coerceAtMost(whole.height - y))
     }
-
-    private const val MS_PER_SECOND = 1000
-
-    /** How far inside a button's corner the point that holds it lies. */
-    private const val INSIDE = 5
-
-    // the seek bar and the volume slider of Winamp 2's main window, and their thumbs
-    private const val POSBAR_X = 16
-    private const val POSBAR_Y = 72
-    private const val POSBAR_W = 248
-    private const val POSBAR_THUMB = 29
-    private const val VOLUME_X = 107
-    private const val VOLUME_Y = 57
-    private const val VOLUME_W = 68
-    private const val VOLUME_THUMB = 14
-    private const val VOLUME_MAX = 100
 }
