@@ -92,6 +92,8 @@ class SkinPickTest {
             library,
             modernOn = { modernOn },
             turnModernOn = { modernOn = true },
+            // these are about modern skins: a classic skin is drawn by Andamp's own windows
+            classicLooks = false,
             openModern = { id, file, name, siblings ->
                 built += name
                 WalLook(id, file, name, siblings, app.cacheDir, WalSettings(app), player(), budgetMs = budgetMs)
