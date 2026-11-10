@@ -10,7 +10,6 @@ import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.ui.PlayerViewport
 import nl.mattix.andamp.ui.widget.Widget
-import nl.mattix.andamp.ui.window.mainWindowWidgets
 import nl.mattix.andamp.ui.window.testViewModel
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -302,14 +301,5 @@ class RemoteScreenTest {
         setBalance(balance, 70)
 
         assertEquals(70, vm.state.balance)
-    }
-
-    @Test
-    fun `on the phone the balance keeps its narrower middle`() {
-        val balance = mainWindowWidgets(vm, onOptions = {}).named("main.balance")
-
-        setBalance(balance, 35)
-
-        assertEquals(35, vm.state.balance)
     }
 }

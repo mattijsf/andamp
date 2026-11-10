@@ -85,9 +85,8 @@ data class WidgetSnapshot(
     }
 
     /**
-     * The snapshot as the state the window's draw functions read. The widget renders through the
-     * player's own `drawMainWindow`, which reads a [WinampState]; this builds one whose playlist
-     * holds the shown track at its queue position.
+     * The snapshot as the player's state: the widget's picture is drawn from a [WinampState], and
+     * this builds one whose playlist holds the shown track at its queue position.
      */
     fun toState(): WinampState =
         WinampState().also { s ->

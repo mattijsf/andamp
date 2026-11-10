@@ -28,7 +28,6 @@ import androidx.compose.ui.unit.IntSize
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import nl.mattix.andamp.core.model.Transport
-import nl.mattix.andamp.skin.Dest
 import nl.mattix.andamp.skin.RegionTxt
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.state.ListFont
@@ -37,27 +36,17 @@ import nl.mattix.andamp.state.SpectrumPhysics
 import nl.mattix.andamp.state.VisMode
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WinampViewModel
-import nl.mattix.andamp.ui.InPlayerVisualizerDriver
 import nl.mattix.andamp.ui.PlayerViewport
 import nl.mattix.andamp.ui.PlayerViewportBox
 import nl.mattix.andamp.ui.ScaledWindowCanvas
 import nl.mattix.andamp.ui.SkinCut
 import nl.mattix.andamp.ui.UiClocks
 import nl.mattix.andamp.ui.widget.Widget
-import nl.mattix.andamp.ui.widget.button
 import nl.mattix.andamp.ui.widget.hitTest
 import nl.mattix.andamp.ui.window.EQ_H
 import nl.mattix.andamp.ui.window.EQ_W
 import nl.mattix.andamp.ui.window.MAIN_H
 import nl.mattix.andamp.ui.window.MAIN_W
-import nl.mattix.andamp.ui.window.SliderMath
-import nl.mattix.andamp.ui.window.VisBox
-import nl.mattix.andamp.ui.window.VisualizerOverlay
-import nl.mattix.andamp.ui.window.WindowControls
-import nl.mattix.andamp.ui.window.drawEqWindow
-import nl.mattix.andamp.ui.window.drawMainWindow
-import nl.mattix.andamp.ui.window.eqWindowWidgets
-import nl.mattix.andamp.ui.window.mainWindowWidgets
 import nl.mattix.andamp.wal.WalStill
 import nl.mattix.andamp.widget.VisFrame
 import nl.mattix.walkit.ClassicVisMode
@@ -71,15 +60,15 @@ import kotlin.math.roundToInt
  * whole scale that fits there. With [fill] it is as large as the whole surface takes, [within]
  * or not: the owner keeps room free for buttons it shows only now and then, and a window kept
  * out of that room is small on some cars' screens. See [remoteViewport].
- * The D in the main window's clutter bar is lit by [fill] and calls [onFill]: this surface's
- * own Double Size. The A is never lit here, and does nothing. Nor are the EQ and PL buttons
- * lit: neither window is open beside this one.
+ * The D in the main window's clutter bar calls [onFill]: Double Size for this surface. The A
+ * does nothing here. The EQ and PL buttons are not lit: neither window is open beside this one.
  *
  * It starts on the main window. The EQ button there swaps the screen to the equalizer and the
  * PL button to the playlist; the close button of either swaps it back. Which one is up belongs
  * to this surface and is not kept.
  *
- * The main window and the equalizer are drawn whole. The controls that need another window or
+ * The main window and the equalizer are drawn whole by the engine, from [skinFile]; the surface
+ * stays black until the first picture is drawn. The controls that need another window or
  * a menu do nothing here; see [mainAlone] and [eqAlone]. The playlist is [RemoteList], a list
  * to pick a song from, which fills the room.
  *
@@ -109,7 +98,6 @@ internal fun RemoteScreen(
             mainAlone(vm, onEq = { up = Up.EQUALIZER }, onPl = { up = Up.PLAYLIST }, onFill = { onFillNow() })
         }
     val eq = remember(vm) { eqAlone(vm, onClose = { up = Up.MAIN }) }
-    InPlayerVisualizerDriver(vm)
     UiClocks(s)
     val context = LocalContext.current
     val still = remember(skinFile) { skinFile?.let { WalStill.of(it, context.cacheDir, WalStill.CAR) } }
@@ -131,9 +119,9 @@ internal fun RemoteScreen(
                 SideEffect { sliders.at = { x, y -> sliderAt(controls, IntOffset(left, top), fit, x, y) } }
                 Box(Modifier.offset { IntOffset(left, top) }) {
                     if (up == Up.EQUALIZER) {
-                        EqualizerAlone(skin, s, fit.scale, eq, picture)
+                        WindowAlone(skin, s, EQ_W, EQ_H, RegionTxt.Window.EQ, fit.scale, eq, picture)
                     } else {
-                        MainAlone(skin, s, fit.scale, main, fill, picture)
+                        WindowAlone(skin, s, MAIN_W, MAIN_H, RegionTxt.Window.MAIN, fit.scale, main, picture)
                     }
                 }
             }
@@ -141,51 +129,24 @@ internal fun RemoteScreen(
     }
 }
 
+/**
+ * [window] of [skin], [width] by [height], as the engine draws it at 1x in [picture], [scale] times
+ * as large, with the touch places in [widgets]. Black until the first picture is drawn.
+ */
 @Composable
-private fun MainAlone(
+private fun WindowAlone(
     skin: Skin,
     s: WinampState,
-    scale: Int,
-    widgets: List<Widget>,
-    fill: Boolean,
-    /** The window as the engine draws it, at 1x; null until the first one is drawn. */
-    picture: ImageBitmap?,
-) {
-    ScaledWindowCanvas(MAIN_W, MAIN_H, scale, s, widgets, cut = SkinCut(skin, RegionTxt.Window.MAIN)) {
-        if (picture != null) {
-            drawImage(picture, dstSize = IntSize(picture.width, picture.height), filterQuality = FilterQuality.None)
-        } else {
-            drawMainWindow(skin, s, alwaysOnTop = false, doubleSize = fill, equalizerOpen = false, playlistOpen = false)
-        }
-    }
-    // the engine's picture has the visualizer in it
-    if (picture != null) return
-    // the visualizer animates on its own canvas, so a frame repaints only that box
-    VisualizerOverlay(
-        skin,
-        s,
-        scale,
-        VisBox.FULL,
-        Modifier.offset { IntOffset(Dest.VISUALIZER.x * scale, Dest.VISUALIZER.y * scale) },
-    )
-}
-
-@Composable
-private fun EqualizerAlone(
-    skin: Skin,
-    s: WinampState,
+    width: Int,
+    height: Int,
+    window: RegionTxt.Window,
     scale: Int,
     widgets: List<Widget>,
     picture: ImageBitmap?,
 ) {
-    ScaledWindowCanvas(EQ_W, EQ_H, scale, s, widgets, cut = SkinCut(skin, RegionTxt.Window.EQ)) {
-        if (picture !=
-            null
-        ) {
-            drawImage(picture, dstSize = IntSize(picture.width, picture.height), filterQuality = FilterQuality.None)
-        } else {
-            drawEqWindow(skin, s)
-        }
+    ScaledWindowCanvas(width, height, scale, s, widgets, cut = SkinCut(skin, window)) {
+        picture ?: return@ScaledWindowCanvas
+        drawImage(picture, dstSize = IntSize(picture.width, picture.height), filterQuality = FilterQuality.None)
     }
 }
 
@@ -279,81 +240,6 @@ internal fun remoteViewport(
     val scale = ((room + window - 1) / window).coerceAtLeast(1)
     return PlayerViewport(scale, room.toFloat() / (window * scale))
 }
-
-/**
- * The main window's controls on a surface that shows one window: those that need nothing but
- * the window itself ([MAIN_ALONE]), the EQ and PL buttons, which call [onEq] and [onPl] in
- * place of opening a window beside it, and the clutter bar's D, which calls [onFill] in place
- * of the phone's Double Size.
- *
- * The balance finds its middle from farther off here ([WIDE_BALANCE_DETENT]): on a car's
- * screen its whole travel is about a finger wide, and a drag is no way to hit one pixel of it.
- */
-internal fun mainAlone(
-    vm: WindowControls,
-    onEq: () -> Unit,
-    onPl: () -> Unit,
-    onFill: () -> Unit,
-): List<Widget> {
-    val here =
-        object : WindowControls by vm {
-            override fun setBalance(balance: Int) = vm.setBalance(SliderMath.stickyBalance(balance, WIDE_BALANCE_DETENT))
-        }
-    return mainWindowWidgets(here, onDoubleSize = onFill, onOptions = {}).mapNotNull { stock ->
-        val at = stock.bounds
-        when (stock.id) {
-            EQ_SWITCH -> button(EQ_SWITCH, at.left, at.top, at.width, at.height, onTap = onEq)
-            PL_SWITCH -> button(PL_SWITCH, at.left, at.top, at.width, at.height, onTap = onPl)
-            in MAIN_ALONE, FILL_SWITCH -> stock
-            else -> null
-        }
-    }
-}
-
-/** How near its middle the balance has to be brought on a lent surface to rest there, of 100 either way. */
-internal const val WIDE_BALANCE_DETENT = 40
-
-/**
- * The equalizer's controls on a surface that shows one window: everything but the preset
- * menu and the shade button. The close button calls [onClose], and takes a touch anywhere in
- * [EQ_CLOSE_REACH]: on a car's screen the 9x9 button itself is a small thing to hit.
- */
-internal fun eqAlone(
-    vm: WindowControls,
-    onClose: () -> Unit,
-): List<Widget> =
-    listOf(
-        button(EQ_CLOSE, EQ_CLOSE_REACH.left, EQ_CLOSE_REACH.top, EQ_CLOSE_REACH.width, EQ_CLOSE_REACH.height, onTap = onClose),
-    ) + eqWindowWidgets(vm).filter { it.id !in EQ_NOT_ALONE }
-
-private const val EQ_SWITCH = "main.eqToggle"
-private const val PL_SWITCH = "main.plToggle"
-private const val FILL_SWITCH = "main.clutter.d"
-private const val EQ_CLOSE = "eq.close"
-
-/** The right end of the equalizer's title bar, down to the row of buttons under it. */
-internal val EQ_CLOSE_REACH = IntRect(235, 0, 275, 17)
-
-/** The controls of the main window that need nothing but the window itself. */
-internal val MAIN_ALONE =
-    setOf(
-        "main.time",
-        "main.vis",
-        "main.marquee",
-        "main.posbar",
-        "main.volume",
-        "main.balance",
-        "main.prev",
-        "main.play",
-        "main.pause",
-        "main.stop",
-        "main.next",
-        "main.shuffle",
-        "main.repeat",
-    )
-
-/** The equalizer's controls that are replaced or need more than the window: see [eqAlone]. */
-private val EQ_NOT_ALONE = setOf(EQ_CLOSE, "eq.shade", "eq.presets")
 
 /**
  * The window [window] of [still]'s skin as [s] has it, drawn again each display frame off the main
