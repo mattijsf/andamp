@@ -111,7 +111,7 @@ class WidgetMenuActivity : ComponentActivity() {
             val showing = picking || importing || menu != null || player.state.showingAModal()
             LaunchedEffect(showing) { if (!showing) finish() }
             // the status bar sits on the wallpaper here, as it does over a floating player
-            StatusBarIcons(onPlayer = true, playerFillsScreen = false, dark = false)
+            StatusBarIcons(onPlayer = true, dark = false)
             // the menu is this window's own state and not WinampState.activeMenu, which every host
             // of AmpModals draws; the dialogs stay shared
             MaterialTheme(colorScheme = skin?.let { rememberSkinColorScheme(it) } ?: darkColorScheme()) {

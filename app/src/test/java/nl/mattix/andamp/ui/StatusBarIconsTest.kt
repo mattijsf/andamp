@@ -10,18 +10,13 @@ import org.junit.Test
 class StatusBarIconsTest {
     @Test
     fun `over the floating player the wallpaper decides`() {
-        assertTrue(statusBarIconsDark(onPlayer = true, playerFillsScreen = false, lightWallpaper = true, lightScreen = false))
-        assertFalse(statusBarIconsDark(onPlayer = true, playerFillsScreen = false, lightWallpaper = false, lightScreen = true))
+        assertTrue(statusBarIconsDark(onPlayer = true, lightWallpaper = true, lightScreen = false))
+        assertFalse(statusBarIconsDark(onPlayer = true, lightWallpaper = false, lightScreen = true))
     }
 
     @Test
-    fun `a player that fills the screen has black under the bar, whatever the wallpaper`() {
-        assertFalse(statusBarIconsDark(onPlayer = true, playerFillsScreen = true, lightWallpaper = true, lightScreen = true))
-    }
-
-    @Test
-    fun `any other screen decides for itself, whatever the player is set to`() {
-        assertTrue(statusBarIconsDark(onPlayer = false, playerFillsScreen = true, lightWallpaper = false, lightScreen = true))
-        assertFalse(statusBarIconsDark(onPlayer = false, playerFillsScreen = true, lightWallpaper = true, lightScreen = false))
+    fun `any other screen decides for itself, whatever the wallpaper`() {
+        assertTrue(statusBarIconsDark(onPlayer = false, lightWallpaper = false, lightScreen = true))
+        assertFalse(statusBarIconsDark(onPlayer = false, lightWallpaper = true, lightScreen = false))
     }
 }

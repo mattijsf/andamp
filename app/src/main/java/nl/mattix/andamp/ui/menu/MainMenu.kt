@@ -461,7 +461,7 @@ private fun optionsItems(
         AmpMenuItem.Action(
             vm.words.get(R.string.menu_double_size),
             enabled = !modernPlayer,
-            checked = if (walkitClassic) WalFilled.on else vm.state.doubleSize && !modernPlayer,
+            checked = walkitClassic && WalFilled.on,
             needsTheApp = true,
             onClick = onDoubleSize,
         ),

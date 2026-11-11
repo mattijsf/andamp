@@ -40,8 +40,6 @@ fun SkinManagerWindow(
     skin: Skin,
     scale: Int,
     modifier: Modifier = Modifier,
-    /** The rectangle the layout holds it in, or null while it floats. */
-    pinned: IntRect? = null,
 ) {
     val s = vm.state
     val context = LocalContext.current
@@ -65,9 +63,7 @@ fun SkinManagerWindow(
         val rows =
             (s.skinRows ?: SkinManagerLayout.DEFAULT_ROWS)
                 .coerceIn(minRows, fits.coerceAtLeast(minRows))
-        val layout =
-            pinned?.let { SkinManagerLayout.filling(it.height, it.width, frame, rowH) }
-                ?: SkinManagerLayout(rows, SkinManagerLayout.widthOfCols(cols), rowH = rowH)
+        val layout = SkinManagerLayout(rows, SkinManagerLayout.widthOfCols(cols), rowH = rowH)
         val widgets =
             remember(vm, frame, layout.visibleRows, layout.width, layout.slack, rowH) { skinManagerWidgets(vm, frame, layout) }
         GenSkinWindow(
@@ -83,7 +79,6 @@ fun SkinManagerWindow(
                     onMove = { place -> s.skinManagerOffset = place },
                     onClose = { s.skinManagerOpen = false },
                     id = WindowStore.SKINS,
-                    pinned = pinned,
                     onResizeRaw = { grab ->
                         val resized =
                             WindowSizing.resize(

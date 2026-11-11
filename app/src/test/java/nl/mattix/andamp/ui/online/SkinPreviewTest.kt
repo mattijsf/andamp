@@ -21,15 +21,10 @@ import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.skin.RegionTxt
 import nl.mattix.andamp.skin.Skin
 import nl.mattix.andamp.skin.SkinLoader
-import nl.mattix.andamp.state.FakeSpectrum
-import nl.mattix.andamp.state.FakeWave
-import nl.mattix.andamp.state.RealOscilloscope
-import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.online.OnlineSkin
 import nl.mattix.andamp.state.online.SkinPreview
 import nl.mattix.andamp.state.online.SkinPreviews
 import nl.mattix.andamp.ui.rememberBackPull
-import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -319,44 +314,6 @@ class SkinPreviewTest {
         assertEquals("the skin keeps its position when the note arrives", stoodAt, after.positionInRoot)
     }
 
-    @Test
-    fun `the preview draws the same signal as the app's fake spectrum and wave`() {
-        // run for many frames: two frames are not enough to tell two signals apart
-        val demo = SkinDemo()
-        val preview = demo.state
-        val shared = WinampState()
-        var millis = 0L
-        repeat(FRAMES) {
-            demo.frame(millis)
-            FakeSpectrum.step(shared, millis / 1000.0)
-            FakeWave.step(shared, millis / 1000.0)
-            millis += FRAME_MS
-        }
-
-        assertArrayEquals("the preview draws the app's spectrum bars", shared.visLevels, preview.visLevels, 0f)
-        assertArrayEquals("the preview draws the app's spectrum peaks", shared.visPeaks, preview.visPeaks, 0f)
-        assertArrayEquals("the preview draws the app's wave trace", shared.visWave, preview.visWave)
-    }
-
-    @Test
-    fun `stopping clears the window and pausing holds the last frame`() {
-        val demo = SkinDemo()
-        val state = demo.state
-        demo.frame(1_000)
-        val held = state.visLevels.toList()
-
-        demo.controls.pause()
-        demo.frame(2_000)
-
-        assertEquals("pause holds the last frame", held, state.visLevels.toList())
-
-        demo.controls.stop()
-        demo.frame(3_000)
-
-        assertTrue("stop clears the bars", state.visLevels.all { it == 0f })
-        assertTrue("stop flattens the trace", state.visWave.all { it == RealOscilloscope.CENTER_ROW })
-    }
-
     /** The bundled skin, with a note packed alongside it. */
     private fun skinNoted(note: String) = SkinPreview(lightFile(), note)
 
@@ -400,10 +357,6 @@ class SkinPreviewTest {
     private companion object {
         /** Long enough for the fade to finish. */
         const val APPEAR_MS = 5_000L
-
-        /** About two seconds of frames. */
-        const val FRAMES = 120
-        const val FRAME_MS = 16L
     }
 
     @Test
@@ -498,10 +451,10 @@ class SkinPreviewTest {
         assertTrue("the demo has songs", state.playlist.isNotEmpty())
 
         demo.frame(millis = 4_000)
-        val moved = state.visLevels.toList()
+        val moved = state.marqueeStep
         demo.frame(millis = 4_500)
 
-        assertTrue("the bars move between frames", moved != state.visLevels.toList())
+        assertTrue("the title scrolls between frames", moved != state.marqueeStep)
         assertTrue("the clock runs", state.currentTimeSec > 0)
     }
 }

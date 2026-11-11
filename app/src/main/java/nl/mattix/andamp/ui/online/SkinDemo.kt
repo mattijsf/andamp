@@ -6,9 +6,6 @@ import nl.mattix.andamp.core.model.Transport
 import nl.mattix.andamp.skinplayer.Entry
 import nl.mattix.andamp.skinplayer.FakeSkinPlayer
 import nl.mattix.andamp.skinplayer.StreamInfo
-import nl.mattix.andamp.state.FakeSpectrum
-import nl.mattix.andamp.state.FakeWave
-import nl.mattix.andamp.state.RealOscilloscope
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.ui.BLINK_MS
 import nl.mattix.andamp.ui.MARQUEE_STEP_MS
@@ -55,8 +52,7 @@ class SkinDemo {
 
     /**
      * Moves everything a running player moves, for the frame at [millis]. The song's place loops
-     * over the stretch the demo shows. The analyzer is the signal the app shows for a backend with
-     * no audio tap, through the same [SpectrumPhysics] every source shares.
+     * over the stretch the demo shows.
      */
     fun frame(millis: Long) {
         now = millis
@@ -64,27 +60,9 @@ class SkinDemo {
         val s = state
         val second = s.currentTimeSec
         if (second >= SONG_START) s.currentTimeSec = SONG_START + (second - SONG_START) % SONG_LENGTH
-        val seconds = millis / 1000.0
         // pause holds the clock, and the blink is the app's own pause blink
         s.blinkOn = s.transport != Transport.Paused || (millis / PAUSE_BLINK_MS) % 2 == 0L
-        when (s.transport) {
-            // stopped clears the window and paused holds the last frame, as Winamp does
-            Transport.Stopped -> {
-                FakeSpectrum.reset(s)
-                s.visWave.fill(RealOscilloscope.CENTER_ROW)
-            }
-
-            Transport.Paused -> {
-                Unit
-            }
-
-            else -> {
-                s.marqueeStep = (millis / MARQUEE_STEP_MS).toInt()
-                FakeSpectrum.step(s, seconds)
-                FakeWave.step(s, seconds)
-            }
-        }
-        s.visFrame++
+        if (s.transport == Transport.Playing) s.marqueeStep = (millis / MARQUEE_STEP_MS).toInt()
     }
 
     private companion object {

@@ -56,17 +56,6 @@ class SkinManagerLayout(
             rowH: Int = ROW_H,
         ): Int = ((availVirtual - furnitureH(frame)) / rowH).coerceAtLeast(minRows(rowH))
 
-        /** The layout of a window exactly [height] tall and [width] wide; see [WindowSizing.rowsAndSlack]. */
-        fun filling(
-            height: Int,
-            width: Int,
-            frame: WindowFrame,
-            rowH: Int = ROW_H,
-        ): SkinManagerLayout {
-            val (rows, slack) = WindowSizing.rowsAndSlack(height, furnitureH(frame), rowH, minRows(rowH))
-            return SkinManagerLayout(rows, width, slack, rowH)
-        }
-
         /** The height that is not rows: the frame's chrome and the top pad. */
         fun furnitureH(frame: WindowFrame) = frame.chromeH + ListText.TOP_PAD.toInt()
 

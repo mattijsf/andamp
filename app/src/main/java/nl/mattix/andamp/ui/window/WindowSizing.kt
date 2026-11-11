@@ -123,21 +123,6 @@ object WindowSizing {
     ): Int = ((availableH - chromeH) / stepPx).coerceAtLeast(min)
 
     /**
-     * A list window held at exactly [height]: the whole rows that fit beside its
-     * [furniture], never fewer than [minRows], and what is left over, which stays empty
-     * under the last row.
-     */
-    fun rowsAndSlack(
-        height: Int,
-        furniture: Int,
-        rowH: Int,
-        minRows: Int,
-    ): Pair<Int, Int> {
-        val rows = ((height - furniture) / rowH).coerceAtLeast(minRows)
-        return rows to (height - furniture - rows * rowH).coerceAtLeast(0)
-    }
-
-    /**
      * The fewest rows of [rowH] a list is drawn with, where [classicRows] rows of
      * [classicRowH] are its smallest in Winamp's own row height: as many as fit that same
      * height, and one at least.

@@ -63,8 +63,6 @@ fun LibraryWindow(
     scale: Int,
     access: LibraryAccessHandle,
     modifier: Modifier = Modifier,
-    /** The rectangle the layout holds it in, or null while it floats. */
-    pinned: IntRect? = null,
 ) {
     val s = vm.state
     val context = LocalContext.current
@@ -97,10 +95,7 @@ fun LibraryWindow(
         // the width is limited to the screen's
         val cols = LibraryLayout.WIDTH_STEPS.clamp(s.libraryCols, screen.width)
         val layout =
-            remember(rows, cols, pinned, frame, rowH) {
-                pinned?.let { LibraryLayout.filling(it.height, it.width, frame, rowH) }
-                    ?: LibraryLayout(rows, LibraryLayout.widthOfCols(cols), rowH = rowH)
-            }
+            remember(rows, cols, frame, rowH) { LibraryLayout(rows, LibraryLayout.widthOfCols(cols), rowH = rowH) }
         val widgets = remember(vm, frame, layout) { libraryWidgets(vm, frame, layout) { requestNow() } }
         GenSkinWindow(
             skin = skin,
@@ -115,7 +110,6 @@ fun LibraryWindow(
                     onMove = { place -> s.libraryOffset = place },
                     onClose = { s.libraryOpen = false },
                     id = WindowStore.LIBRARY,
-                    pinned = pinned,
                     onResizeRaw = { grab ->
                         val resized =
                             WindowSizing.resize(
@@ -1052,17 +1046,6 @@ class LibraryLayout(
             frame: WindowFrame,
             rowH: Int = ROW_H,
         ): Int = ((availVirtual - frame.chromeH - furnitureH(rowH)) / rowH).coerceAtLeast(minRows(rowH))
-
-        /** The layout of a window exactly [height] tall and [width] wide; see [WindowSizing.rowsAndSlack]. */
-        fun filling(
-            height: Int,
-            width: Int,
-            frame: WindowFrame,
-            rowH: Int = ROW_H,
-        ): LibraryLayout {
-            val (rows, slack) = WindowSizing.rowsAndSlack(height, frame.chromeH + furnitureH(rowH), rowH, minRows(rowH))
-            return LibraryLayout(rows, width, slack, rowH)
-        }
 
         /** webamp's WINDOW_RESIZE_SEGMENT_WIDTH. */
         const val WIDTH_STEP = WidthSteps.WIDTH_STEP
