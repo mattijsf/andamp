@@ -12,9 +12,7 @@ import android.content.SharedPreferences
  * Positions are offsets from the screen center, so a remembered window lands in the same
  * place on a bigger screen. Sizes are counts (playlist segments, list rows, resize steps),
  * never pixels, so they survive a skin change. A null size means "fill what is there", which
- * is the default and what dragging a window to full size gives. In a locked workspace the
- * layout places and sizes the windows, and only [open], [shaded] and the plug-in window's
- * [size], its height in steps, are its own.
+ * is the default and what dragging a window to full size gives.
  */
 data class WindowArrangement(
     val x: Int? = null,
@@ -51,8 +49,6 @@ data class WindowLayoutMemory(
     val placements: Map<String, WindowPlacement> = emptyMap(),
     /** Each workspace's windows, bottom to top; unknown ids are ignored on load. */
     val orders: Map<Workspace, List<String>> = emptyMap(),
-    /** Each locked workspace's columns of windows; see [LockedColumns]. */
-    val columns: Map<Workspace, List<List<String>>> = emptyMap(),
     /**
      * Whether nothing has ever been written here: a fresh install.
      *
@@ -65,17 +61,12 @@ data class WindowLayoutMemory(
     fun placementOf(id: String) = placements[id] ?: WindowPlacement()
 
     fun orderOf(workspace: Workspace) = orders[workspace].orEmpty()
-
-    fun columnsOf(workspace: Workspace) = columns[workspace] ?: LockedColumns.defaultFor(workspace.sideways)
 }
 
 class WindowStore(
     context: Context,
 ) {
     private val prefs: SharedPreferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-
-    /** Where Double Size kept the locked layout's collapsed windows and visual height before [WORKSPACE_SCHEMA]. */
-    private val oldStack: SharedPreferences = context.getSharedPreferences(OLD_STACK_PREFS, Context.MODE_PRIVATE)
 
     /**
      * Whether this screen turned before a window had an arrangement per way round: a tablet
@@ -97,18 +88,17 @@ class WindowStore(
                 // before there were workspaces, one order served every layout
                 readOrder(if (schema < WORKSPACE_SCHEMA) Workspace.FLOATING else workspace)
             }
-        val columns =
-            Workspace.entries.filter { it.locked }.associateWith { workspace ->
-                prefs.getString(workspace.columnsKey(), null)?.let { LockedColumns.decode(it) }
-                    ?: LockedColumns.defaultFor(workspace.sideways)
-            }
-        return WindowLayoutMemory(placements, orders, columns, firstRun)
+        return WindowLayoutMemory(placements, orders, firstRun)
     }
 
     fun save(memory: WindowLayoutMemory) {
         prefs
             .edit()
             .apply {
+                // layouts kept under OLD_LOCKED are not read, and go
+                prefs.all.keys
+                    .filter { it.startsWith(OLD_LOCKED) || ".$OLD_LOCKED" in it }
+                    .forEach { remove(it) }
                 putInt(SCHEMA, SCHEMA_VERSION)
                 WINDOWS.forEach { id ->
                     val placement = memory.placementOf(id)
@@ -116,9 +106,6 @@ class WindowStore(
                 }
                 Workspace.entries.forEach { workspace ->
                     putString(workspace.orderKey(), memory.orderOf(workspace).joinToString(","))
-                }
-                Workspace.entries.filter { it.locked }.forEach { workspace ->
-                    putString(workspace.columnsKey(), LockedColumns.encode(memory.columnsOf(workspace)))
                 }
             }.apply()
     }
@@ -128,10 +115,8 @@ class WindowStore(
 
     /**
      * A layout from before there was an arrangement per workspace. The floating layout had
-     * one arrangement, and from [SIDEWAYS_SCHEMA] one for sideways as well; whether a window
-     * was open was shared by every layout; and Double Size kept the locked layout's collapsed
-     * windows and its visual's height in settings of its own. Read so that nothing moves on
-     * the update.
+     * one arrangement, and from [SIDEWAYS_SCHEMA] one for sideways as well; and whether a window
+     * was open was shared by every layout. Read so that nothing moves on the update.
      */
     private fun placementBeforeWorkspaces(
         id: String,
@@ -146,20 +131,7 @@ class WindowStore(
             } else {
                 prefs.readArrangement(Workspace.FLOATING_SIDEWAYS.prefix(id)).copy(open = open)
             }
-        val locked =
-            WindowArrangement(
-                size = oldStack.readOrNull(OLD_STACK_VIS_STEPS).takeIf { id == MILKDROP },
-                shaded = id in oldStack.getStringSet(OLD_STACK_SHADED, emptySet()).orEmpty(),
-                open = open,
-            )
-        return WindowPlacement(
-            mapOf(
-                Workspace.FLOATING to upright,
-                Workspace.FLOATING_SIDEWAYS to sideways,
-                Workspace.LOCKED to locked,
-                Workspace.LOCKED_SIDEWAYS to locked,
-            ),
-        )
+        return WindowPlacement(mapOf(Workspace.FLOATING to upright, Workspace.FLOATING_SIDEWAYS to sideways))
     }
 
     private fun readOrder(workspace: Workspace): List<String> =
@@ -173,8 +145,6 @@ class WindowStore(
     private fun Workspace.prefix(id: String) = if (key.isEmpty()) id else "$id.$key"
 
     private fun Workspace.orderKey() = if (key.isEmpty()) ORDER else "$key.$ORDER"
-
-    private fun Workspace.columnsKey() = "$key.$COLUMNS"
 
     private fun SharedPreferences.readArrangement(prefix: String) =
         WindowArrangement(
@@ -235,7 +205,6 @@ class WindowStore(
         private const val WORKSPACE_SCHEMA = 3
 
         private const val ORDER = "order"
-        private const val COLUMNS = "stack"
         private const val X = "x"
         private const val Y = "y"
         private const val SIZE = "size"
@@ -243,10 +212,8 @@ class WindowStore(
         private const val SHADED = "shaded"
         private const val COLS = "cols"
 
-        /** Double Size's own settings, where it kept the locked layout's state before [WORKSPACE_SCHEMA]. */
-        private const val OLD_STACK_PREFS = "doublesize"
-        private const val OLD_STACK_SHADED = "shaded"
-        private const val OLD_STACK_VIS_STEPS = "vis_steps"
+        /** The name of layouts this store no longer reads; see [save]. */
+        private const val OLD_LOCKED = "double."
 
         /** Android's line between a phone and a tablet: 600dp on the shorter side. */
         private const val LARGE_SCREEN_DP = 600

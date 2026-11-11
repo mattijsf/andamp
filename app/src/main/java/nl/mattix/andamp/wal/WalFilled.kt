@@ -16,7 +16,8 @@ import java.util.concurrent.CopyOnWriteArraySet
  * ([WalSettings.PREFS]) under [KEY]; off (windows apart) unless switched on.
  *
  * The value is read once, off the main thread, before the player's first skin goes on, as
- * [WalApart]'s is. D calls [toggle] on main; a look showing a skin hears it through [watch] and
+ * [WalApart]'s is. A Double Size stored in [OLD_PREFS] is read as this one when this one is
+ * not set, and removed. D calls [toggle] on main; a look showing a skin hears it through [watch] and
  * lays its windows out again.
  */
 internal object WalFilled {
@@ -50,7 +51,7 @@ internal object WalFilled {
         if (test != null && (context.applicationContext ?: context) !== test) return
         synchronized(reading) {
             if (known) return
-            val stored = prefs(test ?: context).getBoolean(KEY, false)
+            val stored = carriedOver(test ?: context)
             synchronized(lock) {
                 if (!known) apply(stored)
             }
@@ -94,6 +95,21 @@ internal object WalFilled {
 
     private fun prefs(context: Context) = context.getSharedPreferences(WalSettings.PREFS, Context.MODE_PRIVATE)
 
+    /** The stored value, with [OLD_PREFS] taken in when this one is not set. */
+    private fun carriedOver(context: Context): Boolean {
+        val prefs = prefs(context)
+        val old = context.getSharedPreferences(OLD_PREFS, Context.MODE_PRIVATE)
+        if (!old.contains(OLD_ON)) return prefs.getBoolean(KEY, false)
+        val filled = if (prefs.contains(KEY)) prefs.getBoolean(KEY, false) else old.getBoolean(OLD_ON, false)
+        prefs.edit().putBoolean(KEY, filled).apply()
+        old.edit().clear().apply()
+        return filled
+    }
+
     /** The key of the stored value in [WalSettings.PREFS]. */
     const val KEY = "classic_filled"
+
+    /** Where a Double Size of the app's windows is stored, and its key. */
+    const val OLD_PREFS = "doublesize"
+    const val OLD_ON = "on"
 }

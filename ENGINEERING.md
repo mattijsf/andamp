@@ -3,12 +3,10 @@
 Andamp is a Winamp 2.8 replica in Jetpack Compose (`nl.mattix.andamp`). It has three
 classic windows: the main player (275x116 virtual pixels), the equalizer (275x116) and the
 playlist (275 wide, as tall as the space left). They are docked in a vertical stack until
-you drag them apart. The screen turns with the device. Floating or in Double Size, upright
-or sideways, each is a workspace of its own (`Workspace`): which windows are open and
-collapsed, where they sit and which is in front is kept per workspace. Sideways they start
-with the playlist beside the player and the equalizer, as tall as the two. In Double Size
-the windows stand in columns (`LockedColumns`), and a drag lifts one and drops it into the
-slot it is over (`LockedColumns.moved`). Classic `.wsz` skins work, and Winamp modern skins
+you drag them apart. The screen turns with the device. Upright and sideways are each a
+workspace (`Workspace`): which windows are open and collapsed, where they sit and which is
+in front is kept per workspace. Sideways they start with the playlist beside the player and
+the equalizer, as tall as the two. Classic `.wsz` skins work, and Winamp modern skins
 (`.wal`) in beta: walkit, the engine in native code (the `nl.mattix.walkit` library, from
 its own repository), runs them, and the app's `wal` package hosts one on the player.
 

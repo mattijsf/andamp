@@ -194,7 +194,6 @@ class PersistenceOps(
         WindowLayoutMemory(
             placements = WindowStore.WINDOWS.associateWith { id -> state.placementOf(id).asMemory() },
             orders = Workspace.entries.associateWith { state.orderOf(it) },
-            columns = Workspace.entries.filter { it.locked }.associateWith { state.columnsOf(it) },
         )
 
     /**
@@ -215,10 +214,6 @@ class PersistenceOps(
         Workspace.entries.forEach { workspace ->
             val stored = memory.orderOf(workspace)
             if (stored.isNotEmpty()) state.setOrder(workspace, stored + state.orderOf(workspace).filterNot { it in stored })
-        }
-        // made whole, for a column that names a window this build does not have, or misses one
-        Workspace.entries.filter { it.locked }.forEach { workspace ->
-            state.setColumns(workspace, LockedColumns.normalize(memory.columnsOf(workspace), workspace.sideways))
         }
         savedWindows = windowMemory()
     }

@@ -6,7 +6,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntRect
 import nl.mattix.andamp.state.WinampState
 import nl.mattix.andamp.state.WindowStore
 
@@ -24,8 +23,6 @@ internal fun MainPlaceholder(
     docked: IntOffset,
     /** Winamp's right click on the player: the main menu. */
     onLongPress: () -> Unit,
-    /** The rectangle the layout holds the main window in, or null while it floats. */
-    pinned: IntRect? = null,
     modifier: Modifier = Modifier,
 ) {
     FloatingSkinWindow(
@@ -41,7 +38,6 @@ internal fun MainPlaceholder(
         widgets = emptyList(),
         dragsGroup = true,
         onLongPress = onLongPress,
-        pinned = pinned,
         modifier = modifier,
     ) {
         drawRect(LOADING)

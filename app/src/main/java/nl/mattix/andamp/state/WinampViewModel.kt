@@ -113,24 +113,6 @@ class WinampViewModel
         /** Whether the welcome screen has been shown; see [WelcomeStore]. */
         val welcome = WelcomeStore(app)
 
-        /**
-         * Whether a modern skin is on screen ([SkinOps.wal]), kept by a collector in init. A plain
-         * field, because the Double Size store reads it while it is made, before [skinOps] is.
-         */
-        private var modernShown = false
-
-        /**
-         * Whether the player fills the screen; see [DoubleSizeStore]. Double Size and Always
-         * On Top are on one at a time: switching this on switches [overlayOps] off, and the
-         * other way round there. A modern skin on screen has no Double Size: the player shows
-         * it off while the skin lasts, and the stored setting stays.
-         */
-        val doubleSize: DoubleSizeStore =
-            DoubleSizeStore(
-                app,
-                mirror = { state.doubleSize = it && !modernShown },
-                onSwitchedOn = { if (overlayOps.gate.wanted) overlayOps.want(false) },
-            )
         val eqOps = EqOps(state, facade, presetStore, words)
 
         /** Preferences > Effects. */
@@ -222,7 +204,6 @@ class WinampViewModel
                 OverlayStore(app),
                 permitted = { Settings.canDrawOverlays(app) },
                 mirror = { state.alwaysOnTop = it },
-                onSwitchedOn = { doubleSize.on = false },
                 supported = OverlaySupport.here,
                 words = words,
             )
@@ -241,8 +222,6 @@ class WinampViewModel
                 )
 
         init {
-            // an install that was left with both starts floating, with Double Size off
-            if (overlayOps.gate.wanted && doubleSize.on) doubleSize.on = false
             // a skin removed in the Skin Manager also loses its museum record and, for a modern
             // skin, what it remembered; a source or Android Auto, if it asked for it, goes back
             // to Default
@@ -533,13 +512,6 @@ class WinampViewModel
             // modern skins turned on or off while the app runs; the first value is skipped,
             // as start reads the switch itself
             viewModelScope.launch { snapshotFlow { WalGate.on }.drop(1).collect(skinOps::betaChanged) }
-            // Double Size goes off while a modern skin is on screen and comes back with a classic one
-            viewModelScope.launch {
-                snapshotFlow { skinOps.wal != null }.collect { shown ->
-                    modernShown = shown
-                    state.doubleSize = doubleSize.on && !shown
-                }
-            }
             presetOps.start()
             dspOps.start() // pushes the stored rack
             // the installed plug-ins reach the backend, and the rack is then decoded again;

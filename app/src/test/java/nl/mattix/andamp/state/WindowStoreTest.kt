@@ -133,14 +133,21 @@ class WindowStoreTest {
     private fun Map<String, WindowPlacement>.asMemory() = WindowLayoutMemory(this)
 
     @Test
-    fun `each locked workspace's columns survive a reload, and start in their order`() {
-        val columns = listOf(listOf(WindowStore.MAIN, WindowStore.PLAYLIST), listOf(WindowStore.EQ, WindowStore.MILKDROP))
-        WindowStore(app).save(WindowLayoutMemory(columns = mapOf(Workspace.LOCKED_SIDEWAYS to columns)))
+    fun `saving drops the layouts kept for the windows held in place`() {
+        app
+            .getSharedPreferences("windows", 0)
+            .edit()
+            .putInt("schema", 3)
+            .putInt("pl.double.x", 4)
+            .putInt("eq.double.sideways.size", 2)
+            .putString("double.order", "pl,eq")
+            .putString("double.sideways.stack", "main|pl")
+            .commit()
 
-        val memory = WindowStore(app).load()
+        WindowStore(app).save(WindowLayoutMemory())
 
-        assertEquals(columns, memory.columnsOf(Workspace.LOCKED_SIDEWAYS))
-        assertEquals(LockedColumns.defaultFor(sideways = false), memory.columnsOf(Workspace.LOCKED))
+        val left = app.getSharedPreferences("windows", 0).all.keys
+        assertEquals(emptyList<String>(), left.filter { "double" in it })
     }
 
     @Test
@@ -158,7 +165,6 @@ class WindowStoreTest {
         val loaded = WindowStore(app).load().placementOf(WindowStore.PLAYLIST)
         assertEquals(placement.of(Workspace.FLOATING), loaded.of(Workspace.FLOATING))
         assertEquals(placement.of(Workspace.FLOATING_SIDEWAYS), loaded.of(Workspace.FLOATING_SIDEWAYS))
-        assertEquals("nothing was said about the locked workspaces", WindowArrangement(), loaded.of(Workspace.LOCKED))
     }
 
     @Test
@@ -202,11 +208,6 @@ class WindowStoreTest {
             "sideways: only whether it was open",
             WindowArrangement(open = true),
             playlist.of(Workspace.FLOATING_SIDEWAYS),
-        )
-        assertEquals(
-            "locked: only whether it was open",
-            WindowArrangement(open = true, shaded = false),
-            playlist.of(Workspace.LOCKED),
         )
     }
 

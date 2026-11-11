@@ -11,6 +11,7 @@ import nl.mattix.andamp.state.WinampViewModel
 import nl.mattix.andamp.ui.PlayerViewport
 import nl.mattix.andamp.ui.widget.Widget
 import nl.mattix.andamp.ui.window.testViewModel
+import nl.mattix.andamp.wal.WalFilled
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -135,12 +136,12 @@ class RemoteScreenTest {
     @Test
     fun `the D is this surface's own and leaves the phone's Double Size alone`() {
         var presses = 0
-        val before = vm.state.doubleSize
+        val before = WalFilled.on
 
         tap(mainAlone(vm, onEq = {}, onPl = {}, onFill = { presses++ }).named("main.clutter.d"))
 
         assertEquals(1, presses)
-        assertEquals(before, vm.state.doubleSize)
+        assertEquals(before, WalFilled.on)
     }
 
     @Test

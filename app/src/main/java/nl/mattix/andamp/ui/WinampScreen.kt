@@ -38,7 +38,6 @@ import androidx.compose.runtime.produceState
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -80,10 +79,8 @@ import nl.mattix.andamp.ui.window.ClassicStack
 import nl.mattix.andamp.ui.window.EQ_H
 import nl.mattix.andamp.ui.window.LibraryWindow
 import nl.mattix.andamp.ui.window.LocalSurfaceScreen
-import nl.mattix.andamp.ui.window.LockedStack
 import nl.mattix.andamp.ui.window.LoupeLayer
 import nl.mattix.andamp.ui.window.MAIN_H
-import nl.mattix.andamp.ui.window.MILKDROP_MIN_STEPS
 import nl.mattix.andamp.ui.window.MainPlaceholder
 import nl.mattix.andamp.ui.window.MilkdropSurface
 import nl.mattix.andamp.ui.window.MilkdropWindow
@@ -98,7 +95,6 @@ import nl.mattix.andamp.ui.window.frameFor
 import nl.mattix.andamp.ui.window.heightOf
 import nl.mattix.andamp.ui.window.milkdropContentH
 import nl.mattix.andamp.ui.window.milkdropHeight
-import nl.mattix.andamp.ui.window.surfaceBottomInset
 import nl.mattix.andamp.ui.window.unshadeEverything
 import nl.mattix.andamp.ui.window.windowScreen
 import nl.mattix.andamp.wal.WAL_LAYER_Z
@@ -178,7 +174,6 @@ internal fun WinampScreen(
     val modern = skin?.let { rememberSkinColorScheme(it) } ?: darkColorScheme()
     StatusBarIcons(
         onPlayer = here == null || here == Screen.PLAYER,
-        playerFillsScreen = vm.state.doubleSize,
         dark = modern.background.luminance() > LIGHT_BACKGROUND,
     )
     LaunchedEffect(here, vm.overlayOps.gate.wanted, vm.overlayOps.gate.permitted) {
@@ -287,26 +282,16 @@ internal fun PlayerSurface(
     /** Whether a modern skin keeps to its natural size instead of filling the screen, as over other apps. */
     compact: Boolean = false,
 ) {
-    // filling the screen, the windows are one locked stack with black around it
-    val locked = vm.state.doubleSize
     // read when the menu is built, so a menu opened later sees the skin worn then
     val walNow by rememberUpdatedState(wal)
-    // The clutter bar's D and the Options menu share this switch. Switching Double Size on
-    // switches Always On Top off, and the surface is told as when its own A did that. A classic
-    // skin walkit draws fills the screen instead, as its D has it. A modern skin has no Double
-    // Size, so the placeholder standing in while it loads switches nothing.
+    // The clutter bar's D and the Options menu share this switch: a classic skin fills the
+    // screen, as its D has it. A modern skin has no Double Size, and neither has the
+    // placeholder standing in while a skin loads.
     val doubleSize = {
-        val look = walNow
-        if (look == null) {
-            val floating = vm.overlayOps.gate.wanted
-            vm.doubleSize.toggle()
-            if (floating && !vm.overlayOps.gate.wanted) onFloatingChanged(false)
-        } else if (look.classic) {
-            WalFilled.toggle(vm.getApplication())
-        }
+        if (walNow?.classic == true) WalFilled.toggle(vm.getApplication())
     }
     SnapTicks(vm.state)
-    Box(Modifier.fillMaxSize().then(if (locked) Modifier.background(Color.Black) else Modifier)) {
+    Box(Modifier.fillMaxSize()) {
         // the fullscreen visualizer is drawn over every window and outside the insets the
         // windows are held inside
         val fullscreen = vm.state.visualizerFullscreen
@@ -330,14 +315,7 @@ internal fun PlayerSurface(
                 FolderAsks(vm)
                 val screenW = constraints.maxWidth
                 val screenH = constraints.maxHeight
-                val viewport =
-                    playerViewport(
-                        screenW,
-                        screenH,
-                        fillScreen = locked,
-                        sideways = s.sideways,
-                        bottomInsetPx = surfaceBottomInset(LocalDensity.current),
-                    )
+                val viewport = playerViewport(screenW, screenH, sideways = s.sideways)
                 val scale = viewport.scale
 
                 val quit = onExit
@@ -475,35 +453,6 @@ private fun BoxWithConstraintsScope.PlayerWindows(
         } else {
             WalPlacement.dockedStack(classic, s.windowRects[WindowStore.MAIN], walDock, milkdropH)
         }
-    // Double Size holds the windows in place instead; see [LockedStack]
-    val held =
-        if (s.doubleSize) {
-            LockedStack.layout(
-                LockedStack.Ask(
-                    screenW = screen.width,
-                    safeBottom = screen.safeBottom,
-                    mainH = mainH,
-                    eqH = eqH.takeIf { s.eqVisible },
-                    visChromeH = frameFor(skin).chromeH.takeIf { s.milkdropOn && !s.milkdropFullscreen },
-                    visSteps = s.milkdropSteps,
-                    playlist =
-                        when {
-                            !s.plVisible -> LockedStack.Playlist.CLOSED
-                            s.plShaded -> LockedStack.Playlist.SHADED
-                            else -> LockedStack.Playlist.OPEN
-                        },
-                    covers =
-                        listOfNotNull(
-                            WindowStore.LIBRARY.takeIf { s.libraryOpen },
-                            WindowStore.SKINS.takeIf { s.skinManagerOpen },
-                        ),
-                    columns = s.lockedColumns,
-                ),
-            )
-        } else {
-            null
-        }
-
     // the clocks drive only the windows Andamp draws: the Library's caret, and a list thrown there
     // or in the Skin Browser
     UiClocks(s, followsScreen = true) { s.libraryOpen || s.skinManagerOpen }
@@ -515,7 +464,6 @@ private fun BoxWithConstraintsScope.PlayerWindows(
         onLongPress,
         libraryAccess,
         docked,
-        held,
         wal,
     )
 
@@ -528,8 +476,7 @@ private fun BoxWithConstraintsScope.PlayerWindows(
  * Every window, stacked by z-index so the one pressed last is on top and hit-tested first.
  *
  * Each window floats. The classic stack is where they start, and a window with no stored
- * position is still docked there. With [held] the layout holds every window instead: each
- * is drawn in the rectangle it has there, and one that has none is not shown.
+ * position is still docked there.
  */
 @Composable
 @Suppress("LongParameterList", "CyclomaticComplexMethod") // one window per branch, and what each needs
@@ -542,7 +489,6 @@ private fun FloatingWindows(
     libraryAccess: LibraryAccessHandle,
     /** Where each window sits until it is moved. */
     docked: ClassicStack.Places,
-    held: LockedStack.Places?,
     /** The modern skin shown in place of the main window, the equalizer and the playlist, or null. */
     wal: WalLayerParts?,
 ) {
@@ -551,9 +497,9 @@ private fun FloatingWindows(
     // what a collapsed playlist expands back to
     val plExpandedH = PlaylistLayout.ofSegments(s.plSegments ?: docked.playlistSegments).height
     // with the shade gesture switched off, every shaded window is opened; this also runs
-    // at launch, for a window that was stored shaded, and again when the layout changes or
-    // the phone is turned: each layout and each way round has its own collapsed windows
-    LaunchedEffect(s.shadeEnabled, plExpandedH, held != null, s.sideways) {
+    // at launch, for a window that was stored shaded, and again when the phone is turned:
+    // each way round keeps its collapsed windows apart
+    LaunchedEffect(s.shadeEnabled, plExpandedH, s.sideways) {
         if (!s.shadeEnabled) s.unshadeEverything(plExpandedH)
     }
     // Composition order is fixed and stacking is a zIndex: a window raised by reordering
@@ -561,15 +507,11 @@ private fun FloatingWindows(
     // that raised it.
     WindowStacking.stack(WindowStore.WINDOWS, s.windowOrder).forEach { (id, z) ->
         key(id) {
-            // the rectangle the stack holds this window in; a window it has none for is not
-            // shown, and one lifted by a drag is drawn where the drag has taken it
-            val pin = held?.rects?.get(id)?.let { slot -> s.lifted?.takeIf { it.id == id }?.drawnIn(slot) ?: slot }
-            val shown = held == null || pin != null
             when (id) {
                 WindowStore.MAIN -> {
                     // a skin still loading, or none drawn, shows the player's place
                     val loading: @Composable () -> Unit = {
-                        MainPlaceholder(s, scale, docked.main, onLongPress, pin, Modifier.fillMaxSize().zIndex(z))
+                        MainPlaceholder(s, scale, docked.main, onLongPress, Modifier.fillMaxSize().zIndex(z))
                     }
                     if (wal == null) {
                         loading()
@@ -579,28 +521,26 @@ private fun FloatingWindows(
                 }
 
                 WindowStore.MILKDROP -> {
-                    if (s.milkdropOn && !s.milkdropFullscreen && shown) {
+                    if (s.milkdropOn && !s.milkdropFullscreen) {
                         MilkdropWindow(
                             vm,
                             skin,
                             scale,
                             docked = docked.vis,
                             modifier = Modifier.fillMaxSize().zIndex(z),
-                            pinned = pin,
-                            visMaxSteps = held?.visMaxSteps ?: MILKDROP_MIN_STEPS,
                         )
                     }
                 }
 
                 WindowStore.LIBRARY -> {
                     if (s.libraryOpen) {
-                        LibraryWindow(vm, skin, scale, libraryAccess, Modifier.fillMaxSize().zIndex(z), pin)
+                        LibraryWindow(vm, skin, scale, libraryAccess, Modifier.fillMaxSize().zIndex(z))
                     }
                 }
 
                 WindowStore.SKINS -> {
                     if (s.skinManagerOpen) {
-                        SkinManagerWindow(vm, skin, scale, Modifier.fillMaxSize().zIndex(z), pin)
+                        SkinManagerWindow(vm, skin, scale, Modifier.fillMaxSize().zIndex(z))
                     }
                 }
             }

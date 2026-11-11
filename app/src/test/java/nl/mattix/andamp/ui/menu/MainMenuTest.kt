@@ -104,12 +104,11 @@ class MainMenuTest {
     }
 
     @Test
-    fun `with a modern skin worn, the grayed windows and Double Size show no tick`() {
+    fun `with a modern skin worn, the grayed windows show no tick`() {
         val vm = testViewModel()
         vm.state.plVisible = true
         vm.state.eqVisible = true
-        vm.state.doubleSize = true
-        val entries = listOf("Playlist Editor", "Equalizer", "Options › Double Size")
+        val entries = listOf("Playlist Editor", "Equalizer")
 
         val classic = ticked(mainMenu(vm, {}, {}, {}, {}).items)
         val modern = ticked(mainMenu(vm, {}, {}, {}, {}, modernPlayer = true).items)
@@ -234,16 +233,13 @@ class MainMenuTest {
     }
 
     @Test
-    fun `double size calls its callback and is ticked while it is on`() {
+    fun `double size calls its callback, and with no classic skin drawn it shows no tick`() {
         val vm = testViewModel()
         var asked = 0
 
         fun entry() = actions(optionsMenu(vm, onDoubleSize = { asked++ }).items).first { it.label == "Double Size" }
 
-        vm.doubleSize.on = false
         assertEquals(false, entry().checked)
-        vm.doubleSize.on = true
-        assertEquals("ticked from the setting, wherever the menu is opened", true, entry().checked)
         assertEquals(true, entry().enabled)
         entry().onClick()
         assertEquals("the entry calls its callback once", 1, asked)
@@ -252,7 +248,6 @@ class MainMenuTest {
     @Test
     fun `with a modern skin worn, Options grays Double Size and leaves it unticked, and the rest as it was`() {
         val vm = testViewModel()
-        vm.doubleSize.on = true
 
         val classic = actions(optionsMenu(vm).items)
         val modern = actions(optionsMenu(vm, modernPlayer = true).items)

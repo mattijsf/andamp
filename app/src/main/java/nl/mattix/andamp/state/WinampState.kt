@@ -14,7 +14,6 @@ import androidx.compose.ui.unit.IntRect
 import kotlinx.coroutines.sync.Mutex
 import nl.mattix.andamp.core.model.Track
 import nl.mattix.andamp.core.model.Transport
-import nl.mattix.andamp.ui.window.LockedStack
 import nl.mattix.andamp.ui.window.WindowScreen
 import nl.mattix.andamp.visualizer.core.PresetGaps
 import kotlin.properties.ReadWriteProperty
@@ -108,15 +107,8 @@ class WinampState {
      */
     var sideways by mutableStateOf(false)
 
-    /**
-     * Winamp's Double Size as it is set; see [DoubleSizeStore]. While it is on, the layout
-     * holds every window in one stack: [windowRects] are the stack's and no window's own
-     * place changes. The clutter bar's D is lit from it.
-     */
-    var doubleSize by mutableStateOf(false)
-
-    /** The workspace on screen: floating or locked, upright or sideways; see [Workspace]. */
-    val workspace: Workspace get() = Workspace.of(locked = doubleSize, sideways = sideways)
+    /** The workspace on screen, upright or sideways; see [Workspace]. */
+    val workspace: Workspace get() = Workspace.of(sideways = sideways)
 
     /**
      * Every window's placement, one entry per [WindowStore.WINDOWS] id. The named
@@ -478,73 +470,6 @@ class WinampState {
 
     /** The windows of [workspace], bottom to top. */
     fun orderOf(workspace: Workspace): List<String> = orders.getValue(workspace)
-
-    /** The columns each locked workspace holds its windows in; see [LockedColumns]. */
-    private val columns =
-        androidx.compose.runtime.mutableStateMapOf<Workspace, List<List<String>>>().apply {
-            Workspace.entries.filter { it.locked }.forEach { put(it, LockedColumns.defaultFor(it.sideways)) }
-        }
-
-    /** The locked workspace the way the phone is held: on screen while Double Size is on. */
-    private val lockedWorkspace get() = Workspace.of(locked = true, sideways = sideways)
-
-    /** The columns of the locked workspace the way the phone is held. */
-    var lockedColumns: List<List<String>>
-        get() = columns.getValue(lockedWorkspace)
-        set(value) {
-            columns[lockedWorkspace] = value
-        }
-
-    fun columnsOf(workspace: Workspace): List<List<String>> = columns.getValue(workspace)
-
-    fun setColumns(
-        workspace: Workspace,
-        columns: List<List<String>>,
-    ) {
-        this.columns[workspace] = columns
-    }
-
-    /** A window lifted out of the locked layout by a drag; see [liftWindow]. */
-    data class LiftedWindow(
-        val id: String,
-        /** Where it was when it was lifted. */
-        val from: IntRect,
-        /** How far the drag has taken it since. */
-        val by: IntOffset,
-    ) {
-        /** Where the drag has taken its top-left corner. */
-        val topLeft: IntOffset get() = IntOffset(from.left + by.x, from.top + by.y)
-
-        val center: IntOffset get() = IntOffset(from.center.x + by.x, from.center.y + by.y)
-
-        /** Drawn where the drag has taken it, at the size of the slot it would drop into. */
-        fun drawnIn(slot: IntRect) = IntRect(topLeft, slot.size)
-    }
-
-    var lifted: LiftedWindow? by mutableStateOf(null)
-
-    /**
-     * A drag on a window the locked layout holds: the window follows the finger, and the
-     * columns are reordered as it goes, so the others make room where it would land. Only the
-     * windows of [LockedColumns.STACK] move; see [LockedColumns.moved].
-     */
-    fun liftWindow(
-        id: String,
-        by: IntOffset,
-    ) {
-        if (!doubleSize || id !in LockedColumns.STACK) return
-        val from = lifted?.takeIf { it.id == id }?.from ?: windowRects[id] ?: return
-        val lift = LiftedWindow(id, from, by)
-        lifted = lift
-        val column = LockedStack.columnAt(lift.center.x, screenW, lockedColumns.size)
-        val moved = LockedColumns.moved(id, lift.center, column, lockedColumns, windowRects - id)
-        if (moved != lockedColumns) lockedColumns = moved
-    }
-
-    /** The drag has ended: the window takes the slot it was over. */
-    fun dropWindow() {
-        lifted = null
-    }
 
     fun setOrder(
         workspace: Workspace,

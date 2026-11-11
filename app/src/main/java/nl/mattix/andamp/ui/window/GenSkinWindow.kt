@@ -58,7 +58,6 @@ fun GenSkinWindow(
         widgets = allWidgets,
         onResizeRaw = spec.onResizeRaw,
         cut = SkinCut(skin),
-        pinned = spec.pinned,
         modifier = modifier,
     ) {
         with(frame) { draw(skin, width, spec.height, title, state.pressedWidget == closeWidgetId(title)) }
