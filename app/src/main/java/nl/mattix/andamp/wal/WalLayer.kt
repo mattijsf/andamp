@@ -500,9 +500,10 @@ private class FailedFrame {
 
 /**
  * The stack where [placed] puts it: the skin's latest frame, and the touches on it. A long press
- * on an object with a skin menu opens that menu, and anywhere else opens the main menu at the
- * press; a drag from one of the skin's move areas moves the stack with [drag]. A draw that throws
- * draws nothing more of that frame and is reported once.
+ * on an object with a skin menu opens that menu, one off the skin's controls opens the main menu at
+ * the press, and one on a control is a press of that control; a drag from one of the skin's move
+ * areas moves the stack with [drag]. A draw that throws draws nothing more of that frame and is
+ * reported once.
  */
 @Composable
 @Suppress("LongParameterList") // the stack, where it sits, and what its touches reach
@@ -565,6 +566,10 @@ private fun WalCanvas(
                             } else {
                                 parts.openMenu(parts.actions.pressAt?.invoke(), null)
                             }
+                        },
+                        onControl = { at, controls ->
+                            val s = placedNow.skinScale
+                            WalLens.landsOn(controls, Offset(at.x / s, at.y / s), WalFitting.TOUCH_SLOP_DP * density.density / s)
                         },
                         drag = drag,
                         lens = WalLensHost({ state.tapAssist }, { placedNow }, { layerNow }, density.density) { onLensNow(it) },
