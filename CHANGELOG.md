@@ -4,6 +4,31 @@ What changed for somebody who uses Andamp, newest first. It is written from the 
 messages, which is why those are conventional (`feat:`, `fix:`, `change:`). `docs:` and
 `chore:` commits do not appear here.
 
+## [0.18.0](https://github.com/mattijsf/andamp/compare/v0.17.0...v0.18.0) (2026-11-14)
+
+
+### New
+
+* a modern skin's windows can sit apart on the player, as on Winamp's desktop ([#196](https://github.com/mattijsf/andamp/issues/196)) ([c431479](https://github.com/mattijsf/andamp/commit/c431479423d93b68fab9b4a79c5da0f66fb16a30))
+* classic skins are now drawn as Winamp draws them, with no switch to turn on ([#201](https://github.com/mattijsf/andamp/issues/201)) ([c39c4a1](https://github.com/mattijsf/andamp/commit/c39c4a1851929f9a2715f9780d905864b3860887))
+* classic skins can be drawn as Winamp draws them, with a new renderer to try in Preferences ([#197](https://github.com/mattijsf/andamp/issues/197)) ([9700a89](https://github.com/mattijsf/andamp/commit/9700a894106fe61ac32820459711531e5a23c765))
+* modern skins can run on Andamp's native engine, behind a switch in Preferences ([8a009ad](https://github.com/mattijsf/andamp/commit/8a009adb42988c5a955206a590a9bcc763bf678c))
+* modern skins run on Andamp's native engine only ([#193](https://github.com/mattijsf/andamp/issues/193)) ([80042c0](https://github.com/mattijsf/andamp/commit/80042c0f0650d69ca4bdab469c298406f585c63e))
+* on Android Auto, your classic skin is drawn as the player draws it ([#204](https://github.com/mattijsf/andamp/issues/204)) ([00756fa](https://github.com/mattijsf/andamp/commit/00756fa3adf3da55bc96a7780d880d0198ae1c56))
+* skins in the museum and on the welcome screen are previewed as the player draws them ([#203](https://github.com/mattijsf/andamp/issues/203)) ([c9a0662](https://github.com/mattijsf/andamp/commit/c9a0662693457daef6c0cdcac30aa95d52523256))
+* the home screen widget shows your classic skin as the player draws it ([#202](https://github.com/mattijsf/andamp/issues/202)) ([4c9a930](https://github.com/mattijsf/andamp/commit/4c9a9306e32df5e1ff21a3a49aba16fb9c117ee9))
+* with the new renderer, a classic skin keeps its menus, playlist marks, multi-row selection and the shade setting ([#199](https://github.com/mattijsf/andamp/issues/199)) ([3cbd014](https://github.com/mattijsf/andamp/commit/3cbd0148aab1cfceb397ff490e1c4f149d4ee9b2))
+* with the new renderer, Andamp's own skins are drawn as Winamp draws them too, in your wallpaper's colors ([#200](https://github.com/mattijsf/andamp/issues/200)) ([48e9132](https://github.com/mattijsf/andamp/commit/48e91325251974eb1730f61e442e291b560c1a6d))
+
+
+### Fixed
+
+* a classic skin the new renderer cannot draw gives way to AndAmp Dark until the next start ([#205](https://github.com/mattijsf/andamp/issues/205)) ([f7e316a](https://github.com/mattijsf/andamp/commit/f7e316aa2c50301982aee3ee80740a3493a70371))
+* Double Size switched on earlier now fills the screen with your skin, and switches off again ([#208](https://github.com/mattijsf/andamp/issues/208)) ([3332f54](https://github.com/mattijsf/andamp/commit/3332f54680c48825658fbbc53a4d4e9871bc2ce9))
+* holding a button or slider no longer pops up the menu ([#209](https://github.com/mattijsf/andamp/issues/209)) ([41da731](https://github.com/mattijsf/andamp/commit/41da7311c942f30f487667e0c5a2fdcf21864606))
+* modern skin windows are black where the skin draws nothing, and a stretched background reaches one pixel further, as in Winamp ([#194](https://github.com/mattijsf/andamp/issues/194)) ([0de7b30](https://github.com/mattijsf/andamp/commit/0de7b303411006cf710d550cbe28e06d1a6f37a7))
+* modern skins that ask for Arial get the matching font on the phone too ([#180](https://github.com/mattijsf/andamp/issues/180)) ([decefe5](https://github.com/mattijsf/andamp/commit/decefe5fd08e6cb00e8ab02e1cf9887805d3cf13))
+
 ## [0.17.0](https://github.com/mattijsf/andamp/compare/v0.16.0...v0.17.0) (2026-10-30)
 
 
