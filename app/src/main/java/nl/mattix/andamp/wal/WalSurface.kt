@@ -25,6 +25,9 @@ internal interface WalSurface : WalTouch.Target {
     /** The seq of the down that moves the stack, as the latest [layout] says. */
     override val moveTarget: Int? get() = layout?.moveTarget
 
+    /** The seq of the down that landed on an object with a skin menu, as the latest [layout] says. */
+    override val menuTarget: Int? get() = layout?.menuTarget
+
     /** Bumped on main after each new frame or menu change; changes close together count once. */
     val frames: IntState
 

@@ -2,6 +2,9 @@
 
 package nl.mattix.andamp.wal
 
+import androidx.compose.ui.geometry.Offset
+import nl.mattix.walkit.Rect
+import nl.mattix.walkit.TouchControl
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Test
@@ -23,6 +26,7 @@ class WalTouchTest {
             toSkin = { (it.x / 2).toInt() to (it.y / 2).toInt() },
             onPress = { pressed += it },
             onLongPress = { at, seq -> longPresses += at to seq },
+            onControl = { at, controls -> WalLens.landsOn(controls, Offset(at.x / 2, at.y / 2), slop = 0f) },
             drag =
                 object : WalTouch.Drag {
                     override fun start(
@@ -186,6 +190,41 @@ class WalTouchTest {
     }
 
     @Test
+    fun `a long press on a control is a press of the control`() {
+        surface.controls = listOf(TouchControl(Rect(8, 18, 4, 4), magnify = false))
+        touch.down(TouchPoint(20f, 40f), 0)
+
+        touch.longPressDue()
+
+        assertEquals("no menu", emptyList<Pair<TouchPoint, Int>>(), longPresses)
+        assertNull("it is asked once", touch.longPressIn(1_000))
+        touch.up(TouchPoint(20f, 40f), 900, consumed = false)
+        assertEquals("the release presses the control", listOf("down 10,20", "up 10,20"), surface.calls)
+    }
+
+    @Test
+    fun `a long press beside the controls opens the menu`() {
+        surface.controls = listOf(TouchControl(Rect(30, 18, 4, 4), magnify = false))
+        touch.down(TouchPoint(20f, 40f), 0)
+
+        touch.longPressDue()
+
+        assertEquals(listOf(TouchPoint(20f, 40f) to 1), longPresses)
+    }
+
+    @Test
+    fun `a long press on an object with a skin menu opens it without asking for the controls`() {
+        surface.controls = listOf(TouchControl(Rect(8, 18, 4, 4), magnify = false))
+        surface.menuUnderEveryPress = true
+        touch.down(TouchPoint(20f, 40f), 0)
+
+        touch.longPressDue()
+
+        assertEquals(listOf(TouchPoint(20f, 40f) to 1), longPresses)
+        assertEquals(0, surface.controlsAsked)
+    }
+
+    @Test
     fun `a double tap held down long-presses in the double tap's gesture`() {
         tap(TouchPoint(20f, 40f), downAt = 0, upAt = 80)
         touch.down(TouchPoint(20f, 40f), 150)
@@ -341,6 +380,20 @@ private class FakeTarget : WalTouch.Target {
     val calls = mutableListOf<String>()
     var moveAreaUnderEveryPress = false
     override var moveTarget: Int? = null
+
+    /** Every press lands on an object with a skin menu. */
+    var menuUnderEveryPress = false
+    override val menuTarget: Int? get() = seq.takeIf { menuUnderEveryPress }
+
+    /** The controls the pressed window lists, and how often they were asked for. */
+    var controls = emptyList<TouchControl>()
+    var controlsAsked = 0
+
+    override fun pressControls(onControls: (List<TouchControl>) -> Unit) {
+        controlsAsked++
+        onControls(controls)
+    }
+
     private var seq = 0
 
     override fun pointerDown(

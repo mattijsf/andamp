@@ -7,8 +7,9 @@ import kotlin.math.hypot
 
 /**
  * One finger on a modern skin, as the skin hears it: a press, its moves and its release; a second
- * tap soon after a first one as a double tap; and a long press, which the skin does not hear as a
- * click but which opens the main menu. A press on a part of the skin that is not a control
+ * tap soon after a first one as a double tap; and a long press off the skin's controls, which the
+ * skin does not hear as a click but which opens a menu. A long press on a control is left to the
+ * control: its release presses it, as a short tap would. A press on a part of the skin that is not a control
  * ([WalLayout.moveTarget]) that travels past the touch slop moves the whole stack through [drag]
  * instead: the skin's press is cancelled and it hears nothing more of that finger.
  *
@@ -29,6 +30,8 @@ internal class WalTouch(
     private val onPress: (TouchPoint) -> Unit = {},
     /** The long press fired at the point the finger went down, in the gesture of this seq; the skin's press is cancelled. */
     private val onLongPress: (at: TouchPoint, seq: Int) -> Unit,
+    /** Whether a press at a point lands on one of the pressed window's controls, which the skin lists in skin pixels. */
+    private val onControl: (at: TouchPoint, controls: List<nl.mattix.walkit.TouchControl>) -> Boolean = { _, _ -> false },
     /** What moves the stack, or null where it cannot be moved. */
     private val drag: Drag? = null,
     /** The magnifier a hold opens, or null when Tap assist is off. */
@@ -69,6 +72,9 @@ internal class WalTouch(
          */
         val moveTarget: Int?
 
+        /** The seq of the down that landed on an object with a skin menu, as the latest layout says, or null. */
+        val menuTarget: Int? get() = null
+
         /** The rest of the press lands exactly where it says, as a mouse's does: a magnifier steers it. */
         fun pointerPrecise() {}
 
@@ -79,7 +85,7 @@ internal class WalTouch(
         ) {}
 
         /** Hands [onControls] the controls of the window the press is on, in the stack's skin pixels, later on main. */
-        fun pressControls(onControls: (List<nl.mattix.walkit.TouchControl>) -> Unit) {}
+        fun pressControls(onControls: (List<nl.mattix.walkit.TouchControl>) -> Unit) = onControls(emptyList())
     }
 
     /** The magnifier, as the host shows it. */
@@ -139,6 +145,9 @@ internal class WalTouch(
 
         /** The long press fired, so the rest of the finger goes nowhere. */
         var taken = false
+
+        /** The long press came due and waits for the skin to say whether the press is on a control. */
+        var asked = false
 
         /** It moves the stack, so the rest of the finger goes to [drag]. */
         var dragging = false
@@ -275,7 +284,7 @@ internal class WalTouch(
     /** How long after [now] the hold that opens the lens or the long press is due, or null when neither can come. */
     fun longPressIn(now: Long): Long? {
         val p = press ?: return null
-        if (!p.holding) return null
+        if (!p.holding || p.asked) return null
         val due = if (p.holdAhead) p.time + Loupe.HOLD_MS else p.time + rules.longPressMs
         return (due - now).coerceAtLeast(0)
     }
@@ -337,10 +346,23 @@ internal class WalTouch(
         open.point.let { (x, y) -> surface.pointerMove(x, y) }
     }
 
-    /** The long press is due: it fires unless the finger traveled or a skin menu opened since it went down. */
+    /**
+     * The long press is due: it fires unless the finger traveled or a skin menu opened since it
+     * went down. On an object with a skin menu it fires at once; anywhere else the skin first lists
+     * the pressed window's controls, and on one of them the press goes on as a press.
+     */
     fun longPressDue() {
         val p = press ?: return
-        if (!p.holding) return
+        if (!p.holding || p.asked) return
+        if (surface.menuTarget == p.seq) return fire(p)
+        p.asked = true
+        surface.pressControls { controls ->
+            if (press === p && p.holding && !onControl(p.at, controls)) fire(p)
+        }
+    }
+
+    /** The long press of [p] fires: the skin's press is cancelled and the rest of the finger goes nowhere. */
+    private fun fire(p: Press) {
         p.taken = true
         surface.pointerCancel()
         onLongPress(p.at, p.seq)

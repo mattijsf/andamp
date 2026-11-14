@@ -137,6 +137,16 @@ internal class WalLens(
 
         private fun IntRect.holds(at: Offset) = at.x >= left && at.x < right && at.y >= top && at.y < bottom
 
+        /**
+         * Whether a press at [at] lands on one of [listed]: under it or within [slop] of it, as the
+         * skin takes a control a finger lands beside.
+         */
+        fun landsOn(
+            listed: List<TouchControl>,
+            at: Offset,
+            slop: Float,
+        ): Boolean = listed.any { distance(it.rect.toIntRect(), at) <= slop }
+
         /** How far [at] lies from [box]. */
         private fun distance(
             box: IntRect,
